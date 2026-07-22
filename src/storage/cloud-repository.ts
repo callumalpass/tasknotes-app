@@ -11,10 +11,9 @@ import {
   OfflineReplica,
   SyncError,
 } from "@mdbase/connect-sync";
-import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
-
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { compareTasks } from "./repository";
+import { resolveTaskCollection } from "./tasknotes-collection";
 
 import type {
   CreateTaskInput,
@@ -45,7 +44,7 @@ export class CloudTaskRepository implements TaskRepository {
   private readonly cache = new Map<string, CachedCloudTask>();
   private readonly listeners = new Set<() => void>();
   private status: RepositorySyncStatus = {
-    mode: "cloud",
+    mode: "replicated",
     state: "syncing",
     pending: 0,
     issues: 0,
@@ -80,7 +79,7 @@ export class CloudTaskRepository implements TaskRepository {
       if (cachedResources) await this.replica.pull();
       else await this.replica.initialize();
       this.status = {
-        mode: "cloud",
+        mode: "replicated",
         state: "synced",
         pending: 0,
         issues: 0,
@@ -91,7 +90,7 @@ export class CloudTaskRepository implements TaskRepository {
         try {
           await this.replica.initialize();
           this.status = {
-            mode: "cloud",
+            mode: "replicated",
             state: "synced",
             pending: 0,
             issues: 0,
@@ -269,7 +268,7 @@ export class CloudTaskRepository implements TaskRepository {
 
   async collectionInfo(): Promise<CollectionInfo> {
     return {
-      kind: "cloud",
+      kind: "connect",
       name: "mdbase cloud",
       location: "Offline copy on this device",
       runtime: Capacitor.isNativePlatform() ? "native" : "browser",
@@ -304,33 +303,9 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   private configureModel(resources: SyncCollectionResources): void {
-    const contract = resources.contracts.find(
-      (candidate) => candidate.id === "tasknotes.task",
-    );
-    if (!contract) {
-      throw new Error(
-        "This cloud collection does not provide TaskNotes tasks.",
-      );
-    }
-    const type = resources.types.find(
-      (candidate) => candidate.name === contract.type_name,
-    );
-    if (!type) {
-      throw new Error(
-        "The TaskNotes task type is missing from this collection.",
-      );
-    }
-    this.taskTypeName = contract.type_name;
-    this.model = new TaskNotesTaskModel(
-      resolveTaskNotesModelConfigFromMdbaseType({
-        schema: { value: type.schema },
-        "x-tasknotes": contract.configuration,
-      }),
-      {
-        typeName: contract.type_name,
-        recordsFolder: recordsFolder(type.collection),
-      },
-    );
+    const resolved = resolveTaskCollection(resources);
+    this.taskTypeName = resolved.typeName;
+    this.model = resolved.model;
   }
 
   private async reloadCache(): Promise<void> {
@@ -463,19 +438,4 @@ function cloudFirstOpenError(reason: unknown): Error {
 function cloudErrorMessage(reason: unknown): string {
   if (reason instanceof Error && reason.message) return reason.message;
   return "Changes will sync when a connection is available.";
-}
-
-function recordsFolder(collection: JsonObject | undefined): string {
-  const path = collection?.path;
-  if (!path || typeof path !== "object" || Array.isArray(path)) return "tasks";
-  const descriptor = path as Record<string, unknown>;
-  const folder = descriptor.folder;
-  if (typeof folder === "string" && folder.trim()) return folder;
-  const pattern = descriptor.pattern;
-  if (typeof pattern !== "string") return "tasks";
-  const marker = pattern.search(/\{[^}]+\}/);
-  const prefix = (marker < 0 ? pattern : pattern.slice(0, marker))
-    .replace(/\/+$/g, "")
-    .trim();
-  return prefix || "tasks";
 }

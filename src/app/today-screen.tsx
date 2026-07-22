@@ -62,16 +62,20 @@ export function TodayScreen({ onOpen }: { onOpen(task: Task): void }) {
         </div>
         <span className="sync-state">
           {refreshing || sync.state === "syncing"
-            ? sync.mode === "cloud"
+            ? sync.mode === "replicated"
               ? "Syncing"
-              : "Checking files"
+              : sync.mode === "live"
+                ? "Refreshing"
+                : "Checking files"
             : sync.mode === "local"
               ? "On this device"
               : sync.state === "offline"
                 ? "Offline"
                 : sync.state === "issues"
                   ? "Sync issue"
-                  : "Cloud · up to date"}
+                  : sync.mode === "live"
+                    ? "Connected"
+                    : "Up to date"}
         </span>
       </header>
 

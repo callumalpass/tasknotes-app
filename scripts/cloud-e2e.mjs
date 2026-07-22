@@ -44,6 +44,7 @@ try {
   const developmentEnvironment = {
     ...process.env,
     TASKNOTES_APP_URL: appUrl,
+    TASKNOTES_WEB_ONLY: "1",
     VITE_MDBASE_CONNECT_URL: controlUrl,
   };
   await execute("pnpm", ["manifest:dev"], {
@@ -78,7 +79,7 @@ try {
 
   phase("authorizing TaskNotes and creating a hosted collection");
   await page.goto(appUrl);
-  await page.getByRole("button", { name: /mdbase cloud/ }).click();
+  await page.getByRole("button", { name: /^mdbase/ }).click();
   await page.getByRole("button", { name: "Continue to mdbase" }).click();
   await expect(page).toHaveURL(new RegExp(`^${escapeRegex(controlUrl)}/login`));
   await page.getByLabel("Name").fill("TaskNotes E2E");
@@ -96,7 +97,7 @@ try {
     timeout: 15_000,
   });
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
-  await expect(page.getByText("Cloud · up to date")).toBeVisible();
+  await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
 
   phase("creating a task locally and synchronizing it to the authority");
   await page.getByLabel("New task title").fill("Cloud foundation");

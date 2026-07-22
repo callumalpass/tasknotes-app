@@ -24,7 +24,7 @@ export function CollectionGate() {
   if (!choice) return <CollectionWelcome onChoose={choose} />;
   if (choice === "cloud")
     return (
-      <Suspense fallback={<OpeningCollection label="Opening mdbase cloud" />}>
+      <Suspense fallback={<OpeningCollection label="Opening mdbase" />}>
         <CloudCollection choose={choose} reset={reset} />
       </Suspense>
     );
@@ -47,7 +47,7 @@ function CollectionWelcome({
         <img alt="" src={tasknotesMarkUrl} />
         <p className="eyebrow">TaskNotes</p>
         <h1>Where should your tasks live?</h1>
-        <p>Both choices work offline. You can change this later.</p>
+        <p>You can change this later.</p>
       </div>
       <div className="collection-choices">
         <button type="button" onClick={() => onChoose("local")}>
@@ -60,8 +60,8 @@ function CollectionWelcome({
         <button type="button" onClick={() => onChoose("cloud")}>
           <Cloud aria-hidden="true" size={22} strokeWidth={1.5} />
           <span>
-            <strong>mdbase cloud</strong>
-            <small>Use the same tasks across devices.</small>
+            <strong>mdbase</strong>
+            <small>Use a collection from the cloud or another computer.</small>
           </span>
         </button>
       </div>

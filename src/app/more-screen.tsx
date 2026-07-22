@@ -99,7 +99,7 @@ export function MoreScreen() {
       </header>
       <SettingsSection label="Storage">
         <div className="setting-row">
-          {info?.kind === "cloud" ? (
+          {info?.kind === "connect" ? (
             <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
           ) : (
             <HardDrive aria-hidden="true" size={20} strokeWidth={1.6} />
@@ -117,9 +117,11 @@ export function MoreScreen() {
           onClick={() => setShowLocation((value) => !value)}
         >
           <span>
-            {info?.kind === "cloud"
-              ? "Tasks are cached here and synchronized with mdbase cloud."
-              : "Tasks are Markdown files stored locally."}
+            {sync.mode === "replicated"
+              ? "Tasks are cached here and synchronized through mdbase."
+              : sync.mode === "live"
+                ? "Tasks are read from this collection through mdbase."
+                : "Tasks are Markdown files stored locally."}
           </span>
           {showLocation ? (
             <ChevronUp aria-hidden="true" size={17} />
@@ -137,12 +139,16 @@ export function MoreScreen() {
           onClick={() => void refresh()}
         >
           {refreshing
-            ? info?.kind === "cloud"
+            ? sync.mode === "replicated"
               ? "Syncing"
-              : "Checking files"
-            : info?.kind === "cloud"
+              : sync.mode === "live"
+                ? "Refreshing"
+                : "Checking files"
+            : sync.mode === "replicated"
               ? "Sync now"
-              : "Check files now"}
+              : sync.mode === "live"
+                ? "Refresh now"
+                : "Check files now"}
         </button>
         {lastRefresh ? (
           <p className="refresh-detail">
@@ -187,24 +193,24 @@ export function MoreScreen() {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection label="Cloud">
+      <SettingsSection label="mdbase">
         <div className="setting-row">
           <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>mdbase cloud</span>
+          <span>mdbase</span>
           <small>{syncLabel(sync)}</small>
         </div>
         {choice === "local" ? (
           <>
             <p className="section-copy">
-              Use one TaskNotes collection across devices, with an offline copy
-              on each device.
+              Open a compatible collection from mdbase cloud or another
+              computer.
             </p>
             <button
               className="text-action"
               type="button"
               onClick={() => choose("cloud")}
             >
-              Connect mdbase cloud
+              Connect mdbase
             </button>
           </>
         ) : (
@@ -233,7 +239,7 @@ export function MoreScreen() {
                 type="button"
                 onClick={disconnectCloud}
               >
-                Disconnect cloud
+                Disconnect mdbase
               </button>
             </div>
           </>
@@ -305,12 +311,16 @@ export function MoreScreen() {
 
 function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
   if (sync.mode === "local") return "Not connected";
-  if (sync.state === "syncing") return "Syncing";
-  if (sync.state === "offline") return "Offline · changes saved here";
+  if (sync.state === "syncing")
+    return sync.mode === "live" ? "Refreshing" : "Syncing";
+  if (sync.state === "offline")
+    return sync.mode === "live"
+      ? "Collection unavailable"
+      : "Offline · changes saved here";
   if (sync.state === "issues")
     return `${sync.issues} sync ${sync.issues === 1 ? "issue" : "issues"}`;
   if (sync.pending) return `${sync.pending} waiting`;
-  return "Up to date";
+  return sync.mode === "live" ? "Connected" : "Up to date";
 }
 
 function SettingsSection({

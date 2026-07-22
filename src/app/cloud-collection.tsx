@@ -9,7 +9,7 @@ import {
   cloudConnect,
   isCloudCallback,
 } from "../cloud/connect";
-import { CloudTaskRepository } from "../storage/cloud-repository";
+import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
@@ -23,7 +23,9 @@ export default function CloudCollection({
 }) {
   const [callbackError, setCallbackError] = useState<string | null>(null);
   const [repository, setRepository] = useState(() =>
-    cloudConnect.connection() ? new CloudTaskRepository(cloudConnect) : null,
+    cloudConnect.connection()
+      ? createConnectTaskRepository(cloudConnect)
+      : null,
   );
 
   const complete = useCallback(async (url: string) => {
@@ -41,7 +43,7 @@ export default function CloudCollection({
     try {
       await cloudConnect.completeAuthorization(url);
       setCallbackError(null);
-      setRepository(new CloudTaskRepository(cloudConnect));
+      setRepository(createConnectTaskRepository(cloudConnect));
       await finishBrowserCallback();
     } catch (reason) {
       setCallbackError(message(reason));
@@ -105,11 +107,11 @@ function CloudConnection({
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">mdbase cloud</p>
-        <h1>Your tasks on every device.</h1>
+        <p className="eyebrow">mdbase</p>
+        <h1>Open your TaskNotes collection.</h1>
         <p>
-          TaskNotes keeps an offline copy here, then synchronizes changes in the
-          background.
+          Choose a collection from mdbase cloud or from a computer running
+          mdbase connect.
         </p>
       </div>
       {error || startError ? (
