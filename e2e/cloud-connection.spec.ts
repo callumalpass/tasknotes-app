@@ -50,7 +50,10 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-    const manifestUrl = `${location.origin}/.well-known/mdbase-app.json`;
+    const manifestUrl = new URL(
+      ".well-known/mdbase-app.json",
+      new URL("./", location.href),
+    ).href;
     localStorage.setItem(
       `mdbase-connect:token:https://connect.mdbase.dev:${manifestUrl}`,
       JSON.stringify({
