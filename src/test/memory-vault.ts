@@ -21,9 +21,19 @@ export class MemoryVault implements Vault {
   }
 
   async listMarkdownFiles(path: string): Promise<VaultEntry[]> {
+    return this.listFiles(path, [".md"]);
+  }
+
+  async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
     const prefix = `${safePath(path)}/`;
     return [...this.files.entries()]
-      .filter(([name]) => name.startsWith(prefix) && name.endsWith(".md"))
+      .filter(
+        ([name]) =>
+          name.startsWith(prefix) &&
+          extensions.some((extension) =>
+            name.toLowerCase().endsWith(extension.toLowerCase()),
+          ),
+      )
       .map(([name, file]) => ({
         path: name,
         lastModified: file.lastModified,

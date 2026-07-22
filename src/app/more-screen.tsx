@@ -1,11 +1,13 @@
 import {
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Cloud,
   FileText,
   HardDrive,
   Info,
   Bell,
+  Columns3,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -13,7 +15,7 @@ import { notificationPermission } from "../native/notifications";
 import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
-export function MoreScreen() {
+export function MoreScreen({ onOpenViews }: { onOpenViews(): void }) {
   const { info, stats, loading } = useCollectionSummary();
   const {
     lastRefresh,
@@ -156,6 +158,19 @@ export function MoreScreen() {
             {lastRefresh.elapsedMs.toLocaleString()} ms.
           </p>
         ) : null}
+      </SettingsSection>
+
+      <SettingsSection label="Views">
+        <button
+          className="setting-row setting-link"
+          type="button"
+          onClick={onOpenViews}
+        >
+          <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Saved views</span>
+          <small>Lists, boards, and calendars</small>
+          <ChevronRight aria-hidden="true" size={17} />
+        </button>
       </SettingsSection>
 
       {benchmarkTools ? (

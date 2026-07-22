@@ -6,6 +6,7 @@ import {
 } from "./index";
 import { batches, MarkdownCollection } from "./collection";
 import { createPlatformVault } from "./vault";
+import { LocalViewExecutor } from "./local-views";
 
 import type {
   CreateTaskInput,
@@ -14,6 +15,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskView, TaskViewExecution } from "../domain/view";
 
 export interface CollectionInfo {
   kind: "local" | "connect";
@@ -32,6 +34,8 @@ export interface TaskRepository {
   toggle(id: string): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
+  listViews(): Promise<TaskView[]>;
+  executeView(view: TaskView): Promise<TaskViewExecution>;
   collectionInfo(): Promise<CollectionInfo>;
   syncStatus(): Promise<RepositorySyncStatus>;
   syncIssues(): Promise<RepositorySyncIssue[]>;
@@ -69,6 +73,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private readonly cache = new Map<string, IndexedTask>();
   private initialization: Promise<void> | null = null;
   private writeTail: Promise<void> = Promise.resolve();
+  private readonly views: LocalViewExecutor;
 
   constructor(
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
@@ -76,6 +81,9 @@ export class IndexedMarkdownRepository implements TaskRepository {
     this.collection =
       options.collection ?? new MarkdownCollection(createPlatformVault());
     this.index = options.index ?? new TaskIndex();
+    this.views = new LocalViewExecutor(this.collection, () => [
+      ...this.cache.values(),
+    ]);
   }
 
   initialize(): Promise<void> {
@@ -179,6 +187,14 @@ export class IndexedMarkdownRepository implements TaskRepository {
       open: this.cache.size - completed,
       completed,
     };
+  }
+
+  listViews(): Promise<TaskView[]> {
+    return this.views.list();
+  }
+
+  executeView(view: TaskView): Promise<TaskViewExecution> {
+    return this.views.execute(view);
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

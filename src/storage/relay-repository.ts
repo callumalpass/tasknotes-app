@@ -11,6 +11,12 @@ import {
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { compareTasks } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
+import {
+  flattenViews,
+  normalizeViewExecution,
+  type ProviderViewExecution,
+  type ProviderViewList,
+} from "./views";
 
 import type {
   CreateTaskInput,
@@ -19,6 +25,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskView, TaskViewExecution } from "../domain/view";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -222,6 +229,41 @@ export class RelayTaskRepository implements TaskRepository {
       open: this.cache.size - completed,
       completed,
     };
+  }
+
+  async listViews(): Promise<TaskView[]> {
+    try {
+      return flattenViews(
+        validResult(await this.connect.listViews()) as ProviderViewList,
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  async executeView(view: TaskView): Promise<TaskViewExecution> {
+    try {
+      const result = validResult(
+        await this.connect.executeView({
+          path: view.source.path,
+          view: view.id,
+          limit: 2_000,
+          render: false,
+        }),
+      ) as ProviderViewExecution;
+      return normalizeViewExecution(view, result, (record) =>
+        this.readRecord({
+          path: record.path,
+          frontmatter: record.frontmatter ?? {},
+          body: record.body,
+          types: record.types ?? [],
+        }),
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

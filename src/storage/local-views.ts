@@ -1,0 +1,317 @@
+import {
+  compileExpression,
+  compileFilter,
+  compileFormulaSet,
+  createEvaluationContext,
+} from "obsidian-bases-expression";
+import { parse } from "yaml";
+
+import { taskViewKey } from "../domain/view";
+
+import type { Task } from "../domain/task";
+import type {
+  TaskView,
+  TaskViewExecution,
+  TaskViewGroup,
+  TaskViewPresentation,
+} from "../domain/view";
+import type { MarkdownCollection } from "./collection";
+import type { VaultEntry } from "./vault";
+
+interface BaseDocument {
+  filters?: BaseFilter;
+  formulas?: Record<string, string>;
+  views?: BaseView[];
+}
+
+type BaseFilter =
+  | string
+  | {
+      and?: BaseFilter | BaseFilter[];
+      or?: BaseFilter | BaseFilter[];
+      not?: BaseFilter | BaseFilter[];
+    };
+
+interface BaseView {
+  type: string;
+  name: string;
+  filters?: BaseFilter;
+  order?: string[];
+  sort?: Array<{ property: string; direction?: string }>;
+  groupBy?: string | { property: string; direction?: string };
+  limit?: number;
+  options?: Record<string, unknown>;
+}
+
+interface LoadedSource {
+  entry: VaultEntry;
+  document: BaseDocument;
+  source: string;
+  ids: string[];
+}
+
+interface LocalViewTask extends Task {
+  sourceMtime?: number;
+  sourceSize?: number;
+}
+
+export class LocalViewExecutor {
+  constructor(
+    private readonly collection: MarkdownCollection,
+    private readonly tasks: () => LocalViewTask[],
+  ) {}
+
+  async list(): Promise<TaskView[]> {
+    const result: TaskView[] = [];
+    for (const source of await this.sources()) {
+      const documentName = fileStem(source.entry.path);
+      for (const [index, view] of (source.document.views ?? []).entries()) {
+        const id = source.ids[index];
+        result.push({
+          key: taskViewKey(source.entry.path, id),
+          documentId: identifier(documentName, "base"),
+          documentName,
+          id,
+          name: view.name,
+          source: {
+            path: source.entry.path,
+            format: "obsidian.base",
+            revision: await revision(source.source),
+            writable: false,
+          },
+          presentation: presentation(view),
+        });
+      }
+    }
+    return result;
+  }
+
+  async execute(selected: TaskView): Promise<TaskViewExecution> {
+    const source = (await this.sources()).find(
+      (candidate) => candidate.entry.path === selected.source.path,
+    );
+    if (!source)
+      throw new Error("The saved view source is no longer available.");
+    const index = source.ids.indexOf(selected.id);
+    const view = source.document.views?.[index];
+    if (!view) throw new Error("The saved view is no longer available.");
+
+    const formulas = compileFormulaSet(source.document.formulas ?? {});
+    const sharedFilter = compileFilter(source.document.filters);
+    const localFilter = compileFilter(view.filters);
+    const invalid = [
+      ...formulas.diagnostics,
+      ...sharedFilter.diagnostics,
+      ...localFilter.diagnostics,
+    ].find((diagnostic) => diagnostic.severity === "error");
+    if (invalid)
+      throw new Error(`The saved view is invalid. ${invalid.message}`);
+
+    const tasks = this.tasks();
+    const files = tasks.map((task) => taskFile(task));
+    const rows = tasks.flatMap((task) => {
+      const context = createEvaluationContext({
+        note: task.frontmatter,
+        file: taskFile(task),
+        files,
+        formulas: source.document.formulas ?? {},
+      });
+      if (
+        !sharedFilter.evaluateToBoolean(context) ||
+        !localFilter.evaluateToBoolean(context)
+      ) {
+        return [];
+      }
+      const formulaValues = formulas.evaluateToPlain(context);
+      const values: Record<string, unknown> = {};
+      for (const property of selectedProperties(view)) {
+        values[property] = property.startsWith("formula.")
+          ? (formulaValues[property.slice("formula.".length)] ?? null)
+          : evaluateProperty(property, context, task);
+      }
+      return [{ task, values }];
+    });
+
+    rows.sort((left, right) => {
+      for (const sort of view.sort ?? []) {
+        const compared = compareValues(
+          left.values[sort.property],
+          right.values[sort.property],
+        );
+        if (compared)
+          return sort.direction?.toUpperCase() === "DESC"
+            ? -compared
+            : compared;
+      }
+      return left.task.path.localeCompare(right.task.path);
+    });
+    const totalCount = rows.length;
+    const limited =
+      typeof view.limit === "number" ? rows.slice(0, view.limit) : rows;
+    return {
+      view: selected,
+      rows: limited,
+      totalCount,
+      hasMore: limited.length < totalCount,
+      groups: groups(rows, groupProperty(view.groupBy)),
+    };
+  }
+
+  private async sources(): Promise<LoadedSource[]> {
+    const loaded: LoadedSource[] = [];
+    for (const entry of await this.collection.listViewSources()) {
+      try {
+        const source = await this.collection.readText(entry.path);
+        const document = parse(source) as BaseDocument;
+        if (!document || !Array.isArray(document.views)) continue;
+        loaded.push({
+          entry,
+          source,
+          document,
+          ids: stableViewIds(document.views),
+        });
+      } catch {
+        // An invalid source remains untouched and does not hide valid views.
+      }
+    }
+    return loaded;
+  }
+}
+
+function presentation(view: BaseView): TaskViewPresentation {
+  const type =
+    {
+      tasknotesKanban: "tasknotes.kanban",
+      tasknotesCalendar: "tasknotes.calendar",
+      tasknotesMiniCalendar: "tasknotes.calendar",
+      tasknotesTaskList: "tasknotes.task-list",
+      table: "mdbase.table",
+    }[view.type] ?? view.type;
+  const column = groupProperty(view.groupBy);
+  return {
+    type,
+    fallback: "mdbase.table",
+    mappings: column && type === "tasknotes.kanban" ? { column } : {},
+    options: structuredClone(view.options ?? {}),
+  };
+}
+
+function selectedProperties(view: BaseView): string[] {
+  const properties = new Set(view.order ?? []);
+  for (const sort of view.sort ?? []) properties.add(sort.property);
+  const group = groupProperty(view.groupBy);
+  if (group) properties.add(group);
+  return [...properties];
+}
+
+function evaluateProperty(
+  property: string,
+  context: ReturnType<typeof createEvaluationContext>,
+  task: Task,
+): unknown {
+  if (property.startsWith("file."))
+    return compileExpression(property).evaluateToPlain(context);
+  return task.frontmatter[property] ?? null;
+}
+
+function taskFile(task: LocalViewTask) {
+  const name = task.path.split("/").at(-1) ?? task.path;
+  const basename = name.endsWith(".md") ? name.slice(0, -3) : name;
+  return {
+    path: task.path,
+    name,
+    basename,
+    folder: task.path.includes("/")
+      ? task.path.slice(0, task.path.lastIndexOf("/"))
+      : "",
+    ext: "md",
+    size: task.sourceSize ?? 0,
+    ctime: validDate(task.createdAt),
+    mtime:
+      task.sourceMtime === undefined
+        ? validDate(task.updatedAt)
+        : new Date(task.sourceMtime),
+    properties: task.frontmatter,
+    tags: [...new Set([...task.tags, ...bodyTags(task.body)])],
+  };
+}
+
+function validDate(value: string): Date {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? new Date(0) : date;
+}
+
+function bodyTags(body: string): string[] {
+  const source = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+  return [...source.matchAll(/(?:^|\s)#([\p{L}\p{N}_/-]+)/gu)].map(
+    (match) => match[1],
+  );
+}
+
+function groups(
+  rows: TaskViewExecution["rows"],
+  property: string | undefined,
+): TaskViewGroup[] {
+  if (!property) return [];
+  const buckets = new Map<string, TaskViewGroup>();
+  for (const row of rows) {
+    const value = row.values[property] ?? null;
+    const key = JSON.stringify(value);
+    const bucket = buckets.get(key) ?? {
+      values: { [property]: value },
+      count: 0,
+      summaries: {},
+    };
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+  return [...buckets.values()].sort((left, right) =>
+    compareValues(left.values[property], right.values[property]),
+  );
+}
+
+function groupProperty(group: BaseView["groupBy"]): string | undefined {
+  return typeof group === "string" ? group : group?.property;
+}
+
+function compareValues(left: unknown, right: unknown): number {
+  if (Object.is(left, right)) return 0;
+  if (left === null || left === undefined) return 1;
+  if (right === null || right === undefined) return -1;
+  if (typeof left === "number" && typeof right === "number")
+    return left - right;
+  return String(left).localeCompare(String(right));
+}
+
+function stableViewIds(views: BaseView[]): string[] {
+  const counts = new Map<string, number>();
+  return views.map((view) => {
+    const base = identifier(view.name, "view");
+    const count = (counts.get(base) ?? 0) + 1;
+    counts.set(base, count);
+    return count === 1 ? base : `${base}-${count}`;
+  });
+}
+
+function identifier(value: string, fallback: string): string {
+  const normalized = value
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9_.:]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return /^[a-z]/.test(normalized) ? normalized : `${fallback}-${normalized}`;
+}
+
+function fileStem(path: string): string {
+  const name = path.split("/").at(-1) ?? path;
+  return name.endsWith(".base") ? name.slice(0, -5) : name;
+}
+
+async function revision(source: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(source),
+  );
+  return `sha256:${[...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")}`;
+}

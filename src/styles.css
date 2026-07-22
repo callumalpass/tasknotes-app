@@ -1009,6 +1009,242 @@ button:disabled {
   font-size: 1.55rem;
 }
 
+.setting-link {
+  grid-template-columns: 32px minmax(0, 1fr) auto auto;
+  width: 100%;
+  padding: 12px 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.setting-link > svg:last-child {
+  color: var(--ink-muted);
+}
+
+.view-header {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.view-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.view-header small {
+  color: var(--ink-muted);
+}
+
+.back-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  min-height: 44px;
+  padding: 0;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.saved-view-list {
+  border-top: 1px solid var(--line-strong);
+}
+
+.saved-view-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 68px;
+  padding: 8px 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.saved-view-row > svg:first-child {
+  color: var(--accent);
+}
+
+.saved-view-row > svg:last-child {
+  color: var(--ink-muted);
+}
+
+.saved-view-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.saved-view-row strong {
+  font-size: 1.04rem;
+}
+
+.saved-view-row small {
+  color: var(--ink-muted);
+}
+
+.plain-empty {
+  padding: 38px 0;
+  border-top: 1px solid var(--line-strong);
+}
+
+.plain-empty h2 {
+  margin: 0 0 5px;
+  font-size: 1.12rem;
+}
+
+.plain-empty p,
+.calendar-agenda > p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.saved-task-list {
+  border-top: 1px solid var(--line-strong);
+}
+
+.kanban-board {
+  display: flex;
+  gap: 24px;
+  padding-bottom: 18px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.kanban-column {
+  flex: 0 0 min(82vw, 310px);
+  scroll-snap-align: start;
+}
+
+.kanban-column > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 38px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.kanban-column > header h2 {
+  margin: 0;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  text-transform: capitalize;
+}
+
+.kanban-column > header span {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.kanban-column .task-row {
+  grid-template-columns: 44px 1fr;
+}
+
+.calendar-toolbar {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.calendar-toolbar h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  text-align: center;
+}
+
+.calendar-toolbar button {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays span {
+  padding: 6px 0;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.67rem;
+  text-align: center;
+}
+
+.calendar-grid {
+  border-top: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line);
+}
+
+.calendar-grid button {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  justify-items: center;
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 2px 5px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.calendar-grid button.outside {
+  color: var(--ink-muted);
+}
+
+.calendar-grid button[aria-selected="true"] {
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.calendar-grid i {
+  min-width: 16px;
+  padding: 0 4px;
+  color: var(--paper);
+  font-size: 0.68rem;
+  font-style: normal;
+  line-height: 16px;
+  background: var(--accent);
+  border-radius: 8px;
+}
+
+.calendar-agenda {
+  margin-top: 26px;
+}
+
+.calendar-agenda > h2 {
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: 1rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.calendar-agenda > p {
+  padding: 20px 0;
+}
+
 @media (min-width: 840px) {
   :root {
     --page-inset: 32px;

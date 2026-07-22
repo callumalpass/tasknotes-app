@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import type { MdbaseConnect } from "@mdbase/connect";
 import type {
   JsonObject,
+  MdbaseOperationEnvelope,
   SyncCollectionResources,
   SyncMutationReceipt,
   SyncRecord,
@@ -14,6 +15,13 @@ import {
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { compareTasks } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
+import { TaskViewCache } from "./view-cache";
+import {
+  flattenViews,
+  normalizeViewExecution,
+  type ProviderViewExecution,
+  type ProviderViewList,
+} from "./views";
 
 import type {
   CreateTaskInput,
@@ -22,6 +30,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskView, TaskViewExecution } from "../domain/view";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -42,6 +51,9 @@ export class CloudTaskRepository implements TaskRepository {
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
   private readonly cache = new Map<string, CachedCloudTask>();
+  private viewCache: TaskView[] = [];
+  private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
+  private viewStore: TaskViewCache | null = null;
   private readonly listeners = new Set<() => void>();
   private status: RepositorySyncStatus = {
     mode: "replicated",
@@ -64,6 +76,8 @@ export class CloudTaskRepository implements TaskRepository {
     if (!hosted) {
       throw new Error("Connect an mdbase cloud collection to continue.");
     }
+    this.viewStore = new TaskViewCache(hosted.collectionId);
+    this.viewCache = await this.viewStore.readViews();
     const store = new IndexedDbReplicaStore<CloudFrontmatter>(
       `tasknotes:${hosted.collectionId}:${hosted.replicaId}`,
       {
@@ -266,6 +280,52 @@ export class CloudTaskRepository implements TaskRepository {
     };
   }
 
+  async listViews(): Promise<TaskView[]> {
+    try {
+      this.viewCache = flattenViews(
+        validResult(await this.connect.listViews()) as ProviderViewList,
+      );
+      await this.viewStore?.writeViews(this.viewCache);
+      return structuredClone(this.viewCache);
+    } catch (reason) {
+      if (this.viewCache.length) return structuredClone(this.viewCache);
+      throw reason;
+    }
+  }
+
+  async executeView(view: TaskView): Promise<TaskViewExecution> {
+    try {
+      const result = validResult(
+        await this.connect.executeView({
+          path: view.source.path,
+          view: view.id,
+          limit: 2_000,
+          render: false,
+        }),
+      ) as ProviderViewExecution;
+      const execution = normalizeViewExecution(view, result, (record) => {
+        try {
+          return this.model.read({
+            path: record.path,
+            frontmatter: record.frontmatter ?? {},
+            body: record.body ?? "",
+          });
+        } catch {
+          return null;
+        }
+      });
+      this.viewExecutionCache.set(view.key, execution);
+      await this.viewStore?.writeExecution(execution);
+      return execution;
+    } catch (reason) {
+      const cached =
+        this.viewExecutionCache.get(view.key) ??
+        (await this.viewStore?.readExecution(view.key));
+      if (cached) return { ...structuredClone(cached), stale: true };
+      throw reason;
+    }
+  }
+
   async collectionInfo(): Promise<CollectionInfo> {
     return {
       kind: "connect",
@@ -438,4 +498,15 @@ function cloudFirstOpenError(reason: unknown): Error {
 function cloudErrorMessage(reason: unknown): string {
   if (reason instanceof Error && reason.message) return reason.message;
   return "Changes will sync when a connection is available.";
+}
+
+function validResult<Result>(
+  envelope: MdbaseOperationEnvelope<Result>,
+): Result {
+  if (!envelope.valid)
+    throw new Error(
+      envelope.diagnostics.map((item) => item.message).join(" ") ||
+        "The collection rejected this view.",
+    );
+  return envelope.result;
 }

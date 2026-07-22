@@ -15,6 +15,7 @@ export class CapacitorVault implements Vault {
   async initialize(): Promise<void> {
     await this.ensureDirectory("tasks");
     await this.ensureDirectory("_types");
+    await this.ensureDirectory("views");
   }
 
   async ensureText(path: string, contents: string): Promise<void> {
@@ -23,6 +24,10 @@ export class CapacitorVault implements Vault {
   }
 
   async listMarkdownFiles(path: string): Promise<VaultEntry[]> {
+    return this.listFiles(path, [".md"]);
+  }
+
+  async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
     const root = safePath(path);
     const pending = [root];
     const entries: VaultEntry[] = [];
@@ -38,7 +43,12 @@ export class CapacitorVault implements Vault {
             pending.push(`${directory}/${file.name}`);
           continue;
         }
-        if (!file.name.toLowerCase().endsWith(".md")) continue;
+        if (
+          !extensions.some((extension) =>
+            file.name.toLowerCase().endsWith(extension.toLowerCase()),
+          )
+        )
+          continue;
         entries.push(toEntry(`${directory}/${file.name}`, file));
       }
     }

@@ -52,12 +52,18 @@ importers:
       lucide-react:
         specifier: 1.25.0
         version: 1.25.0(react@19.2.8)
+      obsidian-bases-expression:
+        specifier: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
+        version: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
       react:
         specifier: 19.2.8
         version: 19.2.8
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
     devDependencies:
       "@callumalpass/mdbase":
         specifier: file:vendor/callumalpass-mdbase-0.3.0-rc.1.tgz
@@ -769,7 +775,7 @@ packages:
   "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz":
     resolution:
       {
-        integrity: sha512-KNP2fdlSWcxEkaEYC7JZV0iTLU732SmRJw80o+KSKZDyMP/a2KSs+Nkb1zwNwF7tMd9NFG6TEz2JzA9mwZZIuA==,
+        integrity: sha512-SFqTXbEWOy6rspk5CYaAqjaNKGKFj0sx8Df2heFUCkrZiukAZYNyeUWUx60q7JcfLec/SlC7T2+ljwbFsCY+EQ==,
         tarball: file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz,
       }
     version: 0.1.0-alpha.1
@@ -786,7 +792,7 @@ packages:
   "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-alpha.1.tgz":
     resolution:
       {
-        integrity: sha512-4htByptplTW0DIv0HkZwvsgpczZfDz9DcmLV1lY3hDVHa+6fe1RqJ5FV+12D0s5eEKgiXboxjpFyrY+Evge8MQ==,
+        integrity: sha512-mj3kUw90wvaDKq/sFumKtn4A4TeZ099wWekP2AVLRjrOB7/s/EoSiHbDjxe6zeLojq/XdT0jEto94Rkecg3hcQ==,
         tarball: file:vendor/mdbase-connect-0.1.0-alpha.1.tgz,
       }
     version: 0.1.0-alpha.1
@@ -3328,6 +3334,12 @@ packages:
       }
     engines: { node: ">=0.10.0" }
 
+  moment@2.30.1:
+    resolution:
+      {
+        integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==,
+      }
+
   ms@2.1.2:
     resolution:
       {
@@ -3430,6 +3442,14 @@ packages:
       {
         integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==,
       }
+
+  obsidian-bases-expression@file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz:
+    resolution:
+      {
+        integrity: sha512-2ffGYN9YydgdR+b7HabCjM5d6Syfng6EsrpwzzLGyrZEMzvo+MtpcMVJEUuQvm+E0ZMFNa1VUQ8hRBpMqEpuNQ==,
+        tarball: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz,
+      }
+    version: 0.3.0-rc.1
 
   obug@2.1.4:
     resolution:
@@ -6895,6 +6915,8 @@ snapshots:
 
   modify-values@1.0.1: {}
 
+  moment@2.30.1: {}
+
   ms@2.1.2: {}
 
   ms@2.1.3: {}
@@ -6957,6 +6979,10 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
+
+  obsidian-bases-expression@file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz:
+    dependencies:
+      moment: 2.30.1
 
   obug@2.1.4: {}
 

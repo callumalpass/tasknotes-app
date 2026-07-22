@@ -9,6 +9,8 @@ export const CLOUD_OPERATIONS = [
   "changes",
   "read",
   "query",
+  "list_views",
+  "execute_view",
   "create",
   "update",
   "delete",

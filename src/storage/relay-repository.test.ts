@@ -80,6 +80,33 @@ describe("relay task repository", () => {
     });
   });
 
+  it("lists and executes provider-owned saved views", async () => {
+    const fixture = relayFixture([
+      taskRecord("board", "Visible on the board", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const [view] = await repository.listViews();
+    expect(view).toMatchObject({
+      id: "kanban",
+      name: "Kanban",
+      presentation: { type: "tasknotes.kanban" },
+    });
+    const execution = await repository.executeView(view);
+    expect(execution.rows[0]).toMatchObject({
+      task: { id: "board", title: "Visible on the board" },
+      values: { status: "open" },
+    });
+    expect(fixture.executeView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "views/tasks.base",
+        view: "kanban",
+        render: false,
+      }),
+    );
+  });
+
   it("hides hosted-versus-relay selection behind one repository factory", () => {
     const relay = relayFixture([]).connect;
     expect(createConnectTaskRepository(relay)).toBeInstanceOf(
@@ -171,6 +198,51 @@ function relayFixture(initial: RecordResult<JsonObject>[]) {
       return valid({ path: input.path, deleted: true });
     },
   );
+  const listViews = vi.fn(async () =>
+    valid({
+      views: [
+        {
+          id: "tasks",
+          name: "Tasks",
+          source: {
+            path: "views/tasks.base",
+            format: "obsidian.base",
+            revision: "sha256:view",
+            writable: false,
+          },
+          views: [
+            {
+              id: "kanban",
+              name: "Kanban",
+              presentation: {
+                type: "tasknotes.kanban",
+                mappings: { column: "status" },
+                options: {},
+              },
+            },
+          ],
+        },
+      ],
+      meta: { total_count: 1 },
+    }),
+  );
+  const executeView = vi.fn(async () =>
+    valid({
+      results: [...records.values()].map((record) => ({
+        path: record.path,
+        frontmatter: record.frontmatter,
+        body: record.body,
+        types: record.types,
+        values: { status: record.frontmatter.status ?? "open" },
+      })),
+      meta: {
+        total_count: records.size,
+        has_more: false,
+        view: { path: "views/tasks.base", id: "kanban" },
+        groups: [],
+      },
+    }),
+  );
   const connect = {
     hostedSync: () => null,
     connection: () => ({ route: "relay" }),
@@ -180,8 +252,19 @@ function relayFixture(initial: RecordResult<JsonObject>[]) {
     create,
     update,
     delete: remove,
+    listViews,
+    executeView,
   } as unknown as MdbaseConnect<JsonObject>;
-  return { connect, query, read, create, update, remove };
+  return {
+    connect,
+    query,
+    read,
+    create,
+    update,
+    remove,
+    listViews,
+    executeView,
+  };
 }
 
 function taskRecord(
@@ -214,7 +297,16 @@ function description(): CollectionDescription {
     collection_id: "local-tasks",
     display_name: "Local tasks",
     spec_version: "0.3.0",
-    operations: ["describe", "query", "read", "create", "update", "delete"],
+    operations: [
+      "describe",
+      "query",
+      "list_views",
+      "execute_view",
+      "read",
+      "create",
+      "update",
+      "delete",
+    ],
     change_cursor: 0,
     types: [
       {

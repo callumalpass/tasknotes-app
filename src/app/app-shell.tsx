@@ -14,9 +14,11 @@ import { SearchScreen } from "./search-screen";
 import { TaskScreen } from "./task-screen";
 import { TodayScreen } from "./today-screen";
 import { UpcomingScreen } from "./upcoming-screen";
+import { ViewsScreen } from "./views-screen";
 
 type Route =
   | { page: "today" | "upcoming" | "search" | "more" }
+  | { page: "views"; key?: string }
   | { page: "task"; id: string };
 
 export function AppShell() {
@@ -55,7 +57,12 @@ export function AppShell() {
     );
   }
 
-  const activePage = route.page === "task" ? "today" : route.page;
+  const activePage =
+    route.page === "task"
+      ? "today"
+      : route.page === "views"
+        ? "more"
+        : route.page;
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">
@@ -89,15 +96,21 @@ export function AppShell() {
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : route.page === "more" ? (
-          <MoreScreen />
-        ) : "id" in route ? (
-          <TaskScreen
-            id={route.id}
-            onBack={() => navigate({ page: "today" }, true)}
+          <MoreScreen onOpenViews={() => navigate({ page: "views" })} />
+        ) : route.page === "views" ? (
+          <ViewsScreen
+            viewKey={route.key}
+            onBack={() =>
+              navigate(route.key ? { page: "views" } : { page: "more" }, true)
+            }
+            onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+            onOpenView={(view) => navigate({ page: "views", key: view.key })}
           />
+        ) : "id" in route ? (
+          <TaskScreen id={route.id} onBack={() => window.history.back()} />
         ) : null}
       </main>
-      {route.page !== "task" ? (
+      {route.page !== "task" && route.page !== "views" ? (
         <nav className="bottom-navigation" aria-label="Primary">
           <Navigation
             active={activePage}
@@ -140,6 +153,9 @@ function parseRoute(): Route {
   const path = appPathname();
   const task = /^\/task\/([^/]+)$/.exec(path);
   if (task) return { page: "task", id: decodeURIComponent(task[1]) };
+  const view = /^\/views\/([^/]+)$/.exec(path);
+  if (view) return { page: "views", key: decodeURIComponent(view[1]) };
+  if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
   if (path === "/upcoming") return { page: "upcoming" };
   if (path === "/more") return { page: "more" };
@@ -150,9 +166,11 @@ function routeUrl(route: Route): string {
   const path =
     route.page === "task"
       ? `/task/${encodeURIComponent(route.id)}`
-      : route.page === "today"
-        ? "/"
-        : `/${route.page}`;
+      : route.page === "views" && route.key
+        ? `/views/${encodeURIComponent(route.key)}`
+        : route.page === "today"
+          ? "/"
+          : `/${route.page}`;
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return `${base}${path}` || "/";
 }
