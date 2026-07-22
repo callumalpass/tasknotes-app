@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+
+const templatedType = buildTaskNotesMdbaseResources().typeDocument.replace(
+  "  compatibility:\n",
+  `  templating:
+    enabled: true
+    template_path: Templates/Task.md
+    failure_mode: error
+    unknown_variable_policy: preserve
+  compatibility:
+`,
+);
 
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
@@ -194,6 +206,57 @@ test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "Remove Warm start profile" }).click();
   await expect(page.getByRole("button", { name: "1 session" })).toHaveCount(0);
+});
+
+test("creates a task from the collection's configured Markdown template", async ({
+  page,
+}) => {
+  await page.evaluate(
+    async ({ typeDocument }) => {
+      const root = await navigator.storage.getDirectory();
+      const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+        create: true,
+      });
+      const types = await tasknotes.getDirectoryHandle("_types", {
+        create: true,
+      });
+      const type = await types.getFileHandle("task.md", { create: true });
+      const typeWriter = await type.createWritable();
+      await typeWriter.write(typeDocument);
+      await typeWriter.close();
+      const templates = await tasknotes.getDirectoryHandle("Templates", {
+        create: true,
+      });
+      const template = await templates.getFileHandle("Task.md", {
+        create: true,
+      });
+      const templateWriter = await template.createWritable();
+      await templateWriter.write(`---
+source: mobile-template
+status: done
+---
+# {{title}}
+
+Created on {{date}} from the collection template.`);
+      await templateWriter.close();
+    },
+    { typeDocument: templatedType },
+  );
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+
+  await page.getByLabel("New task title").fill("Template-backed task");
+  await page.getByRole("button", { name: "Details" }).click();
+  await expect(
+    page.getByText(/Use template · Templates\/Task.md/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Template-backed task", { exact: true }).click();
+  await expect(page.getByLabel("Notes")).toHaveValue(/Created on/);
+  await expect(page.getByRole("button", { name: "Open" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
 test("renders configured saved-view properties without changing calendar rows", async ({

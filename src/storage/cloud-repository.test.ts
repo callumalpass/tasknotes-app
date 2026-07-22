@@ -62,6 +62,35 @@ function resourcesWithType(
   return value;
 }
 
+function resourcesWithTemplate(): SyncCollectionResources {
+  const value = resources();
+  value.contracts[0] = {
+    ...value.contracts[0],
+    configuration: {
+      ...value.contracts[0].configuration,
+      templating: {
+        enabled: true,
+        template_path: "Templates/Task.md",
+        failure_mode: "error_abort",
+        unknown_variable_policy: "preserve",
+      },
+    },
+  };
+  value.documents = [
+    {
+      path: "Templates/Task.md",
+      kind: "configuration",
+      revision: "template:1",
+      document: `---
+source: cloud-template
+status: done
+---
+Cloud body for {{title}} on {{date}}`,
+    },
+  ];
+  return value;
+}
+
 function connect(
   collectionId: string,
   replicaId: string,
@@ -295,6 +324,49 @@ describe("cloud task repository", () => {
     expect(await repository.get(task.id)).toMatchObject({
       title: "Portable contract",
     });
+  });
+
+  it("creates from a raw template resource while offline", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resourcesWithTemplate(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(replicaId);
+    const transport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const repository = new CloudTaskRepository(
+      connect(authority.collectionId, replicaId, transport),
+    );
+    await repository.initialize();
+    online = false;
+
+    const task = await repository.create({
+      title: "Offline template",
+      status: "open",
+    });
+    expect(task.status).toBe("open");
+    expect(task.frontmatter.source).toBe("cloud-template");
+    expect(task.body).toMatch(
+      /^Cloud body for Offline template on \d{4}-\d{2}-\d{2}$/,
+    );
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
   });
 
   it("surfaces conflicts and can keep the local edit", async () => {

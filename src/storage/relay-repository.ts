@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import {
   MdbaseConnectError,
   type JsonObject,
@@ -158,10 +159,17 @@ export class RelayTaskRepository implements TaskRepository {
   create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
     return this.serializeWrite(id, async () => {
-      const task = this.model.create(input, {
-        id,
-        now: new Date().toISOString(),
-      });
+      const task = await this.model.createWithTemplate(
+        input,
+        { id, now: new Date().toISOString() },
+        async (path) => {
+          const template = validResult(await this.connect.read({ path }));
+          return serializeMarkdownDocument(
+            template.raw_frontmatter ?? template.frontmatter,
+            template.body ?? "",
+          );
+        },
+      );
       try {
         const result = validResult(
           await this.connect.create({

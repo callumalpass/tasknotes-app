@@ -274,6 +274,28 @@ button:disabled {
   line-height: 1.45;
 }
 
+.capture-warning {
+  margin: 12px 0;
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.capture-template-choice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.capture-template-choice input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
 .task-groups {
   padding-top: 18px;
 }

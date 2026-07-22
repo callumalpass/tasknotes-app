@@ -26,6 +26,7 @@ import {
 import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
 import { makeTaskPath, normalizeTaskDateTime } from "./task";
+import { expandTaskTemplate } from "./task-template";
 
 import type {
   CreateTaskInput,
@@ -33,6 +34,7 @@ import type {
   TaskTimeEntry,
   UpdateTaskInput,
 } from "./task";
+import type { TaskCollectionConfiguration } from "./task-configuration";
 import type {
   TaskInfo,
   TaskNotesModelConfig,
@@ -78,21 +80,36 @@ export class TaskNotesValidationError extends Error {
 }
 
 export class TaskNotesTaskModel {
-  readonly config: TaskNotesModelConfig;
+  readonly config: TaskCollectionConfiguration;
   private readonly typeName: string;
   private readonly recordsFolder: string;
 
   constructor(
-    config: Partial<TaskNotesModelConfig> = {},
+    config: Partial<TaskCollectionConfiguration> = {},
     options: { typeName?: string; recordsFolder?: string } = {},
   ) {
-    this.config = resolveModelConfig(config);
+    this.config = {
+      ...resolveModelConfig(config),
+      templating: config.templating ?? {
+        enabled: false,
+        failureMode: "warning_fallback",
+        unknownVariablePolicy: "preserve",
+      },
+      archive: config.archive ?? {
+        moveOnArchive: false,
+        folder: "TaskNotes/Archive",
+      },
+    };
     this.typeName = options.typeName ?? "task";
     this.recordsFolder = options.recordsFolder ?? "tasks";
   }
 
-  configuration(): TaskNotesModelConfig {
-    return resolveModelConfig(this.config);
+  configuration(): TaskCollectionConfiguration {
+    return {
+      ...resolveModelConfig(this.config),
+      templating: { ...this.config.templating },
+      archive: { ...this.config.archive },
+    };
   }
 
   read(input: {
@@ -152,6 +169,46 @@ export class TaskNotesTaskModel {
     this.assertValid(info);
     const frontmatter = this.writeFrontmatter({}, info, context.id, 1);
     return this.toTask(info, frontmatter, 1);
+  }
+
+  async createWithTemplate(
+    input: CreateTaskInput,
+    context: { id: string; now?: string; currentDate?: string },
+    loadTemplate: (path: string) => Promise<string>,
+  ): Promise<Task> {
+    const task = this.create(input, context);
+    const template = this.config.templating;
+    if (!template.enabled || input.useTemplate === false) return task;
+    try {
+      if (!template.templatePath)
+        throw new Error("template_missing: The task template path is missing.");
+      const source = await loadTemplate(template.templatePath);
+      const expanded = expandTaskTemplate(
+        source,
+        task,
+        input,
+        template,
+        new Date(context.now ?? new Date().toISOString()),
+      );
+      const frontmatter = { ...expanded.frontmatter, ...task.frontmatter };
+      const body = expanded.body.trim() ? expanded.body : task.body;
+      return this.read({ path: task.path, frontmatter, body });
+    } catch (reason) {
+      const message =
+        reason instanceof Error
+          ? reason.message
+          : `template_parse_failed: ${String(reason)}`;
+      if (template.failureMode === "error_abort")
+        throw new Error(message, { cause: reason });
+      return {
+        ...task,
+        operationWarnings: [
+          message.startsWith("template_")
+            ? message
+            : `template_parse_failed: ${message}`,
+        ],
+      };
+    }
   }
 
   update(

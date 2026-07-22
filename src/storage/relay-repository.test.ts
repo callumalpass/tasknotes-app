@@ -138,6 +138,34 @@ describe("relay task repository", () => {
     );
   });
 
+  it("creates from the configured template through the live relay", async () => {
+    const fixture = relayFixture(
+      [
+        {
+          path: "Templates/Task.md",
+          frontmatter: { source: "relay-template", status: "done" },
+          body: "Relay body for {{title}} on {{date}}",
+          types: [],
+          revision: "template-r1",
+        },
+      ],
+      true,
+    );
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const task = await repository.create({
+      title: "Relay template",
+      status: "open",
+    });
+    expect(task.status).toBe("open");
+    expect(task.frontmatter.source).toBe("relay-template");
+    expect(task.body).toMatch(
+      /^Relay body for Relay template on \d{4}-\d{2}-\d{2}$/,
+    );
+    expect(fixture.read).toHaveBeenCalledWith({ path: "Templates/Task.md" });
+  });
+
   it("hides hosted-versus-relay selection behind one repository factory", () => {
     const relay = relayFixture([]).connect;
     expect(createConnectTaskRepository(relay)).toBeInstanceOf(
@@ -152,10 +180,10 @@ describe("relay task repository", () => {
   });
 });
 
-function relayFixture(initial: RecordResult<JsonObject>[]) {
+function relayFixture(initial: RecordResult<JsonObject>[], templating = false) {
   const records = new Map(initial.map((record) => [record.path, record]));
   let revision = initial.length + 1;
-  const describeCollection = vi.fn(async () => description());
+  const describeCollection = vi.fn(async () => description(templating));
   const query = vi.fn(async () =>
     valid<QueryResult<JsonObject>>({
       results: [...records.values()].map((record) => ({
@@ -316,13 +344,21 @@ function taskRecord(
   };
 }
 
-function description(): CollectionDescription {
+function description(templating = false): CollectionDescription {
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
     collection?: JsonObject;
     "x-tasknotes": JsonObject;
   };
+  const configuration = structuredClone(type["x-tasknotes"]);
+  if (templating)
+    configuration.templating = {
+      enabled: true,
+      template_path: "Templates/Task.md",
+      failure_mode: "error_abort",
+      unknown_variable_policy: "preserve",
+    };
   return {
     protocol_version: 2,
     collection_id: "local-tasks",
@@ -345,7 +381,7 @@ function description(): CollectionDescription {
         version: 1,
         schema: type.schema.value,
         collection: type.collection,
-        extensions: { "x-tasknotes": type["x-tasknotes"] },
+        extensions: { "x-tasknotes": configuration },
       },
     ],
     contracts: [
@@ -354,7 +390,7 @@ function description(): CollectionDescription {
         version: 1,
         type_name: "task",
         extension: "x-tasknotes",
-        configuration: type["x-tasknotes"],
+        configuration,
       },
     ],
   };

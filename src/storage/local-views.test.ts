@@ -11,11 +11,11 @@ describe("local Obsidian Bases views", () => {
     const vault = new MemoryVault();
     const collection = new MarkdownCollection(vault);
     await collection.initialize();
-    const tasks = [
+    const tasks = await Promise.all([
       task(collection, "one", "Write tests", "open", "2026-07-22", 2),
       task(collection, "two", "Ship views", "done", "2026-07-23", 1),
       task(collection, "three", "Document views", "open", undefined, 3),
-    ];
+    ]);
     for (const item of tasks) await collection.write(item);
     await vault.writeText(
       "views/tasks.base",
@@ -95,18 +95,21 @@ function task(
   status: string,
   due: string | undefined,
   priority: number,
-): Task {
-  const item = collection.createTask(
-    { title, ...(due ? { due } : {}) },
-    id,
-    "2026-07-20T00:00:00.000Z",
-  );
-  item.status = status;
-  item.completed = status === "done";
-  item.frontmatter.status = status;
-  item.frontmatter.priority = priority;
-  item.frontmatter.tags = ["task"];
-  item.priority = String(priority);
-  item.tags = ["task"];
-  return item;
+): Promise<Task> {
+  return collection
+    .createTask(
+      { title, ...(due ? { due } : {}) },
+      id,
+      "2026-07-20T00:00:00.000Z",
+    )
+    .then((item) => {
+      item.status = status;
+      item.completed = status === "done";
+      item.frontmatter.status = status;
+      item.frontmatter.priority = priority;
+      item.frontmatter.tags = ["task"];
+      item.priority = String(priority);
+      item.tags = ["task"];
+      return item;
+    });
 }

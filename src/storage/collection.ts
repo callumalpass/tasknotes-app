@@ -76,8 +76,10 @@ export class MarkdownCollection {
     }
   }
 
-  createTask(input: CreateTaskInput, id: string, now: string): Task {
-    return this.taskModel.create(input, { id, now });
+  createTask(input: CreateTaskInput, id: string, now: string): Promise<Task> {
+    return this.taskModel.createWithTemplate(input, { id, now }, (path) =>
+      this.vault.readText(path),
+    );
   }
 
   updateTask(task: Task, input: UpdateTaskInput, now: string): Task {

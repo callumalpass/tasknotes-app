@@ -9,10 +9,25 @@ import type {
   UserMappedFieldType,
 } from "@tasknotes/model/types";
 
-export type TaskCollectionConfiguration = TaskNotesModelConfig;
+export interface TaskTemplatingConfiguration {
+  enabled: boolean;
+  templatePath?: string;
+  failureMode: "error_abort" | "warning_fallback";
+  unknownVariablePolicy: "preserve" | "error" | "empty";
+}
+
+export interface TaskArchiveConfiguration {
+  moveOnArchive: boolean;
+  folder: string;
+}
+
+export interface TaskCollectionConfiguration extends TaskNotesModelConfig {
+  templating: TaskTemplatingConfiguration;
+  archive: TaskArchiveConfiguration;
+}
 
 export function defaultTaskCollectionConfiguration(): TaskCollectionConfiguration {
-  return resolveModelConfig();
+  return withCollectionDefaults(resolveModelConfig());
 }
 
 /**
@@ -35,15 +50,54 @@ export function resolveTaskCollectionConfiguration(
   const inferredFields = inferUserFields(properties, base.fieldMapping);
   const explicitKeys = new Set(base.userFields.map((field) => field.key));
 
-  return resolveModelConfig({
-    ...base,
-    statuses,
-    priorities,
-    userFields: [
-      ...base.userFields,
-      ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
-    ],
-  });
+  return withCollectionDefaults(
+    resolveModelConfig({
+      ...base,
+      statuses,
+      priorities,
+      userFields: [
+        ...base.userFields,
+        ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
+      ],
+    }),
+    extension,
+  );
+}
+
+function withCollectionDefaults(
+  model: TaskNotesModelConfig,
+  extension: Record<string, unknown> = {},
+): TaskCollectionConfiguration {
+  const templating = record(extension.templating);
+  const archive = record(extension.archive);
+  return {
+    ...model,
+    templating: {
+      enabled: boolean(templating.enabled) ?? false,
+      templatePath:
+        string(templating.template_path) ?? string(templating.templatePath),
+      failureMode:
+        templating.failure_mode === "error_abort" ||
+        templating.failureMode === "error_abort"
+          ? "error_abort"
+          : "warning_fallback",
+      unknownVariablePolicy:
+        templating.unknown_variable_policy === "empty" ||
+        templating.unknownVariablePolicy === "empty"
+          ? "empty"
+          : templating.unknown_variable_policy === "error" ||
+              templating.unknownVariablePolicy === "error"
+            ? "error"
+            : "preserve",
+    },
+    archive: {
+      moveOnArchive:
+        boolean(archive.move_on_archive) ??
+        boolean(archive.moveOnArchive) ??
+        false,
+      folder: string(archive.folder) ?? "TaskNotes/Archive",
+    },
+  };
 }
 
 function resolveStatuses(

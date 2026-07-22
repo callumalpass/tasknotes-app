@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import type { MdbaseConnect } from "@mdbase/connect";
 import type {
   JsonObject,
@@ -51,6 +52,7 @@ interface CachedCloudTask {
 export class CloudTaskRepository implements TaskRepository {
   private replica: OfflineReplica<CloudFrontmatter> | null = null;
   private model = new TaskNotesTaskModel();
+  private resources: SyncCollectionResources | null = null;
   private taskTypeName = "task";
   private readonly cache = new Map<string, CachedCloudTask>();
   private viewCache: TaskView[] = [];
@@ -218,10 +220,11 @@ export class CloudTaskRepository implements TaskRepository {
 
   async create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
-    const task = this.model.create(input, {
-      id,
-      now: new Date().toISOString(),
-    });
+    const task = await this.model.createWithTemplate(
+      input,
+      { id, now: new Date().toISOString() },
+      (path) => this.loadTemplate(path),
+    );
     const record = await this.requireReplica().queueCreate({
       recordId: id,
       path: task.path,
@@ -429,9 +432,25 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   private configureModel(resources: SyncCollectionResources): void {
+    this.resources = structuredClone(resources);
     const resolved = resolveTaskCollection(resources);
     this.taskTypeName = resolved.typeName;
     this.model = resolved.model;
+  }
+
+  private async loadTemplate(path: string): Promise<string> {
+    const resource = this.resources?.documents?.find(
+      (document) => document.path === path,
+    );
+    if (resource) return resource.document;
+    const record = (await this.requireReplica().records()).find(
+      (candidate) => candidate.path === path,
+    );
+    if (!record)
+      throw new Error(
+        `template_missing: The template ${path} is not available offline.`,
+      );
+    return serializeMarkdownDocument(record.frontmatter, record.body);
   }
 
   private async reloadCache(): Promise<void> {

@@ -15,7 +15,7 @@ import {
 } from "../domain/task";
 import { successFeedback } from "../native/feedback";
 
-import type { CreateTaskInput } from "../domain/task";
+import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
 export function TaskCapture({
@@ -23,7 +23,7 @@ export function TaskCapture({
   createTask,
 }: {
   configuration: TaskCollectionConfiguration;
-  createTask(input: CreateTaskInput): Promise<unknown>;
+  createTask(input: CreateTaskInput): Promise<Task>;
 }) {
   const [text, setText] = useState("");
   const [parsedText, setParsedText] = useState("");
@@ -32,6 +32,7 @@ export function TaskCapture({
   const [parsing, setParsing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export function TaskCapture({
     setParsing(false);
     setExpanded(false);
     setError(null);
+    setWarning(null);
   }
 
   async function capture(event: FormEvent) {
@@ -105,7 +107,10 @@ export function TaskCapture({
             }));
       if (!next.input.title.trim())
         throw new Error("Add a title as well as task details.");
-      await createTask(next.input);
+      const created = await createTask(next.input);
+      setWarning(
+        created.operationWarnings?.map(cleanTemplateWarning).join(" ") ?? null,
+      );
       successFeedback();
       setText("");
       setResult(null);
@@ -192,6 +197,11 @@ export function TaskCapture({
       {error ? (
         <p className="inline-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {warning ? (
+        <p className="capture-warning" role="status">
+          {warning}
         </p>
       ) : null}
     </form>
@@ -311,8 +321,31 @@ function CaptureDetails({
           onChange={(event) => onChange({ body: event.target.value })}
         />
       </label>
+      {configuration.templating.enabled ? (
+        <label className="capture-template-choice">
+          <input
+            checked={input.useTemplate !== false}
+            type="checkbox"
+            onChange={(event) =>
+              onChange({ useTemplate: event.target.checked })
+            }
+          />
+          <span>
+            Use template
+            {configuration.templating.templatePath
+              ? ` · ${configuration.templating.templatePath}`
+              : ""}
+          </span>
+        </label>
+      ) : null}
     </div>
   );
+}
+
+function cleanTemplateWarning(value: string): string {
+  return value
+    .replace(/^template_missing:\s*/i, "Template unavailable. ")
+    .replace(/^template_parse_failed:\s*/i, "Template could not be read. ");
 }
 
 function CaptureDateTime({

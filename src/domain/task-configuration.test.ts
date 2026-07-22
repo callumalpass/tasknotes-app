@@ -3,6 +3,33 @@ import { describe, expect, it } from "vitest";
 import { resolveTaskCollectionConfiguration } from "./task-configuration";
 
 describe("TaskNotes collection configuration", () => {
+  it("resolves template and archive behavior from the collection contract", () => {
+    const configuration = resolveTaskCollectionConfiguration({
+      "x-tasknotes": {
+        templating: {
+          enabled: true,
+          template_path: "Templates/Task.md",
+          failure_mode: "error_abort",
+          unknown_variable_policy: "error",
+        },
+        archive: {
+          move_on_archive: true,
+          folder: "Archive/Tasks",
+        },
+      },
+    });
+    expect(configuration.templating).toEqual({
+      enabled: true,
+      templatePath: "Templates/Task.md",
+      failureMode: "error_abort",
+      unknownVariablePolicy: "error",
+    });
+    expect(configuration.archive).toEqual({
+      moveOnArchive: true,
+      folder: "Archive/Tasks",
+    });
+  });
+
   it("resolves presentation definitions and editable schema properties", () => {
     const configuration = resolveTaskCollectionConfiguration({
       schema: {

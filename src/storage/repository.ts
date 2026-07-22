@@ -140,7 +140,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   create(input: CreateTaskInput): Promise<Task> {
     return this.exclusive(async () => {
-      const task = this.collection.createTask(
+      const task = await this.collection.createTask(
         input,
         crypto.randomUUID(),
         new Date().toISOString(),

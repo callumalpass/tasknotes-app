@@ -40,6 +40,7 @@ export interface Task {
   timeEstimate?: number;
   timeEntries: TaskTimeEntry[];
   customProperties: Record<string, unknown>;
+  operationWarnings?: string[];
   revision: number;
   frontmatter: Record<string, unknown>;
 }
@@ -59,6 +60,8 @@ export interface CreateTaskInput {
   reminders?: TaskReminder[];
   timeEstimate?: number;
   customProperties?: Record<string, unknown>;
+  parentNote?: string;
+  useTemplate?: boolean;
 }
 
 export interface UpdateTaskInput {
