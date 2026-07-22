@@ -25,6 +25,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 import type {
   CollectionInfo,
@@ -229,6 +230,10 @@ export class RelayTaskRepository implements TaskRepository {
       open: this.cache.size - completed,
       completed,
     };
+  }
+
+  async taskConfiguration(): Promise<TaskCollectionConfiguration> {
+    return this.model.configuration();
   }
 
   async listViews(): Promise<TaskView[]> {

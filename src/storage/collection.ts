@@ -2,19 +2,18 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
-import {
-  buildTaskNotesMdbaseResources,
-  resolveTaskNotesModelConfigFromMdbaseType,
-} from "@tasknotes/model/mdbase";
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   upgradeManagedTaskDocument,
   upgradeManagedTaskType,
 } from "./collection-migration";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Vault, VaultEntry } from "./vault";
 
 export class MarkdownCollection {
@@ -43,7 +42,7 @@ export class MarkdownCollection {
       );
     }
     this.taskModel = new TaskNotesTaskModel(
-      resolveTaskNotesModelConfigFromMdbaseType(upgraded.frontmatter),
+      resolveTaskCollectionConfiguration(upgraded.frontmatter),
     );
   }
 
@@ -82,6 +81,10 @@ export class MarkdownCollection {
 
   toggleTask(task: Task, now: string): Task {
     return this.taskModel.toggle(task, { now });
+  }
+
+  taskConfiguration(): TaskCollectionConfiguration {
+    return this.taskModel.configuration();
   }
 
   write(task: Task): Promise<VaultEntry> {

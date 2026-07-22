@@ -3,9 +3,8 @@ import type {
   CollectionTypeDescriptor,
   JsonObject,
 } from "@mdbase/connect-protocol";
-import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
-
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
 
 export interface TaskCollectionResources {
   contracts: CollectionContractDescriptor[];
@@ -34,7 +33,7 @@ export function resolveTaskCollection(
   return {
     typeName: contract.type_name,
     model: new TaskNotesTaskModel(
-      resolveTaskNotesModelConfigFromMdbaseType({
+      resolveTaskCollectionConfiguration({
         schema: { value: type.schema },
         "x-tasknotes": contract.configuration,
       }),

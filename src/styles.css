@@ -762,6 +762,40 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.custom-fields > h2 {
+  margin: 25px 0 0;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.custom-fields .field-grid {
+  padding-top: 16px;
+}
+
+.boolean-field {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+}
+
+.boolean-field > span {
+  margin: 0;
+}
+
+.form-field.boolean-field input {
+  justify-self: end;
+  width: 22px;
+  min-height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+  border: 0;
+}
+
 .list-field input::placeholder {
   color: var(--ink-muted);
 }

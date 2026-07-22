@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { IndexedMarkdownRepository } from "../storage/repository";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   reconcileTaskNotifications,
   removeTaskNotifications,
@@ -25,6 +26,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -44,6 +46,7 @@ interface RepositoryContextValue {
   sync: RepositorySyncStatus;
   syncIssues: RepositorySyncIssue[];
   version: number;
+  configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   toggleTask(id: string): Promise<Task>;
@@ -76,6 +79,8 @@ export function RepositoryProvider({
   });
   const [syncIssues, setSyncIssues] = useState<RepositorySyncIssue[]>([]);
   const [version, setVersion] = useState(0);
+  const [configuration, setConfiguration] =
+    useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
 
   const bump = useCallback(() => setVersion((value) => value + 1), []);
@@ -116,8 +121,10 @@ export function RepositoryProvider({
     let active = true;
     repository
       .initialize()
-      .then(() => {
+      .then(async () => {
+        const nextConfiguration = await repository.taskConfiguration();
         if (!active) return;
+        setConfiguration(nextConfiguration);
         setStatus("ready");
         void loadSync();
         void reconcileTaskNotifications(repository).catch(() => undefined);
@@ -214,6 +221,7 @@ export function RepositoryProvider({
       sync,
       syncIssues,
       version,
+      configuration,
       createTask,
       updateTask,
       toggleTask,
@@ -230,6 +238,7 @@ export function RepositoryProvider({
       sync,
       syncIssues,
       version,
+      configuration,
       createTask,
       updateTask,
       toggleTask,

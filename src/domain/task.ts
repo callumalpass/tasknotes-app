@@ -31,6 +31,7 @@ export interface Task {
   completeInstances: string[];
   skippedInstances: string[];
   reminders: TaskReminder[];
+  customProperties: Record<string, unknown>;
   revision: number;
   frontmatter: Record<string, unknown>;
 }
@@ -47,6 +48,7 @@ export interface CreateTaskInput {
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
   reminders?: TaskReminder[];
+  customProperties?: Record<string, unknown>;
 }
 
 export interface UpdateTaskInput {
@@ -63,6 +65,7 @@ export interface UpdateTaskInput {
   recurrence?: string | null;
   recurrenceAnchor?: "scheduled" | "completion";
   reminders?: TaskReminder[];
+  customProperties?: Record<string, unknown>;
 }
 
 export interface TaskListQuery {

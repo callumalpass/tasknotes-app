@@ -15,6 +15,7 @@ import type {
   TaskStats,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 
 export interface CollectionInfo {
@@ -36,6 +37,7 @@ export interface TaskRepository {
   stats(): Promise<TaskStats>;
   listViews(): Promise<TaskView[]>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
+  taskConfiguration(): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   syncStatus(): Promise<RepositorySyncStatus>;
   syncIssues(): Promise<RepositorySyncIssue[]>;
@@ -195,6 +197,10 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   executeView(view: TaskView): Promise<TaskViewExecution> {
     return this.views.execute(view);
+  }
+
+  async taskConfiguration(): Promise<TaskCollectionConfiguration> {
+    return this.collection.taskConfiguration();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

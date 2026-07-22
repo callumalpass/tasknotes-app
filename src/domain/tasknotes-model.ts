@@ -77,6 +77,10 @@ export class TaskNotesTaskModel {
     this.recordsFolder = options.recordsFolder ?? "tasks";
   }
 
+  configuration(): TaskNotesModelConfig {
+    return resolveModelConfig(this.config);
+  }
+
   read(input: {
     path: string;
     frontmatter: Record<string, unknown>;
@@ -122,6 +126,10 @@ export class TaskNotesTaskModel {
       recurrence: input.recurrence,
       recurrence_anchor: input.recurrenceAnchor,
       reminders: input.reminders,
+      customProperties: withUserFieldDefaults(
+        this.config,
+        input.customProperties,
+      ),
       dateCreated: now,
       dateModified: now,
       archived: false,
@@ -171,6 +179,8 @@ export class TaskNotesTaskModel {
     if (input.recurrenceAnchor !== undefined)
       updates.recurrence_anchor = input.recurrenceAnchor;
     if (input.reminders !== undefined) updates.reminders = input.reminders;
+    if (input.customProperties !== undefined)
+      updates.customProperties = input.customProperties;
 
     const plan = buildTaskUpdatePlan({
       originalTask: original,
@@ -189,6 +199,12 @@ export class TaskNotesTaskModel {
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
     const patched = applyFrontmatterPatch(base, plan.frontmatterPatch);
+    if (input.customProperties !== undefined) {
+      for (const field of this.config.userFields) {
+        const value = input.customProperties[field.key];
+        if (isEmptyCustomValue(value)) delete patched[field.key];
+      }
+    }
     const frontmatter = this.writeFrontmatter(
       patched,
       plan.updatedTask,
@@ -256,14 +272,17 @@ export class TaskNotesTaskModel {
     path: string,
     body: string,
   ): TaskInfo {
+    const normalized = { ...mapped } as Partial<TaskInfo> &
+      Record<string, unknown>;
+    for (const field of this.config.userFields) delete normalized[field.key];
     return {
-      ...mapped,
-      id: mapped.id,
+      ...normalized,
+      id: normalized.id,
       path,
-      title: mapped.title ?? "",
-      status: mapped.status ?? "",
-      priority: mapped.priority ?? this.config.defaults.priority,
-      archived: mapped.archived ?? false,
+      title: normalized.title ?? "",
+      status: normalized.status ?? "",
+      priority: normalized.priority ?? this.config.defaults.priority,
+      archived: normalized.archived ?? false,
       details: body,
     };
   }
@@ -294,6 +313,7 @@ export class TaskNotesTaskModel {
       completeInstances: info.complete_instances ?? [],
       skippedInstances: info.skipped_instances ?? [],
       reminders: info.reminders ?? [],
+      customProperties: info.customProperties ?? {},
       revision,
       frontmatter,
     };
@@ -349,6 +369,28 @@ export class TaskNotesTaskModel {
     if (!validation.valid)
       throw new TaskNotesValidationError(validation.issues);
   }
+}
+
+function withUserFieldDefaults(
+  config: TaskNotesModelConfig,
+  supplied: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  const values: Record<string, unknown> = {};
+  for (const field of config.userFields) {
+    if (field.defaultValue !== undefined)
+      values[field.key] = field.defaultValue;
+  }
+  Object.assign(values, supplied);
+  return Object.keys(values).length ? values : undefined;
+}
+
+function isEmptyCustomValue(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  );
 }
 
 function requiredTitle(value: string): string {

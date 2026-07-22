@@ -11,7 +11,7 @@ type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
   Task,
   | "title"
-  | "completed"
+  | "status"
   | "priority"
   | "due"
   | "scheduled"
@@ -22,6 +22,7 @@ type Draft = Pick<
   | "recurrence"
   | "recurrenceAnchor"
   | "reminders"
+  | "customProperties"
 >;
 
 export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
@@ -47,7 +48,7 @@ export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
 }
 
 function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
-  const { updateTask, deleteTask } = useRepository();
+  const { updateTask, deleteTask, configuration } = useRepository();
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -56,15 +57,15 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
   const mounted = useRef(true);
   const editVersion = useRef(0);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const persist = useCallback(
-    async (value: Draft = draft, version = editVersion.current) => {
+    async (value: Draft, version: number) => {
       if (!value.title.trim()) {
         if (mounted.current) setSaveState("error");
         return;
@@ -74,7 +75,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
       try {
         const input: UpdateTaskInput = {
           title: value.title,
-          completed: value.completed,
+          status: value.status,
           priority: value.priority,
           due: value.due ?? null,
           scheduled: value.scheduled ?? null,
@@ -85,6 +86,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           recurrence: value.recurrence ?? null,
           recurrenceAnchor: value.recurrenceAnchor,
           reminders: value.reminders,
+          customProperties: value.customProperties,
         };
         await updateTask(task.id, input);
         if (mounted.current && editVersion.current === version) {
@@ -100,7 +102,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         }
       }
     },
-    [draft, task.id, updateTask],
+    [task.id, updateTask],
   );
 
   useEffect(() => {
@@ -116,12 +118,19 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
     setDirty(true);
   }
 
+  function changeCustomProperty(key: string, value: unknown) {
+    const customProperties = { ...draft.customProperties };
+    if (isEmptyFieldValue(value)) delete customProperties[key];
+    else customProperties[key] = value;
+    change({ customProperties });
+  }
+
   function leave() {
     if (!draft.title.trim()) {
       setSaveState("error");
       return;
     }
-    if (dirty) void persist();
+    if (dirty) void persist(draft, editVersion.current);
     onBack();
   }
 
@@ -145,7 +154,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           className={`save-state is-${saveState}`}
           disabled={saveState !== "error" || !draft.title.trim()}
           type="button"
-          onClick={() => void persist()}
+          onClick={() => void persist(draft, editVersion.current)}
           aria-label={
             saveState === "error"
               ? `Save failed. ${saveError ?? "Tap to retry."}`
@@ -210,18 +219,17 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         />
 
         <Fieldset legend="Status">
-          <Choice
-            selected={!draft.completed}
-            onClick={() => change({ completed: false })}
-          >
-            Open
-          </Choice>
-          <Choice
-            selected={draft.completed}
-            onClick={() => change({ completed: true })}
-          >
-            Completed
-          </Choice>
+          {[...configuration.statuses]
+            .sort((left, right) => left.order - right.order)
+            .map((status) => (
+              <Choice
+                key={status.value}
+                selected={draft.status === status.value}
+                onClick={() => change({ status: status.value })}
+              >
+                {status.label}
+              </Choice>
+            ))}
         </Fieldset>
 
         <div className="field-grid">
@@ -248,13 +256,13 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         </div>
 
         <Fieldset legend="Priority">
-          {(["none", "low", "normal", "high"] as const).map((priority) => (
+          {configuration.priorities.map((priority) => (
             <Choice
-              key={priority}
-              selected={draft.priority === priority}
-              onClick={() => change({ priority })}
+              key={priority.value}
+              selected={draft.priority === priority.value}
+              onClick={() => change({ priority: priority.value })}
             >
-              {titleCase(priority)}
+              {priority.label}
             </Choice>
           ))}
         </Fieldset>
@@ -279,6 +287,25 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
             onChange={(tags) => change({ tags: ["task", ...tags] })}
           />
         </div>
+
+        {configuration.userFields.length ? (
+          <section
+            className="custom-fields"
+            aria-labelledby="custom-fields-title"
+          >
+            <h2 id="custom-fields-title">Properties</h2>
+            <div className="field-grid metadata-fields">
+              {configuration.userFields.map((field) => (
+                <CustomField
+                  field={field}
+                  key={field.key}
+                  value={draft.customProperties[field.key]}
+                  onChange={(value) => changeCustomProperty(field.key, value)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="repeat-fields">
           <label className="form-field">
@@ -472,7 +499,7 @@ function ReminderField({
 function toDraft(task: Task): Draft {
   return {
     title: task.title,
-    completed: task.completed,
+    status: task.status,
     priority: task.priority,
     due: task.due,
     scheduled: task.scheduled,
@@ -483,11 +510,66 @@ function toDraft(task: Task): Draft {
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
     reminders: task.reminders,
+    customProperties: { ...task.customProperties },
   };
 }
 
-function titleCase(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+function CustomField({
+  field,
+  value,
+  onChange,
+}: {
+  field: import("@tasknotes/model/types").UserMappedField;
+  value: unknown;
+  onChange(value: unknown): void;
+}) {
+  if (field.type === "boolean") {
+    return (
+      <label className="form-field boolean-field">
+        <span>{field.displayName}</span>
+        <input
+          checked={value === true}
+          type="checkbox"
+          onChange={(event) => onChange(event.target.checked)}
+        />
+      </label>
+    );
+  }
+  if (field.type === "list") {
+    return (
+      <ListField
+        label={field.displayName}
+        placeholder="Comma-separated values"
+        values={Array.isArray(value) ? value.map(String) : []}
+        onChange={onChange}
+      />
+    );
+  }
+  return (
+    <label className="form-field">
+      <span>{field.displayName}</span>
+      <input
+        inputMode={field.type === "number" ? "decimal" : undefined}
+        type={
+          field.type === "date"
+            ? "date"
+            : field.type === "number"
+              ? "number"
+              : "text"
+        }
+        value={
+          typeof value === "string" || typeof value === "number" ? value : ""
+        }
+        onChange={(event) =>
+          onChange(
+            field.type === "number" && event.target.value
+              ? Number(event.target.value)
+              : event.target.value,
+          )
+        }
+      />
+    </label>
+  );
 }
 
 function parseList(value: string): string[] {
@@ -499,6 +581,15 @@ function parseList(value: string): string[] {
         .filter(Boolean),
     ),
   ];
+}
+
+function isEmptyFieldValue(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  );
 }
 
 function toLocalDateTime(value?: string): string {
