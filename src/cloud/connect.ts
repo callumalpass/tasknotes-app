@@ -1,0 +1,58 @@
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
+import { MdbaseConnect } from "@mdbase/connect";
+
+import type { JsonObject } from "@mdbase/connect-protocol";
+
+export const CLOUD_OPERATIONS = [
+  "describe",
+  "changes",
+  "read",
+  "query",
+  "create",
+  "update",
+  "delete",
+  "rename",
+] as const;
+
+const serverUrl =
+  import.meta.env.VITE_MDBASE_CONNECT_URL ?? "https://connect.mdbase.dev";
+const manifestUrl =
+  import.meta.env.VITE_MDBASE_MANIFEST_URL ??
+  (Capacitor.isNativePlatform()
+    ? "https://tasknotes.dev/app/.well-known/mdbase-app.json"
+    : `${location.origin}${joinBase(".well-known/mdbase-app.json")}`);
+const redirectUri = Capacitor.isNativePlatform()
+  ? "dev.tasknotes.app://auth/mdbase/callback"
+  : `${location.origin}${joinBase("auth/mdbase/callback")}`;
+
+export const cloudConnect = new MdbaseConnect<JsonObject>({
+  serverUrl,
+  manifestUrl,
+  redirectUri,
+  navigate: Capacitor.isNativePlatform()
+    ? async (url) => Browser.open({ url })
+    : undefined,
+});
+
+export function isCloudCallback(value: string): boolean {
+  const url = new URL(value);
+  return (
+    url.searchParams.has("code") ||
+    url.searchParams.has("error") ||
+    url.protocol === "dev.tasknotes.app:"
+  );
+}
+
+export function cleanCallbackUrl(): void {
+  const url = new URL(location.href);
+  url.search = "";
+  url.hash = "";
+  const base = joinBase("");
+  history.replaceState(null, "", base || "/");
+}
+
+function joinBase(path: string): string {
+  const base = import.meta.env.BASE_URL;
+  return `${base.endsWith("/") ? base : `${base}/`}${path}`;
+}

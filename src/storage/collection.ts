@@ -1,0 +1,132 @@
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
+import {
+  buildTaskNotesMdbaseResources,
+  resolveTaskNotesModelConfigFromMdbaseType,
+} from "@tasknotes/model/mdbase";
+
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import {
+  upgradeManagedTaskDocument,
+  upgradeManagedTaskType,
+} from "./collection-migration";
+
+import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
+import type { Vault, VaultEntry } from "./vault";
+
+export class MarkdownCollection {
+  private taskModel = new TaskNotesTaskModel();
+
+  constructor(private readonly vault: Vault) {}
+
+  async initialize(): Promise<void> {
+    await this.vault.initialize();
+    const resources = buildTaskNotesMdbaseResources();
+    await this.vault.ensureText(
+      resources.paths.config,
+      resources.configDocument,
+    );
+    await this.vault.ensureText(resources.paths.type, resources.typeDocument);
+    const parsedType = parseFrontmatter(
+      await this.vault.readText(resources.paths.type),
+    );
+    const upgraded = upgradeManagedTaskType(parsedType.frontmatter);
+    if (upgraded.changed) {
+      await this.upgradeDocuments(upgraded.completedField);
+      await this.vault.writeText(
+        resources.paths.type,
+        serializeMarkdownDocument(upgraded.frontmatter, parsedType.body),
+      );
+    }
+    this.taskModel = new TaskNotesTaskModel(
+      resolveTaskNotesModelConfigFromMdbaseType(upgraded.frontmatter),
+    );
+  }
+
+  list(): Promise<VaultEntry[]> {
+    return this.vault.listMarkdownFiles("tasks");
+  }
+
+  async read(document: VaultEntry): Promise<Task | null> {
+    try {
+      const parsed = parseFrontmatter(await this.vault.readText(document.path));
+      return this.taskModel.read({
+        path: document.path,
+        frontmatter: parsed.frontmatter,
+        body: parsed.body,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  createTask(input: CreateTaskInput, id: string, now: string): Task {
+    return this.taskModel.create(input, { id, now });
+  }
+
+  updateTask(task: Task, input: UpdateTaskInput, now: string): Task {
+    return this.taskModel.update(task, input, { now });
+  }
+
+  toggleTask(task: Task, now: string): Task {
+    return this.taskModel.toggle(task, { now });
+  }
+
+  write(task: Task): Promise<VaultEntry> {
+    return this.vault.writeText(
+      task.path,
+      serializeMarkdownDocument(task.frontmatter, task.body),
+    );
+  }
+
+  delete(path: string): Promise<void> {
+    return this.vault.delete(path);
+  }
+
+  exists(path: string): Promise<boolean> {
+    return this.vault.exists(path);
+  }
+
+  location(): string {
+    return this.vault.location();
+  }
+
+  kind(): Vault["kind"] {
+    return this.vault.kind;
+  }
+
+  private async upgradeDocuments(completedField: string): Promise<void> {
+    const documents = await this.list();
+    for (const batch of batches(documents, 64)) {
+      await Promise.all(
+        batch.map(async (document) => {
+          try {
+            const parsed = parseFrontmatter(
+              await this.vault.readText(document.path),
+            );
+            const upgraded = upgradeManagedTaskDocument(
+              parsed.frontmatter,
+              completedField,
+            );
+            if (upgraded.changed)
+              await this.vault.writeText(
+                document.path,
+                serializeMarkdownDocument(upgraded.frontmatter, parsed.body),
+              );
+          } catch {
+            // Invalid user records remain untouched and are omitted from the index.
+          }
+        }),
+      );
+    }
+  }
+}
+
+export function batches<T>(values: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let offset = 0; offset < values.length; offset += size)
+    result.push(values.slice(offset, offset + size));
+  return result;
+}

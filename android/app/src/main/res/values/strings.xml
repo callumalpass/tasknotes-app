@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaskNotes</string>
+    <string name="title_activity_main">TaskNotes</string>
+    <string name="package_name">dev.tasknotes.app</string>
+    <string name="custom_url_scheme">dev.tasknotes.app</string>
+</resources>

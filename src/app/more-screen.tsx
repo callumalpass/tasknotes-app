@@ -1,0 +1,329 @@
+import {
+  ChevronDown,
+  ChevronUp,
+  Cloud,
+  FileText,
+  HardDrive,
+  Info,
+  Bell,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { notificationPermission } from "../native/notifications";
+import { useCollectionGate } from "./collection-context";
+import { useCollectionSummary, useRepository } from "./repository-context";
+
+export function MoreScreen() {
+  const { info, stats, loading } = useCollectionSummary();
+  const {
+    lastRefresh,
+    refresh,
+    refreshing,
+    sync,
+    syncIssues,
+    resolveSyncIssue,
+  } = useRepository();
+  const { choice, choose, disconnectCloud } = useCollectionGate();
+  const [showLocation, setShowLocation] = useState(false);
+  const [notifications, setNotifications] = useState<string>("Checking");
+  const [benchmark, setBenchmark] = useState<{
+    state: "idle" | "writing" | "removing" | "done" | "error";
+    detail: string;
+  }>({ state: "idle", detail: "" });
+  const benchmarkTools = import.meta.env.VITE_BENCHMARK_TOOLS === "1";
+
+  useEffect(() => {
+    void notificationPermission().then((permission) =>
+      setNotifications(
+        permission === "unavailable"
+          ? "Available in the mobile app"
+          : permission === "granted"
+            ? "Allowed"
+            : permission === "denied"
+              ? "Disabled in system settings"
+              : "Asked when you add a reminder",
+      ),
+    );
+  }, []);
+
+  async function generateBenchmark() {
+    setBenchmark({ state: "writing", detail: "Starting…" });
+    try {
+      const { generateBenchmarkVault } = await import("../dev/benchmark");
+      const writeMs = await generateBenchmarkVault(10_000, (progress) =>
+        setBenchmark({
+          state: "writing",
+          detail: `${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()} files`,
+        }),
+      );
+      const indexed = await refresh();
+      setBenchmark({
+        state: "done",
+        detail: `Wrote files in ${writeMs.toLocaleString()} ms; indexed ${indexed.scanned.toLocaleString()} in ${indexed.elapsedMs.toLocaleString()} ms.`,
+      });
+    } catch (reason) {
+      setBenchmark({
+        state: "error",
+        detail: reason instanceof Error ? reason.message : String(reason),
+      });
+    }
+  }
+
+  async function removeBenchmark() {
+    setBenchmark({ state: "removing", detail: "Starting…" });
+    try {
+      const { removeBenchmarkVault } = await import("../dev/benchmark");
+      const deleteMs = await removeBenchmarkVault((progress) =>
+        setBenchmark({
+          state: "removing",
+          detail: `${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()} files`,
+        }),
+      );
+      await refresh();
+      setBenchmark({
+        state: "idle",
+        detail: `Removed in ${deleteMs.toLocaleString()} ms.`,
+      });
+    } catch (reason) {
+      setBenchmark({
+        state: "error",
+        detail: reason instanceof Error ? reason.message : String(reason),
+      });
+    }
+  }
+
+  return (
+    <section className="screen settings-screen" aria-labelledby="more-title">
+      <header className="screen-header compact-header">
+        <h1 id="more-title">More</h1>
+      </header>
+      <SettingsSection label="Storage">
+        <div className="setting-row">
+          {info?.kind === "cloud" ? (
+            <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
+          ) : (
+            <HardDrive aria-hidden="true" size={20} strokeWidth={1.6} />
+          )}
+          <span>{info?.name ?? "On this device"}</span>
+          <small>
+            {loading
+              ? "Opening"
+              : `${stats?.open ?? 0} open · ${stats?.total ?? 0} total`}
+          </small>
+        </div>
+        <button
+          className="setting-explanation"
+          type="button"
+          onClick={() => setShowLocation((value) => !value)}
+        >
+          <span>
+            {info?.kind === "cloud"
+              ? "Tasks are cached here and synchronized with mdbase cloud."
+              : "Tasks are Markdown files stored locally."}
+          </span>
+          {showLocation ? (
+            <ChevronUp aria-hidden="true" size={17} />
+          ) : (
+            <ChevronDown aria-hidden="true" size={17} />
+          )}
+        </button>
+        {showLocation && info ? (
+          <code className="collection-path">{info.location}</code>
+        ) : null}
+        <button
+          className="text-action"
+          disabled={refreshing}
+          type="button"
+          onClick={() => void refresh()}
+        >
+          {refreshing
+            ? info?.kind === "cloud"
+              ? "Syncing"
+              : "Checking files"
+            : info?.kind === "cloud"
+              ? "Sync now"
+              : "Check files now"}
+        </button>
+        {lastRefresh ? (
+          <p className="refresh-detail">
+            {lastRefresh.scanned.toLocaleString()} records checked in{" "}
+            {lastRefresh.elapsedMs.toLocaleString()} ms.
+          </p>
+        ) : null}
+      </SettingsSection>
+
+      {benchmarkTools ? (
+        <SettingsSection label="Benchmark">
+          <p className="section-copy">
+            Debug build only. Creates disposable local Markdown records.
+          </p>
+          <div className="benchmark-actions">
+            <button
+              className="text-action"
+              disabled={
+                benchmark.state === "writing" || benchmark.state === "removing"
+              }
+              type="button"
+              onClick={() => void generateBenchmark()}
+            >
+              Generate 10,000 records
+            </button>
+            <button
+              className="text-action danger"
+              disabled={
+                benchmark.state === "writing" || benchmark.state === "removing"
+              }
+              type="button"
+              onClick={() => void removeBenchmark()}
+            >
+              Remove benchmark
+            </button>
+          </div>
+          {benchmark.detail ? (
+            <p className="refresh-detail" role="status">
+              {benchmark.detail}
+            </p>
+          ) : null}
+        </SettingsSection>
+      ) : null}
+
+      <SettingsSection label="Cloud">
+        <div className="setting-row">
+          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>mdbase cloud</span>
+          <small>{syncLabel(sync)}</small>
+        </div>
+        {choice === "local" ? (
+          <>
+            <p className="section-copy">
+              Use one TaskNotes collection across devices, with an offline copy
+              on each device.
+            </p>
+            <button
+              className="text-action"
+              type="button"
+              onClick={() => choose("cloud")}
+            >
+              Connect mdbase cloud
+            </button>
+          </>
+        ) : (
+          <>
+            {sync.message ? (
+              <p className="section-copy" role="status">
+                {sync.message}
+              </p>
+            ) : null}
+            {sync.pending ? (
+              <p className="refresh-detail">
+                {sync.pending} {sync.pending === 1 ? "change" : "changes"}{" "}
+                waiting to upload.
+              </p>
+            ) : null}
+            <div className="cloud-actions">
+              <button
+                className="text-action"
+                type="button"
+                onClick={() => choose("local")}
+              >
+                Use tasks on this device
+              </button>
+              <button
+                className="text-action danger"
+                type="button"
+                onClick={disconnectCloud}
+              >
+                Disconnect cloud
+              </button>
+            </div>
+          </>
+        )}
+      </SettingsSection>
+
+      {syncIssues.length ? (
+        <SettingsSection label="Sync issues">
+          <p className="section-copy">
+            Choose which version to keep. Other tasks can continue syncing.
+          </p>
+          <div className="sync-issue-list">
+            {syncIssues.map((issue) => (
+              <div className="sync-issue" key={issue.id}>
+                <div>
+                  <strong>{issue.title}</strong>
+                  <small>{issue.message}</small>
+                </div>
+                <div>
+                  {issue.canKeepLocal ? (
+                    <button
+                      className="text-action"
+                      type="button"
+                      onClick={() => void resolveSyncIssue(issue.id, "local")}
+                    >
+                      Keep this device
+                    </button>
+                  ) : null}
+                  <button
+                    className="text-action"
+                    type="button"
+                    onClick={() => void resolveSyncIssue(issue.id, "remote")}
+                  >
+                    Use cloud version
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SettingsSection>
+      ) : null}
+
+      <SettingsSection label="Reminders">
+        <div className="setting-row">
+          <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Notifications</span>
+          <small>{notifications}</small>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection label="Portability">
+        <div className="setting-row">
+          <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Markdown collection</span>
+          <small>mdbase v0.3</small>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection label="About">
+        <div className="setting-row">
+          <Info aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>TaskNotes</span>
+          <small>Web-native preview</small>
+        </div>
+      </SettingsSection>
+    </section>
+  );
+}
+
+function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
+  if (sync.mode === "local") return "Not connected";
+  if (sync.state === "syncing") return "Syncing";
+  if (sync.state === "offline") return "Offline · changes saved here";
+  if (sync.state === "issues")
+    return `${sync.issues} sync ${sync.issues === 1 ? "issue" : "issues"}`;
+  if (sync.pending) return `${sync.pending} waiting`;
+  return "Up to date";
+}
+
+function SettingsSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="settings-section">
+      <h2>{label}</h2>
+      <div className="settings-content">{children}</div>
+    </section>
+  );
+}

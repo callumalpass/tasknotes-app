@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+/public/.well-known/mdbase-app.json
+.DS_Store
+android/.gradle/
+android/app/build/
+android/build/
+*.log
+*.tsbuildinfo
