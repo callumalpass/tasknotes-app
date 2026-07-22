@@ -21,9 +21,13 @@ export default function CloudCollection({
   choose(choice: CollectionChoice): void;
   reset(): void;
 }) {
-  const [callbackError, setCallbackError] = useState<string | null>(null);
+  const [callbackError, setCallbackError] = useState<string | null>(() =>
+    cloudConnect.connection() && !cloudConnect.hostedSync()
+      ? "This saved connection does not support cloud sync. Choose an mdbase cloud collection."
+      : null,
+  );
   const [repository, setRepository] = useState(() =>
-    cloudConnect.connection() ? new CloudTaskRepository(cloudConnect) : null,
+    cloudConnect.hostedSync() ? new CloudTaskRepository(cloudConnect) : null,
   );
 
   const complete = useCallback(async (url: string) => {
@@ -40,6 +44,13 @@ export default function CloudCollection({
     }
     try {
       await cloudConnect.completeAuthorization(url);
+      if (!cloudConnect.hostedSync()) {
+        setCallbackError(
+          "Choose an mdbase cloud collection to use TaskNotes cloud sync.",
+        );
+        await finishBrowserCallback();
+        return;
+      }
       setCallbackError(null);
       setRepository(new CloudTaskRepository(cloudConnect));
       await finishBrowserCallback();

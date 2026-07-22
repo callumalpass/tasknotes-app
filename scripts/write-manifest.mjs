@@ -30,6 +30,7 @@ const manifest = {
     ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
   ],
   requirements: {
+    collection_kind: "hosted",
     contracts: [{ id: "tasknotes.task", version: 1 }],
   },
   provisions: {

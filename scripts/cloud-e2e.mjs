@@ -44,6 +44,7 @@ try {
   const developmentEnvironment = {
     ...process.env,
     TASKNOTES_APP_URL: appUrl,
+    TASKNOTES_WEB_ONLY: "1",
     VITE_MDBASE_CONNECT_URL: controlUrl,
   };
   await execute("pnpm", ["manifest:dev"], {
