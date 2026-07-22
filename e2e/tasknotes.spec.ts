@@ -230,7 +230,12 @@ views:
   await expect(page.getByText("Task details", { exact: true })).toBeVisible();
   await expect(page.getByText("Dates", { exact: true })).toBeVisible();
 
-  await page.getByText("Work board", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Add Work board to navigation" })
+    .click();
+  await page
+    .getByRole("button", { name: "Work board work", exact: true })
+    .click();
   await expect(page.getByLabel("Work board board")).toBeVisible();
   await expect(
     page.getByText("Plan saved views", { exact: true }),
@@ -242,8 +247,18 @@ views:
     page.getByText("Progress", { exact: true }).first(),
   ).toBeVisible();
   await expect(page.getByText("Active", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Work board", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.reload();
+  await expect(page.getByLabel("Work board board")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Work board", exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: /Saved views/ }).click();
   await page.getByText("Task details", { exact: true }).click();
   await expect(page.getByText("State", { exact: true }).first()).toBeVisible();
   await expect(

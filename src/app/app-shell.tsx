@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   CheckCircle2,
+  Columns3,
   MoreHorizontal,
   Search,
 } from "lucide-react";
@@ -14,7 +15,10 @@ import { SearchScreen } from "./search-screen";
 import { TaskScreen } from "./task-screen";
 import { TodayScreen } from "./today-screen";
 import { UpcomingScreen } from "./upcoming-screen";
+import { usePrimaryView } from "./use-primary-view";
 import { ViewsScreen } from "./views-screen";
+
+import type { TaskView } from "../domain/view";
 
 type Route =
   | { page: "today" | "upcoming" | "search" | "more" }
@@ -23,6 +27,12 @@ type Route =
 
 export function AppShell() {
   const { status, error } = useRepository();
+  const {
+    views,
+    error: viewsError,
+    primaryView,
+    setPrimaryView,
+  } = usePrimaryView();
   const [route, setRoute] = useState<Route>(() => parseRoute());
 
   useEffect(() => {
@@ -36,6 +46,7 @@ export function AppShell() {
     if (replace) window.history.replaceState(null, "", url);
     else window.history.pushState(null, "", url);
     setRoute(next);
+    window.scrollTo({ top: 0, left: 0 });
   }
 
   if (status === "opening") {
@@ -60,9 +71,11 @@ export function AppShell() {
   const activePage =
     route.page === "task"
       ? "today"
-      : route.page === "views"
-        ? "more"
-        : route.page;
+      : route.page === "views" && route.key === primaryView?.key
+        ? `view:${route.key}`
+        : route.page === "views"
+          ? "more"
+          : route.page;
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">
@@ -79,7 +92,8 @@ export function AppShell() {
         </button>
         <Navigation
           active={activePage}
-          onNavigate={(page) => navigate({ page })}
+          primaryView={primaryView}
+          onNavigate={navigate}
         />
       </aside>
       <main id="main-content" className="page-surface">
@@ -100,9 +114,16 @@ export function AppShell() {
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : route.page === "more" ? (
-          <MoreScreen onOpenViews={() => navigate({ page: "views" })} />
+          <MoreScreen
+            primaryViewName={primaryView?.name}
+            onOpenViews={() => navigate({ page: "views" })}
+          />
         ) : route.page === "views" ? (
           <ViewsScreen
+            error={viewsError}
+            operational={route.key === primaryView?.key}
+            primaryViewKey={primaryView?.key}
+            views={views}
             viewKey={route.key}
             onBack={() =>
               navigate(route.key ? { page: "views" } : { page: "more" }, true)
@@ -111,6 +132,7 @@ export function AppShell() {
               navigate({ page: "task", id: task.id, occurrence })
             }
             onOpenView={(view) => navigate({ page: "views", key: view.key })}
+            onSetPrimaryView={setPrimaryView}
           />
         ) : "id" in route ? (
           <TaskScreen
@@ -120,11 +142,16 @@ export function AppShell() {
           />
         ) : null}
       </main>
-      {route.page !== "task" && route.page !== "views" ? (
-        <nav className="bottom-navigation" aria-label="Primary">
+      {route.page !== "task" &&
+      (route.page !== "views" || route.key === primaryView?.key) ? (
+        <nav
+          className={`bottom-navigation${primaryView ? " has-primary" : ""}`}
+          aria-label="Primary"
+        >
           <Navigation
             active={activePage}
-            onNavigate={(page) => navigate({ page })}
+            primaryView={primaryView}
+            onNavigate={navigate}
           />
         </nav>
       ) : null}
@@ -134,24 +161,56 @@ export function AppShell() {
 
 function Navigation({
   active,
+  primaryView,
   onNavigate,
 }: {
-  active: "today" | "upcoming" | "search" | "more";
-  onNavigate(page: "today" | "upcoming" | "search" | "more"): void;
+  active: string;
+  primaryView?: TaskView;
+  onNavigate(route: Route): void;
 }) {
-  const items = [
-    { page: "today" as const, label: "Today", icon: CheckCircle2 },
-    { page: "upcoming" as const, label: "Upcoming", icon: CalendarDays },
-    { page: "search" as const, label: "Search", icon: Search },
-    { page: "more" as const, label: "More", icon: MoreHorizontal },
+  const items: {
+    key: string;
+    label: string;
+    icon: typeof CheckCircle2;
+    route: Route;
+  }[] = [
+    {
+      key: "today",
+      label: "Today",
+      icon: CheckCircle2,
+      route: { page: "today" },
+    },
+    {
+      key: "upcoming",
+      label: "Upcoming",
+      icon: CalendarDays,
+      route: { page: "upcoming" },
+    },
+    ...(primaryView
+      ? [
+          {
+            key: `view:${primaryView.key}`,
+            label: primaryView.name,
+            icon: Columns3,
+            route: { page: "views" as const, key: primaryView.key },
+          },
+        ]
+      : []),
+    { key: "search", label: "Search", icon: Search, route: { page: "search" } },
+    {
+      key: "more",
+      label: "More",
+      icon: MoreHorizontal,
+      route: { page: "more" },
+    },
   ];
-  return items.map(({ page, label, icon: Icon }) => (
+  return items.map(({ key, label, icon: Icon, route }) => (
     <button
-      aria-current={active === page ? "page" : undefined}
-      className={active === page ? "is-active" : undefined}
-      key={page}
+      aria-current={active === key ? "page" : undefined}
+      className={active === key ? "is-active" : undefined}
+      key={key}
       type="button"
-      onClick={() => onNavigate(page)}
+      onClick={() => onNavigate(route)}
     >
       <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
       <span>{label}</span>

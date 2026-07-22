@@ -15,7 +15,13 @@ import { notificationPermission } from "../native/notifications";
 import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
-export function MoreScreen({ onOpenViews }: { onOpenViews(): void }) {
+export function MoreScreen({
+  primaryViewName,
+  onOpenViews,
+}: {
+  primaryViewName?: string;
+  onOpenViews(): void;
+}) {
   const { info, stats, loading } = useCollectionSummary();
   const {
     lastRefresh,
@@ -168,7 +174,11 @@ export function MoreScreen({ onOpenViews }: { onOpenViews(): void }) {
         >
           <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Saved views</span>
-          <small>Lists, boards, and calendars</small>
+          <small>
+            {primaryViewName
+              ? `${primaryViewName} is in navigation`
+              : "Lists, boards, and calendars"}
+          </small>
           <ChevronRight aria-hidden="true" size={17} />
         </button>
       </SettingsSection>

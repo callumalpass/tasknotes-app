@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Columns3,
   List,
+  Pin,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -27,38 +28,31 @@ import type {
 
 export function ViewsScreen({
   viewKey,
+  views,
+  error: viewsError,
+  primaryViewKey,
+  operational = false,
   onBack,
   onOpenTask,
   onOpenView,
+  onSetPrimaryView,
 }: {
   viewKey?: string;
+  views: TaskView[] | null;
+  error?: string;
+  primaryViewKey?: string;
+  operational?: boolean;
   onBack(): void;
   onOpenTask(task: Task, occurrenceDate?: string): void;
   onOpenView(view: TaskView): void;
+  onSetPrimaryView(key?: string): void;
 }) {
   const { repository, toggleTask, version } = useRepository();
-  const [views, setViews] = useState<TaskView[] | null>(null);
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
-  const [viewsError, setViewsError] = useState<string>("");
   const [executionError, setExecutionError] = useState<{
     key: string;
     message: string;
   } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void repository.listViews().then(
-      (result) => {
-        if (!active) return;
-        setViews(result);
-        setViewsError("");
-      },
-      (reason) => active && setViewsError(message(reason)),
-    );
-    return () => {
-      active = false;
-    };
-  }, [repository, version]);
 
   const selected = views?.find((view) => view.key === viewKey);
   useEffect(() => {
@@ -105,19 +99,41 @@ export function ViewsScreen({
         ) : views.length ? (
           <div className="saved-view-list">
             {views.map((view) => (
-              <button
-                className="saved-view-row"
-                key={view.key}
-                type="button"
-                onClick={() => onOpenView(view)}
-              >
-                <ViewIcon view={view} />
-                <span>
-                  <strong>{view.name}</strong>
-                  <small>{view.documentName}</small>
-                </span>
-                <ChevronRight aria-hidden="true" size={18} />
-              </button>
+              <div className="saved-view-row" key={view.key}>
+                <button
+                  className="saved-view-open"
+                  type="button"
+                  onClick={() => onOpenView(view)}
+                >
+                  <ViewIcon view={view} />
+                  <span>
+                    <strong>{view.name}</strong>
+                    <small>{view.documentName}</small>
+                  </span>
+                  <ChevronRight aria-hidden="true" size={18} />
+                </button>
+                <button
+                  aria-label={
+                    primaryViewKey === view.key
+                      ? `Remove ${view.name} from navigation`
+                      : `Add ${view.name} to navigation`
+                  }
+                  aria-pressed={primaryViewKey === view.key}
+                  className="saved-view-pin"
+                  type="button"
+                  onClick={() =>
+                    onSetPrimaryView(
+                      primaryViewKey === view.key ? undefined : view.key,
+                    )
+                  }
+                >
+                  <Pin
+                    aria-hidden="true"
+                    fill={primaryViewKey === view.key ? "currentColor" : "none"}
+                    size={17}
+                  />
+                </button>
+              </div>
             ))}
           </div>
         ) : (
@@ -132,15 +148,19 @@ export function ViewsScreen({
 
   return (
     <section className="screen views-screen view-detail" aria-live="polite">
-      <header className="view-header">
-        <button className="back-action" type="button" onClick={onBack}>
-          <ChevronLeft aria-hidden="true" size={20} />
-          Views
-        </button>
+      <header className={`view-header${operational ? " operational" : ""}`}>
+        {!operational ? (
+          <button className="back-action" type="button" onClick={onBack}>
+            <ChevronLeft aria-hidden="true" size={20} />
+            Views
+          </button>
+        ) : null}
         <div>
           <h1>{selected?.name ?? "Saved view"}</h1>
           {visibleExecution?.stale ? (
             <small>Last available result</small>
+          ) : operational ? (
+            <small>Primary view</small>
           ) : null}
         </div>
       </header>

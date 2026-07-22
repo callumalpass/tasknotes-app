@@ -1092,8 +1092,19 @@ button:disabled {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
   padding: 4px 12px env(safe-area-inset-bottom);
-  background: color-mix(in srgb, var(--paper), transparent 2%);
+  background: var(--paper);
   border-top: 1px solid var(--line);
+}
+
+.bottom-navigation.has-primary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.bottom-navigation.has-primary button {
+  padding: 0 2px;
+  font-size: 0.7rem;
 }
 
 .bottom-navigation button,
@@ -1114,9 +1125,20 @@ button:disabled {
   cursor: pointer;
 }
 
+.bottom-navigation button {
+  min-width: 0;
+}
+
 .bottom-navigation button.is-active,
 .navigation-rail button.is-active {
   color: var(--accent);
+}
+
+.bottom-navigation button span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .navigation-rail {
@@ -1309,37 +1331,70 @@ button:disabled {
 
 .saved-view-row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
   width: 100%;
   min-height: 68px;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.saved-view-open {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 67px;
   padding: 8px 0;
   text-align: left;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--line);
   cursor: pointer;
 }
 
-.saved-view-row > svg:first-child {
+.saved-view-open > svg:first-child {
   color: var(--accent);
 }
 
-.saved-view-row > svg:last-child {
+.saved-view-open > svg:last-child {
   color: var(--ink-muted);
 }
 
-.saved-view-row span {
+.saved-view-open span {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
-.saved-view-row strong {
+.saved-view-open strong,
+.saved-view-open small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-view-open strong {
   font-size: 1.04rem;
 }
 
-.saved-view-row small {
+.saved-view-open small {
   color: var(--ink-muted);
+}
+
+.saved-view-pin {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.saved-view-pin[aria-pressed="true"] {
+  color: var(--accent);
 }
 
 .plain-empty {
