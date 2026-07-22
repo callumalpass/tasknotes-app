@@ -13,7 +13,12 @@ import { dateFromStorage, todayString } from "../domain/task";
 import { useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
-import type { TaskView, TaskViewExecution } from "../domain/view";
+import type {
+  TaskView,
+  TaskViewExecution,
+  TaskViewProperty,
+  TaskViewRow,
+} from "../domain/view";
 
 export function ViewsScreen({
   viewKey,
@@ -187,10 +192,12 @@ function KanbanView({ execution, onOpen, onToggle }: ViewProps) {
             <span>{column.rows.length}</span>
           </header>
           <div>
-            {column.rows.map(({ task }) => (
-              <TaskRow
-                key={task.id}
-                task={task}
+            {column.rows.map((row) => (
+              <ViewTaskRow
+                key={row.task.id}
+                row={row}
+                properties={execution.view.properties}
+                omittedProperties={[property]}
                 onOpen={onOpen}
                 onToggle={onToggle}
               />
@@ -292,16 +299,124 @@ function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
     );
   return (
     <div className="saved-task-list">
-      {execution.rows.map(({ task }) => (
-        <TaskRow
-          key={task.id}
-          task={task}
+      {execution.rows.map((row) => (
+        <ViewTaskRow
+          key={row.task.id}
+          row={row}
+          properties={execution.view.properties}
           onOpen={onOpen}
           onToggle={onToggle}
         />
       ))}
     </div>
   );
+}
+
+function ViewTaskRow({
+  row,
+  properties,
+  omittedProperties = [],
+  onOpen,
+  onToggle,
+}: {
+  row: TaskViewRow;
+  properties: TaskViewProperty[];
+  omittedProperties?: string[];
+  onOpen(task: Task): void;
+  onToggle(task: Task): void;
+}) {
+  const details = properties.length
+    ? properties.flatMap((property) => {
+        if (property.hidden || omittedProperties.includes(property.key))
+          return [];
+        const value = propertyValue(row, property.key);
+        const formatted = formatPropertyValue(value, property.format);
+        return formatted === null
+          ? []
+          : [
+              {
+                key: property.key,
+                label: property.label ?? propertyLabel(property.key),
+                value: formatted,
+                ...(property.description
+                  ? { description: property.description }
+                  : {}),
+              },
+            ];
+      })
+    : undefined;
+  return (
+    <TaskRow
+      task={row.task}
+      details={details}
+      onOpen={onOpen}
+      onToggle={onToggle}
+    />
+  );
+}
+
+function propertyValue(row: TaskViewRow, key: string): unknown {
+  if (Object.prototype.hasOwnProperty.call(row.values, key))
+    return row.values[key];
+  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
+  return row.task.frontmatter[field];
+}
+
+function propertyLabel(key: string): string {
+  const name = key.split(".").at(-1) ?? key;
+  const words = name
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim();
+  return words ? `${words[0].toUpperCase()}${words.slice(1)}` : key;
+}
+
+function formatPropertyValue(value: unknown, format?: string): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (Array.isArray(value)) {
+    const values = value
+      .map((item) => formatPropertyValue(item))
+      .filter((item): item is string => item !== null);
+    return values.length ? values.join(", ") : null;
+  }
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return new Intl.NumberFormat().format(value);
+  if (typeof value === "string") {
+    if (format === "date" || /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const date = dateFromStorage(value);
+      if (date)
+        return new Intl.DateTimeFormat(undefined, {
+          day: "numeric",
+          month: "short",
+          year:
+            date.getFullYear() === new Date().getFullYear()
+              ? undefined
+              : "numeric",
+        }).format(date);
+    }
+    if (
+      value.includes("<") &&
+      value.includes(">") &&
+      typeof DOMParser !== "undefined"
+    ) {
+      const text = new DOMParser()
+        .parseFromString(value, "text/html")
+        .body.textContent?.trim();
+      if (text) return text;
+    }
+    return value;
+  }
+  if (typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    if (typeof object.path === "string") return object.path;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
 }
 
 function ViewIcon({ view }: { view: TaskView }) {

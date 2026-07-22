@@ -126,6 +126,8 @@ try {
   await expect(
     page.getByText("Cloud foundation", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Urgency", { exact: true })).toBeVisible();
+  await expect(page.getByText("8", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Views", exact: true }).click();
   await page
     .getByRole("region", { name: "Views" })
@@ -464,6 +466,10 @@ function cloudViewList() {
             {
               id: "board",
               name: "Cloud board",
+              properties: [
+                { key: "status", label: "State" },
+                { key: "urgency", label: "Urgency" },
+              ],
               presentation: {
                 type: "tasknotes.kanban",
                 fallback: "mdbase.table",
@@ -496,7 +502,10 @@ function cloudViewExecution(records) {
         raw_frontmatter: record.frontmatter,
         body: record.body,
         types: record.types,
-        values: { status: record.frontmatter.status ?? null },
+        values: {
+          status: record.frontmatter.status ?? null,
+          urgency: record.frontmatter.title === "Cloud foundation" ? 8 : 1,
+        },
       })),
       meta: {
         total_count: tasks.length,

@@ -21,7 +21,16 @@ import type { VaultEntry } from "./vault";
 interface BaseDocument {
   filters?: BaseFilter;
   formulas?: Record<string, string>;
+  properties?: Record<string, BasePropertyMetadata>;
   views?: BaseView[];
+}
+
+interface BasePropertyMetadata {
+  displayName?: string;
+  label?: string;
+  description?: string;
+  format?: string;
+  hidden?: boolean;
 }
 
 type BaseFilter =
@@ -73,6 +82,9 @@ export class LocalViewExecutor {
           documentName,
           id,
           name: view.name,
+          properties: (view.order ?? []).map((key) =>
+            propertyDescriptor(key, source.document.properties),
+          ),
           source: {
             path: source.entry.path,
             format: "obsidian.base",
@@ -123,20 +135,29 @@ export class LocalViewExecutor {
         return [];
       }
       const formulaValues = formulas.evaluateToPlain(context);
-      const values: Record<string, unknown> = {};
+      const computedValues: Record<string, unknown> = {};
       for (const property of selectedProperties(view)) {
-        values[property] = property.startsWith("formula.")
+        computedValues[property] = property.startsWith("formula.")
           ? (formulaValues[property.slice("formula.".length)] ?? null)
           : evaluateProperty(property, context, task);
       }
-      return [{ task, values }];
+      const values = Object.fromEntries(
+        (view.order ?? []).map((property) => [
+          property,
+          computedValues[property] ?? null,
+        ]),
+      );
+      const groupedProperty = groupProperty(view.groupBy);
+      if (groupedProperty && !(groupedProperty in values))
+        values[groupedProperty] = computedValues[groupedProperty] ?? null;
+      return [{ task, values, computedValues }];
     });
 
     rows.sort((left, right) => {
       for (const sort of view.sort ?? []) {
         const compared = compareValues(
-          left.values[sort.property],
-          right.values[sort.property],
+          left.computedValues[sort.property],
+          right.computedValues[sort.property],
         );
         if (compared)
           return sort.direction?.toUpperCase() === "DESC"
@@ -146,14 +167,21 @@ export class LocalViewExecutor {
       return left.task.path.localeCompare(right.task.path);
     });
     const totalCount = rows.length;
-    const limited =
-      typeof view.limit === "number" ? rows.slice(0, view.limit) : rows;
+    const limited = (
+      typeof view.limit === "number" ? rows.slice(0, view.limit) : rows
+    ).map(({ task, values }) => ({ task, values }));
     return {
       view: selected,
       rows: limited,
       totalCount,
       hasMore: limited.length < totalCount,
-      groups: groups(rows, groupProperty(view.groupBy)),
+      groups: groups(
+        rows.map(({ task, computedValues }) => ({
+          task,
+          values: computedValues,
+        })),
+        groupProperty(view.groupBy),
+      ),
     };
   }
 
@@ -176,6 +204,24 @@ export class LocalViewExecutor {
     }
     return loaded;
   }
+}
+
+function propertyDescriptor(
+  key: string,
+  properties: BaseDocument["properties"],
+): TaskView["properties"][number] {
+  const metadata = properties?.[key] ?? properties?.[`note.${key}`];
+  return {
+    key,
+    ...(metadata?.displayName || metadata?.label
+      ? { label: metadata.displayName ?? metadata.label }
+      : {}),
+    ...(metadata?.description ? { description: metadata.description } : {}),
+    ...(metadata?.format ? { format: metadata.format } : {}),
+    ...(typeof metadata?.hidden === "boolean"
+      ? { hidden: metadata.hidden }
+      : {}),
+  };
 }
 
 function presentation(view: BaseView): TaskViewPresentation {
@@ -209,7 +255,11 @@ function evaluateProperty(
   context: ReturnType<typeof createEvaluationContext>,
   task: Task,
 ): unknown {
-  if (property.startsWith("file."))
+  if (
+    property.startsWith("file.") ||
+    property.startsWith("note.") ||
+    property.startsWith("note[")
+  )
     return compileExpression(property).evaluateToPlain(context);
   return task.frontmatter[property] ?? null;
 }

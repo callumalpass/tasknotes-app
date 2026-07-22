@@ -25,6 +25,11 @@ filters:
     - file.hasTag("task")
 formulas:
   rank: priority * 10
+properties:
+  note.status:
+    displayName: State
+  formula.rank:
+    displayName: Rank
 views:
   - type: tasknotesKanban
     name: Work board
@@ -34,8 +39,10 @@ views:
     groupBy:
       property: status
       direction: ASC
-    order: [status, formula.rank]
+    order: [formula.rank]
     sort:
+      - property: priority
+        direction: DESC
       - property: formula.rank
         direction: DESC
   - type: tasknotesCalendar
@@ -57,12 +64,17 @@ views:
       ["dates", "tasknotes.calendar"],
     ]);
     expect(views[0].source.revision).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(views[0].properties).toEqual([
+      { key: "formula.rank", label: "Rank" },
+    ]);
 
     const board = await executor.execute(views[0]);
     expect(board.rows.map((row) => row.task.id)).toEqual(["three", "one"]);
     expect(board.rows.map((row) => row.values["formula.rank"])).toEqual([
       30, 20,
     ]);
+    expect(board.rows[0].values).not.toHaveProperty("priority");
+    expect(board.rows[0].values.status).toBe("open");
     expect(board.groups).toEqual([
       { values: { status: "open" }, count: 2, summaries: {} },
     ]);

@@ -13,6 +13,7 @@ export interface TaskView {
   documentName: string;
   id: string;
   name: string;
+  properties: TaskViewProperty[];
   source: {
     path: string;
     format: string;
@@ -20,6 +21,14 @@ export interface TaskView {
     writable: boolean;
   };
   presentation?: TaskViewPresentation;
+}
+
+export interface TaskViewProperty {
+  key: string;
+  label?: string;
+  description?: string;
+  format?: string;
+  hidden?: boolean;
 }
 
 export interface TaskViewRow {

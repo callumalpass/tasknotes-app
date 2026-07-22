@@ -15,6 +15,7 @@ export interface ProviderViewList {
     views: Array<{
       id: string;
       name: string;
+      properties?: TaskView["properties"];
       presentation?: {
         type: string;
         fallback?: string;
@@ -49,6 +50,7 @@ export function flattenViews(result: ProviderViewList): TaskView[] {
       documentName: document.name,
       id: view.id,
       name: view.name,
+      properties: structuredClone(view.properties ?? []),
       source: { ...document.source },
       ...(view.presentation
         ? {
