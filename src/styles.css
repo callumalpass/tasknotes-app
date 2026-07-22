@@ -809,6 +809,142 @@ button:disabled {
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(9rem, 0.8fr);
 }
 
+.time-tracking {
+  padding: 24px 0 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.time-tracking-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.time-tracking-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.time-tracking-heading p,
+.active-session {
+  margin: 5px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.timer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 0;
+  border-radius: 6px;
+}
+
+.timer-action.is-running {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.timer-action:disabled {
+  opacity: 0.5;
+}
+
+.timer-description {
+  width: min(100%, 32rem);
+  min-height: 42px;
+  margin-top: 13px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  outline: 0;
+}
+
+.time-history-toggle {
+  margin-top: 16px;
+}
+
+.time-entry-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.time-entry-limit {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.time-entry-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.time-entry-row > button:first-child {
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  padding: 8px 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+
+.time-entry-row strong {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.time-entry-row span {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+}
+
+.time-entry-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.time-entry-editor > input,
+.time-entry-editor > div:not(.time-entry-editor-actions) > input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  outline: 0;
+}
+
+.time-entry-editor > div:not(.time-entry-editor-actions) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.time-entry-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
 .date-time-field > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 6.2rem;
@@ -1153,6 +1289,20 @@ button:disabled {
   input,
   textarea {
     scroll-margin-bottom: 28vh;
+  }
+
+  .time-entry-editor > div:not(.time-entry-editor-actions) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .time-entry-editor-actions {
+    justify-content: space-between;
+  }
+
+  .time-entry-editor-actions .text-action {
+    padding-right: 8px;
+    padding-left: 8px;
   }
 }
 

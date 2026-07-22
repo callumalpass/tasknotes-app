@@ -23,6 +23,7 @@ import type {
   Task,
   TaskListQuery,
   TaskStats,
+  TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -210,6 +211,37 @@ export class RelayTaskRepository implements TaskRepository {
     });
   }
 
+  startTimeTracking(id: string, description?: string): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.startTimeTracking(task, {
+        now: new Date().toISOString(),
+        description,
+      }),
+    );
+  }
+
+  stopTimeTracking(id: string): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.stopTimeTracking(task, { now: new Date().toISOString() }),
+    );
+  }
+
+  replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.replaceTimeEntries(task, entries, {
+        now: new Date().toISOString(),
+      }),
+    );
+  }
+
+  removeTimeEntry(id: string, index: number): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.removeTimeEntry(task, index, {
+        now: new Date().toISOString(),
+      }),
+    );
+  }
+
   delete(id: string): Promise<void> {
     return this.serializeWrite(id, async () => {
       const existing = this.cache.get(id);
@@ -383,6 +415,16 @@ export class RelayTaskRepository implements TaskRepository {
       this.noteOperationFailure(reason);
       throw reason;
     }
+  }
+
+  private persistModelMutation(
+    id: string,
+    mutate: (task: Task) => Task,
+  ): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = await this.requireCurrent(id);
+      return this.persistUpdate(current, mutate(current.task));
+    });
   }
 
   private storeResult(result: RecordResult<JsonObject>): Task {

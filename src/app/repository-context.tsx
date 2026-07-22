@@ -24,6 +24,7 @@ import type {
   Task,
   TaskListQuery,
   TaskStats,
+  TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -51,6 +52,10 @@ interface RepositoryContextValue {
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   toggleTask(id: string, occurrenceDate?: string): Promise<Task>;
   skipTask(id: string, occurrenceDate: string): Promise<Task>;
+  startTimeTracking(id: string, description?: string): Promise<Task>;
+  stopTimeTracking(id: string): Promise<Task>;
+  replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
+  removeTimeEntry(id: string, index: number): Promise<Task>;
   deleteTask(id: string): Promise<void>;
   refresh(): Promise<RefreshResult>;
   resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
@@ -204,6 +209,38 @@ export function RepositoryProvider({
     },
     [bump, repository],
   );
+  const startTimeTracking = useCallback(
+    async (id: string, description?: string) => {
+      const task = await repository.startTimeTracking(id, description);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const stopTimeTracking = useCallback(
+    async (id: string) => {
+      const task = await repository.stopTimeTracking(id);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const replaceTimeEntries = useCallback(
+    async (id: string, entries: TaskTimeEntry[]) => {
+      const task = await repository.replaceTimeEntries(id, entries);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const removeTimeEntry = useCallback(
+    async (id: string, index: number) => {
+      const task = await repository.removeTimeEntry(id, index);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
   const deleteTask = useCallback(
     async (id: string) => {
       await repository.delete(id);
@@ -236,6 +273,10 @@ export function RepositoryProvider({
       updateTask,
       toggleTask,
       skipTask,
+      startTimeTracking,
+      stopTimeTracking,
+      replaceTimeEntries,
+      removeTimeEntry,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -254,6 +295,10 @@ export function RepositoryProvider({
       updateTask,
       toggleTask,
       skipTask,
+      startTimeTracking,
+      stopTimeTracking,
+      replaceTimeEntries,
+      removeTimeEntry,
       deleteTask,
       refresh,
       resolveSyncIssue,

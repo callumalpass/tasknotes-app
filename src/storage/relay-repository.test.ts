@@ -80,6 +80,37 @@ describe("relay task repository", () => {
     });
   });
 
+  it("round-trips time sessions through revision-guarded relay writes", async () => {
+    const fixture = relayFixture([
+      taskRecord("timed", "Profile the relay", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const started = await repository.startTimeTracking("timed", "Relay run");
+    expect(started.timeEntries[0]).toMatchObject({
+      description: "Relay run",
+    });
+    const stopped = await repository.stopTimeTracking("timed");
+    expect(stopped.timeEntries[0].endTime).toMatch(/Z$/);
+    const replaced = await repository.replaceTimeEntries("timed", [
+      {
+        startTime: "2026-07-22T09:00:00+10:00",
+        endTime: "2026-07-22T10:00:00+10:00",
+      },
+    ]);
+    expect(replaced.timeEntries[0]).toEqual({
+      startTime: "2026-07-21T23:00:00Z",
+      endTime: "2026-07-22T00:00:00Z",
+    });
+    expect((await repository.removeTimeEntry("timed", 0)).timeEntries).toEqual(
+      [],
+    );
+    expect(
+      fixture.update.mock.calls.map(([input]) => input.if_revision),
+    ).toEqual(["r1", "r2", "r3", "r4"]);
+  });
+
   it("lists and executes provider-owned saved views", async () => {
     const fixture = relayFixture([
       taskRecord("board", "Visible on the board", "r1"),

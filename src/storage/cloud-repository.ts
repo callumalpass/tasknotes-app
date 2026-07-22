@@ -28,6 +28,7 @@ import type {
   Task,
   TaskListQuery,
   TaskStats,
+  TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -56,6 +57,7 @@ export class CloudTaskRepository implements TaskRepository {
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private viewStore: TaskViewCache | null = null;
   private readonly listeners = new Set<() => void>();
+  private readonly writeTails = new Map<string, Promise<void>>();
   private status: RepositorySyncStatus = {
     mode: "replicated",
     state: "syncing",
@@ -232,59 +234,101 @@ export class CloudTaskRepository implements TaskRepository {
     return task;
   }
 
-  async update(id: string, input: UpdateTaskInput): Promise<Task> {
-    const current = this.requireTask(id);
-    const next = this.model.update(current.task, input, {
-      now: new Date().toISOString(),
+  update(id: string, input: UpdateTaskInput): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = this.requireTask(id);
+      const next = this.model.update(current.task, input, {
+        now: new Date().toISOString(),
+      });
+      await this.requireReplica().queueUpdate({
+        recordId: current.recordId,
+        patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+        body: next.body,
+      });
+      this.cache.set(id, { ...current, task: next });
+      await this.afterLocalMutation();
+      return next;
     });
-    await this.requireReplica().queueUpdate({
-      recordId: current.recordId,
-      patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
-      body: next.body,
-    });
-    this.cache.set(id, { ...current, task: next });
-    await this.afterLocalMutation();
-    return next;
   }
 
-  async toggle(id: string, occurrenceDate?: string): Promise<Task> {
-    const current = this.requireTask(id);
-    const next = this.model.toggle(current.task, {
-      now: new Date().toISOString(),
-      currentDate: occurrenceDate,
+  toggle(id: string, occurrenceDate?: string): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = this.requireTask(id);
+      const next = this.model.toggle(current.task, {
+        now: new Date().toISOString(),
+        currentDate: occurrenceDate,
+      });
+      await this.requireReplica().queueUpdate({
+        recordId: current.recordId,
+        patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+        body: next.body,
+      });
+      this.cache.set(id, { ...current, task: next });
+      await this.afterLocalMutation();
+      return next;
     });
-    await this.requireReplica().queueUpdate({
-      recordId: current.recordId,
-      patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
-      body: next.body,
-    });
-    this.cache.set(id, { ...current, task: next });
-    await this.afterLocalMutation();
-    return next;
   }
 
-  async skip(id: string, occurrenceDate: string): Promise<Task> {
-    const current = this.requireTask(id);
-    const next = this.model.skip(current.task, {
-      now: new Date().toISOString(),
-      currentDate: occurrenceDate,
+  skip(id: string, occurrenceDate: string): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = this.requireTask(id);
+      const next = this.model.skip(current.task, {
+        now: new Date().toISOString(),
+        currentDate: occurrenceDate,
+      });
+      await this.requireReplica().queueUpdate({
+        recordId: current.recordId,
+        patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+        body: next.body,
+      });
+      this.cache.set(id, { ...current, task: next });
+      await this.afterLocalMutation();
+      return next;
     });
-    await this.requireReplica().queueUpdate({
-      recordId: current.recordId,
-      patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
-      body: next.body,
-    });
-    this.cache.set(id, { ...current, task: next });
-    await this.afterLocalMutation();
-    return next;
   }
 
-  async delete(id: string): Promise<void> {
-    const current = this.cache.get(id);
-    if (!current) return;
-    await this.requireReplica().queueDelete({ recordId: current.recordId });
-    this.cache.delete(id);
-    await this.afterLocalMutation();
+  async startTimeTracking(id: string, description?: string): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.startTimeTracking(task, {
+        now: new Date().toISOString(),
+        description,
+      }),
+    );
+  }
+
+  async stopTimeTracking(id: string): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.stopTimeTracking(task, { now: new Date().toISOString() }),
+    );
+  }
+
+  async replaceTimeEntries(
+    id: string,
+    entries: TaskTimeEntry[],
+  ): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.replaceTimeEntries(task, entries, {
+        now: new Date().toISOString(),
+      }),
+    );
+  }
+
+  async removeTimeEntry(id: string, index: number): Promise<Task> {
+    return this.persistModelMutation(id, (task) =>
+      this.model.removeTimeEntry(task, index, {
+        now: new Date().toISOString(),
+      }),
+    );
+  }
+
+  delete(id: string): Promise<void> {
+    return this.serializeWrite(id, async () => {
+      const current = this.cache.get(id);
+      if (!current) return;
+      await this.requireReplica().queueDelete({ recordId: current.recordId });
+      this.cache.delete(id);
+      await this.afterLocalMutation();
+    });
   }
 
   async stats(): Promise<TaskStats> {
@@ -417,6 +461,41 @@ export class CloudTaskRepository implements TaskRepository {
     await this.updateStatusCounts();
     this.emit();
     void this.refresh();
+  }
+
+  private persistModelMutation(
+    id: string,
+    mutate: (task: Task) => Task,
+  ): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = this.requireTask(id);
+      const next = mutate(current.task);
+      await this.requireReplica().queueUpdate({
+        recordId: current.recordId,
+        patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+        body: next.body,
+      });
+      this.cache.set(id, { ...current, task: next });
+      await this.afterLocalMutation();
+      return next;
+    });
+  }
+
+  private serializeWrite<T>(
+    key: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const previous = this.writeTails.get(key) ?? Promise.resolve();
+    const result = previous.catch(() => undefined).then(operation);
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.writeTails.set(key, tail);
+    void tail.finally(() => {
+      if (this.writeTails.get(key) === tail) this.writeTails.delete(key);
+    });
+    return result;
   }
 
   private async updateStatusCounts(): Promise<void> {

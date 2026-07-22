@@ -14,6 +14,7 @@ import type {
   TaskListQuery,
   TaskStats,
   UpdateTaskInput,
+  TaskTimeEntry,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskView, TaskViewExecution } from "../domain/view";
@@ -34,6 +35,10 @@ export interface TaskRepository {
   update(id: string, input: UpdateTaskInput): Promise<Task>;
   toggle(id: string, occurrenceDate?: string): Promise<Task>;
   skip(id: string, occurrenceDate: string): Promise<Task>;
+  startTimeTracking(id: string, description?: string): Promise<Task>;
+  stopTimeTracking(id: string): Promise<Task>;
+  replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
+  removeTimeEntry(id: string, index: number): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
   listViews(): Promise<TaskView[]>;
@@ -181,6 +186,61 @@ export class IndexedMarkdownRepository implements TaskRepository {
         current,
         new Date().toISOString(),
         occurrenceDate,
+      );
+      await this.write(next);
+      return next;
+    });
+  }
+
+  startTimeTracking(id: string, description?: string): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.startTimeTracking(
+        current,
+        new Date().toISOString(),
+        description,
+      );
+      await this.write(next);
+      return next;
+    });
+  }
+
+  stopTimeTracking(id: string): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.stopTimeTracking(
+        current,
+        new Date().toISOString(),
+      );
+      await this.write(next);
+      return next;
+    });
+  }
+
+  replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.replaceTimeEntries(
+        current,
+        entries,
+        new Date().toISOString(),
+      );
+      await this.write(next);
+      return next;
+    });
+  }
+
+  removeTimeEntry(id: string, index: number): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.removeTimeEntry(
+        current,
+        index,
+        new Date().toISOString(),
       );
       await this.write(next);
       return next;

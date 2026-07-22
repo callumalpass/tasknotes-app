@@ -16,11 +16,23 @@ import {
   recurringCompletePlanToFrontmatterPatch,
   recurringSkippedPlanToFrontmatterPatch,
 } from "@tasknotes/model/operations";
+import {
+  buildDeleteTimeEntryPlan,
+  buildStartTimeTrackingPlan,
+  buildStopTimeTrackingPlan,
+  getActiveTimeEntry,
+  replaceTimeEntries,
+} from "@tasknotes/model/time";
 import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
 import { makeTaskPath, normalizeTaskDateTime } from "./task";
 
-import type { CreateTaskInput, Task, UpdateTaskInput } from "./task";
+import type {
+  CreateTaskInput,
+  Task,
+  TaskTimeEntry,
+  UpdateTaskInput,
+} from "./task";
 import type {
   TaskInfo,
   TaskNotesModelConfig,
@@ -185,6 +197,8 @@ export class TaskNotesTaskModel {
     if (input.reminders !== undefined) updates.reminders = input.reminders;
     if (input.timeEstimate !== undefined)
       updates.timeEstimate = input.timeEstimate ?? undefined;
+    if (input.timeEntries !== undefined)
+      updates.timeEntries = normalizeTimeEntries(input.timeEntries);
     if (input.customProperties !== undefined)
       updates.customProperties = input.customProperties;
 
@@ -201,7 +215,12 @@ export class TaskNotesTaskModel {
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
-    this.assertValid(plan.updatedTask);
+    const updatedTask = this.autoStopAfterCompletion(
+      original,
+      plan.updatedTask,
+      now,
+    );
+    this.assertValid(updatedTask);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
     const patched = applyFrontmatterPatch(base, plan.frontmatterPatch);
@@ -213,11 +232,11 @@ export class TaskNotesTaskModel {
     }
     const frontmatter = this.writeFrontmatter(
       patched,
-      plan.updatedTask,
+      updatedTask,
       current.id,
       revision,
     );
-    return this.toTask(plan.updatedTask, frontmatter, revision);
+    return this.toTask(updatedTask, frontmatter, revision);
   }
 
   toggle(
@@ -253,14 +272,18 @@ export class TaskNotesTaskModel {
         base,
         recurringCompletePlanToFrontmatterPatch(plan, this.config.fieldMapping),
       );
+      const updatedTask =
+        plan.newComplete && this.config.timeTracking.autoStopOnComplete
+          ? stopActiveEntry(plan.updatedTask, now)
+          : plan.updatedTask;
       const revision = current.revision + 1;
       const frontmatter = this.writeFrontmatter(
         patched,
-        plan.updatedTask,
+        updatedTask,
         current.id,
         revision,
       );
-      return this.toTask(plan.updatedTask, frontmatter, revision);
+      return this.toTask(updatedTask, frontmatter, revision);
     }
     return this.update(
       current,
@@ -316,6 +339,82 @@ export class TaskNotesTaskModel {
     return this.toTask(plan.updatedTask, frontmatter, revision);
   }
 
+  startTimeTracking(
+    current: Task,
+    context: { now?: string; start?: string; description?: string } = {},
+  ): Task {
+    const original = this.taskInfo(current);
+    if (getActiveTimeEntry(original))
+      throw new Error(
+        "time_tracking_already_active: This task is already being timed.",
+      );
+    const now = canonicalMutationInstant(
+      context.now ?? new Date().toISOString(),
+      original,
+    );
+    const start = canonicalInstant(context.start ?? now);
+    const plan = buildStartTimeTrackingPlan(
+      original,
+      now,
+      start,
+      context.description ?? this.config.timeTracking.defaultSessionDescription,
+    );
+    return this.finishTrackingMutation(current, plan.updatedTask);
+  }
+
+  stopTimeTracking(
+    current: Task,
+    context: { now?: string; stop?: string } = {},
+  ): Task {
+    const original = this.taskInfo(current);
+    const active = getActiveTimeEntry(original);
+    if (!active)
+      throw new Error("no_active_time_entry: This task has no running timer.");
+    const now = canonicalMutationInstant(
+      context.now ?? new Date().toISOString(),
+      original,
+    );
+    const stop = canonicalInstant(context.stop ?? now);
+    if (new Date(stop).getTime() < new Date(active.startTime).getTime())
+      throw new Error(
+        "invalid_time_entry: A session cannot end before it starts.",
+      );
+    const plan = buildStopTimeTrackingPlan(original, active, now, stop);
+    return this.finishTrackingMutation(current, plan.updatedTask);
+  }
+
+  replaceTimeEntries(
+    current: Task,
+    entries: readonly TaskTimeEntry[],
+    context: { now?: string } = {},
+  ): Task {
+    const original = this.taskInfo(current);
+    const now = canonicalMutationInstant(
+      context.now ?? new Date().toISOString(),
+      original,
+    );
+    const updated = replaceTimeEntries(
+      original,
+      normalizeTimeEntries(entries),
+      now,
+    );
+    return this.finishTrackingMutation(current, updated);
+  }
+
+  removeTimeEntry(
+    current: Task,
+    index: number,
+    context: { now?: string } = {},
+  ): Task {
+    const original = this.taskInfo(current);
+    const now = canonicalMutationInstant(
+      context.now ?? new Date().toISOString(),
+      original,
+    );
+    const plan = buildDeleteTimeEntryPlan(original, index, now);
+    return this.finishTrackingMutation(current, plan.updatedTask);
+  }
+
   private completeTaskInfo(
     mapped: Partial<TaskInfo>,
     path: string,
@@ -363,6 +462,7 @@ export class TaskNotesTaskModel {
       skippedInstances: info.skipped_instances ?? [],
       reminders: info.reminders ?? [],
       timeEstimate: info.timeEstimate,
+      timeEntries: normalizeTimeEntries(info.timeEntries ?? []),
       customProperties: info.customProperties ?? {},
       revision,
       frontmatter,
@@ -419,6 +519,115 @@ export class TaskNotesTaskModel {
     if (!validation.valid)
       throw new TaskNotesValidationError(validation.issues);
   }
+
+  private taskInfo(current: Task): TaskInfo {
+    return this.completeTaskInfo(
+      mapTaskFromFrontmatter(
+        this.config.fieldMapping,
+        this.canonicalizeAliases(current.frontmatter, false),
+        current.path,
+        this.config.storeTitleInFilename,
+        this.config.userFields,
+        this.config.statuses,
+        this.config.priorities,
+      ),
+      current.path,
+      current.body,
+    );
+  }
+
+  private finishTrackingMutation(current: Task, updated: TaskInfo): Task {
+    this.assertValid(updated);
+    const revision = current.revision + 1;
+    const frontmatter = this.writeFrontmatter(
+      this.canonicalizeAliases(current.frontmatter, true),
+      updated,
+      current.id,
+      revision,
+    );
+    return this.toTask(updated, frontmatter, revision);
+  }
+
+  private autoStopAfterCompletion(
+    original: TaskInfo,
+    updated: TaskInfo,
+    now: string,
+  ): TaskInfo {
+    if (
+      !this.config.timeTracking.autoStopOnComplete ||
+      isCompletedStatus(original.status, this.config.statuses) ||
+      !isCompletedStatus(updated.status, this.config.statuses)
+    )
+      return updated;
+    return stopActiveEntry(updated, now);
+  }
+}
+
+function stopActiveEntry(task: TaskInfo, now: string): TaskInfo {
+  const active = getActiveTimeEntry(task);
+  if (!active) return task;
+  const modified = canonicalMutationInstant(now, task);
+  const stop =
+    Date.parse(modified) < Date.parse(active.startTime)
+      ? canonicalInstant(active.startTime)
+      : modified;
+  return buildStopTimeTrackingPlan(task, active, stop, stop).updatedTask;
+}
+
+function normalizeTimeEntries(
+  entries: readonly TaskTimeEntry[],
+): TaskTimeEntry[] {
+  let active = 0;
+  return entries.map((entry) => {
+    const startTime = canonicalInstant(entry.startTime);
+    const endTime = entry.endTime ? canonicalInstant(entry.endTime) : undefined;
+    if (endTime && new Date(endTime).getTime() < new Date(startTime).getTime())
+      throw new Error(
+        "invalid_time_entry: A session cannot end before it starts.",
+      );
+    if (!endTime && ++active > 1)
+      throw new Error(
+        "multiple_active_time_entries: A task can have only one running timer.",
+      );
+    return {
+      startTime,
+      ...(endTime ? { endTime } : {}),
+      ...(entry.description === undefined
+        ? {}
+        : { description: entry.description }),
+    };
+  });
+}
+
+function canonicalInstant(value: string): string {
+  const trimmed = value.trim();
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(trimmed))
+    throw new Error(
+      "invalid_datetime_value: Time entries require an explicit timezone.",
+    );
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime()))
+    throw new Error(
+      "invalid_datetime_value: The time entry datetime is invalid.",
+    );
+  return parsed.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+function canonicalMutationInstant(
+  value: string,
+  task: Partial<TaskInfo>,
+): string {
+  const candidate = canonicalInstant(value);
+  const stored = [task.dateCreated, task.dateModified]
+    .map((entry) => (entry ? Date.parse(entry) : Number.NaN))
+    .filter(Number.isFinite);
+  const minimum = stored.length
+    ? Math.max(...stored)
+    : Number.NEGATIVE_INFINITY;
+  if (Date.parse(candidate) >= minimum) return candidate;
+  return new Date(Math.ceil(minimum / 1_000) * 1_000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function withUserFieldDefaults(

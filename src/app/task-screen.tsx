@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock3, Play, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
@@ -9,14 +9,16 @@ import {
 } from "../domain/recurrence-rule";
 import {
   combineTaskDateTime,
+  activeTimeEntry,
   recurrencePreset,
   recurrenceRule,
+  taskTimeTotals,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
 import { useRepository, useTask } from "./repository-context";
 
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 
 type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
@@ -83,14 +85,25 @@ function TaskEditor({
   occurrenceDate?: string;
   onBack(): void;
 }) {
-  const { updateTask, deleteTask, toggleTask, skipTask, configuration } =
-    useRepository();
+  const {
+    updateTask,
+    deleteTask,
+    toggleTask,
+    skipTask,
+    startTimeTracking,
+    stopTimeTracking,
+    replaceTimeEntries,
+    removeTimeEntry,
+    configuration,
+  } = useRepository();
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
+  const [timeAction, setTimeAction] = useState(false);
+  const [timeError, setTimeError] = useState<string | null>(null);
   const mounted = useRef(true);
   const editVersion = useRef(0);
 
@@ -194,6 +207,21 @@ function TaskEditor({
       await skipTask(task.id, occurrenceDate);
     } finally {
       if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function runTimeAction(action: () => Promise<unknown>) {
+    if (timeAction) return;
+    setTimeAction(true);
+    setTimeError(null);
+    try {
+      if (dirty) await persist(draft, editVersion.current);
+      await action();
+    } catch (reason) {
+      if (mounted.current)
+        setTimeError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (mounted.current) setTimeAction(false);
     }
   }
 
@@ -350,6 +378,22 @@ function TaskEditor({
           </label>
         </div>
 
+        <TimeTrackingField
+          busy={timeAction}
+          entries={task.timeEntries}
+          error={timeError}
+          onRemove={(index) =>
+            runTimeAction(() => removeTimeEntry(task.id, index))
+          }
+          onReplace={(entries) =>
+            runTimeAction(() => replaceTimeEntries(task.id, entries))
+          }
+          onStart={(description) =>
+            runTimeAction(() => startTimeTracking(task.id, description))
+          }
+          onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
+        />
+
         <Fieldset legend="Priority">
           {configuration.priorities.map((priority) => (
             <Choice
@@ -431,6 +475,250 @@ function TaskEditor({
       </div>
     </section>
   );
+}
+
+function TimeTrackingField({
+  entries,
+  busy,
+  error,
+  onStart,
+  onStop,
+  onReplace,
+  onRemove,
+}: {
+  entries: TaskTimeEntry[];
+  busy: boolean;
+  error: string | null;
+  onStart(description?: string): void;
+  onStop(): void;
+  onReplace(entries: TaskTimeEntry[]): void;
+  onRemove(index: number): void;
+}) {
+  const active = activeTimeEntry(entries);
+  const now = useTimerNow(Boolean(active));
+  const totals = taskTimeTotals(entries, now);
+  const [expanded, setExpanded] = useState(false);
+  const [description, setDescription] = useState("");
+  const [editing, setEditing] = useState<number | null>(null);
+  const visibleEntries = entries.slice(-50).reverse();
+
+  return (
+    <section className="time-tracking" aria-labelledby="time-tracking-title">
+      <div className="time-tracking-heading">
+        <div>
+          <h2 id="time-tracking-title">
+            <Clock3 aria-hidden="true" size={16} strokeWidth={1.7} /> Time
+          </h2>
+          <p>
+            {active
+              ? `${formatMinutes(totals.liveMinutes)} tracked`
+              : formatMinutes(totals.closedMinutes)}
+          </p>
+        </div>
+        {active ? (
+          <button
+            className="timer-action is-running"
+            disabled={busy}
+            type="button"
+            onClick={onStop}
+          >
+            <Square aria-hidden="true" size={14} fill="currentColor" /> Stop
+          </button>
+        ) : (
+          <button
+            className="timer-action"
+            disabled={busy}
+            type="button"
+            onClick={() => {
+              onStart(description.trim() || undefined);
+              setDescription("");
+            }}
+          >
+            <Play aria-hidden="true" size={15} fill="currentColor" /> Start
+          </button>
+        )}
+      </div>
+
+      {!active ? (
+        <input
+          aria-label="Timer description"
+          className="timer-description"
+          placeholder="What are you working on?"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      ) : (
+        <p className="active-session" aria-live="polite">
+          {active.description || "Work session"} · {formatSession(active, now)}
+        </p>
+      )}
+
+      {error ? (
+        <p className="inline-error" role="alert">
+          {cleanOperationError(error)}
+        </p>
+      ) : null}
+
+      {entries.length ? (
+        <button
+          aria-expanded={expanded}
+          className="text-action time-history-toggle"
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded
+            ? "Hide sessions"
+            : `${entries.length} session${entries.length === 1 ? "" : "s"}`}
+        </button>
+      ) : null}
+
+      {expanded ? (
+        <div className="time-entry-list">
+          {entries.length > visibleEntries.length ? (
+            <p className="time-entry-limit">
+              Showing the latest {visibleEntries.length} of {entries.length}
+              sessions.
+            </p>
+          ) : null}
+          {visibleEntries.map((entry, reversedIndex) => {
+            const index = entries.length - reversedIndex - 1;
+            return editing === index ? (
+              <TimeEntryEditor
+                entry={entry}
+                key={`${entry.startTime}:${index}`}
+                onCancel={() => setEditing(null)}
+                onSave={(next) => {
+                  const replacement = entries.map((value, entryIndex) =>
+                    entryIndex === index ? next : value,
+                  );
+                  onReplace(replacement);
+                  setEditing(null);
+                }}
+              />
+            ) : (
+              <div
+                className="time-entry-row"
+                key={`${entry.startTime}:${index}`}
+              >
+                <button type="button" onClick={() => setEditing(index)}>
+                  <strong>{entry.description || "Work session"}</strong>
+                  <span>{formatSessionRange(entry, now)}</span>
+                </button>
+                <button
+                  aria-label={`Remove ${entry.description || "session"}`}
+                  className="icon-action"
+                  disabled={busy}
+                  type="button"
+                  onClick={() => onRemove(index)}
+                >
+                  <Trash2 aria-hidden="true" size={15} strokeWidth={1.6} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function TimeEntryEditor({
+  entry,
+  onSave,
+  onCancel,
+}: {
+  entry: TaskTimeEntry;
+  onSave(entry: TaskTimeEntry): void;
+  onCancel(): void;
+}) {
+  const [start, setStart] = useState(toLocalDateTime(entry.startTime));
+  const [end, setEnd] = useState(toLocalDateTime(entry.endTime));
+  const [description, setDescription] = useState(entry.description ?? "");
+  const valid = Boolean(start && (!end || new Date(end) >= new Date(start)));
+  return (
+    <div className="time-entry-editor">
+      <input
+        aria-label="Session description"
+        placeholder="Session description"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+      />
+      <div>
+        <input
+          aria-label="Session start"
+          type="datetime-local"
+          value={start}
+          onChange={(event) => setStart(event.target.value)}
+        />
+        <input
+          aria-label="Session end"
+          type="datetime-local"
+          value={end}
+          onChange={(event) => setEnd(event.target.value)}
+        />
+      </div>
+      <div className="time-entry-editor-actions">
+        <button className="text-action" type="button" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          className="text-action"
+          disabled={!valid}
+          type="button"
+          onClick={() =>
+            onSave({
+              startTime: new Date(start).toISOString(),
+              ...(end ? { endTime: new Date(end).toISOString() } : {}),
+              ...(description.trim()
+                ? { description: description.trim() }
+                : {}),
+            })
+          }
+        >
+          Save session
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function useTimerNow(running: boolean): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => setNow(new Date()), 15_000);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  return now;
+}
+
+function formatMinutes(value: number): string {
+  if (value < 60) return `${value}m`;
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function formatSession(entry: TaskTimeEntry, now: Date): string {
+  return formatMinutes(taskTimeTotals([entry], now).liveMinutes);
+}
+
+function formatSessionRange(entry: TaskTimeEntry, now: Date): string {
+  const start = new Date(entry.startTime);
+  const end = entry.endTime ? new Date(entry.endTime) : now;
+  const day = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(start);
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${day} · ${time.format(start)}–${time.format(end)} · ${formatSession(entry, now)}`;
+}
+
+function cleanOperationError(value: string): string {
+  return value.replace(/^[a-z_]+:\s*/i, "");
 }
 
 function Fieldset({

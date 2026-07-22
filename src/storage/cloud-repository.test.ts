@@ -171,6 +171,104 @@ describe("cloud task repository", () => {
     expect(completed.scheduled).not.toBe(date);
   });
 
+  it("keeps time tracking immediate offline and synchronizes it later", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    authority.registerReplica({
+      id: phoneId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    authority.registerReplica({
+      id: tabletId,
+      name: "Tablet",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(phoneId);
+    const phoneTransport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, phoneTransport),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const task = await phone.create({ title: "Offline timing" });
+    await phone.refresh();
+    await tablet.refresh();
+
+    online = false;
+    const started = await phone.startTimeTracking(task.id, "Flight mode");
+    expect(started.timeEntries[0].endTime).toBeUndefined();
+    await phone.refresh();
+    expect(await phone.syncStatus()).toMatchObject({
+      state: "offline",
+      pending: 1,
+    });
+
+    online = true;
+    await phone.refresh();
+    await tablet.refresh();
+    expect((await tablet.get(task.id))?.timeEntries[0]).toMatchObject({
+      description: "Flight mode",
+    });
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
+  });
+
+  it("serializes same-task cloud mutations without dropping local state", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+    await repository.initialize();
+    const task = await repository.create({ title: "Original" });
+
+    await Promise.all([
+      repository.update(task.id, { title: "Edited while starting" }),
+      repository.startTimeTracking(task.id, "Concurrent timer"),
+    ]);
+
+    expect(await repository.get(task.id)).toMatchObject({
+      title: "Edited while starting",
+      timeEntries: [{ description: "Concurrent timer" }],
+    });
+    await repository.refresh();
+    expect(await repository.get(task.id)).toMatchObject({
+      title: "Edited while starting",
+      timeEntries: [{ description: "Concurrent timer" }],
+    });
+  });
+
   it("uses the contract's type name and records folder", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resourcesWithType("todo", "records/tasks"),

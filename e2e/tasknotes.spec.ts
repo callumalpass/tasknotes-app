@@ -166,6 +166,36 @@ test("projects, completes, and skips recurring occurrences by date", async ({
   await expect(page.getByRole("button", { name: "Unskip" })).toBeVisible();
 });
 
+test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
+  await page.getByLabel("New task title").fill("Measure mobile performance");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Measure mobile performance", { exact: true }).click();
+
+  await page.getByLabel("Timer description").fill("Cold start profile");
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await expect(page.getByText(/Cold start profile ·/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+  await page.getByRole("button", { name: "Stop" }).click();
+  await page.getByRole("button", { name: "1 session" }).click();
+  await page.getByText("Cold start profile", { exact: true }).click();
+  await page.getByLabel("Session description").fill("Warm start profile");
+  await page.getByRole("button", { name: "Save session" }).click();
+  await expect(
+    page.getByText("Warm start profile", { exact: true }),
+  ).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "1 session" }).click();
+  await expect(
+    page.getByText("Warm start profile", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Remove Warm start profile" }).click();
+  await expect(page.getByRole("button", { name: "1 session" })).toHaveCount(0);
+});
+
 test("renders configured saved-view properties without changing calendar rows", async ({
   page,
 }) => {

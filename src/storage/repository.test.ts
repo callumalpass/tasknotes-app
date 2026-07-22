@@ -163,4 +163,41 @@ describe("IndexedMarkdownRepository", () => {
         .replace(".000Z", "Z"),
     });
   });
+
+  it("persists start, stop, edit, and removal of time sessions", async () => {
+    const created = await repository.create({ title: "Profile indexer" });
+    const started = await repository.startTimeTracking(created.id, "Benchmark");
+    expect(started.timeEntries).toHaveLength(1);
+    expect(started.timeEntries[0]).toMatchObject({ description: "Benchmark" });
+    expect(started.timeEntries[0].endTime).toBeUndefined();
+    await expect(repository.startTimeTracking(created.id)).rejects.toThrow(
+      /already_active/,
+    );
+
+    const stopped = await repository.stopTimeTracking(created.id);
+    expect(stopped.timeEntries[0].endTime).toMatch(/Z$/);
+    const edited = await repository.replaceTimeEntries(created.id, [
+      {
+        startTime: "2026-07-22T09:00:00+10:00",
+        endTime: "2026-07-22T10:30:00+10:00",
+        description: "Measured run",
+      },
+    ]);
+    expect(edited.timeEntries).toEqual([
+      {
+        startTime: "2026-07-21T23:00:00Z",
+        endTime: "2026-07-22T00:30:00Z",
+        description: "Measured run",
+      },
+    ]);
+    const source = parseFrontmatter(await vault.readText(created.path));
+    expect(source.frontmatter.timeEntries).toEqual(edited.timeEntries);
+    expect(source.frontmatter.timeEntries).not.toHaveProperty("duration");
+
+    const removed = await repository.removeTimeEntry(created.id, 0);
+    expect(removed.timeEntries).toEqual([]);
+    await expect(repository.stopTimeTracking(created.id)).rejects.toThrow(
+      /no_active/,
+    );
+  });
 });

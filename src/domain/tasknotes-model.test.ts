@@ -116,6 +116,136 @@ describe("TaskNotes task model app boundary", () => {
     expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
     expect(skipped.scheduled).toBe(canonicalLocal("2026-08-07T09:00"));
   });
+
+  it("manages canonical time sessions without losing unknown frontmatter", () => {
+    const task = model.read({
+      path: "tasks/timed.md",
+      body: "Notes",
+      frontmatter: {
+        type: "task",
+        id: "timed",
+        title: "Timed task",
+        status: "todo",
+        priority: "later",
+        dateCreated: "2026-07-22T00:00:00Z",
+        dateModified: "2026-07-22T00:00:00Z",
+        external_owner: "kept",
+        time_entries: [
+          {
+            startTime: "2026-07-22T08:00:00Z",
+            endTime: "2026-07-22T08:30:00Z",
+            duration: 30,
+          },
+        ],
+      },
+    });
+
+    const started = model.startTimeTracking(task, {
+      now: "2026-07-22T19:00:00+10:00",
+      description: "Review",
+    });
+    expect(started.timeEntries).toEqual([
+      {
+        startTime: "2026-07-22T08:00:00Z",
+        endTime: "2026-07-22T08:30:00Z",
+      },
+      { startTime: "2026-07-22T09:00:00Z", description: "Review" },
+    ]);
+    expect(started.frontmatter.external_owner).toBe("kept");
+    expect(started.frontmatter.timeEntries).toEqual(started.timeEntries);
+    expect(() => model.startTimeTracking(started)).toThrow(
+      /time_tracking_already_active/,
+    );
+
+    const stopped = model.stopTimeTracking(started, {
+      now: "2026-07-22T09:45:00.987Z",
+    });
+    expect(stopped.timeEntries[1]).toEqual({
+      startTime: "2026-07-22T09:00:00Z",
+      endTime: "2026-07-22T09:45:00Z",
+      description: "Review",
+    });
+    expect(() => model.stopTimeTracking(stopped)).toThrow(
+      /no_active_time_entry/,
+    );
+  });
+
+  it("validates, replaces, and deterministically removes time sessions", () => {
+    const task = model.create(
+      { title: "Sessions" },
+      { id: "sessions", now: "2026-07-22T00:00:00Z" },
+    );
+    const replaced = model.replaceTimeEntries(task, [
+      {
+        startTime: "2026-07-22T09:00:00+10:00",
+        endTime: "2026-07-22T10:00:00+10:00",
+        description: "First",
+      },
+      { startTime: "2026-07-22T11:00:00+10:00" },
+    ]);
+    expect(replaced.timeEntries).toEqual([
+      {
+        startTime: "2026-07-21T23:00:00Z",
+        endTime: "2026-07-22T00:00:00Z",
+        description: "First",
+      },
+      { startTime: "2026-07-22T01:00:00Z" },
+    ]);
+    expect(model.removeTimeEntry(replaced, 0).timeEntries).toEqual([
+      { startTime: "2026-07-22T01:00:00Z" },
+    ]);
+    expect(() => model.removeTimeEntry(replaced, 9)).toThrow(/Invalid/);
+    expect(() =>
+      model.replaceTimeEntries(task, [
+        { startTime: "2026-07-22T09:00:00Z" },
+        { startTime: "2026-07-22T10:00:00Z" },
+      ]),
+    ).toThrow(/multiple_active_time_entries/);
+    expect(() =>
+      model.replaceTimeEntries(task, [
+        {
+          startTime: "2026-07-22T10:00:00Z",
+          endTime: "2026-07-22T09:00:00Z",
+        },
+      ]),
+    ).toThrow(/cannot end before/);
+    expect(() =>
+      model.replaceTimeEntries(task, [{ startTime: "2026-07-22T10:00:00" }]),
+    ).toThrow(/explicit timezone/);
+  });
+
+  it("auto-stops only on completion transitions when configured", () => {
+    const autoStop = new TaskNotesTaskModel({
+      ...model.configuration(),
+      timeTracking: {
+        ...model.configuration().timeTracking,
+        autoStopOnComplete: true,
+      },
+    });
+    const task = autoStop.startTimeTracking(
+      autoStop.create(
+        { title: "Finish me" },
+        { id: "finish-me", now: "2026-07-22T08:00:00Z" },
+      ),
+      { now: "2026-07-22T09:00:00Z" },
+    );
+    const completed = autoStop.update(
+      task,
+      { status: "done" },
+      { now: "2026-07-22T10:00:00Z" },
+    );
+    expect(completed.timeEntries[0].endTime).toBe("2026-07-22T10:00:00Z");
+
+    const alreadyComplete = autoStop.startTimeTracking(completed, {
+      now: "2026-07-22T11:00:00Z",
+    });
+    const edited = autoStop.update(
+      alreadyComplete,
+      { title: "Still complete" },
+      { now: "2026-07-22T12:00:00Z" },
+    );
+    expect(edited.timeEntries[1].endTime).toBeUndefined();
+  });
 });
 
 function status(

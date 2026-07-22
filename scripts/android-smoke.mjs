@@ -154,6 +154,14 @@ views:
       data: ${JSON.stringify(viewSource)},
       recursive: true
     })`);
+    await waitFor(
+      () =>
+        devtools.evaluate(`Capacitor.Plugins.Filesystem.readdir({
+          path: "TaskNotes/views",
+          directory: "DOCUMENTS"
+        }).then(({ files }) => files.some(({ name }) => name === "android-smoke.base"))`),
+      "the native saved-view file to become visible",
+    );
     await devtools.clickButton("More", true);
     await waitFor(() => devtools.hasText("Saved views"), "the More screen");
     await devtools.clickButton("Saved views");

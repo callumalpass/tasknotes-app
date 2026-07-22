@@ -12,7 +12,12 @@ import {
   upgradeManagedTaskType,
 } from "./collection-migration";
 
-import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
+import type {
+  CreateTaskInput,
+  Task,
+  TaskTimeEntry,
+  UpdateTaskInput,
+} from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Vault, VaultEntry } from "./vault";
 
@@ -85,6 +90,22 @@ export class MarkdownCollection {
 
   skipTask(task: Task, now: string, currentDate: string): Task {
     return this.taskModel.skip(task, { now, currentDate });
+  }
+
+  startTimeTracking(task: Task, now: string, description?: string): Task {
+    return this.taskModel.startTimeTracking(task, { now, description });
+  }
+
+  stopTimeTracking(task: Task, now: string): Task {
+    return this.taskModel.stopTimeTracking(task, { now });
+  }
+
+  replaceTimeEntries(task: Task, entries: TaskTimeEntry[], now: string): Task {
+    return this.taskModel.replaceTimeEntries(task, entries, { now });
+  }
+
+  removeTimeEntry(task: Task, index: number, now: string): Task {
+    return this.taskModel.removeTimeEntry(task, index, { now });
   }
 
   taskConfiguration(): TaskCollectionConfiguration {

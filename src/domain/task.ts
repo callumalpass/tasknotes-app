@@ -10,6 +10,12 @@ export interface TaskReminder {
   description?: string;
 }
 
+export interface TaskTimeEntry {
+  startTime: string;
+  endTime?: string;
+  description?: string;
+}
+
 export interface Task {
   id: string;
   path: string;
@@ -32,6 +38,7 @@ export interface Task {
   skippedInstances: string[];
   reminders: TaskReminder[];
   timeEstimate?: number;
+  timeEntries: TaskTimeEntry[];
   customProperties: Record<string, unknown>;
   revision: number;
   frontmatter: Record<string, unknown>;
@@ -69,7 +76,40 @@ export interface UpdateTaskInput {
   recurrenceAnchor?: "scheduled" | "completion";
   reminders?: TaskReminder[];
   timeEstimate?: number | null;
+  timeEntries?: TaskTimeEntry[];
   customProperties?: Record<string, unknown>;
+}
+
+export interface TaskTimeTotals {
+  closedMinutes: number;
+  liveMinutes: number;
+}
+
+/** Task detail surfaces report live minutes; historical rows report closed minutes. */
+export function taskTimeTotals(
+  entries: readonly TaskTimeEntry[],
+  now = new Date(),
+): TaskTimeTotals {
+  let closedMinutes = 0;
+  let liveMinutes = 0;
+  for (const entry of entries) {
+    const start = new Date(entry.startTime).getTime();
+    const end = entry.endTime
+      ? new Date(entry.endTime).getTime()
+      : now.getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
+      continue;
+    const minutes = Math.round((end - start) / 60_000);
+    liveMinutes += minutes;
+    if (entry.endTime) closedMinutes += minutes;
+  }
+  return { closedMinutes, liveMinutes };
+}
+
+export function activeTimeEntry(
+  entries: readonly TaskTimeEntry[],
+): TaskTimeEntry | undefined {
+  return entries.find((entry) => !entry.endTime);
 }
 
 export interface TaskListQuery {

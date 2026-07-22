@@ -28,6 +28,7 @@ const task: Task = {
   completeInstances: ["2026-08-05"],
   skippedInstances: ["2026-08-10"],
   reminders: [],
+  timeEntries: [],
   customProperties: {},
   revision: 1,
   frontmatter: {},
