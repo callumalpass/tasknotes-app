@@ -79,8 +79,12 @@ export class MarkdownCollection {
     return this.taskModel.update(task, input, { now });
   }
 
-  toggleTask(task: Task, now: string): Task {
-    return this.taskModel.toggle(task, { now });
+  toggleTask(task: Task, now: string, currentDate?: string): Task {
+    return this.taskModel.toggle(task, { now, currentDate });
+  }
+
+  skipTask(task: Task, now: string, currentDate: string): Task {
+    return this.taskModel.skip(task, { now, currentDate });
   }
 
   taskConfiguration(): TaskCollectionConfiguration {

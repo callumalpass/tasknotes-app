@@ -11,7 +11,7 @@ suites passed:
 - `../mdbase-connect/packages/protocol`
 - `../mdbase-connect/packages/client`
 - `../mdbase-connect/packages/sync`
-- `../tasknotes-model`
+- `../tasknotes-model` (`8b72f61`, with timezone-safe timed recurrence progression)
 - `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
 - `../tasknotes-spec`
 - `../mdbase`

@@ -49,7 +49,8 @@ interface RepositoryContextValue {
   configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
-  toggleTask(id: string): Promise<Task>;
+  toggleTask(id: string, occurrenceDate?: string): Promise<Task>;
+  skipTask(id: string, occurrenceDate: string): Promise<Task>;
   deleteTask(id: string): Promise<void>;
   refresh(): Promise<RefreshResult>;
   resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
@@ -186,8 +187,17 @@ export function RepositoryProvider({
     [bump, repository],
   );
   const toggleTask = useCallback(
-    async (id: string) => {
-      const task = await repository.toggle(id);
+    async (id: string, occurrenceDate?: string) => {
+      const task = await repository.toggle(id, occurrenceDate);
+      bump();
+      void syncTaskNotifications(task).catch(() => undefined);
+      return task;
+    },
+    [bump, repository],
+  );
+  const skipTask = useCallback(
+    async (id: string, occurrenceDate: string) => {
+      const task = await repository.skip(id, occurrenceDate);
       bump();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
@@ -225,6 +235,7 @@ export function RepositoryProvider({
       createTask,
       updateTask,
       toggleTask,
+      skipTask,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -242,6 +253,7 @@ export function RepositoryProvider({
       createTask,
       updateTask,
       toggleTask,
+      skipTask,
       deleteTask,
       refresh,
       resolveSyncIssue,

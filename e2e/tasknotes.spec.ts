@@ -34,6 +34,11 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByLabel("Contexts").fill("computer");
   await page.getByLabel("Tags").fill("release, planning");
   await page.getByLabel("Repeat").selectOption("weekly");
+  await page.getByRole("button", { name: "Customize" }).click();
+  await page.getByLabel("Repeat interval").fill("2");
+  await page.getByRole("button", { name: "Monday" }).click();
+  await page.getByLabel("Ends").selectOption("count");
+  await page.getByRole("spinbutton", { name: "Occurrences" }).fill("6");
   await page
     .getByLabel("Reminder date and time")
     .fill(`${tomorrowValue}T09:00`);
@@ -42,7 +47,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
 
   await page.getByRole("button", { name: "Upcoming" }).click();
   await expect(
-    page.getByText("Prepare weekly review", { exact: true }),
+    page.getByText("Prepare weekly review", { exact: true }).first(),
   ).toBeVisible();
   await page.getByRole("button", { name: "Search" }).click();
   await page.getByLabel("Search tasks").fill("mdbase computer release");
@@ -117,7 +122,10 @@ test("interprets natural-language capture and preserves timed task fields", asyn
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
   await page.getByRole("button", { name: "Upcoming" }).click();
-  await page.getByText("Prepare launch", { exact: true }).click();
+  await page
+    .getByRole("button", { name: /^Prepare launch / })
+    .first()
+    .click();
   await expect(
     page.getByRole("button", { name: "In progress" }),
   ).toHaveAttribute("aria-pressed", "true");
@@ -130,6 +138,32 @@ test("interprets natural-language capture and preserves timed task fields", asyn
   await expect(page.getByLabel("Projects")).toHaveValue("mdbase");
   await expect(page.getByLabel("Contexts")).toHaveValue("computer");
   await expect(page.getByLabel("Tags")).toHaveValue("release");
+});
+
+test("projects, completes, and skips recurring occurrences by date", async ({
+  page,
+}) => {
+  await page
+    .getByLabel("New task title")
+    .fill("Daily standup today 9am every day");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: /^Daily standup Today,/ }).click();
+  await expect(page.getByText("Occurrence", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Complete", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Mark open" })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(
+    page.getByRole("button", { name: /^Daily standup Today,/ }),
+  ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Upcoming" }).click();
+  const firstUpcoming = page
+    .getByText("Daily standup", { exact: true })
+    .first();
+  await expect(firstUpcoming).toBeVisible();
+  await firstUpcoming.click();
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Unskip" })).toBeVisible();
 });
 
 test("renders configured saved-view properties without changing calendar rows", async ({

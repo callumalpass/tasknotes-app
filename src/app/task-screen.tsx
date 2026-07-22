@@ -1,7 +1,12 @@
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import {
+  buildRecurrenceRule,
+  parseRecurrenceRule,
+  type RecurrenceRuleDraft,
+} from "../domain/recurrence-rule";
 import {
   combineTaskDateTime,
   recurrencePreset,
@@ -32,7 +37,15 @@ type Draft = Pick<
   | "customProperties"
 >;
 
-export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
+export function TaskScreen({
+  id,
+  occurrenceDate,
+  onBack,
+}: {
+  id: string;
+  occurrenceDate?: string;
+  onBack(): void;
+}) {
   const { task, loading, error } = useTask(id);
   if (loading)
     return (
@@ -51,16 +64,33 @@ export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
         </p>
       </section>
     );
-  return <TaskEditor key={task.id} task={task} onBack={onBack} />;
+  return (
+    <TaskEditor
+      key={`${task.id}:${occurrenceDate ?? "record"}`}
+      task={task}
+      occurrenceDate={occurrenceDate}
+      onBack={onBack}
+    />
+  );
 }
 
-function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
-  const { updateTask, deleteTask, configuration } = useRepository();
+function TaskEditor({
+  task,
+  occurrenceDate,
+  onBack,
+}: {
+  task: Task;
+  occurrenceDate?: string;
+  onBack(): void;
+}) {
+  const { updateTask, deleteTask, toggleTask, skipTask, configuration } =
+    useRepository();
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [occurrenceAction, setOccurrenceAction] = useState(false);
   const mounted = useRef(true);
   const editVersion = useRef(0);
 
@@ -147,6 +177,26 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
     onBack();
   }
 
+  async function toggleOccurrence() {
+    if (!occurrenceDate || occurrenceAction) return;
+    setOccurrenceAction(true);
+    try {
+      await toggleTask(task.id, occurrenceDate);
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function toggleSkippedOccurrence() {
+    if (!occurrenceDate || occurrenceAction) return;
+    setOccurrenceAction(true);
+    try {
+      await skipTask(task.id, occurrenceDate);
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
   return (
     <section className="screen task-screen" aria-label="Task details">
       <header className="task-toolbar">
@@ -204,6 +254,37 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
               onClick={() => setConfirmDelete(false)}
             >
               Keep task
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {occurrenceDate && task.recurrence ? (
+        <div className="occurrence-banner">
+          <div>
+            <span>Occurrence</span>
+            <strong>{formatOccurrenceDate(occurrenceDate)}</strong>
+          </div>
+          <div>
+            <button
+              className="text-action"
+              disabled={occurrenceAction}
+              type="button"
+              onClick={() => void toggleOccurrence()}
+            >
+              {task.completeInstances.includes(occurrenceDate)
+                ? "Mark open"
+                : "Complete"}
+            </button>
+            <button
+              className="text-action"
+              disabled={occurrenceAction}
+              type="button"
+              onClick={() => void toggleSkippedOccurrence()}
+            >
+              {task.skippedInstances.includes(occurrenceDate)
+                ? "Unskip"
+                : "Skip"}
             </button>
           </div>
         </div>
@@ -321,60 +402,12 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           </section>
         ) : null}
 
-        <div className="repeat-fields">
-          <label className="form-field">
-            <span>Repeat</span>
-            <select
-              value={recurrencePreset(draft.recurrence)}
-              onChange={(event) => {
-                const preset = event.target.value;
-                change({
-                  recurrence:
-                    preset === "never"
-                      ? undefined
-                      : (recurrenceRule(preset) ?? draft.recurrence ?? ""),
-                });
-              }}
-            >
-              <option value="never">Never</option>
-              <option value="daily">Daily</option>
-              <option value="weekdays">Weekdays</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-              {recurrencePreset(draft.recurrence) === "custom" ? (
-                <option value="custom">Custom rule</option>
-              ) : null}
-            </select>
-          </label>
-          {recurrencePreset(draft.recurrence) === "custom" ? (
-            <label className="form-field custom-rule-field">
-              <span>Recurrence rule</span>
-              <input
-                value={draft.recurrence ?? ""}
-                onChange={(event) => change({ recurrence: event.target.value })}
-              />
-            </label>
-          ) : null}
-          {draft.recurrence ? (
-            <Fieldset legend="Repeat from">
-              <Choice
-                selected={
-                  (draft.recurrenceAnchor ?? "scheduled") === "scheduled"
-                }
-                onClick={() => change({ recurrenceAnchor: "scheduled" })}
-              >
-                Schedule
-              </Choice>
-              <Choice
-                selected={draft.recurrenceAnchor === "completion"}
-                onClick={() => change({ recurrenceAnchor: "completion" })}
-              >
-                Completion
-              </Choice>
-            </Fieldset>
-          ) : null}
-        </div>
+        <RecurrenceField
+          anchor={draft.recurrenceAnchor}
+          value={draft.recurrence}
+          onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
+          onChange={(recurrence) => change({ recurrence })}
+        />
 
         <ReminderField
           reminders={draft.reminders}
@@ -458,6 +491,230 @@ function ListField({
       />
     </label>
   );
+}
+
+function RecurrenceField({
+  value,
+  anchor,
+  onChange,
+  onAnchorChange,
+}: {
+  value?: string;
+  anchor?: "scheduled" | "completion";
+  onChange(value?: string): void;
+  onAnchorChange(value: "scheduled" | "completion"): void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const rule = useMemo(() => parseRecurrenceRule(value), [value]);
+  const update = (patch: Partial<RecurrenceRuleDraft>) =>
+    onChange(buildRecurrenceRule({ ...rule, ...patch }));
+  const preset = recurrencePreset(value);
+  return (
+    <div className="repeat-fields">
+      <div className="repeat-heading">
+        <label className="form-field">
+          <span>Repeat</span>
+          <select
+            value={preset}
+            onChange={(event) => {
+              const next = event.target.value;
+              onChange(
+                next === "never" ? undefined : (recurrenceRule(next) ?? value),
+              );
+            }}
+          >
+            <option value="never">Never</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            {preset === "custom" ? (
+              <option value="custom">Custom</option>
+            ) : null}
+          </select>
+        </label>
+        {value ? (
+          <button
+            className="text-action"
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? "Done" : "Customize"}
+          </button>
+        ) : null}
+      </div>
+
+      {expanded && value ? (
+        rule.unsupported.length ? (
+          <div className="custom-rule-warning">
+            <p>
+              This rule uses {rule.unsupported.join(", ")}. Edit the RRULE
+              directly to preserve it.
+            </p>
+            <label className="form-field custom-rule-field">
+              <span>Recurrence rule</span>
+              <input
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="recurrence-builder">
+            <div className="recurrence-interval">
+              <span>Every</span>
+              <input
+                aria-label="Repeat interval"
+                inputMode="numeric"
+                min="1"
+                type="number"
+                value={rule.interval}
+                onChange={(event) =>
+                  update({ interval: Number(event.target.value) || 1 })
+                }
+              />
+              <select
+                aria-label="Repeat frequency"
+                value={rule.frequency}
+                onChange={(event) =>
+                  update({
+                    frequency: event.target
+                      .value as RecurrenceRuleDraft["frequency"],
+                  })
+                }
+              >
+                <option value="DAILY">days</option>
+                <option value="WEEKLY">weeks</option>
+                <option value="MONTHLY">months</option>
+                <option value="YEARLY">years</option>
+              </select>
+            </div>
+
+            {rule.frequency === "WEEKLY" ? (
+              <fieldset className="recurrence-weekdays">
+                <legend>On</legend>
+                {[
+                  ["MO", "M"],
+                  ["TU", "T"],
+                  ["WE", "W"],
+                  ["TH", "T"],
+                  ["FR", "F"],
+                  ["SA", "S"],
+                  ["SU", "S"],
+                ].map(([day, label]) => (
+                  <button
+                    aria-label={weekdayName(day)}
+                    aria-pressed={rule.weekdays.includes(day)}
+                    className={
+                      rule.weekdays.includes(day) ? "is-selected" : undefined
+                    }
+                    key={day}
+                    type="button"
+                    onClick={() =>
+                      update({
+                        weekdays: rule.weekdays.includes(day)
+                          ? rule.weekdays.filter((entry) => entry !== day)
+                          : [...rule.weekdays, day],
+                      })
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
+            ) : null}
+
+            <div className="recurrence-end">
+              <label className="form-field">
+                <span>Ends</span>
+                <select
+                  value={rule.end}
+                  onChange={(event) =>
+                    update({
+                      end: event.target.value as RecurrenceRuleDraft["end"],
+                      until:
+                        rule.until ?? new Date().toISOString().slice(0, 10),
+                      count: rule.count ?? 10,
+                    })
+                  }
+                >
+                  <option value="never">Never</option>
+                  <option value="until">On date</option>
+                  <option value="count">After occurrences</option>
+                </select>
+              </label>
+              {rule.end === "until" ? (
+                <label className="form-field">
+                  <span>Last date</span>
+                  <input
+                    type="date"
+                    value={rule.until ?? ""}
+                    onChange={(event) => update({ until: event.target.value })}
+                  />
+                </label>
+              ) : rule.end === "count" ? (
+                <label className="form-field">
+                  <span>Occurrences</span>
+                  <input
+                    inputMode="numeric"
+                    min="1"
+                    type="number"
+                    value={rule.count ?? 10}
+                    onChange={(event) =>
+                      update({ count: Number(event.target.value) || 1 })
+                    }
+                  />
+                </label>
+              ) : null}
+            </div>
+          </div>
+        )
+      ) : null}
+
+      {value ? (
+        <Fieldset legend="Repeat from">
+          <Choice
+            selected={(anchor ?? "scheduled") === "scheduled"}
+            onClick={() => onAnchorChange("scheduled")}
+          >
+            Schedule
+          </Choice>
+          <Choice
+            selected={anchor === "completion"}
+            onClick={() => onAnchorChange("completion")}
+          >
+            Completion
+          </Choice>
+        </Fieldset>
+      ) : null}
+    </div>
+  );
+}
+
+function weekdayName(value: string): string {
+  return (
+    {
+      MO: "Monday",
+      TU: "Tuesday",
+      WE: "Wednesday",
+      TH: "Thursday",
+      FR: "Friday",
+      SA: "Saturday",
+      SU: "Sunday",
+    }[value] ?? value
+  );
+}
+
+function formatOccurrenceDate(value: string): string {
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.valueOf())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
 }
 
 function ReminderField({

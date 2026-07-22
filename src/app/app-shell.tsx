@@ -19,7 +19,7 @@ import { ViewsScreen } from "./views-screen";
 type Route =
   | { page: "today" | "upcoming" | "search" | "more" }
   | { page: "views"; key?: string }
-  | { page: "task"; id: string };
+  | { page: "task"; id: string; occurrence?: string };
 
 export function AppShell() {
   const { status, error } = useRepository();
@@ -85,11 +85,15 @@ export function AppShell() {
       <main id="main-content" className="page-surface">
         {route.page === "today" ? (
           <TodayScreen
-            onOpen={(task) => navigate({ page: "task", id: task.id })}
+            onOpen={(task, occurrence) =>
+              navigate({ page: "task", id: task.id, occurrence })
+            }
           />
         ) : route.page === "upcoming" ? (
           <UpcomingScreen
-            onOpen={(task) => navigate({ page: "task", id: task.id })}
+            onOpen={(task, occurrence) =>
+              navigate({ page: "task", id: task.id, occurrence })
+            }
           />
         ) : route.page === "search" ? (
           <SearchScreen
@@ -103,11 +107,17 @@ export function AppShell() {
             onBack={() =>
               navigate(route.key ? { page: "views" } : { page: "more" }, true)
             }
-            onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+            onOpenTask={(task, occurrence) =>
+              navigate({ page: "task", id: task.id, occurrence })
+            }
             onOpenView={(view) => navigate({ page: "views", key: view.key })}
           />
         ) : "id" in route ? (
-          <TaskScreen id={route.id} onBack={() => window.history.back()} />
+          <TaskScreen
+            id={route.id}
+            occurrenceDate={route.occurrence}
+            onBack={() => window.history.back()}
+          />
         ) : null}
       </main>
       {route.page !== "task" && route.page !== "views" ? (
@@ -152,7 +162,14 @@ function Navigation({
 function parseRoute(): Route {
   const path = appPathname();
   const task = /^\/task\/([^/]+)$/.exec(path);
-  if (task) return { page: "task", id: decodeURIComponent(task[1]) };
+  if (task)
+    return {
+      page: "task",
+      id: decodeURIComponent(task[1]),
+      occurrence:
+        new URLSearchParams(window.location.search).get("occurrence") ??
+        undefined,
+    };
   const view = /^\/views\/([^/]+)$/.exec(path);
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
@@ -165,7 +182,7 @@ function parseRoute(): Route {
 function routeUrl(route: Route): string {
   const path =
     route.page === "task"
-      ? `/task/${encodeURIComponent(route.id)}`
+      ? `/task/${encodeURIComponent(route.id)}${route.occurrence ? `?occurrence=${encodeURIComponent(route.occurrence)}` : ""}`
       : route.page === "views" && route.key
         ? `/views/${encodeURIComponent(route.key)}`
         : route.page === "today"

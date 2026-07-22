@@ -82,14 +82,39 @@ describe("TaskNotes task model app boundary", () => {
     expect(created).toMatchObject({
       status: "doing",
       completed: false,
-      scheduled: "2026-08-05T09:00",
+      scheduled: canonicalLocal("2026-08-05T09:00"),
       timeEstimate: 45,
     });
     expect(created.frontmatter).toMatchObject({
       status: "doing",
-      scheduled: "2026-08-05T09:00",
+      scheduled: canonicalLocal("2026-08-05T09:00"),
       timeEstimate: 45,
     });
+  });
+
+  it("completes and skips individual recurring occurrences", () => {
+    const created = model.create(
+      {
+        title: "Standup",
+        scheduled: "2026-08-05T09:00",
+        recurrence: "FREQ=DAILY;INTERVAL=1",
+      },
+      { id: "standup", now: "2026-08-01T00:00:00.000Z" },
+    );
+    const completed = model.toggle(created, {
+      now: "2026-08-05T10:00:00.000Z",
+      currentDate: "2026-08-05",
+    });
+    expect(completed.completeInstances).toEqual(["2026-08-05"]);
+    expect(completed.scheduled).toBe(canonicalLocal("2026-08-06T09:00"));
+
+    const skipped = model.skip(completed, {
+      now: "2026-08-06T10:00:00.000Z",
+      currentDate: "2026-08-06",
+    });
+    expect(skipped.completeInstances).toEqual(["2026-08-05"]);
+    expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
+    expect(skipped.scheduled).toBe(canonicalLocal("2026-08-07T09:00"));
   });
 });
 
@@ -113,4 +138,8 @@ function status(
 
 function priority(value: string, label: string, weight: number) {
   return { id: value, value, label, color: "#808080", weight };
+}
+
+function canonicalLocal(value: string): string {
+  return new Date(value).toISOString().replace(".000Z", "Z");
 }

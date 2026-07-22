@@ -32,7 +32,8 @@ export interface TaskRepository {
   get(id: string): Promise<Task | null>;
   create(input: CreateTaskInput): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
-  toggle(id: string): Promise<Task>;
+  toggle(id: string, occurrenceDate?: string): Promise<Task>;
+  skip(id: string, occurrenceDate: string): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
   listViews(): Promise<TaskView[]>;
@@ -158,13 +159,28 @@ export class IndexedMarkdownRepository implements TaskRepository {
     });
   }
 
-  toggle(id: string): Promise<Task> {
+  toggle(id: string, occurrenceDate?: string): Promise<Task> {
     return this.exclusive(async () => {
       const current = await this.get(id);
       if (!current) throw new Error("Task not found.");
       const next = this.collection.toggleTask(
         current,
         new Date().toISOString(),
+        occurrenceDate,
+      );
+      await this.write(next);
+      return next;
+    });
+  }
+
+  skip(id: string, occurrenceDate: string): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.skipTask(
+        current,
+        new Date().toISOString(),
+        occurrenceDate,
       );
       await this.write(next);
       return next;

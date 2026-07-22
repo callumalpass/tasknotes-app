@@ -978,7 +978,7 @@ packages:
   "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.1.tgz":
     resolution:
       {
-        integrity: sha512-L/Gh+oviEybxYecUpPz2BjKXWo48iuRem5L6vJVO3EJFO1AJxcTrP41N/gnorMQiVxETkrq9mlhWSRUQoDoq7Q==,
+        integrity: sha512-z691423cEI1LxKxeyAk8ZTscchmHZPfoY+VLmEsLwpJtCEdVRCJc93Qb0QRTDfqSkitHvxktWrBYpDN2w/FyWA==,
         tarball: file:vendor/tasknotes-model-0.3.0-rc.1.tgz,
       }
     version: 0.3.0-rc.1

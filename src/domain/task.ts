@@ -111,6 +111,10 @@ export function formatTaskDate(value: string, today = todayString()): string {
 }
 
 export function dateFromStorage(value: string): Date | null {
+  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    const instant = new Date(value);
+    return Number.isNaN(instant.valueOf()) ? null : instant;
+  }
   const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(value);
   if (!match) return null;
   const date = new Date(
@@ -131,11 +135,23 @@ export function dateFromStorage(value: string): Date | null {
 }
 
 export function taskDatePart(value?: string): string {
-  return value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
+  if (!value) return "";
+  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    const instant = dateFromStorage(value);
+    return instant ? todayString(instant) : "";
+  }
+  return value.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
 }
 
 export function taskTimePart(value?: string): string {
-  return value?.match(/(?:T| )(\d{2}:\d{2})/)?.[1] ?? "";
+  if (!value) return "";
+  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    const instant = dateFromStorage(value);
+    return instant
+      ? `${String(instant.getHours()).padStart(2, "0")}:${String(instant.getMinutes()).padStart(2, "0")}`
+      : "";
+  }
+  return value.match(/(?:T| )(\d{2}:\d{2})/)?.[1] ?? "";
 }
 
 export function combineTaskDateTime(
@@ -153,6 +169,15 @@ export function isTaskDateOverdue(value: string, now = new Date()): boolean {
   if (!date) return false;
   if (taskTimePart(value)) return date.getTime() < now.getTime();
   return taskDatePart(value) < todayString(now);
+}
+
+export function normalizeTaskDateTime(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const instant = new Date(trimmed);
+  if (Number.isNaN(instant.valueOf())) return trimmed;
+  return instant.toISOString().replace(".000Z", "Z");
 }
 
 function formatTaskTime(value: string): string {

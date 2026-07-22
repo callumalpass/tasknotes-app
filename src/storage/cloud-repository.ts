@@ -247,10 +247,27 @@ export class CloudTaskRepository implements TaskRepository {
     return next;
   }
 
-  async toggle(id: string): Promise<Task> {
+  async toggle(id: string, occurrenceDate?: string): Promise<Task> {
     const current = this.requireTask(id);
     const next = this.model.toggle(current.task, {
       now: new Date().toISOString(),
+      currentDate: occurrenceDate,
+    });
+    await this.requireReplica().queueUpdate({
+      recordId: current.recordId,
+      patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+      body: next.body,
+    });
+    this.cache.set(id, { ...current, task: next });
+    await this.afterLocalMutation();
+    return next;
+  }
+
+  async skip(id: string, occurrenceDate: string): Promise<Task> {
+    const current = this.requireTask(id);
+    const next = this.model.skip(current.task, {
+      now: new Date().toISOString(),
+      currentDate: occurrenceDate,
     });
     await this.requireReplica().queueUpdate({
       recordId: current.recordId,

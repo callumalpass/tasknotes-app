@@ -142,4 +142,25 @@ describe("IndexedMarkdownRepository", () => {
     expect(cleared.recurrence).toBeUndefined();
     expect(cleared.reminders).toEqual([]);
   });
+
+  it("persists date-specific recurrence completion and skipping", async () => {
+    const created = await repository.create({
+      title: "Daily check-in",
+      scheduled: "2026-08-05T09:00",
+      recurrence: "FREQ=DAILY;INTERVAL=1",
+    });
+    const completed = await repository.toggle(created.id, "2026-08-05");
+    expect(completed.completeInstances).toEqual(["2026-08-05"]);
+    const skipped = await repository.skip(created.id, "2026-08-06");
+    expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
+
+    const source = parseFrontmatter(await vault.readText(created.path));
+    expect(source.frontmatter).toMatchObject({
+      complete_instances: ["2026-08-05"],
+      skipped_instances: ["2026-08-06"],
+      scheduled: new Date("2026-08-07T09:00")
+        .toISOString()
+        .replace(".000Z", "Z"),
+    });
+  });
 });

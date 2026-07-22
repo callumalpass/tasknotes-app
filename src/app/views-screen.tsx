@@ -10,6 +10,11 @@ import { useEffect, useMemo, useState } from "react";
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
+import {
+  occurrenceTask,
+  taskOccurrencesBetween,
+  type TaskOccurrence,
+} from "../domain/task-occurrence";
 import { useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
@@ -28,7 +33,7 @@ export function ViewsScreen({
 }: {
   viewKey?: string;
   onBack(): void;
-  onOpenTask(task: Task): void;
+  onOpenTask(task: Task, occurrenceDate?: string): void;
   onOpenView(view: TaskView): void;
 }) {
   const { repository, toggleTask, version } = useRepository();
@@ -146,19 +151,25 @@ export function ViewsScreen({
         <KanbanView
           execution={visibleExecution}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       ) : visibleExecution.view.presentation?.type === "tasknotes.calendar" ? (
         <CalendarView
           execution={visibleExecution}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       ) : (
         <TaskListView
           execution={visibleExecution}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       )}
     </section>
@@ -215,8 +226,11 @@ function CalendarView({ execution, onOpen, onToggle }: ViewProps) {
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
   );
   const [selected, setSelected] = useState(todayString());
-  const events = useMemo(() => calendarEvents(execution), [execution]);
-  const days = calendarGrid(month);
+  const days = useMemo(() => calendarGrid(month), [month]);
+  const events = useMemo(
+    () => calendarEvents(execution, days[0], days.at(-1) ?? days[0]),
+    [days, execution],
+  );
   const selectedTasks = events.get(selected) ?? [];
   const monthLabel = new Intl.DateTimeFormat(undefined, {
     month: "long",
@@ -273,10 +287,11 @@ function CalendarView({ execution, onOpen, onToggle }: ViewProps) {
       <section className="calendar-agenda">
         <h2>{agendaLabel(selected)}</h2>
         {selectedTasks.length ? (
-          selectedTasks.map((task) => (
+          selectedTasks.map((entry) => (
             <TaskRow
-              key={task.id}
-              task={task}
+              key={entry.occurrence?.key ?? entry.task.id}
+              task={entry.task}
+              occurrence={entry.occurrence}
               onOpen={onOpen}
               onToggle={onToggle}
             />
@@ -432,16 +447,48 @@ function ViewIcon({ view }: { view: TaskView }) {
 
 interface ViewProps {
   execution: TaskViewExecution;
-  onOpen(task: Task): void;
-  onToggle(task: Task): void;
+  onOpen(task: Task, occurrenceDate?: string): void;
+  onToggle(task: Task, occurrenceDate?: string): void;
 }
 
-function calendarEvents(execution: TaskViewExecution): Map<string, Task[]> {
-  const events = new Map<string, Task[]>();
+interface CalendarEntry {
+  task: Task;
+  occurrence?: TaskOccurrence;
+}
+
+function calendarEvents(
+  execution: TaskViewExecution,
+  rangeStart: Date,
+  rangeEnd: Date,
+): Map<string, CalendarEntry[]> {
+  const events = new Map<string, CalendarEntry[]>();
   const options = execution.view.presentation?.options ?? {};
   const showScheduled = options.showScheduled !== false;
   const showDue = options.showDue !== false;
   for (const { task } of execution.rows) {
+    if (task.recurrence) {
+      for (const occurrence of taskOccurrencesBetween(
+        task,
+        storageDate(rangeStart),
+        storageDate(rangeEnd),
+      )) {
+        if (occurrence.skipped) continue;
+        const projected = occurrenceTask(occurrence);
+        const dates = new Set([
+          ...(showScheduled && projected.scheduled
+            ? [taskDatePart(projected.scheduled)]
+            : []),
+          ...(showDue && projected.due ? [taskDatePart(projected.due)] : []),
+        ]);
+        for (const date of dates) {
+          if (!date) continue;
+          const tasks = events.get(date) ?? [];
+          tasks.push({ task, occurrence });
+          events.set(date, tasks);
+        }
+      }
+      continue;
+    }
     for (const value of new Set([
       ...(showScheduled && task.scheduled ? [task.scheduled] : []),
       ...(showDue && task.due ? [task.due] : []),
@@ -449,7 +496,7 @@ function calendarEvents(execution: TaskViewExecution): Map<string, Task[]> {
       const date = taskDatePart(value);
       if (!date) continue;
       const tasks = events.get(date) ?? [];
-      tasks.push(task);
+      tasks.push({ task });
       events.set(date, tasks);
     }
   }

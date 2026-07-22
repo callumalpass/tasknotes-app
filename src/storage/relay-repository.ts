@@ -188,11 +188,23 @@ export class RelayTaskRepository implements TaskRepository {
     });
   }
 
-  toggle(id: string): Promise<Task> {
+  toggle(id: string, occurrenceDate?: string): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
       const next = this.model.toggle(current.task, {
         now: new Date().toISOString(),
+        currentDate: occurrenceDate,
+      });
+      return this.persistUpdate(current, next);
+    });
+  }
+
+  skip(id: string, occurrenceDate: string): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = await this.requireCurrent(id);
+      const next = this.model.skip(current.task, {
+        now: new Date().toISOString(),
+        currentDate: occurrenceDate,
       });
       return this.persistUpdate(current, next);
     });

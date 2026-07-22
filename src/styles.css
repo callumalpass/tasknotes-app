@@ -692,7 +692,7 @@ button:disabled {
   grid-template-columns: 52px 1fr 52px;
   align-items: center;
   min-height: 58px;
-  background: color-mix(in srgb, var(--paper), transparent 3%);
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
@@ -876,7 +876,18 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
-.repeat-fields > .form-field,
+.repeat-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 22px;
+}
+
+.repeat-heading > .text-action {
+  margin-bottom: 1px;
+}
+
 .custom-rule-field {
   display: block;
   padding-bottom: 22px;
@@ -885,6 +896,80 @@ button:disabled {
 .repeat-fields .choice-field {
   padding-top: 3px;
   border-bottom: 0;
+}
+
+.recurrence-builder,
+.custom-rule-warning {
+  padding: 2px 0 22px;
+}
+
+.custom-rule-warning > p {
+  max-width: 52ch;
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.recurrence-interval {
+  display: grid;
+  grid-template-columns: auto 4.5rem minmax(8rem, 1fr);
+  align-items: end;
+  gap: 13px;
+  max-width: 25rem;
+}
+
+.recurrence-interval > span,
+.recurrence-weekdays legend {
+  padding-bottom: 11px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.recurrence-interval input,
+.recurrence-interval select {
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  outline: 0;
+}
+
+.recurrence-weekdays {
+  display: flex;
+  gap: 7px;
+  padding: 22px 0 0;
+  margin: 0;
+  border: 0;
+}
+
+.recurrence-weekdays legend {
+  padding: 0 0 9px;
+}
+
+.recurrence-weekdays button {
+  width: 38px;
+  min-height: 38px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.recurrence-weekdays button.is-selected {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent), var(--paper) 58%);
+}
+
+.recurrence-end {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding-top: 22px;
 }
 
 .reminder-field {
@@ -952,6 +1037,39 @@ button:disabled {
 .delete-confirmation > div {
   display: flex;
   gap: 14px;
+}
+
+.occurrence-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 62px;
+  padding: 12px 3px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.occurrence-banner > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.occurrence-banner span {
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.occurrence-banner strong {
+  font-size: 0.95rem;
+}
+
+.occurrence-banner > div:last-child {
+  display: flex;
+  gap: 18px;
 }
 
 .text-action.danger {
@@ -1457,6 +1575,14 @@ button:disabled {
 
   .capture-details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .recurrence-end {
+    grid-template-columns: 1fr;
+  }
+
+  .occurrence-banner {
+    align-items: flex-start;
   }
 
   .delete-confirmation {

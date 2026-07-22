@@ -11,12 +11,14 @@ import {
 import {
   applyFrontmatterPatch,
   buildRecurringTaskCompletePlan,
+  buildRecurringTaskSkippedPlan,
   buildTaskUpdatePlan,
   recurringCompletePlanToFrontmatterPatch,
+  recurringSkippedPlanToFrontmatterPatch,
 } from "@tasknotes/model/operations";
 import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
-import { makeTaskPath } from "./task";
+import { makeTaskPath, normalizeTaskDateTime } from "./task";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "./task";
 import type {
@@ -117,8 +119,8 @@ export class TaskNotesTaskModel {
       title,
       status: input.status ?? this.config.defaults.status,
       priority: input.priority ?? this.config.defaults.priority,
-      due: input.due,
-      scheduled: input.scheduled,
+      due: normalizeTaskDateTime(input.due),
+      scheduled: normalizeTaskDateTime(input.scheduled),
       details: input.body ?? "",
       tags: input.tags,
       contexts: input.contexts,
@@ -168,9 +170,10 @@ export class TaskNotesTaskModel {
         : this.config.defaults.status;
     }
     if (input.priority !== undefined) updates.priority = input.priority;
-    if (input.due !== undefined) updates.due = input.due ?? undefined;
+    if (input.due !== undefined)
+      updates.due = normalizeTaskDateTime(input.due ?? undefined);
     if (input.scheduled !== undefined)
-      updates.scheduled = input.scheduled ?? undefined;
+      updates.scheduled = normalizeTaskDateTime(input.scheduled ?? undefined);
     if (input.body !== undefined) updates.details = input.body;
     if (input.tags !== undefined) updates.tags = input.tags;
     if (input.contexts !== undefined) updates.contexts = input.contexts;
@@ -239,7 +242,7 @@ export class TaskNotesTaskModel {
       const plan = buildRecurringTaskCompletePlan({
         freshTask: original,
         targetDate: context.currentDate
-          ? new Date(`${context.currentDate}T12:00:00`)
+          ? new Date(`${context.currentDate}T12:00:00Z`)
           : undefined,
         currentTimestamp: now,
         maintainDueDateOffsetInRecurring:
@@ -268,6 +271,49 @@ export class TaskNotesTaskModel {
       },
       context,
     );
+  }
+
+  skip(
+    current: Task,
+    context: { now?: string; currentDate?: string } = {},
+  ): Task {
+    if (!current.recurrence) throw new Error("Task is not recurring.");
+    const original = this.completeTaskInfo(
+      mapTaskFromFrontmatter(
+        this.config.fieldMapping,
+        this.canonicalizeAliases(current.frontmatter, false),
+        current.path,
+        this.config.storeTitleInFilename,
+        this.config.userFields,
+        this.config.statuses,
+        this.config.priorities,
+      ),
+      current.path,
+      current.body,
+    );
+    const now = context.now ?? new Date().toISOString();
+    const plan = buildRecurringTaskSkippedPlan({
+      freshTask: original,
+      targetDate: context.currentDate
+        ? new Date(`${context.currentDate}T12:00:00Z`)
+        : undefined,
+      currentTimestamp: now,
+      maintainDueDateOffsetInRecurring:
+        this.config.recurrence.maintainDueDateOffset,
+    });
+    const base = this.canonicalizeAliases(current.frontmatter, true);
+    const patched = applyFrontmatterPatch(
+      base,
+      recurringSkippedPlanToFrontmatterPatch(plan, this.config.fieldMapping),
+    );
+    const revision = current.revision + 1;
+    const frontmatter = this.writeFrontmatter(
+      patched,
+      plan.updatedTask,
+      current.id,
+      revision,
+    );
+    return this.toTask(plan.updatedTask, frontmatter, revision);
   }
 
   private completeTaskInfo(
