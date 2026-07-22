@@ -27,6 +27,11 @@ export default function CloudCollection({
       ? createConnectTaskRepository(cloudConnect)
       : null,
   );
+  const changeCollection = useCallback(() => {
+    cloudConnect.disconnect();
+    setCallbackError(null);
+    setRepository(null);
+  }, []);
 
   const complete = useCallback(async (url: string) => {
     if (!isCloudCallback(url)) return;
@@ -73,12 +78,9 @@ export default function CloudCollection({
 
   return (
     <OpenedCollection
+      changeConnectedCollection={changeCollection}
       choice="cloud"
       choose={choose}
-      disconnectCloud={() => {
-        cloudConnect.disconnect();
-        reset();
-      }}
       repository={repository}
     />
   );

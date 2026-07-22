@@ -5,7 +5,7 @@ export type CollectionChoice = "local" | "cloud";
 export interface CollectionGateContextValue {
   choice: CollectionChoice;
   choose(choice: CollectionChoice): void;
-  disconnectCloud(): void;
+  changeConnectedCollection(): void;
 }
 
 export const CollectionGateContext =

@@ -11,18 +11,18 @@ import type { TaskRepository } from "../storage/repository";
 
 export function OpenedCollection({
   choice,
+  changeConnectedCollection,
   choose,
-  disconnectCloud,
   repository,
 }: {
   choice: CollectionChoice;
+  changeConnectedCollection(): void;
   choose(choice: CollectionChoice): void;
-  disconnectCloud(): void;
   repository: TaskRepository;
 }) {
   const value = useMemo(
-    () => ({ choice, choose, disconnectCloud }),
-    [choice, choose, disconnectCloud],
+    () => ({ choice, choose, changeConnectedCollection }),
+    [choice, choose, changeConnectedCollection],
   );
   return (
     <CollectionGateContext.Provider value={value}>
