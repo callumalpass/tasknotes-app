@@ -1,7 +1,6 @@
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
-
 import { taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
+import { actionFeedback } from "../native/feedback";
 
 import type { Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -29,9 +28,7 @@ export function TaskRow({
         aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
         aria-pressed={displayedTask.completed}
         onClick={() => {
-          void Haptics.impact({ style: ImpactStyle.Light }).catch(
-            () => undefined,
-          );
+          actionFeedback();
           onToggle(task, occurrence?.date);
         }}
       >

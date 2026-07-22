@@ -1,3 +1,5 @@
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import {
   CalendarDays,
   CheckCircle2,
@@ -5,9 +7,11 @@ import {
   MoreHorizontal,
   Search,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { nativeBackAction } from "../native/navigation";
+import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
@@ -41,13 +45,38 @@ export function AppShell() {
     return () => window.removeEventListener("popstate", pop);
   }, []);
 
-  function navigate(next: Route, replace = false) {
+  const navigate = useCallback((next: Route, replace = false) => {
     const url = routeUrl(next);
     if (replace) window.history.replaceState(null, "", url);
     else window.history.pushState(null, "", url);
     setRoute(next);
     window.scrollTo({ top: 0, left: 0 });
-  }
+  }, []);
+
+  useEffect(
+    () =>
+      listenForTaskNotificationActions((id) => navigate({ page: "task", id })),
+    [navigate],
+  );
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let disposed = false;
+    let remove: (() => Promise<void>) | undefined;
+    void CapacitorApp.addListener("backButton", () => {
+      const action = nativeBackAction(route, primaryView?.key);
+      if (action === "back") window.history.back();
+      else if (action === "home") navigate({ page: "today" }, true);
+      else void CapacitorApp.exitApp();
+    }).then((handle) => {
+      if (disposed) void handle.remove();
+      else remove = () => handle.remove();
+    });
+    return () => {
+      disposed = true;
+      void remove?.();
+    };
+  }, [navigate, primaryView?.key, route]);
 
   if (status === "opening") {
     return (

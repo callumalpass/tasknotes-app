@@ -1141,6 +1141,21 @@ button:disabled {
   white-space: nowrap;
 }
 
+@media (max-width: 839px) {
+  body:has(input:focus, textarea:focus) .bottom-navigation {
+    display: none;
+  }
+
+  body:has(input:focus, textarea:focus) .page-surface {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  input,
+  textarea {
+    scroll-margin-bottom: 28vh;
+  }
+}
+
 .navigation-rail {
   display: none;
 }

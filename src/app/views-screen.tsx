@@ -16,6 +16,7 @@ import {
   taskOccurrencesBetween,
   type TaskOccurrence,
 } from "../domain/task-occurrence";
+import { selectionFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
@@ -121,11 +122,12 @@ export function ViewsScreen({
                   aria-pressed={primaryViewKey === view.key}
                   className="saved-view-pin"
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    selectionFeedback();
                     onSetPrimaryView(
                       primaryViewKey === view.key ? undefined : view.key,
-                    )
-                  }
+                    );
+                  }}
                 >
                   <Pin
                     aria-hidden="true"

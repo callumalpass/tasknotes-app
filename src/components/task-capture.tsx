@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   parseTaskCapture,
@@ -13,6 +13,7 @@ import {
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
+import { successFeedback } from "../native/feedback";
 
 import type { CreateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -31,6 +32,7 @@ export function TaskCapture({
   const [parsing, setParsing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Start after the first paint: collection opening stays lean, while the
@@ -104,10 +106,12 @@ export function TaskCapture({
       if (!next.input.title.trim())
         throw new Error("Add a title as well as task details.");
       await createTask(next.input);
+      successFeedback();
       setText("");
       setResult(null);
       setParsedText("");
       setExpanded(false);
+      inputRef.current?.blur();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -140,6 +144,7 @@ export function TaskCapture({
         </label>
         <input
           id="quick-task"
+          ref={inputRef}
           autoComplete="off"
           enterKeyHint="done"
           placeholder="Add a task — tomorrow 9am, #tag, +project"
@@ -148,7 +153,7 @@ export function TaskCapture({
           onFocus={preloadTaskCapture}
         />
         {text.trim() ? (
-          <button disabled={capturing || parsing} type="submit">
+          <button disabled={capturing} type="submit">
             {capturing ? "Adding" : "Add"}
           </button>
         ) : null}

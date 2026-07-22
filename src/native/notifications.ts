@@ -3,6 +3,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
+import type { ActionPerformed } from "@capacitor/local-notifications";
 
 const REGISTRY_KEY = "tasknotes:notification-registry:v1";
 const CHANNEL_ID = "task-reminders";
@@ -102,6 +103,44 @@ export async function notificationPermission(): Promise<
   if (!Capacitor.isNativePlatform()) return "unavailable";
   const result = await LocalNotifications.checkPermissions();
   return result.display === "prompt-with-rationale" ? "prompt" : result.display;
+}
+
+export function listenForTaskNotificationActions(
+  onOpenTask: (taskId: string) => void,
+): () => void {
+  if (!Capacitor.isNativePlatform()) return () => undefined;
+  let disposed = false;
+  let remove: (() => Promise<void>) | undefined;
+  void LocalNotifications.addListener(
+    "localNotificationActionPerformed",
+    (action) => {
+      const taskId = taskIdFromNotificationAction(action);
+      if (taskId) onOpenTask(taskId);
+    },
+  ).then((handle) => {
+    if (disposed) void handle.remove();
+    else remove = () => handle.remove();
+  });
+  return () => {
+    disposed = true;
+    void remove?.();
+  };
+}
+
+export function taskIdFromNotificationAction(value: unknown): string | null {
+  const extra = (value as Partial<ActionPerformed> | null)?.notification?.extra;
+  let record: unknown = extra;
+  if (typeof extra === "string") {
+    try {
+      record = JSON.parse(extra) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  if (!record || typeof record !== "object" || Array.isArray(record))
+    return null;
+  const taskId = (record as Record<string, unknown>).taskId;
+  return typeof taskId === "string" && taskId.trim() ? taskId : null;
 }
 
 function allocateId(key: string, used: Set<number>): number {

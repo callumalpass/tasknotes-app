@@ -115,7 +115,11 @@ async function main() {
         })()`),
       "the native scheduled reminder",
     );
-    await devtools.clickNamedButton("Back");
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "hardware Back to return to Today",
+    );
     // Kill and relaunch to prove that the public Markdown record survives
     // process death and remains the source of truth.
     devtools.close();
@@ -157,6 +161,7 @@ views:
       () => devtools.hasText("Android board"),
       "the native saved view",
     );
+    await devtools.clickNamedButton("Add Android board to navigation");
     await devtools.clickButton("Android board");
     await waitFor(
       () =>
@@ -174,6 +179,12 @@ views:
       throw new Error(
         "The native saved view did not render its configured formula property.",
       );
+
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "hardware Back from the operational view",
+    );
 
     // Prove that the private-use OAuth callback is routed back into the
     // packaged app and handled by the cloud onboarding screen.
@@ -205,7 +216,7 @@ views:
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, relaunch persistence, saved-view execution, Kanban rendering, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, scheduled reminder, hardware Back routing, relaunch persistence, saved-view execution, Kanban rendering, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
