@@ -3,6 +3,7 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
 import { MarkdownCollection } from "./collection";
 import { TaskIndex } from "./index";
@@ -199,5 +200,84 @@ describe("IndexedMarkdownRepository", () => {
     await expect(repository.stopTimeTracking(created.id)).rejects.toThrow(
       /no_active/,
     );
+  });
+
+  it("hides archived tasks and restores them without deleting Markdown", async () => {
+    const created = await repository.create({ title: "Keep for later" });
+    const archived = await repository.setArchived(created.id, true);
+    expect(archived.archived).toBe(true);
+    expect(archived.frontmatter.tags).toContain("archived");
+    expect(await repository.list({ status: "all" })).toEqual([]);
+    expect(
+      await repository.list({ status: "all", archived: "only" }),
+    ).toHaveLength(1);
+    expect(await repository.stats()).toMatchObject({
+      total: 0,
+      archived: 1,
+    });
+    expect(await vault.exists(created.path)).toBe(true);
+
+    const restored = await repository.setArchived(created.id, false);
+    expect(restored.archived).toBe(false);
+    expect(await repository.list({ status: "all" })).toHaveLength(1);
+    expect(await repository.stats()).toMatchObject({
+      total: 1,
+      archived: 0,
+    });
+  });
+
+  it("moves archived files when the collection contract requests it", async () => {
+    const movingVault = new MemoryVault();
+    const movingIndex = new TaskIndex(`tasknotes-test-${crypto.randomUUID()}`);
+    const resources = buildTaskNotesMdbaseResources();
+    const type = parseFrontmatter(resources.typeDocument);
+    const extension = type.frontmatter["x-tasknotes"] as Record<
+      string,
+      unknown
+    >;
+    extension.archive = { move_on_archive: true, folder: "archive" };
+    await movingVault.writeText(
+      resources.paths.type,
+      serializeMarkdownDocument(type.frontmatter, type.body),
+    );
+    const moving = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(movingVault),
+      index: movingIndex,
+    });
+    try {
+      await moving.initialize();
+      const created = await moving.create({ title: "Move me" });
+      const archived = await moving.setArchived(created.id, true);
+      expect(archived.path).toBe(`archive/${created.id}.md`);
+      expect(await movingVault.exists(created.path)).toBe(false);
+      expect(await movingVault.exists(archived.path)).toBe(true);
+      await moving.refresh();
+      expect(await moving.get(created.id)).toMatchObject({
+        path: archived.path,
+        archived: true,
+      });
+
+      const restored = await moving.setArchived(created.id, false);
+      expect(restored.path).toBe(created.path);
+      expect(await movingVault.exists(archived.path)).toBe(false);
+      expect(await movingVault.exists(created.path)).toBe(true);
+
+      const colliding = await moving.create({ title: "Do not overwrite" });
+      const collisionPath = `archive/${colliding.id}.md`;
+      await movingVault.writeText(collisionPath, "existing archive record");
+      const retained = await moving.setArchived(colliding.id, true);
+      expect(retained).toMatchObject({
+        path: colliding.path,
+        archived: true,
+        operationWarnings: [expect.stringMatching(/^archive_move_failed:/)],
+      });
+      expect(await movingVault.readText(collisionPath)).toBe(
+        "existing archive record",
+      );
+      expect(await movingVault.exists(colliding.path)).toBe(true);
+    } finally {
+      movingIndex.close();
+      await movingIndex.delete();
+    }
   });
 });

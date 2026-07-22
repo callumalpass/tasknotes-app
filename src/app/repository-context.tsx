@@ -56,6 +56,7 @@ interface RepositoryContextValue {
   stopTimeTracking(id: string): Promise<Task>;
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
+  setTaskArchived(id: string, archived: boolean): Promise<Task>;
   deleteTask(id: string): Promise<void>;
   refresh(): Promise<RefreshResult>;
   resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
@@ -241,6 +242,15 @@ export function RepositoryProvider({
     },
     [bump, repository],
   );
+  const setTaskArchived = useCallback(
+    async (id: string, archived: boolean) => {
+      const task = await repository.setArchived(id, archived);
+      bump();
+      void syncTaskNotifications(task).catch(() => undefined);
+      return task;
+    },
+    [bump, repository],
+  );
   const deleteTask = useCallback(
     async (id: string) => {
       await repository.delete(id);
@@ -277,6 +287,7 @@ export function RepositoryProvider({
       stopTimeTracking,
       replaceTimeEntries,
       removeTimeEntry,
+      setTaskArchived,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -299,6 +310,7 @@ export function RepositoryProvider({
       stopTimeTracking,
       replaceTimeEntries,
       removeTimeEntry,
+      setTaskArchived,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -330,13 +342,14 @@ export function useTasks(query: TaskListQuery): {
   const statusFilter = query.status;
   const search = query.search;
   const limit = query.limit;
-  const key = `${statusFilter ?? "open"}:${search ?? ""}:${limit ?? 500}`;
+  const archived = query.archived;
+  const key = `${statusFilter ?? "open"}:${archived ?? "exclude"}:${search ?? ""}:${limit ?? 500}`;
 
   useEffect(() => {
     if (status !== "ready") return;
     let active = true;
     repository
-      .list({ status: statusFilter, search, limit })
+      .list({ status: statusFilter, archived, search, limit })
       .then((result) => {
         if (!active) return;
         setTasks(result);
@@ -351,7 +364,7 @@ export function useTasks(query: TaskListQuery): {
     return () => {
       active = false;
     };
-  }, [key, limit, repository, search, status, statusFilter, version]);
+  }, [archived, key, limit, repository, search, status, statusFilter, version]);
 
   return { tasks, loading: status === "opening" || resolved !== key, error };
 }

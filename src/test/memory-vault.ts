@@ -63,6 +63,23 @@ export class MemoryVault implements Vault {
     this.files.delete(safePath(path));
   }
 
+  async rename(from: string, to: string): Promise<VaultEntry> {
+    const source = safePath(from);
+    const destination = safePath(to);
+    const file = this.files.get(source);
+    if (!file) throw new DOMException("File not found", "NotFoundError");
+    if (this.files.has(destination))
+      throw new Error(`A record already exists at ${destination}.`);
+    const moved = { ...file, lastModified: this.clock++ };
+    this.files.set(destination, moved);
+    this.files.delete(source);
+    return {
+      path: destination,
+      lastModified: moved.lastModified,
+      size: new TextEncoder().encode(moved.contents).byteLength,
+    };
+  }
+
   async exists(path: string): Promise<boolean> {
     return this.files.has(safePath(path));
   }

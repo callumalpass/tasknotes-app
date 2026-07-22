@@ -14,7 +14,8 @@ import {
   SyncError,
 } from "@mdbase/connect-sync";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { compareTasks } from "./repository";
+import { archiveMoveWarning } from "../domain/task-archive";
+import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
@@ -192,6 +193,7 @@ export class CloudTaskRepository implements TaskRepository {
     return [...this.cache.values()]
       .map(({ task }) => task)
       .filter((task) => {
+        if (!matchesArchiveFilter(task, query)) return false;
         if (query.status === "completed" && !task.completed) return false;
         if (
           query.status !== "completed" &&
@@ -324,6 +326,41 @@ export class CloudTaskRepository implements TaskRepository {
     );
   }
 
+  setArchived(id: string, archived: boolean): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = this.requireTask(id);
+      const next = this.model.update(
+        current.task,
+        { archived },
+        { now: new Date().toISOString() },
+      );
+      await this.requireReplica().queueUpdate({
+        recordId: current.recordId,
+        patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+        body: next.body,
+      });
+      let stored = next;
+      const destination = this.model.archiveDestination(next, archived);
+      if (destination) {
+        try {
+          await this.requireReplica().queueRename({
+            recordId: current.recordId,
+            path: destination,
+          });
+          stored = { ...next, path: destination };
+        } catch (reason) {
+          stored = {
+            ...next,
+            operationWarnings: [archiveMoveWarning(reason, archived)],
+          };
+        }
+      }
+      this.cache.set(id, { ...current, task: stored });
+      await this.afterLocalMutation();
+      return stored;
+    });
+  }
+
   delete(id: string): Promise<void> {
     return this.serializeWrite(id, async () => {
       const current = this.cache.get(id);
@@ -335,13 +372,19 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   async stats(): Promise<TaskStats> {
+    let archived = 0;
     let completed = 0;
-    for (const { task } of this.cache.values())
-      if (task.completed) completed += 1;
+    let open = 0;
+    for (const { task } of this.cache.values()) {
+      if (task.archived) archived += 1;
+      else if (task.completed) completed += 1;
+      else open += 1;
+    }
     return {
-      total: this.cache.size,
-      open: this.cache.size - completed,
+      total: open + completed,
+      open,
       completed,
+      archived,
     };
   }
 

@@ -1,5 +1,5 @@
 export type NativeRoute =
-  | { page: "today" | "upcoming" | "search" | "more" }
+  | { page: "today" | "upcoming" | "search" | "archive" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string };
 

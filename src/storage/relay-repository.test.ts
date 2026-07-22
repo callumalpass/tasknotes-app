@@ -111,6 +111,39 @@ describe("relay task repository", () => {
     ).toEqual(["r1", "r2", "r3", "r4"]);
   });
 
+  it("archives, moves, hides, and restores a live collection task", async () => {
+    const fixture = relayFixture(
+      [taskRecord("archived", "Relay archive", "r1")],
+      false,
+      true,
+    );
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const archived = await repository.setArchived("archived", true);
+    expect(archived).toMatchObject({
+      archived: true,
+      path: "TaskNotes/Archive/archived.md",
+    });
+    expect(await repository.list({ status: "all" })).toEqual([]);
+    expect(
+      await repository.list({ status: "all", archived: "only" }),
+    ).toHaveLength(1);
+    expect(fixture.rename).toHaveBeenLastCalledWith({
+      from: "tasks/archived.md",
+      to: "TaskNotes/Archive/archived.md",
+      if_revision: "r2",
+      update_refs: true,
+    });
+
+    const restored = await repository.setArchived("archived", false);
+    expect(restored).toMatchObject({
+      archived: false,
+      path: "tasks/archived.md",
+    });
+    expect(await repository.list({ status: "all" })).toHaveLength(1);
+  });
+
   it("lists and executes provider-owned saved views", async () => {
     const fixture = relayFixture([
       taskRecord("board", "Visible on the board", "r1"),
@@ -180,10 +213,16 @@ describe("relay task repository", () => {
   });
 });
 
-function relayFixture(initial: RecordResult<JsonObject>[], templating = false) {
+function relayFixture(
+  initial: RecordResult<JsonObject>[],
+  templating = false,
+  archive = false,
+) {
   const records = new Map(initial.map((record) => [record.path, record]));
   let revision = initial.length + 1;
-  const describeCollection = vi.fn(async () => description(templating));
+  const describeCollection = vi.fn(async () =>
+    description(templating, archive),
+  );
   const query = vi.fn(async () =>
     valid<QueryResult<JsonObject>>({
       results: [...records.values()].map((record) => ({
@@ -257,6 +296,28 @@ function relayFixture(initial: RecordResult<JsonObject>[], templating = false) {
       return valid({ path: input.path, deleted: true });
     },
   );
+  const rename = vi.fn(
+    async (input: {
+      from: string;
+      to: string;
+      if_revision?: string;
+      update_refs?: boolean;
+    }) => {
+      const current = records.get(input.from);
+      if (!current) throw new Error("Task not found.");
+      if (records.has(input.to)) throw new Error("Destination already exists.");
+      if (input.if_revision !== current.revision)
+        throw new Error("Revision conflict.");
+      const record: RecordResult<JsonObject> = {
+        ...current,
+        path: input.to,
+        revision: `r${revision++}`,
+      };
+      records.delete(input.from);
+      records.set(input.to, record);
+      return valid({ ...record, from: input.from, to: input.to });
+    },
+  );
   const listViews = vi.fn(async () =>
     valid({
       views: [
@@ -311,6 +372,7 @@ function relayFixture(initial: RecordResult<JsonObject>[], templating = false) {
     create,
     update,
     delete: remove,
+    rename,
     listViews,
     executeView,
   } as unknown as MdbaseConnect<JsonObject>;
@@ -321,6 +383,7 @@ function relayFixture(initial: RecordResult<JsonObject>[], templating = false) {
     create,
     update,
     remove,
+    rename,
     listViews,
     executeView,
   };
@@ -344,7 +407,10 @@ function taskRecord(
   };
 }
 
-function description(templating = false): CollectionDescription {
+function description(
+  templating = false,
+  archive = false,
+): CollectionDescription {
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
@@ -358,6 +424,11 @@ function description(templating = false): CollectionDescription {
       template_path: "Templates/Task.md",
       failure_mode: "error",
       unknown_variable_policy: "preserve",
+    };
+  if (archive)
+    configuration.archive = {
+      move_on_archive: true,
+      folder: "TaskNotes/Archive",
     };
   return {
     protocol_version: 2,
@@ -373,6 +444,7 @@ function description(templating = false): CollectionDescription {
       "create",
       "update",
       "delete",
+      "rename",
     ],
     change_cursor: 0,
     types: [

@@ -1,4 +1,12 @@
-import { ArrowLeft, Clock3, Play, Square, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  Clock3,
+  Play,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
@@ -94,6 +102,7 @@ function TaskEditor({
     stopTimeTracking,
     replaceTimeEntries,
     removeTimeEntry,
+    setTaskArchived,
     configuration,
   } = useRepository();
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
@@ -104,6 +113,8 @@ function TaskEditor({
   const [occurrenceAction, setOccurrenceAction] = useState(false);
   const [timeAction, setTimeAction] = useState(false);
   const [timeError, setTimeError] = useState<string | null>(null);
+  const [archiveAction, setArchiveAction] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const mounted = useRef(true);
   const editVersion = useRef(0);
 
@@ -225,6 +236,31 @@ function TaskEditor({
     }
   }
 
+  async function changeArchiveState() {
+    if (archiveAction) return;
+    setArchiveAction(true);
+    setArchiveError(null);
+    try {
+      if (dirty) await persist(draft, editVersion.current);
+      const updated = await setTaskArchived(task.id, !task.archived);
+      if (updated.operationWarnings?.length) {
+        if (mounted.current) {
+          setArchiveError(updated.operationWarnings.join(" "));
+          setArchiveAction(false);
+        }
+        return;
+      }
+      onBack();
+    } catch (reason) {
+      if (mounted.current) {
+        setArchiveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+        setArchiveAction(false);
+      }
+    }
+  }
+
   return (
     <section className="screen task-screen" aria-label="Task details">
       <header className="task-toolbar">
@@ -256,6 +292,19 @@ function TaskEditor({
                 : "Saved"}
         </button>
         <button
+          aria-label={task.archived ? "Restore task" : "Archive task"}
+          className="icon-action"
+          disabled={archiveAction}
+          type="button"
+          onClick={() => void changeArchiveState()}
+        >
+          {task.archived ? (
+            <ArchiveRestore aria-hidden="true" size={19} strokeWidth={1.6} />
+          ) : (
+            <Archive aria-hidden="true" size={19} strokeWidth={1.6} />
+          )}
+        </button>
+        <button
           aria-label="Delete task"
           className="icon-action"
           type="button"
@@ -264,6 +313,12 @@ function TaskEditor({
           <Trash2 aria-hidden="true" size={19} strokeWidth={1.6} />
         </button>
       </header>
+
+      {archiveError ? (
+        <p className="inline-error" role="alert">
+          {cleanOperationError(archiveError)}
+        </p>
+      ) : null}
 
       {confirmDelete ? (
         <div className="delete-confirmation" role="alert">

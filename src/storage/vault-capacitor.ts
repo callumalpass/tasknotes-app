@@ -88,6 +88,25 @@ export class CapacitorVault implements Vault {
     }).catch(ignoreMissing);
   }
 
+  async rename(from: string, to: string): Promise<VaultEntry> {
+    const source = safePath(from);
+    const destination = safePath(to);
+    if (await this.exists(destination))
+      throw new Error(`A record already exists at ${destination}.`);
+    const parent = destination.slice(0, destination.lastIndexOf("/"));
+    if (parent) await this.ensureDirectory(parent);
+    await Filesystem.rename({
+      from: this.path(source),
+      to: this.path(destination),
+      directory: Directory.Documents,
+    });
+    const info = await Filesystem.stat({
+      path: this.path(destination),
+      directory: Directory.Documents,
+    });
+    return toEntry(destination, info);
+  }
+
   async exists(path: string): Promise<boolean> {
     try {
       await Filesystem.stat({

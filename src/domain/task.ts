@@ -22,6 +22,7 @@ export interface Task {
   title: string;
   status: TaskStatus;
   completed: boolean;
+  archived: boolean;
   priority: TaskPriority;
   due?: string;
   scheduled?: string;
@@ -68,6 +69,7 @@ export interface UpdateTaskInput {
   title?: string;
   status?: TaskStatus;
   completed?: boolean;
+  archived?: boolean;
   priority?: TaskPriority;
   due?: string | null;
   scheduled?: string | null;
@@ -117,6 +119,7 @@ export function activeTimeEntry(
 
 export interface TaskListQuery {
   status?: "open" | "completed" | "all";
+  archived?: "exclude" | "only" | "include";
   search?: string;
   limit?: number;
 }
@@ -125,6 +128,7 @@ export interface TaskStats {
   total: number;
   open: number;
   completed: number;
+  archived: number;
 }
 
 export function todayString(now = new Date()): string {

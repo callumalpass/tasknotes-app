@@ -118,6 +118,31 @@ test("saves in the background while navigating away", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("archives and restores a Markdown task without deleting it", async ({
+  page,
+}) => {
+  await page.getByLabel("New task title").fill("Keep archived history");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Keep archived history", { exact: true }).click();
+  await page.getByLabel("Archive task").click();
+  await expect(
+    page.getByText("Keep archived history", { exact: true }),
+  ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: /Archive.*1 archived task/ }).click();
+  await expect(page.getByRole("heading", { name: "Archive" })).toBeVisible();
+  await page.getByText("Keep archived history", { exact: true }).click();
+  await page.getByLabel("Restore task").click();
+  await expect(page.getByText("Nothing archived.")).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(
+    page.getByText("Keep archived history", { exact: true }),
+  ).toBeVisible();
+});
+
 test("interprets natural-language capture and preserves timed task fields", async ({
   page,
 }) => {

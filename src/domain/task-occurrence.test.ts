@@ -15,6 +15,7 @@ const task: Task = {
   title: "Weekly review",
   status: "open",
   completed: false,
+  archived: false,
   priority: "normal",
   scheduled: "2026-08-03T09:00",
   due: "2026-08-04T17:00",

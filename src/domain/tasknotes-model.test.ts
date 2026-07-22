@@ -246,6 +246,52 @@ describe("TaskNotes task model app boundary", () => {
     );
     expect(edited.timeEntries[1].endTime).toBeUndefined();
   });
+
+  it("archives through the configured tag and plans reversible file moves", () => {
+    const archivable = new TaskNotesTaskModel({
+      ...model.configuration(),
+      archive: { moveOnArchive: true, folder: "TaskNotes/Archive" },
+    });
+    const task = archivable.read({
+      path: "tasks/archive-me.md",
+      body: "Kept body",
+      frontmatter: {
+        type: "task",
+        id: "archive-me",
+        title: "Archive me",
+        status: "doing",
+        priority: "later",
+        dateCreated: "2026-07-22T00:00:00Z",
+        dateModified: "2026-07-22T00:00:00Z",
+        external_owner: "kept",
+        tags: ["task", "history"],
+      },
+    });
+
+    const archived = archivable.update(
+      task,
+      { archived: true },
+      { now: "2026-07-22T01:00:00Z" },
+    );
+    expect(archived.archived).toBe(true);
+    expect(archived.frontmatter.tags).toEqual(["task", "history", "archived"]);
+    expect(archived.frontmatter.external_owner).toBe("kept");
+    expect(archivable.archiveDestination(archived, true)).toBe(
+      "TaskNotes/Archive/archive-me.md",
+    );
+
+    const moved = { ...archived, path: "TaskNotes/Archive/archive-me.md" };
+    const restored = archivable.update(
+      moved,
+      { archived: false },
+      { now: "2026-07-22T02:00:00Z" },
+    );
+    expect(restored.archived).toBe(false);
+    expect(restored.frontmatter.tags).toEqual(["task", "history"]);
+    expect(archivable.archiveDestination(restored, false)).toBe(
+      "tasks/archive-me.md",
+    );
+  });
 });
 
 function status(

@@ -51,8 +51,22 @@ export class MarkdownCollection {
     );
   }
 
-  list(): Promise<VaultEntry[]> {
-    return this.vault.listMarkdownFiles("tasks");
+  async list(): Promise<VaultEntry[]> {
+    const roots = new Set([this.taskModel.recordsFolderPath()]);
+    const configuration = this.taskModel.configuration();
+    if (configuration.archive.moveOnArchive)
+      roots.add(configuration.archive.folder);
+    const entries = await Promise.all(
+      [...roots].map((root) =>
+        this.vault.listMarkdownFiles(root).catch((reason: unknown) => {
+          if (isMissingPath(reason)) return [];
+          throw reason;
+        }),
+      ),
+    );
+    return [
+      ...new Map(entries.flat().map((entry) => [entry.path, entry])).values(),
+    ].sort((left, right) => left.path.localeCompare(right.path));
   }
 
   listViewSources(): Promise<VaultEntry[]> {
@@ -121,6 +135,14 @@ export class MarkdownCollection {
     );
   }
 
+  rename(from: string, to: string): Promise<VaultEntry> {
+    return this.vault.rename(from, to);
+  }
+
+  archiveDestination(task: Task, archived: boolean): string | undefined {
+    return this.taskModel.archiveDestination(task, archived);
+  }
+
   delete(path: string): Promise<void> {
     return this.vault.delete(path);
   }
@@ -181,4 +203,11 @@ export function batches<T>(values: T[], size: number): T[][] {
   for (let offset = 0; offset < values.length; offset += size)
     result.push(values.slice(offset, offset + size));
   return result;
+}
+
+function isMissingPath(reason: unknown): boolean {
+  return (
+    (reason instanceof DOMException && reason.name === "NotFoundError") ||
+    /not exist|not found/i.test(String(reason))
+  );
 }

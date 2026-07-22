@@ -12,6 +12,7 @@ export interface Vault {
   listMarkdownFiles(path: string): Promise<VaultEntry[]>;
   readText(path: string): Promise<string>;
   writeText(path: string, contents: string): Promise<VaultEntry>;
+  rename(from: string, to: string): Promise<VaultEntry>;
   delete(path: string): Promise<void>;
   exists(path: string): Promise<boolean>;
   location(): string;

@@ -10,7 +10,8 @@ import {
 } from "@mdbase/connect";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { compareTasks } from "./repository";
+import { archiveMoveWarning } from "../domain/task-archive";
+import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import {
   flattenViews,
@@ -130,6 +131,7 @@ export class RelayTaskRepository implements TaskRepository {
     return [...this.cache.values()]
       .map(({ task }) => task)
       .filter((task) => {
+        if (!matchesArchiveFilter(task, query)) return false;
         if (query.status === "completed" && !task.completed) return false;
         if (
           query.status !== "completed" &&
@@ -250,6 +252,41 @@ export class RelayTaskRepository implements TaskRepository {
     );
   }
 
+  setArchived(id: string, archived: boolean): Promise<Task> {
+    return this.serializeWrite(id, async () => {
+      const current = await this.requireCurrent(id);
+      const next = this.model.update(
+        current.task,
+        { archived },
+        { now: new Date().toISOString() },
+      );
+      const updated = await this.persistUpdate(current, next);
+      const destination = this.model.archiveDestination(updated, archived);
+      if (!destination) return updated;
+      const saved = this.cache.get(id);
+      try {
+        const result = validResult(
+          await this.connect.rename({
+            from: updated.path,
+            to: destination,
+            if_revision: saved?.revision,
+            update_refs: true,
+          }),
+        );
+        return this.storeResult(result);
+      } catch (reason) {
+        this.noteOperationFailure(reason);
+        const retained = {
+          ...updated,
+          operationWarnings: [archiveMoveWarning(reason, archived)],
+        };
+        this.cache.set(id, { task: retained, revision: saved?.revision });
+        this.emit();
+        return retained;
+      }
+    });
+  }
+
   delete(id: string): Promise<void> {
     return this.serializeWrite(id, async () => {
       const existing = this.cache.get(id);
@@ -274,13 +311,19 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async stats(): Promise<TaskStats> {
+    let archived = 0;
     let completed = 0;
-    for (const { task } of this.cache.values())
-      if (task.completed) completed += 1;
+    let open = 0;
+    for (const { task } of this.cache.values()) {
+      if (task.archived) archived += 1;
+      else if (task.completed) completed += 1;
+      else open += 1;
+    }
     return {
-      total: this.cache.size,
-      open: this.cache.size - completed,
+      total: open + completed,
+      open,
       completed,
+      archived,
     };
   }
 

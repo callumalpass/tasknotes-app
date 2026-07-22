@@ -7,6 +7,7 @@ import {
 import { batches, MarkdownCollection } from "./collection";
 import { createPlatformVault } from "./vault";
 import { LocalViewExecutor } from "./local-views";
+import { archiveMoveWarning } from "../domain/task-archive";
 
 import type {
   CreateTaskInput,
@@ -39,6 +40,7 @@ export interface TaskRepository {
   stopTimeTracking(id: string): Promise<Task>;
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
+  setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
   listViews(): Promise<TaskView[]>;
@@ -118,6 +120,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
       .filter(Boolean);
     const tasks = [...this.cache.values()]
       .filter((task) => {
+        if (!matchesArchiveFilter(task, query)) return false;
         if (query.status === "completed" && !task.completed) return false;
         if (
           query.status !== "completed" &&
@@ -247,6 +250,35 @@ export class IndexedMarkdownRepository implements TaskRepository {
     });
   }
 
+  setArchived(id: string, archived: boolean): Promise<Task> {
+    return this.exclusive(async () => {
+      const current = await this.get(id);
+      if (!current) throw new Error("Task not found.");
+      const next = this.collection.updateTask(
+        current,
+        { archived },
+        new Date().toISOString(),
+      );
+      await this.write(next);
+      const destination = this.collection.archiveDestination(next, archived);
+      if (!destination) return next;
+      try {
+        const source = await this.collection.rename(next.path, destination);
+        const moved = { ...next, path: destination };
+        const indexed = indexTask(moved, source);
+        await this.index.tasks.put(indexed);
+        this.cache.set(id, indexed);
+        return moved;
+      } catch (reason) {
+        const warning = archiveMoveWarning(reason, archived);
+        const retained = { ...next, operationWarnings: [warning] };
+        const cached = this.cache.get(id);
+        if (cached) this.cache.set(id, { ...cached, ...retained });
+        return retained;
+      }
+    });
+  }
+
   delete(id: string): Promise<void> {
     return this.exclusive(async () => {
       const current = this.cache.get(id);
@@ -258,12 +290,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
   }
 
   async stats(): Promise<TaskStats> {
+    let archived = 0;
     let completed = 0;
-    for (const task of this.cache.values()) if (task.completed) completed += 1;
+    let open = 0;
+    for (const task of this.cache.values()) {
+      if (task.archived) archived += 1;
+      else if (task.completed) completed += 1;
+      else open += 1;
+    }
     return {
-      total: this.cache.size,
-      open: this.cache.size - completed,
+      total: open + completed,
+      open,
       completed,
+      archived,
     };
   }
 
@@ -381,4 +420,14 @@ export function compareTasks(left: Task, right: Task): number {
   if (priority) return priority;
   const updated = right.updatedAt.localeCompare(left.updatedAt);
   return updated || left.path.localeCompare(right.path);
+}
+
+export function matchesArchiveFilter(
+  task: Task,
+  query: TaskListQuery,
+): boolean {
+  const filter = query.archived ?? "exclude";
+  return (
+    filter === "include" || (filter === "only" ? task.archived : !task.archived)
+  );
 }

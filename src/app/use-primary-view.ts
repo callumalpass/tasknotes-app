@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { TaskView } from "../domain/view";
 import { useRepository } from "./repository-context";
@@ -19,6 +19,7 @@ export function usePrimaryView(): {
   views: TaskView[] | null;
   error: string;
   primaryView?: TaskView;
+  refresh(): Promise<void>;
   setPrimaryView(key?: string): void;
 } {
   const { repository, status, version } = useRepository();
@@ -27,34 +28,37 @@ export function usePrimaryView(): {
     error: "",
     scope: "",
   });
+  const requestSequence = useRef(0);
+
+  const refresh = useCallback(async () => {
+    if (status !== "ready") return;
+    const request = ++requestSequence.current;
+    try {
+      const [info, views] = await Promise.all([
+        repository.collectionInfo(),
+        repository.listViews(),
+      ]);
+      if (request !== requestSequence.current) return;
+      const scope = primaryViewScope(info);
+      setCatalog({
+        views,
+        error: "",
+        scope,
+        primaryKey: readPrimaryViewKey(window.localStorage, scope),
+      });
+    } catch (reason) {
+      if (request !== requestSequence.current) return;
+      setCatalog((current) => ({
+        ...current,
+        views: current.views ?? [],
+        error: reason instanceof Error ? reason.message : String(reason),
+      }));
+    }
+  }, [repository, status]);
 
   useEffect(() => {
-    if (status !== "ready") return;
-    let active = true;
-    Promise.all([repository.collectionInfo(), repository.listViews()]).then(
-      ([info, views]) => {
-        if (!active) return;
-        const scope = primaryViewScope(info);
-        setCatalog({
-          views,
-          error: "",
-          scope,
-          primaryKey: readPrimaryViewKey(window.localStorage, scope),
-        });
-      },
-      (reason: unknown) => {
-        if (!active) return;
-        setCatalog((current) => ({
-          ...current,
-          views: current.views ?? [],
-          error: reason instanceof Error ? reason.message : String(reason),
-        }));
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [repository, status, version]);
+    void refresh();
+  }, [refresh, version]);
 
   const setPrimaryView = useCallback(
     (key?: string) => {
@@ -72,6 +76,7 @@ export function usePrimaryView(): {
     views: catalog.views,
     error: catalog.error,
     primaryView,
+    refresh,
     setPrimaryView,
   };
 }

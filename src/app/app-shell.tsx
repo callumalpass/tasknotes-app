@@ -15,6 +15,7 @@ import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
+import { ArchiveScreen } from "./archive-screen";
 import { SearchScreen } from "./search-screen";
 import { TaskScreen } from "./task-screen";
 import { TodayScreen } from "./today-screen";
@@ -25,7 +26,7 @@ import { ViewsScreen } from "./views-screen";
 import type { TaskView } from "../domain/view";
 
 type Route =
-  | { page: "today" | "upcoming" | "search" | "more" }
+  | { page: "today" | "upcoming" | "search" | "archive" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
 
@@ -35,6 +36,7 @@ export function AppShell() {
     views,
     error: viewsError,
     primaryView,
+    refresh: refreshViews,
     setPrimaryView,
   } = usePrimaryView();
   const [route, setRoute] = useState<Route>(() => parseRoute());
@@ -142,10 +144,19 @@ export function AppShell() {
           <SearchScreen
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
+        ) : route.page === "archive" ? (
+          <ArchiveScreen
+            onBack={() => navigate({ page: "more" }, true)}
+            onOpen={(task) => navigate({ page: "task", id: task.id })}
+          />
         ) : route.page === "more" ? (
           <MoreScreen
             primaryViewName={primaryView?.name}
-            onOpenViews={() => navigate({ page: "views" })}
+            onOpenArchive={() => navigate({ page: "archive" })}
+            onOpenViews={() => {
+              void refreshViews();
+              navigate({ page: "views" });
+            }}
           />
         ) : route.page === "views" ? (
           <ViewsScreen
@@ -262,6 +273,7 @@ function parseRoute(): Route {
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
+  if (path === "/archive") return { page: "archive" };
   if (path === "/upcoming") return { page: "upcoming" };
   if (path === "/more") return { page: "more" };
   return { page: "today" };

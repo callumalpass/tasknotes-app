@@ -136,6 +136,17 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.detail-header {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.detail-header p {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+}
+
 .eyebrow,
 .sync-state,
 .section-heading,
@@ -711,7 +722,7 @@ button:disabled {
   z-index: 3;
   top: 0;
   display: grid;
-  grid-template-columns: 52px 1fr 52px;
+  grid-template-columns: 52px minmax(0, 1fr) 52px 52px;
   align-items: center;
   min-height: 58px;
   background: var(--paper);

@@ -37,14 +37,15 @@ export async function syncTaskNotifications(task: Task): Promise<void> {
     for (const [key] of previous) delete registry[key];
   }
 
-  const reminders = task.completed
-    ? []
-    : task.reminders.filter((reminder) => {
-        const timestamp = reminder.absoluteTime
-          ? Date.parse(reminder.absoluteTime)
-          : Number.NaN;
-        return reminder.type === "absolute" && timestamp > Date.now();
-      });
+  const reminders =
+    task.completed || task.archived
+      ? []
+      : task.reminders.filter((reminder) => {
+          const timestamp = reminder.absoluteTime
+            ? Date.parse(reminder.absoluteTime)
+            : Number.NaN;
+          return reminder.type === "absolute" && timestamp > Date.now();
+        });
   if (!reminders.length) {
     writeRegistry(registry);
     return;

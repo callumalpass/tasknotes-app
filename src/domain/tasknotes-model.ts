@@ -239,6 +239,7 @@ export class TaskNotesTaskModel {
         : this.config.defaults.status;
     }
     if (input.priority !== undefined) updates.priority = input.priority;
+    if (input.archived !== undefined) updates.archived = input.archived;
     if (input.due !== undefined)
       updates.due = normalizeTaskDateTime(input.due ?? undefined);
     if (input.scheduled !== undefined)
@@ -503,6 +504,7 @@ export class TaskNotesTaskModel {
       title: info.title,
       status: info.status,
       completed: isCompletedStatus(info.status, this.config.statuses),
+      archived: info.archived,
       priority: info.priority,
       due: info.due,
       scheduled: info.scheduled,
@@ -603,6 +605,20 @@ export class TaskNotesTaskModel {
       revision,
     );
     return this.toTask(updated, frontmatter, revision);
+  }
+
+  recordsFolderPath(): string {
+    return this.recordsFolder;
+  }
+
+  archiveDestination(task: Task, archived: boolean): string | undefined {
+    if (!this.config.archive.moveOnArchive) return undefined;
+    const folder = normalizeCollectionFolder(
+      archived ? this.config.archive.folder : this.recordsFolder,
+    );
+    const name = task.path.slice(task.path.lastIndexOf("/") + 1);
+    const path = `${folder}/${name}`;
+    return path === task.path ? undefined : path;
   }
 
   private autoStopAfterCompletion(
@@ -707,6 +723,19 @@ function isEmptyCustomValue(value: unknown): boolean {
     value === "" ||
     (Array.isArray(value) && value.length === 0)
   );
+}
+
+function normalizeCollectionFolder(value: string): string {
+  const normalized = value
+    .trim()
+    .replaceAll("\\", "/")
+    .replace(/^\/+|\/+$/g, "");
+  if (
+    !normalized ||
+    normalized.split("/").some((part) => !part || part === "." || part === "..")
+  )
+    throw new Error("archive_path_invalid: The archive folder is unsafe.");
+  return normalized;
 }
 
 function requiredTitle(value: string): string {

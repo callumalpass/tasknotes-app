@@ -85,6 +85,40 @@ export class OpfsVault implements Vault {
     await parent.removeEntry(name).catch(ignoreMissing);
   }
 
+  async rename(from: string, to: string): Promise<VaultEntry> {
+    const source = safePath(from);
+    const destination = safePath(to);
+    if (await this.exists(destination))
+      throw new Error(`A record already exists at ${destination}.`);
+    const sourceHandle = await this.file(source, false);
+    const destinationParts = destination.split("/");
+    const destinationName = destinationParts.pop()!;
+    const destinationDirectory = await this.directory(
+      destinationParts.join("/"),
+      true,
+    );
+    const movable = sourceHandle as FileSystemFileHandle & {
+      move?: (
+        directory: FileSystemDirectoryHandle,
+        name?: string,
+      ) => Promise<void>;
+    };
+    if (movable.move) {
+      await movable.move(destinationDirectory, destinationName);
+    } else {
+      const contents = await (await sourceHandle.getFile()).text();
+      await this.writeText(destination, contents);
+      await this.delete(source);
+    }
+    const moved = await this.file(destination, false);
+    const file = await moved.getFile();
+    return {
+      path: destination,
+      lastModified: file.lastModified,
+      size: file.size,
+    };
+  }
+
   async exists(path: string): Promise<boolean> {
     try {
       await this.file(path, false);

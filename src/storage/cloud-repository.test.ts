@@ -91,6 +91,21 @@ Cloud body for {{title}} on {{date}}`,
   return value;
 }
 
+function resourcesWithArchive(): SyncCollectionResources {
+  const value = resources();
+  value.contracts[0] = {
+    ...value.contracts[0],
+    configuration: {
+      ...value.contracts[0].configuration,
+      archive: {
+        move_on_archive: true,
+        folder: "TaskNotes/Archive",
+      },
+    },
+  };
+  return value;
+}
+
 function connect(
   collectionId: string,
   replicaId: string,
@@ -296,6 +311,69 @@ describe("cloud task repository", () => {
       title: "Edited while starting",
       timeEntries: [{ description: "Concurrent timer" }],
     });
+  });
+
+  it("queues archive state and file movement together while offline", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resourcesWithArchive(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    authority.registerReplica({
+      id: phoneId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    authority.registerReplica({
+      id: tabletId,
+      name: "Tablet",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(phoneId);
+    const phoneTransport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, phoneTransport),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const task = await phone.create({ title: "Cloud archive" });
+    await phone.refresh();
+    await tablet.refresh();
+    online = false;
+
+    const archived = await phone.setArchived(task.id, true);
+    expect(archived).toMatchObject({
+      archived: true,
+      path: `TaskNotes/Archive/${task.id}.md`,
+    });
+    expect(await phone.list({ status: "all" })).toEqual([]);
+    await phone.refresh();
+    expect(await phone.syncStatus()).toMatchObject({ pending: 2 });
+
+    online = true;
+    await phone.refresh();
+    await tablet.refresh();
+    expect(await tablet.get(task.id)).toMatchObject({
+      archived: true,
+      path: `TaskNotes/Archive/${task.id}.md`,
+    });
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
   });
 
   it("uses the contract's type name and records folder", async () => {
