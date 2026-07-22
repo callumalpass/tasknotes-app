@@ -198,7 +198,7 @@ export class TaskNotesTaskModel {
         reason instanceof Error
           ? reason.message
           : `template_parse_failed: ${String(reason)}`;
-      if (template.failureMode === "error_abort")
+      if (template.failureMode === "error")
         throw new Error(message, { cause: reason });
       return {
         ...task,

@@ -45,7 +45,7 @@ unknown: {{futureVariable}}
       {
         enabled: true,
         templatePath: "Templates/Task.md",
-        failureMode: "error_abort",
+        failureMode: "error",
         unknownVariablePolicy: "preserve",
       },
       new Date(2026, 6, 22, 13, 4, 5),
@@ -72,7 +72,7 @@ unknown: {{futureVariable}}
       templating: {
         enabled: true,
         templatePath: "Templates/Task.md",
-        failureMode: "error_abort",
+        failureMode: "error",
         unknownVariablePolicy: "empty",
       },
     });
@@ -124,7 +124,7 @@ Template body for {{title}}`,
       ...fallback.configuration(),
       templating: {
         ...fallback.configuration().templating,
-        failureMode: "error_abort",
+        failureMode: "error",
       },
     });
     await expect(
@@ -134,22 +134,5 @@ Template body for {{title}}`,
         async () => "---\nbroken: [\n---\n",
       ),
     ).rejects.toThrow(/template_parse_failed|flow sequence/i);
-  });
-
-  it("rejects unknown variables when the collection contract requires it", () => {
-    const model = new TaskNotesTaskModel();
-    const input = { title: "Strict template" };
-    const task = model.create(input, {
-      id: "strict-template",
-      now: "2026-07-22T03:04:05Z",
-    });
-
-    expect(() =>
-      expandTaskTemplate("Unknown: {{futureVariable}}", task, input, {
-        enabled: true,
-        failureMode: "error_abort",
-        unknownVariablePolicy: "error",
-      }),
-    ).toThrow("Unknown template variable futureVariable");
   });
 });

@@ -9,8 +9,8 @@ describe("TaskNotes collection configuration", () => {
         templating: {
           enabled: true,
           template_path: "Templates/Task.md",
-          failure_mode: "error_abort",
-          unknown_variable_policy: "error",
+          failure_mode: "error",
+          unknown_variable_policy: "empty",
         },
         archive: {
           move_on_archive: true,
@@ -21,8 +21,8 @@ describe("TaskNotes collection configuration", () => {
     expect(configuration.templating).toEqual({
       enabled: true,
       templatePath: "Templates/Task.md",
-      failureMode: "error_abort",
-      unknownVariablePolicy: "error",
+      failureMode: "error",
+      unknownVariablePolicy: "empty",
     });
     expect(configuration.archive).toEqual({
       moveOnArchive: true,

@@ -356,7 +356,7 @@ function description(templating = false): CollectionDescription {
     configuration.templating = {
       enabled: true,
       template_path: "Templates/Task.md",
-      failure_mode: "error_abort",
+      failure_mode: "error",
       unknown_variable_policy: "preserve",
     };
   return {

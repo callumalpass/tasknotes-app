@@ -12,8 +12,8 @@ import type {
 export interface TaskTemplatingConfiguration {
   enabled: boolean;
   templatePath?: string;
-  failureMode: "error_abort" | "warning_fallback";
-  unknownVariablePolicy: "preserve" | "error" | "empty";
+  failureMode: "error" | "warning_fallback";
+  unknownVariablePolicy: "preserve" | "empty";
 }
 
 export interface TaskArchiveConfiguration {
@@ -77,18 +77,15 @@ function withCollectionDefaults(
       templatePath:
         string(templating.template_path) ?? string(templating.templatePath),
       failureMode:
-        templating.failure_mode === "error_abort" ||
-        templating.failureMode === "error_abort"
-          ? "error_abort"
+        templating.failure_mode === "error" ||
+        templating.failureMode === "error"
+          ? "error"
           : "warning_fallback",
       unknownVariablePolicy:
         templating.unknown_variable_policy === "empty" ||
         templating.unknownVariablePolicy === "empty"
           ? "empty"
-          : templating.unknown_variable_policy === "error" ||
-              templating.unknownVariablePolicy === "error"
-            ? "error"
-            : "preserve",
+          : "preserve",
     },
     archive: {
       moveOnArchive:

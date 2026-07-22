@@ -72,11 +72,6 @@ function expandVariables(
     /\{\{\s*([A-Za-z][A-Za-z0-9]*)\s*\}\}/g,
     (match, key: string, offset: number) => {
       const value = values[key];
-      if (value === undefined && unknownPolicy === "error") {
-        throw new Error(
-          `template_parse_failed: Unknown template variable ${key}.`,
-        );
-      }
       const replacement =
         value === undefined ? (unknownPolicy === "empty" ? "" : match) : value;
       return yaml && isWholeYamlScalar(source, offset, match.length)
