@@ -11,6 +11,7 @@ export class OpfsVault implements Vault {
     this.root = await storageRoot.getDirectoryHandle(ROOT, { create: true });
     await this.directory("tasks", true);
     await this.directory("_types", true);
+    await this.directory("views", true);
   }
 
   async ensureText(path: string, contents: string): Promise<void> {
@@ -19,6 +20,10 @@ export class OpfsVault implements Vault {
   }
 
   async listMarkdownFiles(path: string): Promise<VaultEntry[]> {
+    return this.listFiles(path, [".md"]);
+  }
+
+  async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
     const rootPath = safePath(path);
     const root = await this.directory(rootPath, false);
     const pending: { directory: FileSystemDirectoryHandle; path: string }[] = [
@@ -34,7 +39,12 @@ export class OpfsVault implements Vault {
             pending.push({ directory: handle, path: nextPath });
           continue;
         }
-        if (!name.toLowerCase().endsWith(".md")) continue;
+        if (
+          !extensions.some((extension) =>
+            name.toLowerCase().endsWith(extension.toLowerCase()),
+          )
+        )
+          continue;
         const file = await handle.getFile();
         entries.push({
           path: nextPath,

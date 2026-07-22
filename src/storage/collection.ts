@@ -6,6 +6,7 @@ import {
   buildTaskNotesMdbaseResources,
   resolveTaskNotesModelConfigFromMdbaseType,
 } from "@tasknotes/model/mdbase";
+import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import {
@@ -28,6 +29,7 @@ export class MarkdownCollection {
       resources.paths.config,
       resources.configDocument,
     );
+    await this.ensureViewConfiguration(resources.paths.config);
     await this.vault.ensureText(resources.paths.type, resources.typeDocument);
     const parsedType = parseFrontmatter(
       await this.vault.readText(resources.paths.type),
@@ -47,6 +49,14 @@ export class MarkdownCollection {
 
   list(): Promise<VaultEntry[]> {
     return this.vault.listMarkdownFiles("tasks");
+  }
+
+  listViewSources(): Promise<VaultEntry[]> {
+    return this.vault.listFiles("views", [".base"]);
+  }
+
+  readText(path: string): Promise<string> {
+    return this.vault.readText(path);
   }
 
   async read(document: VaultEntry): Promise<Task | null> {
@@ -121,6 +131,18 @@ export class MarkdownCollection {
         }),
       );
     }
+  }
+
+  private async ensureViewConfiguration(configPath: string): Promise<void> {
+    const source = await this.vault.readText(configPath);
+    const document = parseDocument(source);
+    if (document.hasIn(["x-obsidian", "bases"])) return;
+    document.setIn(["x-obsidian", "bases"], {
+      include: ["views/**/*.base"],
+      create_folder: "views",
+      default_for_new_views: true,
+    });
+    await this.vault.writeText(configPath, String(document));
   }
 }
 

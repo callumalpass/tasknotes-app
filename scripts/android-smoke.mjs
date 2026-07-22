@@ -128,6 +128,41 @@ async function main() {
       "the persisted task after app relaunch",
     );
 
+    // Execute and render a real Obsidian Base through the packaged native
+    // storage adapter.
+    const viewSource = `views:
+  - type: tasknotesKanban
+    name: Android board
+    groupBy:
+      property: status
+      direction: ASC
+    order: [status, file.name]
+`;
+    await devtools.evaluate(`Capacitor.Plugins.Filesystem.writeFile({
+      path: "TaskNotes/views/android-smoke.base",
+      directory: "DOCUMENTS",
+      encoding: "utf8",
+      data: ${JSON.stringify(viewSource)},
+      recursive: true
+    })`);
+    await devtools.clickButton("More", true);
+    await waitFor(() => devtools.hasText("Saved views"), "the More screen");
+    await devtools.clickButton("Saved views");
+    await waitFor(
+      () => devtools.hasText("Android board"),
+      "the native saved view",
+    );
+    await devtools.clickButton("Android board");
+    await waitFor(
+      () =>
+        devtools.hasSelector('.kanban-board[aria-label="Android board board"]'),
+      "the native Kanban board",
+    );
+    if (!(await devtools.hasText(initialTitle)))
+      throw new Error(
+        "The native saved view did not include the persisted task.",
+      );
+
     // Prove that the private-use OAuth callback is routed back into the
     // packaged app and handled by the cloud onboarding screen.
     await devtools.evaluate(`
@@ -158,7 +193,7 @@ async function main() {
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, relaunch persistence, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, scheduled reminder, relaunch persistence, saved-view execution, Kanban rendering, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
@@ -252,6 +287,12 @@ class DevtoolsSession {
   hasText(text) {
     return this.evaluate(
       `document.body?.innerText.includes(${JSON.stringify(text)})`,
+    );
+  }
+
+  hasSelector(selector) {
+    return this.evaluate(
+      `Boolean(document.querySelector(${JSON.stringify(selector)}))`,
     );
   }
 

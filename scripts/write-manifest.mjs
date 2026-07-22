@@ -31,6 +31,7 @@ const manifest = {
   ],
   requirements: {
     contracts: [{ id: "tasknotes.task", version: 1 }],
+    access: "full_collection",
   },
   provisions: {
     types: [

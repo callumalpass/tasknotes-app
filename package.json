@@ -42,8 +42,10 @@
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.1.tgz",
     "dexie": "4.4.4",
     "lucide-react": "1.25.0",
+    "obsidian-bases-expression": "file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.1.tgz",

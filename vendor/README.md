@@ -14,6 +14,7 @@ suites passed:
 - `../tasknotes-model`
 - `../tasknotes-spec`
 - `../mdbase`
+- `../obsidian-bases-expression`
 
 Refresh a snapshot with `pnpm pack --pack-destination
 /path/to/tasknotes-app/vendor` from the relevant package directory, update the

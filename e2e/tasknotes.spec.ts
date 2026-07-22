@@ -100,3 +100,79 @@ test("saves in the background while navigating away", async ({ page }) => {
     page.getByText("Background save completed", { exact: true }),
   ).toBeVisible();
 });
+
+test("discovers and renders local saved board and calendar views", async ({
+  page,
+}) => {
+  const today = [
+    new Date().getFullYear(),
+    String(new Date().getMonth() + 1).padStart(2, "0"),
+    String(new Date().getDate()).padStart(2, "0"),
+  ].join("-");
+
+  await page.getByLabel("New task title").fill("Plan saved views");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Plan saved views", { exact: true }).click();
+  await page.getByLabel("Due").fill(today);
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await page.getByLabel("New task title").fill("Ship saved views");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Complete Ship saved views" }).click();
+
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("work.base", { create: true });
+    const writable = await file.createWritable();
+    await writable.write(`views:
+  - type: tasknotesKanban
+    name: Work board
+    groupBy:
+      property: status
+      direction: ASC
+    order: [status, file.name]
+  - type: tasknotesCalendar
+    name: Dates
+    order: [due, file.name]
+    options:
+      showDue: true
+      showScheduled: false
+`);
+    await writable.close();
+  });
+
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: /Saved views/ }).click();
+  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expect(page.getByText("Work board", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dates", { exact: true })).toBeVisible();
+
+  await page.getByText("Work board", { exact: true }).click();
+  await expect(page.getByLabel("Work board board")).toBeVisible();
+  await expect(
+    page.getByText("Plan saved views", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Ship saved views", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByText("Dates", { exact: true }).click();
+  await expect(page.getByRole("grid")).toBeVisible();
+  await expect(
+    page.getByText("Plan saved views", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page
+    .getByRole("region", { name: "Views" })
+    .getByRole("button", { name: "More", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+});

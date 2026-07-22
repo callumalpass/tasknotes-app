@@ -118,6 +118,20 @@ try {
     "Task created in the browser did not reach the hosted authority",
   );
 
+  phase("rendering a provider-owned saved view through mdbase cloud");
+  await page.getByRole("button", { name: /Saved views/ }).click();
+  await expect(page.getByText("Cloud board", { exact: true })).toBeVisible();
+  await page.getByText("Cloud board", { exact: true }).click();
+  await expect(page.getByLabel("Cloud board board")).toBeVisible();
+  await expect(
+    page.getByText("Cloud foundation", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page
+    .getByRole("region", { name: "Views" })
+    .getByRole("button", { name: "More", exact: true })
+    .click();
+
   phase("saving immediately while the provider is offline, then resuming sync");
   provider.setOnline(false);
   await page.getByRole("button", { name: "Today" }).click();
@@ -194,6 +208,20 @@ try {
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
   await page.getByRole("button", { name: "Today" }).click();
   await expect(page.getByText("Phone version", { exact: true })).toBeVisible();
+
+  phase("reopening cached saved views while the provider is offline");
+  await page.getByRole("button", { name: "More" }).click();
+  provider.setOnline(false);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  await page.getByRole("button", { name: /Saved views/ }).click();
+  await expect(page.getByText("Cloud board", { exact: true })).toBeVisible();
+  await page.getByText("Cloud board", { exact: true }).click();
+  await expect(page.getByText("Last available result")).toBeVisible();
+  await expect(
+    page.getByText("Cloud foundation", { exact: true }),
+  ).toBeVisible();
+  provider.setOnline(true);
   process.stdout.write("TaskNotes cloud browser vertical slice passed\n");
 } finally {
   provider.setOnline(true);
@@ -231,19 +259,21 @@ async function startMemoryProvider() {
       return;
     }
     try {
-      const match = new URL(
-        request.url ?? "/",
-        "http://provider",
-      ).pathname.match(
+      const url = new URL(request.url ?? "/", "http://provider");
+      const match = url.pathname.match(
         /^\/v1\/hosted\/collections\/([^/]+)\/sync\/(sessions|snapshot|changes|mutations)$/,
       );
-      if (!match) {
+      const operationMatch = url.pathname.match(
+        /^\/v1\/hosted\/collections\/([^/]+)\/operations\/(list_views|execute_view)$/,
+      );
+      if (!match && !operationMatch) {
         send(response, 404, error("not_found", "Not found."));
         return;
       }
+      const collectionId = (match ?? operationMatch)[1];
       const bearer = request.headers.authorization?.replace(/^Bearer\s+/i, "");
       const enrollment = bearer ? tokens.get(bearer) : undefined;
-      if (!enrollment || enrollment.collectionId !== match[1]) {
+      if (!enrollment || enrollment.collectionId !== collectionId) {
         send(response, 401, error("invalid_replica_token", "Invalid token."));
         return;
       }
@@ -255,11 +285,20 @@ async function startMemoryProvider() {
         send(response, 403, error("origin_denied", "Origin is not allowed."));
         return;
       }
-      const authority = collections.get(match[1])?.authority;
+      const authority = collections.get(collectionId)?.authority;
       if (!authority)
         throw new SyncError("collection_not_found", "Collection not found.");
+      if (operationMatch) {
+        await requestJson(request);
+        send(response, 200, {
+          result:
+            operationMatch[2] === "list_views"
+              ? cloudViewList()
+              : cloudViewExecution(authority.serialize().records),
+        });
+        return;
+      }
       const transport = authority.transport(enrollment.replicaId);
-      const url = new URL(request.url ?? "/", "http://provider");
       let value;
       if (match[2] === "sessions") value = await transport.openSession();
       else if (match[2] === "snapshot")
@@ -405,6 +444,74 @@ async function requestJson(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function cloudViewList() {
+  return {
+    valid: true,
+    result: {
+      views: [
+        {
+          id: "cloud.views",
+          name: "Cloud views",
+          source: {
+            path: "Views/cloud.md",
+            format: "mdbase.view",
+            revision: "cloud-view-1",
+            writable: true,
+          },
+          views: [
+            {
+              id: "board",
+              name: "Cloud board",
+              presentation: {
+                type: "tasknotes.kanban",
+                fallback: "mdbase.table",
+                mappings: { column: "status" },
+                options: {},
+              },
+            },
+          ],
+        },
+      ],
+      meta: { total_count: 1 },
+    },
+    diagnostics: [],
+  };
+}
+
+function cloudViewExecution(records) {
+  const tasks = records.filter((record) => record.types.includes("task"));
+  const groups = new Map();
+  for (const record of tasks) {
+    const status = record.frontmatter.status ?? null;
+    groups.set(status, (groups.get(status) ?? 0) + 1);
+  }
+  return {
+    valid: true,
+    result: {
+      results: tasks.map((record) => ({
+        path: record.path,
+        frontmatter: record.frontmatter,
+        raw_frontmatter: record.frontmatter,
+        body: record.body,
+        types: record.types,
+        values: { status: record.frontmatter.status ?? null },
+      })),
+      meta: {
+        total_count: tasks.length,
+        has_more: false,
+        view: { path: "Views/cloud.md", id: "board" },
+        context: null,
+        groups: [...groups].map(([status, count]) => ({
+          values: { status },
+          count,
+          summaries: {},
+        })),
+      },
+    },
+    diagnostics: [],
+  };
 }
 
 function send(response, status, value) {
