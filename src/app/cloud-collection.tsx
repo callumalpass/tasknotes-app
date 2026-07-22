@@ -9,7 +9,7 @@ import {
   cloudConnect,
   isCloudCallback,
 } from "../cloud/connect";
-import { CloudTaskRepository } from "../storage/cloud-repository";
+import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
@@ -21,13 +21,11 @@ export default function CloudCollection({
   choose(choice: CollectionChoice): void;
   reset(): void;
 }) {
-  const [callbackError, setCallbackError] = useState<string | null>(() =>
-    cloudConnect.connection() && !cloudConnect.hostedSync()
-      ? "This saved connection does not support cloud sync. Choose an mdbase cloud collection."
-      : null,
-  );
+  const [callbackError, setCallbackError] = useState<string | null>(null);
   const [repository, setRepository] = useState(() =>
-    cloudConnect.hostedSync() ? new CloudTaskRepository(cloudConnect) : null,
+    cloudConnect.connection()
+      ? createConnectTaskRepository(cloudConnect)
+      : null,
   );
 
   const complete = useCallback(async (url: string) => {
@@ -44,15 +42,8 @@ export default function CloudCollection({
     }
     try {
       await cloudConnect.completeAuthorization(url);
-      if (!cloudConnect.hostedSync()) {
-        setCallbackError(
-          "Choose an mdbase cloud collection to use TaskNotes cloud sync.",
-        );
-        await finishBrowserCallback();
-        return;
-      }
       setCallbackError(null);
-      setRepository(new CloudTaskRepository(cloudConnect));
+      setRepository(createConnectTaskRepository(cloudConnect));
       await finishBrowserCallback();
     } catch (reason) {
       setCallbackError(message(reason));
@@ -116,11 +107,11 @@ function CloudConnection({
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">mdbase cloud</p>
-        <h1>Your tasks on every device.</h1>
+        <p className="eyebrow">mdbase</p>
+        <h1>Open your TaskNotes collection.</h1>
         <p>
-          TaskNotes keeps an offline copy here, then synchronizes changes in the
-          background.
+          Choose a collection from mdbase cloud or from a computer running
+          mdbase connect.
         </p>
       </div>
       {error || startError ? (

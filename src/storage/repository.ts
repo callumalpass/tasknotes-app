@@ -16,7 +16,7 @@ import type {
 } from "../domain/task";
 
 export interface CollectionInfo {
-  kind: "local" | "cloud";
+  kind: "local" | "connect";
   name: string;
   location: string;
   runtime: "browser" | "native";
@@ -40,7 +40,7 @@ export interface TaskRepository {
 }
 
 export interface RepositorySyncStatus {
-  mode: "local" | "cloud";
+  mode: "local" | "live" | "replicated";
   state: "local" | "synced" | "syncing" | "offline" | "issues";
   pending: number;
   issues: number;
