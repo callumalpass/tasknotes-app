@@ -203,6 +203,53 @@ test("projects, completes, and skips recurring occurrences by date", async ({
   await expect(page.getByRole("button", { name: "Unskip" })).toBeVisible();
 });
 
+test("materializes one durable occurrence and reconciles it after reload", async ({
+  page,
+}) => {
+  await page
+    .getByLabel("New task title")
+    .fill("Materialized review today every day");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^Materialized review Today/ })
+    .click();
+  await page.getByRole("button", { name: "Make occurrence note" }).click();
+  await expect(
+    page.getByText("Occurrence note", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Complete", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Mark open" })).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByText("Occurrence note", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Materialized review Today/ }),
+  ).toHaveCount(0);
+  const persisted = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const tasks = await tasknotes.getDirectoryHandle("tasks");
+    const documents: string[] = [];
+    for await (const [, handle] of tasks.entries()) {
+      if (handle.kind !== "file") continue;
+      documents.push(await (await handle.getFile()).text());
+    }
+    return {
+      occurrences: documents.filter((source) =>
+        source.includes("occurrence_date:"),
+      ).length,
+      parentReconciled: documents.some((source) =>
+        source.includes("complete_instances:"),
+      ),
+    };
+  });
+  expect(persisted).toEqual({ occurrences: 1, parentReconciled: true });
+});
+
 test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
   await page.getByLabel("New task title").fill("Measure mobile performance");
   await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -231,6 +278,32 @@ test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "Remove Warm start profile" }).click();
   await expect(page.getByRole("button", { name: "1 session" })).toHaveCount(0);
+});
+
+test("keeps timers on different tasks independent", async ({ page }) => {
+  for (const title of ["Parallel research", "Parallel build"]) {
+    const input = page.getByLabel("New task title");
+    await input.fill(title);
+    await input.press("Enter");
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+  }
+
+  await page.getByText("Parallel research", { exact: true }).click();
+  await page.getByLabel("Timer description").fill("Research");
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await page.getByText("Parallel build", { exact: true }).click();
+  await page.getByLabel("Timer description").fill("Build");
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await page.getByText("Parallel research", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+  await page.getByRole("button", { name: "Stop" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByText("Parallel build", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
 });
 
 test("creates a task from the collection's configured Markdown template", async ({

@@ -9,6 +9,7 @@ import type {
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 
+import { todayString } from "../domain/task";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { CloudTaskRepository } from "./cloud-repository";
 import { createConnectTaskRepository } from "./connect-repository";
@@ -109,6 +110,60 @@ describe("relay task repository", () => {
     expect(
       fixture.update.mock.calls.map(([input]) => input.if_revision),
     ).toEqual(["r1", "r2", "r3", "r4"]);
+  });
+
+  it("creates one durable relay occurrence and reconciles its parent", async () => {
+    const parent = taskRecord("series", "Relay recurrence", "r1");
+    parent.frontmatter.scheduled = "2026-08-05";
+    parent.frontmatter.recurrence = "FREQ=DAILY;INTERVAL=1;DTSTART=20260805";
+    const fixture = relayFixture([parent]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const first = await repository.materializeOccurrence(
+      "series",
+      "2026-08-05",
+    );
+    const duplicate = await repository.materializeOccurrence(
+      "series",
+      "2026-08-05",
+    );
+    expect(first.created).toBe(true);
+    expect(duplicate).toMatchObject({
+      created: false,
+      task: { id: first.task.id },
+    });
+    expect(fixture.create).toHaveBeenCalledTimes(1);
+
+    const completed = await repository.toggle(first.task.id);
+    expect(completed.completed).toBe(true);
+    expect((await repository.get("series"))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("maintains a rolling window when an existing relay collection opens", async () => {
+    const today = todayString();
+    const parent = taskRecord("rolling", "Relay rolling window", "r1");
+    parent.frontmatter.scheduled = today;
+    parent.frontmatter.recurrence = `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`;
+    parent.frontmatter.occurrence_materialization = "rolling";
+    parent.frontmatter.occurrence_past_horizon = "P0D";
+    parent.frontmatter.occurrence_future_horizon = "P2D";
+    const fixture = relayFixture([parent]);
+    const repository = new RelayTaskRepository(fixture.connect);
+
+    await repository.initialize();
+    expect(fixture.create).toHaveBeenCalledTimes(3);
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+
+    await repository.refresh();
+    expect(fixture.create).toHaveBeenCalledTimes(3);
   });
 
   it("archives, moves, hides, and restores a live collection task", async () => {

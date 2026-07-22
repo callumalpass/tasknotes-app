@@ -30,6 +30,37 @@ describe("TaskNotes collection configuration", () => {
     });
   });
 
+  it("resolves skipped statuses and occurrence defaults", () => {
+    const configuration = resolveTaskCollectionConfiguration({
+      "x-tasknotes": {
+        status: {
+          values: ["open", "done", "cancelled"],
+          completed_values: ["done"],
+          skipped_values: ["cancelled"],
+          default: "open",
+          default_skipped: "cancelled",
+        },
+        occurrences: {
+          default_materialization: "rolling",
+          default_next_trigger: "completion_or_skip",
+          past_horizon: "P1D",
+          future_horizon: "P21D",
+        },
+      },
+    });
+    expect(configuration.statuses).toMatchObject([
+      { value: "open", isCompleted: false },
+      { value: "done", isCompleted: true },
+      { value: "cancelled", isSkipped: true },
+    ]);
+    expect(configuration.occurrences).toEqual({
+      defaultMaterialization: "rolling",
+      defaultNextTrigger: "completion_or_skip",
+      pastHorizon: "P1D",
+      futureHorizon: "P21D",
+    });
+  });
+
   it("resolves presentation definitions and editable schema properties", () => {
     const configuration = resolveTaskCollectionConfiguration({
       schema: {

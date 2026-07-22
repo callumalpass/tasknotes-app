@@ -20,30 +20,30 @@ export function upgradeManagedTaskType(
     source.description === "A TaskNotes-compatible task." &&
     record(properties.mobileRevision).type === "integer" &&
     extension.contract === "tasknotes.task";
-  if (!managed || completedProperty.format !== "date-time") {
+  if (!managed) {
     return { changed: false, frontmatter: source, completedField };
   }
 
-  const rawCompletedValues = record(extension.status).completed_values;
-  const completedValues = Array.isArray(rawCompletedValues)
-    ? rawCompletedValues.filter(
-        (candidate): candidate is string => typeof candidate === "string",
-      )
-    : ["done"];
-  const required = Array.isArray(value.required)
-    ? [...new Set([...value.required, statusField])]
-    : [
-        "type",
-        "id",
-        roles.title ?? "title",
-        statusField,
-        roles.dateCreated ?? "dateCreated",
-        roles.dateModified ?? "dateModified",
-      ];
-  return {
-    changed: true,
-    completedField,
-    frontmatter: {
+  let frontmatter = source;
+  let changed = false;
+  if (completedProperty.format === "date-time") {
+    const rawCompletedValues = record(extension.status).completed_values;
+    const completedValues = Array.isArray(rawCompletedValues)
+      ? rawCompletedValues.filter(
+          (candidate): candidate is string => typeof candidate === "string",
+        )
+      : ["done"];
+    const required = Array.isArray(value.required)
+      ? [...new Set([...value.required, statusField])]
+      : [
+          "type",
+          "id",
+          roles.title ?? "title",
+          statusField,
+          roles.dateCreated ?? "dateCreated",
+          roles.dateModified ?? "dateModified",
+        ];
+    frontmatter = {
       ...source,
       schema: {
         ...schema,
@@ -66,7 +66,79 @@ export function upgradeManagedTaskType(
           ],
         },
       },
+    };
+    changed = true;
+  }
+  const occurrence = upgradeOccurrenceContract(frontmatter, statusField);
+  return {
+    changed: changed || occurrence.changed,
+    completedField,
+    frontmatter: occurrence.frontmatter,
+  };
+}
+
+function upgradeOccurrenceContract(
+  source: Record<string, unknown>,
+  statusField: string,
+): { changed: boolean; frontmatter: Record<string, unknown> } {
+  const extension = record(source["x-tasknotes"]);
+  const status = record(extension.status);
+  const values = stringList(status.values);
+  const usesAppDefaults =
+    values.includes("open") &&
+    values.includes("done") &&
+    values.every((value) =>
+      ["none", "open", "in-progress", "done", "cancelled"].includes(value),
+    );
+  const nextValues =
+    usesAppDefaults && !values.includes("cancelled")
+      ? [...values, "cancelled"]
+      : values;
+  const profiles = stringList(extension.profiles);
+  const nextProfiles = [
+    ...new Set([...profiles, "recurrence", "materialized-occurrences"]),
+  ];
+  const nextStatus = usesAppDefaults
+    ? {
+        ...status,
+        values: nextValues,
+        skipped_values: ["cancelled"],
+        default_skipped: "cancelled",
+      }
+    : status;
+  const schema = record(source.schema);
+  const schemaValue = record(schema.value);
+  const properties = record(schemaValue.properties);
+  const statusProperty = record(properties[statusField]);
+  const nextStatusProperty =
+    usesAppDefaults && Array.isArray(statusProperty.enum)
+      ? { ...statusProperty, enum: nextValues }
+      : statusProperty;
+  const frontmatter = {
+    ...source,
+    schema: {
+      ...schema,
+      value: {
+        ...schemaValue,
+        properties: { ...properties, [statusField]: nextStatusProperty },
+      },
     },
+    "x-tasknotes": {
+      ...extension,
+      profiles: nextProfiles,
+      status: nextStatus,
+      occurrences: {
+        default_materialization: "manual",
+        default_next_trigger: "completion",
+        past_horizon: "P0D",
+        future_horizon: "P14D",
+        ...record(extension.occurrences),
+      },
+    },
+  };
+  return {
+    changed: JSON.stringify(frontmatter) !== JSON.stringify(source),
+    frontmatter,
   };
 }
 
@@ -92,4 +164,10 @@ function record(value: unknown): Record<string, unknown> {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
 }

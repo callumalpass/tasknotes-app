@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   occurrenceTask,
+  findMaterializedOccurrenceTask,
+  materializedOccurrenceKeys,
   projectTodayTasks,
   projectUpcomingTasks,
+  rollingOccurrenceDates,
   taskOccurrencesBetween,
 } from "./task-occurrence";
 
@@ -96,6 +99,111 @@ describe("recurring task occurrences", () => {
       "2026-08-04",
       "2026-08-12",
     ]);
+  });
+
+  it("lets a materialized child replace the projected parent occurrence", () => {
+    const parent = {
+      ...task,
+      completeInstances: [],
+      skippedInstances: [],
+    };
+    const child: Task = {
+      ...oneOff("child", "2026-08-05T09:00"),
+      recurrenceParent: "[[tasks/weekly]]",
+      occurrenceDate: "2026-08-05",
+    };
+    const active = projectTodayTasks(
+      [parent, child],
+      "2026-08-05",
+      "2026-08-05",
+      10,
+    );
+    expect(active.today).toHaveLength(1);
+    expect(active.today[0]).toMatchObject({
+      key: "child",
+      task: { id: "child" },
+    });
+    expect(active.today[0].occurrence).toBeUndefined();
+
+    const completed = projectTodayTasks(
+      [parent, { ...child, completed: true, status: "done" }],
+      "2026-08-05",
+      "2026-08-05",
+      10,
+    );
+    expect(completed.totalCount).toBe(0);
+  });
+
+  it("keeps rolling materialization finite and rejects unbounded horizons", () => {
+    const rolling: Task = {
+      ...task,
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P1D",
+      occurrenceFutureHorizon: "P2D",
+    };
+    expect(rollingOccurrenceDates(rolling, new Date(2026, 7, 5))).toEqual([
+      "2026-08-05",
+      "2026-08-06",
+      "2026-08-07",
+    ]);
+    expect(() =>
+      rollingOccurrenceDates(
+        { ...rolling, occurrenceFutureHorizon: "unbounded" },
+        new Date(2026, 7, 5),
+      ),
+    ).toThrow(/invalid_occurrence_horizon/);
+  });
+
+  it("clamps calendar-month rolling horizons at the end of the month", () => {
+    const rolling: Task = {
+      ...task,
+      scheduled: "2026-01-31",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260131",
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P0D",
+      occurrenceFutureHorizon: "P1M",
+    };
+    const dates = rollingOccurrenceDates(rolling, new Date(2026, 0, 31));
+    expect(dates.at(-1)).toBe("2026-02-28");
+    expect(dates).toHaveLength(29);
+  });
+
+  it("refuses to choose between duplicate materialized occurrence notes", () => {
+    const child = {
+      ...oneOff("first-child", "2026-08-05"),
+      recurrenceParent: "[[tasks/weekly]]",
+      occurrenceDate: "2026-08-05",
+    };
+    expect(() =>
+      findMaterializedOccurrenceTask(
+        [task, child, { ...child, id: "second-child" }],
+        task,
+        "2026-08-05",
+      ),
+    ).toThrow(/duplicate_occurrence_note/);
+  });
+
+  it("indexes materialized identities linearly for large collections", () => {
+    const count = 10_000;
+    const parents = Array.from({ length: count }, (_, index) => ({
+      ...oneOff(`parent-${index}`, "2026-08-05"),
+      path: `tasks/parent-${index}.md`,
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    }));
+    const children = parents.map((parent, index) => ({
+      ...oneOff(`child-${index}`, "2026-08-05"),
+      recurrenceParent: `[[${parent.path.slice(0, -3)}]]`,
+      occurrenceDate: "2026-08-05",
+    }));
+
+    const startedAt = performance.now();
+    const keys = materializedOccurrenceKeys([...parents, ...children]);
+    const elapsedMs = performance.now() - startedAt;
+
+    expect(keys.size).toBe(count);
+    expect(elapsedMs).toBeLessThan(1_000);
   });
 });
 

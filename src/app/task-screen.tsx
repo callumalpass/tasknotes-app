@@ -42,6 +42,11 @@ type Draft = Pick<
   | "projects"
   | "recurrence"
   | "recurrenceAnchor"
+  | "occurrenceMaterialization"
+  | "occurrenceNextTrigger"
+  | "occurrenceTemplate"
+  | "occurrencePastHorizon"
+  | "occurrenceFutureHorizon"
   | "reminders"
   | "timeEstimate"
   | "customProperties"
@@ -51,10 +56,12 @@ export function TaskScreen({
   id,
   occurrenceDate,
   onBack,
+  onMaterialized,
 }: {
   id: string;
   occurrenceDate?: string;
   onBack(): void;
+  onMaterialized(task: Task): void;
 }) {
   const { task, loading, error } = useTask(id);
   if (loading)
@@ -80,6 +87,7 @@ export function TaskScreen({
       task={task}
       occurrenceDate={occurrenceDate}
       onBack={onBack}
+      onMaterialized={onMaterialized}
     />
   );
 }
@@ -88,16 +96,19 @@ function TaskEditor({
   task,
   occurrenceDate,
   onBack,
+  onMaterialized,
 }: {
   task: Task;
   occurrenceDate?: string;
   onBack(): void;
+  onMaterialized(task: Task): void;
 }) {
   const {
     updateTask,
     deleteTask,
     toggleTask,
     skipTask,
+    materializeOccurrence,
     startTimeTracking,
     stopTimeTracking,
     replaceTimeEntries,
@@ -111,6 +122,7 @@ function TaskEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
+  const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [timeAction, setTimeAction] = useState(false);
   const [timeError, setTimeError] = useState<string | null>(null);
   const [archiveAction, setArchiveAction] = useState(false);
@@ -146,6 +158,11 @@ function TaskEditor({
           projects: value.projects,
           recurrence: value.recurrence ?? null,
           recurrenceAnchor: value.recurrenceAnchor,
+          occurrenceMaterialization: value.occurrenceMaterialization,
+          occurrenceNextTrigger: value.occurrenceNextTrigger,
+          occurrenceTemplate: value.occurrenceTemplate ?? null,
+          occurrencePastHorizon: value.occurrencePastHorizon ?? null,
+          occurrenceFutureHorizon: value.occurrenceFutureHorizon ?? null,
           reminders: value.reminders,
           timeEstimate: value.timeEstimate ?? null,
           customProperties: value.customProperties,
@@ -202,20 +219,51 @@ function TaskEditor({
   }
 
   async function toggleOccurrence() {
-    if (!occurrenceDate || occurrenceAction) return;
+    const date = occurrenceDate ?? task.occurrenceDate;
+    if (!date || occurrenceAction) return;
     setOccurrenceAction(true);
+    setOccurrenceError(null);
     try {
-      await toggleTask(task.id, occurrenceDate);
+      await toggleTask(task.id, task.occurrenceDate ? undefined : date);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
     } finally {
       if (mounted.current) setOccurrenceAction(false);
     }
   }
 
   async function toggleSkippedOccurrence() {
+    const date = occurrenceDate ?? task.occurrenceDate;
+    if (!date || occurrenceAction) return;
+    setOccurrenceAction(true);
+    setOccurrenceError(null);
+    try {
+      await skipTask(task.id, date);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function materialize() {
     if (!occurrenceDate || occurrenceAction) return;
     setOccurrenceAction(true);
+    setOccurrenceError(null);
     try {
-      await skipTask(task.id, occurrenceDate);
+      const result = await materializeOccurrence(task.id, occurrenceDate);
+      onMaterialized(result.task);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
     } finally {
       if (mounted.current) setOccurrenceAction(false);
     }
@@ -342,22 +390,30 @@ function TaskEditor({
         </div>
       ) : null}
 
-      {occurrenceDate && task.recurrence ? (
+      {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
         <div className="occurrence-banner">
           <div>
-            <span>Occurrence</span>
-            <strong>{formatOccurrenceDate(occurrenceDate)}</strong>
+            <span>
+              {task.occurrenceDate ? "Occurrence note" : "Occurrence"}
+            </span>
+            <strong>
+              {formatOccurrenceDate(task.occurrenceDate ?? occurrenceDate!)}
+            </strong>
           </div>
-          <div>
+          <div className="occurrence-actions">
             <button
               className="text-action"
               disabled={occurrenceAction}
               type="button"
               onClick={() => void toggleOccurrence()}
             >
-              {task.completeInstances.includes(occurrenceDate)
-                ? "Mark open"
-                : "Complete"}
+              {task.occurrenceDate
+                ? task.completed
+                  ? "Mark open"
+                  : "Complete"
+                : task.completeInstances.includes(occurrenceDate!)
+                  ? "Mark open"
+                  : "Complete"}
             </button>
             <button
               className="text-action"
@@ -365,11 +421,30 @@ function TaskEditor({
               type="button"
               onClick={() => void toggleSkippedOccurrence()}
             >
-              {task.skippedInstances.includes(occurrenceDate)
-                ? "Unskip"
-                : "Skip"}
+              {task.occurrenceDate
+                ? task.skipped
+                  ? "Unskip"
+                  : "Skip"
+                : task.skippedInstances.includes(occurrenceDate!)
+                  ? "Unskip"
+                  : "Skip"}
             </button>
+            {occurrenceDate && task.recurrence ? (
+              <button
+                className="text-action"
+                disabled={occurrenceAction}
+                type="button"
+                onClick={() => void materialize()}
+              >
+                Make occurrence note
+              </button>
+            ) : null}
           </div>
+          {occurrenceError ? (
+            <p className="inline-error" role="alert">
+              {occurrenceError}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -395,6 +470,15 @@ function TaskEditor({
             .sort((left, right) => left.order - right.order)
             .map((status) => (
               <Choice
+                disabled={
+                  Boolean(task.occurrenceDate) &&
+                  statusKind(status) !==
+                    (task.completed
+                      ? "completed"
+                      : task.skipped
+                        ? "skipped"
+                        : "active")
+                }
                 key={status.value}
                 selected={draft.status === status.value}
                 onClick={() => change({ status: status.value })}
@@ -402,6 +486,12 @@ function TaskEditor({
                 {status.label}
               </Choice>
             ))}
+          {task.occurrenceDate ? (
+            <p className="choice-help">
+              Use the occurrence actions above to complete, skip, or reopen this
+              note.
+            </p>
+          ) : null}
         </Fieldset>
 
         <div className="field-grid timing-fields">
@@ -507,6 +597,17 @@ function TaskEditor({
           onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
           onChange={(recurrence) => change({ recurrence })}
         />
+
+        {draft.recurrence && !task.occurrenceDate ? (
+          <OccurrencePolicyField
+            futureHorizon={draft.occurrenceFutureHorizon}
+            materialization={draft.occurrenceMaterialization ?? "manual"}
+            nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
+            pastHorizon={draft.occurrencePastHorizon}
+            template={draft.occurrenceTemplate}
+            onChange={(patch) => change(patch)}
+          />
+        ) : null}
 
         <ReminderField
           reminders={draft.reminders}
@@ -793,10 +894,12 @@ function Fieldset({
 
 function Choice({
   selected,
+  disabled = false,
   children,
   onClick,
 }: {
   selected: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
   onClick(): void;
 }) {
@@ -804,12 +907,24 @@ function Choice({
     <button
       aria-pressed={selected}
       className={selected ? "is-selected" : undefined}
+      disabled={disabled}
       type="button"
       onClick={onClick}
     >
       {children}
     </button>
   );
+}
+
+function statusKind(status: {
+  isCompleted: boolean;
+  isSkipped?: boolean;
+}): "active" | "completed" | "skipped" {
+  return status.isCompleted
+    ? "completed"
+    : status.isSkipped
+      ? "skipped"
+      : "active";
 }
 
 function ListField({
@@ -1036,6 +1151,100 @@ function RecurrenceField({
   );
 }
 
+function OccurrencePolicyField({
+  materialization,
+  nextTrigger,
+  template,
+  pastHorizon,
+  futureHorizon,
+  onChange,
+}: {
+  materialization: "manual" | "on_completion" | "rolling";
+  nextTrigger: "completion" | "completion_or_skip";
+  template?: string;
+  pastHorizon?: string;
+  futureHorizon?: string;
+  onChange(value: Partial<Draft>): void;
+}) {
+  return (
+    <section className="repeat-fields occurrence-policy">
+      <div className="repeat-heading">
+        <div>
+          <span className="field-label">Occurrence notes</span>
+          <p>Keep individual Markdown notes for recurring dates.</p>
+        </div>
+        <select
+          aria-label="Occurrence note policy"
+          value={materialization}
+          onChange={(event) =>
+            onChange({
+              occurrenceMaterialization: event.target
+                .value as Task["occurrenceMaterialization"],
+            })
+          }
+        >
+          <option value="manual">When I choose</option>
+          <option value="on_completion">
+            Create the next after completion
+          </option>
+          <option value="rolling">Keep a rolling window</option>
+        </select>
+      </div>
+      {materialization === "on_completion" ? (
+        <label className="form-field">
+          <span>Advance after</span>
+          <select
+            value={nextTrigger}
+            onChange={(event) =>
+              onChange({
+                occurrenceNextTrigger: event.target
+                  .value as Task["occurrenceNextTrigger"],
+              })
+            }
+          >
+            <option value="completion">Completion</option>
+            <option value="completion_or_skip">Completion or skip</option>
+          </select>
+        </label>
+      ) : null}
+      {materialization === "rolling" ? (
+        <div className="field-grid metadata-fields">
+          <label className="form-field">
+            <span>Past horizon</span>
+            <input
+              placeholder="P0D"
+              value={pastHorizon ?? ""}
+              onChange={(event) =>
+                onChange({ occurrencePastHorizon: event.target.value })
+              }
+            />
+          </label>
+          <label className="form-field">
+            <span>Future horizon</span>
+            <input
+              placeholder="P14D"
+              value={futureHorizon ?? ""}
+              onChange={(event) =>
+                onChange({ occurrenceFutureHorizon: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      ) : null}
+      <label className="form-field">
+        <span>Occurrence template</span>
+        <input
+          placeholder="Templates/Occurrence.md"
+          value={template ?? ""}
+          onChange={(event) =>
+            onChange({ occurrenceTemplate: event.target.value })
+          }
+        />
+      </label>
+    </section>
+  );
+}
+
 function weekdayName(value: string): string {
   return (
     {
@@ -1123,6 +1332,11 @@ function toDraft(task: Task): Draft {
     projects: task.projects,
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
+    occurrenceMaterialization: task.occurrenceMaterialization,
+    occurrenceNextTrigger: task.occurrenceNextTrigger,
+    occurrenceTemplate: task.occurrenceTemplate,
+    occurrencePastHorizon: task.occurrencePastHorizon,
+    occurrenceFutureHorizon: task.occurrenceFutureHorizon,
     reminders: task.reminders,
     timeEstimate: task.timeEstimate,
     customProperties: { ...task.customProperties },

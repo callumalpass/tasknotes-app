@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const development = process.argv.includes("--development");
 const webOnly = process.env.TASKNOTES_WEB_ONLY === "1";
@@ -9,9 +9,7 @@ const appUrl = (
   process.env.TASKNOTES_APP_URL ??
   (development ? "http://127.0.0.1:4173" : "https://tasknotes.dev/app")
 ).replace(/\/$/, "");
-const resources = buildTaskNotesMdbaseResources({
-  profiles: ["core-lite"],
-});
+const resources = buildAppTaskNotesResources();
 const target = resolve(
   import.meta.dirname,
   "..",

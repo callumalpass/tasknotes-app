@@ -830,6 +830,18 @@ button:disabled {
   border-color: color-mix(in srgb, var(--accent), var(--paper) 55%);
 }
 
+.choice-field button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.choice-help {
+  flex-basis: 100%;
+  margin: 5px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1057,6 +1069,34 @@ button:disabled {
   margin-bottom: 1px;
 }
 
+.occurrence-policy {
+  padding-bottom: 22px;
+}
+
+.occurrence-policy .repeat-heading {
+  align-items: start;
+  padding-bottom: 18px;
+}
+
+.occurrence-policy .repeat-heading p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.occurrence-policy .repeat-heading select {
+  min-height: 40px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.occurrence-policy > .form-field,
+.occurrence-policy > .field-grid {
+  padding-top: 14px;
+}
+
 .custom-rule-field {
   display: block;
   padding-bottom: 22px;
@@ -1236,9 +1276,15 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.occurrence-banner > div:last-child {
+.occurrence-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
+}
+
+.occurrence-banner > .inline-error {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .text-action.danger {

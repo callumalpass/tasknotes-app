@@ -6,6 +6,7 @@ import {
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
 import { MarkdownCollection } from "./collection";
+import { todayString } from "../domain/task";
 import { TaskIndex } from "./index";
 import { IndexedMarkdownRepository } from "./repository";
 import { MemoryVault } from "../test/memory-vault";
@@ -165,6 +166,83 @@ describe("IndexedMarkdownRepository", () => {
     });
   });
 
+  it("materializes durable occurrence notes without duplicates and reconciles completion", async () => {
+    const parent = await repository.create({
+      title: "Daily durable task",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+      occurrenceMaterialization: "on_completion",
+      occurrenceNextTrigger: "completion_or_skip",
+    });
+    const first = await repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const second = await repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    expect(first.created).toBe(true);
+    expect(second).toMatchObject({
+      created: false,
+      task: { id: first.task.id },
+    });
+    expect(first.task).toMatchObject({
+      occurrenceDate: "2026-08-05",
+      recurrenceParent: `[[tasks/${parent.id}]]`,
+    });
+    expect(await vault.exists(first.task.path)).toBe(true);
+
+    const completed = await repository.toggle(first.task.id);
+    expect(completed.completed).toBe(true);
+    expect((await repository.get(parent.id))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.occurrenceDate === "2026-08-06",
+      ),
+    ).toHaveLength(1);
+    await repository.refresh();
+    expect(await repository.get(first.task.id)).toMatchObject({
+      completed: true,
+      occurrenceDate: "2026-08-05",
+    });
+    await repository.toggle(first.task.id);
+    const skipped = await repository.skip(first.task.id, "2026-08-05");
+    expect(skipped).toMatchObject({ skipped: true, status: "cancelled" });
+    expect((await repository.get(parent.id))?.skippedInstances).toContain(
+      "2026-08-05",
+    );
+  });
+
+  it("maintains a finite rolling occurrence window after parent writes", async () => {
+    const today = todayString();
+    const parent = await repository.create({
+      title: "Rolling daily task",
+      scheduled: today,
+      recurrence: `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`,
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P0D",
+      occurrenceFutureHorizon: "P2D",
+    });
+    expect(parent.operationWarnings).toBeUndefined();
+    const tasks = await repository.list({ status: "all", limit: 100 });
+    const occurrences = tasks.filter(
+      (task) => task.recurrenceParent && task.occurrenceDate,
+    );
+    expect(occurrences).toHaveLength(3);
+    expect(new Set(occurrences.map((task) => task.occurrenceDate)).size).toBe(
+      3,
+    );
+    await repository.update(parent.id, { body: "No duplicates" });
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+  });
+
   it("persists start, stop, edit, and removal of time sessions", async () => {
     const created = await repository.create({ title: "Profile indexer" });
     const started = await repository.startTimeTracking(created.id, "Benchmark");
@@ -200,6 +278,27 @@ describe("IndexedMarkdownRepository", () => {
     await expect(repository.stopTimeTracking(created.id)).rejects.toThrow(
       /no_active/,
     );
+  });
+
+  it("tracks work on multiple tasks at the same time", async () => {
+    const [first, second] = await Promise.all([
+      repository.create({ title: "Parallel research" }),
+      repository.create({ title: "Parallel build" }),
+    ]);
+    const [firstStarted, secondStarted] = await Promise.all([
+      repository.startTimeTracking(first.id, "Research"),
+      repository.startTimeTracking(second.id, "Build"),
+    ]);
+    expect(firstStarted.timeEntries.at(-1)?.endTime).toBeUndefined();
+    expect(secondStarted.timeEntries.at(-1)?.endTime).toBeUndefined();
+
+    await repository.stopTimeTracking(first.id);
+    expect(
+      (await repository.get(first.id))?.timeEntries.at(-1)?.endTime,
+    ).toMatch(/Z$/);
+    expect(
+      (await repository.get(second.id))?.timeEntries.at(-1)?.endTime,
+    ).toBeUndefined();
   });
 
   it("hides archived tasks and restores them without deleting Markdown", async () => {

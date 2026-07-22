@@ -179,6 +179,9 @@ export function AppShell() {
             id={route.id}
             occurrenceDate={route.occurrence}
             onBack={() => window.history.back()}
+            onMaterialized={(task) =>
+              navigate({ page: "task", id: task.id }, true)
+            }
           />
         ) : null}
       </main>

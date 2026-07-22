@@ -20,7 +20,7 @@ export function UpcomingScreen({
   onOpen(task: Task, occurrenceDate?: string): void;
 }) {
   const { toggleTask } = useRepository();
-  const { tasks, loading, error } = useTasks({ status: "open", limit: 50_000 });
+  const { tasks, loading, error } = useTasks({ status: "all", limit: 50_000 });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
   const range = useMemo(() => occurrenceRange(0, 60), []);

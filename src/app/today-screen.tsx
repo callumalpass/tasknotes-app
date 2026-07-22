@@ -30,7 +30,7 @@ export function TodayScreen({
 }) {
   const { createTask, toggleTask, refreshing, sync, configuration } =
     useRepository();
-  const { tasks, loading, error } = useTasks({ status: "open", limit: 50_000 });
+  const { tasks, loading, error } = useTasks({ status: "all", limit: 50_000 });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
   const range = useMemo(() => occurrenceRange(30, 0), []);

@@ -8,6 +8,7 @@ describe("TaskNotes task model app boundary", () => {
       status("todo", "To do", 1),
       status("doing", "Doing", 2),
       status("done", "Done", 3, true),
+      status("cancelled", "Cancelled", 4, false, true),
     ],
     priorities: [priority("later", "Later", 1), priority("now", "Now", 2)],
     defaults: { status: "todo", priority: "later", taskTag: "task" },
@@ -292,6 +293,139 @@ describe("TaskNotes task model app boundary", () => {
       "tasks/archive-me.md",
     );
   });
+
+  it("materializes an occurrence idempotently and reconciles child state", async () => {
+    const parent = model.read({
+      path: "tasks/series.md",
+      body: "Parent checklist",
+      frontmatter: {
+        type: "task",
+        id: "series",
+        title: "Daily review",
+        status: "todo",
+        priority: "later",
+        scheduled: "2026-08-05",
+        recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+        occurrence_materialization: "on_completion",
+        occurrence_next_trigger: "completion_or_skip",
+        dateCreated: "2026-08-01T00:00:00Z",
+        dateModified: "2026-08-01T00:00:00Z",
+      },
+    });
+    const materialized = await model.materializeOccurrence(
+      parent,
+      "2026-08-05",
+      [],
+      { id: "occurrence", now: "2026-08-05T08:00:00Z" },
+    );
+    expect(materialized).toMatchObject({ created: true, warnings: [] });
+    expect(materialized.task).toMatchObject({
+      id: "occurrence",
+      recurrenceParent: "[[tasks/series]]",
+      occurrenceDate: "2026-08-05",
+      scheduled: "2026-08-05",
+      recurrence: undefined,
+      body: "Parent checklist",
+    });
+    expect(materialized.task.frontmatter).toMatchObject({
+      recurrence_parent: "[[tasks/series]]",
+      occurrence_date: "2026-08-05",
+    });
+
+    const duplicate = await model.materializeOccurrence(
+      parent,
+      "2026-08-05",
+      [materialized.task],
+      { id: "ignored", now: "2026-08-05T08:01:00Z" },
+    );
+    expect(duplicate).toMatchObject({
+      created: false,
+      task: { id: "occurrence" },
+    });
+    expect(() =>
+      model.update(
+        materialized.task,
+        { status: "done" },
+        { now: "2026-08-05T08:30:00Z" },
+      ),
+    ).toThrow(/materialized_occurrence_transition_required/);
+    expect(
+      model.update(
+        materialized.task,
+        { status: "doing" },
+        { now: "2026-08-05T08:30:00Z" },
+      ).status,
+    ).toBe("doing");
+
+    const completed = model.transitionMaterializedOccurrence(
+      materialized.task,
+      parent,
+      "toggle",
+      { now: "2026-08-05T09:00:00Z" },
+    );
+    expect(completed.occurrence).toMatchObject({
+      completed: true,
+      status: "done",
+    });
+    expect(completed.parent.completeInstances).toContain("2026-08-05");
+    expect(completed.materializeNextDate).toBe("2026-08-06");
+
+    const skipped = model.transitionMaterializedOccurrence(
+      materialized.task,
+      parent,
+      "skip",
+      { now: "2026-08-05T09:00:00Z" },
+    );
+    expect(skipped.occurrence).toMatchObject({
+      skipped: true,
+      status: "cancelled",
+    });
+    expect(skipped.parent.skippedInstances).toContain("2026-08-05");
+    expect(skipped.materializeNextDate).toBe("2026-08-06");
+  });
+
+  it("applies occurrence templates while retaining canonical identity", async () => {
+    const parent = model.read({
+      path: "tasks/template-series.md",
+      body: "Parent body",
+      frontmatter: {
+        type: "task",
+        id: "template-series",
+        title: "Weekly planning",
+        status: "todo",
+        priority: "later",
+        scheduled: "2026-08-05",
+        recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+        occurrence_template: "Templates/Occurrence.md",
+        dateCreated: "2026-08-01T00:00:00Z",
+        dateModified: "2026-08-01T00:00:00Z",
+      },
+    });
+    const result = await model.materializeOccurrence(
+      parent,
+      "2026-08-05",
+      [],
+      { id: "templated-occurrence", now: "2026-08-05T08:00:00Z" },
+      async () => `---
+title: "{{title}} note"
+scheduled: 2026-08-07
+external_owner: portable
+---
+Occurrence body for {{title}}`,
+    );
+    expect(result.task).toMatchObject({
+      title: "Weekly planning note",
+      scheduled: "2026-08-07",
+      body: "Occurrence body for Weekly planning",
+      recurrenceParent: "[[tasks/template-series]]",
+      occurrenceDate: "2026-08-05",
+    });
+    expect(result.task.frontmatter).toMatchObject({
+      external_owner: "portable",
+      recurrence_parent: "[[tasks/template-series]]",
+      occurrence_date: "2026-08-05",
+    });
+  });
 });
 
 function status(
@@ -299,6 +433,7 @@ function status(
   label: string,
   order: number,
   isCompleted = false,
+  isSkipped = false,
 ) {
   return {
     id: value,
@@ -306,6 +441,7 @@ function status(
     label,
     color: "#808080",
     isCompleted,
+    isSkipped,
     order,
     autoArchive: false,
     autoArchiveDelay: 5,

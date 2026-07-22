@@ -376,6 +376,102 @@ describe("cloud task repository", () => {
     }
   });
 
+  it("synchronizes materialized occurrence identity and parent state across devices", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    for (const [id, name] of [
+      [phoneId, "Phone"],
+      [tabletId, "Tablet"],
+    ] as const)
+      authority.registerReplica({
+        id,
+        name,
+        mode: "read_write",
+        allowedTypes: ["task"],
+      });
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, authority.transport(phoneId)),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const parent = await phone.create({
+      title: "Cloud daily review",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    await phone.refresh();
+    await tablet.refresh();
+
+    const occurrence = await phone.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    await phone.refresh();
+    await tablet.refresh();
+    expect(await tablet.get(occurrence.task.id)).toMatchObject({
+      occurrenceDate: "2026-08-05",
+      recurrenceParent: `[[tasks/${parent.id}]]`,
+    });
+
+    await tablet.toggle(occurrence.task.id);
+    await tablet.refresh();
+    await phone.refresh();
+    expect(await phone.get(occurrence.task.id)).toMatchObject({
+      completed: true,
+    });
+    expect((await phone.get(parent.id))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+  });
+
+  it("publishes a finite rolling window in the same cloud refresh", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    for (const [id, name] of [
+      [phoneId, "Phone"],
+      [tabletId, "Tablet"],
+    ] as const)
+      authority.registerReplica({
+        id,
+        name,
+        mode: "read_write",
+        allowedTypes: ["task"],
+      });
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, authority.transport(phoneId)),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const today = todayString();
+    await phone.create({
+      title: "Cloud rolling window",
+      scheduled: today,
+      recurrence: `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`,
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P0D",
+      occurrenceFutureHorizon: "P2D",
+    });
+
+    await phone.refresh();
+    await tablet.refresh();
+    expect(
+      (await tablet.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+    expect(await phone.syncStatus()).toMatchObject({ pending: 0 });
+  });
+
   it("uses the contract's type name and records folder", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resourcesWithType("todo", "records/tasks"),

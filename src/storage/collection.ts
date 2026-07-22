@@ -6,7 +6,10 @@ import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
+import {
+  defaultTaskCollectionConfiguration,
+  resolveTaskCollectionConfiguration,
+} from "../domain/task-configuration";
 import {
   upgradeManagedTaskDocument,
   upgradeManagedTaskType,
@@ -14,6 +17,7 @@ import {
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskTimeEntry,
   UpdateTaskInput,
@@ -28,13 +32,51 @@ export class MarkdownCollection {
 
   async initialize(): Promise<void> {
     await this.vault.initialize();
-    const resources = buildTaskNotesMdbaseResources();
+    const defaults = defaultTaskCollectionConfiguration();
+    const resources = buildTaskNotesMdbaseResources({
+      profiles: ["core-lite", "recurrence", "materialized-occurrences"],
+      modelConfig: {
+        ...defaults,
+        statuses: [
+          ...defaults.statuses,
+          {
+            id: "cancelled",
+            value: "cancelled",
+            label: "Cancelled",
+            color: "#808080",
+            isCompleted: false,
+            isSkipped: true,
+            excludeFromCycle: true,
+            order: defaults.statuses.length,
+            autoArchive: false,
+            autoArchiveDelay: 5,
+          },
+        ],
+      },
+    });
+    const generatedType = structuredClone(resources.type);
+    const extension = generatedType["x-tasknotes"] as Record<string, unknown>;
+    extension.status = {
+      ...(extension.status as Record<string, unknown>),
+      skipped_values: ["cancelled"],
+      default_skipped: "cancelled",
+    };
+    extension.occurrences = {
+      default_materialization: defaults.occurrences.defaultMaterialization,
+      default_next_trigger: defaults.occurrences.defaultNextTrigger,
+      past_horizon: defaults.occurrences.pastHorizon,
+      future_horizon: defaults.occurrences.futureHorizon,
+    };
+    const generated = parseFrontmatter(resources.typeDocument);
     await this.vault.ensureText(
       resources.paths.config,
       resources.configDocument,
     );
     await this.ensureViewConfiguration(resources.paths.config);
-    await this.vault.ensureText(resources.paths.type, resources.typeDocument);
+    await this.vault.ensureText(
+      resources.paths.type,
+      serializeMarkdownDocument(generatedType, generated.body),
+    );
     const parsedType = parseFrontmatter(
       await this.vault.readText(resources.paths.type),
     );
@@ -106,6 +148,36 @@ export class MarkdownCollection {
 
   skipTask(task: Task, now: string, currentDate: string): Task {
     return this.taskModel.skip(task, { now, currentDate });
+  }
+
+  materializeOccurrence(
+    parent: Task,
+    targetDate: string,
+    existingOccurrences: readonly Task[],
+    id: string,
+    now: string,
+  ): Promise<MaterializeOccurrenceResult> {
+    return this.taskModel.materializeOccurrence(
+      parent,
+      targetDate,
+      existingOccurrences,
+      { id, now },
+      (path) => this.vault.readText(path),
+    );
+  }
+
+  transitionMaterializedOccurrence(
+    occurrence: Task,
+    parent: Task,
+    action: "toggle" | "skip",
+    now: string,
+  ) {
+    return this.taskModel.transitionMaterializedOccurrence(
+      occurrence,
+      parent,
+      action,
+      { now },
+    );
   }
 
   startTimeTracking(task: Task, now: string, description?: string): Task {

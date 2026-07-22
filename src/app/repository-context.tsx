@@ -21,6 +21,7 @@ import {
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskListQuery,
   TaskStats,
@@ -52,6 +53,10 @@ interface RepositoryContextValue {
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   toggleTask(id: string, occurrenceDate?: string): Promise<Task>;
   skipTask(id: string, occurrenceDate: string): Promise<Task>;
+  materializeOccurrence(
+    parentId: string,
+    occurrenceDate: string,
+  ): Promise<MaterializeOccurrenceResult>;
   startTimeTracking(id: string, description?: string): Promise<Task>;
   stopTimeTracking(id: string): Promise<Task>;
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
@@ -210,6 +215,18 @@ export function RepositoryProvider({
     },
     [bump, repository],
   );
+  const materializeOccurrence = useCallback(
+    async (parentId: string, occurrenceDate: string) => {
+      const result = await repository.materializeOccurrence(
+        parentId,
+        occurrenceDate,
+      );
+      bump();
+      void syncTaskNotifications(result.task).catch(() => undefined);
+      return result;
+    },
+    [bump, repository],
+  );
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
       const task = await repository.startTimeTracking(id, description);
@@ -283,6 +300,7 @@ export function RepositoryProvider({
       updateTask,
       toggleTask,
       skipTask,
+      materializeOccurrence,
       startTimeTracking,
       stopTimeTracking,
       replaceTimeEntries,
@@ -306,6 +324,7 @@ export function RepositoryProvider({
       updateTask,
       toggleTask,
       skipTask,
+      materializeOccurrence,
       startTimeTracking,
       stopTimeTracking,
       replaceTimeEntries,

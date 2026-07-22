@@ -15,6 +15,12 @@ import {
 } from "@mdbase/connect-sync";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
+import {
+  findOccurrenceParent,
+  findMaterializedOccurrenceTask,
+  occurrenceRecordId,
+  rollingOccurrenceDates,
+} from "../domain/task-occurrence";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -27,6 +33,7 @@ import {
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskListQuery,
   TaskStats,
@@ -132,6 +139,15 @@ export class CloudTaskRepository implements TaskRepository {
       );
     this.configureModel(resources);
     await this.reloadCache();
+    const rollingCreated = await this.maintainRollingOccurrencesUnlocked();
+    if (rollingCreated) {
+      try {
+        await this.requireReplica().sync();
+        await this.reloadCache();
+      } catch (reason) {
+        this.setOffline(reason);
+      }
+    }
     await this.updateStatusCounts();
     this.emit();
   }
@@ -156,6 +172,10 @@ export class CloudTaskRepository implements TaskRepository {
     try {
       await replica.sync();
       await this.reloadCache();
+      if (await this.maintainRollingOccurrencesUnlocked()) {
+        await replica.sync();
+        await this.reloadCache();
+      }
       await this.updateStatusCounts();
       this.status = {
         ...this.status,
@@ -165,6 +185,7 @@ export class CloudTaskRepository implements TaskRepository {
       };
     } catch (reason) {
       await this.reloadCache();
+      await this.maintainRollingOccurrencesUnlocked();
       await this.updateStatusCounts();
       this.setOffline(reason);
     }
@@ -235,8 +256,9 @@ export class CloudTaskRepository implements TaskRepository {
       types: [this.taskTypeName],
     });
     this.cache.set(task.id, { task, recordId: record.record_id });
+    const retained = await this.withRollingWarnings(task);
     await this.afterLocalMutation();
-    return task;
+    return retained;
   }
 
   update(id: string, input: UpdateTaskInput): Promise<Task> {
@@ -251,12 +273,29 @@ export class CloudTaskRepository implements TaskRepository {
         body: next.body,
       });
       this.cache.set(id, { ...current, task: next });
+      const retained = await this.withRollingWarnings(next);
       await this.afterLocalMutation();
-      return next;
+      return retained;
     });
   }
 
   toggle(id: string, occurrenceDate?: string): Promise<Task> {
+    const cached = this.cache.get(id)?.task;
+    if (cached?.recurrenceParent && cached.occurrenceDate) {
+      const parent = findOccurrenceParent(
+        [...this.cache.values()].map(({ task }) => task),
+        cached,
+      );
+      if (!parent)
+        return Promise.reject(
+          new Error(
+            "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+          ),
+        );
+      return this.serializeWrites([id, parent.id], () =>
+        this.transitionMaterializedUnlocked(id, parent.id, "toggle"),
+      );
+    }
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
       const next = this.model.toggle(current.task, {
@@ -275,6 +314,22 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   skip(id: string, occurrenceDate: string): Promise<Task> {
+    const cached = this.cache.get(id)?.task;
+    if (cached?.recurrenceParent && cached.occurrenceDate) {
+      const parent = findOccurrenceParent(
+        [...this.cache.values()].map(({ task }) => task),
+        cached,
+      );
+      if (!parent)
+        return Promise.reject(
+          new Error(
+            "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+          ),
+        );
+      return this.serializeWrites([id, parent.id], () =>
+        this.transitionMaterializedUnlocked(id, parent.id, "skip"),
+      );
+    }
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
       const next = this.model.skip(current.task, {
@@ -290,6 +345,15 @@ export class CloudTaskRepository implements TaskRepository {
       await this.afterLocalMutation();
       return next;
     });
+  }
+
+  materializeOccurrence(
+    parentId: string,
+    occurrenceDate: string,
+  ): Promise<MaterializeOccurrenceResult> {
+    return this.serializeWrite(parentId, () =>
+      this.materializeOccurrenceUnlocked(parentId, occurrenceDate),
+    );
   }
 
   async startTimeTracking(id: string, description?: string): Promise<Task> {
@@ -543,19 +607,204 @@ export class CloudTaskRepository implements TaskRepository {
     });
   }
 
+  private async materializeOccurrenceUnlocked(
+    parentId: string,
+    occurrenceDate: string,
+    notify = true,
+  ): Promise<MaterializeOccurrenceResult> {
+    const parent = this.requireTask(parentId);
+    const occurrences = [...this.cache.values()]
+      .map(({ task }) => task)
+      .filter((task) => task.recurrenceParent && task.occurrenceDate);
+    const resolved = findMaterializedOccurrenceTask(
+      [...this.cache.values()].map(({ task }) => task),
+      parent.task,
+      occurrenceDate,
+    );
+    if (resolved) return { task: resolved, created: false, warnings: [] };
+    const result = await this.model.materializeOccurrence(
+      parent.task,
+      occurrenceDate,
+      occurrences,
+      {
+        id: await occurrenceRecordId(parent.task.id, occurrenceDate),
+        now: new Date().toISOString(),
+      },
+      (path) => this.loadTemplate(path),
+    );
+    if (!result.created) return result;
+    const record = await this.requireReplica().queueCreate({
+      recordId: result.task.id,
+      path: result.task.path,
+      frontmatter: asJson(result.task.frontmatter),
+      body: result.task.body,
+      types: [this.taskTypeName],
+    });
+    const task = result.warnings.length
+      ? { ...result.task, operationWarnings: result.warnings }
+      : result.task;
+    this.cache.set(task.id, { task, recordId: record.record_id });
+    if (notify) await this.afterLocalMutation();
+    return { ...result, task };
+  }
+
+  private async transitionMaterializedUnlocked(
+    occurrenceId: string,
+    parentId: string,
+    action: "toggle" | "skip",
+  ): Promise<Task> {
+    const occurrence = this.requireTask(occurrenceId);
+    const parent = this.requireTask(parentId);
+    const transition = this.model.transitionMaterializedOccurrence(
+      occurrence.task,
+      parent.task,
+      action,
+      { now: new Date().toISOString() },
+    );
+    await this.requireReplica().queueUpdate({
+      recordId: occurrence.recordId,
+      patch: frontmatterPatch(
+        occurrence.task.frontmatter,
+        transition.occurrence.frontmatter,
+      ),
+      body: transition.occurrence.body,
+    });
+    this.cache.set(occurrenceId, {
+      ...occurrence,
+      task: transition.occurrence,
+    });
+    const warnings: string[] = [];
+    try {
+      await this.requireReplica().queueUpdate({
+        recordId: parent.recordId,
+        patch: frontmatterPatch(
+          parent.task.frontmatter,
+          transition.parent.frontmatter,
+        ),
+        body: transition.parent.body,
+      });
+      this.cache.set(parentId, { ...parent, task: transition.parent });
+    } catch (reason) {
+      warnings.push(
+        `occurrence_parent_reconciliation_failed: ${errorMessage(reason)}`,
+      );
+    }
+    if (transition.materializeNextDate) {
+      try {
+        await this.materializeOccurrenceUnlocked(
+          parentId,
+          transition.materializeNextDate,
+          false,
+        );
+      } catch (reason) {
+        warnings.push(
+          `next_occurrence_materialization_failed: ${errorMessage(reason)}`,
+        );
+      }
+    }
+    let task = transition.occurrence;
+    if (warnings.length) {
+      task = { ...task, operationWarnings: warnings };
+      this.cache.set(occurrenceId, { ...occurrence, task });
+    }
+    await this.afterLocalMutation();
+    return task;
+  }
+
+  private async withRollingWarnings(task: Task): Promise<Task> {
+    if (!task.recurrence || task.occurrenceMaterialization !== "rolling")
+      return task;
+    const { warnings } = await this.materializeRollingWindow(task);
+    if (!warnings.length) return task;
+    const retained = { ...task, operationWarnings: warnings };
+    const cached = this.cache.get(task.id);
+    if (cached) this.cache.set(task.id, { ...cached, task: retained });
+    this.emit();
+    return retained;
+  }
+
+  private async maintainRollingOccurrencesUnlocked(): Promise<number> {
+    let created = 0;
+    const parents = [...this.cache.values()]
+      .map(({ task }) => task)
+      .filter(
+        (task) =>
+          task.recurrence && task.occurrenceMaterialization === "rolling",
+      );
+    for (const parent of parents) {
+      const result = await this.materializeRollingWindow(parent);
+      created += result.created;
+      const { warnings } = result;
+      if (!warnings.length) continue;
+      const cached = this.cache.get(parent.id);
+      if (cached)
+        this.cache.set(parent.id, {
+          ...cached,
+          task: { ...cached.task, operationWarnings: warnings },
+        });
+    }
+    return created;
+  }
+
+  private async materializeRollingWindow(
+    task: Task,
+  ): Promise<{ warnings: string[]; created: number }> {
+    let dates: string[];
+    try {
+      dates = rollingOccurrenceDates(task);
+    } catch (reason) {
+      return {
+        warnings: [
+          `rolling_occurrence_materialization_failed: ${errorMessage(reason)}`,
+        ],
+        created: 0,
+      };
+    }
+    const warnings: string[] = [];
+    let created = 0;
+    for (const date of dates) {
+      try {
+        const result = await this.materializeOccurrenceUnlocked(
+          task.id,
+          date,
+          false,
+        );
+        if (result.created) created += 1;
+      } catch (reason) {
+        warnings.push(
+          `rolling_occurrence_materialization_failed: ${date}: ${errorMessage(reason)}`,
+        );
+      }
+    }
+    return { warnings, created };
+  }
+
   private serializeWrite<T>(
     key: string,
     operation: () => Promise<T>,
   ): Promise<T> {
-    const previous = this.writeTails.get(key) ?? Promise.resolve();
-    const result = previous.catch(() => undefined).then(operation);
+    return this.serializeWrites([key], operation);
+  }
+
+  private serializeWrites<T>(
+    keys: readonly string[],
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const unique = [...new Set(keys)].sort();
+    const previous = Promise.all(
+      unique.map((key) =>
+        (this.writeTails.get(key) ?? Promise.resolve()).catch(() => undefined),
+      ),
+    );
+    const result = previous.then(operation);
     const tail = result.then(
       () => undefined,
       () => undefined,
     );
-    this.writeTails.set(key, tail);
+    for (const key of unique) this.writeTails.set(key, tail);
     void tail.finally(() => {
-      if (this.writeTails.get(key) === tail) this.writeTails.delete(key);
+      for (const key of unique)
+        if (this.writeTails.get(key) === tail) this.writeTails.delete(key);
     });
     return result;
   }
@@ -646,6 +895,10 @@ function sameValue(left: unknown, right: unknown): boolean {
 
 function signature(task: Task): string {
   return JSON.stringify([task.path, task.frontmatter, task.body]);
+}
+
+function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
 }
 
 function isNotInitialized(reason: unknown): boolean {

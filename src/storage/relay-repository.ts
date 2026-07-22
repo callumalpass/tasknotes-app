@@ -11,6 +11,12 @@ import {
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
+import {
+  findOccurrenceParent,
+  findMaterializedOccurrenceTask,
+  occurrenceRecordId,
+  rollingOccurrenceDates,
+} from "../domain/task-occurrence";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import {
@@ -22,6 +28,7 @@ import {
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskListQuery,
   TaskStats,
@@ -81,6 +88,7 @@ export class RelayTaskRepository implements TaskRepository {
     this.displayName = description.display_name;
     await this.reloadCache();
     this.setConnected();
+    await this.maintainRollingOccurrencesUnlocked();
     this.emit();
   }
 
@@ -103,6 +111,7 @@ export class RelayTaskRepository implements TaskRepository {
     try {
       await this.reloadCache();
       this.setConnected();
+      await this.maintainRollingOccurrencesUnlocked();
     } catch (reason) {
       this.setOffline(reason);
     }
@@ -181,7 +190,7 @@ export class RelayTaskRepository implements TaskRepository {
             body: task.body,
           }),
         );
-        return this.storeResult(result);
+        return this.withRollingWarnings(this.storeResult(result));
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
@@ -195,11 +204,27 @@ export class RelayTaskRepository implements TaskRepository {
       const next = this.model.update(current.task, input, {
         now: new Date().toISOString(),
       });
-      return this.persistUpdate(current, next);
+      return this.withRollingWarnings(await this.persistUpdate(current, next));
     });
   }
 
   toggle(id: string, occurrenceDate?: string): Promise<Task> {
+    const cached = this.cache.get(id)?.task;
+    if (cached?.recurrenceParent && cached.occurrenceDate) {
+      const parent = findOccurrenceParent(
+        [...this.cache.values()].map(({ task }) => task),
+        cached,
+      );
+      if (!parent)
+        return Promise.reject(
+          new Error(
+            "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+          ),
+        );
+      return this.serializeWrites([id, parent.id], () =>
+        this.transitionMaterializedUnlocked(id, parent.id, "toggle"),
+      );
+    }
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
       const next = this.model.toggle(current.task, {
@@ -211,6 +236,22 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   skip(id: string, occurrenceDate: string): Promise<Task> {
+    const cached = this.cache.get(id)?.task;
+    if (cached?.recurrenceParent && cached.occurrenceDate) {
+      const parent = findOccurrenceParent(
+        [...this.cache.values()].map(({ task }) => task),
+        cached,
+      );
+      if (!parent)
+        return Promise.reject(
+          new Error(
+            "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+          ),
+        );
+      return this.serializeWrites([id, parent.id], () =>
+        this.transitionMaterializedUnlocked(id, parent.id, "skip"),
+      );
+    }
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
       const next = this.model.skip(current.task, {
@@ -219,6 +260,15 @@ export class RelayTaskRepository implements TaskRepository {
       });
       return this.persistUpdate(current, next);
     });
+  }
+
+  materializeOccurrence(
+    parentId: string,
+    occurrenceDate: string,
+  ): Promise<MaterializeOccurrenceResult> {
+    return this.serializeWrite(parentId, () =>
+      this.materializeOccurrenceUnlocked(parentId, occurrenceDate),
+    );
   }
 
   startTimeTracking(id: string, description?: string): Promise<Task> {
@@ -499,19 +549,202 @@ export class RelayTaskRepository implements TaskRepository {
     }
   }
 
+  private async materializeOccurrenceUnlocked(
+    parentId: string,
+    occurrenceDate: string,
+  ): Promise<MaterializeOccurrenceResult> {
+    const parent = await this.requireCurrent(parentId);
+    const occurrences = [...this.cache.values()]
+      .map(({ task }) => task)
+      .filter((task) => task.recurrenceParent && task.occurrenceDate);
+    const resolved = findMaterializedOccurrenceTask(
+      [...this.cache.values()].map(({ task }) => task),
+      parent.task,
+      occurrenceDate,
+    );
+    if (resolved) return { task: resolved, created: false, warnings: [] };
+    const result = await this.model.materializeOccurrence(
+      parent.task,
+      occurrenceDate,
+      occurrences,
+      {
+        id: await occurrenceRecordId(parent.task.id, occurrenceDate),
+        now: new Date().toISOString(),
+      },
+      async (path) => {
+        const template = validResult(await this.connect.read({ path }));
+        return serializeMarkdownDocument(
+          template.raw_frontmatter ?? template.frontmatter,
+          template.body ?? "",
+        );
+      },
+    );
+    if (!result.created) return result;
+    try {
+      const saved = this.storeResult(
+        validResult(
+          await this.connect.create({
+            path: result.task.path,
+            type: this.taskTypeName,
+            frontmatter: asJson(result.task.frontmatter),
+            body: result.task.body,
+          }),
+        ),
+      );
+      const task = result.warnings.length
+        ? { ...saved, operationWarnings: result.warnings }
+        : saved;
+      const cached = this.cache.get(saved.id);
+      this.cache.set(saved.id, { task, revision: cached?.revision });
+      return { ...result, task };
+    } catch (reason) {
+      try {
+        const existing = validResult(
+          await this.connect.read({ path: result.task.path }),
+        );
+        const task = this.storeResult(existing);
+        if (
+          task.occurrenceDate === occurrenceDate &&
+          findOccurrenceParent(
+            [...this.cache.values()].map(({ task: candidate }) => candidate),
+            task,
+          )?.id === parent.task.id
+        )
+          return { task, created: false, warnings: result.warnings };
+      } catch {
+        // Preserve the original create failure when no idempotent record exists.
+      }
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  private async transitionMaterializedUnlocked(
+    occurrenceId: string,
+    parentId: string,
+    action: "toggle" | "skip",
+  ): Promise<Task> {
+    const [occurrence, parent] = await Promise.all([
+      this.requireCurrent(occurrenceId),
+      this.requireCurrent(parentId),
+    ]);
+    const transition = this.model.transitionMaterializedOccurrence(
+      occurrence.task,
+      parent.task,
+      action,
+      { now: new Date().toISOString() },
+    );
+    const savedOccurrence = await this.persistUpdate(
+      occurrence,
+      transition.occurrence,
+    );
+    const warnings: string[] = [];
+    try {
+      await this.persistUpdate(parent, transition.parent);
+    } catch (reason) {
+      warnings.push(
+        `occurrence_parent_reconciliation_failed: ${errorMessage(reason)}`,
+      );
+    }
+    if (transition.materializeNextDate) {
+      try {
+        await this.materializeOccurrenceUnlocked(
+          parentId,
+          transition.materializeNextDate,
+        );
+      } catch (reason) {
+        warnings.push(
+          `next_occurrence_materialization_failed: ${errorMessage(reason)}`,
+        );
+      }
+    }
+    if (!warnings.length) return savedOccurrence;
+    const task = { ...savedOccurrence, operationWarnings: warnings };
+    const cached = this.cache.get(task.id);
+    this.cache.set(task.id, { task, revision: cached?.revision });
+    this.emit();
+    return task;
+  }
+
+  private async withRollingWarnings(task: Task): Promise<Task> {
+    if (!task.recurrence || task.occurrenceMaterialization !== "rolling")
+      return task;
+    const warnings = await this.materializeRollingWindow(task);
+    if (!warnings.length) return task;
+    const retained = { ...task, operationWarnings: warnings };
+    const cached = this.cache.get(task.id);
+    this.cache.set(task.id, { task: retained, revision: cached?.revision });
+    this.emit();
+    return retained;
+  }
+
+  private async maintainRollingOccurrencesUnlocked(): Promise<void> {
+    const parents = [...this.cache.values()]
+      .map(({ task }) => task)
+      .filter(
+        (task) =>
+          task.recurrence && task.occurrenceMaterialization === "rolling",
+      );
+    for (const parent of parents) {
+      const warnings = await this.materializeRollingWindow(parent);
+      if (!warnings.length) continue;
+      const cached = this.cache.get(parent.id);
+      if (cached)
+        this.cache.set(parent.id, {
+          ...cached,
+          task: { ...cached.task, operationWarnings: warnings },
+        });
+    }
+  }
+
+  private async materializeRollingWindow(task: Task): Promise<string[]> {
+    let dates: string[];
+    try {
+      dates = rollingOccurrenceDates(task);
+    } catch (reason) {
+      return [
+        `rolling_occurrence_materialization_failed: ${errorMessage(reason)}`,
+      ];
+    }
+    const warnings: string[] = [];
+    for (const date of dates) {
+      try {
+        await this.materializeOccurrenceUnlocked(task.id, date);
+      } catch (reason) {
+        warnings.push(
+          `rolling_occurrence_materialization_failed: ${date}: ${errorMessage(reason)}`,
+        );
+      }
+    }
+    return warnings;
+  }
+
   private serializeWrite<T>(
     key: string,
     operation: () => Promise<T>,
   ): Promise<T> {
-    const previous = this.writeTails.get(key) ?? Promise.resolve();
-    const result = previous.catch(() => undefined).then(operation);
+    return this.serializeWrites([key], operation);
+  }
+
+  private serializeWrites<T>(
+    keys: readonly string[],
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const unique = [...new Set(keys)].sort();
+    const previous = Promise.all(
+      unique.map((key) =>
+        (this.writeTails.get(key) ?? Promise.resolve()).catch(() => undefined),
+      ),
+    );
+    const result = previous.then(operation);
     const tail = result.then(
       () => undefined,
       () => undefined,
     );
-    this.writeTails.set(key, tail);
+    for (const key of unique) this.writeTails.set(key, tail);
     void tail.finally(() => {
-      if (this.writeTails.get(key) === tail) this.writeTails.delete(key);
+      for (const key of unique)
+        if (this.writeTails.get(key) === tail) this.writeTails.delete(key);
     });
     return result;
   }
@@ -576,6 +809,10 @@ function asJson(value: Record<string, unknown>): JsonObject {
 
 function signature(task: Task): string {
   return JSON.stringify([task.path, task.frontmatter, task.body]);
+}
+
+function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
 }
 
 function isConnectionFailure(reason: unknown): boolean {

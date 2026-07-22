@@ -55,6 +55,10 @@ export function resolveTaskCollectionConfiguration(
       ...base,
       statuses,
       priorities,
+      occurrences: resolveOccurrences(
+        base.occurrences,
+        record(extension.occurrences),
+      ),
       userFields: [
         ...base.userFields,
         ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
@@ -101,8 +105,11 @@ function resolveStatuses(
   base: StatusConfig[],
   status: Record<string, unknown>,
 ): StatusConfig[] {
+  const completedValues = new Set(stringList(status.completed_values));
+  const skippedValues = new Set(stringList(status.skipped_values));
   const definitions = objectList(status.definitions);
-  if (!definitions.length) return base;
+  if (!definitions.length && !completedValues.size && !skippedValues.size)
+    return base;
   const byValue = new Map(
     definitions.flatMap((definition) => {
       const value = string(definition.value);
@@ -110,8 +117,7 @@ function resolveStatuses(
     }),
   );
   return base.map((entry, index) => {
-    const definition = byValue.get(entry.value);
-    if (!definition) return entry;
+    const definition = byValue.get(entry.value) ?? {};
     return {
       ...entry,
       label: string(definition.label) ?? entry.label,
@@ -121,10 +127,12 @@ function resolveStatuses(
       isCompleted:
         boolean(definition.is_completed) ??
         boolean(definition.isCompleted) ??
+        (completedValues.size ? completedValues.has(entry.value) : undefined) ??
         entry.isCompleted,
       isSkipped:
         boolean(definition.is_skipped) ??
         boolean(definition.isSkipped) ??
+        (skippedValues.size ? skippedValues.has(entry.value) : undefined) ??
         entry.isSkipped,
       excludeFromCycle:
         boolean(definition.exclude_from_cycle) ??
@@ -144,6 +152,35 @@ function resolveStatuses(
         entry.autoArchiveDelay,
     };
   });
+}
+
+function resolveOccurrences(
+  base: TaskNotesModelConfig["occurrences"],
+  occurrences: Record<string, unknown>,
+): TaskNotesModelConfig["occurrences"] {
+  const mode =
+    occurrences.default_materialization ?? occurrences.defaultMaterialization;
+  const trigger =
+    occurrences.default_next_trigger ?? occurrences.defaultNextTrigger;
+  return {
+    ...base,
+    defaultMaterialization:
+      mode === "manual" || mode === "on_completion" || mode === "rolling"
+        ? mode
+        : base.defaultMaterialization,
+    defaultNextTrigger:
+      trigger === "completion" || trigger === "completion_or_skip"
+        ? trigger
+        : base.defaultNextTrigger,
+    pastHorizon:
+      string(occurrences.past_horizon) ??
+      string(occurrences.pastHorizon) ??
+      base.pastHorizon,
+    futureHorizon:
+      string(occurrences.future_horizon) ??
+      string(occurrences.futureHorizon) ??
+      base.futureHorizon,
+  };
 }
 
 function resolvePriorities(
@@ -250,6 +287,12 @@ function record(value: unknown): Record<string, unknown> {
 
 function objectList(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.map(record) : [];
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
 }
 
 function string(value: unknown): string | undefined {

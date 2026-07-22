@@ -35,6 +35,14 @@ export interface Task {
   projects: string[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
+  occurrenceMaterialization?: "manual" | "on_completion" | "rolling";
+  occurrenceNextTrigger?: "completion" | "completion_or_skip";
+  occurrenceTemplate?: string;
+  occurrencePastHorizon?: string;
+  occurrenceFutureHorizon?: string;
+  recurrenceParent?: string;
+  occurrenceDate?: string;
+  skipped?: boolean;
   completeInstances: string[];
   skippedInstances: string[];
   reminders: TaskReminder[];
@@ -58,6 +66,11 @@ export interface CreateTaskInput {
   projects?: string[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
+  occurrenceMaterialization?: "manual" | "on_completion" | "rolling";
+  occurrenceNextTrigger?: "completion" | "completion_or_skip";
+  occurrenceTemplate?: string;
+  occurrencePastHorizon?: string;
+  occurrenceFutureHorizon?: string;
   reminders?: TaskReminder[];
   timeEstimate?: number;
   customProperties?: Record<string, unknown>;
@@ -79,6 +92,11 @@ export interface UpdateTaskInput {
   projects?: string[];
   recurrence?: string | null;
   recurrenceAnchor?: "scheduled" | "completion";
+  occurrenceMaterialization?: "manual" | "on_completion" | "rolling";
+  occurrenceNextTrigger?: "completion" | "completion_or_skip";
+  occurrenceTemplate?: string | null;
+  occurrencePastHorizon?: string | null;
+  occurrenceFutureHorizon?: string | null;
   reminders?: TaskReminder[];
   timeEstimate?: number | null;
   timeEntries?: TaskTimeEntry[];
@@ -129,6 +147,12 @@ export interface TaskStats {
   open: number;
   completed: number;
   archived: number;
+}
+
+export interface MaterializeOccurrenceResult {
+  task: Task;
+  created: boolean;
+  warnings: string[];
 }
 
 export function todayString(now = new Date()): string {

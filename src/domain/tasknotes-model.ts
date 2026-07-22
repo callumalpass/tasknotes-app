@@ -1,7 +1,9 @@
 import {
   resolveModelConfig,
   isCompletedStatus,
+  isSkippedStatus,
   getDefaultCompletedStatus,
+  getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
 import { getCurrentDateString } from "@tasknotes/model/date";
 import {
@@ -12,6 +14,11 @@ import {
   applyFrontmatterPatch,
   buildRecurringTaskCompletePlan,
   buildRecurringTaskSkippedPlan,
+  buildMaterializeOccurrencePlan,
+  buildMaterializedOccurrenceCompletePlan,
+  buildMaterializedOccurrenceSkipPlan,
+  buildMaterializedOccurrenceUncompletePlan,
+  buildMaterializedOccurrenceUnskipPlan,
   buildTaskUpdatePlan,
   recurringCompletePlanToFrontmatterPatch,
   recurringSkippedPlanToFrontmatterPatch,
@@ -30,6 +37,7 @@ import { expandTaskTemplate } from "./task-template";
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskTimeEntry,
   UpdateTaskInput,
@@ -77,6 +85,12 @@ export class TaskNotesValidationError extends Error {
     );
     this.name = "TaskNotesValidationError";
   }
+}
+
+export interface MaterializedOccurrenceTransition {
+  occurrence: Task;
+  parent: Task;
+  materializeNextDate?: string;
 }
 
 export class TaskNotesTaskModel {
@@ -156,6 +170,11 @@ export class TaskNotesTaskModel {
       projects: input.projects,
       recurrence: input.recurrence,
       recurrence_anchor: input.recurrenceAnchor,
+      occurrence_materialization: input.occurrenceMaterialization,
+      occurrence_next_trigger: input.occurrenceNextTrigger,
+      occurrence_template: input.occurrenceTemplate,
+      occurrence_past_horizon: input.occurrencePastHorizon,
+      occurrence_future_horizon: input.occurrenceFutureHorizon,
       reminders: input.reminders,
       timeEstimate: input.timeEstimate,
       customProperties: withUserFieldDefaults(
@@ -238,6 +257,16 @@ export class TaskNotesTaskModel {
         ? getDefaultCompletedStatus(this.config.statuses)
         : this.config.defaults.status;
     }
+    if (
+      original.recurrence_parent &&
+      original.occurrence_date &&
+      updates.status !== undefined &&
+      occurrenceState(original.status, this.config.statuses) !==
+        occurrenceState(updates.status, this.config.statuses)
+    )
+      throw new Error(
+        "materialized_occurrence_transition_required: Complete, reopen, skip, or unskip the occurrence through its occurrence operation.",
+      );
     if (input.priority !== undefined) updates.priority = input.priority;
     if (input.archived !== undefined) updates.archived = input.archived;
     if (input.due !== undefined)
@@ -252,6 +281,18 @@ export class TaskNotesTaskModel {
       updates.recurrence = input.recurrence ?? undefined;
     if (input.recurrenceAnchor !== undefined)
       updates.recurrence_anchor = input.recurrenceAnchor;
+    if (input.occurrenceMaterialization !== undefined)
+      updates.occurrence_materialization = input.occurrenceMaterialization;
+    if (input.occurrenceNextTrigger !== undefined)
+      updates.occurrence_next_trigger = input.occurrenceNextTrigger;
+    if (input.occurrenceTemplate !== undefined)
+      updates.occurrence_template = input.occurrenceTemplate ?? undefined;
+    if (input.occurrencePastHorizon !== undefined)
+      updates.occurrence_past_horizon =
+        input.occurrencePastHorizon ?? undefined;
+    if (input.occurrenceFutureHorizon !== undefined)
+      updates.occurrence_future_horizon =
+        input.occurrenceFutureHorizon ?? undefined;
     if (input.reminders !== undefined) updates.reminders = input.reminders;
     if (input.timeEstimate !== undefined)
       updates.timeEstimate = input.timeEstimate ?? undefined;
@@ -397,6 +438,159 @@ export class TaskNotesTaskModel {
     return this.toTask(plan.updatedTask, frontmatter, revision);
   }
 
+  async materializeOccurrence(
+    parent: Task,
+    targetDate: string,
+    existingOccurrences: readonly Task[],
+    context: { id: string; now?: string },
+    loadTemplate?: (path: string) => Promise<string>,
+  ): Promise<MaterializeOccurrenceResult> {
+    const now = context.now ?? new Date().toISOString();
+    const parentInfo = this.taskInfo(parent);
+    const occurrenceInfos = existingOccurrences.map((task) =>
+      this.taskInfo(task),
+    );
+    let plan = buildMaterializeOccurrencePlan({
+      parentTask: parentInfo,
+      targetDate,
+      currentTimestamp: now,
+      existingOccurrences: occurrenceInfos,
+      defaultStatus: this.config.defaults.status,
+      defaultPriority: this.config.defaults.priority,
+    });
+    const existing = plan.existingOccurrence
+      ? existingOccurrences.find(
+          (task) =>
+            task.id === plan.existingOccurrence?.id ||
+            task.path === plan.existingOccurrence?.path,
+        )
+      : undefined;
+    if (!plan.created && existing)
+      return {
+        task: existing,
+        created: false,
+        warnings: plan.issues.map((issue) => issue.message),
+      };
+
+    let templateFrontmatter: Record<string, unknown> = {};
+    let templateWarning: string | undefined;
+    if (parentInfo.occurrence_template && loadTemplate) {
+      try {
+        const draft = this.materializedTaskFromPlan(
+          plan.occurrenceTask,
+          context.id,
+          {},
+        );
+        const source = await loadTemplate(parentInfo.occurrence_template);
+        const input = taskAsCreateInput(draft);
+        const expanded = expandTaskTemplate(
+          source,
+          draft,
+          input,
+          { ...this.config.templating, enabled: true },
+          new Date(now),
+        );
+        templateFrontmatter = expanded.frontmatter;
+        const templateInfo: Partial<TaskInfo> = {
+          ...mapTaskFromFrontmatter(
+            this.config.fieldMapping,
+            this.canonicalizeAliases(expanded.frontmatter, false),
+            draft.path,
+            this.config.storeTitleInFilename,
+            this.config.userFields,
+            this.config.statuses,
+            this.config.priorities,
+          ),
+          details: expanded.body,
+        };
+        plan = buildMaterializeOccurrencePlan({
+          parentTask: parentInfo,
+          targetDate,
+          currentTimestamp: now,
+          existingOccurrences: occurrenceInfos,
+          defaultStatus: this.config.defaults.status,
+          defaultPriority: this.config.defaults.priority,
+          templateTask: templateInfo,
+        });
+      } catch (reason) {
+        const message =
+          reason instanceof Error
+            ? reason.message
+            : `template_parse_failed: ${reason}`;
+        if (this.config.templating.failureMode === "error") throw reason;
+        templateWarning = message.startsWith("template_")
+          ? message
+          : `template_parse_failed: ${message}`;
+      }
+    }
+    const task = this.materializedTaskFromPlan(
+      plan.occurrenceTask,
+      context.id,
+      templateFrontmatter,
+    );
+    return {
+      task,
+      created: true,
+      warnings: [
+        ...plan.issues.map((issue) => issue.message),
+        ...(templateWarning ? [templateWarning] : []),
+      ],
+    };
+  }
+
+  transitionMaterializedOccurrence(
+    occurrence: Task,
+    parent: Task,
+    action: "toggle" | "skip",
+    context: { now?: string } = {},
+  ): MaterializedOccurrenceTransition {
+    const now = context.now ?? new Date().toISOString();
+    const occurrenceInfo = this.taskInfo(occurrence);
+    const parentInfo = this.taskInfo(parent);
+    const plan =
+      action === "toggle"
+        ? isCompletedStatus(occurrenceInfo.status, this.config.statuses)
+          ? buildMaterializedOccurrenceUncompletePlan({
+              occurrenceTask: occurrenceInfo,
+              parentTask: parentInfo,
+              activeStatus: this.config.defaults.status,
+              currentTimestamp: now,
+            })
+          : buildMaterializedOccurrenceCompletePlan({
+              occurrenceTask: occurrenceInfo,
+              parentTask: parentInfo,
+              completedStatus: getDefaultCompletedStatus(this.config.statuses),
+              currentTimestamp: now,
+              maintainDueDateOffsetInRecurring:
+                this.config.recurrence.maintainDueDateOffset,
+            })
+        : isSkippedStatus(occurrenceInfo.status, this.config.statuses)
+          ? buildMaterializedOccurrenceUnskipPlan({
+              occurrenceTask: occurrenceInfo,
+              parentTask: parentInfo,
+              activeStatus: this.config.defaults.status,
+              currentTimestamp: now,
+            })
+          : buildMaterializedOccurrenceSkipPlan({
+              occurrenceTask: occurrenceInfo,
+              parentTask: parentInfo,
+              skippedStatus: getDefaultSkippedStatus(this.config.statuses),
+              currentTimestamp: now,
+              maintainDueDateOffsetInRecurring:
+                this.config.recurrence.maintainDueDateOffset,
+            });
+    const updatedOccurrence = this.autoStopAfterCompletion(
+      occurrenceInfo,
+      plan.updatedOccurrenceTask,
+      now,
+    );
+    return {
+      occurrence: this.finishPlannedTask(occurrence, updatedOccurrence),
+      parent: this.finishPlannedTask(parent, plan.updatedParentTask),
+      materializeNextDate: plan.materializeNextDate,
+    };
+  }
+
   startTimeTracking(
     current: Task,
     context: { now?: string; start?: string; description?: string } = {},
@@ -517,6 +711,20 @@ export class TaskNotesTaskModel {
       projects: info.projects ?? [],
       recurrence: info.recurrence,
       recurrenceAnchor: info.recurrence_anchor,
+      recurrenceParent: info.recurrence_parent,
+      occurrenceDate: info.occurrence_date,
+      occurrenceMaterialization:
+        info.occurrence_materialization ??
+        this.config.occurrences.defaultMaterialization,
+      occurrenceNextTrigger:
+        info.occurrence_next_trigger ??
+        this.config.occurrences.defaultNextTrigger,
+      occurrenceTemplate: info.occurrence_template,
+      occurrencePastHorizon:
+        info.occurrence_past_horizon ?? this.config.occurrences.pastHorizon,
+      occurrenceFutureHorizon:
+        info.occurrence_future_horizon ?? this.config.occurrences.futureHorizon,
+      skipped: isSkippedStatus(info.status, this.config.statuses),
       completeInstances: info.complete_instances ?? [],
       skippedInstances: info.skipped_instances ?? [],
       reminders: info.reminders ?? [],
@@ -607,6 +815,39 @@ export class TaskNotesTaskModel {
     return this.toTask(updated, frontmatter, revision);
   }
 
+  private finishPlannedTask(current: Task, updated: TaskInfo): Task {
+    this.assertValid(updated);
+    const revision = current.revision + 1;
+    const frontmatter = this.writeFrontmatter(
+      this.canonicalizeAliases(current.frontmatter, true),
+      updated,
+      current.id,
+      revision,
+    );
+    return this.toTask(updated, frontmatter, revision);
+  }
+
+  private materializedTaskFromPlan(
+    planned: Partial<TaskInfo>,
+    id: string,
+    base: Record<string, unknown>,
+  ): Task {
+    const title = requiredTitle(planned.title ?? "");
+    const info = this.completeTaskInfo(
+      {
+        ...planned,
+        id,
+        path: makeTaskPath(title, id, this.recordsFolder),
+        title,
+        archived: false,
+      },
+      makeTaskPath(title, id, this.recordsFolder),
+      planned.details ?? "",
+    );
+    this.assertValid(info);
+    return this.toTask(info, this.writeFrontmatter(base, info, id, 1), 1);
+  }
+
   recordsFolderPath(): string {
     return this.recordsFolder;
   }
@@ -645,6 +886,15 @@ function stopActiveEntry(task: TaskInfo, now: string): TaskInfo {
       ? canonicalInstant(active.startTime)
       : modified;
   return buildStopTimeTrackingPlan(task, active, stop, stop).updatedTask;
+}
+
+function occurrenceState(
+  value: string | undefined,
+  statuses: TaskNotesModelConfig["statuses"],
+): "active" | "completed" | "skipped" {
+  if (isCompletedStatus(value, statuses)) return "completed";
+  if (isSkippedStatus(value, statuses)) return "skipped";
+  return "active";
 }
 
 function normalizeTimeEntries(
@@ -714,6 +964,23 @@ function withUserFieldDefaults(
   }
   Object.assign(values, supplied);
   return Object.keys(values).length ? values : undefined;
+}
+
+function taskAsCreateInput(task: Task): CreateTaskInput {
+  return {
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    due: task.due,
+    scheduled: task.scheduled,
+    body: task.body,
+    tags: task.tags,
+    contexts: task.contexts,
+    projects: task.projects,
+    reminders: task.reminders,
+    timeEstimate: task.timeEstimate,
+    customProperties: task.customProperties,
+  };
 }
 
 function isEmptyCustomValue(value: unknown): boolean {
