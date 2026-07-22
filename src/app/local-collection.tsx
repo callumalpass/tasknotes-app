@@ -14,9 +14,9 @@ export default function LocalCollection({
   const repository = useMemo(() => new IndexedMarkdownRepository(), []);
   return (
     <OpenedCollection
+      changeConnectedCollection={reset}
       choice="local"
       choose={choose}
-      disconnectCloud={reset}
       repository={repository}
     />
   );

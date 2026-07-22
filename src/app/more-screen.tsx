@@ -23,7 +23,7 @@ export function MoreScreen() {
     syncIssues,
     resolveSyncIssue,
   } = useRepository();
-  const { choice, choose, disconnectCloud } = useCollectionGate();
+  const { choice, choose, changeConnectedCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
   const [notifications, setNotifications] = useState<string>("Checking");
   const [benchmark, setBenchmark] = useState<{
@@ -235,11 +235,11 @@ export function MoreScreen() {
                 Use tasks on this device
               </button>
               <button
-                className="text-action danger"
+                className="text-action"
                 type="button"
-                onClick={disconnectCloud}
+                onClick={changeConnectedCollection}
               >
-                Disconnect mdbase
+                Change collection
               </button>
             </div>
           </>

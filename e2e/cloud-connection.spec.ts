@@ -83,6 +83,28 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   ).toHaveCount(0);
   expect(operations).toContain("describe");
   expect(operations).toContain("query");
+
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "Change collection" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Open your TaskNotes collection." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Continue to mdbase" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => ({
+      choice: localStorage.getItem("tasknotes:collection-choice:v1"),
+      hasConnection: Object.keys(localStorage).some((key) =>
+        key.startsWith("mdbase-connect:token:"),
+      ),
+    })),
+  ).toEqual({ choice: "cloud", hasConnection: false });
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Open your TaskNotes collection." }),
+  ).toBeVisible();
 });
 
 function collectionDescription() {
