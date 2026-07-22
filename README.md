@@ -114,8 +114,10 @@ No external account or persistent cloud data is used.
 Pushes to `main` deploy the web application to
 <https://callumalpass.github.io/tasknotes-app/> through GitHub Actions. The
 Pages build uses `/tasknotes-app/` as its asset and callback base and publishes
-a web-only mdbase manifest. Native builds continue to use the TaskNotes-hosted
-manifest and private-use callback.
+a web-only mdbase manifest. The build includes an explicit authorization
+callback document and a Pages-compatible fallback so OAuth deep links load the
+application. Native builds continue to use the TaskNotes-hosted manifest and
+private-use callback.
 
 ## Large-vault result
 
