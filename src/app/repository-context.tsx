@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { IndexedMarkdownRepository } from "../storage/repository";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   reconcileTaskNotifications,
   removeTaskNotifications,
@@ -20,11 +21,14 @@ import {
 
 import type {
   CreateTaskInput,
+  MaterializeOccurrenceResult,
   Task,
   TaskListQuery,
   TaskStats,
+  TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -44,9 +48,20 @@ interface RepositoryContextValue {
   sync: RepositorySyncStatus;
   syncIssues: RepositorySyncIssue[];
   version: number;
+  configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
-  toggleTask(id: string): Promise<Task>;
+  toggleTask(id: string, occurrenceDate?: string): Promise<Task>;
+  skipTask(id: string, occurrenceDate: string): Promise<Task>;
+  materializeOccurrence(
+    parentId: string,
+    occurrenceDate: string,
+  ): Promise<MaterializeOccurrenceResult>;
+  startTimeTracking(id: string, description?: string): Promise<Task>;
+  stopTimeTracking(id: string): Promise<Task>;
+  replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
+  removeTimeEntry(id: string, index: number): Promise<Task>;
+  setTaskArchived(id: string, archived: boolean): Promise<Task>;
   deleteTask(id: string): Promise<void>;
   refresh(): Promise<RefreshResult>;
   resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
@@ -76,6 +91,8 @@ export function RepositoryProvider({
   });
   const [syncIssues, setSyncIssues] = useState<RepositorySyncIssue[]>([]);
   const [version, setVersion] = useState(0);
+  const [configuration, setConfiguration] =
+    useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
 
   const bump = useCallback(() => setVersion((value) => value + 1), []);
@@ -116,8 +133,10 @@ export function RepositoryProvider({
     let active = true;
     repository
       .initialize()
-      .then(() => {
+      .then(async () => {
+        const nextConfiguration = await repository.taskConfiguration();
         if (!active) return;
+        setConfiguration(nextConfiguration);
         setStatus("ready");
         void loadSync();
         void reconcileTaskNotifications(repository).catch(() => undefined);
@@ -179,8 +198,70 @@ export function RepositoryProvider({
     [bump, repository],
   );
   const toggleTask = useCallback(
+    async (id: string, occurrenceDate?: string) => {
+      const task = await repository.toggle(id, occurrenceDate);
+      bump();
+      void syncTaskNotifications(task).catch(() => undefined);
+      return task;
+    },
+    [bump, repository],
+  );
+  const skipTask = useCallback(
+    async (id: string, occurrenceDate: string) => {
+      const task = await repository.skip(id, occurrenceDate);
+      bump();
+      void syncTaskNotifications(task).catch(() => undefined);
+      return task;
+    },
+    [bump, repository],
+  );
+  const materializeOccurrence = useCallback(
+    async (parentId: string, occurrenceDate: string) => {
+      const result = await repository.materializeOccurrence(
+        parentId,
+        occurrenceDate,
+      );
+      bump();
+      void syncTaskNotifications(result.task).catch(() => undefined);
+      return result;
+    },
+    [bump, repository],
+  );
+  const startTimeTracking = useCallback(
+    async (id: string, description?: string) => {
+      const task = await repository.startTimeTracking(id, description);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const stopTimeTracking = useCallback(
     async (id: string) => {
-      const task = await repository.toggle(id);
+      const task = await repository.stopTimeTracking(id);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const replaceTimeEntries = useCallback(
+    async (id: string, entries: TaskTimeEntry[]) => {
+      const task = await repository.replaceTimeEntries(id, entries);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const removeTimeEntry = useCallback(
+    async (id: string, index: number) => {
+      const task = await repository.removeTimeEntry(id, index);
+      bump();
+      return task;
+    },
+    [bump, repository],
+  );
+  const setTaskArchived = useCallback(
+    async (id: string, archived: boolean) => {
+      const task = await repository.setArchived(id, archived);
       bump();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
@@ -214,9 +295,17 @@ export function RepositoryProvider({
       sync,
       syncIssues,
       version,
+      configuration,
       createTask,
       updateTask,
       toggleTask,
+      skipTask,
+      materializeOccurrence,
+      startTimeTracking,
+      stopTimeTracking,
+      replaceTimeEntries,
+      removeTimeEntry,
+      setTaskArchived,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -230,9 +319,17 @@ export function RepositoryProvider({
       sync,
       syncIssues,
       version,
+      configuration,
       createTask,
       updateTask,
       toggleTask,
+      skipTask,
+      materializeOccurrence,
+      startTimeTracking,
+      stopTimeTracking,
+      replaceTimeEntries,
+      removeTimeEntry,
+      setTaskArchived,
       deleteTask,
       refresh,
       resolveSyncIssue,
@@ -264,13 +361,14 @@ export function useTasks(query: TaskListQuery): {
   const statusFilter = query.status;
   const search = query.search;
   const limit = query.limit;
-  const key = `${statusFilter ?? "open"}:${search ?? ""}:${limit ?? 500}`;
+  const archived = query.archived;
+  const key = `${statusFilter ?? "open"}:${archived ?? "exclude"}:${search ?? ""}:${limit ?? 500}`;
 
   useEffect(() => {
     if (status !== "ready") return;
     let active = true;
     repository
-      .list({ status: statusFilter, search, limit })
+      .list({ status: statusFilter, archived, search, limit })
       .then((result) => {
         if (!active) return;
         setTasks(result);
@@ -285,7 +383,7 @@ export function useTasks(query: TaskListQuery): {
     return () => {
       active = false;
     };
-  }, [key, limit, repository, search, status, statusFilter, version]);
+  }, [archived, key, limit, repository, search, status, statusFilter, version]);
 
   return { tasks, loading: status === "opening" || resolved !== key, error };
 }

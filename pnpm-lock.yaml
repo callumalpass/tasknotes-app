@@ -61,6 +61,9 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      tasknotes-nlp-core:
+        specifier: file:vendor/tasknotes-nlp-core-0.1.5.tgz
+        version: file:vendor/tasknotes-nlp-core-0.1.5.tgz
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -975,7 +978,7 @@ packages:
   "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.1.tgz":
     resolution:
       {
-        integrity: sha512-L/Gh+oviEybxYecUpPz2BjKXWo48iuRem5L6vJVO3EJFO1AJxcTrP41N/gnorMQiVxETkrq9mlhWSRUQoDoq7Q==,
+        integrity: sha512-z691423cEI1LxKxeyAk8ZTscchmHZPfoY+VLmEsLwpJtCEdVRCJc93Qb0QRTDfqSkitHvxktWrBYpDN2w/FyWA==,
         tarball: file:vendor/tasknotes-model-0.3.0-rc.1.tgz,
       }
     version: 0.3.0-rc.1
@@ -1690,6 +1693,13 @@ packages:
       }
     engines: { node: ">=18" }
 
+  chrono-node@2.10.1:
+    resolution:
+      {
+        integrity: sha512-tPOsBzYVAK5zth+CiHCgp5NGeqRc4mMD8FPthQ5IxkgjPWWxIFdM5odnmfw//IRAzl6C++Xy8olQW7wn5qBR1g==,
+      }
+    engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
+
   cliui@6.0.0:
     resolution:
       {
@@ -1972,6 +1982,12 @@ packages:
         integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==,
       }
     engines: { node: ^20.19.0 || ^22.12.0 || >=24.0.0 }
+
+  date-fns@4.4.0:
+    resolution:
+      {
+        integrity: sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==,
+      }
 
   dateformat@3.0.3:
     resolution:
@@ -4259,6 +4275,14 @@ packages:
       }
     engines: { node: ">=18" }
 
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+    resolution:
+      {
+        integrity: sha512-bsrii9ZNeezbGXwbUfVh1NtvcUQXC+SEBp+Y8w8Fuy3sUbr4IlW7rs8NTwhzbUMjeyYJwE+N+qMISgghk5DKkw==,
+        tarball: file:vendor/tasknotes-nlp-core-0.1.5.tgz,
+      }
+    version: 0.1.5
+
   tasknotes-spec@file:vendor/tasknotes-spec-0.2.0.tgz:
     resolution:
       {
@@ -6031,6 +6055,8 @@ snapshots:
 
   chownr@3.0.0: {}
 
+  chrono-node@2.10.1: {}
+
   cliui@6.0.0:
     dependencies:
       string-width: 4.2.3
@@ -6226,6 +6252,8 @@ snapshots:
       whatwg-url: 16.0.1
     transitivePeerDependencies:
       - "@noble/hashes"
+
+  date-fns@4.4.0: {}
 
   dateformat@3.0.3: {}
 
@@ -7481,6 +7509,12 @@ snapshots:
       minipass: 7.1.3
       minizlib: 3.1.0
       yallist: 5.0.0
+
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+    dependencies:
+      chrono-node: 2.10.1
+      date-fns: 4.4.0
+      rrule: 2.8.1
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.2.0.tgz: {}
 

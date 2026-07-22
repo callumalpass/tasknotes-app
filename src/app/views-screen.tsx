@@ -4,13 +4,16 @@ import {
   ChevronRight,
   Columns3,
   List,
+  Pin,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
+import { calendarEvents } from "../domain/calendar-events";
 import { dateFromStorage, todayString } from "../domain/task";
-import { useRepository } from "./repository-context";
+import { selectionFeedback } from "../native/feedback";
+import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
 import type {
@@ -22,38 +25,32 @@ import type {
 
 export function ViewsScreen({
   viewKey,
+  views,
+  error: viewsError,
+  primaryViewKey,
+  operational = false,
   onBack,
   onOpenTask,
   onOpenView,
+  onSetPrimaryView,
 }: {
   viewKey?: string;
+  views: TaskView[] | null;
+  error?: string;
+  primaryViewKey?: string;
+  operational?: boolean;
   onBack(): void;
-  onOpenTask(task: Task): void;
+  onOpenTask(task: Task, occurrenceDate?: string): void;
   onOpenView(view: TaskView): void;
+  onSetPrimaryView(key?: string): void;
 }) {
   const { repository, toggleTask, version } = useRepository();
-  const [views, setViews] = useState<TaskView[] | null>(null);
+  const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
-  const [viewsError, setViewsError] = useState<string>("");
   const [executionError, setExecutionError] = useState<{
     key: string;
     message: string;
   } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void repository.listViews().then(
-      (result) => {
-        if (!active) return;
-        setViews(result);
-        setViewsError("");
-      },
-      (reason) => active && setViewsError(message(reason)),
-    );
-    return () => {
-      active = false;
-    };
-  }, [repository, version]);
 
   const selected = views?.find((view) => view.key === viewKey);
   useEffect(() => {
@@ -100,19 +97,42 @@ export function ViewsScreen({
         ) : views.length ? (
           <div className="saved-view-list">
             {views.map((view) => (
-              <button
-                className="saved-view-row"
-                key={view.key}
-                type="button"
-                onClick={() => onOpenView(view)}
-              >
-                <ViewIcon view={view} />
-                <span>
-                  <strong>{view.name}</strong>
-                  <small>{view.documentName}</small>
-                </span>
-                <ChevronRight aria-hidden="true" size={18} />
-              </button>
+              <div className="saved-view-row" key={view.key}>
+                <button
+                  className="saved-view-open"
+                  type="button"
+                  onClick={() => onOpenView(view)}
+                >
+                  <ViewIcon view={view} />
+                  <span>
+                    <strong>{view.name}</strong>
+                    <small>{view.documentName}</small>
+                  </span>
+                  <ChevronRight aria-hidden="true" size={18} />
+                </button>
+                <button
+                  aria-label={
+                    primaryViewKey === view.key
+                      ? `Remove ${view.name} from navigation`
+                      : `Add ${view.name} to navigation`
+                  }
+                  aria-pressed={primaryViewKey === view.key}
+                  className="saved-view-pin"
+                  type="button"
+                  onClick={() => {
+                    selectionFeedback();
+                    onSetPrimaryView(
+                      primaryViewKey === view.key ? undefined : view.key,
+                    );
+                  }}
+                >
+                  <Pin
+                    aria-hidden="true"
+                    fill={primaryViewKey === view.key ? "currentColor" : "none"}
+                    size={17}
+                  />
+                </button>
+              </div>
             ))}
           </div>
         ) : (
@@ -127,15 +147,19 @@ export function ViewsScreen({
 
   return (
     <section className="screen views-screen view-detail" aria-live="polite">
-      <header className="view-header">
-        <button className="back-action" type="button" onClick={onBack}>
-          <ChevronLeft aria-hidden="true" size={20} />
-          Views
-        </button>
+      <header className={`view-header${operational ? " operational" : ""}`}>
+        {!operational ? (
+          <button className="back-action" type="button" onClick={onBack}>
+            <ChevronLeft aria-hidden="true" size={20} />
+            Views
+          </button>
+        ) : null}
         <div>
           <h1>{selected?.name ?? "Saved view"}</h1>
           {visibleExecution?.stale ? (
             <small>Last available result</small>
+          ) : operational ? (
+            <small>Primary view</small>
           ) : null}
         </div>
       </header>
@@ -146,19 +170,26 @@ export function ViewsScreen({
         <KanbanView
           execution={visibleExecution}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       ) : visibleExecution.view.presentation?.type === "tasknotes.calendar" ? (
         <CalendarView
           execution={visibleExecution}
+          identityTasks={identityTasks}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       ) : (
         <TaskListView
           execution={visibleExecution}
           onOpen={onOpenTask}
-          onToggle={(task) => void toggleTask(task.id)}
+          onToggle={(task, occurrenceDate) =>
+            void toggleTask(task.id, occurrenceDate)
+          }
         />
       )}
     </section>
@@ -209,14 +240,23 @@ function KanbanView({ execution, onOpen, onToggle }: ViewProps) {
   );
 }
 
-function CalendarView({ execution, onOpen, onToggle }: ViewProps) {
+function CalendarView({
+  execution,
+  identityTasks,
+  onOpen,
+  onToggle,
+}: ViewProps & { identityTasks: readonly Task[] }) {
   const initial = dateFromStorage(todayString()) ?? new Date();
   const [month, setMonth] = useState(
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
   );
   const [selected, setSelected] = useState(todayString());
-  const events = useMemo(() => calendarEvents(execution), [execution]);
-  const days = calendarGrid(month);
+  const days = useMemo(() => calendarGrid(month), [month]);
+  const events = useMemo(
+    () =>
+      calendarEvents(execution, days[0], days.at(-1) ?? days[0], identityTasks),
+    [days, execution, identityTasks],
+  );
   const selectedTasks = events.get(selected) ?? [];
   const monthLabel = new Intl.DateTimeFormat(undefined, {
     month: "long",
@@ -273,10 +313,11 @@ function CalendarView({ execution, onOpen, onToggle }: ViewProps) {
       <section className="calendar-agenda">
         <h2>{agendaLabel(selected)}</h2>
         {selectedTasks.length ? (
-          selectedTasks.map((task) => (
+          selectedTasks.map((entry) => (
             <TaskRow
-              key={task.id}
-              task={task}
+              key={entry.occurrence?.key ?? entry.task.id}
+              task={entry.task}
+              occurrence={entry.occurrence}
               onOpen={onOpen}
               onToggle={onToggle}
             />
@@ -432,27 +473,8 @@ function ViewIcon({ view }: { view: TaskView }) {
 
 interface ViewProps {
   execution: TaskViewExecution;
-  onOpen(task: Task): void;
-  onToggle(task: Task): void;
-}
-
-function calendarEvents(execution: TaskViewExecution): Map<string, Task[]> {
-  const events = new Map<string, Task[]>();
-  const options = execution.view.presentation?.options ?? {};
-  const showScheduled = options.showScheduled !== false;
-  const showDue = options.showDue !== false;
-  for (const { task } of execution.rows) {
-    for (const date of new Set([
-      ...(showScheduled && task.scheduled ? [task.scheduled] : []),
-      ...(showDue && task.due ? [task.due] : []),
-    ])) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      const tasks = events.get(date) ?? [];
-      tasks.push(task);
-      events.set(date, tasks);
-    }
-  }
-  return events;
+  onOpen(task: Task, occurrenceDate?: string): void;
+  onToggle(task: Task, occurrenceDate?: string): void;
 }
 
 function calendarGrid(month: Date): Date[] {

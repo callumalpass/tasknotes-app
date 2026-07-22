@@ -1,33 +1,35 @@
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
-
 import { taskMeta } from "../domain/task";
+import { occurrenceTask } from "../domain/task-occurrence";
+import { actionFeedback } from "../native/feedback";
 
 import type { Task } from "../domain/task";
+import type { TaskOccurrence } from "../domain/task-occurrence";
 
 export function TaskRow({
   task,
   onOpen,
   onToggle,
   details,
+  occurrence,
 }: {
   task: Task;
-  onOpen(task: Task): void;
-  onToggle(task: Task): void;
+  onOpen(task: Task, occurrenceDate?: string): void;
+  onToggle(task: Task, occurrenceDate?: string): void;
   details?: TaskRowDetail[];
+  occurrence?: TaskOccurrence;
 }) {
-  const metadata = taskMeta(task);
+  const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
+  const metadata = taskMeta(displayedTask);
   return (
-    <div className={`task-row${task.completed ? " is-complete" : ""}`}>
+    <div className={`task-row${displayedTask.completed ? " is-complete" : ""}`}>
       <button
         className="completion-control"
         type="button"
-        aria-label={`${task.completed ? "Reopen" : "Complete"} ${task.title}`}
-        aria-pressed={task.completed}
+        aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
+        aria-pressed={displayedTask.completed}
         onClick={() => {
-          void Haptics.impact({ style: ImpactStyle.Light }).catch(
-            () => undefined,
-          );
-          onToggle(task);
+          actionFeedback();
+          onToggle(task, occurrence?.date);
         }}
       >
         <span aria-hidden="true" />
@@ -35,7 +37,7 @@ export function TaskRow({
       <button
         className="task-row-content"
         type="button"
-        onClick={() => onOpen(task)}
+        onClick={() => onOpen(task, occurrence?.date)}
       >
         <span className="task-row-title">{task.title}</span>
         {details ? (

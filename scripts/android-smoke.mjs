@@ -6,6 +6,8 @@ const TASKS = "/storage/emulated/0/Documents/TaskNotes/tasks";
 const DEVTOOLS_PORT = 9222;
 const runId = Date.now().toString(36);
 const initialTitle = `Android smoke ${runId}`;
+const parallelTitle = `Android parallel ${runId}`;
+const recurringTitle = `Android recurring ${runId}`;
 
 function adb(...args) {
   return execFileSync("adb", args, { encoding: "utf8" }).trim();
@@ -37,6 +39,12 @@ function readTask(file) {
   return adb("shell", "cat", `${TASKS}/${file}`);
 }
 
+function sourceForTitle(title) {
+  return [...taskFiles()]
+    .map(readTask)
+    .find((source) => source.includes(`title: ${title}`));
+}
+
 async function waitFor(check, description, timeoutMs = 10_000) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
@@ -66,7 +74,7 @@ async function main() {
     launch();
     devtools = await connectToWebView();
     await devtools.evaluate(`
-      localStorage.removeItem("tasknotes:collection-choice:v1");
+      localStorage.clear();
       indexedDB.deleteDatabase("tasknotes-index-v2");
       location.replace("/");
     `);
@@ -115,7 +123,11 @@ async function main() {
         })()`),
       "the native scheduled reminder",
     );
-    await devtools.clickNamedButton("Back");
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "hardware Back to return to Today",
+    );
     // Kill and relaunch to prove that the public Markdown record survives
     // process death and remains the source of truth.
     devtools.close();
@@ -150,6 +162,14 @@ views:
       data: ${JSON.stringify(viewSource)},
       recursive: true
     })`);
+    await waitFor(
+      () =>
+        devtools.evaluate(`Capacitor.Plugins.Filesystem.readdir({
+          path: "TaskNotes/views",
+          directory: "DOCUMENTS"
+        }).then(({ files }) => files.some(({ name }) => name === "android-smoke.base"))`),
+      "the native saved-view file to become visible",
+    );
     await devtools.clickButton("More", true);
     await waitFor(() => devtools.hasText("Saved views"), "the More screen");
     await devtools.clickButton("Saved views");
@@ -157,6 +177,7 @@ views:
       () => devtools.hasText("Android board"),
       "the native saved view",
     );
+    await devtools.clickNamedButton("Add Android board to navigation");
     await devtools.clickButton("Android board");
     await waitFor(
       () =>
@@ -174,6 +195,100 @@ views:
       throw new Error(
         "The native saved view did not render its configured formula property.",
       );
+
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "hardware Back from the operational view",
+    );
+
+    // Timers belong to tasks, so unrelated work may remain active in parallel.
+    // Verify both sessions through the native Markdown records.
+    await waitFor(
+      () => devtools.hasTaskRow(initialTitle),
+      "the task row after leaving the saved view",
+    );
+    await devtools.openTask(initialTitle);
+    await devtools.fillNamedInput("Timer description", "Native primary");
+    await devtools.clickButton("Start", true);
+    await waitFor(
+      () => sourceForTitle(initialTitle)?.includes("Native primary"),
+      "the first native timer",
+    );
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "Today after timer",
+    );
+    await devtools.fillInput("New task title", parallelTitle);
+    await devtools.clickButton("Add", true);
+    await waitFor(
+      () => devtools.hasTaskRow(parallelTitle),
+      "the parallel task",
+    );
+    await devtools.openTask(parallelTitle);
+    await devtools.fillNamedInput("Timer description", "Native parallel");
+    await devtools.clickButton("Start", true);
+    await waitFor(
+      () => sourceForTitle(parallelTitle)?.includes("Native parallel"),
+      "the second native timer",
+    );
+    if (
+      !sourceForTitle(initialTitle)?.includes("Native primary") ||
+      !sourceForTitle(parallelTitle)?.includes("Native parallel")
+    )
+      throw new Error("Independent native timers were not both persisted.");
+    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await waitFor(
+      () => devtools.hasSelector("#today-title"),
+      "Today after parallel timer",
+    );
+
+    // Materialize and complete a projected recurrence. The child note and the
+    // parent's compatibility state must both remain durable Markdown.
+    await devtools.fillInput(
+      "New task title",
+      `${recurringTitle} today every day`,
+    );
+    await devtools.clickButton("Add", true);
+    await waitFor(
+      () => devtools.hasTaskRow(recurringTitle),
+      "the projected recurring task",
+    );
+    await devtools.openTask(recurringTitle);
+    await waitFor(
+      () => devtools.hasText("Make occurrence note"),
+      "the materialization action",
+    );
+    await devtools.clickButton("Make occurrence note", true);
+    await waitFor(
+      () => devtools.hasText("Occurrence note"),
+      "the materialized occurrence note",
+    );
+    await waitFor(
+      () => devtools.hasEnabledButton("Complete"),
+      "the occurrence completion action",
+    );
+    await devtools.clickButton("Complete", true);
+    await waitFor(
+      () => devtools.hasText("Mark open"),
+      "occurrence completion",
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      throw new Error(`${reason.message}\n${text}`);
+    });
+    await waitFor(() => {
+      const sources = [...taskFiles()].map(readTask);
+      return (
+        sources.filter((source) => source.includes("occurrence_date:"))
+          .length === 1 &&
+        sources.some(
+          (source) =>
+            source.includes(`title: ${recurringTitle}`) &&
+            source.includes("complete_instances:"),
+        )
+      );
+    }, "materialized occurrence reconciliation");
 
     // Prove that the private-use OAuth callback is routed back into the
     // packaged app and handled by the cloud onboarding screen.
@@ -205,7 +320,7 @@ views:
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, relaunch persistence, saved-view execution, Kanban rendering, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, scheduled reminder, hardware Back routing, relaunch persistence, saved-view execution, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
@@ -335,6 +450,14 @@ class DevtoolsSession {
       button.click();
       return true;
     })()`);
+  }
+
+  hasEnabledButton(text) {
+    return this.evaluate(`
+      [...document.querySelectorAll("button")].some(
+        (candidate) => candidate.innerText.trim() === ${JSON.stringify(text)} && !candidate.disabled
+      )
+    `);
   }
 
   fillInput(label, value) {

@@ -4,13 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { Collection } from "@callumalpass/mdbase";
-import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "tasknotes-app-mdbase-"));
 try {
-  const resources = buildTaskNotesMdbaseResources({
-    profiles: ["core-lite"],
-  });
+  const resources = buildAppTaskNotesResources();
   await write(root, resources.paths.config, resources.configDocument);
   await write(root, resources.paths.type, resources.typeDocument);
 

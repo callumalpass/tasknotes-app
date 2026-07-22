@@ -2,19 +2,27 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
-import {
-  buildTaskNotesMdbaseResources,
-  resolveTaskNotesModelConfigFromMdbaseType,
-} from "@tasknotes/model/mdbase";
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import {
+  defaultTaskCollectionConfiguration,
+  resolveTaskCollectionConfiguration,
+} from "../domain/task-configuration";
 import {
   upgradeManagedTaskDocument,
   upgradeManagedTaskType,
 } from "./collection-migration";
 
-import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
+import type {
+  CreateTaskInput,
+  MaterializeOccurrenceResult,
+  Task,
+  TaskTimeEntry,
+  UpdateTaskInput,
+} from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Vault, VaultEntry } from "./vault";
 
 export class MarkdownCollection {
@@ -24,13 +32,51 @@ export class MarkdownCollection {
 
   async initialize(): Promise<void> {
     await this.vault.initialize();
-    const resources = buildTaskNotesMdbaseResources();
+    const defaults = defaultTaskCollectionConfiguration();
+    const resources = buildTaskNotesMdbaseResources({
+      profiles: ["core-lite", "recurrence", "materialized-occurrences"],
+      modelConfig: {
+        ...defaults,
+        statuses: [
+          ...defaults.statuses,
+          {
+            id: "cancelled",
+            value: "cancelled",
+            label: "Cancelled",
+            color: "#808080",
+            isCompleted: false,
+            isSkipped: true,
+            excludeFromCycle: true,
+            order: defaults.statuses.length,
+            autoArchive: false,
+            autoArchiveDelay: 5,
+          },
+        ],
+      },
+    });
+    const generatedType = structuredClone(resources.type);
+    const extension = generatedType["x-tasknotes"] as Record<string, unknown>;
+    extension.status = {
+      ...(extension.status as Record<string, unknown>),
+      skipped_values: ["cancelled"],
+      default_skipped: "cancelled",
+    };
+    extension.occurrences = {
+      default_materialization: defaults.occurrences.defaultMaterialization,
+      default_next_trigger: defaults.occurrences.defaultNextTrigger,
+      past_horizon: defaults.occurrences.pastHorizon,
+      future_horizon: defaults.occurrences.futureHorizon,
+    };
+    const generated = parseFrontmatter(resources.typeDocument);
     await this.vault.ensureText(
       resources.paths.config,
       resources.configDocument,
     );
     await this.ensureViewConfiguration(resources.paths.config);
-    await this.vault.ensureText(resources.paths.type, resources.typeDocument);
+    await this.vault.ensureText(
+      resources.paths.type,
+      serializeMarkdownDocument(generatedType, generated.body),
+    );
     const parsedType = parseFrontmatter(
       await this.vault.readText(resources.paths.type),
     );
@@ -43,12 +89,26 @@ export class MarkdownCollection {
       );
     }
     this.taskModel = new TaskNotesTaskModel(
-      resolveTaskNotesModelConfigFromMdbaseType(upgraded.frontmatter),
+      resolveTaskCollectionConfiguration(upgraded.frontmatter),
     );
   }
 
-  list(): Promise<VaultEntry[]> {
-    return this.vault.listMarkdownFiles("tasks");
+  async list(): Promise<VaultEntry[]> {
+    const roots = new Set([this.taskModel.recordsFolderPath()]);
+    const configuration = this.taskModel.configuration();
+    if (configuration.archive.moveOnArchive)
+      roots.add(configuration.archive.folder);
+    const entries = await Promise.all(
+      [...roots].map((root) =>
+        this.vault.listMarkdownFiles(root).catch((reason: unknown) => {
+          if (isMissingPath(reason)) return [];
+          throw reason;
+        }),
+      ),
+    );
+    return [
+      ...new Map(entries.flat().map((entry) => [entry.path, entry])).values(),
+    ].sort((left, right) => left.path.localeCompare(right.path));
   }
 
   listViewSources(): Promise<VaultEntry[]> {
@@ -72,16 +132,72 @@ export class MarkdownCollection {
     }
   }
 
-  createTask(input: CreateTaskInput, id: string, now: string): Task {
-    return this.taskModel.create(input, { id, now });
+  createTask(input: CreateTaskInput, id: string, now: string): Promise<Task> {
+    return this.taskModel.createWithTemplate(input, { id, now }, (path) =>
+      this.vault.readText(path),
+    );
   }
 
   updateTask(task: Task, input: UpdateTaskInput, now: string): Task {
     return this.taskModel.update(task, input, { now });
   }
 
-  toggleTask(task: Task, now: string): Task {
-    return this.taskModel.toggle(task, { now });
+  toggleTask(task: Task, now: string, currentDate?: string): Task {
+    return this.taskModel.toggle(task, { now, currentDate });
+  }
+
+  skipTask(task: Task, now: string, currentDate: string): Task {
+    return this.taskModel.skip(task, { now, currentDate });
+  }
+
+  materializeOccurrence(
+    parent: Task,
+    targetDate: string,
+    existingOccurrences: readonly Task[],
+    id: string,
+    now: string,
+  ): Promise<MaterializeOccurrenceResult> {
+    return this.taskModel.materializeOccurrence(
+      parent,
+      targetDate,
+      existingOccurrences,
+      { id, now },
+      (path) => this.vault.readText(path),
+    );
+  }
+
+  transitionMaterializedOccurrence(
+    occurrence: Task,
+    parent: Task,
+    action: "toggle" | "skip",
+    now: string,
+  ) {
+    return this.taskModel.transitionMaterializedOccurrence(
+      occurrence,
+      parent,
+      action,
+      { now },
+    );
+  }
+
+  startTimeTracking(task: Task, now: string, description?: string): Task {
+    return this.taskModel.startTimeTracking(task, { now, description });
+  }
+
+  stopTimeTracking(task: Task, now: string): Task {
+    return this.taskModel.stopTimeTracking(task, { now });
+  }
+
+  replaceTimeEntries(task: Task, entries: TaskTimeEntry[], now: string): Task {
+    return this.taskModel.replaceTimeEntries(task, entries, { now });
+  }
+
+  removeTimeEntry(task: Task, index: number, now: string): Task {
+    return this.taskModel.removeTimeEntry(task, index, { now });
+  }
+
+  taskConfiguration(): TaskCollectionConfiguration {
+    return this.taskModel.configuration();
   }
 
   write(task: Task): Promise<VaultEntry> {
@@ -89,6 +205,14 @@ export class MarkdownCollection {
       task.path,
       serializeMarkdownDocument(task.frontmatter, task.body),
     );
+  }
+
+  rename(from: string, to: string): Promise<VaultEntry> {
+    return this.vault.rename(from, to);
+  }
+
+  archiveDestination(task: Task, archived: boolean): string | undefined {
+    return this.taskModel.archiveDestination(task, archived);
   }
 
   delete(path: string): Promise<void> {
@@ -151,4 +275,11 @@ export function batches<T>(values: T[], size: number): T[][] {
   for (let offset = 0; offset < values.length; offset += size)
     result.push(values.slice(offset, offset + size));
   return result;
+}
+
+function isMissingPath(reason: unknown): boolean {
+  return (
+    (reason instanceof DOMException && reason.name === "NotFoundError") ||
+    /not exist|not found/i.test(String(reason))
+  );
 }

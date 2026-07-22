@@ -62,6 +62,50 @@ function resourcesWithType(
   return value;
 }
 
+function resourcesWithTemplate(): SyncCollectionResources {
+  const value = resources();
+  value.contracts[0] = {
+    ...value.contracts[0],
+    configuration: {
+      ...value.contracts[0].configuration,
+      templating: {
+        enabled: true,
+        template_path: "Templates/Task.md",
+        failure_mode: "error",
+        unknown_variable_policy: "preserve",
+      },
+    },
+  };
+  value.documents = [
+    {
+      path: "Templates/Task.md",
+      kind: "configuration",
+      revision: "template:1",
+      document: `---
+source: cloud-template
+status: done
+---
+Cloud body for {{title}} on {{date}}`,
+    },
+  ];
+  return value;
+}
+
+function resourcesWithArchive(): SyncCollectionResources {
+  const value = resources();
+  value.contracts[0] = {
+    ...value.contracts[0],
+    configuration: {
+      ...value.contracts[0].configuration,
+      archive: {
+        move_on_archive: true,
+        folder: "TaskNotes/Archive",
+      },
+    },
+  };
+  return value;
+}
+
 function connect(
   collectionId: string,
   replicaId: string,
@@ -171,6 +215,263 @@ describe("cloud task repository", () => {
     expect(completed.scheduled).not.toBe(date);
   });
 
+  it("keeps time tracking immediate offline and synchronizes it later", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    authority.registerReplica({
+      id: phoneId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    authority.registerReplica({
+      id: tabletId,
+      name: "Tablet",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(phoneId);
+    const phoneTransport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, phoneTransport),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const task = await phone.create({ title: "Offline timing" });
+    await phone.refresh();
+    await tablet.refresh();
+
+    online = false;
+    const started = await phone.startTimeTracking(task.id, "Flight mode");
+    expect(started.timeEntries[0].endTime).toBeUndefined();
+    await phone.refresh();
+    expect(await phone.syncStatus()).toMatchObject({
+      state: "offline",
+      pending: 1,
+    });
+
+    online = true;
+    await phone.refresh();
+    await tablet.refresh();
+    expect((await tablet.get(task.id))?.timeEntries[0]).toMatchObject({
+      description: "Flight mode",
+    });
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
+  });
+
+  it("serializes same-task cloud mutations without dropping local state", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+    await repository.initialize();
+    const task = await repository.create({ title: "Original" });
+
+    await Promise.all([
+      repository.update(task.id, { title: "Edited while starting" }),
+      repository.startTimeTracking(task.id, "Concurrent timer"),
+    ]);
+
+    expect(await repository.get(task.id)).toMatchObject({
+      title: "Edited while starting",
+      timeEntries: [{ description: "Concurrent timer" }],
+    });
+    await repository.refresh();
+    expect(await repository.get(task.id)).toMatchObject({
+      title: "Edited while starting",
+      timeEntries: [{ description: "Concurrent timer" }],
+    });
+  });
+
+  it("queues archive state and file movement together while offline", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resourcesWithArchive(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    authority.registerReplica({
+      id: phoneId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    authority.registerReplica({
+      id: tabletId,
+      name: "Tablet",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(phoneId);
+    const phoneTransport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, phoneTransport),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const task = await phone.create({ title: "Cloud archive" });
+    await phone.refresh();
+    await tablet.refresh();
+    online = false;
+
+    const archived = await phone.setArchived(task.id, true);
+    expect(archived).toMatchObject({
+      archived: true,
+      path: `TaskNotes/Archive/${task.id}.md`,
+    });
+    expect(await phone.list({ status: "all" })).toEqual([]);
+    await phone.refresh();
+    expect(await phone.syncStatus()).toMatchObject({ pending: 2 });
+
+    online = true;
+    await phone.refresh();
+    await tablet.refresh();
+    expect(await tablet.get(task.id)).toMatchObject({
+      archived: true,
+      path: `TaskNotes/Archive/${task.id}.md`,
+    });
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
+  });
+
+  it("synchronizes materialized occurrence identity and parent state across devices", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    for (const [id, name] of [
+      [phoneId, "Phone"],
+      [tabletId, "Tablet"],
+    ] as const)
+      authority.registerReplica({
+        id,
+        name,
+        mode: "read_write",
+        allowedTypes: ["task"],
+      });
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, authority.transport(phoneId)),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const parent = await phone.create({
+      title: "Cloud daily review",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    await phone.refresh();
+    await tablet.refresh();
+
+    const occurrence = await phone.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    await phone.refresh();
+    await tablet.refresh();
+    expect(await tablet.get(occurrence.task.id)).toMatchObject({
+      occurrenceDate: "2026-08-05",
+      recurrenceParent: `[[tasks/${parent.id}]]`,
+    });
+
+    await tablet.toggle(occurrence.task.id);
+    await tablet.refresh();
+    await phone.refresh();
+    expect(await phone.get(occurrence.task.id)).toMatchObject({
+      completed: true,
+    });
+    expect((await phone.get(parent.id))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+  });
+
+  it("publishes a finite rolling window in the same cloud refresh", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const tabletId = crypto.randomUUID();
+    for (const [id, name] of [
+      [phoneId, "Phone"],
+      [tabletId, "Tablet"],
+    ] as const)
+      authority.registerReplica({
+        id,
+        name,
+        mode: "read_write",
+        allowedTypes: ["task"],
+      });
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, authority.transport(phoneId)),
+    );
+    const tablet = new CloudTaskRepository(
+      connect(authority.collectionId, tabletId, authority.transport(tabletId)),
+    );
+    await Promise.all([phone.initialize(), tablet.initialize()]);
+    const today = todayString();
+    await phone.create({
+      title: "Cloud rolling window",
+      scheduled: today,
+      recurrence: `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`,
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P0D",
+      occurrenceFutureHorizon: "P2D",
+    });
+
+    await phone.refresh();
+    await tablet.refresh();
+    expect(
+      (await tablet.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+    expect(await phone.syncStatus()).toMatchObject({ pending: 0 });
+  });
+
   it("uses the contract's type name and records folder", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resourcesWithType("todo", "records/tasks"),
@@ -197,6 +498,49 @@ describe("cloud task repository", () => {
     expect(await repository.get(task.id)).toMatchObject({
       title: "Portable contract",
     });
+  });
+
+  it("creates from a raw template resource while offline", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resourcesWithTemplate(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    let online = true;
+    const upstream = authority.transport(replicaId);
+    const transport: SyncTransport<JsonObject> = {
+      openSession: () => network(() => upstream.openSession()),
+      snapshot: (snapshot, page) =>
+        network(() => upstream.snapshot(snapshot, page)),
+      changes: (after, limit) => network(() => upstream.changes(after, limit)),
+      mutate: (mutation) => network(() => upstream.mutate(mutation)),
+    };
+    const repository = new CloudTaskRepository(
+      connect(authority.collectionId, replicaId, transport),
+    );
+    await repository.initialize();
+    online = false;
+
+    const task = await repository.create({
+      title: "Offline template",
+      status: "open",
+    });
+    expect(task.status).toBe("open");
+    expect(task.frontmatter.source).toBe("cloud-template");
+    expect(task.body).toMatch(
+      /^Cloud body for Offline template on \d{4}-\d{2}-\d{2}$/,
+    );
+
+    function network<T>(operation: () => Promise<T>): Promise<T> {
+      return online
+        ? operation()
+        : Promise.reject(new SyncError("offline", "Network unavailable."));
+    }
   });
 
   it("surfaces conflicts and can keep the local edit", async () => {

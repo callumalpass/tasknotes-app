@@ -3,8 +3,10 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
 import { MarkdownCollection } from "./collection";
+import { todayString } from "../domain/task";
 import { TaskIndex } from "./index";
 import { IndexedMarkdownRepository } from "./repository";
 import { MemoryVault } from "../test/memory-vault";
@@ -141,5 +143,240 @@ describe("IndexedMarkdownRepository", () => {
     });
     expect(cleared.recurrence).toBeUndefined();
     expect(cleared.reminders).toEqual([]);
+  });
+
+  it("persists date-specific recurrence completion and skipping", async () => {
+    const created = await repository.create({
+      title: "Daily check-in",
+      scheduled: "2026-08-05T09:00",
+      recurrence: "FREQ=DAILY;INTERVAL=1",
+    });
+    const completed = await repository.toggle(created.id, "2026-08-05");
+    expect(completed.completeInstances).toEqual(["2026-08-05"]);
+    const skipped = await repository.skip(created.id, "2026-08-06");
+    expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
+
+    const source = parseFrontmatter(await vault.readText(created.path));
+    expect(source.frontmatter).toMatchObject({
+      complete_instances: ["2026-08-05"],
+      skipped_instances: ["2026-08-06"],
+      scheduled: new Date("2026-08-07T09:00")
+        .toISOString()
+        .replace(".000Z", "Z"),
+    });
+  });
+
+  it("materializes durable occurrence notes without duplicates and reconciles completion", async () => {
+    const parent = await repository.create({
+      title: "Daily durable task",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+      occurrenceMaterialization: "on_completion",
+      occurrenceNextTrigger: "completion_or_skip",
+    });
+    const first = await repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const second = await repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    expect(first.created).toBe(true);
+    expect(second).toMatchObject({
+      created: false,
+      task: { id: first.task.id },
+    });
+    expect(first.task).toMatchObject({
+      occurrenceDate: "2026-08-05",
+      recurrenceParent: `[[tasks/${parent.id}]]`,
+    });
+    expect(await vault.exists(first.task.path)).toBe(true);
+
+    const completed = await repository.toggle(first.task.id);
+    expect(completed.completed).toBe(true);
+    expect((await repository.get(parent.id))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.occurrenceDate === "2026-08-06",
+      ),
+    ).toHaveLength(1);
+    await repository.refresh();
+    expect(await repository.get(first.task.id)).toMatchObject({
+      completed: true,
+      occurrenceDate: "2026-08-05",
+    });
+    await repository.toggle(first.task.id);
+    const skipped = await repository.skip(first.task.id, "2026-08-05");
+    expect(skipped).toMatchObject({ skipped: true, status: "cancelled" });
+    expect((await repository.get(parent.id))?.skippedInstances).toContain(
+      "2026-08-05",
+    );
+  });
+
+  it("maintains a finite rolling occurrence window after parent writes", async () => {
+    const today = todayString();
+    const parent = await repository.create({
+      title: "Rolling daily task",
+      scheduled: today,
+      recurrence: `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`,
+      occurrenceMaterialization: "rolling",
+      occurrencePastHorizon: "P0D",
+      occurrenceFutureHorizon: "P2D",
+    });
+    expect(parent.operationWarnings).toBeUndefined();
+    const tasks = await repository.list({ status: "all", limit: 100 });
+    const occurrences = tasks.filter(
+      (task) => task.recurrenceParent && task.occurrenceDate,
+    );
+    expect(occurrences).toHaveLength(3);
+    expect(new Set(occurrences.map((task) => task.occurrenceDate)).size).toBe(
+      3,
+    );
+    await repository.update(parent.id, { body: "No duplicates" });
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+  });
+
+  it("persists start, stop, edit, and removal of time sessions", async () => {
+    const created = await repository.create({ title: "Profile indexer" });
+    const started = await repository.startTimeTracking(created.id, "Benchmark");
+    expect(started.timeEntries).toHaveLength(1);
+    expect(started.timeEntries[0]).toMatchObject({ description: "Benchmark" });
+    expect(started.timeEntries[0].endTime).toBeUndefined();
+    await expect(repository.startTimeTracking(created.id)).rejects.toThrow(
+      /already_active/,
+    );
+
+    const stopped = await repository.stopTimeTracking(created.id);
+    expect(stopped.timeEntries[0].endTime).toMatch(/Z$/);
+    const edited = await repository.replaceTimeEntries(created.id, [
+      {
+        startTime: "2026-07-22T09:00:00+10:00",
+        endTime: "2026-07-22T10:30:00+10:00",
+        description: "Measured run",
+      },
+    ]);
+    expect(edited.timeEntries).toEqual([
+      {
+        startTime: "2026-07-21T23:00:00Z",
+        endTime: "2026-07-22T00:30:00Z",
+        description: "Measured run",
+      },
+    ]);
+    const source = parseFrontmatter(await vault.readText(created.path));
+    expect(source.frontmatter.timeEntries).toEqual(edited.timeEntries);
+    expect(source.frontmatter.timeEntries).not.toHaveProperty("duration");
+
+    const removed = await repository.removeTimeEntry(created.id, 0);
+    expect(removed.timeEntries).toEqual([]);
+    await expect(repository.stopTimeTracking(created.id)).rejects.toThrow(
+      /no_active/,
+    );
+  });
+
+  it("tracks work on multiple tasks at the same time", async () => {
+    const [first, second] = await Promise.all([
+      repository.create({ title: "Parallel research" }),
+      repository.create({ title: "Parallel build" }),
+    ]);
+    const [firstStarted, secondStarted] = await Promise.all([
+      repository.startTimeTracking(first.id, "Research"),
+      repository.startTimeTracking(second.id, "Build"),
+    ]);
+    expect(firstStarted.timeEntries.at(-1)?.endTime).toBeUndefined();
+    expect(secondStarted.timeEntries.at(-1)?.endTime).toBeUndefined();
+
+    await repository.stopTimeTracking(first.id);
+    expect(
+      (await repository.get(first.id))?.timeEntries.at(-1)?.endTime,
+    ).toMatch(/Z$/);
+    expect(
+      (await repository.get(second.id))?.timeEntries.at(-1)?.endTime,
+    ).toBeUndefined();
+  });
+
+  it("hides archived tasks and restores them without deleting Markdown", async () => {
+    const created = await repository.create({ title: "Keep for later" });
+    const archived = await repository.setArchived(created.id, true);
+    expect(archived.archived).toBe(true);
+    expect(archived.frontmatter.tags).toContain("archived");
+    expect(await repository.list({ status: "all" })).toEqual([]);
+    expect(
+      await repository.list({ status: "all", archived: "only" }),
+    ).toHaveLength(1);
+    expect(await repository.stats()).toMatchObject({
+      total: 0,
+      archived: 1,
+    });
+    expect(await vault.exists(created.path)).toBe(true);
+
+    const restored = await repository.setArchived(created.id, false);
+    expect(restored.archived).toBe(false);
+    expect(await repository.list({ status: "all" })).toHaveLength(1);
+    expect(await repository.stats()).toMatchObject({
+      total: 1,
+      archived: 0,
+    });
+  });
+
+  it("moves archived files when the collection contract requests it", async () => {
+    const movingVault = new MemoryVault();
+    const movingIndex = new TaskIndex(`tasknotes-test-${crypto.randomUUID()}`);
+    const resources = buildTaskNotesMdbaseResources();
+    const type = parseFrontmatter(resources.typeDocument);
+    const extension = type.frontmatter["x-tasknotes"] as Record<
+      string,
+      unknown
+    >;
+    extension.archive = { move_on_archive: true, folder: "archive" };
+    await movingVault.writeText(
+      resources.paths.type,
+      serializeMarkdownDocument(type.frontmatter, type.body),
+    );
+    const moving = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(movingVault),
+      index: movingIndex,
+    });
+    try {
+      await moving.initialize();
+      const created = await moving.create({ title: "Move me" });
+      const archived = await moving.setArchived(created.id, true);
+      expect(archived.path).toBe(`archive/${created.id}.md`);
+      expect(await movingVault.exists(created.path)).toBe(false);
+      expect(await movingVault.exists(archived.path)).toBe(true);
+      await moving.refresh();
+      expect(await moving.get(created.id)).toMatchObject({
+        path: archived.path,
+        archived: true,
+      });
+
+      const restored = await moving.setArchived(created.id, false);
+      expect(restored.path).toBe(created.path);
+      expect(await movingVault.exists(archived.path)).toBe(false);
+      expect(await movingVault.exists(created.path)).toBe(true);
+
+      const colliding = await moving.create({ title: "Do not overwrite" });
+      const collisionPath = `archive/${colliding.id}.md`;
+      await movingVault.writeText(collisionPath, "existing archive record");
+      const retained = await moving.setArchived(colliding.id, true);
+      expect(retained).toMatchObject({
+        path: colliding.path,
+        archived: true,
+        operationWarnings: [expect.stringMatching(/^archive_move_failed:/)],
+      });
+      expect(await movingVault.readText(collisionPath)).toBe(
+        "existing archive record",
+      );
+      expect(await movingVault.exists(colliding.path)).toBe(true);
+    } finally {
+      movingIndex.close();
+      await movingIndex.delete();
+    }
   });
 });

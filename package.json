@@ -45,6 +45,7 @@
     "obsidian-bases-expression": "file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "tasknotes-nlp-core": "file:vendor/tasknotes-nlp-core-0.1.5.tgz",
     "yaml": "2.9.0"
   },
   "devDependencies": {

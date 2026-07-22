@@ -1,17 +1,38 @@
-import { ArrowLeft, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  Clock3,
+  Play,
+  Square,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
-import { recurrencePreset, recurrenceRule } from "../domain/task";
+import {
+  buildRecurrenceRule,
+  parseRecurrenceRule,
+  type RecurrenceRuleDraft,
+} from "../domain/recurrence-rule";
+import {
+  combineTaskDateTime,
+  activeTimeEntry,
+  recurrencePreset,
+  recurrenceRule,
+  taskTimeTotals,
+  taskDatePart,
+  taskTimePart,
+} from "../domain/task";
 import { useRepository, useTask } from "./repository-context";
 
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 
 type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
   Task,
   | "title"
-  | "completed"
+  | "status"
   | "priority"
   | "due"
   | "scheduled"
@@ -21,10 +42,27 @@ type Draft = Pick<
   | "projects"
   | "recurrence"
   | "recurrenceAnchor"
+  | "occurrenceMaterialization"
+  | "occurrenceNextTrigger"
+  | "occurrenceTemplate"
+  | "occurrencePastHorizon"
+  | "occurrenceFutureHorizon"
   | "reminders"
+  | "timeEstimate"
+  | "customProperties"
 >;
 
-export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
+export function TaskScreen({
+  id,
+  occurrenceDate,
+  onBack,
+  onMaterialized,
+}: {
+  id: string;
+  occurrenceDate?: string;
+  onBack(): void;
+  onMaterialized(task: Task): void;
+}) {
   const { task, loading, error } = useTask(id);
   if (loading)
     return (
@@ -43,28 +81,64 @@ export function TaskScreen({ id, onBack }: { id: string; onBack(): void }) {
         </p>
       </section>
     );
-  return <TaskEditor key={task.id} task={task} onBack={onBack} />;
+  return (
+    <TaskEditor
+      key={`${task.id}:${occurrenceDate ?? "record"}`}
+      task={task}
+      occurrenceDate={occurrenceDate}
+      onBack={onBack}
+      onMaterialized={onMaterialized}
+    />
+  );
 }
 
-function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
-  const { updateTask, deleteTask } = useRepository();
+function TaskEditor({
+  task,
+  occurrenceDate,
+  onBack,
+  onMaterialized,
+}: {
+  task: Task;
+  occurrenceDate?: string;
+  onBack(): void;
+  onMaterialized(task: Task): void;
+}) {
+  const {
+    updateTask,
+    deleteTask,
+    toggleTask,
+    skipTask,
+    materializeOccurrence,
+    startTimeTracking,
+    stopTimeTracking,
+    replaceTimeEntries,
+    removeTimeEntry,
+    setTaskArchived,
+    configuration,
+  } = useRepository();
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [occurrenceAction, setOccurrenceAction] = useState(false);
+  const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
+  const [timeAction, setTimeAction] = useState(false);
+  const [timeError, setTimeError] = useState<string | null>(null);
+  const [archiveAction, setArchiveAction] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const mounted = useRef(true);
   const editVersion = useRef(0);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const persist = useCallback(
-    async (value: Draft = draft, version = editVersion.current) => {
+    async (value: Draft, version: number) => {
       if (!value.title.trim()) {
         if (mounted.current) setSaveState("error");
         return;
@@ -74,7 +148,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
       try {
         const input: UpdateTaskInput = {
           title: value.title,
-          completed: value.completed,
+          status: value.status,
           priority: value.priority,
           due: value.due ?? null,
           scheduled: value.scheduled ?? null,
@@ -84,7 +158,14 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           projects: value.projects,
           recurrence: value.recurrence ?? null,
           recurrenceAnchor: value.recurrenceAnchor,
+          occurrenceMaterialization: value.occurrenceMaterialization,
+          occurrenceNextTrigger: value.occurrenceNextTrigger,
+          occurrenceTemplate: value.occurrenceTemplate ?? null,
+          occurrencePastHorizon: value.occurrencePastHorizon ?? null,
+          occurrenceFutureHorizon: value.occurrenceFutureHorizon ?? null,
           reminders: value.reminders,
+          timeEstimate: value.timeEstimate ?? null,
+          customProperties: value.customProperties,
         };
         await updateTask(task.id, input);
         if (mounted.current && editVersion.current === version) {
@@ -100,7 +181,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         }
       }
     },
-    [draft, task.id, updateTask],
+    [task.id, updateTask],
   );
 
   useEffect(() => {
@@ -116,18 +197,116 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
     setDirty(true);
   }
 
+  function changeCustomProperty(key: string, value: unknown) {
+    const customProperties = { ...draft.customProperties };
+    if (isEmptyFieldValue(value)) delete customProperties[key];
+    else customProperties[key] = value;
+    change({ customProperties });
+  }
+
   function leave() {
     if (!draft.title.trim()) {
       setSaveState("error");
       return;
     }
-    if (dirty) void persist();
+    if (dirty) void persist(draft, editVersion.current);
     onBack();
   }
 
   async function remove() {
     await deleteTask(task.id);
     onBack();
+  }
+
+  async function toggleOccurrence() {
+    const date = occurrenceDate ?? task.occurrenceDate;
+    if (!date || occurrenceAction) return;
+    setOccurrenceAction(true);
+    setOccurrenceError(null);
+    try {
+      await toggleTask(task.id, task.occurrenceDate ? undefined : date);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function toggleSkippedOccurrence() {
+    const date = occurrenceDate ?? task.occurrenceDate;
+    if (!date || occurrenceAction) return;
+    setOccurrenceAction(true);
+    setOccurrenceError(null);
+    try {
+      await skipTask(task.id, date);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function materialize() {
+    if (!occurrenceDate || occurrenceAction) return;
+    setOccurrenceAction(true);
+    setOccurrenceError(null);
+    try {
+      const result = await materializeOccurrence(task.id, occurrenceDate);
+      onMaterialized(result.task);
+    } catch (reason) {
+      if (mounted.current)
+        setOccurrenceError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setOccurrenceAction(false);
+    }
+  }
+
+  async function runTimeAction(action: () => Promise<unknown>) {
+    if (timeAction) return;
+    setTimeAction(true);
+    setTimeError(null);
+    try {
+      if (dirty) await persist(draft, editVersion.current);
+      await action();
+    } catch (reason) {
+      if (mounted.current)
+        setTimeError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (mounted.current) setTimeAction(false);
+    }
+  }
+
+  async function changeArchiveState() {
+    if (archiveAction) return;
+    setArchiveAction(true);
+    setArchiveError(null);
+    try {
+      if (dirty) await persist(draft, editVersion.current);
+      const updated = await setTaskArchived(task.id, !task.archived);
+      if (updated.operationWarnings?.length) {
+        if (mounted.current) {
+          setArchiveError(updated.operationWarnings.join(" "));
+          setArchiveAction(false);
+        }
+        return;
+      }
+      onBack();
+    } catch (reason) {
+      if (mounted.current) {
+        setArchiveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+        setArchiveAction(false);
+      }
+    }
   }
 
   return (
@@ -145,7 +324,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           className={`save-state is-${saveState}`}
           disabled={saveState !== "error" || !draft.title.trim()}
           type="button"
-          onClick={() => void persist()}
+          onClick={() => void persist(draft, editVersion.current)}
           aria-label={
             saveState === "error"
               ? `Save failed. ${saveError ?? "Tap to retry."}`
@@ -161,6 +340,19 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
                 : "Saved"}
         </button>
         <button
+          aria-label={task.archived ? "Restore task" : "Archive task"}
+          className="icon-action"
+          disabled={archiveAction}
+          type="button"
+          onClick={() => void changeArchiveState()}
+        >
+          {task.archived ? (
+            <ArchiveRestore aria-hidden="true" size={19} strokeWidth={1.6} />
+          ) : (
+            <Archive aria-hidden="true" size={19} strokeWidth={1.6} />
+          )}
+        </button>
+        <button
           aria-label="Delete task"
           className="icon-action"
           type="button"
@@ -169,6 +361,12 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           <Trash2 aria-hidden="true" size={19} strokeWidth={1.6} />
         </button>
       </header>
+
+      {archiveError ? (
+        <p className="inline-error" role="alert">
+          {cleanOperationError(archiveError)}
+        </p>
+      ) : null}
 
       {confirmDelete ? (
         <div className="delete-confirmation" role="alert">
@@ -192,6 +390,64 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         </div>
       ) : null}
 
+      {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
+        <div className="occurrence-banner">
+          <div>
+            <span>
+              {task.occurrenceDate ? "Occurrence note" : "Occurrence"}
+            </span>
+            <strong>
+              {formatOccurrenceDate(task.occurrenceDate ?? occurrenceDate!)}
+            </strong>
+          </div>
+          <div className="occurrence-actions">
+            <button
+              className="text-action"
+              disabled={occurrenceAction}
+              type="button"
+              onClick={() => void toggleOccurrence()}
+            >
+              {task.occurrenceDate
+                ? task.completed
+                  ? "Mark open"
+                  : "Complete"
+                : task.completeInstances.includes(occurrenceDate!)
+                  ? "Mark open"
+                  : "Complete"}
+            </button>
+            <button
+              className="text-action"
+              disabled={occurrenceAction}
+              type="button"
+              onClick={() => void toggleSkippedOccurrence()}
+            >
+              {task.occurrenceDate
+                ? task.skipped
+                  ? "Unskip"
+                  : "Skip"
+                : task.skippedInstances.includes(occurrenceDate!)
+                  ? "Unskip"
+                  : "Skip"}
+            </button>
+            {occurrenceDate && task.recurrence ? (
+              <button
+                className="text-action"
+                disabled={occurrenceAction}
+                type="button"
+                onClick={() => void materialize()}
+              >
+                Make occurrence note
+              </button>
+            ) : null}
+          </div>
+          {occurrenceError ? (
+            <p className="inline-error" role="alert">
+              {occurrenceError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="task-form">
         <label
           className="visually-hidden"
@@ -210,51 +466,87 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
         />
 
         <Fieldset legend="Status">
-          <Choice
-            selected={!draft.completed}
-            onClick={() => change({ completed: false })}
-          >
-            Open
-          </Choice>
-          <Choice
-            selected={draft.completed}
-            onClick={() => change({ completed: true })}
-          >
-            Completed
-          </Choice>
+          {[...configuration.statuses]
+            .sort((left, right) => left.order - right.order)
+            .map((status) => (
+              <Choice
+                disabled={
+                  Boolean(task.occurrenceDate) &&
+                  statusKind(status) !==
+                    (task.completed
+                      ? "completed"
+                      : task.skipped
+                        ? "skipped"
+                        : "active")
+                }
+                key={status.value}
+                selected={draft.status === status.value}
+                onClick={() => change({ status: status.value })}
+              >
+                {status.label}
+              </Choice>
+            ))}
+          {task.occurrenceDate ? (
+            <p className="choice-help">
+              Use the occurrence actions above to complete, skip, or reopen this
+              note.
+            </p>
+          ) : null}
         </Fieldset>
 
-        <div className="field-grid">
+        <div className="field-grid timing-fields">
+          <DateTimeField
+            label="Scheduled"
+            value={draft.scheduled}
+            onChange={(scheduled) => change({ scheduled })}
+          />
+          <DateTimeField
+            label="Due"
+            value={draft.due}
+            onChange={(due) => change({ due })}
+          />
           <label className="form-field">
-            <span>Scheduled</span>
+            <span>Estimate (minutes)</span>
             <input
-              type="date"
-              value={draft.scheduled ?? ""}
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={draft.timeEstimate ?? ""}
               onChange={(event) =>
-                change({ scheduled: event.target.value || undefined })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span>Due</span>
-            <input
-              type="date"
-              value={draft.due ?? ""}
-              onChange={(event) =>
-                change({ due: event.target.value || undefined })
+                change({
+                  timeEstimate: event.target.value
+                    ? Number(event.target.value)
+                    : undefined,
+                })
               }
             />
           </label>
         </div>
 
+        <TimeTrackingField
+          busy={timeAction}
+          entries={task.timeEntries}
+          error={timeError}
+          onRemove={(index) =>
+            runTimeAction(() => removeTimeEntry(task.id, index))
+          }
+          onReplace={(entries) =>
+            runTimeAction(() => replaceTimeEntries(task.id, entries))
+          }
+          onStart={(description) =>
+            runTimeAction(() => startTimeTracking(task.id, description))
+          }
+          onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
+        />
+
         <Fieldset legend="Priority">
-          {(["none", "low", "normal", "high"] as const).map((priority) => (
+          {configuration.priorities.map((priority) => (
             <Choice
-              key={priority}
-              selected={draft.priority === priority}
-              onClick={() => change({ priority })}
+              key={priority.value}
+              selected={draft.priority === priority.value}
+              onClick={() => change({ priority: priority.value })}
             >
-              {titleCase(priority)}
+              {priority.label}
             </Choice>
           ))}
         </Fieldset>
@@ -280,60 +572,42 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           />
         </div>
 
-        <div className="repeat-fields">
-          <label className="form-field">
-            <span>Repeat</span>
-            <select
-              value={recurrencePreset(draft.recurrence)}
-              onChange={(event) => {
-                const preset = event.target.value;
-                change({
-                  recurrence:
-                    preset === "never"
-                      ? undefined
-                      : (recurrenceRule(preset) ?? draft.recurrence ?? ""),
-                });
-              }}
-            >
-              <option value="never">Never</option>
-              <option value="daily">Daily</option>
-              <option value="weekdays">Weekdays</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-              {recurrencePreset(draft.recurrence) === "custom" ? (
-                <option value="custom">Custom rule</option>
-              ) : null}
-            </select>
-          </label>
-          {recurrencePreset(draft.recurrence) === "custom" ? (
-            <label className="form-field custom-rule-field">
-              <span>Recurrence rule</span>
-              <input
-                value={draft.recurrence ?? ""}
-                onChange={(event) => change({ recurrence: event.target.value })}
-              />
-            </label>
-          ) : null}
-          {draft.recurrence ? (
-            <Fieldset legend="Repeat from">
-              <Choice
-                selected={
-                  (draft.recurrenceAnchor ?? "scheduled") === "scheduled"
-                }
-                onClick={() => change({ recurrenceAnchor: "scheduled" })}
-              >
-                Schedule
-              </Choice>
-              <Choice
-                selected={draft.recurrenceAnchor === "completion"}
-                onClick={() => change({ recurrenceAnchor: "completion" })}
-              >
-                Completion
-              </Choice>
-            </Fieldset>
-          ) : null}
-        </div>
+        {configuration.userFields.length ? (
+          <section
+            className="custom-fields"
+            aria-labelledby="custom-fields-title"
+          >
+            <h2 id="custom-fields-title">Properties</h2>
+            <div className="field-grid metadata-fields">
+              {configuration.userFields.map((field) => (
+                <CustomField
+                  field={field}
+                  key={field.key}
+                  value={draft.customProperties[field.key]}
+                  onChange={(value) => changeCustomProperty(field.key, value)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <RecurrenceField
+          anchor={draft.recurrenceAnchor}
+          value={draft.recurrence}
+          onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
+          onChange={(recurrence) => change({ recurrence })}
+        />
+
+        {draft.recurrence && !task.occurrenceDate ? (
+          <OccurrencePolicyField
+            futureHorizon={draft.occurrenceFutureHorizon}
+            materialization={draft.occurrenceMaterialization ?? "manual"}
+            nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
+            pastHorizon={draft.occurrencePastHorizon}
+            template={draft.occurrenceTemplate}
+            onChange={(patch) => change(patch)}
+          />
+        ) : null}
 
         <ReminderField
           reminders={draft.reminders}
@@ -359,6 +633,250 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
   );
 }
 
+function TimeTrackingField({
+  entries,
+  busy,
+  error,
+  onStart,
+  onStop,
+  onReplace,
+  onRemove,
+}: {
+  entries: TaskTimeEntry[];
+  busy: boolean;
+  error: string | null;
+  onStart(description?: string): void;
+  onStop(): void;
+  onReplace(entries: TaskTimeEntry[]): void;
+  onRemove(index: number): void;
+}) {
+  const active = activeTimeEntry(entries);
+  const now = useTimerNow(Boolean(active));
+  const totals = taskTimeTotals(entries, now);
+  const [expanded, setExpanded] = useState(false);
+  const [description, setDescription] = useState("");
+  const [editing, setEditing] = useState<number | null>(null);
+  const visibleEntries = entries.slice(-50).reverse();
+
+  return (
+    <section className="time-tracking" aria-labelledby="time-tracking-title">
+      <div className="time-tracking-heading">
+        <div>
+          <h2 id="time-tracking-title">
+            <Clock3 aria-hidden="true" size={16} strokeWidth={1.7} /> Time
+          </h2>
+          <p>
+            {active
+              ? `${formatMinutes(totals.liveMinutes)} tracked`
+              : formatMinutes(totals.closedMinutes)}
+          </p>
+        </div>
+        {active ? (
+          <button
+            className="timer-action is-running"
+            disabled={busy}
+            type="button"
+            onClick={onStop}
+          >
+            <Square aria-hidden="true" size={14} fill="currentColor" /> Stop
+          </button>
+        ) : (
+          <button
+            className="timer-action"
+            disabled={busy}
+            type="button"
+            onClick={() => {
+              onStart(description.trim() || undefined);
+              setDescription("");
+            }}
+          >
+            <Play aria-hidden="true" size={15} fill="currentColor" /> Start
+          </button>
+        )}
+      </div>
+
+      {!active ? (
+        <input
+          aria-label="Timer description"
+          className="timer-description"
+          placeholder="What are you working on?"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      ) : (
+        <p className="active-session" aria-live="polite">
+          {active.description || "Work session"} · {formatSession(active, now)}
+        </p>
+      )}
+
+      {error ? (
+        <p className="inline-error" role="alert">
+          {cleanOperationError(error)}
+        </p>
+      ) : null}
+
+      {entries.length ? (
+        <button
+          aria-expanded={expanded}
+          className="text-action time-history-toggle"
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded
+            ? "Hide sessions"
+            : `${entries.length} session${entries.length === 1 ? "" : "s"}`}
+        </button>
+      ) : null}
+
+      {expanded ? (
+        <div className="time-entry-list">
+          {entries.length > visibleEntries.length ? (
+            <p className="time-entry-limit">
+              Showing the latest {visibleEntries.length} of {entries.length}
+              sessions.
+            </p>
+          ) : null}
+          {visibleEntries.map((entry, reversedIndex) => {
+            const index = entries.length - reversedIndex - 1;
+            return editing === index ? (
+              <TimeEntryEditor
+                entry={entry}
+                key={`${entry.startTime}:${index}`}
+                onCancel={() => setEditing(null)}
+                onSave={(next) => {
+                  const replacement = entries.map((value, entryIndex) =>
+                    entryIndex === index ? next : value,
+                  );
+                  onReplace(replacement);
+                  setEditing(null);
+                }}
+              />
+            ) : (
+              <div
+                className="time-entry-row"
+                key={`${entry.startTime}:${index}`}
+              >
+                <button type="button" onClick={() => setEditing(index)}>
+                  <strong>{entry.description || "Work session"}</strong>
+                  <span>{formatSessionRange(entry, now)}</span>
+                </button>
+                <button
+                  aria-label={`Remove ${entry.description || "session"}`}
+                  className="icon-action"
+                  disabled={busy}
+                  type="button"
+                  onClick={() => onRemove(index)}
+                >
+                  <Trash2 aria-hidden="true" size={15} strokeWidth={1.6} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function TimeEntryEditor({
+  entry,
+  onSave,
+  onCancel,
+}: {
+  entry: TaskTimeEntry;
+  onSave(entry: TaskTimeEntry): void;
+  onCancel(): void;
+}) {
+  const [start, setStart] = useState(toLocalDateTime(entry.startTime));
+  const [end, setEnd] = useState(toLocalDateTime(entry.endTime));
+  const [description, setDescription] = useState(entry.description ?? "");
+  const valid = Boolean(start && (!end || new Date(end) >= new Date(start)));
+  return (
+    <div className="time-entry-editor">
+      <input
+        aria-label="Session description"
+        placeholder="Session description"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+      />
+      <div>
+        <input
+          aria-label="Session start"
+          type="datetime-local"
+          value={start}
+          onChange={(event) => setStart(event.target.value)}
+        />
+        <input
+          aria-label="Session end"
+          type="datetime-local"
+          value={end}
+          onChange={(event) => setEnd(event.target.value)}
+        />
+      </div>
+      <div className="time-entry-editor-actions">
+        <button className="text-action" type="button" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          className="text-action"
+          disabled={!valid}
+          type="button"
+          onClick={() =>
+            onSave({
+              startTime: new Date(start).toISOString(),
+              ...(end ? { endTime: new Date(end).toISOString() } : {}),
+              ...(description.trim()
+                ? { description: description.trim() }
+                : {}),
+            })
+          }
+        >
+          Save session
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function useTimerNow(running: boolean): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => setNow(new Date()), 15_000);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  return now;
+}
+
+function formatMinutes(value: number): string {
+  if (value < 60) return `${value}m`;
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function formatSession(entry: TaskTimeEntry, now: Date): string {
+  return formatMinutes(taskTimeTotals([entry], now).liveMinutes);
+}
+
+function formatSessionRange(entry: TaskTimeEntry, now: Date): string {
+  const start = new Date(entry.startTime);
+  const end = entry.endTime ? new Date(entry.endTime) : now;
+  const day = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(start);
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${day} · ${time.format(start)}–${time.format(end)} · ${formatSession(entry, now)}`;
+}
+
+function cleanOperationError(value: string): string {
+  return value.replace(/^[a-z_]+:\s*/i, "");
+}
+
 function Fieldset({
   legend,
   children,
@@ -376,10 +894,12 @@ function Fieldset({
 
 function Choice({
   selected,
+  disabled = false,
   children,
   onClick,
 }: {
   selected: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
   onClick(): void;
 }) {
@@ -387,12 +907,24 @@ function Choice({
     <button
       aria-pressed={selected}
       className={selected ? "is-selected" : undefined}
+      disabled={disabled}
       type="button"
       onClick={onClick}
     >
       {children}
     </button>
   );
+}
+
+function statusKind(status: {
+  isCompleted: boolean;
+  isSkipped?: boolean;
+}): "active" | "completed" | "skipped" {
+  return status.isCompleted
+    ? "completed"
+    : status.isSkipped
+      ? "skipped"
+      : "active";
 }
 
 function ListField({
@@ -417,6 +949,324 @@ function ListField({
       />
     </label>
   );
+}
+
+function RecurrenceField({
+  value,
+  anchor,
+  onChange,
+  onAnchorChange,
+}: {
+  value?: string;
+  anchor?: "scheduled" | "completion";
+  onChange(value?: string): void;
+  onAnchorChange(value: "scheduled" | "completion"): void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const rule = useMemo(() => parseRecurrenceRule(value), [value]);
+  const update = (patch: Partial<RecurrenceRuleDraft>) =>
+    onChange(buildRecurrenceRule({ ...rule, ...patch }));
+  const preset = recurrencePreset(value);
+  return (
+    <div className="repeat-fields">
+      <div className="repeat-heading">
+        <label className="form-field">
+          <span>Repeat</span>
+          <select
+            value={preset}
+            onChange={(event) => {
+              const next = event.target.value;
+              onChange(
+                next === "never" ? undefined : (recurrenceRule(next) ?? value),
+              );
+            }}
+          >
+            <option value="never">Never</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            {preset === "custom" ? (
+              <option value="custom">Custom</option>
+            ) : null}
+          </select>
+        </label>
+        {value ? (
+          <button
+            className="text-action"
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? "Done" : "Customize"}
+          </button>
+        ) : null}
+      </div>
+
+      {expanded && value ? (
+        rule.unsupported.length ? (
+          <div className="custom-rule-warning">
+            <p>
+              This rule uses {rule.unsupported.join(", ")}. Edit the RRULE
+              directly to preserve it.
+            </p>
+            <label className="form-field custom-rule-field">
+              <span>Recurrence rule</span>
+              <input
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="recurrence-builder">
+            <div className="recurrence-interval">
+              <span>Every</span>
+              <input
+                aria-label="Repeat interval"
+                inputMode="numeric"
+                min="1"
+                type="number"
+                value={rule.interval}
+                onChange={(event) =>
+                  update({ interval: Number(event.target.value) || 1 })
+                }
+              />
+              <select
+                aria-label="Repeat frequency"
+                value={rule.frequency}
+                onChange={(event) =>
+                  update({
+                    frequency: event.target
+                      .value as RecurrenceRuleDraft["frequency"],
+                  })
+                }
+              >
+                <option value="DAILY">days</option>
+                <option value="WEEKLY">weeks</option>
+                <option value="MONTHLY">months</option>
+                <option value="YEARLY">years</option>
+              </select>
+            </div>
+
+            {rule.frequency === "WEEKLY" ? (
+              <fieldset className="recurrence-weekdays">
+                <legend>On</legend>
+                {[
+                  ["MO", "M"],
+                  ["TU", "T"],
+                  ["WE", "W"],
+                  ["TH", "T"],
+                  ["FR", "F"],
+                  ["SA", "S"],
+                  ["SU", "S"],
+                ].map(([day, label]) => (
+                  <button
+                    aria-label={weekdayName(day)}
+                    aria-pressed={rule.weekdays.includes(day)}
+                    className={
+                      rule.weekdays.includes(day) ? "is-selected" : undefined
+                    }
+                    key={day}
+                    type="button"
+                    onClick={() =>
+                      update({
+                        weekdays: rule.weekdays.includes(day)
+                          ? rule.weekdays.filter((entry) => entry !== day)
+                          : [...rule.weekdays, day],
+                      })
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
+            ) : null}
+
+            <div className="recurrence-end">
+              <label className="form-field">
+                <span>Ends</span>
+                <select
+                  value={rule.end}
+                  onChange={(event) =>
+                    update({
+                      end: event.target.value as RecurrenceRuleDraft["end"],
+                      until:
+                        rule.until ?? new Date().toISOString().slice(0, 10),
+                      count: rule.count ?? 10,
+                    })
+                  }
+                >
+                  <option value="never">Never</option>
+                  <option value="until">On date</option>
+                  <option value="count">After occurrences</option>
+                </select>
+              </label>
+              {rule.end === "until" ? (
+                <label className="form-field">
+                  <span>Last date</span>
+                  <input
+                    type="date"
+                    value={rule.until ?? ""}
+                    onChange={(event) => update({ until: event.target.value })}
+                  />
+                </label>
+              ) : rule.end === "count" ? (
+                <label className="form-field">
+                  <span>Occurrences</span>
+                  <input
+                    inputMode="numeric"
+                    min="1"
+                    type="number"
+                    value={rule.count ?? 10}
+                    onChange={(event) =>
+                      update({ count: Number(event.target.value) || 1 })
+                    }
+                  />
+                </label>
+              ) : null}
+            </div>
+          </div>
+        )
+      ) : null}
+
+      {value ? (
+        <Fieldset legend="Repeat from">
+          <Choice
+            selected={(anchor ?? "scheduled") === "scheduled"}
+            onClick={() => onAnchorChange("scheduled")}
+          >
+            Schedule
+          </Choice>
+          <Choice
+            selected={anchor === "completion"}
+            onClick={() => onAnchorChange("completion")}
+          >
+            Completion
+          </Choice>
+        </Fieldset>
+      ) : null}
+    </div>
+  );
+}
+
+function OccurrencePolicyField({
+  materialization,
+  nextTrigger,
+  template,
+  pastHorizon,
+  futureHorizon,
+  onChange,
+}: {
+  materialization: "manual" | "on_completion" | "rolling";
+  nextTrigger: "completion" | "completion_or_skip";
+  template?: string;
+  pastHorizon?: string;
+  futureHorizon?: string;
+  onChange(value: Partial<Draft>): void;
+}) {
+  return (
+    <section className="repeat-fields occurrence-policy">
+      <div className="repeat-heading">
+        <div>
+          <span className="field-label">Occurrence notes</span>
+          <p>Keep individual Markdown notes for recurring dates.</p>
+        </div>
+        <select
+          aria-label="Occurrence note policy"
+          value={materialization}
+          onChange={(event) =>
+            onChange({
+              occurrenceMaterialization: event.target
+                .value as Task["occurrenceMaterialization"],
+            })
+          }
+        >
+          <option value="manual">When I choose</option>
+          <option value="on_completion">
+            Create the next after completion
+          </option>
+          <option value="rolling">Keep a rolling window</option>
+        </select>
+      </div>
+      {materialization === "on_completion" ? (
+        <label className="form-field">
+          <span>Advance after</span>
+          <select
+            value={nextTrigger}
+            onChange={(event) =>
+              onChange({
+                occurrenceNextTrigger: event.target
+                  .value as Task["occurrenceNextTrigger"],
+              })
+            }
+          >
+            <option value="completion">Completion</option>
+            <option value="completion_or_skip">Completion or skip</option>
+          </select>
+        </label>
+      ) : null}
+      {materialization === "rolling" ? (
+        <div className="field-grid metadata-fields">
+          <label className="form-field">
+            <span>Past horizon</span>
+            <input
+              placeholder="P0D"
+              value={pastHorizon ?? ""}
+              onChange={(event) =>
+                onChange({ occurrencePastHorizon: event.target.value })
+              }
+            />
+          </label>
+          <label className="form-field">
+            <span>Future horizon</span>
+            <input
+              placeholder="P14D"
+              value={futureHorizon ?? ""}
+              onChange={(event) =>
+                onChange({ occurrenceFutureHorizon: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      ) : null}
+      <label className="form-field">
+        <span>Occurrence template</span>
+        <input
+          placeholder="Templates/Occurrence.md"
+          value={template ?? ""}
+          onChange={(event) =>
+            onChange({ occurrenceTemplate: event.target.value })
+          }
+        />
+      </label>
+    </section>
+  );
+}
+
+function weekdayName(value: string): string {
+  return (
+    {
+      MO: "Monday",
+      TU: "Tuesday",
+      WE: "Wednesday",
+      TH: "Thursday",
+      FR: "Friday",
+      SA: "Saturday",
+      SU: "Sunday",
+    }[value] ?? value
+  );
+}
+
+function formatOccurrenceDate(value: string): string {
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.valueOf())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
 }
 
 function ReminderField({
@@ -472,7 +1322,7 @@ function ReminderField({
 function toDraft(task: Task): Draft {
   return {
     title: task.title,
-    completed: task.completed,
+    status: task.status,
     priority: task.priority,
     due: task.due,
     scheduled: task.scheduled,
@@ -482,12 +1332,110 @@ function toDraft(task: Task): Draft {
     projects: task.projects,
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
+    occurrenceMaterialization: task.occurrenceMaterialization,
+    occurrenceNextTrigger: task.occurrenceNextTrigger,
+    occurrenceTemplate: task.occurrenceTemplate,
+    occurrencePastHorizon: task.occurrencePastHorizon,
+    occurrenceFutureHorizon: task.occurrenceFutureHorizon,
     reminders: task.reminders,
+    timeEstimate: task.timeEstimate,
+    customProperties: { ...task.customProperties },
   };
 }
 
-function titleCase(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+function DateTimeField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  onChange(value?: string): void;
+}) {
+  const date = taskDatePart(value);
+  const time = taskTimePart(value);
+  return (
+    <label className="form-field date-time-field">
+      <span>{label}</span>
+      <div>
+        <input
+          aria-label={`${label} date`}
+          type="date"
+          value={date}
+          onChange={(event) =>
+            onChange(combineTaskDateTime(event.target.value, time))
+          }
+        />
+        <input
+          aria-label={`${label} time`}
+          disabled={!date}
+          type="time"
+          value={time}
+          onChange={(event) =>
+            onChange(combineTaskDateTime(date, event.target.value))
+          }
+        />
+      </div>
+    </label>
+  );
+}
+
+function CustomField({
+  field,
+  value,
+  onChange,
+}: {
+  field: import("@tasknotes/model/types").UserMappedField;
+  value: unknown;
+  onChange(value: unknown): void;
+}) {
+  if (field.type === "boolean") {
+    return (
+      <label className="form-field boolean-field">
+        <span>{field.displayName}</span>
+        <input
+          checked={value === true}
+          type="checkbox"
+          onChange={(event) => onChange(event.target.checked)}
+        />
+      </label>
+    );
+  }
+  if (field.type === "list") {
+    return (
+      <ListField
+        label={field.displayName}
+        placeholder="Comma-separated values"
+        values={Array.isArray(value) ? value.map(String) : []}
+        onChange={onChange}
+      />
+    );
+  }
+  return (
+    <label className="form-field">
+      <span>{field.displayName}</span>
+      <input
+        inputMode={field.type === "number" ? "decimal" : undefined}
+        type={
+          field.type === "date"
+            ? "date"
+            : field.type === "number"
+              ? "number"
+              : "text"
+        }
+        value={
+          typeof value === "string" || typeof value === "number" ? value : ""
+        }
+        onChange={(event) =>
+          onChange(
+            field.type === "number" && event.target.value
+              ? Number(event.target.value)
+              : event.target.value,
+          )
+        }
+      />
+    </label>
+  );
 }
 
 function parseList(value: string): string[] {
@@ -499,6 +1447,15 @@ function parseList(value: string): string[] {
         .filter(Boolean),
     ),
   ];
+}
+
+function isEmptyFieldValue(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  );
 }
 
 function toLocalDateTime(value?: string): string {

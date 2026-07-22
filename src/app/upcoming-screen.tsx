@@ -1,18 +1,33 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { dateFromStorage, formatTaskDate, todayString } from "../domain/task";
+import {
+  occurrenceRange,
+  projectUpcomingTasks,
+} from "../domain/task-occurrence";
 import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
 
-export function UpcomingScreen({ onOpen }: { onOpen(task: Task): void }) {
+const PAGE_SIZE = 300;
+
+export function UpcomingScreen({
+  onOpen,
+}: {
+  onOpen(task: Task, occurrenceDate?: string): void;
+}) {
   const { toggleTask } = useRepository();
-  const { tasks, loading, error } = useTasks({ status: "open", limit: 50_000 });
+  const { tasks, loading, error } = useTasks({ status: "all", limit: 50_000 });
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
-  const groups = useMemo(() => groupUpcoming(tasks, today), [tasks, today]);
+  const range = useMemo(() => occurrenceRange(0, 60), []);
+  const projection = useMemo(
+    () => projectUpcomingTasks(tasks, today, range.end, visibleCount),
+    [range.end, tasks, today, visibleCount],
+  );
 
   return (
     <section className="screen" aria-labelledby="upcoming-title">
@@ -25,49 +40,53 @@ export function UpcomingScreen({ onOpen }: { onOpen(task: Task): void }) {
         </p>
       ) : loading ? (
         <LoadingRows count={6} />
-      ) : groups.length === 0 ? (
+      ) : projection.groups.length === 0 ? (
         <EmptyState
           title="Nothing scheduled ahead."
           body="Add a scheduled or due date to a task when it needs a place here."
         />
       ) : (
         <div className="task-groups upcoming-groups">
-          {groups.map((group) => (
+          {projection.groups.map((group) => (
             <section className="task-section" key={group.date}>
               <div className="section-heading">
                 <h2>{formatUpcomingDate(group.date, today)}</h2>
-                <span>{group.tasks.length}</span>
+                <span>{group.totalCount}</span>
               </div>
               <div className="task-list">
-                {group.tasks.map((task) => (
+                {group.tasks.map((entry) => (
                   <TaskRow
-                    key={task.id}
-                    task={task}
+                    key={entry.key}
+                    task={entry.task}
+                    occurrence={entry.occurrence}
                     onOpen={onOpen}
-                    onToggle={(item) => void toggleTask(item.id)}
+                    onToggle={(item, occurrenceDate) =>
+                      void toggleTask(item.id, occurrenceDate)
+                    }
                   />
                 ))}
               </div>
             </section>
           ))}
+          {projection.totalCount > projection.shownCount ? (
+            <div className="task-list-more">
+              <p>
+                Showing {projection.shownCount.toLocaleString()} of{" "}
+                {projection.totalCount.toLocaleString()} upcoming tasks.
+              </p>
+              <button
+                className="text-action"
+                type="button"
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              >
+                Show more
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     </section>
   );
-}
-
-function groupUpcoming(tasks: Task[], today: string) {
-  const groups = new Map<string, Task[]>();
-  for (const task of tasks) {
-    const date = task.scheduled ?? task.due;
-    if (!date || date <= today) continue;
-    const existing = groups.get(date) ?? [];
-    existing.push(task);
-    groups.set(date, existing);
-  }
-  return [...groups.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([date, grouped]) => ({ date, tasks: grouped }));
 }
 
 function formatUpcomingDate(value: string, today: string): string {

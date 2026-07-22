@@ -9,6 +9,7 @@ import type {
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 
+import { todayString } from "../domain/task";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { CloudTaskRepository } from "./cloud-repository";
 import { createConnectTaskRepository } from "./connect-repository";
@@ -80,6 +81,124 @@ describe("relay task repository", () => {
     });
   });
 
+  it("round-trips time sessions through revision-guarded relay writes", async () => {
+    const fixture = relayFixture([
+      taskRecord("timed", "Profile the relay", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const started = await repository.startTimeTracking("timed", "Relay run");
+    expect(started.timeEntries[0]).toMatchObject({
+      description: "Relay run",
+    });
+    const stopped = await repository.stopTimeTracking("timed");
+    expect(stopped.timeEntries[0].endTime).toMatch(/Z$/);
+    const replaced = await repository.replaceTimeEntries("timed", [
+      {
+        startTime: "2026-07-22T09:00:00+10:00",
+        endTime: "2026-07-22T10:00:00+10:00",
+      },
+    ]);
+    expect(replaced.timeEntries[0]).toEqual({
+      startTime: "2026-07-21T23:00:00Z",
+      endTime: "2026-07-22T00:00:00Z",
+    });
+    expect((await repository.removeTimeEntry("timed", 0)).timeEntries).toEqual(
+      [],
+    );
+    expect(
+      fixture.update.mock.calls.map(([input]) => input.if_revision),
+    ).toEqual(["r1", "r2", "r3", "r4"]);
+  });
+
+  it("creates one durable relay occurrence and reconciles its parent", async () => {
+    const parent = taskRecord("series", "Relay recurrence", "r1");
+    parent.frontmatter.scheduled = "2026-08-05";
+    parent.frontmatter.recurrence = "FREQ=DAILY;INTERVAL=1;DTSTART=20260805";
+    const fixture = relayFixture([parent]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const first = await repository.materializeOccurrence(
+      "series",
+      "2026-08-05",
+    );
+    const duplicate = await repository.materializeOccurrence(
+      "series",
+      "2026-08-05",
+    );
+    expect(first.created).toBe(true);
+    expect(duplicate).toMatchObject({
+      created: false,
+      task: { id: first.task.id },
+    });
+    expect(fixture.create).toHaveBeenCalledTimes(1);
+
+    const completed = await repository.toggle(first.task.id);
+    expect(completed.completed).toBe(true);
+    expect((await repository.get("series"))?.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("maintains a rolling window when an existing relay collection opens", async () => {
+    const today = todayString();
+    const parent = taskRecord("rolling", "Relay rolling window", "r1");
+    parent.frontmatter.scheduled = today;
+    parent.frontmatter.recurrence = `FREQ=DAILY;INTERVAL=1;DTSTART=${today.replaceAll("-", "")}`;
+    parent.frontmatter.occurrence_materialization = "rolling";
+    parent.frontmatter.occurrence_past_horizon = "P0D";
+    parent.frontmatter.occurrence_future_horizon = "P2D";
+    const fixture = relayFixture([parent]);
+    const repository = new RelayTaskRepository(fixture.connect);
+
+    await repository.initialize();
+    expect(fixture.create).toHaveBeenCalledTimes(3);
+    expect(
+      (await repository.list({ status: "all", limit: 100 })).filter(
+        (task) => task.recurrenceParent && task.occurrenceDate,
+      ),
+    ).toHaveLength(3);
+
+    await repository.refresh();
+    expect(fixture.create).toHaveBeenCalledTimes(3);
+  });
+
+  it("archives, moves, hides, and restores a live collection task", async () => {
+    const fixture = relayFixture(
+      [taskRecord("archived", "Relay archive", "r1")],
+      false,
+      true,
+    );
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const archived = await repository.setArchived("archived", true);
+    expect(archived).toMatchObject({
+      archived: true,
+      path: "TaskNotes/Archive/archived.md",
+    });
+    expect(await repository.list({ status: "all" })).toEqual([]);
+    expect(
+      await repository.list({ status: "all", archived: "only" }),
+    ).toHaveLength(1);
+    expect(fixture.rename).toHaveBeenLastCalledWith({
+      from: "tasks/archived.md",
+      to: "TaskNotes/Archive/archived.md",
+      if_revision: "r2",
+      update_refs: true,
+    });
+
+    const restored = await repository.setArchived("archived", false);
+    expect(restored).toMatchObject({
+      archived: false,
+      path: "tasks/archived.md",
+    });
+    expect(await repository.list({ status: "all" })).toHaveLength(1);
+  });
+
   it("lists and executes provider-owned saved views", async () => {
     const fixture = relayFixture([
       taskRecord("board", "Visible on the board", "r1"),
@@ -107,6 +226,34 @@ describe("relay task repository", () => {
     );
   });
 
+  it("creates from the configured template through the live relay", async () => {
+    const fixture = relayFixture(
+      [
+        {
+          path: "Templates/Task.md",
+          frontmatter: { source: "relay-template", status: "done" },
+          body: "Relay body for {{title}} on {{date}}",
+          types: [],
+          revision: "template-r1",
+        },
+      ],
+      true,
+    );
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const task = await repository.create({
+      title: "Relay template",
+      status: "open",
+    });
+    expect(task.status).toBe("open");
+    expect(task.frontmatter.source).toBe("relay-template");
+    expect(task.body).toMatch(
+      /^Relay body for Relay template on \d{4}-\d{2}-\d{2}$/,
+    );
+    expect(fixture.read).toHaveBeenCalledWith({ path: "Templates/Task.md" });
+  });
+
   it("hides hosted-versus-relay selection behind one repository factory", () => {
     const relay = relayFixture([]).connect;
     expect(createConnectTaskRepository(relay)).toBeInstanceOf(
@@ -121,10 +268,16 @@ describe("relay task repository", () => {
   });
 });
 
-function relayFixture(initial: RecordResult<JsonObject>[]) {
+function relayFixture(
+  initial: RecordResult<JsonObject>[],
+  templating = false,
+  archive = false,
+) {
   const records = new Map(initial.map((record) => [record.path, record]));
   let revision = initial.length + 1;
-  const describeCollection = vi.fn(async () => description());
+  const describeCollection = vi.fn(async () =>
+    description(templating, archive),
+  );
   const query = vi.fn(async () =>
     valid<QueryResult<JsonObject>>({
       results: [...records.values()].map((record) => ({
@@ -198,6 +351,28 @@ function relayFixture(initial: RecordResult<JsonObject>[]) {
       return valid({ path: input.path, deleted: true });
     },
   );
+  const rename = vi.fn(
+    async (input: {
+      from: string;
+      to: string;
+      if_revision?: string;
+      update_refs?: boolean;
+    }) => {
+      const current = records.get(input.from);
+      if (!current) throw new Error("Task not found.");
+      if (records.has(input.to)) throw new Error("Destination already exists.");
+      if (input.if_revision !== current.revision)
+        throw new Error("Revision conflict.");
+      const record: RecordResult<JsonObject> = {
+        ...current,
+        path: input.to,
+        revision: `r${revision++}`,
+      };
+      records.delete(input.from);
+      records.set(input.to, record);
+      return valid({ ...record, from: input.from, to: input.to });
+    },
+  );
   const listViews = vi.fn(async () =>
     valid({
       views: [
@@ -252,6 +427,7 @@ function relayFixture(initial: RecordResult<JsonObject>[]) {
     create,
     update,
     delete: remove,
+    rename,
     listViews,
     executeView,
   } as unknown as MdbaseConnect<JsonObject>;
@@ -262,6 +438,7 @@ function relayFixture(initial: RecordResult<JsonObject>[]) {
     create,
     update,
     remove,
+    rename,
     listViews,
     executeView,
   };
@@ -285,13 +462,29 @@ function taskRecord(
   };
 }
 
-function description(): CollectionDescription {
+function description(
+  templating = false,
+  archive = false,
+): CollectionDescription {
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
     collection?: JsonObject;
     "x-tasknotes": JsonObject;
   };
+  const configuration = structuredClone(type["x-tasknotes"]);
+  if (templating)
+    configuration.templating = {
+      enabled: true,
+      template_path: "Templates/Task.md",
+      failure_mode: "error",
+      unknown_variable_policy: "preserve",
+    };
+  if (archive)
+    configuration.archive = {
+      move_on_archive: true,
+      folder: "TaskNotes/Archive",
+    };
   return {
     protocol_version: 2,
     collection_id: "local-tasks",
@@ -306,6 +499,7 @@ function description(): CollectionDescription {
       "create",
       "update",
       "delete",
+      "rename",
     ],
     change_cursor: 0,
     types: [
@@ -314,7 +508,7 @@ function description(): CollectionDescription {
         version: 1,
         schema: type.schema.value,
         collection: type.collection,
-        extensions: { "x-tasknotes": type["x-tasknotes"] },
+        extensions: { "x-tasknotes": configuration },
       },
     ],
     contracts: [
@@ -323,7 +517,7 @@ function description(): CollectionDescription {
         version: 1,
         type_name: "task",
         extension: "x-tasknotes",
-        configuration: type["x-tasknotes"],
+        configuration,
       },
     ],
   };
