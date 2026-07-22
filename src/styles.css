@@ -341,6 +341,32 @@ button:disabled {
   color: var(--danger);
 }
 
+.task-row-properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.task-row-property {
+  display: inline-flex;
+  min-width: 0;
+  gap: 4px;
+}
+
+.task-row-property > span {
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+}
+
+.task-row-property > strong {
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+
 .empty-state {
   display: grid;
   align-content: center;

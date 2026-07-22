@@ -130,13 +130,18 @@ async function main() {
 
     // Execute and render a real Obsidian Base through the packaged native
     // storage adapter.
-    const viewSource = `views:
+    const viewSource = `formulas:
+  surface: '"Native"'
+properties:
+  formula.surface:
+    displayName: Surface
+views:
   - type: tasknotesKanban
     name: Android board
     groupBy:
       property: status
       direction: ASC
-    order: [status, file.name]
+    order: [status, formula.surface]
 `;
     await devtools.evaluate(`Capacitor.Plugins.Filesystem.writeFile({
       path: "TaskNotes/views/android-smoke.base",
@@ -161,6 +166,13 @@ async function main() {
     if (!(await devtools.hasText(initialTitle)))
       throw new Error(
         "The native saved view did not include the persisted task.",
+      );
+    if (
+      !(await devtools.hasText("Surface")) ||
+      !(await devtools.hasText("Native"))
+    )
+      throw new Error(
+        "The native saved view did not render its configured formula property.",
       );
 
     // Prove that the private-use OAuth callback is routed back into the

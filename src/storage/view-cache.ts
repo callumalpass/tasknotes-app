@@ -17,7 +17,9 @@ export class TaskViewCache extends Dexie {
   }
 
   async readViews(): Promise<TaskView[]> {
-    return clone((await this.entries.get("views"))?.value, []);
+    return clone<TaskView[]>((await this.entries.get("views"))?.value, []).map(
+      normalizeView,
+    );
   }
 
   async writeViews(views: TaskView[]): Promise<void> {
@@ -25,7 +27,13 @@ export class TaskViewCache extends Dexie {
   }
 
   async readExecution(key: string): Promise<TaskViewExecution | null> {
-    return clone((await this.entries.get(`execution:${key}`))?.value, null);
+    const execution = clone<TaskViewExecution | null>(
+      (await this.entries.get(`execution:${key}`))?.value,
+      null,
+    );
+    return execution
+      ? { ...execution, view: normalizeView(execution.view) }
+      : null;
   }
 
   async writeExecution(execution: TaskViewExecution): Promise<void> {
@@ -34,6 +42,14 @@ export class TaskViewCache extends Dexie {
       value: structuredClone(execution),
     });
   }
+}
+
+function normalizeView(view: TaskView): TaskView {
+  const properties = (view as Partial<TaskView>).properties;
+  return {
+    ...view,
+    properties: Array.isArray(properties) ? structuredClone(properties) : [],
+  };
 }
 
 function clone<T>(value: unknown, fallback: T): T {

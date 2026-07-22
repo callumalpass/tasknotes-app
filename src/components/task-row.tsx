@@ -8,10 +8,12 @@ export function TaskRow({
   task,
   onOpen,
   onToggle,
+  details,
 }: {
   task: Task;
   onOpen(task: Task): void;
   onToggle(task: Task): void;
+  details?: TaskRowDetail[];
 }) {
   const metadata = taskMeta(task);
   return (
@@ -36,7 +38,22 @@ export function TaskRow({
         onClick={() => onOpen(task)}
       >
         <span className="task-row-title">{task.title}</span>
-        {metadata.length ? (
+        {details ? (
+          details.length ? (
+            <span className="task-row-properties">
+              {details.map((detail) => (
+                <span
+                  className="task-row-property"
+                  key={detail.key}
+                  title={detail.description}
+                >
+                  <span>{detail.label}</span>
+                  <strong>{detail.value}</strong>
+                </span>
+              ))}
+            </span>
+          ) : null
+        ) : metadata.length ? (
           <span className="task-row-meta">
             {metadata.map((item) => (
               <span
@@ -51,4 +68,11 @@ export function TaskRow({
       </button>
     </div>
   );
+}
+
+export interface TaskRowDetail {
+  key: string;
+  label: string;
+  value: string;
+  description?: string;
 }

@@ -101,7 +101,7 @@ test("saves in the background while navigating away", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("discovers and renders local saved board and calendar views", async ({
+test("renders configured saved-view properties without changing calendar rows", async ({
   page,
 }) => {
   const today = [
@@ -131,13 +131,23 @@ test("discovers and renders local saved board and calendar views", async ({
     });
     const file = await views.getFileHandle("work.base", { create: true });
     const writable = await file.createWritable();
-    await writable.write(`views:
+    await writable.write(`formulas:
+  progress: if(status == "done", "Complete", "Active")
+properties:
+  note.status:
+    displayName: State
+  formula.progress:
+    displayName: Progress
+views:
   - type: tasknotesKanban
     name: Work board
     groupBy:
       property: status
       direction: ASC
-    order: [status, file.name]
+    order: [status, formula.progress]
+  - type: tasknotesTaskList
+    name: Task details
+    order: [status, formula.progress]
   - type: tasknotesCalendar
     name: Dates
     order: [due, file.name]
@@ -152,6 +162,7 @@ test("discovers and renders local saved board and calendar views", async ({
   await page.getByRole("button", { name: /Saved views/ }).click();
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await expect(page.getByText("Work board", { exact: true })).toBeVisible();
+  await expect(page.getByText("Task details", { exact: true })).toBeVisible();
   await expect(page.getByText("Dates", { exact: true })).toBeVisible();
 
   await page.getByText("Work board", { exact: true }).click();
@@ -162,6 +173,18 @@ test("discovers and renders local saved board and calendar views", async ({
   await expect(
     page.getByText("Ship saved views", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByText("Progress", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("Active", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByText("Task details", { exact: true }).click();
+  await expect(page.getByText("State", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("Progress", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("Complete", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Views", exact: true }).click();
   await page.getByText("Dates", { exact: true }).click();
@@ -169,6 +192,7 @@ test("discovers and renders local saved board and calendar views", async ({
   await expect(
     page.getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Progress", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Views", exact: true }).click();
   await page
     .getByRole("region", { name: "Views" })
