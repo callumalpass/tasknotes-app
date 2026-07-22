@@ -210,6 +210,63 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.capture-interpretation {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 43px;
+  padding: 8px 0;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-interpretation > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  padding: 5px 0;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.capture-interpretation > div > span:not(:last-child)::after {
+  position: relative;
+  left: 7px;
+  color: var(--line-strong);
+  content: "·";
+}
+
+.capture-parsing,
+.capture-plain {
+  color: var(--ink-muted);
+}
+
+.capture-details {
+  padding: 20px 0 4px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.capture-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+
+.capture-details .form-field > span {
+  margin-bottom: 7px;
+}
+
+.capture-notes {
+  padding: 20px 0 14px;
+  border-bottom: 0;
+}
+
+.capture-notes textarea {
+  min-height: 74px;
+}
+
 .inline-error {
   margin: 12px 0;
   color: var(--danger);
@@ -746,6 +803,20 @@ button:disabled {
   gap: 18px;
   padding: 25px 0 22px;
   border-bottom: 1px solid var(--line);
+}
+
+.timing-fields {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(9rem, 0.8fr);
+}
+
+.date-time-field > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.2rem;
+  gap: 12px;
+}
+
+.date-time-field input[type="time"]:disabled {
+  opacity: 0.35;
 }
 
 .form-field input {
@@ -1379,7 +1450,12 @@ button:disabled {
 
 @media (max-width: 480px) {
   .field-grid,
-  .metadata-fields {
+  .metadata-fields,
+  .timing-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .capture-details-grid {
     grid-template-columns: 1fr;
   }
 

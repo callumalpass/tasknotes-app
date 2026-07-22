@@ -3,7 +3,12 @@ import { useMemo } from "react";
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
-import { dateFromStorage, formatTaskDate, todayString } from "../domain/task";
+import {
+  dateFromStorage,
+  formatTaskDate,
+  taskDatePart,
+  todayString,
+} from "../domain/task";
 import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
@@ -59,7 +64,7 @@ export function UpcomingScreen({ onOpen }: { onOpen(task: Task): void }) {
 function groupUpcoming(tasks: Task[], today: string) {
   const groups = new Map<string, Task[]>();
   for (const task of tasks) {
-    const date = task.scheduled ?? task.due;
+    const date = taskDatePart(task.scheduled ?? task.due);
     if (!date || date <= today) continue;
     const existing = groups.get(date) ?? [];
     existing.push(task);

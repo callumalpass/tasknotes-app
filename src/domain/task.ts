@@ -31,6 +31,7 @@ export interface Task {
   completeInstances: string[];
   skippedInstances: string[];
   reminders: TaskReminder[];
+  timeEstimate?: number;
   customProperties: Record<string, unknown>;
   revision: number;
   frontmatter: Record<string, unknown>;
@@ -38,6 +39,7 @@ export interface Task {
 
 export interface CreateTaskInput {
   title: string;
+  status?: TaskStatus;
   priority?: TaskPriority;
   due?: string;
   scheduled?: string;
@@ -48,6 +50,7 @@ export interface CreateTaskInput {
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
   reminders?: TaskReminder[];
+  timeEstimate?: number;
   customProperties?: Record<string, unknown>;
 }
 
@@ -65,6 +68,7 @@ export interface UpdateTaskInput {
   recurrence?: string | null;
   recurrenceAnchor?: "scheduled" | "completion";
   reminders?: TaskReminder[];
+  timeEstimate?: number | null;
   customProperties?: Record<string, unknown>;
 }
 
@@ -88,27 +92,33 @@ export function todayString(now = new Date()): string {
 }
 
 export function formatTaskDate(value: string, today = todayString()): string {
-  if (value === today) return "Today";
+  const datePart = taskDatePart(value);
+  const timePart = taskTimePart(value);
+  const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
+  if (datePart === today) return `Today${timeLabel}`;
   const date = dateFromStorage(value);
   if (!date) return value;
   const todayDate = dateFromStorage(today) ?? new Date();
   const tomorrow = new Date(todayDate);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (value === todayString(tomorrow)) return "Tomorrow";
-  return new Intl.DateTimeFormat(undefined, {
+  if (datePart === todayString(tomorrow)) return `Tomorrow${timeLabel}`;
+  const dateLabel = new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     day: "numeric",
     month: "short",
   }).format(date);
+  return `${dateLabel}${timeLabel}`;
 }
 
 export function dateFromStorage(value: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(value);
   if (!match) return null;
   const date = new Date(
     Number(match[1]),
     Number(match[2]) - 1,
     Number(match[3]),
+    Number(match[4] ?? 0),
+    Number(match[5] ?? 0),
   );
   if (
     Number.isNaN(date.valueOf()) ||
@@ -120,6 +130,40 @@ export function dateFromStorage(value: string): Date | null {
   return date;
 }
 
+export function taskDatePart(value?: string): string {
+  return value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
+}
+
+export function taskTimePart(value?: string): string {
+  return value?.match(/(?:T| )(\d{2}:\d{2})/)?.[1] ?? "";
+}
+
+export function combineTaskDateTime(
+  date?: string,
+  time?: string,
+): string | undefined {
+  if (!date) return undefined;
+  return time
+    ? `${taskDatePart(date) || date}T${time}`
+    : taskDatePart(date) || date;
+}
+
+export function isTaskDateOverdue(value: string, now = new Date()): boolean {
+  const date = dateFromStorage(value);
+  if (!date) return false;
+  if (taskTimePart(value)) return date.getTime() < now.getTime();
+  return taskDatePart(value) < todayString(now);
+}
+
+function formatTaskTime(value: string): string {
+  const [hours, minutes] = value.split(":").map(Number);
+  const date = new Date(2024, 0, 1, hours, minutes);
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function taskMeta(
   task: Task,
   today = todayString(),
@@ -128,12 +172,12 @@ export function taskMeta(
   if (task.scheduled) {
     values.push({
       label: formatTaskDate(task.scheduled, today),
-      overdue: !task.completed && task.scheduled < today,
+      overdue: !task.completed && isTaskDateOverdue(task.scheduled),
     });
   } else if (task.due) {
     values.push({
       label: `Due ${formatTaskDate(task.due, today)}`,
-      overdue: !task.completed && task.due < today,
+      overdue: !task.completed && isTaskDateOverdue(task.due),
     });
   }
   if (task.priority !== "none" && task.priority !== "normal")

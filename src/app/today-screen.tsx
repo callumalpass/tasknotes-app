@@ -1,9 +1,10 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
+import { TaskCapture } from "../components/task-capture";
 import { TaskRow } from "../components/task-row";
-import { todayString } from "../domain/task";
+import { taskDatePart, todayString } from "../domain/task";
 import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
@@ -11,17 +12,15 @@ import type { Task } from "../domain/task";
 const PAGE_SIZE = 300;
 
 export function TodayScreen({ onOpen }: { onOpen(task: Task): void }) {
-  const { createTask, toggleTask, refreshing, sync } = useRepository();
+  const { createTask, toggleTask, refreshing, sync, configuration } =
+    useRepository();
   const { tasks, loading, error } = useTasks({ status: "open", limit: 50_000 });
-  const [title, setTitle] = useState("");
-  const [captureError, setCaptureError] = useState<string | null>(null);
-  const [capturing, setCapturing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
   const relevantTasks = useMemo(
     () =>
       tasks.filter((task) => {
-        const date = task.scheduled ?? task.due;
+        const date = taskDatePart(task.scheduled ?? task.due);
         return !date || date <= today;
       }),
     [tasks, today],
@@ -34,24 +33,6 @@ export function TodayScreen({ onOpen }: { onOpen(task: Task): void }) {
     () => groupTasks(visibleTasks, today),
     [today, visibleTasks],
   );
-
-  async function capture(event: FormEvent) {
-    event.preventDefault();
-    const value = title.trim();
-    if (!value || capturing) return;
-    setCapturing(true);
-    setCaptureError(null);
-    try {
-      await createTask({ title: value });
-      setTitle("");
-    } catch (reason) {
-      setCaptureError(
-        reason instanceof Error ? reason.message : String(reason),
-      );
-    } finally {
-      setCapturing(false);
-    }
-  }
 
   return (
     <section className="screen" aria-labelledby="today-title">
@@ -79,32 +60,7 @@ export function TodayScreen({ onOpen }: { onOpen(task: Task): void }) {
         </span>
       </header>
 
-      <form className="quick-capture" onSubmit={(event) => void capture(event)}>
-        <span aria-hidden="true" className="capture-plus">
-          +
-        </span>
-        <label className="visually-hidden" htmlFor="quick-task">
-          New task title
-        </label>
-        <input
-          id="quick-task"
-          autoComplete="off"
-          enterKeyHint="done"
-          placeholder="Add a task"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-        {title.trim() ? (
-          <button disabled={capturing} type="submit">
-            {capturing ? "Adding" : "Add"}
-          </button>
-        ) : null}
-      </form>
-      {captureError ? (
-        <p className="inline-error" role="alert">
-          {captureError}
-        </p>
-      ) : null}
+      <TaskCapture configuration={configuration} createTask={createTask} />
       {error ? (
         <p className="inline-error" role="alert">
           {error.message}
@@ -198,7 +154,7 @@ function groupTasks(tasks: Task[], today: string) {
     inbox: [],
   };
   for (const task of tasks) {
-    const date = task.scheduled ?? task.due;
+    const date = taskDatePart(task.scheduled ?? task.due);
     if (!date) result.inbox.push(task);
     else if (date < today) result.overdue.push(task);
     else if (date === today) result.today.push(task);

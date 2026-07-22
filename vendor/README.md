@@ -12,6 +12,7 @@ suites passed:
 - `../mdbase-connect/packages/client`
 - `../mdbase-connect/packages/sync`
 - `../tasknotes-model`
+- `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
 - `../tasknotes-spec`
 - `../mdbase`
 - `../obsidian-bases-expression`

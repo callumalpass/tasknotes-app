@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
-import { dateFromStorage, todayString } from "../domain/task";
+import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
 import { useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
@@ -442,11 +442,12 @@ function calendarEvents(execution: TaskViewExecution): Map<string, Task[]> {
   const showScheduled = options.showScheduled !== false;
   const showDue = options.showDue !== false;
   for (const { task } of execution.rows) {
-    for (const date of new Set([
+    for (const value of new Set([
       ...(showScheduled && task.scheduled ? [task.scheduled] : []),
       ...(showDue && task.due ? [task.due] : []),
     ])) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      const date = taskDatePart(value);
+      if (!date) continue;
       const tasks = events.get(date) ?? [];
       tasks.push(task);
       events.set(date, tasks);

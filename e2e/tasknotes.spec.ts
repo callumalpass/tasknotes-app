@@ -29,7 +29,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     String(tomorrow.getMonth() + 1).padStart(2, "0"),
     String(tomorrow.getDate()).padStart(2, "0"),
   ].join("-");
-  await page.getByLabel("Scheduled").fill(tomorrowValue);
+  await page.getByLabel("Scheduled date", { exact: true }).fill(tomorrowValue);
   await page.getByLabel("Projects").fill("mdbase");
   await page.getByLabel("Contexts").fill("computer");
   await page.getByLabel("Tags").fill("release, planning");
@@ -101,6 +101,37 @@ test("saves in the background while navigating away", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("interprets natural-language capture and preserves timed task fields", async ({
+  page,
+}) => {
+  await page
+    .getByLabel("New task title")
+    .fill(
+      "Prepare launch tomorrow 9am #release @computer +mdbase every week 45m !high *in-progress",
+    );
+  await expect(
+    page.getByText("Tomorrow", { exact: false }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("Weekly", { exact: true })).toBeVisible();
+  await expect(page.getByText("45 min", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await page.getByRole("button", { name: "Upcoming" }).click();
+  await page.getByText("Prepare launch", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "In progress" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "High" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Scheduled time")).toHaveValue("09:00");
+  await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
+  await expect(page.getByLabel("Projects")).toHaveValue("mdbase");
+  await expect(page.getByLabel("Contexts")).toHaveValue("computer");
+  await expect(page.getByLabel("Tags")).toHaveValue("release");
+});
+
 test("renders configured saved-view properties without changing calendar rows", async ({
   page,
 }) => {
@@ -113,7 +144,7 @@ test("renders configured saved-view properties without changing calendar rows", 
   await page.getByLabel("New task title").fill("Plan saved views");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Plan saved views", { exact: true }).click();
-  await page.getByLabel("Due").fill(today);
+  await page.getByLabel("Due date", { exact: true }).fill(today);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
 

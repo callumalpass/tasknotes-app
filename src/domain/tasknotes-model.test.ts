@@ -67,6 +67,30 @@ describe("TaskNotes task model app boundary", () => {
     expect(updated.frontmatter.energy).toBe(0);
     expect(updated.frontmatter).not.toHaveProperty("client");
   });
+
+  it("persists status, timed dates, and estimates from capture", () => {
+    const created = model.create(
+      {
+        title: "Captured",
+        status: "doing",
+        scheduled: "2026-08-05T09:00",
+        timeEstimate: 45,
+      },
+      { id: "captured", now: "2026-07-22T00:00:00.000Z" },
+    );
+
+    expect(created).toMatchObject({
+      status: "doing",
+      completed: false,
+      scheduled: "2026-08-05T09:00",
+      timeEstimate: 45,
+    });
+    expect(created.frontmatter).toMatchObject({
+      status: "doing",
+      scheduled: "2026-08-05T09:00",
+      timeEstimate: 45,
+    });
+  });
 });
 
 function status(

@@ -115,7 +115,7 @@ export class TaskNotesTaskModel {
       id: context.id,
       path: makeTaskPath(title, context.id, this.recordsFolder),
       title,
-      status: this.config.defaults.status,
+      status: input.status ?? this.config.defaults.status,
       priority: input.priority ?? this.config.defaults.priority,
       due: input.due,
       scheduled: input.scheduled,
@@ -126,6 +126,7 @@ export class TaskNotesTaskModel {
       recurrence: input.recurrence,
       recurrence_anchor: input.recurrenceAnchor,
       reminders: input.reminders,
+      timeEstimate: input.timeEstimate,
       customProperties: withUserFieldDefaults(
         this.config,
         input.customProperties,
@@ -179,6 +180,8 @@ export class TaskNotesTaskModel {
     if (input.recurrenceAnchor !== undefined)
       updates.recurrence_anchor = input.recurrenceAnchor;
     if (input.reminders !== undefined) updates.reminders = input.reminders;
+    if (input.timeEstimate !== undefined)
+      updates.timeEstimate = input.timeEstimate ?? undefined;
     if (input.customProperties !== undefined)
       updates.customProperties = input.customProperties;
 
@@ -313,6 +316,7 @@ export class TaskNotesTaskModel {
       completeInstances: info.complete_instances ?? [],
       skippedInstances: info.skipped_instances ?? [],
       reminders: info.reminders ?? [],
+      timeEstimate: info.timeEstimate,
       customProperties: info.customProperties ?? {},
       revision,
       frontmatter,

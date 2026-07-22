@@ -2,7 +2,13 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
-import { recurrencePreset, recurrenceRule } from "../domain/task";
+import {
+  combineTaskDateTime,
+  recurrencePreset,
+  recurrenceRule,
+  taskDatePart,
+  taskTimePart,
+} from "../domain/task";
 import { useRepository, useTask } from "./repository-context";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
@@ -22,6 +28,7 @@ type Draft = Pick<
   | "recurrence"
   | "recurrenceAnchor"
   | "reminders"
+  | "timeEstimate"
   | "customProperties"
 >;
 
@@ -86,6 +93,7 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
           recurrence: value.recurrence ?? null,
           recurrenceAnchor: value.recurrenceAnchor,
           reminders: value.reminders,
+          timeEstimate: value.timeEstimate ?? null,
           customProperties: value.customProperties,
         };
         await updateTask(task.id, input);
@@ -232,24 +240,30 @@ function TaskEditor({ task, onBack }: { task: Task; onBack(): void }) {
             ))}
         </Fieldset>
 
-        <div className="field-grid">
+        <div className="field-grid timing-fields">
+          <DateTimeField
+            label="Scheduled"
+            value={draft.scheduled}
+            onChange={(scheduled) => change({ scheduled })}
+          />
+          <DateTimeField
+            label="Due"
+            value={draft.due}
+            onChange={(due) => change({ due })}
+          />
           <label className="form-field">
-            <span>Scheduled</span>
+            <span>Estimate (minutes)</span>
             <input
-              type="date"
-              value={draft.scheduled ?? ""}
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={draft.timeEstimate ?? ""}
               onChange={(event) =>
-                change({ scheduled: event.target.value || undefined })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span>Due</span>
-            <input
-              type="date"
-              value={draft.due ?? ""}
-              onChange={(event) =>
-                change({ due: event.target.value || undefined })
+                change({
+                  timeEstimate: event.target.value
+                    ? Number(event.target.value)
+                    : undefined,
+                })
               }
             />
           </label>
@@ -510,8 +524,46 @@ function toDraft(task: Task): Draft {
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
     reminders: task.reminders,
+    timeEstimate: task.timeEstimate,
     customProperties: { ...task.customProperties },
   };
+}
+
+function DateTimeField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  onChange(value?: string): void;
+}) {
+  const date = taskDatePart(value);
+  const time = taskTimePart(value);
+  return (
+    <label className="form-field date-time-field">
+      <span>{label}</span>
+      <div>
+        <input
+          aria-label={`${label} date`}
+          type="date"
+          value={date}
+          onChange={(event) =>
+            onChange(combineTaskDateTime(event.target.value, time))
+          }
+        />
+        <input
+          aria-label={`${label} time`}
+          disabled={!date}
+          type="time"
+          value={time}
+          onChange={(event) =>
+            onChange(combineTaskDateTime(date, event.target.value))
+          }
+        />
+      </div>
+    </label>
+  );
 }
 
 function CustomField({
