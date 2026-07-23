@@ -110,7 +110,7 @@ async function main() {
       "the created task row",
     );
     await devtools.openTask(initialTitle);
-    await waitFor(() => devtools.hasText("MARKDOWN RECORD"), "task details");
+    await waitFor(() => devtools.hasText("Markdown record"), "task details");
     const reminder = localDateTime(new Date(Date.now() + 60 * 60 * 1_000));
     await devtools.fillNamedInput("Reminder date and time", reminder);
     await waitFor(
@@ -209,7 +209,12 @@ views:
       "the task row after leaving the saved view",
     );
     await devtools.openTask(initialTitle);
+    await devtools.clickSummary("Time");
     await devtools.fillNamedInput("Timer description", "Native primary");
+    await waitFor(
+      () => devtools.hasEnabledButton("Start"),
+      "the first timer start action",
+    );
     await devtools.clickButton("Start", true);
     await waitFor(
       () => sourceForTitle(initialTitle)?.includes("Native primary"),
@@ -227,7 +232,12 @@ views:
       "the parallel task",
     );
     await devtools.openTask(parallelTitle);
+    await devtools.clickSummary("Time");
     await devtools.fillNamedInput("Timer description", "Native parallel");
+    await waitFor(
+      () => devtools.hasEnabledButton("Start"),
+      "the second timer start action",
+    );
     await devtools.clickButton("Start", true);
     await waitFor(
       () => sourceForTitle(parallelTitle)?.includes("Native parallel"),
@@ -262,7 +272,7 @@ views:
     );
     await devtools.clickButton("Make occurrence note", true);
     await waitFor(
-      () => devtools.hasText("Occurrence note"),
+      () => devtools.hasText("OCCURRENCE NOTE"),
       "the materialized occurrence note",
     );
     await waitFor(
@@ -501,6 +511,20 @@ class DevtoolsSession {
       );
       if (!button) throw new Error("Button not found: " + ${JSON.stringify(name)});
       button.click();
+      return true;
+    })()`);
+  }
+
+  clickSummary(text) {
+    return this.evaluate(`(() => {
+      const expected = ${JSON.stringify(text)};
+      const summary = [...document.querySelectorAll("summary")].find(
+        (candidate) =>
+          candidate.innerText.trim() === expected ||
+          candidate.querySelector("strong")?.innerText.trim() === expected
+      );
+      if (!summary) throw new Error("Summary not found: " + expected);
+      summary.click();
       return true;
     })()`);
   }

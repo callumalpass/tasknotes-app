@@ -36,6 +36,7 @@ export function TodayScreen({
   const { tasks, loading, error } = useTasks({ status: "all", limit: 50_000 });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
+  const creationDefaults = useMemo(() => ({ scheduled: today }), [today]);
   const range = useMemo(() => occurrenceRange(30, 0), []);
   const projection = useMemo(
     () => projectTodayTasks(tasks, range.start, today, visibleCount),
@@ -78,7 +79,18 @@ export function TodayScreen({
         </span>
       </header>
 
-      <TaskCapture configuration={configuration} createTask={createTask} />
+      <TaskCapture
+        configuration={configuration}
+        createTask={createTask}
+        defaults={creationDefaults}
+        placeholder="Add to Today"
+        onCreated={async (task) =>
+          projectTodayTasks([task], range.start, today, 1).totalCount
+            ? undefined
+            : { message: "Task created, but it is outside Today." }
+        }
+        onOpenCreated={onOpen}
+      />
       {error ? (
         <p className="inline-error" role="alert">
           {error.message}

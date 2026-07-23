@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
+import type { Locator, Page } from "@playwright/test";
+
 const templatedType = buildTaskNotesMdbaseResources().typeDocument.replace(
   "  compatibility:\n",
   `  templating:
@@ -11,6 +13,113 @@ const templatedType = buildTaskNotesMdbaseResources().typeDocument.replace(
   compatibility:
 `,
 );
+
+async function dragKanbanHandle(
+  page: Page,
+  handle: Locator,
+  destination: Locator,
+  touch: boolean,
+) {
+  await handle.scrollIntoViewIfNeeded();
+  const sourceBox = await handle.boundingBox();
+  const destinationBox = await destination.boundingBox();
+  if (!sourceBox || !destinationBox)
+    throw new Error("Kanban drag elements are not laid out");
+
+  const start = {
+    x: sourceBox.x + sourceBox.width / 2,
+    y: sourceBox.y + sourceBox.height / 2,
+  };
+  const viewport = page.viewportSize();
+  const end = {
+    x: Math.max(
+      8,
+      Math.min(
+        destinationBox.x + destinationBox.width / 2,
+        (viewport?.width ?? destinationBox.x + destinationBox.width) - 8,
+      ),
+    ),
+    y: Math.max(
+      destinationBox.y + 8,
+      Math.min(start.y, destinationBox.y + destinationBox.height - 8),
+    ),
+  };
+
+  if (!touch) {
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 8 });
+    await page.mouse.up();
+    return;
+  }
+
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ ...start, id: 1 }],
+    });
+    for (let step = 1; step <= 8; step += 1) {
+      await session.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [
+          {
+            id: 1,
+            x: start.x + ((end.x - start.x) * step) / 8,
+            y: start.y + ((end.y - start.y) * step) / 8,
+          },
+        ],
+      });
+    }
+
+    const board = page.locator(".kanban-board");
+    let dropPoint: { x: number; y: number } | null = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await page.waitForTimeout(25);
+      const [boardBox, currentDestinationBox] = await Promise.all([
+        board.boundingBox(),
+        destination.boundingBox(),
+      ]);
+      if (
+        boardBox &&
+        currentDestinationBox &&
+        currentDestinationBox.x < boardBox.x + boardBox.width - 8 &&
+        currentDestinationBox.x + currentDestinationBox.width > boardBox.x + 8
+      ) {
+        dropPoint = {
+          x: Math.max(
+            boardBox.x + 8,
+            Math.min(
+              currentDestinationBox.x + currentDestinationBox.width / 2,
+              boardBox.x + boardBox.width - 8,
+            ),
+          ),
+          y: Math.max(
+            currentDestinationBox.y + 8,
+            Math.min(
+              start.y,
+              currentDestinationBox.y + currentDestinationBox.height - 8,
+            ),
+          ),
+        };
+        break;
+      }
+    }
+    if (!dropPoint)
+      throw new Error("Kanban destination did not scroll into view");
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ ...dropPoint, id: 1 }],
+    });
+    await page.waitForTimeout(32);
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await session.detach();
+  }
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
@@ -24,7 +133,9 @@ test.beforeEach(async ({ page }) => {
   });
   await page.reload();
   await page.getByRole("button", { name: /On this device/ }).click();
-  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Today", level: 1 }),
+  ).toBeVisible();
 });
 
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({
@@ -452,12 +563,26 @@ views:
   ).toBeVisible();
   await expect(page.getByText("Active", { exact: true })).toBeVisible();
   const inProgressColumn = page.getByLabel("In progress column");
+  await page.getByRole("button", { name: "Add task to In progress" }).click();
+  const boardCapture = page.getByLabel("New task title");
+  await expect(boardCapture).toHaveAttribute(
+    "placeholder",
+    "Add to In progress",
+  );
+  await boardCapture.fill("Column capture");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    inProgressColumn.getByText("Column capture", { exact: true }),
+  ).toBeVisible();
   const movePlan = page.getByRole("button", {
-    name: "Move Plan saved views. Use left and right arrow keys, or drag.",
+    name: "Move Plan saved views. Drag, or use left and right arrow keys.",
   });
-  if (testInfo.project.name === "desktop")
-    await movePlan.dragTo(inProgressColumn);
-  else await movePlan.press("ArrowRight");
+  await dragKanbanHandle(
+    page,
+    movePlan,
+    inProgressColumn,
+    testInfo.project.name === "mobile",
+  );
   await expect(
     inProgressColumn.getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
@@ -503,6 +628,15 @@ views:
     page
       .locator(".calendar-agenda .task-row-title")
       .getByText("Plan saved views", { exact: true }),
+  ).toBeVisible();
+  const calendarCapture = page.getByLabel("New task title");
+  await expect(calendarCapture).toHaveAttribute("placeholder", "Add to Dates");
+  await calendarCapture.fill("Created on the calendar");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page
+      .locator(".calendar-agenda .task-row-title")
+      .getByText("Created on the calendar", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Due", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Progress", { exact: true })).toHaveCount(0);
@@ -595,6 +729,42 @@ test("orders several navigation views and keeps the rest behind the mobile overf
   ).toBeVisible();
 });
 
+test("keeps a task recoverable when a view filter cannot be inverted", async ({
+  page,
+}) => {
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("future.base", { create: true });
+    const writable = await file.createWritable();
+    await writable.write(`views:
+  - type: tasknotesTaskList
+    name: Future
+    filters: due > today()
+`);
+    await writable.close();
+  });
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: /Saved views/ }).click();
+  await page.getByText("Future", { exact: true }).click();
+  await page.getByLabel("New task title").fill("Outside the future filter");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await expect(
+    page.getByText(/Task created, but this view does not show it/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Open task" }).click();
+  await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
+    "Outside the future filter",
+  );
+});
+
 test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("New task title").fill("Build the view editor");
   await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -619,6 +789,8 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
+  await page.getByText("New tasks", { exact: true }).click();
+  await page.getByLabel("Priority", { exact: true }).selectOption("high");
   await page.getByRole("button", { name: "Save", exact: true }).click();
 
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();
@@ -627,6 +799,15 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await expect(
     page.getByText("Build the view editor", { exact: true }),
   ).toBeVisible();
+  await page.getByLabel("New task title").fill("Created from Open work");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Created from Open work", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Created from Open work", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(page.getByLabel("Priority")).toHaveValue("high");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Edit Open work" }).click();
   await expect(
@@ -686,7 +867,9 @@ test("keeps the task workspace visible beside the desktop editor", async ({
 
   const inspector = page.getByRole("complementary", { name: "Task details" });
   await expect(inspector).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Today", level: 1 }),
+  ).toBeVisible();
   await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
     "Inspect beside the list",
   );

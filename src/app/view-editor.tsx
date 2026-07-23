@@ -32,6 +32,8 @@ export function ViewEditor({
   const { repository } = useRepository();
   const [source, setSource] = useState<TaskViewSourceDocument | null>(null);
   const [draft, setDraft] = useState<EditableViewDraft | null>(null);
+  const [configuration, setConfiguration] =
+    useState<TaskCollectionConfiguration | null>(null);
   const [fields, setFields] = useState<ExpressionField[]>(defaultFields);
   const [propertyInput, setPropertyInput] = useState("");
   const [filterValid, setFilterValid] = useState(true);
@@ -56,6 +58,7 @@ export function ViewEditor({
             );
         setSource(loadedSource);
         setDraft(next);
+        setConfiguration(configuration);
         setFields(viewFields(configuration, next.availableProperties));
         setStatus("ready");
       },
@@ -323,6 +326,93 @@ export function ViewEditor({
               </fieldset>
             ) : null}
 
+            {configuration ? (
+              <details className="view-create-defaults">
+                <summary>
+                  <span>
+                    <strong>New tasks</strong>
+                    <small>Optional defaults when adding from this view</small>
+                  </span>
+                </summary>
+                <div className="view-create-defaults-fields">
+                  <label>
+                    <span>Status</span>
+                    <select
+                      value={string(createDefaults(draft).status)}
+                      onChange={(event) =>
+                        setDraft(
+                          updateCreateDefault(
+                            draft,
+                            "status",
+                            event.target.value || undefined,
+                          ),
+                        )
+                      }
+                    >
+                      <option value="">From the task form</option>
+                      {configuration.statuses.map((status) => (
+                        <option key={status.value} value={status.value}>
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Priority</span>
+                    <select
+                      value={string(createDefaults(draft).priority)}
+                      onChange={(event) =>
+                        setDraft(
+                          updateCreateDefault(
+                            draft,
+                            "priority",
+                            event.target.value || undefined,
+                          ),
+                        )
+                      }
+                    >
+                      <option value="">From the task form</option>
+                      {configuration.priorities.map((priority) => (
+                        <option key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {(
+                    [
+                      ["projects", "Projects"],
+                      ["contexts", "Contexts"],
+                      ["tags", "Tags"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <label key={key}>
+                      <span>{label}</span>
+                      <input
+                        placeholder="Comma separated"
+                        value={stringList(createDefaults(draft)[key]).join(
+                          ", ",
+                        )}
+                        onChange={(event) =>
+                          setDraft(
+                            updateCreateDefault(
+                              draft,
+                              key,
+                              commaList(event.target.value),
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p>
+                  TaskNotes also fills simple “is” and “contains” filters when
+                  it can do so safely.
+                </p>
+              </details>
+            ) : null}
+
             <section
               className="view-editor-section"
               aria-labelledby="view-properties-title"
@@ -500,6 +590,59 @@ function move<T>(values: T[], from: number, to: number): T[] {
   const [value] = next.splice(from, 1);
   next.splice(to, 0, value);
   return next;
+}
+
+function createDefaults(draft: EditableViewDraft): Record<string, unknown> {
+  return record(record(draft.options.create).defaults);
+}
+
+function updateCreateDefault(
+  draft: EditableViewDraft,
+  key: string,
+  value: unknown,
+): EditableViewDraft {
+  const options = { ...draft.options };
+  const create = { ...record(options.create) };
+  const defaults = { ...record(create.defaults) };
+  if (
+    value === undefined ||
+    value === "" ||
+    (Array.isArray(value) && !value.length)
+  )
+    delete defaults[key];
+  else defaults[key] = value;
+  if (Object.keys(defaults).length) {
+    create.defaults = defaults;
+    options.create = create;
+  } else {
+    delete create.defaults;
+    if (Object.keys(create).length) options.create = create;
+    else delete options.create;
+  }
+  return { ...draft, options };
+}
+
+function commaList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function string(value: unknown): string {
+  return typeof value === "string" ? value : "";
 }
 
 function humanize(value: string): string {

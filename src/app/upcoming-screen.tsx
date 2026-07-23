@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
+import { TaskCapture } from "../components/task-capture";
 import { TaskRow } from "../components/task-row";
 import { dateFromStorage, formatTaskDate, todayString } from "../domain/task";
 import {
@@ -22,11 +23,15 @@ export function UpcomingScreen({
   onBack?(): void;
   onOpen(task: Task, occurrenceDate?: string): void;
 }) {
-  const { toggleTask } = useRepository();
+  const { createTask, toggleTask, configuration } = useRepository();
   const { tasks, loading, error } = useTasks({ status: "all", limit: 50_000 });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const today = todayString();
   const range = useMemo(() => occurrenceRange(0, 60), []);
+  const creationDefaults = useMemo(
+    () => ({ scheduled: tomorrowString(today) }),
+    [today],
+  );
   const projection = useMemo(
     () => projectUpcomingTasks(tasks, today, range.end, visibleCount),
     [range.end, tasks, today, visibleCount],
@@ -47,6 +52,18 @@ export function UpcomingScreen({
       <header className="screen-header compact-header">
         <h1 id="upcoming-title">Upcoming</h1>
       </header>
+      <TaskCapture
+        configuration={configuration}
+        createTask={createTask}
+        defaults={creationDefaults}
+        placeholder="Add to Upcoming"
+        onCreated={async (task) =>
+          projectUpcomingTasks([task], today, range.end, 1).totalCount
+            ? undefined
+            : { message: "Task created, but it is outside Upcoming." }
+        }
+        onOpenCreated={onOpen}
+      />
       {error ? (
         <p className="inline-error" role="alert">
           {error.message}
@@ -100,6 +117,12 @@ export function UpcomingScreen({
       )}
     </section>
   );
+}
+
+function tomorrowString(today: string): string {
+  const date = dateFromStorage(today) ?? new Date();
+  date.setDate(date.getDate() + 1);
+  return todayString(date);
 }
 
 function formatUpcomingDate(value: string, today: string): string {
