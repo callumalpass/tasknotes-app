@@ -1,6 +1,6 @@
 import { compileFilter } from "obsidian-bases-expression";
 import { Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
 
 import type { ViewDialect } from "../domain/view-document";
@@ -52,11 +52,13 @@ export function ExpressionBuilder({
   dialect,
   fields,
   onChange,
+  onValidityChange,
 }: {
   value?: unknown;
   dialect: ViewDialect;
   fields: ExpressionField[];
   onChange(value: unknown): void;
+  onValidityChange?(valid: boolean): void;
 }) {
   const [state, setState] = useState<BuilderState>(() =>
     initialState(value, dialect),
@@ -69,6 +71,9 @@ export function ExpressionBuilder({
     [dialect, state],
   );
   const error = useMemo(() => validate(encoded, dialect), [dialect, encoded]);
+  useEffect(() => {
+    onValidityChange?.(!error);
+  }, [error, onValidityChange]);
 
   function change(next: BuilderState) {
     setState(next);
@@ -432,6 +437,7 @@ function rawFilter(source: string, dialect: ViewDialect): unknown {
 }
 
 function filterSource(value: unknown): string {
+  if (value === undefined) return "";
   return typeof value === "string" ? value : stringify(value).trim();
 }
 

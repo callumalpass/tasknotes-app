@@ -101,6 +101,22 @@ Keep this body.
         mappings: { column: "status" },
       }),
     );
+
+    const listDocument = updateViewDocument(
+      { ...source, document: updated },
+      {
+        ...readViewDraft({ ...source, document: updated }, "all"),
+        renderer: "tasknotes.task-list",
+        filter: undefined,
+      },
+    );
+    const listView = (
+      parseFrontmatter(listDocument).frontmatter.views as Array<
+        Record<string, unknown>
+      >
+    )[0];
+    expect(listView).not.toHaveProperty("group_by");
+    expect(listView).not.toHaveProperty("where");
   });
 
   it("creates complete source documents for both formats", () => {

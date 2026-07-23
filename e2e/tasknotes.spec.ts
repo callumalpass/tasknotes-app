@@ -504,7 +504,12 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
 
   await page.getByLabel("Name").fill("Open work");
   await page.getByRole("button", { name: "Board", exact: true }).click();
-  await page.getByRole("button", { name: "Condition", exact: true }).click();
+  await page.getByRole("button", { name: "Expression", exact: true }).click();
+  await page.getByLabel("Filter expression").fill("status == (");
+  await expect(
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Builder", exact: true }).click();
   await page.getByLabel("Filter property").fill("status");
   await page.getByLabel("Filter condition").selectOption("equals");
   await page.getByLabel("Filter value").selectOption("open");

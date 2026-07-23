@@ -32,6 +32,7 @@ export function ViewEditor({
   const [draft, setDraft] = useState<EditableViewDraft | null>(null);
   const [fields, setFields] = useState<ExpressionField[]>(defaultFields);
   const [propertyInput, setPropertyInput] = useState("");
+  const [filterValid, setFilterValid] = useState(true);
   const [status, setStatus] = useState<"loading" | "ready" | "saving">(
     "loading",
   );
@@ -76,7 +77,7 @@ export function ViewEditor({
   );
 
   async function save() {
-    if (!draft || !draft.name.trim()) return;
+    if (!draft || !draft.name.trim() || !filterValid) return;
     setStatus("saving");
     setError("");
     try {
@@ -145,7 +146,7 @@ export function ViewEditor({
         </button>
         <button
           className="save-view-action"
-          disabled={!draft?.name.trim() || status !== "ready"}
+          disabled={!draft?.name.trim() || !filterValid || status !== "ready"}
           type="button"
           onClick={() => void save()}
         >
@@ -189,6 +190,9 @@ export function ViewEditor({
                       setDraft({
                         ...draft,
                         renderer: value as EditableViewDraft["renderer"],
+                        ...(value === "tasknotes.kanban" && !draft.groupProperty
+                          ? { groupProperty: "status" }
+                          : {}),
                       })
                     }
                   >
@@ -213,6 +217,7 @@ export function ViewEditor({
                 onChange={(filterValue) =>
                   setDraft({ ...draft, filter: filterValue })
                 }
+                onValidityChange={setFilterValid}
               />
             </section>
 

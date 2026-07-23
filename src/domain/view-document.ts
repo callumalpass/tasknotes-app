@@ -103,6 +103,7 @@ export function emptyViewDraft(dialect: ViewDialect): EditableViewDraft {
     name: "New view",
     renderer: "tasknotes.task-list",
     properties: ["status", "due"],
+    groupProperty: "status",
     options: {},
     dialect,
     availableProperties: [],
@@ -216,7 +217,12 @@ function updateCanonicalDocument(
   const views = objectList(frontmatter.views);
   const index = views.findIndex((view) => view.id === draft.id);
   if (index < 0) throw new Error("This view is no longer in its source file.");
-  views[index] = { ...views[index], ...canonicalView(draft) };
+  const updated = { ...views[index], ...canonicalView(draft) };
+  if (typeof draft.filter !== "string" || !draft.filter.trim())
+    delete updated.where;
+  if (draft.renderer !== "tasknotes.kanban" || !draft.groupProperty)
+    delete updated.group_by;
+  views[index] = updated;
   frontmatter.views = views;
   return serializeMarkdownDocument(frontmatter, parsed.body);
 }
@@ -248,9 +254,10 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
         ? draft.filter
         : undefined,
     select: draft.properties.length ? draft.properties : ["title"],
-    group_by: draft.groupProperty
-      ? [{ field: draft.groupProperty, direction: "asc" }]
-      : undefined,
+    group_by:
+      draft.renderer === "tasknotes.kanban" && draft.groupProperty
+        ? [{ field: draft.groupProperty, direction: "asc" }]
+        : undefined,
     presentation: {
       type: draft.renderer,
       fallback: "mdbase.table",
