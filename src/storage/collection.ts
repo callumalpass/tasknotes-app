@@ -6,6 +6,7 @@ import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import { viewSourceRevision } from "./local-views";
 import {
   defaultTaskCollectionConfiguration,
   resolveTaskCollectionConfiguration,
@@ -23,6 +24,11 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  CreateTaskViewSourceInput,
+  TaskViewSourceDocument,
+  UpdateTaskViewSourceInput,
+} from "../domain/view";
 import type { Vault, VaultEntry } from "./vault";
 
 export class MarkdownCollection {
@@ -117,6 +123,54 @@ export class MarkdownCollection {
 
   readText(path: string): Promise<string> {
     return this.vault.readText(path);
+  }
+
+  async readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    assertLocalViewPath(path);
+    const document = await this.vault.readText(path);
+    validateBaseDocument(document);
+    return {
+      path,
+      format: "obsidian.base",
+      revision: await viewSourceRevision(document),
+      document,
+    };
+  }
+
+  async createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    if (input.format && input.format !== "obsidian.base")
+      throw new Error(`Unsupported saved-view format: ${input.format}`);
+    validateBaseDocument(input.document);
+    const path = input.path ?? `views/${viewSlug(input.name ?? "view")}.base`;
+    assertLocalViewPath(path);
+    if (await this.vault.exists(path))
+      throw new Error(`A saved view already exists at ${path}.`);
+    await this.vault.writeText(path, input.document);
+    return this.readViewSource(path);
+  }
+
+  async updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    const current = await this.readViewSource(input.path);
+    if (input.ifRevision && input.ifRevision !== current.revision)
+      throw new Error(
+        "This view changed after it was opened. Reload it before saving.",
+      );
+    validateBaseDocument(input.document);
+    await this.vault.writeText(input.path, input.document);
+    return this.readViewSource(input.path);
+  }
+
+  async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    const current = await this.readViewSource(path);
+    if (ifRevision && ifRevision !== current.revision)
+      throw new Error(
+        "This view changed after it was opened. Reload it before deleting.",
+      );
+    await this.vault.delete(path);
   }
 
   async read(document: VaultEntry): Promise<Task | null> {
@@ -268,6 +322,33 @@ export class MarkdownCollection {
     });
     await this.vault.writeText(configPath, String(document));
   }
+}
+
+function assertLocalViewPath(path: string): void {
+  if (
+    !path.startsWith("views/") ||
+    !path.endsWith(".base") ||
+    path.includes("..") ||
+    path.includes("\\")
+  ) {
+    throw new Error("Saved views must be .base files inside views/.");
+  }
+}
+
+function validateBaseDocument(source: string): void {
+  const parsed = parseDocument(source);
+  if (parsed.errors.length) throw new Error(parsed.errors[0].message);
+  const value = parsed.toJS() as { views?: unknown } | null;
+  if (!value || !Array.isArray(value.views))
+    throw new Error("A saved-view source requires a views list.");
+}
+
+function viewSlug(value: string): string {
+  const slug = value
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "view";
 }
 
 export function batches<T>(values: T[], size: number): T[][] {

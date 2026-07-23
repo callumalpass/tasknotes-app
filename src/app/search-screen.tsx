@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
@@ -8,7 +8,13 @@ import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
 
-export function SearchScreen({ onOpen }: { onOpen(task: Task): void }) {
+export function SearchScreen({
+  onBack,
+  onOpen,
+}: {
+  onBack(): void;
+  onOpen(task: Task): void;
+}) {
   const [query, setQuery] = useState("");
   const deferred = useDebounced(query, 160);
   const { toggleTask } = useRepository();
@@ -21,8 +27,19 @@ export function SearchScreen({ onOpen }: { onOpen(task: Task): void }) {
 
   return (
     <section className="screen" aria-labelledby="search-title">
-      <header className="screen-header compact-header">
-        <h1 id="search-title">Search</h1>
+      <header className="screen-header compact-header detail-header">
+        <button
+          aria-label="Back to views"
+          className="icon-action"
+          type="button"
+          onClick={onBack}
+        >
+          <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
+        </button>
+        <div>
+          <h1 id="search-title">Search</h1>
+          <p>Across this collection</p>
+        </div>
       </header>
       <div className="search-field">
         <Search aria-hidden="true" size={19} strokeWidth={1.7} />

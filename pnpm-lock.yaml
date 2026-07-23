@@ -62,8 +62,8 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
       tasknotes-nlp-core:
-        specifier: file:vendor/tasknotes-nlp-core-0.1.5.tgz
-        version: file:vendor/tasknotes-nlp-core-0.1.5.tgz
+        specifier: 0.1.5
+        version: 0.1.5
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -778,7 +778,7 @@ packages:
   "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz":
     resolution:
       {
-        integrity: sha512-SFqTXbEWOy6rspk5CYaAqjaNKGKFj0sx8Df2heFUCkrZiukAZYNyeUWUx60q7JcfLec/SlC7T2+ljwbFsCY+EQ==,
+        integrity: sha512-L6LMg8swGEtlm4lCOLrR+Ffbw0T1om+sxXzSnXYNIMJ6fJHg9UF74/YoRXHr6+GLxfhkjX5PtHZL7eH8v2ppIw==,
         tarball: file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz,
       }
     version: 0.1.0-alpha.1
@@ -795,7 +795,7 @@ packages:
   "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-alpha.1.tgz":
     resolution:
       {
-        integrity: sha512-mj3kUw90wvaDKq/sFumKtn4A4TeZ099wWekP2AVLRjrOB7/s/EoSiHbDjxe6zeLojq/XdT0jEto94Rkecg3hcQ==,
+        integrity: sha512-fmS4XmfdCF1Bo+ZyTm7IbnKSNafMCqucPFcrmib4o5HSNeDyDJ7nWIvE/61wRk6oPL8U3Jo/+CnCklutbiEXwQ==,
         tarball: file:vendor/mdbase-connect-0.1.0-alpha.1.tgz,
       }
     version: 0.1.0-alpha.1
@@ -4275,13 +4275,11 @@ packages:
       }
     engines: { node: ">=18" }
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+  tasknotes-nlp-core@0.1.5:
     resolution:
       {
-        integrity: sha512-bsrii9ZNeezbGXwbUfVh1NtvcUQXC+SEBp+Y8w8Fuy3sUbr4IlW7rs8NTwhzbUMjeyYJwE+N+qMISgghk5DKkw==,
-        tarball: file:vendor/tasknotes-nlp-core-0.1.5.tgz,
+        integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==,
       }
-    version: 0.1.5
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.2.0.tgz:
     resolution:
@@ -7510,7 +7508,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+  tasknotes-nlp-core@0.1.5:
     dependencies:
       chrono-node: 2.10.1
       date-fns: 4.4.0

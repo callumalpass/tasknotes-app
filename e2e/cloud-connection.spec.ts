@@ -218,7 +218,9 @@ test("edits a contract-defined task without collapsing custom status or fields",
   await expect(page.getByLabel("Energy level")).toHaveValue("4");
   await expect(page.getByLabel("Client")).toHaveValue("Acme");
 
-  await page.getByLabel("Task title").fill("Preserve the collection contract");
+  await page
+    .getByLabel("Task title", { exact: true })
+    .fill("Preserve the collection contract");
   await page.getByLabel("Client").fill("");
   await expect.poll(() => updateInput).toBeTruthy();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();

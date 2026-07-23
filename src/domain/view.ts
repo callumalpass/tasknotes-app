@@ -51,6 +51,26 @@ export interface TaskViewExecution {
   stale?: boolean;
 }
 
+export interface TaskViewSourceDocument {
+  path: string;
+  format: string;
+  revision: string;
+  document: string;
+}
+
+export interface CreateTaskViewSourceInput {
+  document: string;
+  path?: string;
+  format?: string;
+  name?: string;
+}
+
+export interface UpdateTaskViewSourceInput {
+  path: string;
+  document: string;
+  ifRevision?: string;
+}
+
 export function taskViewKey(path: string, id: string): string {
   return `${path}#${id}`;
 }

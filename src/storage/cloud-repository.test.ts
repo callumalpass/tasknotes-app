@@ -9,7 +9,7 @@ import {
   type SyncTransport,
 } from "@mdbase/connect-sync";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
 import { CloudTaskRepository } from "./cloud-repository";
@@ -110,13 +110,87 @@ function connect(
   collectionId: string,
   replicaId: string,
   transport: SyncTransport<JsonObject>,
+  operations: object = {},
 ): MdbaseConnect<JsonObject> {
   return {
     hostedSync: () => ({ collectionId, replicaId, transport }),
+    ...operations,
   } as unknown as MdbaseConnect<JsonObject>;
 }
 
 describe("cloud task repository", () => {
+  it("writes saved-view sources through cloud operations and refreshes the catalogue", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    const document = {
+      path: "Views/focused.md",
+      format: "mdbase.view" as const,
+      revision: "view-r1",
+      document: "---\ntype: view\nname: Focused\n---\n",
+    };
+    const envelope = <T>(result: T) => ({
+      valid: true as const,
+      result,
+      diagnostics: [],
+    });
+    const listViews = vi.fn(async () =>
+      envelope({ views: [], meta: { total_count: 0 } }),
+    );
+    const readViewSource = vi.fn(async () => envelope(document));
+    const createViewSource = vi.fn(async () => envelope(document));
+    const updateViewSource = vi.fn(async () =>
+      envelope({ ...document, revision: "view-r2" }),
+    );
+    const deleteViewSource = vi.fn(async () =>
+      envelope({ path: document.path, deleted: true }),
+    );
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+        {
+          listViews,
+          readViewSource,
+          createViewSource,
+          updateViewSource,
+          deleteViewSource,
+        },
+      ),
+    );
+    await repository.initialize();
+
+    expect(await repository.readViewSource(document.path)).toEqual(document);
+    await repository.createViewSource({
+      format: "mdbase.view",
+      name: "Focused",
+      document: document.document,
+    });
+    const updated = await repository.updateViewSource({
+      path: document.path,
+      document: document.document,
+      ifRevision: document.revision,
+    });
+    await repository.deleteViewSource(updated.path, updated.revision);
+
+    expect(updateViewSource).toHaveBeenCalledWith(
+      expect.objectContaining({ if_revision: "view-r1" }),
+    );
+    expect(deleteViewSource).toHaveBeenCalledWith({
+      path: document.path,
+      if_revision: "view-r2",
+    });
+    expect(listViews).toHaveBeenCalledTimes(3);
+  });
+
   it("keeps local mutations immediate, synchronizes devices, and survives an outage", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resources(),

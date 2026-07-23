@@ -41,7 +41,13 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskView, TaskViewExecution } from "../domain/view";
+import type {
+  CreateTaskViewSourceInput,
+  TaskView,
+  TaskViewExecution,
+  TaskViewSourceDocument,
+  UpdateTaskViewSourceInput,
+} from "../domain/view";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -500,6 +506,53 @@ export class CloudTaskRepository implements TaskRepository {
       if (cached) return { ...structuredClone(cached), stale: true };
       throw reason;
     }
+  }
+
+  async readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    return validResult(await this.connect.readViewSource({ path }));
+  }
+
+  async createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    const created = validResult(
+      await this.connect.createViewSource({ ...input }),
+    );
+    await this.refreshViewsAfterMutation();
+    return created;
+  }
+
+  async updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    const updated = validResult(
+      await this.connect.updateViewSource({
+        path: input.path,
+        document: input.document,
+        if_revision: input.ifRevision,
+      }),
+    );
+    await this.refreshViewsAfterMutation();
+    return updated;
+  }
+
+  async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    validResult(
+      await this.connect.deleteViewSource({
+        path,
+        if_revision: ifRevision,
+      }),
+    );
+    await this.refreshViewsAfterMutation();
+  }
+
+  private async refreshViewsAfterMutation(): Promise<void> {
+    this.viewExecutionCache.clear();
+    this.viewCache = flattenViews(
+      validResult(await this.connect.listViews()) as ProviderViewList,
+    );
+    await this.viewStore?.writeViews(this.viewCache);
+    this.emit();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

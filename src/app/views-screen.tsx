@@ -4,7 +4,10 @@ import {
   ChevronRight,
   Columns3,
   List,
+  Pencil,
   Pin,
+  Plus,
+  Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,10 +15,13 @@ import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
 import { dateFromStorage, todayString } from "../domain/task";
+import { occurrenceTask } from "../domain/task-occurrence";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { ViewEditor } from "./view-editor";
 
 import type { Task } from "../domain/task";
+import type { TaskOccurrence } from "../domain/task-occurrence";
 import type {
   TaskView,
   TaskViewExecution,
@@ -31,8 +37,10 @@ export function ViewsScreen({
   operational = false,
   onBack,
   onOpenTask,
+  onSearch,
   onOpenView,
   onSetPrimaryView,
+  onViewsChanged,
 }: {
   viewKey?: string;
   views: TaskView[] | null;
@@ -41,8 +49,10 @@ export function ViewsScreen({
   operational?: boolean;
   onBack(): void;
   onOpenTask(task: Task, occurrenceDate?: string): void;
+  onSearch(): void;
   onOpenView(view: TaskView): void;
   onSetPrimaryView(key?: string): void;
+  onViewsChanged(): Promise<void>;
 }) {
   const { repository, toggleTask, version } = useRepository();
   const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
@@ -51,6 +61,7 @@ export function ViewsScreen({
     key: string;
     message: string;
   } | null>(null);
+  const [editing, setEditing] = useState<TaskView | "new" | null>(null);
 
   const selected = views?.find((view) => view.key === viewKey);
   useEffect(() => {
@@ -80,119 +91,180 @@ export function ViewsScreen({
 
   if (!viewKey) {
     return (
-      <section className="screen views-screen" aria-labelledby="views-title">
-        <header className="screen-header compact-header">
-          <div>
-            <button className="back-action" type="button" onClick={onBack}>
-              <ChevronLeft aria-hidden="true" size={20} />
-              More
-            </button>
-            <p className="eyebrow">Your collection</p>
-            <h1 id="views-title">Views</h1>
-          </div>
-        </header>
-        {error ? <p className="inline-error">{error}</p> : null}
-        {!views ? (
-          <LoadingRows count={4} />
-        ) : views.length ? (
-          <div className="saved-view-list">
-            {views.map((view) => (
-              <div className="saved-view-row" key={view.key}>
-                <button
-                  className="saved-view-open"
-                  type="button"
-                  onClick={() => onOpenView(view)}
-                >
-                  <ViewIcon view={view} />
-                  <span>
-                    <strong>{view.name}</strong>
-                    <small>{view.documentName}</small>
-                  </span>
-                  <ChevronRight aria-hidden="true" size={18} />
-                </button>
-                <button
-                  aria-label={
-                    primaryViewKey === view.key
-                      ? `Remove ${view.name} from navigation`
-                      : `Add ${view.name} to navigation`
-                  }
-                  aria-pressed={primaryViewKey === view.key}
-                  className="saved-view-pin"
-                  type="button"
-                  onClick={() => {
-                    selectionFeedback();
-                    onSetPrimaryView(
-                      primaryViewKey === view.key ? undefined : view.key,
-                    );
-                  }}
-                >
-                  <Pin
-                    aria-hidden="true"
-                    fill={primaryViewKey === view.key ? "currentColor" : "none"}
-                    size={17}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="plain-empty">
-            <h2>No saved views yet</h2>
-            <p>Views from this collection will appear here when you add one.</p>
-          </div>
-        )}
-      </section>
+      <>
+        <section className="screen views-screen" aria-labelledby="views-title">
+          <header className="screen-header compact-header views-catalog-header">
+            <div>
+              <p className="eyebrow">Your collection</p>
+              <h1 id="views-title">Views</h1>
+            </div>
+            <div className="views-header-actions">
+              <button
+                aria-label="Create view"
+                className="icon-action"
+                type="button"
+                onClick={() => setEditing("new")}
+              >
+                <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
+              </button>
+              <button
+                aria-label="Search tasks"
+                className="icon-action"
+                type="button"
+                onClick={onSearch}
+              >
+                <Search aria-hidden="true" size={20} strokeWidth={1.7} />
+              </button>
+            </div>
+          </header>
+          {error ? <p className="inline-error">{error}</p> : null}
+          {!views ? (
+            <LoadingRows count={4} />
+          ) : views.length ? (
+            <div className="saved-view-list">
+              {views.map((view) => (
+                <div className="saved-view-row" key={view.key}>
+                  <button
+                    className="saved-view-open"
+                    type="button"
+                    onClick={() => onOpenView(view)}
+                  >
+                    <ViewIcon view={view} />
+                    <span>
+                      <strong>{view.name}</strong>
+                      <small>{view.documentName}</small>
+                    </span>
+                    <ChevronRight aria-hidden="true" size={18} />
+                  </button>
+                  {view.source.writable ? (
+                    <button
+                      aria-label={`Edit ${view.name}`}
+                      className="saved-view-edit"
+                      type="button"
+                      onClick={() => setEditing(view)}
+                    >
+                      <Pencil aria-hidden="true" size={16} />
+                    </button>
+                  ) : null}
+                  <button
+                    aria-label={
+                      primaryViewKey === view.key
+                        ? `Remove ${view.name} from navigation`
+                        : `Add ${view.name} to navigation`
+                    }
+                    aria-pressed={primaryViewKey === view.key}
+                    className="saved-view-pin"
+                    type="button"
+                    onClick={() => {
+                      selectionFeedback();
+                      onSetPrimaryView(
+                        primaryViewKey === view.key ? undefined : view.key,
+                      );
+                    }}
+                  >
+                    <Pin
+                      aria-hidden="true"
+                      fill={
+                        primaryViewKey === view.key ? "currentColor" : "none"
+                      }
+                      size={17}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="plain-empty">
+              <h2>No saved views yet</h2>
+              <p>
+                Views from this collection will appear here when you add one.
+              </p>
+            </div>
+          )}
+        </section>
+        {editing ? (
+          <ViewEditor
+            view={editing === "new" ? undefined : editing}
+            onClose={() => setEditing(null)}
+            onChanged={onViewsChanged}
+          />
+        ) : null}
+      </>
     );
   }
 
   return (
-    <section className="screen views-screen view-detail" aria-live="polite">
-      <header className={`view-header${operational ? " operational" : ""}`}>
-        {!operational ? (
-          <button className="back-action" type="button" onClick={onBack}>
-            <ChevronLeft aria-hidden="true" size={20} />
-            Views
-          </button>
-        ) : null}
-        <div>
-          <h1>{selected?.name ?? "Saved view"}</h1>
-          {visibleExecution?.stale ? (
-            <small>Last available result</small>
-          ) : operational ? (
-            <small>Primary view</small>
+    <>
+      <section className="screen views-screen view-detail" aria-live="polite">
+        <header className={`view-header${operational ? " operational" : ""}`}>
+          {!operational ? (
+            <button className="back-action" type="button" onClick={onBack}>
+              <ChevronLeft aria-hidden="true" size={20} />
+              Views
+            </button>
           ) : null}
-        </div>
-      </header>
-      {error ? <p className="inline-error">{error}</p> : null}
-      {!visibleExecution ? (
-        <LoadingRows count={6} />
-      ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
-        <KanbanView
-          execution={visibleExecution}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
+          <div>
+            <h1>{selected?.name ?? "Saved view"}</h1>
+            {visibleExecution?.stale ? (
+              <small>Last available result</small>
+            ) : operational ? (
+              <small>Primary view</small>
+            ) : null}
+          </div>
+          {selected?.source.writable ? (
+            <button
+              aria-label={`Edit ${selected.name}`}
+              className="edit-view-action"
+              type="button"
+              onClick={() => setEditing(selected)}
+            >
+              <Pencil aria-hidden="true" size={16} /> Edit
+            </button>
+          ) : null}
+        </header>
+        {error ? <p className="inline-error">{error}</p> : null}
+        {!visibleExecution ? (
+          <LoadingRows count={6} />
+        ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
+          <KanbanView
+            execution={visibleExecution}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        ) : visibleExecution.view.presentation?.type ===
+          "tasknotes.calendar" ? (
+          <CalendarView
+            execution={visibleExecution}
+            identityTasks={identityTasks}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        ) : (
+          <TaskListView
+            execution={visibleExecution}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        )}
+      </section>
+      {editing && editing !== "new" ? (
+        <ViewEditor
+          view={editing}
+          onClose={() => setEditing(null)}
+          onChanged={async () => {
+            if (primaryViewKey === editing.key) onSetPrimaryView(undefined);
+            await onViewsChanged();
+            onBack();
+          }}
         />
-      ) : visibleExecution.view.presentation?.type === "tasknotes.calendar" ? (
-        <CalendarView
-          execution={visibleExecution}
-          identityTasks={identityTasks}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
-        />
-      ) : (
-        <TaskListView
-          execution={visibleExecution}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
-        />
-      )}
-    </section>
+      ) : null}
+    </>
   );
 }
 
@@ -286,14 +358,15 @@ function CalendarView({
         </button>
       </div>
       <div className="calendar-weekdays" aria-hidden="true">
-        {weekdays().map((day) => (
-          <span key={day}>{day}</span>
+        {weekdays().map((day, index) => (
+          <span key={`${day}:${index}`}>{day}</span>
         ))}
       </div>
       <div className="calendar-grid" role="grid" aria-label={monthLabel}>
         {days.map((day) => {
           const date = storageDate(day);
-          const count = events.get(date)?.length ?? 0;
+          const entries = events.get(date) ?? [];
+          const count = entries.length;
           return (
             <button
               aria-label={`${day.toLocaleDateString()}, ${count} ${count === 1 ? "task" : "tasks"}`}
@@ -304,7 +377,20 @@ function CalendarView({
               type="button"
               onClick={() => setSelected(date)}
             >
-              <span>{day.getDate()}</span>
+              <span className="calendar-date-number">{day.getDate()}</span>
+              {count ? (
+                <span className="calendar-cell-tasks" aria-hidden="true">
+                  {entries.slice(0, 3).map((entry) => (
+                    <span
+                      key={entry.occurrence?.key ?? entry.task.id}
+                      className={entry.task.completed ? "is-complete" : ""}
+                    >
+                      {entry.task.title}
+                    </span>
+                  ))}
+                  {count > 3 ? <small>+{count - 3} more</small> : null}
+                </span>
+              ) : null}
               {count ? <i aria-hidden="true">{count}</i> : null}
             </button>
           );
@@ -314,9 +400,10 @@ function CalendarView({
         <h2>{agendaLabel(selected)}</h2>
         {selectedTasks.length ? (
           selectedTasks.map((entry) => (
-            <TaskRow
+            <ViewTaskRow
               key={entry.occurrence?.key ?? entry.task.id}
-              task={entry.task}
+              row={entry.row}
+              properties={execution.view.properties}
               occurrence={entry.occurrence}
               onOpen={onOpen}
               onToggle={onToggle}
@@ -357,12 +444,14 @@ function ViewTaskRow({
   row,
   properties,
   omittedProperties = [],
+  occurrence,
   onOpen,
   onToggle,
 }: {
   row: TaskViewRow;
   properties: TaskViewProperty[];
   omittedProperties?: string[];
+  occurrence?: TaskOccurrence;
   onOpen(task: Task): void;
   onToggle(task: Task): void;
 }) {
@@ -370,7 +459,7 @@ function ViewTaskRow({
     ? properties.flatMap((property) => {
         if (property.hidden || omittedProperties.includes(property.key))
           return [];
-        const value = propertyValue(row, property.key);
+        const value = propertyValue(row, property.key, occurrence);
         const formatted = formatPropertyValue(value, property.format);
         return formatted === null
           ? []
@@ -390,17 +479,25 @@ function ViewTaskRow({
     <TaskRow
       task={row.task}
       details={details}
+      occurrence={occurrence}
       onOpen={onOpen}
       onToggle={onToggle}
     />
   );
 }
 
-function propertyValue(row: TaskViewRow, key: string): unknown {
+function propertyValue(
+  row: TaskViewRow,
+  key: string,
+  occurrence?: TaskOccurrence,
+): unknown {
+  const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
+  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
+  if (occurrence && Object.prototype.hasOwnProperty.call(displayed, field))
+    return displayed[field as keyof Task];
   if (Object.prototype.hasOwnProperty.call(row.values, key))
     return row.values[key];
-  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
-  return row.task.frontmatter[field];
+  return displayed.frontmatter[field];
 }
 
 function propertyLabel(key: string): string {

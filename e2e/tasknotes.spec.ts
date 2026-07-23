@@ -55,13 +55,14 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     .getByLabel("Reminder date and time")
     .fill(`${tomorrowValue}T09:00`);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Upcoming" }).click();
   await expect(
     page.getByText("Prepare weekly review", { exact: true }).first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("mdbase computer release");
   await expect(
     page.getByText("Prepare weekly review", { exact: true }),
@@ -78,13 +79,14 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 
   await page.getByText("Review Capacitor storage", { exact: true }).click();
-  const title = page.getByLabel("Task title");
+  const title = page.getByLabel("Task title", { exact: true });
   await title.fill("Review web-native storage");
   await page.getByText("Normal", { exact: true }).click();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -97,7 +99,8 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 
   await page.reload();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -111,8 +114,10 @@ test("saves in the background while navigating away", async ({ page }) => {
   await page.getByLabel("New task title").fill("Background save");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Background save", { exact: true }).click();
-  await page.getByLabel("Task title").fill("Background save completed");
-  await page.getByRole("button", { name: "Back" }).click();
+  await page
+    .getByLabel("Task title", { exact: true })
+    .fill("Background save completed");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(
     page.getByText("Background save completed", { exact: true }),
   ).toBeVisible();
@@ -166,10 +171,9 @@ test("interprets natural-language capture and preserves timed task fields", asyn
   await expect(
     page.getByRole("button", { name: "In progress" }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "High" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(
+    page.getByRole("button", { name: "High", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Scheduled time")).toHaveValue("09:00");
   await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
   await expect(page.getByLabel("Projects")).toHaveValue("mdbase");
@@ -188,7 +192,7 @@ test("projects, completes, and skips recurring occurrences by date", async ({
   await expect(page.getByText("Occurrence", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Complete", exact: true }).click();
   await expect(page.getByRole("button", { name: "Mark open" })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(
     page.getByRole("button", { name: /^Daily standup Today,/ }),
   ).toHaveCount(0);
@@ -224,7 +228,7 @@ test("materializes one durable occurrence and reconciles it after reload", async
   await expect(
     page.getByText("Occurrence note", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^Materialized review Today/ }),
@@ -291,17 +295,17 @@ test("keeps timers on different tasks independent", async ({ page }) => {
   await page.getByText("Parallel research", { exact: true }).click();
   await page.getByLabel("Timer description").fill("Research");
   await page.getByRole("button", { name: "Start", exact: true }).click();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByText("Parallel build", { exact: true }).click();
   await page.getByLabel("Timer description").fill("Build");
   await page.getByRole("button", { name: "Start", exact: true }).click();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByText("Parallel research", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
   await page.getByRole("button", { name: "Stop" }).click();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByText("Parallel build", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
 });
@@ -357,9 +361,9 @@ Created on {{date}} from the collection template.`);
   );
 });
 
-test("renders configured saved-view properties without changing calendar rows", async ({
+test("renders configured saved-view properties in every result list", async ({
   page,
-}) => {
+}, testInfo) => {
   const today = [
     new Date().getFullYear(),
     String(new Date().getMonth() + 1).padStart(2, "0"),
@@ -371,7 +375,7 @@ test("renders configured saved-view properties without changing calendar rows", 
   await page.getByText("Plan saved views", { exact: true }).click();
   await page.getByLabel("Due date", { exact: true }).fill(today);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByLabel("New task title").fill("Ship saved views");
   await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -457,17 +461,137 @@ views:
   ).toBeVisible();
   await expect(page.getByText("Complete", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page
+    .locator("#main-content")
+    .getByRole("button", { name: "Views", exact: true })
+    .click();
   await page.getByText("Dates", { exact: true }).click();
   await expect(page.getByRole("grid")).toBeVisible();
   await expect(
-    page.getByText("Plan saved views", { exact: true }),
+    page
+      .locator(".calendar-agenda .task-row-title")
+      .getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Due", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Progress", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  if (testInfo.project.name === "desktop") {
+    await expect(
+      page.locator(".calendar-cell-tasks").getByText("Plan saved views"),
+    ).toBeVisible();
+    const calendar = await page.locator(".calendar-grid").boundingBox();
+    const agenda = await page.locator(".calendar-agenda").boundingBox();
+    expect(calendar).not.toBeNull();
+    expect(agenda).not.toBeNull();
+    expect(agenda!.x).toBeGreaterThan(calendar!.x + calendar!.width);
+  }
   await page
-    .getByRole("region", { name: "Views" })
-    .getByRole("button", { name: "More", exact: true })
+    .locator("#main-content")
+    .getByRole("button", { name: "Views", exact: true })
     .click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+});
+
+test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
+  await page.getByLabel("New task title").fill("Build the view editor");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Create view" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create a view" }),
+  ).toBeVisible();
+
+  await page.getByLabel("Name").fill("Open work");
+  await page.getByRole("button", { name: "Board", exact: true }).click();
+  await page.getByRole("button", { name: "Expression", exact: true }).click();
+  await page.getByLabel("Filter expression").fill("status == (");
+  await expect(
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Builder", exact: true }).click();
+  await page.getByLabel("Filter property").fill("status");
+  await page.getByLabel("Filter condition").selectOption("equals");
+  await page.getByLabel("Filter value").selectOption("open");
+  await page.getByLabel("Board column").fill("status");
+  await page.getByLabel("Property to display").fill("priority");
+  await page.getByRole("button", { name: "Add", exact: true }).last().click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  await expect(page.getByText("Open work", { exact: true })).toBeVisible();
+  await page.getByText("Open work", { exact: true }).click();
+  await expect(page.getByLabel("Open work board")).toBeVisible();
+  await expect(
+    page.getByText("Build the view editor", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit Open work" }).click();
+  await expect(page.getByRole("heading", { name: "Edit view" })).toBeVisible();
+  await page.getByLabel("Name").fill("Focused work");
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expect(page.getByText("Focused work", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit Focused work" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete view" }).click();
+  await expect(page.getByText("Focused work", { exact: true })).toHaveCount(0);
+});
+
+test("offers task actions without opening the editor", async ({ page }) => {
+  await page.getByLabel("New task title").fill("Act from the task row");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await page
+    .getByRole("button", { name: "Task actions for Act from the task row" })
+    .click();
+  await page.getByRole("menuitem", { name: "Start timer" }).click();
+
+  await page
+    .getByRole("button", { name: "Task actions for Act from the task row" })
+    .click();
+  await expect(
+    page.getByRole("menuitem", { name: "Stop timer" }),
+  ).toBeVisible();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await expect(
+    page.getByText("Act from the task row", { exact: true }),
+  ).toHaveCount(0);
+});
+
+test("keeps the task workspace visible beside the desktop editor", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop");
+  await page.getByLabel("New task title").fill("Inspect beside the list");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Inspect beside the list", { exact: true }).click();
+
+  const inspector = page.getByRole("complementary", { name: "Task details" });
+  await expect(inspector).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
+    "Inspect beside the list",
+  );
+  const workspace = await page.locator("#main-content").boundingBox();
+  const details = await inspector.boundingBox();
+  expect(details).not.toBeNull();
+  expect(workspace).not.toBeNull();
+  expect(details!.x).toBeGreaterThanOrEqual(workspace!.x + workspace!.width);
+});
+
+test("uses a full-screen task editor on mobile", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile");
+  await page.getByLabel("New task title").fill("Edit on a phone");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Edit on a phone", { exact: true }).click();
+
+  await expect(
+    page.getByRole("complementary", { name: "Task details" }),
+  ).toBeVisible();
+  await expect(page.locator("#main-content")).toBeHidden();
+  await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
+    "Edit on a phone",
+  );
 });

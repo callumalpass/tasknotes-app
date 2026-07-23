@@ -25,7 +25,13 @@ import type {
   TaskTimeEntry,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskView, TaskViewExecution } from "../domain/view";
+import type {
+  CreateTaskViewSourceInput,
+  TaskView,
+  TaskViewExecution,
+  TaskViewSourceDocument,
+  UpdateTaskViewSourceInput,
+} from "../domain/view";
 
 export interface CollectionInfo {
   kind: "local" | "connect";
@@ -56,6 +62,14 @@ export interface TaskRepository {
   stats(): Promise<TaskStats>;
   listViews(): Promise<TaskView[]>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
+  readViewSource(path: string): Promise<TaskViewSourceDocument>;
+  createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument>;
+  updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument>;
+  deleteViewSource(path: string, ifRevision?: string): Promise<void>;
   taskConfiguration(): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   syncStatus(): Promise<RepositorySyncStatus>;
@@ -341,6 +355,26 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   executeView(view: TaskView): Promise<TaskViewExecution> {
     return this.views.execute(view);
+  }
+
+  readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    return this.collection.readViewSource(path);
+  }
+
+  createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    return this.collection.createViewSource(input);
+  }
+
+  updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    return this.collection.updateViewSource(input);
+  }
+
+  deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    return this.collection.deleteViewSource(path, ifRevision);
   }
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
