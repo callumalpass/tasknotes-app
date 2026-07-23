@@ -226,6 +226,45 @@ describe("relay task repository", () => {
     );
   });
 
+  it("round-trips writable saved-view sources with revisions", async () => {
+    const fixture = relayFixture([]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const original = await repository.readViewSource("views/tasks.base");
+    expect(original).toMatchObject({
+      path: "views/tasks.base",
+      format: "obsidian.base",
+      revision: "view-r1",
+    });
+
+    const created = await repository.createViewSource({
+      format: "obsidian.base",
+      name: "Focused work",
+      document: "views:\n  - name: Focused work\n    type: tasknotesTaskList\n",
+    });
+    expect(created.path).toBe("views/focused-work.base");
+
+    const updated = await repository.updateViewSource({
+      path: created.path,
+      document: created.document.replace("Focused work", "Open work"),
+      ifRevision: created.revision,
+    });
+    expect(updated).toMatchObject({ revision: "view-r3" });
+    expect(fixture.updateViewSource).toHaveBeenCalledWith(
+      expect.objectContaining({ if_revision: "view-r2" }),
+    );
+
+    await repository.deleteViewSource(updated.path, updated.revision);
+    expect(fixture.deleteViewSource).toHaveBeenCalledWith({
+      path: updated.path,
+      if_revision: "view-r3",
+    });
+    await expect(repository.readViewSource(updated.path)).rejects.toThrow(
+      "View source not found",
+    );
+  });
+
   it("creates from the configured template through the live relay", async () => {
     const fixture = relayFixture(
       [
@@ -418,6 +457,74 @@ function relayFixture(
       },
     }),
   );
+  const viewSources = new Map<
+    string,
+    {
+      path: string;
+      format: "obsidian.base" | "mdbase.view";
+      revision: string;
+      document: string;
+    }
+  >([
+    [
+      "views/tasks.base",
+      {
+        path: "views/tasks.base",
+        format: "obsidian.base" as const,
+        revision: "view-r1",
+        document: "views:\n  - name: Kanban\n    type: tasknotesKanban\n",
+      },
+    ],
+  ]);
+  let viewRevision = 2;
+  const readViewSource = vi.fn(async ({ path }: { path: string }) => {
+    const source = viewSources.get(path);
+    if (!source) throw new Error("View source not found.");
+    return valid(structuredClone(source));
+  });
+  const createViewSource = vi.fn(
+    async (input: {
+      format: "obsidian.base" | "mdbase.view";
+      name: string;
+      document: string;
+    }) => {
+      const extension = input.format === "obsidian.base" ? "base" : "md";
+      const path = `views/${input.name.toLowerCase().replaceAll(" ", "-")}.${extension}`;
+      const source = {
+        path,
+        format: input.format,
+        revision: `view-r${viewRevision++}`,
+        document: input.document,
+      };
+      viewSources.set(path, source);
+      return valid(structuredClone(source));
+    },
+  );
+  const updateViewSource = vi.fn(
+    async (input: { path: string; document: string; if_revision?: string }) => {
+      const current = viewSources.get(input.path);
+      if (!current) throw new Error("View source not found.");
+      if (input.if_revision !== current.revision)
+        throw new Error("Revision conflict.");
+      const source = {
+        ...current,
+        revision: `view-r${viewRevision++}`,
+        document: input.document,
+      };
+      viewSources.set(input.path, source);
+      return valid(structuredClone(source));
+    },
+  );
+  const deleteViewSource = vi.fn(
+    async (input: { path: string; if_revision?: string }) => {
+      const current = viewSources.get(input.path);
+      if (!current) throw new Error("View source not found.");
+      if (input.if_revision !== current.revision)
+        throw new Error("Revision conflict.");
+      viewSources.delete(input.path);
+      return valid({ path: input.path, deleted: true });
+    },
+  );
   const connect = {
     hostedSync: () => null,
     connection: () => ({ route: "relay" }),
@@ -430,6 +537,10 @@ function relayFixture(
     rename,
     listViews,
     executeView,
+    readViewSource,
+    createViewSource,
+    updateViewSource,
+    deleteViewSource,
   } as unknown as MdbaseConnect<JsonObject>;
   return {
     connect,
@@ -441,6 +552,10 @@ function relayFixture(
     rename,
     listViews,
     executeView,
+    readViewSource,
+    createViewSource,
+    updateViewSource,
+    deleteViewSource,
   };
 }
 
@@ -495,6 +610,10 @@ function description(
       "query",
       "list_views",
       "execute_view",
+      "read_view_source",
+      "create_view_source",
+      "update_view_source",
+      "delete_view_source",
       "read",
       "create",
       "update",

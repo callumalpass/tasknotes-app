@@ -4,7 +4,9 @@ import {
   ChevronRight,
   Columns3,
   List,
+  Pencil,
   Pin,
+  Plus,
   Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -16,6 +18,7 @@ import { dateFromStorage, todayString } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { ViewEditor } from "./view-editor";
 
 import type { Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -37,6 +40,7 @@ export function ViewsScreen({
   onSearch,
   onOpenView,
   onSetPrimaryView,
+  onViewsChanged,
 }: {
   viewKey?: string;
   views: TaskView[] | null;
@@ -48,6 +52,7 @@ export function ViewsScreen({
   onSearch(): void;
   onOpenView(view: TaskView): void;
   onSetPrimaryView(key?: string): void;
+  onViewsChanged(): Promise<void>;
 }) {
   const { repository, toggleTask, version } = useRepository();
   const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
@@ -56,6 +61,7 @@ export function ViewsScreen({
     key: string;
     message: string;
   } | null>(null);
+  const [editing, setEditing] = useState<TaskView | "new" | null>(null);
 
   const selected = views?.find((view) => view.key === viewKey);
   useEffect(() => {
@@ -85,123 +91,180 @@ export function ViewsScreen({
 
   if (!viewKey) {
     return (
-      <section className="screen views-screen" aria-labelledby="views-title">
-        <header className="screen-header compact-header views-catalog-header">
-          <div>
-            <p className="eyebrow">Your collection</p>
-            <h1 id="views-title">Views</h1>
-          </div>
-          <button
-            aria-label="Search tasks"
-            className="icon-action"
-            type="button"
-            onClick={onSearch}
-          >
-            <Search aria-hidden="true" size={20} strokeWidth={1.7} />
-          </button>
-        </header>
-        {error ? <p className="inline-error">{error}</p> : null}
-        {!views ? (
-          <LoadingRows count={4} />
-        ) : views.length ? (
-          <div className="saved-view-list">
-            {views.map((view) => (
-              <div className="saved-view-row" key={view.key}>
-                <button
-                  className="saved-view-open"
-                  type="button"
-                  onClick={() => onOpenView(view)}
-                >
-                  <ViewIcon view={view} />
-                  <span>
-                    <strong>{view.name}</strong>
-                    <small>{view.documentName}</small>
-                  </span>
-                  <ChevronRight aria-hidden="true" size={18} />
-                </button>
-                <button
-                  aria-label={
-                    primaryViewKey === view.key
-                      ? `Remove ${view.name} from navigation`
-                      : `Add ${view.name} to navigation`
-                  }
-                  aria-pressed={primaryViewKey === view.key}
-                  className="saved-view-pin"
-                  type="button"
-                  onClick={() => {
-                    selectionFeedback();
-                    onSetPrimaryView(
-                      primaryViewKey === view.key ? undefined : view.key,
-                    );
-                  }}
-                >
-                  <Pin
-                    aria-hidden="true"
-                    fill={primaryViewKey === view.key ? "currentColor" : "none"}
-                    size={17}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="plain-empty">
-            <h2>No saved views yet</h2>
-            <p>Views from this collection will appear here when you add one.</p>
-          </div>
-        )}
-      </section>
+      <>
+        <section className="screen views-screen" aria-labelledby="views-title">
+          <header className="screen-header compact-header views-catalog-header">
+            <div>
+              <p className="eyebrow">Your collection</p>
+              <h1 id="views-title">Views</h1>
+            </div>
+            <div className="views-header-actions">
+              <button
+                aria-label="Create view"
+                className="icon-action"
+                type="button"
+                onClick={() => setEditing("new")}
+              >
+                <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
+              </button>
+              <button
+                aria-label="Search tasks"
+                className="icon-action"
+                type="button"
+                onClick={onSearch}
+              >
+                <Search aria-hidden="true" size={20} strokeWidth={1.7} />
+              </button>
+            </div>
+          </header>
+          {error ? <p className="inline-error">{error}</p> : null}
+          {!views ? (
+            <LoadingRows count={4} />
+          ) : views.length ? (
+            <div className="saved-view-list">
+              {views.map((view) => (
+                <div className="saved-view-row" key={view.key}>
+                  <button
+                    className="saved-view-open"
+                    type="button"
+                    onClick={() => onOpenView(view)}
+                  >
+                    <ViewIcon view={view} />
+                    <span>
+                      <strong>{view.name}</strong>
+                      <small>{view.documentName}</small>
+                    </span>
+                    <ChevronRight aria-hidden="true" size={18} />
+                  </button>
+                  {view.source.writable ? (
+                    <button
+                      aria-label={`Edit ${view.name}`}
+                      className="saved-view-edit"
+                      type="button"
+                      onClick={() => setEditing(view)}
+                    >
+                      <Pencil aria-hidden="true" size={16} />
+                    </button>
+                  ) : null}
+                  <button
+                    aria-label={
+                      primaryViewKey === view.key
+                        ? `Remove ${view.name} from navigation`
+                        : `Add ${view.name} to navigation`
+                    }
+                    aria-pressed={primaryViewKey === view.key}
+                    className="saved-view-pin"
+                    type="button"
+                    onClick={() => {
+                      selectionFeedback();
+                      onSetPrimaryView(
+                        primaryViewKey === view.key ? undefined : view.key,
+                      );
+                    }}
+                  >
+                    <Pin
+                      aria-hidden="true"
+                      fill={
+                        primaryViewKey === view.key ? "currentColor" : "none"
+                      }
+                      size={17}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="plain-empty">
+              <h2>No saved views yet</h2>
+              <p>
+                Views from this collection will appear here when you add one.
+              </p>
+            </div>
+          )}
+        </section>
+        {editing ? (
+          <ViewEditor
+            view={editing === "new" ? undefined : editing}
+            onClose={() => setEditing(null)}
+            onChanged={onViewsChanged}
+          />
+        ) : null}
+      </>
     );
   }
 
   return (
-    <section className="screen views-screen view-detail" aria-live="polite">
-      <header className={`view-header${operational ? " operational" : ""}`}>
-        {!operational ? (
-          <button className="back-action" type="button" onClick={onBack}>
-            <ChevronLeft aria-hidden="true" size={20} />
-            Views
-          </button>
-        ) : null}
-        <div>
-          <h1>{selected?.name ?? "Saved view"}</h1>
-          {visibleExecution?.stale ? (
-            <small>Last available result</small>
-          ) : operational ? (
-            <small>Primary view</small>
+    <>
+      <section className="screen views-screen view-detail" aria-live="polite">
+        <header className={`view-header${operational ? " operational" : ""}`}>
+          {!operational ? (
+            <button className="back-action" type="button" onClick={onBack}>
+              <ChevronLeft aria-hidden="true" size={20} />
+              Views
+            </button>
           ) : null}
-        </div>
-      </header>
-      {error ? <p className="inline-error">{error}</p> : null}
-      {!visibleExecution ? (
-        <LoadingRows count={6} />
-      ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
-        <KanbanView
-          execution={visibleExecution}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
+          <div>
+            <h1>{selected?.name ?? "Saved view"}</h1>
+            {visibleExecution?.stale ? (
+              <small>Last available result</small>
+            ) : operational ? (
+              <small>Primary view</small>
+            ) : null}
+          </div>
+          {selected?.source.writable ? (
+            <button
+              aria-label={`Edit ${selected.name}`}
+              className="edit-view-action"
+              type="button"
+              onClick={() => setEditing(selected)}
+            >
+              <Pencil aria-hidden="true" size={16} /> Edit
+            </button>
+          ) : null}
+        </header>
+        {error ? <p className="inline-error">{error}</p> : null}
+        {!visibleExecution ? (
+          <LoadingRows count={6} />
+        ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
+          <KanbanView
+            execution={visibleExecution}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        ) : visibleExecution.view.presentation?.type ===
+          "tasknotes.calendar" ? (
+          <CalendarView
+            execution={visibleExecution}
+            identityTasks={identityTasks}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        ) : (
+          <TaskListView
+            execution={visibleExecution}
+            onOpen={onOpenTask}
+            onToggle={(task, occurrenceDate) =>
+              void toggleTask(task.id, occurrenceDate)
+            }
+          />
+        )}
+      </section>
+      {editing && editing !== "new" ? (
+        <ViewEditor
+          view={editing}
+          onClose={() => setEditing(null)}
+          onChanged={async () => {
+            if (primaryViewKey === editing.key) onSetPrimaryView(undefined);
+            await onViewsChanged();
+            onBack();
+          }}
         />
-      ) : visibleExecution.view.presentation?.type === "tasknotes.calendar" ? (
-        <CalendarView
-          execution={visibleExecution}
-          identityTasks={identityTasks}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
-        />
-      ) : (
-        <TaskListView
-          execution={visibleExecution}
-          onOpen={onOpenTask}
-          onToggle={(task, occurrenceDate) =>
-            void toggleTask(task.id, occurrenceDate)
-          }
-        />
-      )}
-    </section>
+      ) : null}
+    </>
   );
 }
 

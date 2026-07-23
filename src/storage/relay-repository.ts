@@ -36,7 +36,13 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskView, TaskViewExecution } from "../domain/view";
+import type {
+  CreateTaskViewSourceInput,
+  TaskView,
+  TaskViewExecution,
+  TaskViewSourceDocument,
+  UpdateTaskViewSourceInput,
+} from "../domain/view";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -408,6 +414,61 @@ export class RelayTaskRepository implements TaskRepository {
           frontmatter: record.frontmatter ?? {},
           body: record.body,
           types: record.types ?? [],
+        }),
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  async readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    try {
+      return validResult(await this.connect.readViewSource({ path }));
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  async createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    try {
+      return validResult(
+        await this.connect.createViewSource({
+          ...input,
+        }),
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  async updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    try {
+      return validResult(
+        await this.connect.updateViewSource({
+          path: input.path,
+          document: input.document,
+          if_revision: input.ifRevision,
+        }),
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
+  }
+
+  async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    try {
+      validResult(
+        await this.connect.deleteViewSource({
+          path,
+          if_revision: ifRevision,
         }),
       );
     } catch (reason) {

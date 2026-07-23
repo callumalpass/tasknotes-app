@@ -88,8 +88,8 @@ export class LocalViewExecutor {
           source: {
             path: source.entry.path,
             format: "obsidian.base",
-            revision: await revision(source.source),
-            writable: false,
+            revision: await viewSourceRevision(source.source),
+            writable: true,
           },
           presentation: presentation(view),
         });
@@ -356,7 +356,7 @@ function fileStem(path: string): string {
   return name.endsWith(".base") ? name.slice(0, -5) : name;
 }
 
-async function revision(source: string): Promise<string> {
+export async function viewSourceRevision(source: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(source),

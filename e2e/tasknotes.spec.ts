@@ -492,6 +492,48 @@ views:
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
 });
 
+test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
+  await page.getByLabel("New task title").fill("Build the view editor");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Create view" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create a view" }),
+  ).toBeVisible();
+
+  await page.getByLabel("Name").fill("Open work");
+  await page.getByRole("button", { name: "Board", exact: true }).click();
+  await page.getByRole("button", { name: "Condition", exact: true }).click();
+  await page.getByLabel("Filter property").fill("status");
+  await page.getByLabel("Filter condition").selectOption("equals");
+  await page.getByLabel("Filter value").selectOption("open");
+  await page.getByLabel("Board column").fill("status");
+  await page.getByLabel("Property to display").fill("priority");
+  await page.getByRole("button", { name: "Add", exact: true }).last().click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  await expect(page.getByText("Open work", { exact: true })).toBeVisible();
+  await page.getByText("Open work", { exact: true }).click();
+  await expect(page.getByLabel("Open work board")).toBeVisible();
+  await expect(
+    page.getByText("Build the view editor", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit Open work" }).click();
+  await expect(page.getByRole("heading", { name: "Edit view" })).toBeVisible();
+  await page.getByLabel("Name").fill("Focused work");
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expect(page.getByText("Focused work", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit Focused work" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete view" }).click();
+  await expect(page.getByText("Focused work", { exact: true })).toHaveCount(0);
+});
+
 test("offers task actions without opening the editor", async ({ page }) => {
   await page.getByLabel("New task title").fill("Act from the task row");
   await page.getByRole("button", { name: "Add", exact: true }).click();

@@ -241,6 +241,7 @@ export function AppShell() {
             onSearch={() => navigate({ page: "search" })}
             onOpenView={(view) => navigate({ page: "views", key: view.key })}
             onSetPrimaryView={setPrimaryView}
+            onViewsChanged={refreshViews}
           />
         ) : null}
       </main>
