@@ -1,6 +1,12 @@
 name: Production smoke
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/production-smoke.yml"
+      - "scripts/production-smoke.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:

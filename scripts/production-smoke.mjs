@@ -3,6 +3,7 @@ const connectOrigin =
 const appOrigin =
   process.env.TASKNOTES_PRODUCTION_URL ??
   "https://callumalpass.github.io/tasknotes-app";
+const retryDelays = [3_000, 6_000, 12_000, 20_000, 20_000];
 
 const checks = [
   async () => {
@@ -40,22 +41,28 @@ const checks = [
 ];
 
 for (const [index, check] of checks.entries()) {
-  await retry(check, 3);
+  await retry(check);
   console.log(`Production check ${index + 1}/${checks.length} passed.`);
 }
 
 console.log("TaskNotes production boundaries are healthy.");
 
-async function retry(check, attempts) {
+async function retry(check) {
   let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
     try {
       await check();
       return;
     } catch (error) {
       lastError = error;
-      if (attempt < attempts)
-        await new Promise((resolve) => setTimeout(resolve, attempt * 2_000));
+      if (attempt < retryDelays.length) {
+        console.warn(
+          `${error instanceof Error ? error.message : String(error)} Retrying in ${retryDelays[attempt] / 1_000}s.`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelays[attempt]),
+        );
+      }
     }
   }
   throw lastError;
