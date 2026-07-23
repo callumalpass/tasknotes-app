@@ -9,10 +9,17 @@ import {
   Bell,
   Columns3,
   Archive,
+  SunMoon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { notificationPermission } from "../native/notifications";
+import {
+  applyThemePreference,
+  loadThemePreference,
+  saveThemePreference,
+  type ThemePreference,
+} from "../theme";
 import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
@@ -203,6 +210,14 @@ export function MoreScreen({
         </button>
       </SettingsSection>
 
+      <SettingsSection label="Appearance">
+        <div className="setting-row">
+          <SunMoon aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Color theme</span>
+          <ThemeSelect />
+        </div>
+      </SettingsSection>
+
       {benchmarkTools ? (
         <SettingsSection label="Benchmark">
           <p className="section-copy">
@@ -351,6 +366,36 @@ export function MoreScreen({
         </div>
       </SettingsSection>
     </section>
+  );
+}
+
+function ThemeSelect() {
+  const [preference, setPreference] =
+    useState<ThemePreference>(loadThemePreference);
+  useEffect(() => {
+    applyThemePreference(preference);
+    if (preference !== "system" || typeof window.matchMedia !== "function")
+      return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => applyThemePreference("system");
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [preference]);
+  return (
+    <select
+      className="theme-picker"
+      aria-label="Color theme"
+      value={preference}
+      onChange={(event) => {
+        const next = event.target.value as ThemePreference;
+        setPreference(next);
+        saveThemePreference(next);
+      }}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
   );
 }
 

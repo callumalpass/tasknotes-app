@@ -12,6 +12,16 @@ colors:
   accent: "#356F96"
   danger: "#974D4A"
   success: "#4F735D"
+dark-colors:
+  paper: "oklch(17.5% 0.012 255)"
+  paper-soft: "oklch(20% 0.013 255)"
+  paper-raised: "oklch(21.5% 0.014 255)"
+  ink: "oklch(92% 0.008 255)"
+  ink-soft: "oklch(78% 0.01 255)"
+  ink-muted: "oklch(67% 0.012 255)"
+  line: "oklch(29% 0.012 255)"
+  line-strong: "oklch(40% 0.014 255)"
+  accent: "oklch(73% 0.09 238)"
 typography:
   title:
     fontFamily: "Atkinson Hyperlegible"
@@ -49,14 +59,14 @@ spacing:
 
 ## Creative north star
 
-**A pocket standards notebook.** TaskNotes mobile borrows mdbase's white
-paper, blue-black ink, pale rules, literal labels, and generous page-level
-space. It applies them to a mobile workflow where task rows stay compact and
-controls remain familiar.
+**A pocket standards notebook.** TaskNotes mobile borrows mdbase's paper,
+blue-black ink, quiet rules, literal labels, and generous page-level space. It
+applies them to a mobile workflow where task rows stay compact and controls
+remain familiar.
 
 The physical scene is a person checking or capturing work on a phone in normal
-daylight, often one-handed and between other activities. This requires a light,
-high-clarity surface with stable controls and no visual ceremony.
+daylight or after dark, often one-handed and between other activities. This
+requires a high-clarity surface with stable controls and no visual ceremony.
 
 ## Color
 
@@ -64,6 +74,19 @@ Use paper across the application. Paper-soft may distinguish a true secondary
 surface such as the navigation bar or read-only metadata region. Lines group
 rows and fields. Accent is reserved for focus, selection, links, and active
 navigation. Semantic colors always appear with a word, icon, or position.
+
+Dark mode uses deep blue-black paper rather than pure black. Raised surfaces
+remain close to the canvas, dividers become visible through lightness rather
+than saturation, and accent and semantic colors become lighter to retain AA
+contrast.
+
+## Theme contract
+
+TaskNotes offers System, Light, and Dark under More. System follows the device
+appearance; an explicit choice is stored locally as `mdbase:theme` and applied
+before first paint. Components consume canvas, surface, surface-subtle, text,
+text-soft, text-muted, border, border-strong, accent, success, warning, and
+danger roles rather than fixed palette values.
 
 ## Typography
 
@@ -97,7 +120,7 @@ Today             Search       More
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
 - Buttons are text or lightly outlined controls. There are no black or saturated filled buttons.
-- Inputs are white with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
+- Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
