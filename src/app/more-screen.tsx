@@ -24,11 +24,11 @@ import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
 export function MoreScreen({
-  primaryViewName,
+  navigationViewCount,
   onOpenViews,
   onOpenArchive,
 }: {
-  primaryViewName?: string;
+  navigationViewCount: number;
   onOpenViews(): void;
   onOpenArchive(): void;
 }) {
@@ -185,8 +185,8 @@ export function MoreScreen({
           <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Saved views</span>
           <small>
-            {primaryViewName
-              ? `${primaryViewName} is in navigation`
+            {navigationViewCount
+              ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
               : "Lists, boards, and calendars"}
           </small>
           <ChevronRight aria-hidden="true" size={17} />

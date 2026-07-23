@@ -1544,13 +1544,17 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
-.bottom-navigation.has-primary {
+.bottom-navigation.items-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bottom-navigation.items-5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding-right: 4px;
   padding-left: 4px;
 }
 
-.bottom-navigation.has-primary button {
+.bottom-navigation.items-5 button {
   padding: 0 2px;
   font-size: 0.7rem;
 }
@@ -1905,6 +1909,101 @@ button:disabled {
   border-top: 1px solid var(--line-strong);
 }
 
+.view-catalog {
+  display: grid;
+  gap: 34px;
+}
+
+.navigation-view-order {
+  border-top: 1px solid var(--line-strong);
+}
+
+.navigation-view-order > header {
+  padding: 18px 0 12px;
+}
+
+.navigation-view-order h2,
+.navigation-view-order p {
+  margin: 0;
+}
+
+.navigation-view-order h2,
+.view-document-heading h2 {
+  font-size: 0.98rem;
+}
+
+.navigation-view-order p {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.navigation-view-order ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.navigation-view-order li {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 52px;
+  border-top: 1px solid var(--line);
+}
+
+.navigation-view-order li > svg {
+  color: var(--accent);
+}
+
+.navigation-order-actions {
+  display: flex;
+}
+
+.navigation-order-actions button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.navigation-order-actions button:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
+.view-document + .view-document {
+  margin-top: 30px;
+}
+
+.view-document-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 9px;
+}
+
+.view-document-heading h2 {
+  margin: 0;
+}
+
+.view-document-heading small {
+  max-width: 56%;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .saved-view-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 40px 44px;
@@ -1985,6 +2084,15 @@ button:disabled {
 
 .saved-view-pin[aria-pressed="true"] {
   color: var(--accent);
+}
+
+.saved-view-pin:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.view-back-action {
+  margin-bottom: 4px;
 }
 
 .view-editor {
@@ -2339,6 +2447,14 @@ button:disabled {
 
 .saved-task-list {
   border-top: 1px solid var(--line-strong);
+}
+
+.saved-view-groups {
+  padding-top: 0;
+}
+
+.saved-view-groups .saved-task-list {
+  border-top: 0;
 }
 
 .kanban-board {

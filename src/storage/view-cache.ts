@@ -1,6 +1,10 @@
 import Dexie, { type Table } from "dexie";
 
-import type { TaskView, TaskViewExecution } from "../domain/view";
+import type {
+  TaskView,
+  TaskViewDocument,
+  TaskViewExecution,
+} from "../domain/view";
 
 interface ViewCacheEntry {
   key: string;
@@ -16,14 +20,19 @@ export class TaskViewCache extends Dexie {
     this.entries = this.table("entries");
   }
 
-  async readViews(): Promise<TaskView[]> {
-    return clone<TaskView[]>((await this.entries.get("views"))?.value, []).map(
-      normalizeView,
-    );
+  async readViewDocuments(): Promise<TaskViewDocument[]> {
+    const value = (await this.entries.get("views"))?.value;
+    if (!Array.isArray(value)) return [];
+    if (value.every(isViewDocument))
+      return clone<TaskViewDocument[]>(value, []).map(normalizeDocument);
+    return groupLegacyViews(clone<TaskView[]>(value, []).map(normalizeView));
   }
 
-  async writeViews(views: TaskView[]): Promise<void> {
-    await this.entries.put({ key: "views", value: structuredClone(views) });
+  async writeViewDocuments(documents: TaskViewDocument[]): Promise<void> {
+    await this.entries.put({
+      key: "views",
+      value: structuredClone(documents),
+    });
   }
 
   async readExecution(key: string): Promise<TaskViewExecution | null> {
@@ -50,6 +59,40 @@ function normalizeView(view: TaskView): TaskView {
     ...view,
     properties: Array.isArray(properties) ? structuredClone(properties) : [],
   };
+}
+
+function normalizeDocument(document: TaskViewDocument): TaskViewDocument {
+  return {
+    ...document,
+    source: { ...document.source },
+    views: document.views.map(normalizeView),
+  };
+}
+
+function isViewDocument(value: unknown): value is TaskViewDocument {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    Array.isArray((value as Partial<TaskViewDocument>).views)
+  );
+}
+
+function groupLegacyViews(views: TaskView[]): TaskViewDocument[] {
+  const documents = new Map<string, TaskViewDocument>();
+  for (const view of views) {
+    const existing = documents.get(view.source.path);
+    if (existing) {
+      existing.views.push(view);
+      continue;
+    }
+    documents.set(view.source.path, {
+      id: view.documentId,
+      name: view.documentName,
+      source: { ...view.source },
+      views: [view],
+    });
+  }
+  return [...documents.values()];
 }
 
 function clone<T>(value: unknown, fallback: T): T {

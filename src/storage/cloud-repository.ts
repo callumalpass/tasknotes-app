@@ -25,7 +25,7 @@ import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
-  flattenViews,
+  normalizeViewDocuments,
   normalizeViewExecution,
   type ProviderViewExecution,
   type ProviderViewList,
@@ -44,6 +44,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
@@ -69,7 +70,7 @@ export class CloudTaskRepository implements TaskRepository {
   private resources: SyncCollectionResources | null = null;
   private taskTypeName = "task";
   private readonly cache = new Map<string, CachedCloudTask>();
-  private viewCache: TaskView[] = [];
+  private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private viewStore: TaskViewCache | null = null;
   private readonly listeners = new Set<() => void>();
@@ -96,7 +97,7 @@ export class CloudTaskRepository implements TaskRepository {
       throw new Error("Connect an mdbase cloud collection to continue.");
     }
     this.viewStore = new TaskViewCache(hosted.collectionId);
-    this.viewCache = await this.viewStore.readViews();
+    this.viewCache = await this.viewStore.readViewDocuments();
     const store = new IndexedDbReplicaStore<CloudFrontmatter>(
       `tasknotes:${hosted.collectionId}:${hosted.replicaId}`,
       {
@@ -462,12 +463,12 @@ export class CloudTaskRepository implements TaskRepository {
     return this.model.configuration();
   }
 
-  async listViews(): Promise<TaskView[]> {
+  async listViews(): Promise<TaskViewDocument[]> {
     try {
-      this.viewCache = flattenViews(
+      this.viewCache = normalizeViewDocuments(
         validResult(await this.connect.listViews()) as ProviderViewList,
       );
-      await this.viewStore?.writeViews(this.viewCache);
+      await this.viewStore?.writeViewDocuments(this.viewCache);
       return structuredClone(this.viewCache);
     } catch (reason) {
       if (this.viewCache.length) return structuredClone(this.viewCache);
@@ -548,10 +549,10 @@ export class CloudTaskRepository implements TaskRepository {
 
   private async refreshViewsAfterMutation(): Promise<void> {
     this.viewExecutionCache.clear();
-    this.viewCache = flattenViews(
+    this.viewCache = normalizeViewDocuments(
       validResult(await this.connect.listViews()) as ProviderViewList,
     );
-    await this.viewStore?.writeViews(this.viewCache);
+    await this.viewStore?.writeViewDocuments(this.viewCache);
     this.emit();
   }
 

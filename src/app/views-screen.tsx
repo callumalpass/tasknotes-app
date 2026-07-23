@@ -1,7 +1,9 @@
 import {
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Columns3,
   GripVertical,
   List,
@@ -15,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
+import { isTaskNotesDefaultView } from "../domain/default-views";
 import {
   kanbanMoveInput,
   kanbanPropertyRole,
@@ -22,14 +25,18 @@ import {
 } from "../domain/kanban";
 import { dateFromStorage, todayString } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
+import { groupTaskViewRows } from "../domain/view-grouping";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { TodayScreen } from "./today-screen";
+import { UpcomingScreen } from "./upcoming-screen";
 import { ViewEditor } from "./view-editor";
 
 import type { Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
 import type {
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewProperty,
   TaskViewRow,
@@ -37,27 +44,31 @@ import type {
 
 export function ViewsScreen({
   viewKey,
+  documents,
   views,
   error: viewsError,
-  primaryViewKey,
+  navigationViewKeys,
   operational = false,
   onBack,
   onOpenTask,
   onSearch,
   onOpenView,
-  onSetPrimaryView,
+  onToggleNavigationView,
+  onMoveNavigationView,
   onViewsChanged,
 }: {
   viewKey?: string;
+  documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
   error?: string;
-  primaryViewKey?: string;
+  navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
   onOpenTask(task: Task, occurrenceDate?: string): void;
   onSearch(): void;
   onOpenView(view: TaskView): void;
-  onSetPrimaryView(key?: string): void;
+  onToggleNavigationView(key: string): void;
+  onMoveNavigationView(key: string, direction: -1 | 1): void;
   onViewsChanged(): Promise<void>;
 }) {
   const { repository, toggleTask, updateTask, configuration, version } =
@@ -85,7 +96,7 @@ export function ViewsScreen({
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
   useEffect(() => {
-    if (!viewKey || !selected) return;
+    if (!viewKey || !selected || isTaskNotesDefaultView(selected)) return;
     let active = true;
     void repository.executeView(selected).then(
       (result) => {
@@ -190,6 +201,21 @@ export function ViewsScreen({
     });
   }
 
+  if (selected?.presentation?.type === "tasknotes.today")
+    return (
+      <TodayScreen
+        onBack={operational ? undefined : onBack}
+        onOpen={onOpenTask}
+      />
+    );
+  if (selected?.presentation?.type === "tasknotes.upcoming")
+    return (
+      <UpcomingScreen
+        onBack={operational ? undefined : onBack}
+        onOpen={onOpenTask}
+      />
+    );
+
   if (!viewKey) {
     return (
       <>
@@ -219,60 +245,90 @@ export function ViewsScreen({
             </div>
           </header>
           {error ? <p className="inline-error">{error}</p> : null}
-          {!views ? (
+          {!documents || !views ? (
             <LoadingRows count={4} />
           ) : views.length ? (
-            <div className="saved-view-list">
-              {views.map((view) => (
-                <div className="saved-view-row" key={view.key}>
-                  <button
-                    className="saved-view-open"
-                    type="button"
-                    onClick={() => onOpenView(view)}
+            <div className="view-catalog">
+              <NavigationViewOrder
+                keys={navigationViewKeys}
+                views={views}
+                onMove={onMoveNavigationView}
+              />
+              <div className="view-document-list">
+                {documents.map((document) => (
+                  <section
+                    className="view-document"
+                    key={document.source.path}
+                    aria-labelledby={`view-document-${safeId(document.id)}`}
                   >
-                    <ViewIcon view={view} />
-                    <span>
-                      <strong>{view.name}</strong>
-                      <small>{view.documentName}</small>
-                    </span>
-                    <ChevronRight aria-hidden="true" size={18} />
-                  </button>
-                  {view.source.writable ? (
-                    <button
-                      aria-label={`Edit ${view.name}`}
-                      className="saved-view-edit"
-                      type="button"
-                      onClick={() => setEditing(view)}
-                    >
-                      <Pencil aria-hidden="true" size={16} />
-                    </button>
-                  ) : null}
-                  <button
-                    aria-label={
-                      primaryViewKey === view.key
-                        ? `Remove ${view.name} from navigation`
-                        : `Add ${view.name} to navigation`
-                    }
-                    aria-pressed={primaryViewKey === view.key}
-                    className="saved-view-pin"
-                    type="button"
-                    onClick={() => {
-                      selectionFeedback();
-                      onSetPrimaryView(
-                        primaryViewKey === view.key ? undefined : view.key,
-                      );
-                    }}
-                  >
-                    <Pin
-                      aria-hidden="true"
-                      fill={
-                        primaryViewKey === view.key ? "currentColor" : "none"
-                      }
-                      size={17}
-                    />
-                  </button>
-                </div>
-              ))}
+                    <header className="view-document-heading">
+                      <h2 id={`view-document-${safeId(document.id)}`}>
+                        {document.name}
+                      </h2>
+                      {document.source.format !== "tasknotes.builtin" ? (
+                        <small>{document.source.path}</small>
+                      ) : null}
+                    </header>
+                    <div className="saved-view-list">
+                      {document.views.map((view) => {
+                        const inNavigation = navigationViewKeys.includes(
+                          view.key,
+                        );
+                        const lastNavigationView =
+                          inNavigation && navigationViewKeys.length === 1;
+                        return (
+                          <div className="saved-view-row" key={view.key}>
+                            <button
+                              className="saved-view-open"
+                              type="button"
+                              onClick={() => onOpenView(view)}
+                            >
+                              <ViewIcon view={view} />
+                              <span>
+                                <strong>{view.name}</strong>
+                              </span>
+                              <ChevronRight aria-hidden="true" size={18} />
+                            </button>
+                            {view.source.writable ? (
+                              <button
+                                aria-label={`Edit ${view.name}`}
+                                className="saved-view-edit"
+                                type="button"
+                                onClick={() => setEditing(view)}
+                              >
+                                <Pencil aria-hidden="true" size={16} />
+                              </button>
+                            ) : null}
+                            <button
+                              aria-label={
+                                lastNavigationView
+                                  ? `${view.name} must remain in navigation until another view is added`
+                                  : inNavigation
+                                    ? `Remove ${view.name} from navigation`
+                                    : `Add ${view.name} to navigation`
+                              }
+                              aria-pressed={inNavigation}
+                              className="saved-view-pin"
+                              disabled={lastNavigationView}
+                              type="button"
+                              onClick={() => {
+                                selectionFeedback();
+                                onToggleNavigationView(view.key);
+                              }}
+                            >
+                              <Pin
+                                aria-hidden="true"
+                                fill={inNavigation ? "currentColor" : "none"}
+                                size={17}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="plain-empty">
@@ -309,7 +365,7 @@ export function ViewsScreen({
             {visibleExecution?.stale ? (
               <small>Last available result</small>
             ) : operational ? (
-              <small>Primary view</small>
+              <small>In navigation</small>
             ) : null}
           </div>
           {selected?.source.writable && !editing ? (
@@ -385,6 +441,60 @@ export function ViewsScreen({
         )}
       </section>
     </>
+  );
+}
+
+function NavigationViewOrder({
+  keys,
+  views,
+  onMove,
+}: {
+  keys: string[];
+  views: TaskView[];
+  onMove(key: string, direction: -1 | 1): void;
+}) {
+  const ordered = keys.flatMap((key) => {
+    const view = views.find((candidate) => candidate.key === key);
+    return view ? [view] : [];
+  });
+  return (
+    <section
+      className="navigation-view-order"
+      aria-labelledby="navigation-view-order-title"
+    >
+      <header>
+        <div>
+          <h2 id="navigation-view-order-title">Navigation</h2>
+          <p>The first view opens when TaskNotes starts.</p>
+        </div>
+      </header>
+      <ol>
+        {ordered.map((view, index) => (
+          <li key={view.key}>
+            <ViewIcon view={view} />
+            <span>{view.name}</span>
+            <div className="navigation-order-actions">
+              <button
+                aria-label={`Move ${view.name} earlier`}
+                disabled={index === 0}
+                type="button"
+                onClick={() => onMove(view.key, -1)}
+              >
+                <ChevronUp aria-hidden="true" size={17} />
+              </button>
+              <button
+                aria-label={`Move ${view.name} later`}
+                disabled={index === ordered.length - 1}
+                type="button"
+                onClick={() => onMove(view.key, 1)}
+              >
+                <ChevronDown aria-hidden="true" size={17} />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -742,6 +852,35 @@ function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
         <p>This view has no matching tasks.</p>
       </div>
     );
+  const groups = groupTaskViewRows(execution);
+  if (groups.length)
+    return (
+      <div className="task-groups saved-view-groups">
+        {groups.map((group) => (
+          <section className="task-section" key={group.key}>
+            <div className="section-heading">
+              <h2>
+                {Object.keys(group.values).length
+                  ? groupLabel(Object.entries(group.values))
+                  : "Other"}
+              </h2>
+              <span>{group.count}</span>
+            </div>
+            <div className="saved-task-list">
+              {group.rows.map((row) => (
+                <ViewTaskRow
+                  key={row.task.id}
+                  row={row}
+                  properties={execution.view.properties}
+                  onOpen={onOpen}
+                  onToggle={onToggle}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
   return (
     <div className="saved-task-list">
       {execution.rows.map((row) => (
@@ -755,6 +894,21 @@ function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
       ))}
     </div>
   );
+}
+
+function groupLabel(entries: Array<[string, unknown]>): string {
+  if (entries.length === 1) {
+    const [field, value] = entries[0];
+    return (
+      formatPropertyValue(value) ?? `No ${propertyLabel(field).toLowerCase()}`
+    );
+  }
+  return entries
+    .map(
+      ([field, value]) =>
+        `${propertyLabel(field)}: ${formatPropertyValue(value) ?? "None"}`,
+    )
+    .join(" · ");
 }
 
 function ViewTaskRow({
@@ -932,6 +1086,10 @@ function agendaLabel(value: string): string {
 
 function valueKey(value: unknown): string {
   return JSON.stringify(value ?? null);
+}
+
+function safeId(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
 function columnLabel(value: unknown): string {

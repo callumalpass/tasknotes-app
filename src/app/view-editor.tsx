@@ -274,11 +274,20 @@ export function ViewEditor({
               </section>
             )}
 
-            {draft.renderer === "tasknotes.kanban" ? (
+            {draft.renderer !== "tasknotes.calendar" ? (
               <label>
-                <span>Board column</span>
+                <span>
+                  {draft.renderer === "tasknotes.kanban"
+                    ? "Board column"
+                    : "Group by"}
+                </span>
                 <input
                   list="view-properties"
+                  placeholder={
+                    draft.renderer === "tasknotes.kanban"
+                      ? undefined
+                      : "No grouping"
+                  }
                   value={draft.groupProperty ?? ""}
                   onChange={(event) =>
                     setDraft({ ...draft, groupProperty: event.target.value })

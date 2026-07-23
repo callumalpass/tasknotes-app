@@ -103,7 +103,6 @@ export function emptyViewDraft(dialect: ViewDialect): EditableViewDraft {
     name: "New view",
     renderer: "tasknotes.task-list",
     properties: ["status", "due"],
-    groupProperty: "status",
     options: {},
     dialect,
     availableProperties: [],
@@ -168,7 +167,7 @@ function updateObsidianDocument(
   setOrDelete(
     view,
     "groupBy",
-    draft.renderer === "tasknotes.kanban" && draft.groupProperty
+    draft.renderer !== "tasknotes.calendar" && draft.groupProperty
       ? { property: draft.groupProperty, direction: "ASC" }
       : undefined,
   );
@@ -220,7 +219,7 @@ function updateCanonicalDocument(
   const updated = { ...views[index], ...canonicalView(draft) };
   if (typeof draft.filter !== "string" || !draft.filter.trim())
     delete updated.where;
-  if (draft.renderer !== "tasknotes.kanban" || !draft.groupProperty)
+  if (draft.renderer === "tasknotes.calendar" || !draft.groupProperty)
     delete updated.group_by;
   views[index] = updated;
   frontmatter.views = views;
@@ -234,7 +233,7 @@ function obsidianView(draft: EditableViewDraft): Record<string, unknown> {
     filters: draft.filter,
     order: draft.properties,
     groupBy:
-      draft.renderer === "tasknotes.kanban" && draft.groupProperty
+      draft.renderer !== "tasknotes.calendar" && draft.groupProperty
         ? { property: draft.groupProperty, direction: "ASC" }
         : undefined,
     options: Object.keys(draft.options).length ? draft.options : undefined,
@@ -255,7 +254,7 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
         : undefined,
     select: draft.properties.length ? draft.properties : ["title"],
     group_by:
-      draft.renderer === "tasknotes.kanban" && draft.groupProperty
+      draft.renderer !== "tasknotes.calendar" && draft.groupProperty
         ? [{ field: draft.groupProperty, direction: "asc" }]
         : undefined,
     presentation: {

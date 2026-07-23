@@ -23,6 +23,13 @@ export interface TaskView {
   presentation?: TaskViewPresentation;
 }
 
+export interface TaskViewDocument {
+  id: string;
+  name: string;
+  source: TaskView["source"];
+  views: TaskView[];
+}
+
 export interface TaskViewProperty {
   key: string;
   label?: string;
@@ -73,4 +80,10 @@ export interface UpdateTaskViewSourceInput {
 
 export function taskViewKey(path: string, id: string): string {
   return `${path}#${id}`;
+}
+
+export function flattenViewDocuments(
+  documents: readonly TaskViewDocument[],
+): TaskView[] {
+  return documents.flatMap((document) => document.views);
 }
