@@ -351,6 +351,22 @@ button:disabled {
   line-height: 1.45;
 }
 
+.capture-follow-up {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 48px;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-follow-up .text-action {
+  flex: 0 0 auto;
+}
+
 .capture-template-choice {
   display: flex;
   align-items: center;
@@ -2276,6 +2292,51 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
+.view-create-defaults {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.view-create-defaults > summary {
+  min-height: 62px;
+  padding: 12px 2px;
+  cursor: pointer;
+}
+
+.view-create-defaults > summary::marker {
+  color: var(--ink-muted);
+}
+
+.view-create-defaults > summary > span {
+  display: inline-grid;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.view-create-defaults > summary strong {
+  font-size: 0.9rem;
+}
+
+.view-create-defaults > summary small,
+.view-create-defaults > p {
+  color: var(--ink-muted);
+}
+
+.view-create-defaults-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 8px 0 18px 16px;
+  border-left: 1px solid var(--line);
+}
+
+.view-create-defaults > p {
+  padding: 0 0 18px 16px;
+  margin: 0;
+  font-size: 0.82rem;
+  border-left: 1px solid var(--line);
+}
+
 .inline-view-filter {
   padding: 0;
   border-top: 1px solid var(--line);
@@ -2466,6 +2527,10 @@ button:disabled {
   scroll-snap-type: x proximity;
 }
 
+.kanban-board.is-dragging {
+  scroll-snap-type: none;
+}
+
 .kanban-column {
   flex: 0 0 min(82vw, 310px);
   scroll-snap-align: start;
@@ -2498,11 +2563,37 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.kanban-column > header > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kanban-column-add {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.kanban-column-add:hover,
+.kanban-column-add:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .kanban-card {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: stretch;
   border-bottom: 1px solid var(--line);
+  cursor: grab;
   transition:
     opacity 140ms var(--ease-out),
     transform 140ms var(--ease-out);
@@ -2514,12 +2605,13 @@ button:disabled {
 
 .kanban-card.is-dragging {
   opacity: 0.38;
+  cursor: grabbing;
 }
 
 .kanban-drag-handle {
   display: grid;
   place-items: center;
-  width: 28px;
+  width: 44px;
   min-height: 44px;
   padding: 0;
   color: var(--ink-muted);
@@ -2527,6 +2619,8 @@ button:disabled {
   background: transparent;
   border: 0;
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .kanban-drag-handle:active {
@@ -2537,6 +2631,14 @@ button:disabled {
   grid-template-columns: 44px minmax(0, 1fr) 40px;
   min-width: 0;
   border-bottom: 0;
+}
+
+.kanban-card .task-row-content {
+  cursor: grab;
+}
+
+.kanban-card.is-dragging .task-row-content {
+  cursor: grabbing;
 }
 
 .view-note {
@@ -2892,6 +2994,10 @@ button:disabled {
   }
 
   .capture-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .view-create-defaults-fields {
     grid-template-columns: 1fr;
   }
 

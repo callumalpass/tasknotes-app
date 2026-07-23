@@ -30,6 +30,16 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     }),
     list: async () => [execution.rows[0].task],
     executeView: async () => execution,
+    readViewSource: async () => ({
+      path: execution.view.source.path,
+      format: "obsidian.base",
+      revision: "one",
+      document: `views:
+  - type: tasknotesKanban
+    name: Board
+    groupBy: { property: status, direction: ASC }
+`,
+    }),
     update,
     taskConfiguration: async () => defaultTaskCollectionConfiguration,
     syncStatus: async () => ({
@@ -70,16 +80,40 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   const open = await screen.findByRole("region", { name: "Open column" });
   expect(within(open).getByText("Move on the board")).toBeVisible();
 
-  fireEvent.keyDown(
-    screen.getByRole("button", {
-      name: "Move Move on the board. Use left and right arrow keys, or drag.",
-    }),
-    { key: "ArrowRight" },
-  );
-
   const inProgress = screen.getByRole("region", {
     name: "In progress column",
   });
+  const handle = screen.getByRole("button", {
+    name: "Move Move on the board. Drag, or use left and right arrow keys.",
+  });
+  const board = screen.getByLabelText("Work board");
+  Object.defineProperty(handle, "setPointerCapture", {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(board, "scrollBy", {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => inProgress),
+  });
+
+  fireEvent.pointerDown(handle, { pointerId: 7, pointerType: "touch" });
+  fireEvent.pointerMove(handle, {
+    clientX: 500,
+    clientY: 500,
+    pointerId: 7,
+    pointerType: "touch",
+  });
+  fireEvent.pointerUp(handle, {
+    clientX: 500,
+    clientY: 500,
+    pointerId: 7,
+    pointerType: "touch",
+  });
+
   expect(within(inProgress).getByText("Move on the board")).toBeVisible();
   expect(update).toHaveBeenCalledWith("task-1", { status: "in-progress" });
 

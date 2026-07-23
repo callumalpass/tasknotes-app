@@ -13,17 +13,30 @@ import {
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
+import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
+const emptyDefaults: Partial<CreateTaskInput> = {};
+
 export function TaskCapture({
   configuration,
   createTask,
+  defaults,
+  placeholder = "Add a task — tomorrow 9am, #tag, +project",
+  focusRequest,
+  onCreated,
+  onOpenCreated,
 }: {
   configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
+  defaults?: Partial<CreateTaskInput>;
+  placeholder?: string;
+  focusRequest?: number;
+  onCreated?(task: Task): Promise<TaskCaptureFollowUp | void>;
+  onOpenCreated?(task: Task): void;
 }) {
   const [text, setText] = useState("");
   const [parsedText, setParsedText] = useState("");
@@ -33,7 +46,13 @@ export function TaskCapture({
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [followUp, setFollowUp] = useState<{
+    task: Task;
+    message: string;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const followUpSequence = useRef(0);
+  const creationDefaults = defaults ?? emptyDefaults;
 
   useEffect(() => {
     // Start after the first paint: collection opening stays lean, while the
@@ -43,6 +62,11 @@ export function TaskCapture({
   }, []);
 
   useEffect(() => {
+    if (focusRequest === undefined) return;
+    inputRef.current?.focus();
+  }, [focusRequest]);
+
+  useEffect(() => {
     const value = text.trim();
     if (!value) return;
     let active = true;
@@ -50,13 +74,23 @@ export function TaskCapture({
       void parseTaskCapture(value, configuration)
         .then((next) => {
           if (!active) return;
-          setResult(next);
+          const input = mergeTaskCreationDefaults(creationDefaults, next.input);
+          setResult({
+            input,
+            preview: taskCapturePreview(input, configuration),
+          });
           setParsedText(value);
           setError(null);
         })
         .catch(() => {
           if (!active) return;
-          setResult({ input: { title: value }, preview: [] });
+          const input = mergeTaskCreationDefaults(creationDefaults, {
+            title: value,
+          });
+          setResult({
+            input,
+            preview: taskCapturePreview(input, configuration),
+          });
           setParsedText(value);
         })
         .finally(() => {
@@ -67,7 +101,7 @@ export function TaskCapture({
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [configuration, text]);
+  }, [configuration, creationDefaults, text]);
 
   const preview = useMemo(
     () =>
@@ -89,6 +123,7 @@ export function TaskCapture({
     setExpanded(false);
     setError(null);
     setWarning(null);
+    setFollowUp(null);
   }
 
   async function capture(event: FormEvent) {
@@ -101,10 +136,26 @@ export function TaskCapture({
       const next =
         result && parsedText === value
           ? result
-          : await parseTaskCapture(value, configuration).catch(() => ({
-              input: { title: value },
-              preview: [],
-            }));
+          : await parseTaskCapture(value, configuration)
+              .then((parsed) => {
+                const input = mergeTaskCreationDefaults(
+                  creationDefaults,
+                  parsed.input,
+                );
+                return {
+                  input,
+                  preview: taskCapturePreview(input, configuration),
+                };
+              })
+              .catch(() => {
+                const input = mergeTaskCreationDefaults(creationDefaults, {
+                  title: value,
+                });
+                return {
+                  input,
+                  preview: taskCapturePreview(input, configuration),
+                };
+              });
       if (!next.input.title.trim())
         throw new Error("Add a title as well as task details.");
       const created = await createTask(next.input);
@@ -117,6 +168,29 @@ export function TaskCapture({
       setParsedText("");
       setExpanded(false);
       inputRef.current?.blur();
+      setFollowUp(null);
+      const sequence = followUpSequence.current + 1;
+      followUpSequence.current = sequence;
+      if (onCreated)
+        void Promise.resolve()
+          .then(() => onCreated(created))
+          .then(
+            (result) => {
+              if (
+                followUpSequence.current === sequence &&
+                result?.message?.trim()
+              )
+                setFollowUp({ task: created, message: result.message.trim() });
+            },
+            () => {
+              if (followUpSequence.current === sequence)
+                setFollowUp({
+                  task: created,
+                  message:
+                    "Task created. This view could not refresh, so it may not appear yet.",
+                });
+            },
+          );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -152,7 +226,7 @@ export function TaskCapture({
           ref={inputRef}
           autoComplete="off"
           enterKeyHint="done"
-          placeholder="Add a task — tomorrow 9am, #tag, +project"
+          placeholder={placeholder}
           value={text}
           onChange={(event) => changeText(event.target.value)}
           onFocus={preloadTaskCapture}
@@ -204,8 +278,26 @@ export function TaskCapture({
           {warning}
         </p>
       ) : null}
+      {followUp ? (
+        <div className="capture-follow-up" role="status">
+          <span>{followUp.message}</span>
+          {onOpenCreated ? (
+            <button
+              className="text-action"
+              type="button"
+              onClick={() => onOpenCreated(followUp.task)}
+            >
+              Open task
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
+}
+
+export interface TaskCaptureFollowUp {
+  message?: string;
 }
 
 function CaptureDetails({

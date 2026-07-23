@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { TaskCapture } from "../components/task-capture";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
 import { isTaskNotesDefaultView } from "../domain/default-views";
@@ -25,6 +26,12 @@ import {
 } from "../domain/kanban";
 import { dateFromStorage, todayString } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
+import {
+  createPlanForView,
+  mergeTaskCreationDefaults,
+  propertiesToCreateDefaults,
+  type ViewCreationPlan,
+} from "../domain/view-creation";
 import { groupTaskViewRows } from "../domain/view-grouping";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
@@ -32,7 +39,7 @@ import { TodayScreen } from "./today-screen";
 import { UpcomingScreen } from "./upcoming-screen";
 import { ViewEditor } from "./view-editor";
 
-import type { Task } from "../domain/task";
+import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
 import type {
   TaskView,
@@ -71,8 +78,14 @@ export function ViewsScreen({
   onMoveNavigationView(key: string, direction: -1 | 1): void;
   onViewsChanged(): Promise<void>;
 }) {
-  const { repository, toggleTask, updateTask, configuration, version } =
-    useRepository();
+  const {
+    repository,
+    createTask,
+    toggleTask,
+    updateTask,
+    configuration,
+    version,
+  } = useRepository();
   const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
   const [executionError, setExecutionError] = useState<{
@@ -86,6 +99,21 @@ export function ViewsScreen({
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
+  } | null>(null);
+  const [creationPlan, setCreationPlan] = useState<{
+    key: string;
+    revision: string;
+    plan: ViewCreationPlan;
+  } | null>(null);
+  const [creationContext, setCreationContext] = useState<{
+    key: string;
+    label: string;
+    defaults: Partial<CreateTaskInput>;
+    focusRequest: number;
+  } | null>(null);
+  const [calendarSelection, setCalendarSelection] = useState<{
+    key: string;
+    date: string;
   } | null>(null);
   const boardMutationSequence = useRef(new Map<string, number>());
 
@@ -112,6 +140,35 @@ export function ViewsScreen({
       active = false;
     };
   }, [repository, selected, version, viewKey]);
+  useEffect(() => {
+    if (!viewKey || !selected || isTaskNotesDefaultView(selected)) return;
+    let active = true;
+    void repository
+      .readViewSource(selected.source.path)
+      .then((source) => {
+        if (!active) return;
+        setCreationPlan({
+          key: selected.key,
+          revision: selected.source.revision,
+          plan: createPlanForView(selected, source, configuration),
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setCreationPlan({
+          key: selected.key,
+          revision: selected.source.revision,
+          plan: {
+            defaults: {},
+            inferredProperties: [],
+            explicitProperties: [],
+          },
+        });
+      });
+    return () => {
+      active = false;
+    };
+  }, [configuration, repository, selected, viewKey]);
   const visibleExecution =
     execution?.view.key === selected?.key ? execution : null;
   const currentExecutionError =
@@ -123,6 +180,31 @@ export function ViewsScreen({
     viewActionError && viewActionError.viewKey === selected?.key
       ? viewActionError.message
       : "";
+  const currentCreationPlan =
+    creationPlan &&
+    creationPlan.key === selected?.key &&
+    creationPlan.revision === selected.source.revision
+      ? creationPlan.plan
+      : null;
+  const currentCreationContext =
+    creationContext?.key === selected?.key ? creationContext : null;
+  const currentCalendarSelection =
+    calendarSelection && calendarSelection.key === selected?.key
+      ? calendarSelection.date
+      : todayString();
+  const calendarCreateDefaults =
+    selected?.presentation?.type === "tasknotes.calendar"
+      ? calendarDateDefaults(selected, currentCalendarSelection)
+      : {};
+  const captureDefaults = currentCreationPlan
+    ? mergeTaskCreationDefaults(
+        currentCreationPlan.defaults,
+        mergeTaskCreationDefaults(
+          calendarCreateDefaults,
+          currentCreationContext?.defaults ?? {},
+        ),
+      )
+    : null;
 
   async function moveBoardTask(
     row: TaskViewRow,
@@ -199,6 +281,47 @@ export function ViewsScreen({
       next.delete(taskId);
       return next;
     });
+  }
+
+  async function refreshAfterCreate(task: Task) {
+    if (!selected) return;
+    const refreshed = await repository.executeView(selected);
+    if (selectedKeyRef.current === selected.key) {
+      setExecution(refreshed);
+      setExecutionError(null);
+      setCreationContext(null);
+    }
+    return refreshed.rows.some((row) => row.task.id === task.id)
+      ? undefined
+      : {
+          message:
+            "Task created, but this view does not show it. Its filters or result limit may exclude it.",
+        };
+  }
+
+  function createInBoardColumn(
+    property: string,
+    value: unknown,
+    label: string,
+  ) {
+    if (!selected) return;
+    setCreationContext({
+      key: selected.key,
+      label,
+      defaults: propertiesToCreateDefaults(
+        { [property]: value },
+        configuration,
+      ),
+      focusRequest: Date.now(),
+    });
+  }
+
+  function canCreateInBoardColumn(property: string, value: unknown) {
+    return (
+      Object.keys(
+        propertiesToCreateDefaults({ [property]: value }, configuration),
+      ).length > 0
+    );
   }
 
   if (selected?.presentation?.type === "tasknotes.today")
@@ -393,6 +516,22 @@ export function ViewsScreen({
             onChanged={onViewsChanged}
           />
         ) : null}
+        {captureDefaults ? (
+          <TaskCapture
+            key={selected?.key}
+            configuration={configuration}
+            createTask={createTask}
+            defaults={captureDefaults}
+            focusRequest={currentCreationContext?.focusRequest}
+            placeholder={
+              currentCreationContext
+                ? `Add to ${currentCreationContext.label}`
+                : `Add to ${selected?.name ?? "this view"}`
+            }
+            onCreated={refreshAfterCreate}
+            onOpenCreated={onOpenTask}
+          />
+        ) : null}
         {!visibleExecution ? (
           <LoadingRows count={6} />
         ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
@@ -415,6 +554,8 @@ export function ViewsScreen({
             onMove={(row, property, value) =>
               void moveBoardTask(row, property, value)
             }
+            onCreateInColumn={createInBoardColumn}
+            canCreateInColumn={canCreateInBoardColumn}
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
@@ -425,6 +566,10 @@ export function ViewsScreen({
           <CalendarView
             execution={visibleExecution}
             identityTasks={identityTasks}
+            selected={currentCalendarSelection}
+            onSelect={(date) =>
+              selected && setCalendarSelection({ key: selected.key, date })
+            }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
@@ -505,6 +650,8 @@ function KanbanView({
   priorityColumns,
   statusColumns,
   onMove,
+  onCreateInColumn,
+  canCreateInColumn,
   onOpen,
   onToggle,
 }: ViewProps & {
@@ -513,6 +660,8 @@ function KanbanView({
   priorityColumns: Array<{ value: string; label: string }>;
   statusColumns: Array<{ value: string; label: string }>;
   onMove(row: TaskViewRow, property: string, value: unknown): void;
+  onCreateInColumn(property: string, value: unknown, label: string): void;
+  canCreateInColumn(property: string, value: unknown): boolean;
 }) {
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<
@@ -569,11 +718,45 @@ function KanbanView({
   } | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const boardRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef<{
+    row: TaskViewRow;
+    sourceKey: string;
+  } | null>(null);
   const pointerDrag = useRef<{
     pointerId: number;
     row: TaskViewRow;
     sourceKey: string;
   } | null>(null);
+  const pointerPosition = useRef<{ x: number; y: number } | null>(null);
+  const autoScrollFrame = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (autoScrollFrame.current !== null)
+        cancelAnimationFrame(autoScrollFrame.current);
+    },
+    [],
+  );
+
+  function beginMove(row: TaskViewRow, sourceKey: string) {
+    const active = { row, sourceKey };
+    draggingRef.current = active;
+    setDragging(active);
+    setOverKey(sourceKey);
+  }
+
+  function clearDrag() {
+    if (autoScrollFrame.current !== null) {
+      cancelAnimationFrame(autoScrollFrame.current);
+      autoScrollFrame.current = null;
+    }
+    draggingRef.current = null;
+    pointerDrag.current = null;
+    pointerPosition.current = null;
+    setDragging(null);
+    setOverKey(null);
+  }
 
   function finishMove(
     row: TaskViewRow,
@@ -589,17 +772,56 @@ function KanbanView({
         `Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`,
       );
     }
-    setDragging(null);
-    setOverKey(null);
+    clearDrag();
   }
 
   function destinationAt(clientX: number, clientY: number): string | null {
+    const board = boardRef.current;
+    const bounds = board?.getBoundingClientRect();
+    const x = bounds
+      ? Math.max(bounds.left + 1, Math.min(clientX, bounds.right - 1))
+      : clientX;
+    const y = bounds
+      ? Math.max(bounds.top + 1, Math.min(clientY, bounds.bottom - 1))
+      : clientY;
     return (
       document
-        .elementFromPoint(clientX, clientY)
+        .elementFromPoint(x, y)
         ?.closest<HTMLElement>("[data-kanban-column-key]")
         ?.getAttribute("data-kanban-column-key") ?? null
     );
+  }
+
+  function continueAutoScroll() {
+    autoScrollFrame.current = null;
+    const board = boardRef.current;
+    const pointer = pointerPosition.current;
+    if (!board || !pointer || !pointerDrag.current) return;
+    const bounds = board.getBoundingClientRect();
+    const edge = 52;
+    let distance = 0;
+    if (pointer.x < bounds.left + edge)
+      distance = -Math.max(
+        4,
+        Math.ceil(((bounds.left + edge - pointer.x) / edge) * 18),
+      );
+    else if (pointer.x > bounds.right - edge)
+      distance = Math.max(
+        4,
+        Math.ceil(((pointer.x - (bounds.right - edge)) / edge) * 18),
+      );
+    if (!distance) return;
+
+    const previous = board.scrollLeft;
+    board.scrollLeft += distance;
+    setOverKey(destinationAt(pointer.x, pointer.y));
+    if (board.scrollLeft !== previous)
+      autoScrollFrame.current = requestAnimationFrame(continueAutoScroll);
+  }
+
+  function startAutoScroll() {
+    if (autoScrollFrame.current === null)
+      autoScrollFrame.current = requestAnimationFrame(continueAutoScroll);
   }
 
   return (
@@ -610,7 +832,11 @@ function KanbanView({
           read-only.
         </p>
       ) : null}
-      <div className="kanban-board" aria-label={`${execution.view.name} board`}>
+      <div
+        className={`kanban-board${dragging ? " is-dragging" : ""}`}
+        aria-label={`${execution.view.name} board`}
+        ref={boardRef}
+      >
         {orderedColumns.map((column, columnIndex) => {
           const key = valueKey(column.value);
           const label = column.label ?? columnLabel(column.value);
@@ -621,18 +847,34 @@ function KanbanView({
               data-kanban-column-key={key}
               key={key}
               onDragOver={(event) => {
-                if (!dragging || !writable) return;
+                if (!draggingRef.current || !writable) return;
                 event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
                 setOverKey(key);
               }}
               onDrop={(event) => {
                 event.preventDefault();
-                if (dragging) finishMove(dragging.row, dragging.sourceKey, key);
+                const active = draggingRef.current;
+                if (active) finishMove(active.row, active.sourceKey, key);
               }}
             >
               <header>
                 <h2>{label}</h2>
-                <span>{column.rows.length}</span>
+                <div>
+                  <span>{column.rows.length}</span>
+                  {writable && canCreateInColumn(property, column.value) ? (
+                    <button
+                      aria-label={`Add task to ${label}`}
+                      className="kanban-column-add"
+                      type="button"
+                      onClick={() =>
+                        onCreateInColumn(property, column.value, label)
+                      }
+                    >
+                      <Plus aria-hidden="true" size={16} />
+                    </button>
+                  ) : null}
+                </div>
               </header>
               <div>
                 {column.rows.map((row) => {
@@ -640,27 +882,30 @@ function KanbanView({
                   return (
                     <div
                       className={`kanban-card${pending ? " is-pending" : ""}${dragging?.row.task.id === row.task.id ? " is-dragging" : ""}`}
+                      draggable={writable}
                       key={row.task.id}
+                      onDragEnd={clearDrag}
+                      onDragStart={(event) => {
+                        if (
+                          event.target instanceof Element &&
+                          event.target.closest(
+                            ".completion-control, .kanban-drag-handle, .task-actions-trigger",
+                          )
+                        ) {
+                          event.preventDefault();
+                          return;
+                        }
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", row.task.id);
+                        beginMove(row, key);
+                      }}
                     >
                       {writable ? (
                         <button
-                          aria-label={`Move ${row.task.title}. Use left and right arrow keys, or drag.`}
+                          aria-label={`Move ${row.task.title}. Drag, or use left and right arrow keys.`}
                           className="kanban-drag-handle"
-                          draggable
                           type="button"
-                          onDragEnd={() => {
-                            setDragging(null);
-                            setOverKey(null);
-                          }}
-                          onDragStart={(event) => {
-                            event.dataTransfer.effectAllowed = "move";
-                            event.dataTransfer.setData(
-                              "text/plain",
-                              row.task.id,
-                            );
-                            setDragging({ row, sourceKey: key });
-                            setOverKey(key);
-                          }}
+                          onContextMenu={(event) => event.preventDefault()}
                           onKeyDown={(event) => {
                             const direction =
                               event.key === "ArrowLeft"
@@ -676,7 +921,7 @@ function KanbanView({
                             finishMove(row, key, valueKey(destination.value));
                           }}
                           onPointerDown={(event) => {
-                            if (event.pointerType === "mouse") return;
+                            event.preventDefault();
                             event.currentTarget.setPointerCapture(
                               event.pointerId,
                             );
@@ -685,23 +930,28 @@ function KanbanView({
                               row,
                               sourceKey: key,
                             };
-                            setDragging({ row, sourceKey: key });
-                            setOverKey(key);
+                            pointerPosition.current = {
+                              x: event.clientX,
+                              y: event.clientY,
+                            };
+                            beginMove(row, key);
                           }}
                           onPointerMove={(event) => {
                             if (
                               pointerDrag.current?.pointerId !== event.pointerId
                             )
                               return;
+                            event.preventDefault();
+                            pointerPosition.current = {
+                              x: event.clientX,
+                              y: event.clientY,
+                            };
                             setOverKey(
                               destinationAt(event.clientX, event.clientY),
                             );
+                            startAutoScroll();
                           }}
-                          onPointerCancel={() => {
-                            pointerDrag.current = null;
-                            setDragging(null);
-                            setOverKey(null);
-                          }}
+                          onPointerCancel={clearDrag}
                           onPointerUp={(event) => {
                             const active = pointerDrag.current;
                             if (!active || active.pointerId !== event.pointerId)
@@ -742,14 +992,19 @@ function KanbanView({
 function CalendarView({
   execution,
   identityTasks,
+  selected,
+  onSelect,
   onOpen,
   onToggle,
-}: ViewProps & { identityTasks: readonly Task[] }) {
+}: ViewProps & {
+  identityTasks: readonly Task[];
+  selected: string;
+  onSelect(date: string): void;
+}) {
   const initial = dateFromStorage(todayString()) ?? new Date();
   const [month, setMonth] = useState(
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
   );
-  const [selected, setSelected] = useState(todayString());
   const days = useMemo(() => calendarGrid(month), [month]);
   const events = useMemo(
     () =>
@@ -802,7 +1057,7 @@ function CalendarView({
               key={date}
               role="gridcell"
               type="button"
-              onClick={() => setSelected(date)}
+              onClick={() => onSelect(date)}
             >
               <span className="calendar-date-number">{day.getDate()}</span>
               {count ? (
@@ -842,6 +1097,16 @@ function CalendarView({
       </section>
     </div>
   );
+}
+
+function calendarDateDefaults(
+  view: TaskView,
+  selectedDate: string,
+): Partial<CreateTaskInput> {
+  const options = view.presentation?.options ?? {};
+  if (options.showScheduled !== false) return { scheduled: selectedDate };
+  if (options.showDue !== false) return { due: selectedDate };
+  return {};
 }
 
 function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
