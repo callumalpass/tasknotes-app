@@ -2087,10 +2087,9 @@ button:disabled {
 
 .filter-rule {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(130px, 1fr) minmax(
-      110px,
-      1fr
-    ) 36px;
+  grid-template-columns:
+    minmax(120px, 1fr) minmax(130px, 1fr) minmax(110px, 1fr)
+    36px;
   gap: 8px;
   align-items: end;
 }
