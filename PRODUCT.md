@@ -51,5 +51,5 @@ Obsidian UI at phone scale.
 Target WCAG AA contrast and platform accessibility conventions. All controls
 need accessible names, at least 44-point touch targets, dynamic text-friendly
 layouts, non-color state indicators, reduced-motion support, and predictable
-screen-reader order. Test light and dark system settings even while the first
-visual theme remains deliberately light.
+screen-reader order. Support system, light, and dark appearance settings, and
+test all three without encoding task state by color alone.
