@@ -28,6 +28,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
@@ -60,7 +61,7 @@ export interface TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
-  listViews(): Promise<TaskView[]>;
+  listViews(): Promise<TaskViewDocument[]>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
   readViewSource(path: string): Promise<TaskViewSourceDocument>;
   createViewSource(
@@ -349,7 +350,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
     };
   }
 
-  listViews(): Promise<TaskView[]> {
+  listViews(): Promise<TaskViewDocument[]> {
     return this.views.list();
   }
 

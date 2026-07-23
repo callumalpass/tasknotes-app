@@ -1,5 +1,5 @@
 export type NativeRoute =
-  | { page: "today" | "upcoming" | "search" | "archive" | "more" }
+  | { page: "home" | "search" | "archive" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string };
 
@@ -7,11 +7,15 @@ export type NativeBackAction = "back" | "home" | "exit";
 
 export function nativeBackAction(
   route: NativeRoute,
-  primaryViewKey?: string,
+  navigationViewKeys: readonly string[] = [],
 ): NativeBackAction {
   if (route.page === "task") return "back";
-  if (route.page === "views" && route.key && route.key !== primaryViewKey)
+  if (
+    route.page === "views" &&
+    route.key &&
+    !navigationViewKeys.includes(route.key)
+  )
     return "back";
-  if (route.page === "today") return "exit";
+  if (route.page === "home") return "exit";
   return "home";
 }

@@ -44,6 +44,15 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   render(
     <RepositoryProvider repository={repository}>
       <ViewsScreen
+        documents={[
+          {
+            id: execution.view.documentId,
+            name: execution.view.documentName,
+            source: execution.view.source,
+            views: [execution.view],
+          },
+        ]}
+        navigationViewKeys={[execution.view.key]}
         operational
         viewKey={execution.view.key}
         views={[execution.view]}
@@ -51,7 +60,8 @@ it("moves a board card immediately and rolls it back when persistence fails", as
         onOpenTask={() => undefined}
         onOpenView={() => undefined}
         onSearch={() => undefined}
-        onSetPrimaryView={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
         onViewsChanged={async () => undefined}
       />
     </RepositoryProvider>,

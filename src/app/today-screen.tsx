@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
@@ -24,8 +25,10 @@ interface TodayEntry {
 }
 
 export function TodayScreen({
+  onBack,
   onOpen,
 }: {
+  onBack?(): void;
   onOpen(task: Task, occurrenceDate?: string): void;
 }) {
   const { createTask, toggleTask, refreshing, sync, configuration } =
@@ -41,6 +44,16 @@ export function TodayScreen({
 
   return (
     <section className="screen" aria-labelledby="today-title">
+      {onBack ? (
+        <button
+          className="back-action view-back-action"
+          type="button"
+          onClick={onBack}
+        >
+          <ChevronLeft aria-hidden="true" size={20} />
+          Views
+        </button>
+      ) : null}
       <header className="screen-header">
         <div>
           <p className="eyebrow">{formatFullDate()}</p>

@@ -206,7 +206,8 @@ describe("relay task repository", () => {
     const repository = new RelayTaskRepository(fixture.connect);
     await repository.initialize();
 
-    const [view] = await repository.listViews();
+    const [document] = await repository.listViews();
+    const [view] = document.views;
     expect(view).toMatchObject({
       id: "kanban",
       name: "Kanban",

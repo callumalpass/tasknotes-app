@@ -115,7 +115,7 @@ Keep this body.
         Record<string, unknown>
       >
     )[0];
-    expect(listView).not.toHaveProperty("group_by");
+    expect(listView.group_by).toEqual([{ field: "status", direction: "asc" }]);
     expect(listView).not.toHaveProperty("where");
   });
 
@@ -144,6 +144,28 @@ Keep this body.
         }),
       ).frontmatter.type,
     ).toBe("view");
+  });
+
+  it("preserves grouping for list views", () => {
+    const source = baseSource(`views:
+  - type: tasknotesTaskList
+    name: By status
+    groupBy:
+      property: status
+      direction: ASC
+`);
+    const draft = readViewDraft(source, "by-status");
+    expect(draft.groupProperty).toBe("status");
+    const updated = parse(
+      updateViewDocument(source, {
+        ...draft,
+        groupProperty: "priority",
+      }),
+    ) as { views: Array<Record<string, unknown>> };
+    expect(updated.views[0].groupBy).toEqual({
+      property: "priority",
+      direction: "ASC",
+    });
   });
 });
 

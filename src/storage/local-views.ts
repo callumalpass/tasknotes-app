@@ -11,6 +11,7 @@ import { taskViewKey } from "../domain/view";
 import type { Task } from "../domain/task";
 import type {
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewGroup,
   TaskViewPresentation,
@@ -70,30 +71,37 @@ export class LocalViewExecutor {
     private readonly tasks: () => LocalViewTask[],
   ) {}
 
-  async list(): Promise<TaskView[]> {
-    const result: TaskView[] = [];
+  async list(): Promise<TaskViewDocument[]> {
+    const result: TaskViewDocument[] = [];
     for (const source of await this.sources()) {
       const documentName = fileStem(source.entry.path);
-      for (const [index, view] of (source.document.views ?? []).entries()) {
-        const id = source.ids[index];
-        result.push({
-          key: taskViewKey(source.entry.path, id),
-          documentId: identifier(documentName, "base"),
-          documentName,
-          id,
-          name: view.name,
-          properties: (view.order ?? []).map((key) =>
-            propertyDescriptor(key, source.document.properties),
-          ),
-          source: {
-            path: source.entry.path,
-            format: "obsidian.base",
-            revision: await viewSourceRevision(source.source),
-            writable: true,
-          },
-          presentation: presentation(view),
-        });
-      }
+      const documentId = identifier(documentName, "base");
+      const viewSource = {
+        path: source.entry.path,
+        format: "obsidian.base",
+        revision: await viewSourceRevision(source.source),
+        writable: true,
+      };
+      result.push({
+        id: documentId,
+        name: documentName,
+        source: viewSource,
+        views: (source.document.views ?? []).map((view, index) => {
+          const id = source.ids[index];
+          return {
+            key: taskViewKey(source.entry.path, id),
+            documentId,
+            documentName,
+            id,
+            name: view.name,
+            properties: (view.order ?? []).map((key) =>
+              propertyDescriptor(key, source.document.properties),
+            ),
+            source: viewSource,
+            presentation: presentation(view),
+          };
+        }),
+      });
     }
     return result;
   }

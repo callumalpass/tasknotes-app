@@ -58,7 +58,13 @@ views:
     );
     const executor = new LocalViewExecutor(collection, () => tasks);
 
-    const views = await executor.list();
+    const documents = await executor.list();
+    const views = documents.flatMap((document) => document.views);
+    expect(documents).toHaveLength(1);
+    expect(documents[0]).toMatchObject({
+      name: "tasks",
+      source: { path: "views/tasks.base" },
+    });
     expect(views.map((view) => [view.id, view.presentation?.type])).toEqual([
       ["work-board", "tasknotes.kanban"],
       ["dates", "tasknotes.calendar"],

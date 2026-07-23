@@ -4,11 +4,13 @@ import {
   CalendarDays,
   CheckCircle2,
   Columns3,
+  List,
   MoreHorizontal,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { TODAY_VIEW_KEY, UPCOMING_VIEW_KEY } from "../domain/default-views";
 import { nativeBackAction } from "../native/navigation";
 import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
@@ -19,15 +21,13 @@ import { MoreScreen } from "./more-screen";
 import { ArchiveScreen } from "./archive-screen";
 import { SearchScreen } from "./search-screen";
 import { TaskScreen } from "./task-screen";
-import { TodayScreen } from "./today-screen";
-import { UpcomingScreen } from "./upcoming-screen";
-import { usePrimaryView } from "./use-primary-view";
+import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
 
 import type { TaskView } from "../domain/view";
 
 type Route =
-  | { page: "today" | "upcoming" | "search" | "archive" | "more" }
+  | { page: "home" | "search" | "archive" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
@@ -36,16 +36,19 @@ export function AppShell() {
   const { status, error } = useRepository();
   const { choice, changeConnectedCollection, choose } = useCollectionGate();
   const {
+    documents,
     views,
     error: viewsError,
-    primaryView,
+    navigationViews,
+    homeView,
     refresh: refreshViews,
-    setPrimaryView,
-  } = usePrimaryView();
+    toggleNavigationView,
+    moveNavigationView,
+  } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [workspaceRoute, setWorkspaceRoute] = useState<WorkspaceRoute>(() => {
     const initial = parseRoute();
-    return initial.page === "task" ? { page: "today" } : initial;
+    return initial.page === "task" ? { page: "home" } : initial;
   });
 
   useEffect(() => {
@@ -86,9 +89,12 @@ export function AppShell() {
     let disposed = false;
     let remove: (() => Promise<void>) | undefined;
     void CapacitorApp.addListener("backButton", () => {
-      const action = nativeBackAction(route, primaryView?.key);
+      const action = nativeBackAction(
+        route,
+        navigationViews.map((view) => view.key),
+      );
       if (action === "back") window.history.back();
-      else if (action === "home") navigate({ page: "today" }, true);
+      else if (action === "home") navigate({ page: "home" }, true);
       else void CapacitorApp.exitApp();
     }).then((handle) => {
       if (disposed) void handle.remove();
@@ -98,7 +104,7 @@ export function AppShell() {
       disposed = true;
       void remove?.();
     };
-  }, [navigate, primaryView?.key, route]);
+  }, [navigate, navigationViews, route]);
 
   if (status === "opening") {
     return (
@@ -164,9 +170,19 @@ export function AppShell() {
 
   const workspace: WorkspaceRoute =
     route.page === "task" ? workspaceRoute : route;
+  const workspaceViewKey =
+    workspace.page === "home"
+      ? homeView?.key
+      : workspace.page === "views"
+        ? workspace.key
+        : undefined;
+  const workspaceIsNavigationView = Boolean(
+    workspaceViewKey &&
+    navigationViews.some((view) => view.key === workspaceViewKey),
+  );
   const activePage =
-    workspace.page === "views" && workspace.key === primaryView?.key
-      ? `view:${workspace.key}`
+    workspaceViewKey && workspaceIsNavigationView
+      ? `view:${workspaceViewKey}`
       : workspace.page === "views" || workspace.page === "search"
         ? "views"
         : workspace.page;
@@ -179,31 +195,21 @@ export function AppShell() {
         <button
           className="wordmark"
           type="button"
-          onClick={() => navigate({ page: "today" })}
+          onClick={() => navigate({ page: "home" })}
         >
           <img alt="" src={tasknotesMarkUrl} />
           <span>TaskNotes</span>
         </button>
         <Navigation
           active={activePage}
-          primaryView={primaryView}
+          homeViewKey={homeView?.key}
+          mode="desktop"
+          navigationViews={navigationViews}
           onNavigate={navigate}
         />
       </aside>
       <main id="main-content" className="page-surface">
-        {workspace.page === "today" ? (
-          <TodayScreen
-            onOpen={(task, occurrence) =>
-              navigate({ page: "task", id: task.id, occurrence })
-            }
-          />
-        ) : workspace.page === "upcoming" ? (
-          <UpcomingScreen
-            onOpen={(task, occurrence) =>
-              navigate({ page: "task", id: task.id, occurrence })
-            }
-          />
-        ) : workspace.page === "search" ? (
+        {workspace.page === "search" ? (
           <SearchScreen
             onBack={() => navigate({ page: "views" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
@@ -215,23 +221,24 @@ export function AppShell() {
           />
         ) : workspace.page === "more" ? (
           <MoreScreen
-            primaryViewName={primaryView?.name}
+            navigationViewCount={navigationViews.length}
             onOpenArchive={() => navigate({ page: "archive" })}
             onOpenViews={() => {
               void refreshViews();
               navigate({ page: "views" });
             }}
           />
-        ) : workspace.page === "views" ? (
+        ) : workspace.page === "views" || workspace.page === "home" ? (
           <ViewsScreen
+            documents={documents}
             error={viewsError}
-            operational={workspace.key === primaryView?.key}
-            primaryViewKey={primaryView?.key}
+            navigationViewKeys={navigationViews.map((view) => view.key)}
+            operational={workspaceIsNavigationView}
             views={views}
-            viewKey={workspace.key}
+            viewKey={workspaceViewKey}
             onBack={() =>
               navigate(
-                workspace.key ? { page: "views" } : { page: "more" },
+                workspaceViewKey ? { page: "views" } : { page: "more" },
                 true,
               )
             }
@@ -239,8 +246,15 @@ export function AppShell() {
               navigate({ page: "task", id: task.id, occurrence })
             }
             onSearch={() => navigate({ page: "search" })}
-            onOpenView={(view) => navigate({ page: "views", key: view.key })}
-            onSetPrimaryView={setPrimaryView}
+            onOpenView={(view) =>
+              navigate(
+                view.key === homeView?.key
+                  ? { page: "home" }
+                  : { page: "views", key: view.key },
+              )
+            }
+            onToggleNavigationView={toggleNavigationView}
+            onMoveNavigationView={moveNavigationView}
             onViewsChanged={refreshViews}
           />
         ) : null}
@@ -262,15 +276,17 @@ export function AppShell() {
       ) : null}
       {route.page !== "task" &&
       (workspace.page !== "views" ||
-        !workspace.key ||
-        workspace.key === primaryView?.key) ? (
+        !workspaceViewKey ||
+        workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation${primaryView ? " has-primary" : ""}`}
+          className={`bottom-navigation items-${Math.min(navigationViews.length, 3) + 2}`}
           aria-label="Primary"
         >
           <Navigation
             active={activePage}
-            primaryView={primaryView}
+            homeViewKey={homeView?.key}
+            mode="mobile"
+            navigationViews={navigationViews}
             onNavigate={navigate}
           />
         </nav>
@@ -281,44 +297,40 @@ export function AppShell() {
 
 function Navigation({
   active,
-  primaryView,
+  homeViewKey,
+  mode,
+  navigationViews,
   onNavigate,
 }: {
   active: string;
-  primaryView?: TaskView;
+  homeViewKey?: string;
+  mode: "desktop" | "mobile";
+  navigationViews: TaskView[];
   onNavigate(route: Route): void;
 }) {
+  const visibleViews =
+    mode === "mobile" ? navigationViews.slice(0, 3) : navigationViews;
   const items: {
     key: string;
     label: string;
     icon: typeof CheckCircle2;
     route: Route;
   }[] = [
-    {
-      key: "today",
-      label: "Today",
-      icon: CheckCircle2,
-      route: { page: "today" },
-    },
-    {
-      key: "upcoming",
-      label: "Upcoming",
-      icon: CalendarDays,
-      route: { page: "upcoming" },
-    },
-    ...(primaryView
-      ? [
-          {
-            key: `view:${primaryView.key}`,
-            label: primaryView.name,
-            icon: Columns3,
-            route: { page: "views" as const, key: primaryView.key },
-          },
-        ]
-      : []),
+    ...visibleViews.map((view) => ({
+      key: `view:${view.key}`,
+      label: view.name,
+      icon: navigationViewIcon(view),
+      route:
+        view.key === homeViewKey
+          ? ({ page: "home" } as const)
+          : ({ page: "views", key: view.key } as const),
+    })),
     {
       key: "views",
-      label: "Views",
+      label:
+        mode === "mobile" && navigationViews.length > visibleViews.length
+          ? "More views"
+          : "Views",
       icon: Columns3,
       route: { page: "views" },
     },
@@ -343,6 +355,14 @@ function Navigation({
   ));
 }
 
+function navigationViewIcon(view: TaskView): typeof CheckCircle2 {
+  if (view.key === TODAY_VIEW_KEY) return CheckCircle2;
+  if (view.key === UPCOMING_VIEW_KEY) return CalendarDays;
+  if (view.presentation?.type === "tasknotes.kanban") return Columns3;
+  if (view.presentation?.type === "tasknotes.calendar") return CalendarDays;
+  return List;
+}
+
 function parseRoute(): Route {
   const path = appPathname();
   const task = /^\/task\/([^/]+)$/.exec(path);
@@ -359,9 +379,9 @@ function parseRoute(): Route {
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
   if (path === "/archive") return { page: "archive" };
-  if (path === "/upcoming") return { page: "upcoming" };
+  if (path === "/upcoming") return { page: "views", key: UPCOMING_VIEW_KEY };
   if (path === "/more") return { page: "more" };
-  return { page: "today" };
+  return { page: "home" };
 }
 
 function routeUrl(route: Route): string {
@@ -370,7 +390,7 @@ function routeUrl(route: Route): string {
       ? `/task/${encodeURIComponent(route.id)}${route.occurrence ? `?occurrence=${encodeURIComponent(route.occurrence)}` : ""}`
       : route.page === "views" && route.key
         ? `/views/${encodeURIComponent(route.key)}`
-        : route.page === "today"
+        : route.page === "home"
           ? "/"
           : `/${route.page}`;
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");

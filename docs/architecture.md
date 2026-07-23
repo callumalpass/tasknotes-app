@@ -64,6 +64,24 @@ The in-memory projection supports immediate list and token search operations.
 Large Today lists are revealed in 300-row increments so the DOM does not grow
 to thousands of rows on initial render.
 
+## Views and navigation
+
+`TaskRepository.listViews()` preserves the provider's saved-view document
+shape. A document corresponds to one source file and contains its named views
+in source order. The UI derives a flat index only when resolving a stable
+`source path + view id` key; the Views catalog keeps source ownership visible.
+
+Today and Upcoming are application-owned named views in the TaskNotes view
+document. They use the same catalog, routing, navigation, and presentation
+dispatch as collection views while retaining their offline recurrence
+projection. Collection-owned list views render provider `group_by` metadata;
+boards and calendars continue to use their dedicated presentations.
+
+Navigation is a collection-scoped ordered list of view keys stored as a device
+preference. Its first item is the home view. Desktop shows the complete list;
+mobile shows the first three views and a Views overflow destination. Removing
+the final navigation view is disallowed so the collection always has a home.
+
 ## Platform storage
 
 `OpfsVault` stores browser collections under OPFS. `CapacitorVault` stores

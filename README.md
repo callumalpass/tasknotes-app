@@ -11,7 +11,9 @@ installed during migration.
 ## Current scope
 
 - First-run choice between device-local records and mdbase cloud
-- Today, Upcoming, capture, editing, completion, and client-side search
+- Ordered view navigation with Today, Upcoming, saved lists, boards, and calendars
+- Grouped view sources and grouped list results
+- Capture, editing, completion, and client-side search
 - Projects, contexts, tags, recurrence, absolute reminders, and priorities
 - Offline cloud replica with background synchronization and explicit conflict resolution
 - Background saves that continue while the user navigates

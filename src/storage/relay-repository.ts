@@ -20,7 +20,7 @@ import {
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import {
-  flattenViews,
+  normalizeViewDocuments,
   normalizeViewExecution,
   type ProviderViewExecution,
   type ProviderViewList,
@@ -39,6 +39,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
@@ -387,9 +388,9 @@ export class RelayTaskRepository implements TaskRepository {
     return this.model.configuration();
   }
 
-  async listViews(): Promise<TaskView[]> {
+  async listViews(): Promise<TaskViewDocument[]> {
     try {
-      return flattenViews(
+      return normalizeViewDocuments(
         validResult(await this.connect.listViews()) as ProviderViewList,
       );
     } catch (reason) {

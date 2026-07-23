@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 
 import { calendarEvents } from "../domain/calendar-events";
+import { groupTaskViewRows } from "../domain/view-grouping";
 
 import type { Task } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
@@ -55,6 +56,56 @@ it("suppresses a projected calendar occurrence when its child is filtered out", 
   );
 
   expect(events.get("2026-08-05")).toBeUndefined();
+});
+
+it("partitions list rows in provider group order", () => {
+  const open = task({
+    id: "open",
+    status: "open",
+    frontmatter: { status: "open" },
+  });
+  const done = task({
+    id: "done",
+    status: "done",
+    completed: true,
+    frontmatter: { status: "done" },
+  });
+  const execution: TaskViewExecution = {
+    view: {
+      key: "views/tasks.base#by-status",
+      documentId: "tasks",
+      documentName: "Tasks",
+      id: "by-status",
+      name: "By status",
+      properties: [],
+      source: {
+        path: "views/tasks.base",
+        format: "obsidian.base",
+        revision: "1",
+        writable: true,
+      },
+    },
+    rows: [
+      { task: open, values: { status: "open" } },
+      { task: done, values: { status: "done" } },
+    ],
+    totalCount: 2,
+    hasMore: false,
+    groups: [
+      { values: { status: "done" }, count: 1, summaries: {} },
+      { values: { status: "open" }, count: 1, summaries: {} },
+    ],
+  };
+
+  expect(
+    groupTaskViewRows(execution).map((group) => ({
+      values: group.values,
+      ids: group.rows.map((row) => row.task.id),
+    })),
+  ).toEqual([
+    { values: { status: "done" }, ids: ["done"] },
+    { values: { status: "open" }, ids: ["open"] },
+  ]);
 });
 
 function task(overrides: Partial<Task>): Task {

@@ -3,6 +3,7 @@ import { taskViewKey } from "../domain/view";
 import type { Task } from "../domain/task";
 import type {
   TaskView,
+  TaskViewDocument,
   TaskViewExecution,
   TaskViewGroup,
 } from "../domain/view";
@@ -42,9 +43,14 @@ export interface ProviderViewExecution {
   };
 }
 
-export function flattenViews(result: ProviderViewList): TaskView[] {
-  return result.views.flatMap((document) =>
-    document.views.map((view) => ({
+export function normalizeViewDocuments(
+  result: ProviderViewList,
+): TaskViewDocument[] {
+  return result.views.map((document) => ({
+    id: document.id,
+    name: document.name,
+    source: { ...document.source },
+    views: document.views.map((view) => ({
       key: taskViewKey(document.source.path, view.id),
       documentId: document.id,
       documentName: document.name,
@@ -65,7 +71,7 @@ export function flattenViews(result: ProviderViewList): TaskView[] {
           }
         : {}),
     })),
-  );
+  }));
 }
 
 export function normalizeViewExecution(

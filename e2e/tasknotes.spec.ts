@@ -411,6 +411,9 @@ views:
     order: [status, formula.progress]
   - type: tasknotesTaskList
     name: Task details
+    groupBy:
+      property: status
+      direction: ASC
     order: [status, formula.progress]
   - type: tasknotesCalendar
     name: Dates
@@ -433,7 +436,9 @@ views:
     .getByRole("button", { name: "Add Work board to navigation" })
     .click();
   await page
-    .getByRole("button", { name: "Work board work", exact: true })
+    .locator(".view-document")
+    .filter({ has: page.getByRole("heading", { name: "work" }) })
+    .getByRole("button", { name: "Work board", exact: true })
     .click();
   await expect(page.getByLabel("Work board board")).toBeVisible();
   await expect(
@@ -474,6 +479,14 @@ views:
   await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: /Saved views/ }).click();
   await page.getByText("Task details", { exact: true }).click();
+  await expect(
+    page.locator(".saved-view-groups").getByRole("heading", {
+      name: "in-progress",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".saved-view-groups").getByRole("heading", { name: "done" }),
+  ).toBeVisible();
   await expect(page.getByText("State", { exact: true }).first()).toBeVisible();
   await expect(
     page.getByText("Progress", { exact: true }).first(),
@@ -509,6 +522,77 @@ views:
     .click();
   await page.getByRole("button", { name: "More", exact: true }).click();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+});
+
+test("orders several navigation views and keeps the rest behind the mobile overflow", async ({
+  page,
+}, testInfo) => {
+  await page.getByLabel("New task title").fill("Navigation task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("navigation.base", {
+      create: true,
+    });
+    const writable = await file.createWritable();
+    await writable.write(`views:
+  - type: tasknotesTaskList
+    name: Focus
+    order: [status]
+  - type: tasknotesTaskList
+    name: Later
+    order: [due]
+`);
+    await writable.close();
+  });
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: /Saved views/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "TaskNotes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "navigation", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Add Focus to navigation" }).click();
+  await page.getByRole("button", { name: "Add Later to navigation" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
+
+  const ordered = page.locator(".navigation-view-order li");
+  await expect(ordered).toHaveCount(4);
+  await expect(ordered.nth(0)).toContainText("Focus");
+  await expect(ordered.nth(1)).toContainText("Today");
+  await expect(ordered.nth(2)).toContainText("Upcoming");
+  await expect(ordered.nth(3)).toContainText("Later");
+
+  if (testInfo.project.name === "mobile") {
+    const navigation = page.locator(".bottom-navigation");
+    await expect(
+      navigation.getByRole("button", { name: "More views", exact: true }),
+    ).toBeVisible();
+    await expect(
+      navigation.getByRole("button", { name: "Later", exact: true }),
+    ).toHaveCount(0);
+  } else {
+    await expect(
+      page
+        .locator(".navigation-rail")
+        .getByRole("button", { name: "Later", exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.goto("./");
+  await expect(page.getByRole("heading", { name: "Focus" })).toBeVisible();
+  await expect(
+    page.getByText("Navigation task", { exact: true }),
+  ).toBeVisible();
 });
 
 test("creates, edits, executes, and deletes a saved view", async ({ page }) => {

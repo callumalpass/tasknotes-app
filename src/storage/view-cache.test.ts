@@ -30,7 +30,9 @@ describe("TaskViewCache", () => {
       },
     });
 
-    expect((await cache.readViews())[0].properties).toEqual([]);
+    expect((await cache.readViewDocuments())[0].views[0].properties).toEqual(
+      [],
+    );
     expect(
       (await cache.readExecution(legacyView.key))?.view.properties,
     ).toEqual([]);
