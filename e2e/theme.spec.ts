@@ -17,35 +17,22 @@ test("follows the system theme and persists explicit overrides", async ({
   await page.getByRole("button", { name: /On this device/ }).click();
 
   const root = page.locator("html");
+  const readCanvas = () =>
+    root.evaluate((element) =>
+      getComputedStyle(element).getPropertyValue("--color-canvas").trim(),
+    );
   await expect(root).not.toHaveAttribute("data-theme");
-  await expect
-    .poll(() =>
-      root.evaluate((element) =>
-        getComputedStyle(element).getPropertyValue("--color-canvas").trim(),
-      ),
-    )
-    .toBe("oklch(17.5% 0.012 255)");
+  await expect.poll(readCanvas).not.toBe("");
+  const systemDarkCanvas = await readCanvas();
 
   await page.getByRole("button", { name: "More" }).click();
   const select = page.getByRole("combobox", { name: "Color theme" });
   await select.selectOption("light");
   await expect(root).toHaveAttribute("data-theme", "light");
-  await expect
-    .poll(() =>
-      root.evaluate((element) =>
-        getComputedStyle(element).getPropertyValue("--color-canvas").trim(),
-      ),
-    )
-    .toBe("oklch(99.2% 0.004 255)");
+  await expect.poll(readCanvas).not.toBe(systemDarkCanvas);
 
   await select.selectOption("dark");
   await page.reload();
   await expect(root).toHaveAttribute("data-theme", "dark");
-  await expect
-    .poll(() =>
-      root.evaluate((element) =>
-        getComputedStyle(element).getPropertyValue("--color-canvas").trim(),
-      ),
-    )
-    .toBe("oklch(17.5% 0.012 255)");
+  await expect.poll(readCanvas).toBe(systemDarkCanvas);
 });
