@@ -42,9 +42,11 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     String(tomorrow.getDate()).padStart(2, "0"),
   ].join("-");
   await page.getByLabel("Scheduled date", { exact: true }).fill(tomorrowValue);
+  await page.getByText("Organize", { exact: true }).click();
   await page.getByLabel("Projects").fill("mdbase");
   await page.getByLabel("Contexts").fill("computer");
   await page.getByLabel("Tags").fill("release, planning");
+  await page.getByText("Repeat and reminders", { exact: true }).click();
   await page.getByLabel("Repeat").selectOption("weekly");
   await page.getByRole("button", { name: "Customize" }).click();
   await page.getByLabel("Repeat interval").fill("2");
@@ -81,6 +83,7 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   await page.getByText("Review Capacitor storage", { exact: true }).click();
   const title = page.getByLabel("Task title", { exact: true });
   await title.fill("Review web-native storage");
+  await page.getByText("Organize", { exact: true }).click();
   await page.getByText("Normal", { exact: true }).click();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -168,17 +171,17 @@ test("interprets natural-language capture and preserves timed task fields", asyn
     .getByRole("button", { name: /^Prepare launch / })
     .first()
     .click();
-  await expect(
-    page.getByRole("button", { name: "In progress" }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Status")).toHaveValue("in-progress");
+  await page.getByText("Organize", { exact: true }).click();
   await expect(
     page.getByRole("button", { name: "High", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Scheduled time")).toHaveValue("09:00");
-  await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
   await expect(page.getByLabel("Projects")).toHaveValue("mdbase");
   await expect(page.getByLabel("Contexts")).toHaveValue("computer");
   await expect(page.getByLabel("Tags")).toHaveValue("release");
+  await openTaskSection(page, "Time");
+  await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
 });
 
 test("projects, completes, and skips recurring occurrences by date", async ({
@@ -259,6 +262,7 @@ test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Measure mobile performance", { exact: true }).click();
 
+  await openTaskSection(page, "Time");
   await page.getByLabel("Timer description").fill("Cold start profile");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await expect(page.getByText(/Cold start profile ·/)).toBeVisible();
@@ -276,6 +280,7 @@ test("tracks, edits, persists, and removes work sessions", async ({ page }) => {
   ).toBeVisible();
 
   await page.reload();
+  await openTaskSection(page, "Time");
   await page.getByRole("button", { name: "1 session" }).click();
   await expect(
     page.getByText("Warm start profile", { exact: true }),
@@ -293,11 +298,13 @@ test("keeps timers on different tasks independent", async ({ page }) => {
   }
 
   await page.getByText("Parallel research", { exact: true }).click();
+  await openTaskSection(page, "Time");
   await page.getByLabel("Timer description").fill("Research");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByText("Parallel build", { exact: true }).click();
+  await openTaskSection(page, "Time");
   await page.getByLabel("Timer description").fill("Build");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -355,10 +362,7 @@ Created on {{date}} from the collection template.`);
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Template-backed task", { exact: true }).click();
   await expect(page.getByLabel("Notes")).toHaveValue(/Created on/);
-  await expect(page.getByRole("button", { name: "Open" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByLabel("Status")).toHaveValue("open");
 });
 
 test("renders configured saved-view properties in every result list", async ({
@@ -442,12 +446,27 @@ views:
     page.getByText("Progress", { exact: true }).first(),
   ).toBeVisible();
   await expect(page.getByText("Active", { exact: true })).toBeVisible();
+  const inProgressColumn = page.getByLabel("In progress column");
+  const movePlan = page.getByRole("button", {
+    name: "Move Plan saved views. Use left and right arrow keys, or drag.",
+  });
+  if (testInfo.project.name === "desktop")
+    await movePlan.dragTo(inProgressColumn);
+  else await movePlan.press("ArrowRight");
+  await expect(
+    inProgressColumn.getByText("Plan saved views", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Work board", exact: true }),
   ).toHaveAttribute("aria-current", "page");
 
   await page.reload();
   await expect(page.getByLabel("Work board board")).toBeVisible();
+  await expect(
+    page
+      .getByLabel("In progress column")
+      .getByText("Plan saved views", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Work board", exact: true }),
   ).toBeVisible();
@@ -526,12 +545,25 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Edit Open work" }).click();
-  await expect(page.getByRole("heading", { name: "Edit view" })).toBeVisible();
-  await page.getByLabel("Name").fill("Focused work");
+  await expect(
+    page.getByRole("region", { name: "View settings" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "List", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByLabel("Open work board")).toHaveCount(0);
+  await expect(
+    page.getByText("Build the view editor", { exact: true }),
+  ).toBeVisible();
 
+  await page
+    .locator("#main-content")
+    .getByRole("button", { name: "Views", exact: true })
+    .click();
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit Open work" }).click();
+  await expect(page.getByRole("heading", { name: "Edit view" })).toBeVisible();
+  await page.getByLabel("Name").fill("Focused work");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Focused work", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit Focused work" }).click();
   page.once("dialog", (dialog) => dialog.accept());
@@ -595,3 +627,13 @@ test("uses a full-screen task editor on mobile", async ({ page }, testInfo) => {
     "Edit on a phone",
   );
 });
+
+async function openTaskSection(
+  page: import("@playwright/test").Page,
+  name: string,
+) {
+  await page
+    .locator("details.task-form-section > summary")
+    .filter({ hasText: new RegExp(`^${name}`) })
+    .click();
+}

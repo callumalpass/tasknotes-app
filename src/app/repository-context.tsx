@@ -113,7 +113,7 @@ export function RepositoryProvider({
         setLastRefresh(result);
         setError(null);
         bump();
-        void loadSync();
+        void loadSync().catch(() => undefined);
         return result;
       })
       .catch((reason: unknown) => {
@@ -138,7 +138,7 @@ export function RepositoryProvider({
         if (!active) return;
         setConfiguration(nextConfiguration);
         setStatus("ready");
-        void loadSync();
+        void loadSync().catch(() => undefined);
         void reconcileTaskNotifications(repository).catch(() => undefined);
         void refresh().catch(() => undefined);
       })
@@ -156,7 +156,7 @@ export function RepositoryProvider({
     if (!repository.subscribe) return;
     return repository.subscribe(() => {
       bump();
-      void loadSync();
+      void loadSync().catch(() => undefined);
     });
   }, [bump, loadSync, repository]);
 
@@ -178,6 +178,25 @@ export function RepositoryProvider({
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh, status]);
+
+  useEffect(() => {
+    if (
+      status !== "ready" ||
+      sync.mode === "local" ||
+      Capacitor.isNativePlatform()
+    )
+      return;
+    const refreshIfAvailable = () => {
+      if (document.visibilityState === "visible" && navigator.onLine !== false)
+        void refresh().catch(() => undefined);
+    };
+    window.addEventListener("online", refreshIfAvailable);
+    const timer = window.setInterval(refreshIfAvailable, 60_000);
+    return () => {
+      window.removeEventListener("online", refreshIfAvailable);
+      window.clearInterval(timer);
+    };
+  }, [refresh, status, sync.mode]);
 
   const createTask = useCallback(
     async (input: CreateTaskInput) => {

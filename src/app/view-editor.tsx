@@ -20,10 +20,12 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
 export function ViewEditor({
   view,
+  inline = false,
   onClose,
   onChanged,
 }: {
   view?: TaskView;
+  inline?: boolean;
   onClose(): void;
   onChanged(): Promise<void>;
 }) {
@@ -131,48 +133,79 @@ export function ViewEditor({
   return (
     <section
       aria-labelledby="view-editor-title"
-      aria-modal="true"
-      className="view-editor"
-      role="dialog"
+      aria-modal={inline ? undefined : true}
+      className={`view-editor${inline ? " is-inline" : ""}`}
+      role={inline ? "region" : "dialog"}
     >
       <header className="view-editor-header">
-        <button
-          aria-label="Close view editor"
-          className="back-action"
-          type="button"
-          onClick={onClose}
-        >
-          <ChevronLeft aria-hidden="true" size={20} /> Views
-        </button>
-        <button
-          className="save-view-action"
-          disabled={!draft?.name.trim() || !filterValid || status !== "ready"}
-          type="button"
-          onClick={() => void save()}
-        >
-          {status === "saving" ? "Saving…" : "Save"}
-        </button>
+        {inline ? (
+          <>
+            <strong id="view-editor-title">View settings</strong>
+            <div>
+              <button className="text-action" type="button" onClick={onClose}>
+                Cancel
+              </button>
+              <button
+                className="save-view-action"
+                disabled={
+                  !draft?.name.trim() || !filterValid || status !== "ready"
+                }
+                type="button"
+                onClick={() => void save()}
+              >
+                {status === "saving" ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              aria-label="Close view editor"
+              className="back-action"
+              type="button"
+              onClick={onClose}
+            >
+              <ChevronLeft aria-hidden="true" size={20} /> Views
+            </button>
+            <button
+              className="save-view-action"
+              disabled={
+                !draft?.name.trim() || !filterValid || status !== "ready"
+              }
+              type="button"
+              onClick={() => void save()}
+            >
+              {status === "saving" ? "Saving…" : "Save"}
+            </button>
+          </>
+        )}
       </header>
       <div className="view-editor-body">
-        <div>
-          <p className="eyebrow">{view ? "Saved view" : "New saved view"}</p>
-          <h1 id="view-editor-title">{view ? "Edit view" : "Create a view"}</h1>
-        </div>
+        {!inline ? (
+          <div>
+            <p className="eyebrow">{view ? "Saved view" : "New saved view"}</p>
+            <h1 id="view-editor-title">
+              {view ? "Edit view" : "Create a view"}
+            </h1>
+          </div>
+        ) : null}
         {error ? <p className="inline-error">{error}</p> : null}
         {!draft ? (
           <p className="view-editor-loading">Opening the view definition…</p>
         ) : (
           <>
-            <label className="view-name-field">
-              <span>Name</span>
-              <input
-                autoFocus
-                value={draft.name}
-                onChange={(event) =>
-                  setDraft({ ...draft, name: event.target.value })
-                }
-              />
-            </label>
+            {!inline ? (
+              <label className="view-name-field">
+                <span>Name</span>
+                <input
+                  autoFocus
+                  value={draft.name}
+                  onChange={(event) =>
+                    setDraft({ ...draft, name: event.target.value })
+                  }
+                />
+              </label>
+            ) : null}
 
             <fieldset className="view-kind-field">
               <legend>Layout</legend>
@@ -202,24 +235,44 @@ export function ViewEditor({
               </div>
             </fieldset>
 
-            <section
-              className="view-editor-section"
-              aria-labelledby="view-filter-title"
-            >
-              <div>
-                <h2 id="view-filter-title">Filter</h2>
-                <p>Choose which tasks belong in this view.</p>
-              </div>
-              <ExpressionBuilder
-                dialect={draft.dialect}
-                fields={fields}
-                value={draft.filter}
-                onChange={(filterValue) =>
-                  setDraft({ ...draft, filter: filterValue })
-                }
-                onValidityChange={setFilterValid}
-              />
-            </section>
+            {inline ? (
+              <details className="inline-view-filter">
+                <summary>
+                  <span>
+                    <strong>Filter</strong>
+                    <small>Choose which tasks belong in this view</small>
+                  </span>
+                </summary>
+                <ExpressionBuilder
+                  dialect={draft.dialect}
+                  fields={fields}
+                  value={draft.filter}
+                  onChange={(filterValue) =>
+                    setDraft({ ...draft, filter: filterValue })
+                  }
+                  onValidityChange={setFilterValid}
+                />
+              </details>
+            ) : (
+              <section
+                className="view-editor-section"
+                aria-labelledby="view-filter-title"
+              >
+                <div>
+                  <h2 id="view-filter-title">Filter</h2>
+                  <p>Choose which tasks belong in this view.</p>
+                </div>
+                <ExpressionBuilder
+                  dialect={draft.dialect}
+                  fields={fields}
+                  value={draft.filter}
+                  onChange={(filterValue) =>
+                    setDraft({ ...draft, filter: filterValue })
+                  }
+                  onValidityChange={setFilterValid}
+                />
+              </section>
+            )}
 
             {draft.renderer === "tasknotes.kanban" ? (
               <label>
@@ -353,7 +406,7 @@ export function ViewEditor({
               </datalist>
             </section>
 
-            {view ? (
+            {view && !inline ? (
               <button
                 className="danger-text-action"
                 type="button"

@@ -129,6 +129,9 @@ function TaskEditor({
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const mounted = useRef(true);
   const editVersion = useRef(0);
+  const draftRef = useRef(draft);
+  const dirtyRef = useRef(false);
+  const savesInFlight = useRef(new Map<number, Promise<void>>());
 
   useEffect(() => {
     mounted.current = true;
@@ -138,48 +141,64 @@ function TaskEditor({
   }, []);
 
   const persist = useCallback(
-    async (value: Draft, version: number) => {
+    (value: Draft, version: number): Promise<void> => {
+      const existing = savesInFlight.current.get(version);
+      if (existing) return existing;
       if (!value.title.trim()) {
-        if (mounted.current) setSaveState("error");
-        return;
-      }
-      setSaveState("saving");
-      setSaveError(null);
-      try {
-        const input: UpdateTaskInput = {
-          title: value.title,
-          status: value.status,
-          priority: value.priority,
-          due: value.due ?? null,
-          scheduled: value.scheduled ?? null,
-          body: value.body,
-          tags: value.tags,
-          contexts: value.contexts,
-          projects: value.projects,
-          recurrence: value.recurrence ?? null,
-          recurrenceAnchor: value.recurrenceAnchor,
-          occurrenceMaterialization: value.occurrenceMaterialization,
-          occurrenceNextTrigger: value.occurrenceNextTrigger,
-          occurrenceTemplate: value.occurrenceTemplate ?? null,
-          occurrencePastHorizon: value.occurrencePastHorizon ?? null,
-          occurrenceFutureHorizon: value.occurrenceFutureHorizon ?? null,
-          reminders: value.reminders,
-          timeEstimate: value.timeEstimate ?? null,
-          customProperties: value.customProperties,
-        };
-        await updateTask(task.id, input);
-        if (mounted.current && editVersion.current === version) {
-          setDirty(false);
-          setSaveState("saved");
-        }
-      } catch (reason) {
-        if (mounted.current && editVersion.current === version) {
-          setSaveError(
-            reason instanceof Error ? reason.message : String(reason),
-          );
+        if (mounted.current) {
+          setSaveError("Add a title before leaving this task.");
           setSaveState("error");
         }
+        return Promise.resolve();
       }
+      if (mounted.current) {
+        setSaveState("saving");
+        setSaveError(null);
+      }
+      const run = (async () => {
+        try {
+          const input: UpdateTaskInput = {
+            title: value.title,
+            status: value.status,
+            priority: value.priority,
+            due: value.due ?? null,
+            scheduled: value.scheduled ?? null,
+            body: value.body,
+            tags: value.tags,
+            contexts: value.contexts,
+            projects: value.projects,
+            recurrence: value.recurrence ?? null,
+            recurrenceAnchor: value.recurrenceAnchor,
+            occurrenceMaterialization: value.occurrenceMaterialization,
+            occurrenceNextTrigger: value.occurrenceNextTrigger,
+            occurrenceTemplate: value.occurrenceTemplate ?? null,
+            occurrencePastHorizon: value.occurrencePastHorizon ?? null,
+            occurrenceFutureHorizon: value.occurrenceFutureHorizon ?? null,
+            reminders: value.reminders,
+            timeEstimate: value.timeEstimate ?? null,
+            customProperties: value.customProperties,
+          };
+          await updateTask(task.id, input);
+          if (editVersion.current === version) {
+            dirtyRef.current = false;
+            if (mounted.current) {
+              setDirty(false);
+              setSaveState("saved");
+            }
+          }
+        } catch (reason) {
+          if (mounted.current && editVersion.current === version) {
+            setSaveError(
+              reason instanceof Error ? reason.message : String(reason),
+            );
+            setSaveState("error");
+          }
+        } finally {
+          savesInFlight.current.delete(version);
+        }
+      })();
+      savesInFlight.current.set(version, run);
+      return run;
     },
     [task.id, updateTask],
   );
@@ -191,9 +210,30 @@ function TaskEditor({
     return () => window.clearTimeout(timeout);
   }, [dirty, draft, persist]);
 
+  useEffect(() => {
+    const flush = () => {
+      if (!dirtyRef.current || !draftRef.current.title.trim()) return;
+      void persist(draftRef.current, editVersion.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [persist]);
+
   function change(patch: Partial<Draft>) {
     editVersion.current += 1;
-    setDraft((value) => ({ ...value, ...patch }));
+    setDraft((value) => {
+      const next = { ...value, ...patch };
+      draftRef.current = next;
+      return next;
+    });
+    dirtyRef.current = true;
     setDirty(true);
   }
 
@@ -209,7 +249,7 @@ function TaskEditor({
       setSaveState("error");
       return;
     }
-    if (dirty) void persist(draft, editVersion.current);
+    if (dirtyRef.current) void persist(draftRef.current, editVersion.current);
     onBack();
   }
 
@@ -465,36 +505,31 @@ function TaskEditor({
           onChange={(event) => change({ title: event.target.value })}
         />
 
-        <Fieldset legend="Status">
-          {[...configuration.statuses]
-            .sort((left, right) => left.order - right.order)
-            .map((status) => (
-              <Choice
-                disabled={
-                  Boolean(task.occurrenceDate) &&
-                  statusKind(status) !==
-                    (task.completed
-                      ? "completed"
-                      : task.skipped
-                        ? "skipped"
-                        : "active")
-                }
-                key={status.value}
-                selected={draft.status === status.value}
-                onClick={() => change({ status: status.value })}
-              >
-                {status.label}
-              </Choice>
-            ))}
-          {task.occurrenceDate ? (
-            <p className="choice-help">
-              Use the occurrence actions above to complete, skip, or reopen this
-              note.
-            </p>
-          ) : null}
-        </Fieldset>
-
-        <div className="field-grid timing-fields">
+        <div className="field-grid timing-fields task-core-fields">
+          <label className="form-field">
+            <span>Status</span>
+            <select
+              aria-describedby={
+                task.occurrenceDate ? "occurrence-status-help" : undefined
+              }
+              disabled={Boolean(task.occurrenceDate)}
+              value={draft.status}
+              onChange={(event) => change({ status: event.target.value })}
+            >
+              {[...configuration.statuses]
+                .sort((left, right) => left.order - right.order)
+                .map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+            </select>
+            {task.occurrenceDate ? (
+              <small id="occurrence-status-help">
+                Use the occurrence actions above to change this state.
+              </small>
+            ) : null}
+          </label>
           <DateTimeField
             label="Scheduled"
             value={draft.scheduled}
@@ -505,7 +540,76 @@ function TaskEditor({
             value={draft.due}
             onChange={(due) => change({ due })}
           />
-          <label className="form-field">
+        </div>
+
+        <label className="notes-field">
+          <span>Notes</span>
+          <textarea
+            placeholder="Add a note"
+            rows={8}
+            value={draft.body}
+            onChange={(event) => change({ body: event.target.value })}
+          />
+        </label>
+
+        <TaskFormSection summary={organizeSummary(draft)} title="Organize">
+          <Fieldset legend="Priority">
+            {configuration.priorities.map((priority) => (
+              <Choice
+                key={priority.value}
+                selected={draft.priority === priority.value}
+                onClick={() => change({ priority: priority.value })}
+              >
+                {priority.label}
+              </Choice>
+            ))}
+          </Fieldset>
+          <div className="field-grid metadata-fields">
+            <ListField
+              label="Projects"
+              placeholder="Website, Home"
+              values={draft.projects}
+              onChange={(projects) => change({ projects })}
+            />
+            <ListField
+              label="Contexts"
+              placeholder="Computer, Errands"
+              values={draft.contexts}
+              onChange={(contexts) => change({ contexts })}
+            />
+            <ListField
+              label="Tags"
+              placeholder="work, important"
+              values={draft.tags.filter((tag) => tag !== "task")}
+              onChange={(tags) => change({ tags: ["task", ...tags] })}
+            />
+          </div>
+          {configuration.userFields.length ? (
+            <section
+              className="custom-fields"
+              aria-labelledby="custom-fields-title"
+            >
+              <h2 id="custom-fields-title">Properties</h2>
+              <div className="field-grid metadata-fields">
+                {configuration.userFields.map((field) => (
+                  <CustomField
+                    field={field}
+                    key={field.key}
+                    value={draft.customProperties[field.key]}
+                    onChange={(value) => changeCustomProperty(field.key, value)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </TaskFormSection>
+
+        <TaskFormSection
+          defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
+          summary={timeSummary(task, draft.timeEstimate)}
+          title="Time"
+        >
+          <label className="form-field time-estimate-field">
             <span>Estimate (minutes)</span>
             <input
               inputMode="numeric"
@@ -521,116 +625,142 @@ function TaskEditor({
               }
             />
           </label>
-        </div>
-
-        <TimeTrackingField
-          busy={timeAction}
-          entries={task.timeEntries}
-          error={timeError}
-          onRemove={(index) =>
-            runTimeAction(() => removeTimeEntry(task.id, index))
-          }
-          onReplace={(entries) =>
-            runTimeAction(() => replaceTimeEntries(task.id, entries))
-          }
-          onStart={(description) =>
-            runTimeAction(() => startTimeTracking(task.id, description))
-          }
-          onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
-        />
-
-        <Fieldset legend="Priority">
-          {configuration.priorities.map((priority) => (
-            <Choice
-              key={priority.value}
-              selected={draft.priority === priority.value}
-              onClick={() => change({ priority: priority.value })}
-            >
-              {priority.label}
-            </Choice>
-          ))}
-        </Fieldset>
-
-        <div className="field-grid metadata-fields">
-          <ListField
-            label="Projects"
-            placeholder="Website, Home"
-            values={draft.projects}
-            onChange={(projects) => change({ projects })}
+          <TimeTrackingField
+            busy={timeAction}
+            entries={task.timeEntries}
+            error={timeError}
+            onRemove={(index) =>
+              runTimeAction(() => removeTimeEntry(task.id, index))
+            }
+            onReplace={(entries) =>
+              runTimeAction(() => replaceTimeEntries(task.id, entries))
+            }
+            onStart={(description) =>
+              runTimeAction(() => startTimeTracking(task.id, description))
+            }
+            onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
           />
-          <ListField
-            label="Contexts"
-            placeholder="Computer, Errands"
-            values={draft.contexts}
-            onChange={(contexts) => change({ contexts })}
+        </TaskFormSection>
+
+        <TaskFormSection
+          summary={repeatSummary(draft)}
+          title="Repeat and reminders"
+        >
+          <RecurrenceField
+            anchor={draft.recurrenceAnchor}
+            value={draft.recurrence}
+            onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
+            onChange={(recurrence) => change({ recurrence })}
           />
-          <ListField
-            label="Tags"
-            placeholder="work, important"
-            values={draft.tags.filter((tag) => tag !== "task")}
-            onChange={(tags) => change({ tags: ["task", ...tags] })}
+          {draft.recurrence && !task.occurrenceDate ? (
+            <OccurrencePolicyField
+              futureHorizon={draft.occurrenceFutureHorizon}
+              materialization={draft.occurrenceMaterialization ?? "manual"}
+              nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
+              pastHorizon={draft.occurrencePastHorizon}
+              template={draft.occurrenceTemplate}
+              onChange={(patch) => change(patch)}
+            />
+          ) : null}
+          <ReminderField
+            reminders={draft.reminders}
+            onChange={(reminders) => change({ reminders })}
           />
-        </div>
+        </TaskFormSection>
 
-        {configuration.userFields.length ? (
-          <section
-            className="custom-fields"
-            aria-labelledby="custom-fields-title"
-          >
-            <h2 id="custom-fields-title">Properties</h2>
-            <div className="field-grid metadata-fields">
-              {configuration.userFields.map((field) => (
-                <CustomField
-                  field={field}
-                  key={field.key}
-                  value={draft.customProperties[field.key]}
-                  onChange={(value) => changeCustomProperty(field.key, value)}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <RecurrenceField
-          anchor={draft.recurrenceAnchor}
-          value={draft.recurrence}
-          onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
-          onChange={(recurrence) => change({ recurrence })}
-        />
-
-        {draft.recurrence && !task.occurrenceDate ? (
-          <OccurrencePolicyField
-            futureHorizon={draft.occurrenceFutureHorizon}
-            materialization={draft.occurrenceMaterialization ?? "manual"}
-            nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
-            pastHorizon={draft.occurrencePastHorizon}
-            template={draft.occurrenceTemplate}
-            onChange={(patch) => change(patch)}
-          />
-        ) : null}
-
-        <ReminderField
-          reminders={draft.reminders}
-          onChange={(reminders) => change({ reminders })}
-        />
-
-        <label className="notes-field">
-          <span>Notes</span>
-          <textarea
-            placeholder="Add a note"
-            rows={8}
-            value={draft.body}
-            onChange={(event) => change({ body: event.target.value })}
-          />
-        </label>
-
-        <div className="record-path">
-          <span>Markdown record</span>
+        <details className="record-path">
+          <summary>Markdown record</summary>
           <code>{task.path}</code>
-        </div>
+        </details>
       </div>
     </section>
   );
+}
+
+function TaskFormSection({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <details
+      className="task-form-section"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{summary}</small>
+        </span>
+      </summary>
+      <div className="task-form-section-content">{children}</div>
+    </details>
+  );
+}
+
+function organizeSummary(draft: Draft): string {
+  const values: string[] = [];
+  if (draft.priority !== "normal" && draft.priority !== "none")
+    values.push(`${humanizeValue(draft.priority)} priority`);
+  if (draft.projects.length)
+    values.push(listSummary(draft.projects, "project"));
+  if (draft.contexts.length)
+    values.push(listSummary(draft.contexts, "context"));
+  const tags = draft.tags.filter((tag) => tag !== "task");
+  if (tags.length)
+    values.push(`${tags.length} ${tags.length === 1 ? "tag" : "tags"}`);
+  const customCount = Object.values(draft.customProperties).filter(
+    (value) => !isEmptyFieldValue(value),
+  ).length;
+  if (customCount)
+    values.push(
+      `${customCount} ${customCount === 1 ? "property" : "properties"}`,
+    );
+  return values.join(" · ") || "Priority, projects, contexts and tags";
+}
+
+function timeSummary(task: Task, estimate?: number): string {
+  const active = activeTimeEntry(task.timeEntries);
+  const values: string[] = [];
+  if (active) values.push("Timer running");
+  else if (task.timeEntries.length)
+    values.push(
+      `${task.timeEntries.length} ${task.timeEntries.length === 1 ? "session" : "sessions"}`,
+    );
+  if (estimate) values.push(`${estimate}m estimate`);
+  return values.join(" · ") || "Estimate and work sessions";
+}
+
+function repeatSummary(draft: Draft): string {
+  const values: string[] = [];
+  if (draft.recurrence) {
+    const preset = recurrencePreset(draft.recurrence);
+    values.push(preset === "custom" ? "Custom repeat" : humanizeValue(preset));
+  }
+  if (draft.reminders.length)
+    values.push(
+      `${draft.reminders.length} ${draft.reminders.length === 1 ? "reminder" : "reminders"}`,
+    );
+  return values.join(" · ") || "No repeat or reminder";
+}
+
+function listSummary(values: string[], singular: string): string {
+  return values.length === 1 ? values[0] : `${values.length} ${singular}s`;
+}
+
+function humanizeValue(value: string): string {
+  const normalized = value.replaceAll("_", " ").replaceAll("-", " ");
+  return normalized
+    ? `${normalized[0].toUpperCase()}${normalized.slice(1)}`
+    : value;
 }
 
 function TimeTrackingField({
@@ -914,17 +1044,6 @@ function Choice({
       {children}
     </button>
   );
-}
-
-function statusKind(status: {
-  isCompleted: boolean;
-  isSkipped?: boolean;
-}): "active" | "completed" | "skipped" {
-  return status.isCompleted
-    ? "completed"
-    : status.isSkipped
-      ? "skipped"
-      : "active";
 }
 
 function ListField({

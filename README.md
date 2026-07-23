@@ -81,6 +81,23 @@ existing emulator collection aside and restores it afterward:
 pnpm test:android-smoke
 ```
 
+Pull requests and pushes to `main` also run the complete verification suite,
+Android unit tests, Android lint, and a debug APK build. The APK is retained as
+a workflow artifact.
+
+Tags named `android-v<version>` create a signed APK and Android App Bundle and
+attach both to a private GitHub release. Configure these repository secrets
+before creating a release tag:
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+The keystore secret is the base64-encoded contents of the release `.jks` file.
+Version codes use the GitHub Actions run number, while the version name comes
+from the tag.
+
 ### iOS
 
 ```sh
@@ -97,6 +114,7 @@ pnpm verify
 pnpm test:e2e
 pnpm test:e2e:cloud
 pnpm test:android-smoke
+pnpm test:production-smoke
 ```
 
 `pnpm verify` includes formatting, TypeScript, ESLint, unit tests, the claimed
@@ -108,6 +126,10 @@ viewports.
 then drives authorization, inline hosted-collection creation, offline work,
 resumed synchronization, a two-device conflict, resolution, and cached reload.
 No external account or persistent cloud data is used.
+
+The production smoke check verifies the deployed web shell, OAuth callback,
+application manifest, and the public mdbase connect health and readiness
+boundaries. GitHub Actions runs it every six hours.
 
 ## Test deployment
 
