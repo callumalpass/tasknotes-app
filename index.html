@@ -12,6 +12,20 @@
       content="A calm task manager built on portable Markdown records."
     />
     <link rel="icon" href="%BASE_URL%tasknotes-mark.svg" type="image/svg+xml" />
+    <script>
+      try {
+        const theme = localStorage.getItem("mdbase:theme");
+        if (theme === "light" || theme === "dark")
+          document.documentElement.dataset.theme = theme;
+        const dark =
+          theme === "dark" ||
+          (theme !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.querySelector('meta[name="theme-color"]').content = dark
+          ? "#1b1d23"
+          : "#fbfcfe";
+      } catch {}
+    </script>
     <title>TaskNotes</title>
   </head>
   <body>

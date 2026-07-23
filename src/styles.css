@@ -1,27 +1,79 @@
 :root {
   color-scheme: light;
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
-  color: #20242c;
-  background: #fbfcfe;
+  color: var(--ink);
+  background: var(--paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --paper: #fbfcfe;
-  --paper-soft: #f6f8fb;
-  --paper-raised: #fdfefe;
-  --ink: #20242c;
-  --ink-soft: #505965;
-  --ink-muted: #77818e;
-  --line: #e6eaf0;
-  --line-strong: #cdd3dc;
-  --accent: #356f96;
-  --accent-soft: #eef5f9;
-  --danger: #974d4a;
-  --danger-soft: #fbf2f1;
-  --success: #4f735d;
+  --color-canvas: oklch(99.2% 0.004 255);
+  --color-surface: oklch(99.7% 0.002 255);
+  --color-surface-subtle: oklch(97.8% 0.006 255);
+  --color-text: oklch(25% 0.018 255);
+  --color-text-soft: oklch(43% 0.016 255);
+  --color-text-muted: oklch(56% 0.014 255);
+  --color-border: oklch(92.5% 0.007 255);
+  --color-border-strong: oklch(84% 0.01 255);
+  --color-accent: oklch(50% 0.09 238);
+  --color-accent-soft: oklch(96% 0.018 238);
+  --color-on-accent: oklch(98.5% 0.004 255);
+  --color-danger: oklch(51% 0.09 28);
+  --color-danger-soft: oklch(97% 0.018 28);
+  --color-success: oklch(49% 0.065 153);
+  --paper: var(--color-canvas);
+  --paper-soft: var(--color-surface-subtle);
+  --paper-raised: var(--color-surface);
+  --ink: var(--color-text);
+  --ink-soft: var(--color-text-soft);
+  --ink-muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --line-strong: var(--color-border-strong);
+  --accent: var(--color-accent);
+  --accent-soft: var(--color-accent-soft);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-soft);
+  --success: var(--color-success);
   --page-inset: 20px;
   --nav-height: 70px;
   --content-width: 720px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: oklch(17.5% 0.012 255);
+  --color-surface: oklch(21.5% 0.014 255);
+  --color-surface-subtle: oklch(20% 0.013 255);
+  --color-text: oklch(92% 0.008 255);
+  --color-text-soft: oklch(78% 0.01 255);
+  --color-text-muted: oklch(67% 0.012 255);
+  --color-border: oklch(29% 0.012 255);
+  --color-border-strong: oklch(40% 0.014 255);
+  --color-accent: oklch(73% 0.09 238);
+  --color-accent-soft: oklch(27% 0.03 238);
+  --color-on-accent: oklch(17% 0.012 255);
+  --color-danger: oklch(72% 0.11 28);
+  --color-danger-soft: oklch(25% 0.03 28);
+  --color-success: oklch(72% 0.08 153);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-canvas: oklch(17.5% 0.012 255);
+    --color-surface: oklch(21.5% 0.014 255);
+    --color-surface-subtle: oklch(20% 0.013 255);
+    --color-text: oklch(92% 0.008 255);
+    --color-text-soft: oklch(78% 0.01 255);
+    --color-text-muted: oklch(67% 0.012 255);
+    --color-border: oklch(29% 0.012 255);
+    --color-border-strong: oklch(40% 0.014 255);
+    --color-accent: oklch(73% 0.09 238);
+    --color-accent-soft: oklch(27% 0.03 238);
+    --color-on-accent: oklch(17% 0.012 255);
+    --color-danger: oklch(72% 0.11 28);
+    --color-danger-soft: oklch(25% 0.03 28);
+    --color-success: oklch(72% 0.08 153);
+  }
 }
 
 * {
@@ -712,6 +764,18 @@ button:disabled {
 .setting-row small {
   color: var(--ink-muted);
   font-size: 0.84rem;
+}
+
+.theme-picker {
+  width: auto;
+  min-height: 38px;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  background: var(--paper-raised);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
 }
 
 .setting-explanation {
@@ -2224,7 +2288,7 @@ button:disabled {
 .calendar-grid i {
   min-width: 16px;
   padding: 0 4px;
-  color: var(--paper);
+  color: var(--color-on-accent);
   font-size: 0.68rem;
   font-style: normal;
   line-height: 16px;
