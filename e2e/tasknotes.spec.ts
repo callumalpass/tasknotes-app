@@ -61,7 +61,8 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(
     page.getByText("Prepare weekly review", { exact: true }).first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("mdbase computer release");
   await expect(
     page.getByText("Prepare weekly review", { exact: true }),
@@ -84,7 +85,8 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
 
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -97,7 +99,8 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 
   await page.reload();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -357,7 +360,7 @@ Created on {{date}} from the collection template.`);
   );
 });
 
-test("renders configured saved-view properties without changing calendar rows", async ({
+test("renders configured saved-view properties in every result list", async ({
   page,
 }) => {
   const today = [
@@ -457,17 +460,42 @@ views:
   ).toBeVisible();
   await expect(page.getByText("Complete", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page
+    .locator("#main-content")
+    .getByRole("button", { name: "Views", exact: true })
+    .click();
   await page.getByText("Dates", { exact: true }).click();
   await expect(page.getByRole("grid")).toBeVisible();
   await expect(
     page.getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Due", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Progress", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Views", exact: true }).click();
   await page
-    .getByRole("region", { name: "Views" })
-    .getByRole("button", { name: "More", exact: true })
+    .locator("#main-content")
+    .getByRole("button", { name: "Views", exact: true })
     .click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+});
+
+test("offers task actions without opening the editor", async ({ page }) => {
+  await page.getByLabel("New task title").fill("Act from the task row");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await page
+    .getByRole("button", { name: "Task actions for Act from the task row" })
+    .click();
+  await page.getByRole("menuitem", { name: "Start timer" }).click();
+
+  await page
+    .getByRole("button", { name: "Task actions for Act from the task row" })
+    .click();
+  await expect(
+    page.getByRole("menuitem", { name: "Stop timer" }),
+  ).toBeVisible();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await expect(
+    page.getByText("Act from the task row", { exact: true }),
+  ).toHaveCount(0);
 });

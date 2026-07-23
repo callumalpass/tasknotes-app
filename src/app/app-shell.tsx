@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Columns3,
   MoreHorizontal,
-  Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -13,6 +12,8 @@ import { LoadingRows } from "../components/loading";
 import { nativeBackAction } from "../native/navigation";
 import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
+import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
+import { useCollectionGate } from "./collection-context";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { ArchiveScreen } from "./archive-screen";
@@ -32,6 +33,7 @@ type Route =
 
 export function AppShell() {
   const { status, error } = useRepository();
+  const { choice, changeConnectedCollection, choose } = useCollectionGate();
   const {
     views,
     error: viewsError,
@@ -90,11 +92,54 @@ export function AppShell() {
     );
   }
   if (status === "error") {
+    const authorizationExpired =
+      choice === "cloud" && isAuthorizationError(error);
     return (
       <main className="opening-screen storage-error">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>TaskNotes could not open.</h1>
-        <p>{error?.message ?? "Local storage is unavailable."}</p>
+        <h1>
+          {authorizationExpired
+            ? "Reconnect to mdbase."
+            : "TaskNotes could not open."}
+        </h1>
+        <p>
+          {authorizationExpired
+            ? "Your connection has expired. Your tasks and offline data remain unchanged."
+            : "The collection is unavailable right now."}
+        </p>
+        <div className="welcome-actions">
+          {authorizationExpired ? (
+            <button
+              className="outline-action"
+              type="button"
+              onClick={changeConnectedCollection}
+            >
+              Reconnect to mdbase
+            </button>
+          ) : (
+            <button
+              className="outline-action"
+              type="button"
+              onClick={() => location.reload()}
+            >
+              Try again
+            </button>
+          )}
+          <button
+            className="text-action"
+            type="button"
+            onClick={() => {
+              if (choice === "cloud") changeConnectedCollection();
+              choose(choice === "local" ? "cloud" : "local");
+            }}
+          >
+            {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
+          </button>
+        </div>
+        <details className="technical-details">
+          <summary>Technical details</summary>
+          <p>{technicalErrorMessage(error)}</p>
+        </details>
       </main>
     );
   }
@@ -104,8 +149,8 @@ export function AppShell() {
       ? "today"
       : route.page === "views" && route.key === primaryView?.key
         ? `view:${route.key}`
-        : route.page === "views"
-          ? "more"
+        : route.page === "views" || route.page === "search"
+          ? "views"
           : route.page;
   return (
     <div className="app-shell">
@@ -142,6 +187,7 @@ export function AppShell() {
           />
         ) : route.page === "search" ? (
           <SearchScreen
+            onBack={() => navigate({ page: "views" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : route.page === "archive" ? (
@@ -171,6 +217,7 @@ export function AppShell() {
             onOpenTask={(task, occurrence) =>
               navigate({ page: "task", id: task.id, occurrence })
             }
+            onSearch={() => navigate({ page: "search" })}
             onOpenView={(view) => navigate({ page: "views", key: view.key })}
             onSetPrimaryView={setPrimaryView}
           />
@@ -186,7 +233,9 @@ export function AppShell() {
         ) : null}
       </main>
       {route.page !== "task" &&
-      (route.page !== "views" || route.key === primaryView?.key) ? (
+      (route.page !== "views" ||
+        !route.key ||
+        route.key === primaryView?.key) ? (
         <nav
           className={`bottom-navigation${primaryView ? " has-primary" : ""}`}
           aria-label="Primary"
@@ -239,7 +288,12 @@ function Navigation({
           },
         ]
       : []),
-    { key: "search", label: "Search", icon: Search, route: { page: "search" } },
+    {
+      key: "views",
+      label: "Views",
+      icon: Columns3,
+      route: { page: "views" },
+    },
     {
       key: "more",
       label: "More",

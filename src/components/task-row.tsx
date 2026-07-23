@@ -1,6 +1,7 @@
 import { taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
+import { TaskActions } from "./task-actions";
 
 import type { Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -21,7 +22,17 @@ export function TaskRow({
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
   return (
-    <div className={`task-row${displayedTask.completed ? " is-complete" : ""}`}>
+    <div
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}`}
+      onContextMenu={(event) => {
+        const trigger = event.currentTarget.querySelector<HTMLButtonElement>(
+          ".task-actions-trigger",
+        );
+        if (!trigger) return;
+        event.preventDefault();
+        trigger.click();
+      }}
+    >
       <button
         className="completion-control"
         type="button"
@@ -68,6 +79,12 @@ export function TaskRow({
           </span>
         ) : null}
       </button>
+      <TaskActions
+        task={task}
+        occurrenceDate={occurrence?.date}
+        onOpen={onOpen}
+        onToggle={onToggle}
+      />
     </div>
   );
 }

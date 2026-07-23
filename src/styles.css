@@ -331,12 +331,85 @@ button:disabled {
 
 .task-row {
   display: grid;
-  grid-template-columns: 52px 1fr;
+  grid-template-columns: 52px minmax(0, 1fr) 44px;
   min-height: 64px;
   border-bottom: 1px solid var(--line);
   content-visibility: auto;
   contain-intrinsic-size: auto 64px;
   transition: opacity 180ms var(--ease-out);
+}
+
+.task-actions-trigger {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.task-actions-menu {
+  position: fixed;
+  z-index: 40;
+  width: 224px;
+  padding: 7px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--ink), transparent 86%);
+}
+
+.task-actions-heading {
+  display: none;
+}
+
+.task-actions-items,
+.task-actions-confirm {
+  display: grid;
+}
+
+.task-actions-items button,
+.task-actions-confirm button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  padding: 0 10px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.task-actions-items button:hover,
+.task-actions-items button:focus-visible,
+.task-actions-confirm button:hover,
+.task-actions-confirm button:focus-visible {
+  background: var(--paper-soft);
+  outline: 0;
+}
+
+.task-actions-items button.danger,
+.task-actions-confirm button.danger {
+  color: var(--danger);
+}
+
+.task-actions-confirm p {
+  margin: 8px 10px;
+  font-weight: 700;
+}
+
+.task-actions-error {
+  margin: 5px 10px 7px;
+  color: var(--danger);
+  font-size: 0.82rem;
 }
 
 .task-list-more {
@@ -1357,6 +1430,48 @@ button:disabled {
 }
 
 @media (max-width: 839px) {
+  .task-actions-menu {
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    width: 100%;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -16px 40px color-mix(in srgb, var(--ink), transparent 88%);
+  }
+
+  .task-actions-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .task-actions-heading strong {
+    max-width: calc(100% - 72px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task-actions-heading button {
+    min-height: 44px;
+    color: var(--accent);
+    background: transparent;
+    border: 0;
+  }
+
+  .task-actions-items button,
+  .task-actions-confirm button {
+    min-height: 48px;
+  }
+
   body:has(input:focus, textarea:focus) .bottom-navigation {
     display: none;
   }
@@ -1522,6 +1637,22 @@ button:disabled {
 .storage-error h1 {
   margin: 0 0 8px;
   font-size: 1.55rem;
+}
+
+.technical-details {
+  margin-top: 26px;
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+}
+
+.technical-details summary {
+  width: max-content;
+  cursor: pointer;
+}
+
+.technical-details p {
+  max-width: 60ch;
+  overflow-wrap: anywhere;
 }
 
 .setting-link {

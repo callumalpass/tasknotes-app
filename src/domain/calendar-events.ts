@@ -7,10 +7,11 @@ import {
 
 import type { Task } from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
-import type { TaskViewExecution } from "./view";
+import type { TaskViewExecution, TaskViewRow } from "./view";
 
 export interface CalendarEntry {
   task: Task;
+  row: TaskViewRow;
   occurrence?: TaskOccurrence;
 }
 
@@ -25,7 +26,8 @@ export function calendarEvents(
   const showScheduled = options.showScheduled !== false;
   const showDue = options.showDue !== false;
   const materialized = materializedOccurrenceKeys(identityTasks);
-  for (const { task } of execution.rows) {
+  for (const row of execution.rows) {
+    const { task } = row;
     if (task.recurrence) {
       for (const occurrence of taskOccurrencesBetween(
         task,
@@ -40,7 +42,8 @@ export function calendarEvents(
             : []),
           ...(showDue && projected.due ? [taskDatePart(projected.due)] : []),
         ]);
-        for (const date of dates) append(events, date, { task, occurrence });
+        for (const date of dates)
+          append(events, date, { task, row, occurrence });
       }
       continue;
     }
@@ -48,7 +51,7 @@ export function calendarEvents(
       ...(showScheduled && task.scheduled ? [task.scheduled] : []),
       ...(showDue && task.due ? [task.due] : []),
     ]))
-      append(events, taskDatePart(value), { task });
+      append(events, taskDatePart(value), { task, row });
   }
   return events;
 }

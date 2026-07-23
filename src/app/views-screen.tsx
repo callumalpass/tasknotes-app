@@ -5,6 +5,7 @@ import {
   Columns3,
   List,
   Pin,
+  Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,10 +13,12 @@ import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
 import { dateFromStorage, todayString } from "../domain/task";
+import { occurrenceTask } from "../domain/task-occurrence";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
 
 import type { Task } from "../domain/task";
+import type { TaskOccurrence } from "../domain/task-occurrence";
 import type {
   TaskView,
   TaskViewExecution,
@@ -31,6 +34,7 @@ export function ViewsScreen({
   operational = false,
   onBack,
   onOpenTask,
+  onSearch,
   onOpenView,
   onSetPrimaryView,
 }: {
@@ -41,6 +45,7 @@ export function ViewsScreen({
   operational?: boolean;
   onBack(): void;
   onOpenTask(task: Task, occurrenceDate?: string): void;
+  onSearch(): void;
   onOpenView(view: TaskView): void;
   onSetPrimaryView(key?: string): void;
 }) {
@@ -81,15 +86,19 @@ export function ViewsScreen({
   if (!viewKey) {
     return (
       <section className="screen views-screen" aria-labelledby="views-title">
-        <header className="screen-header compact-header">
+        <header className="screen-header compact-header views-catalog-header">
           <div>
-            <button className="back-action" type="button" onClick={onBack}>
-              <ChevronLeft aria-hidden="true" size={20} />
-              More
-            </button>
             <p className="eyebrow">Your collection</p>
             <h1 id="views-title">Views</h1>
           </div>
+          <button
+            aria-label="Search tasks"
+            className="icon-action"
+            type="button"
+            onClick={onSearch}
+          >
+            <Search aria-hidden="true" size={20} strokeWidth={1.7} />
+          </button>
         </header>
         {error ? <p className="inline-error">{error}</p> : null}
         {!views ? (
@@ -286,8 +295,8 @@ function CalendarView({
         </button>
       </div>
       <div className="calendar-weekdays" aria-hidden="true">
-        {weekdays().map((day) => (
-          <span key={day}>{day}</span>
+        {weekdays().map((day, index) => (
+          <span key={`${day}:${index}`}>{day}</span>
         ))}
       </div>
       <div className="calendar-grid" role="grid" aria-label={monthLabel}>
@@ -314,9 +323,10 @@ function CalendarView({
         <h2>{agendaLabel(selected)}</h2>
         {selectedTasks.length ? (
           selectedTasks.map((entry) => (
-            <TaskRow
+            <ViewTaskRow
               key={entry.occurrence?.key ?? entry.task.id}
-              task={entry.task}
+              row={entry.row}
+              properties={execution.view.properties}
               occurrence={entry.occurrence}
               onOpen={onOpen}
               onToggle={onToggle}
@@ -357,12 +367,14 @@ function ViewTaskRow({
   row,
   properties,
   omittedProperties = [],
+  occurrence,
   onOpen,
   onToggle,
 }: {
   row: TaskViewRow;
   properties: TaskViewProperty[];
   omittedProperties?: string[];
+  occurrence?: TaskOccurrence;
   onOpen(task: Task): void;
   onToggle(task: Task): void;
 }) {
@@ -370,7 +382,7 @@ function ViewTaskRow({
     ? properties.flatMap((property) => {
         if (property.hidden || omittedProperties.includes(property.key))
           return [];
-        const value = propertyValue(row, property.key);
+        const value = propertyValue(row, property.key, occurrence);
         const formatted = formatPropertyValue(value, property.format);
         return formatted === null
           ? []
@@ -390,17 +402,25 @@ function ViewTaskRow({
     <TaskRow
       task={row.task}
       details={details}
+      occurrence={occurrence}
       onOpen={onOpen}
       onToggle={onToggle}
     />
   );
 }
 
-function propertyValue(row: TaskViewRow, key: string): unknown {
+function propertyValue(
+  row: TaskViewRow,
+  key: string,
+  occurrence?: TaskOccurrence,
+): unknown {
+  const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
+  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
+  if (occurrence && Object.prototype.hasOwnProperty.call(displayed, field))
+    return displayed[field as keyof Task];
   if (Object.prototype.hasOwnProperty.call(row.values, key))
     return row.values[key];
-  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
-  return row.task.frontmatter[field];
+  return displayed.frontmatter[field];
 }
 
 function propertyLabel(key: string): string {

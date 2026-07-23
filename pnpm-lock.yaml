@@ -62,8 +62,8 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
       tasknotes-nlp-core:
-        specifier: file:vendor/tasknotes-nlp-core-0.1.5.tgz
-        version: file:vendor/tasknotes-nlp-core-0.1.5.tgz
+        specifier: 0.1.5
+        version: 0.1.5
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -4275,13 +4275,11 @@ packages:
       }
     engines: { node: ">=18" }
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+  tasknotes-nlp-core@0.1.5:
     resolution:
       {
-        integrity: sha512-bsrii9ZNeezbGXwbUfVh1NtvcUQXC+SEBp+Y8w8Fuy3sUbr4IlW7rs8NTwhzbUMjeyYJwE+N+qMISgghk5DKkw==,
-        tarball: file:vendor/tasknotes-nlp-core-0.1.5.tgz,
+        integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==,
       }
-    version: 0.1.5
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.2.0.tgz:
     resolution:
@@ -7510,7 +7508,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.1.5.tgz:
+  tasknotes-nlp-core@0.1.5:
     dependencies:
       chrono-node: 2.10.1
       date-fns: 4.4.0
