@@ -302,7 +302,8 @@ function CalendarView({
       <div className="calendar-grid" role="grid" aria-label={monthLabel}>
         {days.map((day) => {
           const date = storageDate(day);
-          const count = events.get(date)?.length ?? 0;
+          const entries = events.get(date) ?? [];
+          const count = entries.length;
           return (
             <button
               aria-label={`${day.toLocaleDateString()}, ${count} ${count === 1 ? "task" : "tasks"}`}
@@ -313,7 +314,20 @@ function CalendarView({
               type="button"
               onClick={() => setSelected(date)}
             >
-              <span>{day.getDate()}</span>
+              <span className="calendar-date-number">{day.getDate()}</span>
+              {count ? (
+                <span className="calendar-cell-tasks" aria-hidden="true">
+                  {entries.slice(0, 3).map((entry) => (
+                    <span
+                      key={entry.occurrence?.key ?? entry.task.id}
+                      className={entry.task.completed ? "is-complete" : ""}
+                    >
+                      {entry.task.title}
+                    </span>
+                  ))}
+                  {count > 3 ? <small>+{count - 3} more</small> : null}
+                </span>
+              ) : null}
               {count ? <i aria-hidden="true">{count}</i> : null}
             </button>
           );

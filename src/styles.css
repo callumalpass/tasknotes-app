@@ -107,6 +107,13 @@ button:disabled {
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
 }
 
+.detail-inspector {
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+}
+
 .screen {
   width: min(100%, var(--content-width));
   min-height: 100%;
@@ -1430,6 +1437,15 @@ button:disabled {
 }
 
 @media (max-width: 839px) {
+  .app-shell.has-detail .page-surface,
+  .app-shell.has-detail .bottom-navigation {
+    display: none;
+  }
+
+  .detail-inspector {
+    width: 100%;
+  }
+
   .task-actions-menu {
     top: auto !important;
     right: 0;
@@ -1829,7 +1845,7 @@ button:disabled {
 }
 
 .kanban-column .task-row {
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 44px minmax(0, 1fr) 40px;
 }
 
 .calendar-toolbar {
@@ -1909,6 +1925,10 @@ button:disabled {
   border-radius: 8px;
 }
 
+.calendar-cell-tasks {
+  display: none;
+}
+
 .calendar-agenda {
   margin-top: 26px;
 }
@@ -1982,6 +2002,14 @@ button:disabled {
     padding-bottom: 0;
   }
 
+  .detail-inspector {
+    grid-column: 2;
+  }
+
+  .app-shell.has-detail .page-surface {
+    display: none;
+  }
+
   .screen {
     min-height: 100vh;
     padding-top: 44px;
@@ -1993,6 +2021,122 @@ button:disabled {
 
   .bottom-navigation {
     display: none;
+  }
+}
+
+@media (min-width: 1180px) {
+  .app-shell.has-detail {
+    grid-template-columns: 190px minmax(480px, 1fr) minmax(390px, 470px);
+  }
+
+  .app-shell.has-detail .page-surface {
+    display: block;
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .detail-inspector {
+    position: sticky;
+    top: 0;
+    grid-column: 3;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    border-left: 1px solid var(--line);
+  }
+
+  .detail-inspector .screen {
+    width: 100%;
+    min-height: 100%;
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .detail-inspector .title-field {
+    min-height: 96px;
+    font-size: 1.65rem;
+  }
+
+  .detail-inspector .timing-fields,
+  .detail-inspector .metadata-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .view-detail {
+    width: min(100%, 1440px);
+  }
+
+  .calendar-view {
+    display: grid;
+    grid-template-columns: minmax(520px, 1fr) minmax(280px, 360px);
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  .calendar-toolbar,
+  .calendar-weekdays,
+  .calendar-grid {
+    grid-column: 1;
+  }
+
+  .calendar-agenda {
+    grid-row: 1 / span 3;
+    grid-column: 2;
+    margin-top: 0;
+  }
+
+  .calendar-grid button {
+    align-content: start;
+    justify-items: stretch;
+    min-height: 112px;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .calendar-date-number {
+    justify-self: end;
+    font-family: "Azeret Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+  }
+
+  .calendar-cell-tasks {
+    display: grid;
+    gap: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .calendar-cell-tasks > span {
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .calendar-cell-tasks > span.is-complete {
+    color: var(--ink-muted);
+    text-decoration: line-through;
+  }
+
+  .calendar-cell-tasks small {
+    color: var(--ink-muted);
+    font-size: 0.7rem;
+  }
+
+  .calendar-grid i {
+    display: none;
+  }
+
+  .app-shell.has-detail .calendar-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.has-detail .calendar-agenda {
+    grid-row: auto;
+    grid-column: 1;
+    margin-top: 26px;
   }
 }
 

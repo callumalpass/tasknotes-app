@@ -30,6 +30,7 @@ type Route =
   | { page: "today" | "upcoming" | "search" | "archive" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
+type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
   const { status, error } = useRepository();
@@ -42,20 +43,37 @@ export function AppShell() {
     setPrimaryView,
   } = usePrimaryView();
   const [route, setRoute] = useState<Route>(() => parseRoute());
+  const [workspaceRoute, setWorkspaceRoute] = useState<WorkspaceRoute>(() => {
+    const initial = parseRoute();
+    return initial.page === "task" ? { page: "today" } : initial;
+  });
 
   useEffect(() => {
-    const pop = () => setRoute(parseRoute());
+    const pop = () => {
+      const next = parseRoute();
+      setRoute(next);
+      if (next.page !== "task") setWorkspaceRoute(next);
+    };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, []);
 
-  const navigate = useCallback((next: Route, replace = false) => {
-    const url = routeUrl(next);
-    if (replace) window.history.replaceState(null, "", url);
-    else window.history.pushState(null, "", url);
-    setRoute(next);
-    window.scrollTo({ top: 0, left: 0 });
-  }, []);
+  const navigate = useCallback(
+    (next: Route, replace = false) => {
+      const url = routeUrl(next);
+      const state = next.page === "task" ? { taskPanel: true } : null;
+      if (replace) window.history.replaceState(state, "", url);
+      else window.history.pushState(state, "", url);
+      if (next.page === "task") {
+        if (route.page !== "task") setWorkspaceRoute(route);
+      } else {
+        setWorkspaceRoute(next);
+      }
+      setRoute(next);
+      if (next.page !== "task") window.scrollTo({ top: 0, left: 0 });
+    },
+    [route],
+  );
 
   useEffect(
     () =>
@@ -144,16 +162,16 @@ export function AppShell() {
     );
   }
 
+  const workspace: WorkspaceRoute =
+    route.page === "task" ? workspaceRoute : route;
   const activePage =
-    route.page === "task"
-      ? "today"
-      : route.page === "views" && route.key === primaryView?.key
-        ? `view:${route.key}`
-        : route.page === "views" || route.page === "search"
-          ? "views"
-          : route.page;
+    workspace.page === "views" && workspace.key === primaryView?.key
+      ? `view:${workspace.key}`
+      : workspace.page === "views" || workspace.page === "search"
+        ? "views"
+        : workspace.page;
   return (
-    <div className="app-shell">
+    <div className={`app-shell${route.page === "task" ? " has-detail" : ""}`}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -173,29 +191,29 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface">
-        {route.page === "today" ? (
+        {workspace.page === "today" ? (
           <TodayScreen
             onOpen={(task, occurrence) =>
               navigate({ page: "task", id: task.id, occurrence })
             }
           />
-        ) : route.page === "upcoming" ? (
+        ) : workspace.page === "upcoming" ? (
           <UpcomingScreen
             onOpen={(task, occurrence) =>
               navigate({ page: "task", id: task.id, occurrence })
             }
           />
-        ) : route.page === "search" ? (
+        ) : workspace.page === "search" ? (
           <SearchScreen
             onBack={() => navigate({ page: "views" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
-        ) : route.page === "archive" ? (
+        ) : workspace.page === "archive" ? (
           <ArchiveScreen
             onBack={() => navigate({ page: "more" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
-        ) : route.page === "more" ? (
+        ) : workspace.page === "more" ? (
           <MoreScreen
             primaryViewName={primaryView?.name}
             onOpenArchive={() => navigate({ page: "archive" })}
@@ -204,15 +222,18 @@ export function AppShell() {
               navigate({ page: "views" });
             }}
           />
-        ) : route.page === "views" ? (
+        ) : workspace.page === "views" ? (
           <ViewsScreen
             error={viewsError}
-            operational={route.key === primaryView?.key}
+            operational={workspace.key === primaryView?.key}
             primaryViewKey={primaryView?.key}
             views={views}
-            viewKey={route.key}
+            viewKey={workspace.key}
             onBack={() =>
-              navigate(route.key ? { page: "views" } : { page: "more" }, true)
+              navigate(
+                workspace.key ? { page: "views" } : { page: "more" },
+                true,
+              )
             }
             onOpenTask={(task, occurrence) =>
               navigate({ page: "task", id: task.id, occurrence })
@@ -221,21 +242,27 @@ export function AppShell() {
             onOpenView={(view) => navigate({ page: "views", key: view.key })}
             onSetPrimaryView={setPrimaryView}
           />
-        ) : "id" in route ? (
+        ) : null}
+      </main>
+      {route.page === "task" ? (
+        <aside className="detail-inspector" aria-label="Task details">
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
-            onBack={() => window.history.back()}
+            onBack={() => {
+              if (window.history.state?.taskPanel) window.history.back();
+              else navigate(workspaceRoute, true);
+            }}
             onMaterialized={(task) =>
               navigate({ page: "task", id: task.id }, true)
             }
           />
-        ) : null}
-      </main>
+        </aside>
+      ) : null}
       {route.page !== "task" &&
-      (route.page !== "views" ||
-        !route.key ||
-        route.key === primaryView?.key) ? (
+      (workspace.page !== "views" ||
+        !workspace.key ||
+        workspace.key === primaryView?.key) ? (
         <nav
           className={`bottom-navigation${primaryView ? " has-primary" : ""}`}
           aria-label="Primary"
