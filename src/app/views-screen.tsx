@@ -3,17 +3,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Columns3,
+  GripVertical,
   List,
   Pencil,
   Pin,
   Plus,
   Search,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
+import {
+  kanbanMoveInput,
+  kanbanPropertyRole,
+  type KanbanFieldMapping,
+} from "../domain/kanban";
 import { dateFromStorage, todayString } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { selectionFeedback } from "../native/feedback";
@@ -54,7 +60,8 @@ export function ViewsScreen({
   onSetPrimaryView(key?: string): void;
   onViewsChanged(): Promise<void>;
 }) {
-  const { repository, toggleTask, version } = useRepository();
+  const { repository, toggleTask, updateTask, configuration, version } =
+    useRepository();
   const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
   const [executionError, setExecutionError] = useState<{
@@ -62,8 +69,21 @@ export function ViewsScreen({
     message: string;
   } | null>(null);
   const [editing, setEditing] = useState<TaskView | "new" | null>(null);
+  const [boardMoves, setBoardMoves] = useState<
+    Map<string, { viewKey: string; property: string; value: unknown }>
+  >(() => new Map());
+  const [viewActionError, setViewActionError] = useState<{
+    viewKey: string;
+    message: string;
+  } | null>(null);
+  const boardMutationSequence = useRef(new Map<string, number>());
 
   const selected = views?.find((view) => view.key === viewKey);
+  const selectedKey = selected?.key;
+  const selectedKeyRef = useRef(selectedKey);
+  useEffect(() => {
+    selectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
   useEffect(() => {
     if (!viewKey || !selected) return;
     let active = true;
@@ -88,6 +108,87 @@ export function ViewsScreen({
       ? executionError.message
       : "";
   const error = viewKey ? currentExecutionError || viewsError : viewsError;
+  const currentViewActionError =
+    viewActionError && viewActionError.viewKey === selected?.key
+      ? viewActionError.message
+      : "";
+
+  async function moveBoardTask(
+    row: TaskViewRow,
+    property: string,
+    value: unknown,
+  ) {
+    if (!selected) return;
+    const input = kanbanMoveInput(
+      row.task,
+      property,
+      value,
+      configuration.fieldMapping,
+    );
+    if (!input) {
+      setViewActionError({
+        viewKey: selected.key,
+        message: `${propertyLabel(property)} is calculated by this view and cannot be changed here.`,
+      });
+      return;
+    }
+    const optimistic = boardMoves.get(row.task.id);
+    const current =
+      optimistic?.viewKey === selected.key && optimistic.property === property
+        ? optimistic.value
+        : (row.values[property] ?? row.task.frontmatter[property] ?? null);
+    if (valueKey(current) === valueKey(value)) return;
+
+    const sequence = (boardMutationSequence.current.get(row.task.id) ?? 0) + 1;
+    boardMutationSequence.current.set(row.task.id, sequence);
+    setViewActionError(null);
+    setBoardMoves((moves) => {
+      const next = new Map(moves);
+      next.set(row.task.id, { viewKey: selected.key, property, value });
+      return next;
+    });
+    selectionFeedback();
+
+    try {
+      await updateTask(row.task.id, input);
+    } catch (reason) {
+      if (boardMutationSequence.current.get(row.task.id) !== sequence) return;
+      clearBoardMove(row.task.id);
+      if (selectedKeyRef.current === selected.key)
+        setViewActionError({
+          viewKey: selected.key,
+          message: `Could not move “${row.task.title}”. ${message(reason)}`,
+        });
+      return;
+    }
+
+    if (boardMutationSequence.current.get(row.task.id) !== sequence) return;
+    try {
+      const refreshed = await repository.executeView(selected);
+      if (boardMutationSequence.current.get(row.task.id) !== sequence) return;
+      clearBoardMove(row.task.id);
+      if (selectedKeyRef.current !== selected.key) return;
+      setExecution(refreshed);
+      setExecutionError(null);
+    } catch (reason) {
+      if (boardMutationSequence.current.get(row.task.id) !== sequence) return;
+      clearBoardMove(row.task.id);
+      if (selectedKeyRef.current === selected.key)
+        setViewActionError({
+          viewKey: selected.key,
+          message: `The move was saved, but this view could not refresh. ${message(reason)}`,
+        });
+    }
+  }
+
+  function clearBoardMove(taskId: string) {
+    setBoardMoves((moves) => {
+      if (!moves.has(taskId)) return moves;
+      const next = new Map(moves);
+      next.delete(taskId);
+      return next;
+    });
+  }
 
   if (!viewKey) {
     return (
@@ -211,23 +312,53 @@ export function ViewsScreen({
               <small>Primary view</small>
             ) : null}
           </div>
-          {selected?.source.writable ? (
+          {selected?.source.writable && !editing ? (
             <button
               aria-label={`Edit ${selected.name}`}
               className="edit-view-action"
               type="button"
               onClick={() => setEditing(selected)}
             >
-              <Pencil aria-hidden="true" size={16} /> Edit
+              <Pencil aria-hidden="true" size={16} /> Edit view
             </button>
           ) : null}
         </header>
         {error ? <p className="inline-error">{error}</p> : null}
+        {currentViewActionError ? (
+          <p className="inline-error" role="alert">
+            {currentViewActionError}
+          </p>
+        ) : null}
+        {editing && editing !== "new" ? (
+          <ViewEditor
+            inline
+            view={editing}
+            onClose={() => setEditing(null)}
+            onChanged={onViewsChanged}
+          />
+        ) : null}
         {!visibleExecution ? (
           <LoadingRows count={6} />
         ) : visibleExecution.view.presentation?.type === "tasknotes.kanban" ? (
           <KanbanView
+            fieldMapping={configuration.fieldMapping}
             execution={visibleExecution}
+            moves={
+              new Map(
+                [...boardMoves].filter(
+                  ([, move]) => move.viewKey === selected?.key,
+                ),
+              )
+            }
+            statusColumns={[...configuration.statuses]
+              .sort((left, right) => left.order - right.order)
+              .map(({ value, label }) => ({ value, label }))}
+            priorityColumns={[...configuration.priorities]
+              .sort((left, right) => left.weight - right.weight)
+              .map(({ value, label }) => ({ value, label }))}
+            onMove={(row, property, value) =>
+              void moveBoardTask(row, property, value)
+            }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
@@ -253,62 +384,248 @@ export function ViewsScreen({
           />
         )}
       </section>
-      {editing && editing !== "new" ? (
-        <ViewEditor
-          view={editing}
-          onClose={() => setEditing(null)}
-          onChanged={async () => {
-            if (primaryViewKey === editing.key) onSetPrimaryView(undefined);
-            await onViewsChanged();
-            onBack();
-          }}
-        />
-      ) : null}
     </>
   );
 }
 
-function KanbanView({ execution, onOpen, onToggle }: ViewProps) {
+function KanbanView({
+  execution,
+  fieldMapping,
+  moves,
+  priorityColumns,
+  statusColumns,
+  onMove,
+  onOpen,
+  onToggle,
+}: ViewProps & {
+  fieldMapping: KanbanFieldMapping;
+  moves: Map<string, { viewKey: string; property: string; value: unknown }>;
+  priorityColumns: Array<{ value: string; label: string }>;
+  statusColumns: Array<{ value: string; label: string }>;
+  onMove(row: TaskViewRow, property: string, value: unknown): void;
+}) {
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<
     string,
-    { value: unknown; rows: typeof execution.rows }
+    { value: unknown; label?: string; rows: typeof execution.rows }
   >();
+  const propertyName = kanbanPropertyRole(property, fieldMapping);
+  const configuredColumns =
+    propertyName === "status"
+      ? statusColumns
+      : propertyName === "priority"
+        ? priorityColumns
+        : [];
+  for (const configured of configuredColumns)
+    columns.set(valueKey(configured.value), {
+      value: configured.value,
+      label: configured.label,
+      rows: [],
+    });
+  if (propertyName === "completed" || propertyName === "archived") {
+    for (const configured of [
+      { value: false, label: propertyName === "archived" ? "Active" : "Open" },
+      {
+        value: true,
+        label: propertyName === "archived" ? "Archived" : "Complete",
+      },
+    ])
+      columns.set(valueKey(configured.value), {
+        value: configured.value,
+        label: configured.label,
+        rows: [],
+      });
+  }
   for (const group of execution.groups) {
     const value = group.values[property] ?? null;
-    columns.set(valueKey(value), { value, rows: [] });
+    const existing = columns.get(valueKey(value));
+    columns.set(valueKey(value), existing ?? { value, rows: [] });
   }
   for (const row of execution.rows) {
     const value =
-      row.values[property] ?? row.task.frontmatter[property] ?? null;
+      moves.get(row.task.id)?.property === property
+        ? moves.get(row.task.id)!.value
+        : (row.values[property] ?? row.task.frontmatter[property] ?? null);
     const key = valueKey(value);
     const column = columns.get(key) ?? { value, rows: [] };
     column.rows.push(row);
     columns.set(key, column);
   }
+  const orderedColumns = [...columns.values()];
+  const writable = propertyName !== null;
+  const [dragging, setDragging] = useState<{
+    row: TaskViewRow;
+    sourceKey: string;
+  } | null>(null);
+  const [overKey, setOverKey] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const pointerDrag = useRef<{
+    pointerId: number;
+    row: TaskViewRow;
+    sourceKey: string;
+  } | null>(null);
+
+  function finishMove(
+    row: TaskViewRow,
+    sourceKey: string,
+    destinationKey: string | null,
+  ) {
+    const destination = orderedColumns.find(
+      (column) => valueKey(column.value) === destinationKey,
+    );
+    if (destination && destinationKey !== sourceKey) {
+      onMove(row, property, destination.value);
+      setAnnouncement(
+        `Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`,
+      );
+    }
+    setDragging(null);
+    setOverKey(null);
+  }
+
+  function destinationAt(clientX: number, clientY: number): string | null {
+    return (
+      document
+        .elementFromPoint(clientX, clientY)
+        ?.closest<HTMLElement>("[data-kanban-column-key]")
+        ?.getAttribute("data-kanban-column-key") ?? null
+    );
+  }
+
   return (
-    <div className="kanban-board" aria-label={`${execution.view.name} board`}>
-      {[...columns.values()].map((column) => (
-        <section className="kanban-column" key={valueKey(column.value)}>
-          <header>
-            <h2>{columnLabel(column.value)}</h2>
-            <span>{column.rows.length}</span>
-          </header>
-          <div>
-            {column.rows.map((row) => (
-              <ViewTaskRow
-                key={row.task.id}
-                row={row}
-                properties={execution.view.properties}
-                omittedProperties={[property]}
-                onOpen={onOpen}
-                onToggle={onToggle}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
+    <>
+      {!writable ? (
+        <p className="view-note">
+          This board groups by a calculated property, so its cards are
+          read-only.
+        </p>
+      ) : null}
+      <div className="kanban-board" aria-label={`${execution.view.name} board`}>
+        {orderedColumns.map((column, columnIndex) => {
+          const key = valueKey(column.value);
+          const label = column.label ?? columnLabel(column.value);
+          return (
+            <section
+              aria-label={`${label} column`}
+              className={`kanban-column${overKey === key ? " is-drop-target" : ""}`}
+              data-kanban-column-key={key}
+              key={key}
+              onDragOver={(event) => {
+                if (!dragging || !writable) return;
+                event.preventDefault();
+                setOverKey(key);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragging) finishMove(dragging.row, dragging.sourceKey, key);
+              }}
+            >
+              <header>
+                <h2>{label}</h2>
+                <span>{column.rows.length}</span>
+              </header>
+              <div>
+                {column.rows.map((row) => {
+                  const pending = moves.has(row.task.id);
+                  return (
+                    <div
+                      className={`kanban-card${pending ? " is-pending" : ""}${dragging?.row.task.id === row.task.id ? " is-dragging" : ""}`}
+                      key={row.task.id}
+                    >
+                      {writable ? (
+                        <button
+                          aria-label={`Move ${row.task.title}. Use left and right arrow keys, or drag.`}
+                          className="kanban-drag-handle"
+                          draggable
+                          type="button"
+                          onDragEnd={() => {
+                            setDragging(null);
+                            setOverKey(null);
+                          }}
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData(
+                              "text/plain",
+                              row.task.id,
+                            );
+                            setDragging({ row, sourceKey: key });
+                            setOverKey(key);
+                          }}
+                          onKeyDown={(event) => {
+                            const direction =
+                              event.key === "ArrowLeft"
+                                ? -1
+                                : event.key === "ArrowRight"
+                                  ? 1
+                                  : 0;
+                            if (!direction) return;
+                            const destination =
+                              orderedColumns[columnIndex + direction];
+                            if (!destination) return;
+                            event.preventDefault();
+                            finishMove(row, key, valueKey(destination.value));
+                          }}
+                          onPointerDown={(event) => {
+                            if (event.pointerType === "mouse") return;
+                            event.currentTarget.setPointerCapture(
+                              event.pointerId,
+                            );
+                            pointerDrag.current = {
+                              pointerId: event.pointerId,
+                              row,
+                              sourceKey: key,
+                            };
+                            setDragging({ row, sourceKey: key });
+                            setOverKey(key);
+                          }}
+                          onPointerMove={(event) => {
+                            if (
+                              pointerDrag.current?.pointerId !== event.pointerId
+                            )
+                              return;
+                            setOverKey(
+                              destinationAt(event.clientX, event.clientY),
+                            );
+                          }}
+                          onPointerCancel={() => {
+                            pointerDrag.current = null;
+                            setDragging(null);
+                            setOverKey(null);
+                          }}
+                          onPointerUp={(event) => {
+                            const active = pointerDrag.current;
+                            if (!active || active.pointerId !== event.pointerId)
+                              return;
+                            pointerDrag.current = null;
+                            finishMove(
+                              active.row,
+                              active.sourceKey,
+                              destinationAt(event.clientX, event.clientY),
+                            );
+                          }}
+                        >
+                          <GripVertical aria-hidden="true" size={16} />
+                        </button>
+                      ) : null}
+                      <ViewTaskRow
+                        row={row}
+                        properties={execution.view.properties}
+                        omittedProperties={[property]}
+                        onOpen={onOpen}
+                        onToggle={onToggle}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      <p className="visually-hidden" aria-live="polite">
+        {announcement}
+      </p>
+    </>
   );
 }
 

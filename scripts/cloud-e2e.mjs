@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { chromium, expect } from "@playwright/test";
+import { parse } from "yaml";
 
 process.env.NODE_ENV = "test";
 
@@ -133,13 +134,19 @@ try {
 
   phase("editing the cloud-owned saved-view source through the public API");
   await page.getByRole("button", { name: "Edit Cloud board" }).click();
-  await page.getByLabel("Name").fill("Cloud priorities");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
-  await expect(
-    page.getByText("Cloud priorities", { exact: true }),
-  ).toBeVisible();
-  assert.match(provider.viewSource().document, /name: Cloud priorities/);
+  const viewSettings = page.getByRole("region", { name: "View settings" });
+  await viewSettings.getByLabel("Property to display").fill("due");
+  await viewSettings.getByRole("button", { name: "Add", exact: true }).click();
+  await viewSettings.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByLabel("Cloud board board")).toBeVisible();
+  const savedView = markdownFrontmatter(provider.viewSource().document)
+    .views[0];
+  assert.deepEqual(savedView.select, ["status", "urgency", "due"]);
+  assert.equal(
+    savedView.presentation.type,
+    "tasknotes.kanban",
+    "Editing displayed properties changed the view layout",
+  );
   await page.getByRole("button", { name: "More", exact: true }).click();
 
   phase("saving immediately while the provider is offline, then resuming sync");
@@ -227,10 +234,8 @@ try {
   await page.reload();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
   await page.getByRole("button", { name: /Saved views/ }).click();
-  await expect(
-    page.getByText("Cloud priorities", { exact: true }),
-  ).toBeVisible();
-  await page.getByText("Cloud priorities", { exact: true }).click();
+  await expect(page.getByText("Cloud board", { exact: true })).toBeVisible();
+  await page.getByText("Cloud board", { exact: true }).click();
   await expect(page.getByText("Last available result")).toBeVisible();
   await expect(
     page.getByText("Cloud foundation", { exact: true }),
@@ -510,12 +515,24 @@ query:
 views:
   - id: board
     name: Cloud board
-    renderer: tasknotes.kanban
-    group_by: status
     select: [status, urgency]
+    group_by:
+      - field: status
+        direction: asc
+    presentation:
+      type: tasknotes.kanban
+      fallback: mdbase.table
+      mappings:
+        column: status
 ---
 `,
   };
+}
+
+function markdownFrontmatter(document) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(document);
+  assert.ok(match, "Expected a Markdown frontmatter document");
+  return parse(match[1]);
 }
 
 function cloudViewList(source) {

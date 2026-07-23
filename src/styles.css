@@ -995,7 +995,19 @@ button:disabled {
 }
 
 .timing-fields {
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(9rem, 0.8fr);
+  grid-template-columns: minmax(8rem, 0.8fr) repeat(2, minmax(0, 1.35fr));
+}
+
+.task-core-fields {
+  padding-top: 20px;
+}
+
+.form-field > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
 .time-tracking {
@@ -1350,7 +1362,7 @@ button:disabled {
 .notes-field textarea {
   display: block;
   width: 100%;
-  min-height: 180px;
+  min-height: 150px;
   padding: 0;
   resize: vertical;
   font-size: 1.04rem;
@@ -1360,11 +1372,88 @@ button:disabled {
   outline: 0;
 }
 
+.task-form-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.task-form-section > summary {
+  min-height: 70px;
+  padding: 15px 2px;
+  cursor: pointer;
+}
+
+.task-form-section > summary::marker {
+  color: var(--ink-muted);
+}
+
+.task-form-section > summary > span {
+  display: inline-grid;
+  gap: 3px;
+  max-width: calc(100% - 22px);
+  vertical-align: middle;
+}
+
+.task-form-section > summary strong {
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.task-form-section > summary small {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-form-section-content {
+  padding: 0 0 22px 18px;
+  border-left: 1px solid var(--line);
+}
+
+.task-form-section-content > .choice-field,
+.task-form-section-content > .field-grid,
+.task-form-section-content > .time-tracking,
+.task-form-section-content > .repeat-fields,
+.task-form-section-content > .reminder-field {
+  border-bottom: 0;
+}
+
+.task-form-section-content > .choice-field:first-child,
+.task-form-section-content > .field-grid:first-child,
+.task-form-section-content > .repeat-fields:first-child {
+  padding-top: 4px;
+}
+
+.task-form-section-content > .time-estimate-field {
+  display: block;
+  width: min(100%, 14rem);
+  padding-top: 4px;
+}
+
+.task-form-section-content > .time-tracking {
+  padding-bottom: 0;
+}
+
+.task-form-section-content .custom-fields .field-grid {
+  border-bottom: 0;
+}
+
 .record-path {
-  padding: 25px 0;
+  padding: 20px 2px 25px;
+  color: var(--ink-muted);
+}
+
+.record-path summary {
+  width: max-content;
+  margin-bottom: 9px;
+  cursor: pointer;
+  font-size: 0.82rem;
 }
 
 .record-path code {
+  display: block;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: 0.7rem;
@@ -1907,6 +1996,17 @@ button:disabled {
   background: var(--paper);
 }
 
+.view-editor.is-inline {
+  position: relative;
+  z-index: 1;
+  inset: auto;
+  width: 100%;
+  margin: -4px 0 28px;
+  overflow: visible;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
 .view-editor-header {
   position: sticky;
   z-index: 2;
@@ -1921,12 +2021,40 @@ button:disabled {
   backdrop-filter: blur(12px);
 }
 
+.view-editor.is-inline .view-editor-header {
+  position: static;
+  min-height: 58px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.view-editor.is-inline .view-editor-header > strong {
+  font-size: 0.96rem;
+}
+
+.view-editor.is-inline .view-editor-header > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.view-editor.is-inline .save-view-action {
+  border: 0;
+}
+
 .view-editor-body {
   display: grid;
   gap: 30px;
   width: min(100%, 700px);
   padding: 34px var(--page-inset) 80px;
   margin: 0 auto;
+}
+
+.view-editor.is-inline .view-editor-body {
+  gap: 22px;
+  width: 100%;
+  padding: 22px 0 28px;
 }
 
 .view-editor-body h1 {
@@ -2038,6 +2166,41 @@ button:disabled {
   gap: 16px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
+}
+
+.inline-view-filter {
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.inline-view-filter > summary {
+  min-height: 62px;
+  padding: 12px 2px;
+  cursor: pointer;
+}
+
+.inline-view-filter > summary::marker {
+  color: var(--ink-muted);
+}
+
+.inline-view-filter > summary > span {
+  display: inline-grid;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.inline-view-filter > summary strong {
+  font-size: 0.9rem;
+}
+
+.inline-view-filter > summary small {
+  color: var(--ink-muted);
+}
+
+.inline-view-filter > .expression-builder {
+  padding: 4px 0 22px 16px;
+  border-left: 1px solid var(--line);
 }
 
 .view-editor-section h2,
@@ -2190,6 +2353,11 @@ button:disabled {
 .kanban-column {
   flex: 0 0 min(82vw, 310px);
   scroll-snap-align: start;
+  transition: background-color 140ms var(--ease-out);
+}
+
+.kanban-column.is-drop-target {
+  background: color-mix(in srgb, var(--accent-soft), transparent 42%);
 }
 
 .kanban-column > header {
@@ -2214,8 +2382,51 @@ button:disabled {
   font-size: 0.82rem;
 }
 
-.kanban-column .task-row {
+.kanban-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+  transition:
+    opacity 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+
+.kanban-card.is-pending {
+  opacity: 0.62;
+}
+
+.kanban-card.is-dragging {
+  opacity: 0.38;
+}
+
+.kanban-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  touch-action: none;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+}
+
+.kanban-drag-handle:active {
+  cursor: grabbing;
+}
+
+.kanban-card .task-row {
   grid-template-columns: 44px minmax(0, 1fr) 40px;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.view-note {
+  margin: -8px 0 18px;
+  color: var(--ink-muted);
+  font-size: 0.84rem;
 }
 
 .calendar-toolbar {
@@ -2396,6 +2607,10 @@ button:disabled {
   .view-editor {
     left: 190px;
   }
+
+  .view-editor.is-inline {
+    left: auto;
+  }
 }
 
 @media (min-width: 1180px) {
@@ -2434,6 +2649,10 @@ button:disabled {
   .detail-inspector .timing-fields,
   .detail-inspector .metadata-fields {
     grid-template-columns: 1fr;
+  }
+
+  .detail-inspector .task-form-section-content {
+    padding-left: 14px;
   }
 
   .view-detail {
@@ -2519,6 +2738,14 @@ button:disabled {
     width: min(680px, calc(100vw - 190px));
     border-left: 1px solid var(--line);
     box-shadow: -24px 0 60px color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+
+  .view-editor.is-inline {
+    right: auto;
+    left: auto;
+    width: 100%;
+    border-left: 0;
+    box-shadow: none;
   }
 }
 
