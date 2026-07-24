@@ -250,18 +250,20 @@ export function ViewsScreen({
       ? calendarDateDefaults(selected, currentCalendarCreateValue)
       : {};
   const captureDefaults =
-    selected?.presentation?.type === "tasknotes.projects" &&
-    !currentCreationContext
+    selected?.presentation?.options.create === false
       ? null
-      : currentCreationPlan
-        ? mergeTaskCreationDefaults(
-            currentCreationPlan.defaults,
-            mergeTaskCreationDefaults(
-              calendarCreateDefaults,
-              currentCreationContext?.defaults ?? {},
-            ),
-          )
-        : null;
+      : selected?.presentation?.type === "tasknotes.projects" &&
+          !currentCreationContext
+        ? null
+        : currentCreationPlan
+          ? mergeTaskCreationDefaults(
+              currentCreationPlan.defaults,
+              mergeTaskCreationDefaults(
+                calendarCreateDefaults,
+                currentCreationContext?.defaults ?? {},
+              ),
+            )
+          : null;
 
   async function moveBoardTask(
     row: TaskViewRow,

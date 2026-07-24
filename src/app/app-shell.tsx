@@ -6,8 +6,10 @@ import {
   Columns3,
   List,
   MoreHorizontal,
+  Search,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { LoadingRows } from "../components/loading";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
@@ -18,7 +20,6 @@ import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
 import { useCollectionGate } from "./collection-context";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
-import { ArchiveScreen } from "./archive-screen";
 import { SearchScreen } from "./search-screen";
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
@@ -27,7 +28,7 @@ import { ViewsScreen } from "./views-screen";
 import type { TaskView } from "../domain/view";
 
 type Route =
-  | { page: "home" | "search" | "archive" | "more" }
+  | { page: "home" | "search" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
@@ -200,9 +201,11 @@ export function AppShell() {
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
-      : workspace.page === "views" || workspace.page === "search"
-        ? "views"
-        : workspace.page;
+      : workspace.page === "views" && !workspace.key
+        ? "more"
+        : workspace.page === "views" || workspace.page === "search"
+          ? "views"
+          : workspace.page;
   return (
     <div className={`app-shell${route.page === "task" ? " has-detail" : ""}`}>
       <a className="skip-link" href="#main-content">
@@ -228,18 +231,12 @@ export function AppShell() {
       <main id="main-content" className="page-surface">
         {workspace.page === "search" ? (
           <SearchScreen
-            onBack={() => navigate({ page: "views" }, true)}
-            onOpen={(task) => navigate({ page: "task", id: task.id })}
-          />
-        ) : workspace.page === "archive" ? (
-          <ArchiveScreen
-            onBack={() => navigate({ page: "more" }, true)}
+            onBack={() => navigate({ page: "home" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : workspace.page === "more" ? (
           <MoreScreen
             navigationViewCount={navigationViews.length}
-            onOpenArchive={() => navigate({ page: "archive" })}
             onOpenViews={() => {
               void refreshViews();
               navigate({ page: "views" });
@@ -348,8 +345,9 @@ function Navigation({
 }) {
   const visibleViews =
     mode === "mobile" ? navigationViews.slice(0, 3) : navigationViews;
+  const additionalViews =
+    mode === "mobile" ? navigationViews.slice(visibleViews.length) : [];
   const hiddenNavigationViewActive =
-    mode === "mobile" &&
     active.startsWith("view:") &&
     !visibleViews.some((view) => active === `view:${view.key}`);
   const items: {
@@ -357,52 +355,204 @@ function Navigation({
     label: string;
     icon: typeof CheckCircle2;
     route: Route;
-  }[] = [
-    ...visibleViews.map((view) => ({
-      key: `view:${view.key}`,
-      label: view.name,
-      icon: navigationViewIcon(view),
-      route:
-        view.key === homeViewKey
-          ? ({ page: "home" } as const)
-          : ({ page: "views", key: view.key } as const),
-    })),
-    {
-      key: "views",
-      label:
-        mode === "mobile" && navigationViews.length > visibleViews.length
-          ? "More views"
-          : "Views",
-      icon: Columns3,
-      route: { page: "views" },
-    },
-    {
-      key: "more",
-      label: "More",
-      icon: MoreHorizontal,
-      route: { page: "more" },
-    },
-  ];
-  return items.map(({ key, label, icon: Icon, route }) => (
-    <button
-      aria-current={
-        active === key || (key === "views" && hiddenNavigationViewActive)
-          ? "page"
-          : undefined
+  }[] = visibleViews.map((view) => ({
+    key: `view:${view.key}`,
+    label: view.name,
+    icon: navigationViewIcon(view),
+    route:
+      view.key === homeViewKey
+        ? ({ page: "home" } as const)
+        : ({ page: "views", key: view.key } as const),
+  }));
+  const [menuPosition, setMenuPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuPosition) return;
+    const close = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !menuRef.current?.contains(target) &&
+        !triggerRef.current?.contains(target)
+      )
+        closeMenu();
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMenu();
+        triggerRef.current?.focus();
+        return;
       }
-      className={
-        active === key || (key === "views" && hiddenNavigationViewActive)
-          ? "is-active"
-          : undefined
-      }
-      key={key}
-      type="button"
-      onClick={() => onNavigate(route)}
-    >
-      <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-      <span>{label}</span>
-    </button>
-  ));
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const choices = [
+        ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
+          "[role='menuitem']",
+        ) ?? []),
+      ];
+      if (!choices.length) return;
+      const current = choices.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? choices.length - 1
+            : event.key === "ArrowDown"
+              ? (current + 1) % choices.length
+              : (current - 1 + choices.length) % choices.length;
+      event.preventDefault();
+      choices[next]?.focus();
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", keydown);
+    window.addEventListener("resize", closeMenu);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", keydown);
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [menuPosition]);
+
+  function openMenu() {
+    if (menuPosition) {
+      closeMenu();
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    const width = Math.min(236, innerWidth - 16);
+    const height = Math.min(
+      (additionalViews.length + 1) * 46 + 16,
+      innerHeight - 96,
+    );
+    const left =
+      mode === "mobile"
+        ? Math.max(
+            8,
+            Math.min(
+              (rect?.left ?? innerWidth / 2) +
+                (rect?.width ?? 0) / 2 -
+                width / 2,
+              innerWidth - width - 8,
+            ),
+          )
+        : Math.min((rect?.right ?? 190) + 8, innerWidth - width - 8);
+    const top =
+      mode === "mobile"
+        ? Math.max(8, (rect?.top ?? innerHeight) - height - 8)
+        : Math.max(8, Math.min(rect?.top ?? 80, innerHeight - height - 8));
+    setMenuPosition({ left, top });
+    queueMicrotask(() =>
+      menuRef.current
+        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
+        ?.focus(),
+    );
+  }
+
+  function closeMenu() {
+    setMenuPosition(null);
+  }
+
+  function choose(route: Route) {
+    closeMenu();
+    onNavigate(route);
+  }
+
+  return (
+    <>
+      {items.map(({ key, label, icon: Icon, route }) => (
+        <button
+          aria-current={active === key ? "page" : undefined}
+          className={active === key ? "is-active" : undefined}
+          key={key}
+          type="button"
+          onClick={() => onNavigate(route)}
+        >
+          <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
+          <span>{label}</span>
+        </button>
+      ))}
+      <button
+        aria-controls={menuPosition ? menuId : undefined}
+        aria-current={
+          active === "views" || hiddenNavigationViewActive ? "page" : undefined
+        }
+        aria-expanded={Boolean(menuPosition)}
+        aria-haspopup="menu"
+        className={
+          active === "views" || hiddenNavigationViewActive
+            ? "is-active"
+            : undefined
+        }
+        ref={triggerRef}
+        type="button"
+        onClick={openMenu}
+      >
+        <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>Views</span>
+      </button>
+      {menuPosition
+        ? createPortal(
+            <div
+              aria-label="Views"
+              className="navigation-views-menu"
+              id={menuId}
+              ref={menuRef}
+              role="menu"
+              style={menuPosition}
+            >
+              {additionalViews.map((view) => {
+                const Icon = navigationViewIcon(view);
+                return (
+                  <button
+                    aria-current={
+                      active === `view:${view.key}` ? "page" : undefined
+                    }
+                    key={view.key}
+                    role="menuitem"
+                    type="button"
+                    onClick={() =>
+                      choose(
+                        view.key === homeViewKey
+                          ? { page: "home" }
+                          : { page: "views", key: view.key },
+                      )
+                    }
+                  >
+                    <Icon aria-hidden="true" size={19} strokeWidth={1.7} />
+                    <span>{view.name}</span>
+                  </button>
+                );
+              })}
+              {additionalViews.length ? <hr /> : null}
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => choose({ page: "search" })}
+              >
+                <Search aria-hidden="true" size={19} strokeWidth={1.7} />
+                <span>Search tasks</span>
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+      <button
+        aria-current={active === "more" ? "page" : undefined}
+        className={active === "more" ? "is-active" : undefined}
+        type="button"
+        onClick={() => onNavigate({ page: "more" })}
+      >
+        <MoreHorizontal aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>More</span>
+      </button>
+    </>
+  );
 }
 
 function navigationViewIcon(view: TaskView): typeof CheckCircle2 {
@@ -430,7 +580,6 @@ function parseRoute(): Route {
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
-  if (path === "/archive") return { page: "archive" };
   if (path === "/more") return { page: "more" };
   return { page: "home" };
 }

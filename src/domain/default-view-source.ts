@@ -9,12 +9,13 @@ import type { TaskViewDocument } from "./view";
 import type { TaskRepository } from "../storage/repository";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
-const TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION = 2;
+const TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION = 3;
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Today",
   "Upcoming",
   "Calendar",
   "Projects",
+  "Archive",
 ] as const;
 
 export function taskNotesDefaultBaseDocument(
@@ -110,6 +111,14 @@ export function taskNotesDefaultBaseDocument(
           order: ["file.name", "file.folder"],
           sort: [{ property: "file.name", direction: "ASC" }],
         },
+        {
+          type: "tasknotesTaskList",
+          name: "Archive",
+          filters: { and: [archivedTaskFilter(configuration)] },
+          order: [title, status, scheduled, due, priority],
+          sort: [{ property: title, direction: "ASC" }],
+          options: { create: false },
+        },
       ],
     },
     { lineWidth: 0 },
@@ -188,6 +197,18 @@ export function taskNotesDefaultCanonicalDocument(
             fallback: "mdbase.table",
           },
         },
+        {
+          id: "archive",
+          name: "Archive",
+          where: archivedTaskFilter(configuration),
+          select: selection,
+          order_by: [{ field: fields.title, direction: "asc" }],
+          presentation: {
+            type: "tasknotes.task-list",
+            fallback: "mdbase.table",
+            options: { create: false },
+          },
+        },
       ],
     },
     "",
@@ -223,8 +244,7 @@ export async function ensureTaskNotesDefaultViewSource(
 ): Promise<TaskViewDocument[]> {
   const existing = documents.find(isTaskNotesDefaultViewDocument);
   if (existing) {
-    if (existing.views.some(({ name }) => name === "Projects"))
-      return documents;
+    if (existing.views.some(({ name }) => name === "Archive")) return documents;
     return upgradeTaskNotesDefaultViewSource(
       repository,
       documents,
@@ -281,10 +301,19 @@ async function upgradeTaskNotesDefaultViewSource(
       const generated = parse(
         taskNotesDefaultBaseDocument(configuration),
       ) as Record<string, unknown>;
-      const project = (generated.views as Array<Record<string, unknown>>).find(
-        (view) => view.name === "Projects",
+      const existingNames = new Set(
+        (Array.isArray(value?.views) ? value.views : []).flatMap((view) =>
+          view &&
+          typeof view === "object" &&
+          typeof (view as Record<string, unknown>).name === "string"
+            ? [(view as Record<string, string>).name]
+            : [],
+        ),
       );
-      if (project) views.add(project);
+      for (const view of generated.views as Array<Record<string, unknown>>) {
+        if (typeof view.name === "string" && !existingNames.has(view.name))
+          views.add(view);
+      }
       document.set("x-tasknotes-app", {
         version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
       });
@@ -313,15 +342,25 @@ async function upgradeTaskNotesDefaultViewSource(
       const currentViews = Array.isArray(parsed.frontmatter.views)
         ? parsed.frontmatter.views
         : [];
-      const project = Array.isArray(generated.views)
-        ? generated.views.find(
-            (view) =>
-              view &&
-              typeof view === "object" &&
-              (view as Record<string, unknown>).id === "projects",
+      const existingIds = new Set(
+        currentViews.flatMap((view) =>
+          view &&
+          typeof view === "object" &&
+          typeof (view as Record<string, unknown>).id === "string"
+            ? [(view as Record<string, string>).id]
+            : [],
+        ),
+      );
+      if (Array.isArray(generated.views))
+        for (const view of generated.views) {
+          if (
+            view &&
+            typeof view === "object" &&
+            typeof (view as Record<string, unknown>).id === "string" &&
+            !existingIds.has((view as Record<string, string>).id)
           )
-        : undefined;
-      if (project) currentViews.push(project);
+            currentViews.push(view);
+        }
       parsed.frontmatter.views = currentViews;
       parsed.frontmatter["x-tasknotes-app"] = {
         version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
@@ -338,7 +377,7 @@ async function upgradeTaskNotesDefaultViewSource(
     if (
       concurrent
         .find(isTaskNotesDefaultViewDocument)
-        ?.views.some(({ name }) => name === "Projects")
+        ?.views.some(({ name }) => name === "Archive")
     )
       return concurrent;
   }
@@ -412,6 +451,12 @@ function activeTaskFilters(
     ...completed,
     `${file}.hasTag(${literal(configuration.fieldMapping.archiveTag)}) != true`,
   ];
+}
+
+function archivedTaskFilter(
+  configuration: TaskCollectionConfiguration,
+): string {
+  return `file.hasTag(${literal(configuration.fieldMapping.archiveTag)}) == true`;
 }
 
 function note(field: string): string {
