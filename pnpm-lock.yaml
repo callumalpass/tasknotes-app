@@ -1219,7 +1219,7 @@ packages:
   "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz":
     resolution:
       {
-        integrity: sha512-1/TTnvCyIu5/rJl/jmApuhW7xuYlHa3v3oc/TUc1wt6jezhPM27HHvSrrTOiWpaI6VYU7JnGH7+qA9KXT3s5DQ==,
+        integrity: sha512-COvnjDq098Hf2jk/C062yKJRdouH9NHicGVJSADTKoOP3RvZ/FrekzBrQbiU4Ix6BGNTb5NR6aXRxDJdEwL8jg==,
         tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz,
       }
     version: 0.1.0-beta.1
@@ -1236,7 +1236,7 @@ packages:
   "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.1.tgz":
     resolution:
       {
-        integrity: sha512-adP3U108ZS4T+Ko5BJP19Nw46TIDRovONKB+445rOyDQxhqbsnDT3SuZd5lud8ufMzpLODf7R5AW9iiY8j2GEg==,
+        integrity: sha512-m/0zDM/WZJazpgBg+QN5hGwwniyBgMzTNuIZPE2BbDmWs38cX0OtJWguRLoqQTql6RWWvG7n9SnClRtDvf+amg==,
         tarball: file:vendor/mdbase-connect-0.1.0-beta.1.tgz,
       }
     version: 0.1.0-beta.1
