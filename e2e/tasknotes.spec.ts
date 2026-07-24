@@ -185,6 +185,43 @@ async function openSearch(page: Page): Promise<void> {
     .click();
 }
 
+async function chooseOption(
+  scope: Page | Locator,
+  label: string,
+  option: string,
+): Promise<void> {
+  await scope.getByRole("combobox", { name: label, exact: true }).click();
+  await scope.getByRole("option", { name: option, exact: true }).click();
+}
+
+async function chooseDate(
+  page: Page,
+  label: string,
+  value: string,
+): Promise<void> {
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.locator(`[data-date="${value}"]`).last().click();
+}
+
+async function chooseTime(
+  page: Page,
+  label: string,
+  value: string,
+): Promise<void> {
+  const [hour, minute] = value.split(":");
+  await page.getByRole("button", { name: label, exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: label, exact: true });
+  await dialog
+    .getByRole("listbox", { name: "Hour" })
+    .getByRole("option", { name: hour, exact: true })
+    .click();
+  await dialog
+    .getByRole("listbox", { name: "Minute" })
+    .getByRole("option", { name: minute, exact: true })
+    .click();
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(async () => {
@@ -202,6 +239,66 @@ test.beforeEach(async ({ page }) => {
   ).toBeVisible();
 });
 
+test("uses responsive TaskNotes controls instead of browser pickers", async ({
+  page,
+}, testInfo) => {
+  await page.getByLabel("New task title").fill("Test native controls");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Test native controls", { exact: true }).click();
+
+  await expect(
+    page.locator(
+      'select, datalist, input[type="date"], input[type="time"], input[type="datetime-local"]',
+    ),
+  ).toHaveCount(0);
+
+  await chooseOption(page, "Status", "In progress");
+  await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
+    "data-value",
+    "in-progress",
+  );
+
+  const date = new Date();
+  date.setDate(date.getDate() + 2);
+  const dateValue = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+
+  await page
+    .getByRole("button", { name: "Scheduled date", exact: true })
+    .click();
+  const calendar = page.getByRole("dialog", {
+    name: "Scheduled date calendar",
+  });
+  const calendarBox = await calendar.boundingBox();
+  const viewport = page.viewportSize();
+  expect(calendarBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  if (testInfo.project.name === "mobile") {
+    expect(calendarBox!.width).toBeGreaterThanOrEqual(viewport!.width - 1);
+    expect(
+      Math.abs(calendarBox!.y + calendarBox!.height - viewport!.height),
+    ).toBeLessThanOrEqual(1);
+  } else {
+    expect(calendarBox!.width).toBeLessThan(400);
+  }
+  await page
+    .getByRole("button", { name: "Close Scheduled date calendar" })
+    .click();
+
+  await chooseDate(page, "Scheduled date", dateValue);
+  await chooseTime(page, "Scheduled time", "07:05");
+  await expect(
+    page.getByRole("button", { name: "Scheduled date", exact: true }),
+  ).toHaveAttribute("data-value", dateValue);
+  await expect(
+    page.getByRole("button", { name: "Scheduled time", exact: true }),
+  ).toHaveAttribute("data-value", "07:05");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+});
+
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({
   page,
 }) => {
@@ -216,21 +313,20 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     String(tomorrow.getMonth() + 1).padStart(2, "0"),
     String(tomorrow.getDate()).padStart(2, "0"),
   ].join("-");
-  await page.getByLabel("Scheduled date", { exact: true }).fill(tomorrowValue);
+  await chooseDate(page, "Scheduled date", tomorrowValue);
   await page.getByText("Organize", { exact: true }).click();
   await page.getByLabel("Projects").fill("mdbase");
   await page.getByLabel("Contexts").fill("computer");
   await page.getByLabel("Tags").fill("release, planning");
   await page.getByText("Repeat and reminders", { exact: true }).click();
-  await page.getByLabel("Repeat").selectOption("weekly");
+  await chooseOption(page, "Repeat", "Weekly");
   await page.getByRole("button", { name: "Customize" }).click();
   await page.getByLabel("Repeat interval").fill("2");
   await page.getByRole("button", { name: "Monday" }).click();
-  await page.getByLabel("Ends").selectOption("count");
+  await chooseOption(page, "Ends", "After occurrences");
   await page.getByRole("spinbutton", { name: "Occurrences" }).fill("6");
-  await page
-    .getByLabel("Reminder date and time")
-    .fill(`${tomorrowValue}T09:00`);
+  await chooseDate(page, "Reminder date", tomorrowValue);
+  await chooseTime(page, "Reminder time", "09:00");
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
@@ -355,12 +451,18 @@ test("interprets natural-language capture and preserves timed task fields", asyn
     .getByRole("button", { name: /^Prepare launch / })
     .first()
     .click();
-  await expect(page.getByLabel("Status")).toHaveValue("in-progress");
+  await expect(page.getByLabel("Status")).toHaveAttribute(
+    "data-value",
+    "in-progress",
+  );
   await page.getByText("Organize", { exact: true }).click();
   await expect(
     page.getByRole("button", { name: "High", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByLabel("Scheduled time")).toHaveValue("09:00");
+  await expect(page.getByLabel("Scheduled time")).toHaveAttribute(
+    "data-value",
+    "09:00",
+  );
   await expect(
     page.getByRole("button", { name: "Remove mdbase" }),
   ).toBeVisible();
@@ -615,7 +717,7 @@ Created on {{date}} from the collection template.`);
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Template-backed task", { exact: true }).click();
   await expect(page.getByLabel("Notes")).toHaveValue(/Created on/);
-  await expect(page.getByLabel("Status")).toHaveValue("open");
+  await expect(page.getByLabel("Status")).toHaveAttribute("data-value", "open");
 });
 
 test("renders configured saved-view properties in every result list", async ({
@@ -630,7 +732,7 @@ test("renders configured saved-view properties in every result list", async ({
   await page.getByLabel("New task title").fill("Plan saved views");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Plan saved views", { exact: true }).click();
-  await page.getByLabel("Due date", { exact: true }).fill(today);
+  await chooseDate(page, "Due date", today);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
@@ -827,9 +929,9 @@ views:
       destination.getByText("Plan saved views", { exact: true }),
     ).toBeVisible();
     await destination.getByText("Plan saved views", { exact: true }).click();
-    await expect(page.getByLabel("Due date", { exact: true })).toHaveValue(
-      nextDayValue,
-    );
+    await expect(
+      page.getByRole("button", { name: "Due date", exact: true }),
+    ).toHaveAttribute("data-value", nextDayValue);
     await page.getByRole("button", { name: "Back", exact: true }).click();
 
     await expect(
@@ -987,17 +1089,15 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   ).toBeDisabled();
   await page.getByRole("button", { name: "Builder", exact: true }).click();
   await page.getByLabel("Filter property").fill("status");
-  await page.getByLabel("Filter condition").selectOption("equals");
-  await page.getByLabel("Filter value").selectOption("open");
+  await chooseOption(page, "Filter condition", "is");
+  await chooseOption(page, "Filter value", "Open");
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
   const creationDefaults = page.locator("details.view-create-defaults");
   await creationDefaults.locator("summary").click();
   await expect(creationDefaults).toHaveAttribute("open", "");
-  await creationDefaults
-    .getByRole("combobox", { name: "Priority" })
-    .selectOption("high");
+  await chooseOption(creationDefaults, "Priority", "High");
   await page.getByRole("button", { name: "Save", exact: true }).click();
 
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();

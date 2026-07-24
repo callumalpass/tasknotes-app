@@ -16,6 +16,10 @@ import {
 import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
 import { MultiValueField } from "./multi-value-field";
+import {
+  TaskNotesDateTimeField,
+  TaskNotesSelectField,
+} from "./tasknotes-controls";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -356,32 +360,18 @@ function CaptureDetails({
           value={input.due}
           onChange={(due) => onChange({ due })}
         />
-        <label className="form-field">
-          <span>Status</span>
-          <select
-            value={input.status ?? configuration.defaults.status}
-            onChange={(event) => onChange({ status: event.target.value })}
-          >
-            {configuration.statuses.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="form-field">
-          <span>Priority</span>
-          <select
-            value={input.priority ?? configuration.defaults.priority}
-            onChange={(event) => onChange({ priority: event.target.value })}
-          >
-            {configuration.priorities.map((priority) => (
-              <option key={priority.value} value={priority.value}>
-                {priority.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <TaskNotesSelectField
+          label="Status"
+          options={configuration.statuses}
+          value={input.status ?? configuration.defaults.status}
+          onChange={(status) => onChange({ status })}
+        />
+        <TaskNotesSelectField
+          label="Priority"
+          options={configuration.priorities}
+          value={input.priority ?? configuration.defaults.priority}
+          onChange={(priority) => onChange({ priority })}
+        />
         <CaptureList
           field={configuration.fieldMapping.projects}
           label="Projects"
@@ -430,31 +420,29 @@ function CaptureDetails({
             }
           />
         </label>
-        <label className="form-field">
-          <span>Repeat</span>
-          <select
-            value={recurrencePreset(input.recurrence)}
-            onChange={(event) => {
-              const value = event.target.value;
-              onChange({
-                recurrence:
-                  value === "never"
-                    ? undefined
-                    : (recurrenceRule(value) ?? input.recurrence),
-              });
-            }}
-          >
-            <option value="never">Never</option>
-            <option value="daily">Daily</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            {recurrencePreset(input.recurrence) === "custom" ? (
-              <option value="custom">Custom rule</option>
-            ) : null}
-          </select>
-        </label>
+        <TaskNotesSelectField
+          label="Repeat"
+          options={[
+            { value: "never", label: "Never" },
+            { value: "daily", label: "Daily" },
+            { value: "weekdays", label: "Weekdays" },
+            { value: "weekly", label: "Weekly" },
+            { value: "monthly", label: "Monthly" },
+            { value: "yearly", label: "Yearly" },
+            ...(recurrencePreset(input.recurrence) === "custom"
+              ? [{ value: "custom", label: "Custom rule" }]
+              : []),
+          ]}
+          value={recurrencePreset(input.recurrence)}
+          onChange={(value) =>
+            onChange({
+              recurrence:
+                value === "never"
+                  ? undefined
+                  : (recurrenceRule(value) ?? input.recurrence),
+            })
+          }
+        />
       </div>
       <label className="notes-field capture-notes">
         <span>Notes</span>
@@ -500,31 +488,17 @@ function CaptureDateTime({
   value?: string;
   onChange(value?: string): void;
 }) {
-  const date = taskDatePart(value);
-  const time = taskTimePart(value);
   return (
-    <label className="form-field date-time-field">
-      <span>{label}</span>
-      <div>
-        <input
-          aria-label={`${label} date`}
-          type="date"
-          value={date}
-          onChange={(event) =>
-            onChange(combineTaskDateTime(event.target.value, time))
-          }
-        />
-        <input
-          aria-label={`${label} time`}
-          disabled={!date}
-          type="time"
-          value={time}
-          onChange={(event) =>
-            onChange(combineTaskDateTime(date, event.target.value))
-          }
-        />
-      </div>
-    </label>
+    <TaskNotesDateTimeField
+      combineValue={combineTaskDateTime}
+      label={label}
+      splitValue={(current) => ({
+        date: taskDatePart(current) || undefined,
+        time: taskTimePart(current) || undefined,
+      })}
+      value={value}
+      onChange={onChange}
+    />
   );
 }
 

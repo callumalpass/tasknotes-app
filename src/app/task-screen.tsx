@@ -12,17 +12,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LoadingRows } from "../components/loading";
 import { MultiValueField } from "../components/multi-value-field";
 import {
+  TaskNotesDateField,
+  TaskNotesDatePicker,
+  TaskNotesDateTimeField,
+  TaskNotesSelect,
+  TaskNotesSelectField,
+  TaskNotesTimePicker,
+} from "../components/tasknotes-controls";
+import {
   buildRecurrenceRule,
   parseRecurrenceRule,
   type RecurrenceRuleDraft,
 } from "../domain/recurrence-rule";
 import {
-  combineTaskDateTime,
   activeTimeEntry,
+  combineTaskDateTime,
   recurrencePreset,
   recurrenceRule,
-  taskTimeTotals,
   taskDatePart,
+  taskTimeTotals,
   taskTimePart,
 } from "../domain/task";
 import { useRepository, useTask } from "./repository-context";
@@ -517,30 +525,25 @@ function TaskEditor({
         />
 
         <div className="field-grid timing-fields task-core-fields">
-          <label className="form-field">
-            <span>Status</span>
-            <select
-              aria-describedby={
+          <div className="tasknotes-status-field">
+            <TaskNotesSelectField
+              ariaDescribedBy={
                 task.occurrenceDate ? "occurrence-status-help" : undefined
               }
               disabled={Boolean(task.occurrenceDate)}
+              label="Status"
+              options={[...configuration.statuses].sort(
+                (left, right) => left.order - right.order,
+              )}
               value={draft.status}
-              onChange={(event) => change({ status: event.target.value })}
-            >
-              {[...configuration.statuses]
-                .sort((left, right) => left.order - right.order)
-                .map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-            </select>
+              onChange={(status) => change({ status })}
+            />
             {task.occurrenceDate ? (
               <small id="occurrence-status-help">
                 Use the occurrence actions above to change this state.
               </small>
             ) : null}
-          </label>
+          </div>
           <DateTimeField
             label="Scheduled"
             value={draft.scheduled}
@@ -962,17 +965,15 @@ function TimeEntryEditor({
         onChange={(event) => setDescription(event.target.value)}
       />
       <div>
-        <input
-          aria-label="Session start"
-          type="datetime-local"
+        <TaskNotesDateTimeField
+          label="Session start"
           value={start}
-          onChange={(event) => setStart(event.target.value)}
+          onChange={(value) => setStart(value ?? "")}
         />
-        <input
-          aria-label="Session end"
-          type="datetime-local"
+        <TaskNotesDateTimeField
+          label="Session end"
           value={end}
-          onChange={(event) => setEnd(event.target.value)}
+          onChange={(value) => setEnd(value ?? "")}
         />
       </div>
       <div className="time-entry-editor-actions">
@@ -1127,28 +1128,26 @@ function RecurrenceField({
   return (
     <div className="repeat-fields">
       <div className="repeat-heading">
-        <label className="form-field">
-          <span>Repeat</span>
-          <select
-            value={preset}
-            onChange={(event) => {
-              const next = event.target.value;
-              onChange(
-                next === "never" ? undefined : (recurrenceRule(next) ?? value),
-              );
-            }}
-          >
-            <option value="never">Never</option>
-            <option value="daily">Daily</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            {preset === "custom" ? (
-              <option value="custom">Custom</option>
-            ) : null}
-          </select>
-        </label>
+        <TaskNotesSelectField
+          label="Repeat"
+          options={[
+            { value: "never", label: "Never" },
+            { value: "daily", label: "Daily" },
+            { value: "weekdays", label: "Weekdays" },
+            { value: "weekly", label: "Weekly" },
+            { value: "monthly", label: "Monthly" },
+            { value: "yearly", label: "Yearly" },
+            ...(preset === "custom"
+              ? [{ value: "custom", label: "Custom" }]
+              : []),
+          ]}
+          value={preset}
+          onChange={(next) =>
+            onChange(
+              next === "never" ? undefined : (recurrenceRule(next) ?? value),
+            )
+          }
+        />
         {value ? (
           <button
             className="text-action"
@@ -1190,21 +1189,21 @@ function RecurrenceField({
                   update({ interval: Number(event.target.value) || 1 })
                 }
               />
-              <select
-                aria-label="Repeat frequency"
+              <TaskNotesSelect
+                ariaLabel="Repeat frequency"
+                options={[
+                  { value: "DAILY", label: "days" },
+                  { value: "WEEKLY", label: "weeks" },
+                  { value: "MONTHLY", label: "months" },
+                  { value: "YEARLY", label: "years" },
+                ]}
                 value={rule.frequency}
-                onChange={(event) =>
+                onChange={(frequency) =>
                   update({
-                    frequency: event.target
-                      .value as RecurrenceRuleDraft["frequency"],
+                    frequency: frequency as RecurrenceRuleDraft["frequency"],
                   })
                 }
-              >
-                <option value="DAILY">days</option>
-                <option value="WEEKLY">weeks</option>
-                <option value="MONTHLY">months</option>
-                <option value="YEARLY">years</option>
-              </select>
+              />
             </div>
 
             {rule.frequency === "WEEKLY" ? (
@@ -1242,33 +1241,28 @@ function RecurrenceField({
             ) : null}
 
             <div className="recurrence-end">
-              <label className="form-field">
-                <span>Ends</span>
-                <select
-                  value={rule.end}
-                  onChange={(event) =>
-                    update({
-                      end: event.target.value as RecurrenceRuleDraft["end"],
-                      until:
-                        rule.until ?? new Date().toISOString().slice(0, 10),
-                      count: rule.count ?? 10,
-                    })
-                  }
-                >
-                  <option value="never">Never</option>
-                  <option value="until">On date</option>
-                  <option value="count">After occurrences</option>
-                </select>
-              </label>
+              <TaskNotesSelectField
+                label="Ends"
+                options={[
+                  { value: "never", label: "Never" },
+                  { value: "until", label: "On date" },
+                  { value: "count", label: "After occurrences" },
+                ]}
+                value={rule.end}
+                onChange={(end) =>
+                  update({
+                    end: end as RecurrenceRuleDraft["end"],
+                    until: rule.until ?? new Date().toISOString().slice(0, 10),
+                    count: rule.count ?? 10,
+                  })
+                }
+              />
               {rule.end === "until" ? (
-                <label className="form-field">
-                  <span>Last date</span>
-                  <input
-                    type="date"
-                    value={rule.until ?? ""}
-                    onChange={(event) => update({ until: event.target.value })}
-                  />
-                </label>
+                <TaskNotesDateField
+                  label="Last date"
+                  value={rule.until}
+                  onChange={(until) => update({ until })}
+                />
               ) : rule.end === "count" ? (
                 <label className="form-field">
                   <span>Occurrences</span>
@@ -1330,39 +1324,42 @@ function OccurrencePolicyField({
           <span className="field-label">Occurrence notes</span>
           <p>Keep individual Markdown notes for recurring dates.</p>
         </div>
-        <select
-          aria-label="Occurrence note policy"
+        <TaskNotesSelect
+          ariaLabel="Occurrence note policy"
+          options={[
+            { value: "manual", label: "When I choose" },
+            {
+              value: "on_completion",
+              label: "Create the next after completion",
+            },
+            { value: "rolling", label: "Keep a rolling window" },
+          ]}
           value={materialization}
-          onChange={(event) =>
+          onChange={(value) =>
             onChange({
-              occurrenceMaterialization: event.target
-                .value as Task["occurrenceMaterialization"],
+              occurrenceMaterialization:
+                value as Task["occurrenceMaterialization"],
             })
           }
-        >
-          <option value="manual">When I choose</option>
-          <option value="on_completion">
-            Create the next after completion
-          </option>
-          <option value="rolling">Keep a rolling window</option>
-        </select>
+        />
       </div>
       {materialization === "on_completion" ? (
-        <label className="form-field">
-          <span>Advance after</span>
-          <select
-            value={nextTrigger}
-            onChange={(event) =>
-              onChange({
-                occurrenceNextTrigger: event.target
-                  .value as Task["occurrenceNextTrigger"],
-              })
-            }
-          >
-            <option value="completion">Completion</option>
-            <option value="completion_or_skip">Completion or skip</option>
-          </select>
-        </label>
+        <TaskNotesSelectField
+          label="Advance after"
+          options={[
+            { value: "completion", label: "Completion" },
+            {
+              value: "completion_or_skip",
+              label: "Completion or skip",
+            },
+          ]}
+          value={nextTrigger}
+          onChange={(value) =>
+            onChange({
+              occurrenceNextTrigger: value as Task["occurrenceNextTrigger"],
+            })
+          }
+        />
       ) : null}
       {materialization === "rolling" ? (
         <div className="field-grid metadata-fields">
@@ -1436,43 +1433,67 @@ function ReminderField({
   const absolute = reminders.find(
     (reminder) => reminder.type === "absolute" && reminder.absoluteTime,
   );
+  const initial = toLocalDateTime(absolute?.absoluteTime);
+  const [date, setDate] = useState(initial.slice(0, 10));
+  const [time, setTime] = useState(initial.slice(11, 16));
+
+  function commit(nextDate: string, nextTime: string) {
+    onChange([
+      ...reminders.filter((reminder) => reminder !== absolute),
+      {
+        id: absolute?.id ?? crypto.randomUUID(),
+        type: "absolute",
+        absoluteTime: new Date(`${nextDate}T${nextTime}`).toISOString(),
+      },
+    ]);
+  }
+
+  function remove() {
+    onChange(reminders.filter((reminder) => reminder !== absolute));
+  }
+
   return (
-    <label className="form-field reminder-field">
-      <span>Reminder</span>
-      <div>
-        <input
-          aria-label="Reminder date and time"
-          type="datetime-local"
-          value={toLocalDateTime(absolute?.absoluteTime)}
-          onChange={(event) => {
-            const next = event.target.value;
-            onChange(
-              next
-                ? [
-                    ...reminders.filter((reminder) => reminder !== absolute),
-                    {
-                      id: absolute?.id ?? crypto.randomUUID(),
-                      type: "absolute",
-                      absoluteTime: new Date(next).toISOString(),
-                    },
-                  ]
-                : reminders.filter((reminder) => reminder !== absolute),
-            );
-          }}
-        />
-        {absolute ? (
-          <button
-            className="text-action danger"
-            type="button"
-            onClick={() =>
-              onChange(reminders.filter((reminder) => reminder !== absolute))
-            }
-          >
-            Remove
-          </button>
-        ) : null}
+    <div className="reminder-field">
+      <div className="form-field date-time-field tasknotes-control-field">
+        <span>Reminder</span>
+        <div>
+          <TaskNotesDatePicker
+            ariaLabel="Reminder date"
+            value={date || undefined}
+            onChange={(next) => {
+              const nextDate = next ?? "";
+              setDate(nextDate);
+              if (nextDate && time) commit(nextDate, time);
+              else if (!nextDate && absolute) remove();
+            }}
+          />
+          <TaskNotesTimePicker
+            ariaLabel="Reminder time"
+            disabled={!date}
+            value={time || undefined}
+            onChange={(next) => {
+              const nextTime = next ?? "";
+              setTime(nextTime);
+              if (date && nextTime) commit(date, nextTime);
+              else if (!nextTime && absolute) remove();
+            }}
+          />
+        </div>
       </div>
-    </label>
+      {absolute ? (
+        <button
+          className="text-action danger"
+          type="button"
+          onClick={() => {
+            setDate("");
+            setTime("");
+            remove();
+          }}
+        >
+          Remove
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -1509,31 +1530,17 @@ function DateTimeField({
   value?: string;
   onChange(value?: string): void;
 }) {
-  const date = taskDatePart(value);
-  const time = taskTimePart(value);
   return (
-    <label className="form-field date-time-field">
-      <span>{label}</span>
-      <div>
-        <input
-          aria-label={`${label} date`}
-          type="date"
-          value={date}
-          onChange={(event) =>
-            onChange(combineTaskDateTime(event.target.value, time))
-          }
-        />
-        <input
-          aria-label={`${label} time`}
-          disabled={!date}
-          type="time"
-          value={time}
-          onChange={(event) =>
-            onChange(combineTaskDateTime(date, event.target.value))
-          }
-        />
-      </div>
-    </label>
+    <TaskNotesDateTimeField
+      combineValue={combineTaskDateTime}
+      label={label}
+      splitValue={(current) => ({
+        date: taskDatePart(current) || undefined,
+        time: taskTimePart(current) || undefined,
+      })}
+      value={value}
+      onChange={onChange}
+    />
   );
 }
 
@@ -1575,18 +1582,21 @@ function CustomField({
       />
     );
   }
+  if (field.type === "date") {
+    return (
+      <TaskNotesDateField
+        label={field.displayName}
+        value={typeof value === "string" ? value : undefined}
+        onChange={onChange}
+      />
+    );
+  }
   return (
     <label className="form-field">
       <span>{field.displayName}</span>
       <input
         inputMode={field.type === "number" ? "decimal" : undefined}
-        type={
-          field.type === "date"
-            ? "date"
-            : field.type === "number"
-              ? "number"
-              : "text"
-        }
+        type={field.type === "number" ? "number" : "text"}
         value={
           typeof value === "string" || typeof value === "number" ? value : ""
         }

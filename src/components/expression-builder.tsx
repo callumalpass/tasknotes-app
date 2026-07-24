@@ -3,6 +3,12 @@ import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
 
+import {
+  TaskNotesCombobox,
+  TaskNotesDatePicker,
+  TaskNotesSelect,
+} from "./tasknotes-controls";
+
 import type { ViewDialect } from "../domain/view-document";
 
 export interface ExpressionField {
@@ -170,16 +176,17 @@ function FilterGroupEditor({
     <fieldset className="filter-group">
       <legend>{root ? "Include tasks when" : "Nested group"}</legend>
       <div className="filter-group-heading">
-        <select
-          aria-label={root ? "Match mode" : "Nested match mode"}
+        <TaskNotesSelect
+          ariaLabel={root ? "Match mode" : "Nested match mode"}
+          options={[
+            { value: "and", label: "All conditions match" },
+            { value: "or", label: "Any condition matches" },
+          ]}
           value={group.operator}
-          onChange={(event) =>
-            onChange({ ...group, operator: event.target.value as "and" | "or" })
+          onChange={(operator) =>
+            onChange({ ...group, operator: operator as "and" | "or" })
           }
-        >
-          <option value="and">All conditions match</option>
-          <option value="or">Any condition matches</option>
-        </select>
+        />
         {!root ? (
           <button
             aria-label="Remove group"
@@ -249,55 +256,57 @@ function FilterRuleEditor({
     <div className="filter-rule">
       <label>
         <span>Property</span>
-        <input
-          aria-label="Filter property"
-          list="view-filter-properties"
+        <TaskNotesCombobox
+          ariaLabel="Filter property"
+          options={fields.map((candidate) => ({
+            value: candidate.key,
+            label: candidate.label,
+          }))}
           value={rule.field}
-          onChange={(event) => onChange({ ...rule, field: event.target.value })}
+          onChange={(field) => onChange({ ...rule, field })}
         />
       </label>
       <label>
         <span>Condition</span>
-        <select
-          aria-label="Filter condition"
+        <TaskNotesSelect
+          ariaLabel="Filter condition"
+          options={[
+            { value: "equals", label: "is" },
+            { value: "not-equals", label: "is not" },
+            { value: "contains", label: "contains" },
+            { value: "not-contains", label: "does not contain" },
+            { value: "before", label: "is before" },
+            { value: "after", label: "is after" },
+            { value: "empty", label: "is empty" },
+            { value: "not-empty", label: "is not empty" },
+          ]}
           value={rule.operator}
-          onChange={(event) =>
-            onChange({ ...rule, operator: event.target.value as RuleOperator })
+          onChange={(operator) =>
+            onChange({ ...rule, operator: operator as RuleOperator })
           }
-        >
-          <option value="equals">is</option>
-          <option value="not-equals">is not</option>
-          <option value="contains">contains</option>
-          <option value="not-contains">does not contain</option>
-          <option value="before">is before</option>
-          <option value="after">is after</option>
-          <option value="empty">is empty</option>
-          <option value="not-empty">is not empty</option>
-        </select>
+        />
       </label>
       {!noValue ? (
         <label>
           <span>Value</span>
           {field?.options?.length ? (
-            <select
-              aria-label="Filter value"
+            <TaskNotesSelect
+              ariaLabel="Filter value"
+              options={[{ value: "", label: "Choose…" }, ...field.options]}
               value={rule.value}
-              onChange={(event) =>
-                onChange({ ...rule, value: event.target.value })
-              }
-            >
-              <option value="">Choose…</option>
-              {field.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => onChange({ ...rule, value })}
+            />
+          ) : field?.type === "date" ? (
+            <TaskNotesDatePicker
+              ariaLabel="Filter value"
+              value={rule.value || undefined}
+              onChange={(value) => onChange({ ...rule, value: value ?? "" })}
+            />
           ) : (
             <input
               aria-label="Filter value"
               inputMode={field?.type === "number" ? "decimal" : undefined}
-              type={field?.type === "date" ? "date" : "text"}
+              type="text"
               value={rule.value}
               onChange={(event) =>
                 onChange({ ...rule, value: event.target.value })
@@ -314,13 +323,6 @@ function FilterRuleEditor({
       >
         <Trash2 aria-hidden="true" size={16} />
       </button>
-      <datalist id="view-filter-properties">
-        {fields.map((candidate) => (
-          <option key={candidate.key} value={candidate.key}>
-            {candidate.label}
-          </option>
-        ))}
-      </datalist>
     </div>
   );
 }

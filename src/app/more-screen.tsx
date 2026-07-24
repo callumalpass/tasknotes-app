@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { TaskNotesSelect } from "../components/tasknotes-controls";
 import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
@@ -460,20 +461,21 @@ function ThemeSelect() {
     return () => media.removeEventListener("change", update);
   }, [preference]);
   return (
-    <select
+    <TaskNotesSelect
+      ariaLabel="Color theme"
       className="theme-picker"
-      aria-label="Color theme"
+      options={[
+        { value: "system", label: "System" },
+        { value: "light", label: "Light" },
+        { value: "dark", label: "Dark" },
+      ]}
       value={preference}
-      onChange={(event) => {
-        const next = event.target.value as ThemePreference;
+      onChange={(value) => {
+        const next = value as ThemePreference;
         setPreference(next);
         saveThemePreference(next);
       }}
-    >
-      <option value="system">System</option>
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-    </select>
+    />
   );
 }
 
