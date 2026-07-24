@@ -1219,7 +1219,7 @@ packages:
   "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz":
     resolution:
       {
-        integrity: sha512-COvnjDq098Hf2jk/C062yKJRdouH9NHicGVJSADTKoOP3RvZ/FrekzBrQbiU4Ix6BGNTb5NR6aXRxDJdEwL8jg==,
+        integrity: sha512-c7mBmDX2TutzWIvgtRJ1XAzjaO6wiSDcxhwJHzatpa5/JDmvMnbgVLEHWeWfQjgnGiKQUMZPdp/KU5qB2W46Qw==,
         tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz,
       }
     version: 0.1.0-beta.1
