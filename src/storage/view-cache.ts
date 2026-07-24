@@ -35,22 +35,34 @@ export class TaskViewCache extends Dexie {
     });
   }
 
-  async readExecution(key: string): Promise<TaskViewExecution | null> {
-    const execution = clone<TaskViewExecution | null>(
-      (await this.entries.get(`execution:${key}`))?.value,
-      null,
-    );
-    return execution
-      ? { ...execution, view: normalizeView(execution.view) }
-      : null;
+  async readExecution(
+    view: Pick<TaskView, "key" | "source">,
+  ): Promise<TaskViewExecution | null> {
+    const value =
+      (await this.entries.get(executionKey(view.key, view.source.revision)))
+        ?.value ??
+      // Read the pre-revision cache once for a seamless migration.
+      (await this.entries.get(`execution:${view.key}`))?.value;
+    const execution = clone<TaskViewExecution | null>(value, null);
+    if (
+      !execution ||
+      execution.view.key !== view.key ||
+      execution.view.source.revision !== view.source.revision
+    )
+      return null;
+    return { ...execution, view: normalizeView(execution.view) };
   }
 
   async writeExecution(execution: TaskViewExecution): Promise<void> {
     await this.entries.put({
-      key: `execution:${execution.view.key}`,
+      key: executionKey(execution.view.key, execution.view.source.revision),
       value: structuredClone(execution),
     });
   }
+}
+
+function executionKey(key: string, revision: string): string {
+  return `execution:${key}:${revision}`;
 }
 
 function normalizeView(view: TaskView): TaskView {

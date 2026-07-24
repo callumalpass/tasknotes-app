@@ -19,6 +19,7 @@ import {
 } from "../domain/task-occurrence";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
+import { TaskViewCache } from "./view-cache";
 import {
   normalizeViewDocuments,
   normalizeViewExecution,
@@ -69,6 +70,10 @@ export class RelayTaskRepository implements TaskRepository {
   private taskTypeName = "task";
   private displayName = "mdbase collection";
   private readonly cache = new Map<string, CachedRelayTask>();
+  private viewCache: TaskViewDocument[] = [];
+  private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
+  private viewStore: TaskViewCache | null = null;
+  private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
   private initialization: Promise<void> | null = null;
@@ -93,6 +98,9 @@ export class RelayTaskRepository implements TaskRepository {
     this.model = resolved.model;
     this.taskTypeName = resolved.typeName;
     this.displayName = description.display_name;
+    this.collectionId = description.collection_id;
+    this.viewStore = new TaskViewCache(description.collection_id);
+    this.viewCache = await this.viewStore.readViewDocuments().catch(() => []);
     await this.reloadCache();
     this.setConnected();
     await this.maintainRollingOccurrencesUnlocked();
@@ -390,13 +398,32 @@ export class RelayTaskRepository implements TaskRepository {
 
   async listViews(): Promise<TaskViewDocument[]> {
     try {
-      return normalizeViewDocuments(
+      this.viewCache = normalizeViewDocuments(
         validResult(await this.connect.listViews()) as ProviderViewList,
       );
+      await this.viewStore
+        ?.writeViewDocuments(this.viewCache)
+        .catch(() => undefined);
+      return structuredClone(this.viewCache);
     } catch (reason) {
       this.noteOperationFailure(reason);
+      if (this.viewCache.length) return structuredClone(this.viewCache);
       throw reason;
     }
+  }
+
+  async cachedViews(): Promise<TaskViewDocument[]> {
+    return structuredClone(this.viewCache);
+  }
+
+  async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
+    const key = viewExecutionKey(view);
+    const cached =
+      this.viewExecutionCache.get(key) ??
+      (await this.viewStore?.readExecution(view).catch(() => null));
+    if (!cached) return null;
+    this.viewExecutionCache.set(key, cached);
+    return structuredClone(cached);
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
@@ -409,7 +436,7 @@ export class RelayTaskRepository implements TaskRepository {
           render: false,
         }),
       ) as ProviderViewExecution;
-      return normalizeViewExecution(view, result, (record) =>
+      const execution = normalizeViewExecution(view, result, (record) =>
         this.readRecord({
           path: record.path,
           frontmatter: record.frontmatter ?? {},
@@ -417,8 +444,13 @@ export class RelayTaskRepository implements TaskRepository {
           types: record.types ?? [],
         }),
       );
+      this.viewExecutionCache.set(viewExecutionKey(view), execution);
+      await this.viewStore?.writeExecution(execution).catch(() => undefined);
+      return execution;
     } catch (reason) {
       this.noteOperationFailure(reason);
+      const cached = await this.cachedViewExecution(view);
+      if (cached) return { ...cached, stale: true };
       throw reason;
     }
   }
@@ -436,11 +468,13 @@ export class RelayTaskRepository implements TaskRepository {
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
     try {
-      return validResult(
+      const created = validResult(
         await this.connect.createViewSource({
           ...input,
         }),
       );
+      await this.refreshViewsAfterMutation();
+      return created;
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -451,13 +485,15 @@ export class RelayTaskRepository implements TaskRepository {
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
     try {
-      return validResult(
+      const updated = validResult(
         await this.connect.updateViewSource({
           path: input.path,
           document: input.document,
           if_revision: input.ifRevision,
         }),
       );
+      await this.refreshViewsAfterMutation();
+      return updated;
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -472,15 +508,28 @@ export class RelayTaskRepository implements TaskRepository {
           if_revision: ifRevision,
         }),
       );
+      await this.refreshViewsAfterMutation();
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
     }
   }
 
+  private async refreshViewsAfterMutation(): Promise<void> {
+    this.viewExecutionCache.clear();
+    this.viewCache = normalizeViewDocuments(
+      validResult(await this.connect.listViews()) as ProviderViewList,
+    );
+    await this.viewStore
+      ?.writeViewDocuments(this.viewCache)
+      .catch(() => undefined);
+    this.emit();
+  }
+
   async collectionInfo(): Promise<CollectionInfo> {
     return {
       kind: "connect",
+      id: this.collectionId,
       name: this.displayName,
       location: "Live connection through mdbase",
       runtime: Capacitor.isNativePlatform() ? "native" : "browser",
@@ -831,6 +880,9 @@ export class RelayTaskRepository implements TaskRepository {
 
   private noteOperationFailure(reason: unknown): void {
     if (isConnectionFailure(reason)) {
+      const message = connectionErrorMessage(reason);
+      if (this.status.state === "offline" && this.status.message === message)
+        return;
       this.setOffline(reason);
       this.emit();
     }
@@ -839,6 +891,10 @@ export class RelayTaskRepository implements TaskRepository {
   private emit(): void {
     for (const listener of this.listeners) listener();
   }
+}
+
+function viewExecutionKey(view: TaskView): string {
+  return `${view.key}:${view.source.revision}`;
 }
 
 function validResult<Result>(

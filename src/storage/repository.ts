@@ -36,6 +36,7 @@ import type {
 
 export interface CollectionInfo {
   kind: "local" | "connect";
+  id?: string;
   name: string;
   location: string;
   runtime: "browser" | "native";
@@ -61,7 +62,9 @@ export interface TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string): Promise<void>;
   stats(): Promise<TaskStats>;
+  cachedViews(): Promise<TaskViewDocument[]>;
   listViews(): Promise<TaskViewDocument[]>;
+  cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
   readViewSource(path: string): Promise<TaskViewSourceDocument>;
   createViewSource(
@@ -352,6 +355,14 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   listViews(): Promise<TaskViewDocument[]> {
     return this.views.list();
+  }
+
+  cachedViews(): Promise<TaskViewDocument[]> {
+    return Promise.resolve([]);
+  }
+
+  cachedViewExecution(): Promise<TaskViewExecution | null> {
+    return Promise.resolve(null);
   }
 
   executeView(view: TaskView): Promise<TaskViewExecution> {

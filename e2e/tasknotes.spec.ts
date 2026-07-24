@@ -587,6 +587,11 @@ views:
     inProgressColumn.getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
   await expect(
+    inProgressColumn
+      .locator(".kanban-card")
+      .filter({ hasText: "Plan saved views" }),
+  ).toHaveAttribute("aria-busy", "false");
+  await expect(
     page.getByRole("button", { name: "Work board", exact: true }),
   ).toHaveAttribute("aria-current", "page");
 
