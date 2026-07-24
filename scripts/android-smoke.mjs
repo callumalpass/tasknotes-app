@@ -221,6 +221,29 @@ views:
       throw new Error(
         "The native saved view did not render its configured formula property.",
       );
+    await devtools.clickNamedButton("Edit Android board");
+    await waitFor(
+      () => devtools.hasSelector('.view-editor[role="dialog"]'),
+      "the native view editor",
+    );
+    await waitFor(
+      () => devtools.hasText("Filter"),
+      "the loaded native view editor",
+    );
+    for (const section of ["View", "Filter", "Arrange", "New tasks"])
+      if (!(await devtools.hasText(section)))
+        throw new Error(`The native view editor did not show ${section}.`);
+    await devtools.clickButton("List");
+    await devtools.clickButton("Save view");
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `!document.querySelector('.view-editor') && !document.querySelector('.kanban-board')`,
+        ),
+      "the saved native view layout",
+    );
+    if (!(await devtools.hasText(initialTitle)))
+      throw new Error("The edited native view lost its task result.");
 
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
@@ -376,7 +399,7 @@ views:
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, hardware Back routing, relaunch persistence, saved-view execution, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, scheduled reminder, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {

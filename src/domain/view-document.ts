@@ -23,10 +23,17 @@ export interface EditableViewDraft {
   renderer: ViewRenderer;
   filter?: unknown;
   properties: string[];
+  sort: EditableViewSort[];
   groupProperty?: string;
+  groupDirection: "asc" | "desc";
   options: Record<string, unknown>;
   dialect: ViewDialect;
   availableProperties: string[];
+}
+
+export interface EditableViewSort {
+  property: string;
+  direction: "asc" | "desc";
 }
 
 export function readViewDraft(
@@ -108,6 +115,8 @@ export function emptyViewDraft(dialect: ViewDialect): EditableViewDraft {
     name: "New view",
     renderer: "tasknotes.task-list",
     properties: ["status", "due"],
+    sort: [],
+    groupDirection: "asc",
     options: {},
     dialect,
     availableProperties: [],
@@ -128,18 +137,28 @@ function readObsidianDraft(source: string, viewId: string): EditableViewDraft {
   const formulas = Object.keys(record(value.formulas)).map(
     (name) => `formula.${name}`,
   );
+  const properties = stringList(view.order);
+  const sort = obsidianSort(view.sort);
+  const grouping = groupProperty(view.groupBy);
   return {
     id: viewId,
     name: string(view.name) || "View",
     renderer: editableRenderer(string(view.type)),
     filter: view.filters,
-    properties: stringList(view.order),
-    groupProperty: groupProperty(view.groupBy),
+    properties,
+    sort,
+    groupProperty: grouping,
+    groupDirection: direction(record(view.groupBy).direction),
     options: record(view.options),
     dialect: "obsidian-bases",
     availableProperties: [
-      ...Object.keys(record(value.properties)),
-      ...formulas,
+      ...new Set([
+        ...Object.keys(record(value.properties)),
+        ...formulas,
+        ...properties,
+        ...sort.map(({ property }) => property),
+        ...(grouping ? [grouping] : []),
+      ]),
     ],
   };
 }
@@ -173,7 +192,20 @@ function updateObsidianDocument(
     view,
     "groupBy",
     supportsGrouping(draft.renderer) && draft.groupProperty
-      ? { property: draft.groupProperty, direction: "ASC" }
+      ? {
+          property: draft.groupProperty,
+          direction: draft.groupDirection.toUpperCase(),
+        }
+      : undefined,
+  );
+  setOrDelete(
+    view,
+    "sort",
+    draft.sort.length
+      ? draft.sort.map((sort) => ({
+          property: sort.property,
+          direction: sort.direction.toUpperCase(),
+        }))
       : undefined,
   );
   setOrDelete(
@@ -196,18 +228,28 @@ function readCanonicalDraft(source: string, viewId: string): EditableViewDraft {
     ...record(query.projections),
     ...record(view.projections),
   };
+  const properties = stringList(view.select);
+  const sort = canonicalSort(view.order_by);
+  const grouping = string(objectList(view.group_by)[0]?.field) || undefined;
   return {
     id: viewId,
     name: string(view.name) || "View",
     renderer: editableRenderer(string(record(view.presentation).type)),
     filter: view.where,
-    properties: stringList(view.select),
-    groupProperty: string(objectList(view.group_by)[0]?.field) || undefined,
+    properties,
+    sort,
+    groupProperty: grouping,
+    groupDirection: direction(objectList(view.group_by)[0]?.direction),
     options: record(record(view.presentation).options),
     dialect: "mdbase-cel",
     availableProperties: [
-      ...Object.keys(record(frontmatter.properties)),
-      ...Object.keys(projections).map((name) => `projection.${name}`),
+      ...new Set([
+        ...Object.keys(record(frontmatter.properties)),
+        ...Object.keys(projections).map((name) => `projection.${name}`),
+        ...properties,
+        ...sort.map(({ property }) => property),
+        ...(grouping ? [grouping] : []),
+      ]),
     ],
   };
 }
@@ -221,11 +263,31 @@ function updateCanonicalDocument(
   const views = objectList(frontmatter.views);
   const index = views.findIndex((view) => view.id === draft.id);
   if (index < 0) throw new Error("This view is no longer in its source file.");
-  const updated = { ...views[index], ...canonicalView(draft) };
+  const current = views[index];
+  const generated = canonicalView(draft);
+  const currentPresentation = record(current.presentation);
+  const generatedPresentation = record(generated.presentation);
+  const currentMappings = record(currentPresentation.mappings);
+  const generatedMappings = record(generatedPresentation.mappings);
+  const mappings = { ...currentMappings, ...generatedMappings };
+  if (draft.renderer !== "tasknotes.kanban") delete mappings.column;
+  const presentation: Record<string, unknown> = {
+    ...currentPresentation,
+    ...generatedPresentation,
+    ...(Object.keys(mappings).length ? { mappings } : {}),
+  };
+  if (!Object.keys(mappings).length) delete presentation.mappings;
+  if (!Object.keys(draft.options).length) delete presentation.options;
+  const updated: Record<string, unknown> = {
+    ...current,
+    ...generated,
+    presentation,
+  };
   if (typeof draft.filter !== "string" || !draft.filter.trim())
     delete updated.where;
   if (!supportsGrouping(draft.renderer) || !draft.groupProperty)
     delete updated.group_by;
+  if (!draft.sort.length) delete updated.order_by;
   views[index] = updated;
   frontmatter.views = views;
   return serializeMarkdownDocument(frontmatter, parsed.body);
@@ -237,9 +299,18 @@ function obsidianView(draft: EditableViewDraft): Record<string, unknown> {
     name: draft.name,
     filters: draft.filter,
     order: draft.properties,
+    sort: draft.sort.length
+      ? draft.sort.map((sort) => ({
+          property: sort.property,
+          direction: sort.direction.toUpperCase(),
+        }))
+      : undefined,
     groupBy:
       supportsGrouping(draft.renderer) && draft.groupProperty
-        ? { property: draft.groupProperty, direction: "ASC" }
+        ? {
+            property: draft.groupProperty,
+            direction: draft.groupDirection.toUpperCase(),
+          }
         : undefined,
     options: Object.keys(draft.options).length ? draft.options : undefined,
   });
@@ -258,9 +329,15 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
         ? draft.filter
         : undefined,
     select: draft.properties.length ? draft.properties : ["title"],
+    order_by: draft.sort.length
+      ? draft.sort.map((sort) => ({
+          field: sort.property,
+          direction: sort.direction,
+        }))
+      : undefined,
     group_by:
       supportsGrouping(draft.renderer) && draft.groupProperty
-        ? [{ field: draft.groupProperty, direction: "asc" }]
+        ? [{ field: draft.groupProperty, direction: draft.groupDirection }]
         : undefined,
     presentation: {
       type: draft.renderer,
@@ -297,6 +374,26 @@ function groupProperty(value: unknown): string | undefined {
   return typeof value === "string"
     ? value
     : string(record(value).property) || undefined;
+}
+
+function obsidianSort(value: unknown): EditableViewSort[] {
+  return objectList(value).flatMap((sort) => {
+    const property = string(sort.property);
+    return property ? [{ property, direction: direction(sort.direction) }] : [];
+  });
+}
+
+function canonicalSort(value: unknown): EditableViewSort[] {
+  return objectList(value).flatMap((sort) => {
+    const property = string(sort.field);
+    return property ? [{ property, direction: direction(sort.direction) }] : [];
+  });
+}
+
+function direction(value: unknown): "asc" | "desc" {
+  return typeof value === "string" && value.toLocaleLowerCase() === "desc"
+    ? "desc"
+    : "asc";
 }
 
 function supportsGrouping(renderer: ViewRenderer): boolean {

@@ -1085,7 +1085,7 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByRole("button", { name: "Expression", exact: true }).click();
   await page.getByLabel("Filter expression").fill("status == (");
   await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
+    page.getByRole("button", { name: "Save view", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Builder", exact: true }).click();
   await page.getByLabel("Filter property").fill("status");
@@ -1094,11 +1094,8 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
-  const creationDefaults = page.locator("details.view-create-defaults");
-  await creationDefaults.locator("summary").click();
-  await expect(creationDefaults).toHaveAttribute("open", "");
-  await chooseOption(creationDefaults, "Priority", "High");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await chooseOption(page, "Default priority", "High");
+  await page.getByRole("button", { name: "Save view", exact: true }).click();
 
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();
   await page.getByText("Open work", { exact: true }).click();
@@ -1123,11 +1120,9 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Edit Open work" }).click();
-  await expect(
-    page.getByRole("region", { name: "View settings" }),
-  ).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Edit view" })).toBeVisible();
   await page.getByRole("button", { name: "List", exact: true }).click();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save view", exact: true }).click();
   await expect(page.getByLabel("Open work board")).toHaveCount(0);
   await expect(
     page.getByText("Build the view editor", { exact: true }),
@@ -1141,12 +1136,104 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByRole("button", { name: "Edit Open work" }).click();
   await expect(page.getByRole("heading", { name: "Edit view" })).toBeVisible();
   await page.getByLabel("Name").fill("Focused work");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save view", exact: true }).click();
   await expect(page.getByText("Focused work", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit Focused work" }).click();
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete view" }).click();
+  const confirmation = page.getByRole("alertdialog", { name: "Delete view?" });
+  await expect(confirmation).toBeVisible();
+  await confirmation
+    .getByRole("button", { name: "Delete view", exact: true })
+    .click();
   await expect(page.getByText("Focused work", { exact: true })).toHaveCount(0);
+});
+
+test("uses one responsive editor for every saved view layout", async ({
+  page,
+}, testInfo) => {
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("editor-layouts.base", {
+      create: true,
+    });
+    const writable = await file.createWritable();
+    await writable.write(`views:
+  - type: tasknotesTaskList
+    name: Editor List
+    order: [status, due]
+    sort: [{ property: priority, direction: DESC }]
+  - type: tasknotesKanban
+    name: Editor Board
+    groupBy: { property: status, direction: ASC }
+  - type: tasknotesCalendar
+    name: Editor Calendar
+    options: { calendarView: listWeek, showDue: true }
+  - type: tasknotesMiniCalendar
+    name: Editor Mini
+    options: { showScheduled: true }
+  - type: tasknotesProjects
+    name: Editor Projects
+`);
+    await writable.close();
+  });
+
+  await openViewsCatalog(page);
+  const layouts = [
+    ["Editor List", "List"],
+    ["Editor Board", "Board"],
+    ["Editor Calendar", "Calendar"],
+    ["Editor Mini", "Mini calendar"],
+    ["Editor Projects", "Projects"],
+  ] as const;
+
+  for (const [name, layout] of layouts) {
+    await page.getByRole("button", { name: `Edit ${name}` }).click();
+    const editor = page.getByRole("dialog", { name: "Edit view" });
+    await expect(editor).toBeVisible();
+    await expect(editor.getByLabel("Name")).toHaveValue(name);
+    await expect(
+      editor.getByRole("button", { name: layout, exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    for (const section of ["View", "Filter", "Arrange", "New tasks"])
+      await expect(
+        editor.getByRole("heading", { name: section, exact: true }),
+      ).toBeVisible();
+
+    if (layout === "Board")
+      await expect(editor.getByLabel("Board column")).toHaveValue("status");
+    if (layout === "Calendar") {
+      await expect(editor.getByLabel("Opens as")).toHaveAttribute(
+        "data-value",
+        "listWeek",
+      );
+      await expect(
+        editor.getByText("Upcoming recurring instances"),
+      ).toBeVisible();
+    }
+    if (layout === "Mini calendar")
+      await expect(editor.getByText("Scheduled dates")).toBeVisible();
+
+    const box = await editor.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    if (testInfo.project.name === "mobile") {
+      expect(box!.width).toBe(viewport!.width);
+      expect(box!.y).toBeGreaterThan(0);
+    } else {
+      expect(box!.width).toBeLessThan(viewport!.width);
+      expect(box!.x).toBeGreaterThan(0);
+    }
+
+    await editor.getByRole("button", { name: "Close view editor" }).click();
+    await expect(editor).toHaveCount(0);
+  }
 });
 
 test("offers task actions without opening the editor", async ({ page }) => {

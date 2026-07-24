@@ -53,6 +53,7 @@ import {
 } from "../domain/completion";
 import { useRepository, useTasks } from "./repository-context";
 import { ViewEditor } from "./view-editor";
+import { preloadViewEditor } from "./view-editor-loader";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -144,6 +145,12 @@ export function ViewsScreen({
       repository.completeField(request),
     [repository],
   );
+  const hasWritableViews = views?.some((view) => view.source.writable) ?? false;
+  useEffect(() => {
+    if (!hasWritableViews) return;
+    const timeout = window.setTimeout(preloadViewEditor, 400);
+    return () => window.clearTimeout(timeout);
+  }, [hasWritableViews]);
 
   const selected = views?.find((view) => view.key === viewKey);
   const selectedKey = selected?.key;
@@ -413,7 +420,9 @@ export function ViewsScreen({
                 aria-label="Create view"
                 className="icon-action"
                 type="button"
+                onFocus={preloadViewEditor}
                 onClick={() => setEditing("new")}
+                onPointerEnter={preloadViewEditor}
               >
                 <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
               </button>
@@ -475,7 +484,9 @@ export function ViewsScreen({
                                 aria-label={`Edit ${view.name}`}
                                 className="saved-view-edit"
                                 type="button"
+                                onFocus={preloadViewEditor}
                                 onClick={() => setEditing(view)}
+                                onPointerEnter={preloadViewEditor}
                               >
                                 <Pencil aria-hidden="true" size={16} />
                               </button>
@@ -556,7 +567,9 @@ export function ViewsScreen({
               aria-label={`Edit ${selected.name}`}
               className="edit-view-action"
               type="button"
+              onFocus={preloadViewEditor}
               onClick={() => setEditing(selected)}
+              onPointerEnter={preloadViewEditor}
             >
               <Pencil aria-hidden="true" size={16} /> Edit view
             </button>
@@ -570,7 +583,6 @@ export function ViewsScreen({
         ) : null}
         {editing && editing !== "new" ? (
           <ViewEditor
-            inline
             view={editing}
             onClose={() => setEditing(null)}
             onChanged={onViewsChanged}

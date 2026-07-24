@@ -76,6 +76,10 @@ views:
   - id: all
     name: All tasks
     select: [title]
+    presentation:
+      type: tasknotes.task-list
+      x-density: compact
+      mappings: { owner: project }
 ---
 Keep this body.
 `,
@@ -98,7 +102,8 @@ Keep this body.
     expect(view.presentation).toEqual(
       expect.objectContaining({
         type: "tasknotes.kanban",
-        mappings: { column: "status" },
+        "x-density": "compact",
+        mappings: { owner: "project", column: "status" },
       }),
     );
 
@@ -116,6 +121,12 @@ Keep this body.
       >
     )[0];
     expect(listView.group_by).toEqual([{ field: "status", direction: "asc" }]);
+    expect(listView.presentation).toEqual(
+      expect.objectContaining({
+        "x-density": "compact",
+        mappings: { owner: "project" },
+      }),
+    );
     expect(listView).not.toHaveProperty("where");
   });
 
@@ -125,6 +136,8 @@ Keep this body.
       name: "Today",
       renderer: "tasknotes.task-list" as const,
       properties: ["title", "due"],
+      sort: [],
+      groupDirection: "asc" as const,
       options: {},
       dialect: "obsidian-bases" as const,
       availableProperties: [],
@@ -156,16 +169,60 @@ Keep this body.
 `);
     const draft = readViewDraft(source, "by-status");
     expect(draft.groupProperty).toBe("status");
+    expect(draft.groupDirection).toBe("asc");
     const updated = parse(
       updateViewDocument(source, {
         ...draft,
         groupProperty: "priority",
+        groupDirection: "desc",
       }),
     ) as { views: Array<Record<string, unknown>> };
     expect(updated.views[0].groupBy).toEqual({
       property: "priority",
-      direction: "ASC",
+      direction: "DESC",
     });
+  });
+
+  it("round-trips sorting in both view dialects", () => {
+    const source = baseSource(`views:
+  - type: tasknotesTaskList
+    name: Ranked
+    sort:
+      - { property: priority, direction: DESC }
+      - { property: due, direction: ASC }
+`);
+    const draft = readViewDraft(source, "ranked");
+    expect(draft.sort).toEqual([
+      { property: "priority", direction: "desc" },
+      { property: "due", direction: "asc" },
+    ]);
+    const updated = parse(
+      updateViewDocument(source, {
+        ...draft,
+        sort: [{ property: "title", direction: "asc" }],
+      }),
+    ) as { views: Array<Record<string, unknown>> };
+    expect(updated.views[0].sort).toEqual([
+      { property: "title", direction: "ASC" },
+    ]);
+
+    const canonical = createViewDocument("mdbase.view", {
+      ...draft,
+      dialect: "mdbase-cel",
+      sort: [{ property: "due", direction: "desc" }],
+    });
+    const canonicalDraft = readViewDraft(
+      {
+        path: "views/ranked.md",
+        format: "mdbase.view",
+        revision: "sha256:two",
+        document: canonical,
+      },
+      "ranked",
+    );
+    expect(canonicalDraft.sort).toEqual([
+      { property: "due", direction: "desc" },
+    ]);
   });
 });
 
