@@ -39,3 +39,8 @@ jobs:
 
       - name: Check production boundaries
         run: pnpm test:production-smoke
+        env:
+          # Pull requests inspect the currently deployed base revision. The
+          # Pages workflow performs the strict notification-manifest check
+          # after it deploys main.
+          TASKNOTES_REQUIRE_NOTIFICATION_MANIFEST: ${{ github.event_name == 'pull_request' && '0' || '1' }}
