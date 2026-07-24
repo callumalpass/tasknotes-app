@@ -24,8 +24,8 @@ resources.
 
 The UI depends only on `TaskRepository`. Platform checks stay inside the
 `Vault` factory, while cloud synchronization stays inside
-`CloudTaskRepository`. Screens use the same list, mutation, status, and issue
-vocabulary for both locations.
+`CloudTaskRepository`. Screens use the same list, mutation, completion, status,
+and issue vocabulary for every collection location.
 
 ## Invariants
 
@@ -71,16 +71,38 @@ shape. A document corresponds to one source file and contains its named views
 in source order. The UI derives a flat index only when resolving a stable
 `source path + view id` key; the Views catalog keeps source ownership visible.
 
-Today and Upcoming are application-owned named views in the TaskNotes view
-document. They use the same catalog, routing, navigation, and presentation
-dispatch as collection views while retaining their offline recurrence
-projection. Collection-owned list views render provider `group_by` metadata;
-boards and calendars continue to use their dedicated presentations.
+Today, Upcoming, Calendar, and Projects are managed starter views in the
+TaskNotes view document. They use the same catalog, routing, navigation, and
+presentation dispatch as collection views while retaining their specialized
+task renderers. The managed source carries a version marker so additive starter
+view migrations run once and later user edits remain authoritative.
+
+Projects is a relationship view rather than a folder browser. Its saved query
+selects collection records with backlinks from active tasks through the
+configured projects field. The view engine constructs the backlink index once
+per execution. The renderer indexes returned project paths and makes one pass
+over the in-memory task projection, avoiding a task-by-project nested scan.
+Creating a task from a project injects the project link into the configured
+field.
 
 Navigation is a collection-scoped ordered list of view keys stored as a device
 preference. Its first item is the home view. Desktop shows the complete list;
 mobile shows the first three views and a Views overflow destination. Removing
 the final navigation view is disallowed so the collection always has a home.
+
+## Field completion
+
+Task field controls request completions through `TaskRepository.completeField`.
+The request describes values or records, the configured field name, optional
+target types, and schema enum values. This keeps storage, query dialect, and
+link serialization out of React components.
+
+Value completion reads the existing task projection, so contexts, tags, and
+other repeated values are immediate. Record completion searches the local
+collection, the offline cloud replica, or the relay query endpoint. Relay
+requests are debounced, coalesced while in flight, bounded, and cached briefly.
+The selected record is persisted as a collection-root wikilink or Markdown
+link according to collection configuration.
 
 ## Platform storage
 

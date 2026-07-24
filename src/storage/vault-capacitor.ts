@@ -27,20 +27,30 @@ export class CapacitorVault implements Vault {
     return this.listFiles(path, [".md"]);
   }
 
+  async listCollectionFiles(extensions: string[]): Promise<VaultEntry[]> {
+    return this.collectFiles("", extensions);
+  }
+
   async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
-    const root = safePath(path);
+    return this.collectFiles(safePath(path), extensions);
+  }
+
+  private async collectFiles(
+    root: string,
+    extensions: string[],
+  ): Promise<VaultEntry[]> {
     const pending = [root];
     const entries: VaultEntry[] = [];
     while (pending.length) {
       const directory = pending.shift()!;
       const result = await Filesystem.readdir({
-        path: `${ROOT}/${directory}`,
+        path: directory ? `${ROOT}/${directory}` : ROOT,
         directory: Directory.Documents,
       });
       for (const file of result.files) {
+        const nextPath = directory ? `${directory}/${file.name}` : file.name;
         if (file.type === "directory") {
-          if (!EXCLUDED_DIRECTORIES.has(file.name))
-            pending.push(`${directory}/${file.name}`);
+          if (!EXCLUDED_DIRECTORIES.has(file.name)) pending.push(nextPath);
           continue;
         }
         if (
@@ -49,7 +59,7 @@ export class CapacitorVault implements Vault {
           )
         )
           continue;
-        entries.push(toEntry(`${directory}/${file.name}`, file));
+        entries.push(toEntry(nextPath, file));
       }
     }
     return entries.sort((left, right) => left.path.localeCompare(right.path));

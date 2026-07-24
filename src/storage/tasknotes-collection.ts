@@ -35,6 +35,7 @@ export function resolveTaskCollection(
     model: new TaskNotesTaskModel(
       resolveTaskCollectionConfiguration({
         schema: { value: type.schema },
+        fields: type.definition?.fields,
         "x-tasknotes": contract.configuration,
       }),
       {

@@ -7,6 +7,7 @@ import {
 import { batches, MarkdownCollection } from "./collection";
 import { createPlatformVault } from "./vault";
 import { LocalViewExecutor } from "./local-views";
+import { completeRecords, completeTaskValues } from "./completions";
 import { archiveMoveWarning } from "../domain/task-archive";
 import {
   findOccurrenceParent,
@@ -25,6 +26,10 @@ import type {
   TaskTimeEntry,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  FieldCompletion,
+  FieldCompletionRequest,
+} from "../domain/completion";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
@@ -47,6 +52,7 @@ export interface TaskRepository {
   refresh(): Promise<RefreshResult>;
   list(query?: TaskListQuery): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
+  completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
   toggle(id: string, occurrenceDate?: string): Promise<Task>;
@@ -173,6 +179,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
   async get(id: string): Promise<Task | null> {
     const task = this.cache.get(id);
     return task ? withoutIndexFields(task) : null;
+  }
+
+  async completeField(
+    request: FieldCompletionRequest,
+  ): Promise<FieldCompletion[]> {
+    if (request.kind === "values")
+      return completeTaskValues(this.cache.values(), request);
+    const configuration = this.collection.taskConfiguration();
+    const records = await this.collection.findCollectionRecords(
+      request.query ?? "",
+      Math.max((request.limit ?? 12) * 4, 48),
+    );
+    return completeRecords(records, request, configuration.linkWriteFormat);
   }
 
   create(input: CreateTaskInput): Promise<Task> {

@@ -24,6 +24,7 @@ import {
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
+import { completeRecords, completeTaskValues } from "./completions";
 import {
   normalizeViewDocuments,
   normalizeViewExecution,
@@ -41,6 +42,11 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  CollectionRecord,
+  FieldCompletion,
+  FieldCompletionRequest,
+} from "../domain/completion";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
@@ -70,6 +76,7 @@ export class CloudTaskRepository implements TaskRepository {
   private resources: SyncCollectionResources | null = null;
   private taskTypeName = "task";
   private readonly cache = new Map<string, CachedCloudTask>();
+  private completionRecords: CollectionRecord[] = [];
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private readonly viewExecutionInFlight = new Map<
@@ -252,6 +259,21 @@ export class CloudTaskRepository implements TaskRepository {
 
   async get(id: string): Promise<Task | null> {
     return this.cache.get(id)?.task ?? null;
+  }
+
+  async completeField(
+    request: FieldCompletionRequest,
+  ): Promise<FieldCompletion[]> {
+    if (request.kind === "values")
+      return completeTaskValues(
+        [...this.cache.values()].map(({ task }) => task),
+        request,
+      );
+    return completeRecords(
+      this.completionRecords,
+      request,
+      this.model.configuration().linkWriteFormat,
+    );
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
@@ -653,7 +675,9 @@ export class CloudTaskRepository implements TaskRepository {
 
   private async reloadCache(): Promise<void> {
     const next = new Map<string, CachedCloudTask>();
-    for (const record of await this.requireReplica().records()) {
+    const records = await this.requireReplica().records();
+    this.completionRecords = records.map(cloudCollectionRecord);
+    for (const record of records) {
       if (!record.types.includes(this.taskTypeName)) continue;
       const task = this.readRecord(record);
       if (task) next.set(task.id, { task, recordId: record.record_id });
@@ -961,6 +985,21 @@ export class CloudTaskRepository implements TaskRepository {
   private emit(): void {
     for (const listener of this.listeners) listener();
   }
+}
+
+function cloudCollectionRecord(
+  record: SyncRecord<CloudFrontmatter>,
+): CollectionRecord {
+  return {
+    path: record.path,
+    label:
+      typeof record.frontmatter.title === "string"
+        ? record.frontmatter.title
+        : (record.path.split("/").at(-1)?.replace(/\.md$/i, "") ?? record.path),
+    frontmatter: record.frontmatter,
+    body: record.body,
+    types: record.types,
+  };
 }
 
 function viewExecutionKey(view: TaskView): string {

@@ -113,6 +113,8 @@ export class TaskNotesTaskModel {
         moveOnArchive: false,
         folder: "TaskNotes/Archive",
       },
+      fieldCompletions: structuredClone(config.fieldCompletions ?? {}),
+      linkWriteFormat: config.linkWriteFormat ?? "wikilink",
     };
     this.typeName = options.typeName ?? "task";
     this.recordsFolder = options.recordsFolder ?? "tasks";
@@ -123,6 +125,8 @@ export class TaskNotesTaskModel {
       ...resolveModelConfig(this.config),
       templating: { ...this.config.templating },
       archive: { ...this.config.archive },
+      fieldCompletions: structuredClone(this.config.fieldCompletions),
+      linkWriteFormat: this.config.linkWriteFormat,
     };
   }
 

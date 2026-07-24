@@ -151,4 +151,39 @@ describe("TaskNotes collection configuration", () => {
       },
     ]);
   });
+
+  it("derives value and record completion from the collection schema", () => {
+    const configuration = resolveTaskCollectionConfiguration({
+      schema: {
+        value: {
+          type: "object",
+          properties: {
+            contexts: {
+              type: "array",
+              items: { enum: ["computer", "errands"] },
+            },
+          },
+        },
+      },
+      fields: {
+        projects: {
+          type: "list",
+          items: { type: "link", target: "project" },
+        },
+      },
+      "x-tasknotes": {
+        links: { write_format: "markdown" },
+      },
+    });
+
+    expect(configuration.fieldCompletions.contexts).toEqual({
+      kind: "values",
+      values: [{ value: "computer" }, { value: "errands" }],
+    });
+    expect(configuration.fieldCompletions.projects).toEqual({
+      kind: "records",
+      targetTypes: ["project"],
+    });
+    expect(configuration.linkWriteFormat).toBe("markdown");
+  });
 });

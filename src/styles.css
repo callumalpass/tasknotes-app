@@ -219,6 +219,7 @@ button:disabled {
 .choice-field legend,
 .notes-field > span,
 .form-field > span,
+.form-field > label,
 .record-path > span {
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: 0.68rem;
@@ -1244,6 +1245,135 @@ button:disabled {
 
 .list-field input::placeholder {
   color: var(--ink-muted);
+}
+
+.multi-value-field {
+  position: relative;
+  min-width: 0;
+}
+
+.multi-value-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-strong);
+  cursor: text;
+}
+
+.multi-value-control:focus-within {
+  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
+}
+
+.multi-value-control input {
+  flex: 1 1 7rem;
+  width: auto;
+  min-width: 5rem;
+  min-height: 32px;
+  border: 0;
+}
+
+.field-token {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 3px 0 9px;
+  color: var(--ink-soft);
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+
+.field-token > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-token button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.field-suggestions {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 17rem;
+  padding: 4px;
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink), transparent 92%);
+}
+
+.field-suggestions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 9px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.field-suggestions button:hover,
+.field-suggestions button.is-active {
+  background: var(--paper-soft);
+}
+
+.field-suggestions button > span {
+  display: grid;
+  min-width: 0;
+}
+
+.field-suggestions strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-suggestions small,
+.field-suggestion-status {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-suggestion-status {
+  display: block;
+  min-height: 44px;
+  padding: 13px 9px;
+}
+
+.field-suggestions .field-suggestion-create {
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .repeat-fields {
@@ -2530,6 +2660,47 @@ button:disabled {
 
 .saved-task-list {
   border-top: 1px solid var(--line-strong);
+}
+
+.projects-view {
+  display: grid;
+  gap: 30px;
+}
+
+.project-group > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 48px;
+  padding-bottom: 9px;
+}
+
+.project-group > header h2 {
+  margin: 0;
+  font-size: 1.06rem;
+}
+
+.project-group > header small {
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+}
+
+.project-group > header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0;
+  color: var(--accent);
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .saved-view-groups {

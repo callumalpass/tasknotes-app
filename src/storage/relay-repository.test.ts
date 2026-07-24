@@ -16,6 +16,51 @@ import { createConnectTaskRepository } from "./connect-repository";
 import { RelayTaskRepository } from "./relay-repository";
 
 describe("relay task repository", () => {
+  it("coalesces record completion into one small provider query", async () => {
+    const project: RecordResult<JsonObject> = {
+      path: "Projects/Mobile.md",
+      frontmatter: { title: "Mobile roadmap" },
+      body: "",
+      types: ["project"],
+      revision: "project-r1",
+    };
+    const fixture = relayFixture([
+      taskRecord("existing", "Review relay support", "r1"),
+      project,
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    const request = {
+      field: "projects",
+      kind: "records" as const,
+      query: "mobile",
+      limit: 10,
+    };
+    const [first, second] = await Promise.all([
+      repository.completeField(request),
+      repository.completeField(request),
+    ]);
+
+    expect(first).toEqual(second);
+    expect(first).toContainEqual({
+      kind: "record",
+      value: "[[Projects/Mobile]]",
+      label: "Mobile roadmap",
+      detail: "Projects/Mobile.md",
+      path: "Projects/Mobile.md",
+    });
+    expect(fixture.query).toHaveBeenCalledTimes(2);
+    const completionQuery = fixture.query.mock.calls[1]?.[0];
+    expect(completionQuery).toMatchObject({
+      limit: 48,
+      order_by: [{ field: "file.path", direction: "asc" }],
+    });
+    expect(String(completionQuery?.where)).toContain(
+      'file.path.lower().contains("mobile")',
+    );
+  });
+
   it("opens, searches, and mutates a TaskNotes collection over live operations", async () => {
     const fixture = relayFixture([
       taskRecord("existing", "Review relay support", "r1"),
@@ -406,8 +451,9 @@ function relayFixture(
   const describeCollection = vi.fn(async () =>
     description(templating, archive, collectionId),
   );
-  const query = vi.fn(async () =>
-    valid<QueryResult<JsonObject>>({
+  const query = vi.fn(async (input?: Record<string, unknown>) => {
+    void input;
+    return valid<QueryResult<JsonObject>>({
       results: [...records.values()].map((record) => ({
         path: record.path,
         frontmatter: record.frontmatter,
@@ -417,8 +463,8 @@ function relayFixture(
         file: record.file,
       })),
       meta: { total_count: records.size, has_more: false, snapshot: "tasks-1" },
-    }),
-  );
+    });
+  });
   const read = vi.fn(async ({ path }: { path: string }) => {
     const record = records.get(path);
     if (!record) throw new Error("Task not found.");

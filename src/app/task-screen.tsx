@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { MultiValueField } from "../components/multi-value-field";
 import {
   buildRecurrenceRule,
   parseRecurrenceRule,
@@ -27,6 +28,11 @@ import {
 import { useRepository, useTask } from "./repository-context";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
+import type {
+  FieldCompletionRequest,
+  FieldCompletion,
+} from "../domain/completion";
+import type { TaskFieldCompletionConfiguration } from "../domain/task-configuration";
 
 type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
@@ -115,7 +121,12 @@ function TaskEditor({
     removeTimeEntry,
     setTaskArchived,
     configuration,
+    repository,
   } = useRepository();
+  const completeField = useCallback(
+    (request: FieldCompletionRequest) => repository.completeField(request),
+    [repository],
+  );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -566,21 +577,40 @@ function TaskEditor({
           </Fieldset>
           <div className="field-grid metadata-fields">
             <ListField
+              field={configuration.fieldMapping.projects}
               label="Projects"
               placeholder="Website, Home"
               values={draft.projects}
+              completion={
+                configuration.fieldCompletions[
+                  configuration.fieldMapping.projects
+                ] ?? { kind: "records" }
+              }
+              completeField={completeField}
               onChange={(projects) => change({ projects })}
             />
             <ListField
+              field={configuration.fieldMapping.contexts}
               label="Contexts"
               placeholder="Computer, Errands"
               values={draft.contexts}
+              completion={
+                configuration.fieldCompletions[
+                  configuration.fieldMapping.contexts
+                ] ?? { kind: "values" }
+              }
+              completeField={completeField}
               onChange={(contexts) => change({ contexts })}
             />
             <ListField
+              field="tags"
               label="Tags"
               placeholder="work, important"
               values={draft.tags.filter((tag) => tag !== "task")}
+              completion={
+                configuration.fieldCompletions.tags ?? { kind: "values" }
+              }
+              completeField={completeField}
               onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
@@ -593,6 +623,8 @@ function TaskEditor({
               <div className="field-grid metadata-fields">
                 {configuration.userFields.map((field) => (
                   <CustomField
+                    completion={configuration.fieldCompletions[field.key]}
+                    completeField={completeField}
                     field={field}
                     key={field.key}
                     value={draft.customProperties[field.key]}
@@ -1047,26 +1079,32 @@ function Choice({
 }
 
 function ListField({
+  field,
   label,
   placeholder,
   values,
+  completion,
+  completeField,
   onChange,
 }: {
+  field: string;
   label: string;
   placeholder: string;
   values: string[];
+  completion: TaskFieldCompletionConfiguration;
+  completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   onChange(values: string[]): void;
 }) {
   return (
-    <label className="form-field list-field">
-      <span>{label}</span>
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={values.join(", ")}
-        onChange={(event) => onChange(parseList(event.target.value))}
-      />
-    </label>
+    <MultiValueField
+      completion={completion}
+      completeField={completeField}
+      field={field}
+      label={label}
+      placeholder={placeholder}
+      values={values}
+      onChange={onChange}
+    />
   );
 }
 
@@ -1502,10 +1540,14 @@ function DateTimeField({
 function CustomField({
   field,
   value,
+  completion,
+  completeField,
   onChange,
 }: {
   field: import("@tasknotes/model/types").UserMappedField;
   value: unknown;
+  completion?: TaskFieldCompletionConfiguration;
+  completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   onChange(value: unknown): void;
 }) {
   if (field.type === "boolean") {
@@ -1523,9 +1565,12 @@ function CustomField({
   if (field.type === "list") {
     return (
       <ListField
+        field={field.key}
         label={field.displayName}
         placeholder="Comma-separated values"
         values={Array.isArray(value) ? value.map(String) : []}
+        completion={completion ?? { kind: "values" }}
+        completeField={completeField}
         onChange={onChange}
       />
     );
@@ -1555,17 +1600,6 @@ function CustomField({
       />
     </label>
   );
-}
-
-function parseList(value: string): string[] {
-  return [
-    ...new Set(
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  ];
 }
 
 function isEmptyFieldValue(value: unknown): boolean {

@@ -161,6 +161,10 @@ async function localTaskDocuments(page: Page): Promise<string[]> {
   });
 }
 
+async function openViewsCatalog(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /^(Views|More views)$/ }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(async () => {
@@ -224,7 +228,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await openViewsCatalog(page);
   await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("mdbase computer release");
   await expect(
@@ -249,7 +253,7 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await openViewsCatalog(page);
   await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
@@ -263,7 +267,7 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 
   await page.reload();
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await openViewsCatalog(page);
   await page.getByRole("button", { name: "Search tasks" }).click();
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
@@ -341,11 +345,96 @@ test("interprets natural-language capture and preserves timed task fields", asyn
     page.getByRole("button", { name: "High", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Scheduled time")).toHaveValue("09:00");
-  await expect(page.getByLabel("Projects")).toHaveValue("mdbase");
-  await expect(page.getByLabel("Contexts")).toHaveValue("computer");
-  await expect(page.getByLabel("Tags")).toHaveValue("release");
+  await expect(
+    page.getByRole("button", { name: "Remove mdbase" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Remove computer" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Remove release" }),
+  ).toBeVisible();
   await openTaskSection(page, "Time");
   await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
+});
+
+test("completes project links and creates tasks from the Projects view", async ({
+  page,
+}) => {
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const projects = await tasknotes.getDirectoryHandle("Projects", {
+      create: true,
+    });
+    const project = await projects.getFileHandle("mobile.md", {
+      create: true,
+    });
+    const writable = await project.createWritable();
+    await writable.write(`---
+title: Mobile roadmap
+---
+Project notes`);
+    await writable.close();
+  });
+  await page.reload();
+
+  await page.getByLabel("New task title").fill("Prepare mobile release");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Prepare mobile release", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await page.getByLabel("Projects").fill("roadmap");
+  const suggestion = page.getByRole("option", {
+    name: /Mobile roadmap.*Projects\/mobile\.md/,
+  });
+  await expect(suggestion).toBeVisible();
+  await suggestion.click();
+  await expect(
+    page.getByRole("button", { name: "Remove mobile" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  const directProjects = page.getByRole("button", {
+    name: "Projects",
+    exact: true,
+  });
+  if (await directProjects.count()) await directProjects.click();
+  else {
+    await openViewsCatalog(page);
+    await page
+      .locator(".view-document")
+      .filter({
+        has: page.getByRole("heading", {
+          name: "tasknotes-app",
+          exact: true,
+        }),
+      })
+      .getByRole("button", { name: "Projects", exact: true })
+      .click();
+  }
+
+  await expect(
+    page.getByRole("heading", { name: "Mobile roadmap", level: 2 }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Prepare mobile release", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Add task to Mobile roadmap" })
+    .click();
+  await page.getByLabel("New task title").fill("Review mobile milestone");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Review mobile milestone", { exact: true }),
+  ).toBeVisible();
+
+  const documents = await localTaskDocuments(page);
+  expect(documents).toHaveLength(2);
+  expect(
+    documents.some((source) =>
+      /projects:\s*\n\s*-\s+['"]?\[\[Projects\/mobile\]\]['"]?/.test(source),
+    ),
+  ).toBe(true);
 });
 
 test("projects, completes, and skips recurring occurrences by date", async ({
@@ -590,7 +679,7 @@ views:
     await writable.close();
   });
 
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: /Saved views/ }).click();
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await expect(page.getByText("Work board", { exact: true })).toBeVisible();
@@ -802,14 +891,16 @@ test("orders several navigation views and keeps the rest behind the mobile overf
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
 
   const ordered = page.locator(".navigation-view-order li");
-  await expect(ordered).toHaveCount(5);
+  await expect(ordered).toHaveCount(6);
   await expect(ordered.nth(0)).toContainText("Focus");
   await expect(ordered.nth(1)).toContainText("Today");
   await expect(ordered.nth(2)).toContainText("Upcoming");
   await expect(ordered.nth(3)).toContainText("Calendar");
-  await expect(ordered.nth(4)).toContainText("Later");
+  await expect(ordered.nth(4)).toContainText("Projects");
+  await expect(ordered.nth(5)).toContainText("Later");
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
@@ -874,7 +965,7 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("New task title").fill("Build the view editor");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await openViewsCatalog(page);
   await page.getByRole("button", { name: "Create view" }).click();
   await expect(
     page.getByRole("heading", { name: "Create a view" }),
