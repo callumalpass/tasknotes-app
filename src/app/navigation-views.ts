@@ -4,7 +4,7 @@ const STORAGE_KEY = "tasknotes:navigation-views:v2";
 const LEGACY_STORAGE_KEY = "tasknotes:primary-views:v1";
 
 export function navigationViewScope(info: CollectionInfo): string {
-  return `${info.kind}:${info.location}`;
+  return `${info.kind}:${info.id ?? info.location}`;
 }
 
 export function readNavigationViewKeys(

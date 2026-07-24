@@ -227,6 +227,55 @@ describe("relay task repository", () => {
     );
   });
 
+  it("restores saved views and their last result across relay sessions", async () => {
+    const collectionId = crypto.randomUUID();
+    const firstFixture = relayFixture(
+      [taskRecord("cached", "Cached relay task", "r1")],
+      false,
+      false,
+      collectionId,
+    );
+    const first = new RelayTaskRepository(firstFixture.connect);
+    await first.initialize();
+    const [document] = await first.listViews();
+    const view = document.views[0];
+    const execution = await first.executeView(view);
+
+    const reopenedFixture = relayFixture([], false, false, collectionId);
+    reopenedFixture.listViews.mockRejectedValue(new Error("Still refreshing"));
+    reopenedFixture.executeView.mockRejectedValue(
+      new Error("Still refreshing"),
+    );
+    const reopened = new RelayTaskRepository(reopenedFixture.connect);
+    await reopened.initialize();
+
+    expect((await reopened.cachedViews())[0].views[0].name).toBe("Kanban");
+    expect(await reopened.cachedViewExecution(view)).toEqual(execution);
+    expect((await reopened.executeView(view)).stale).toBe(true);
+    expect((await reopened.collectionInfo()).id).toBe(collectionId);
+  });
+
+  it("does not publish repeated state changes for the same operation failure", async () => {
+    const fixture = relayFixture([]);
+    const connect = {
+      ...fixture.connect,
+      readViewSource: undefined,
+    } as unknown as MdbaseConnect<JsonObject>;
+    const repository = new RelayTaskRepository(connect);
+    await repository.initialize();
+    const listener = vi.fn();
+    repository.subscribe(listener);
+
+    await expect(repository.readViewSource("Views/work.md")).rejects.toThrow(
+      TypeError,
+    );
+    await expect(repository.readViewSource("Views/work.md")).rejects.toThrow(
+      TypeError,
+    );
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("round-trips writable saved-view sources with revisions", async () => {
     const fixture = relayFixture([]);
     const repository = new RelayTaskRepository(fixture.connect);
@@ -312,11 +361,12 @@ function relayFixture(
   initial: RecordResult<JsonObject>[],
   templating = false,
   archive = false,
+  collectionId = crypto.randomUUID(),
 ) {
   const records = new Map(initial.map((record) => [record.path, record]));
   let revision = initial.length + 1;
   const describeCollection = vi.fn(async () =>
-    description(templating, archive),
+    description(templating, archive, collectionId),
   );
   const query = vi.fn(async () =>
     valid<QueryResult<JsonObject>>({
@@ -581,6 +631,7 @@ function taskRecord(
 function description(
   templating = false,
   archive = false,
+  collectionId = crypto.randomUUID(),
 ): CollectionDescription {
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
   const type = generated.type as unknown as {
@@ -603,7 +654,7 @@ function description(
     };
   return {
     protocol_version: 2,
-    collection_id: "local-tasks",
+    collection_id: collectionId,
     display_name: "Local tasks",
     spec_version: "0.3.0",
     operations: [

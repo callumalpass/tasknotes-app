@@ -29,6 +29,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
       elapsedMs: 0,
     }),
     list: async () => [execution.rows[0].task],
+    cachedViewExecution: async () => null,
     executeView: async () => execution,
     readViewSource: async () => ({
       path: execution.view.source.path,
@@ -123,6 +124,79 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     expect(within(open).getByText("Move on the board")).toBeVisible(),
   );
   expect(screen.getByRole("alert")).toHaveTextContent("Could not move");
+});
+
+it("shows a cached view while its authoritative result refreshes", async () => {
+  const cached = boardExecution();
+  const fresh = structuredClone(cached);
+  fresh.rows[0].task.title = "Fresh board result";
+  const pending = deferred<TaskViewExecution>();
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: 1,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => [cached.rows[0].task],
+    cachedViewExecution: async () => cached,
+    executeView: () => pending.promise,
+    readViewSource: async () => ({
+      path: cached.view.source.path,
+      format: "obsidian.base",
+      revision: cached.view.source.revision,
+      document: `views:
+  - type: tasknotesKanban
+    name: Board
+    groupBy: { property: status, direction: ASC }
+`,
+    }),
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  render(
+    <RepositoryProvider repository={repository}>
+      <ViewsScreen
+        documents={[
+          {
+            id: cached.view.documentId,
+            name: cached.view.documentName,
+            source: cached.view.source,
+            views: [cached.view],
+          },
+        ]}
+        navigationViewKeys={[cached.view.key]}
+        operational
+        viewKey={cached.view.key}
+        views={[cached.view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+
+  expect(await screen.findByText("Move on the board")).toBeVisible();
+  expect(screen.getByText("Updating")).toBeVisible();
+
+  await act(async () => pending.resolve(fresh));
+
+  expect(await screen.findByText("Fresh board result")).toBeVisible();
+  await waitFor(() =>
+    expect(screen.queryByText("Updating")).not.toBeInTheDocument(),
+  );
 });
 
 function boardExecution(): TaskViewExecution {

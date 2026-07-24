@@ -33,6 +33,7 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
     }),
     list: async () => (created ? [created] : []),
     create,
+    cachedViewExecution: async () => null,
     executeView: async () => execution(),
     readViewSource: async () => ({
       path: view.source.path,

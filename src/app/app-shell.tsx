@@ -41,6 +41,7 @@ export function AppShell() {
     error: viewsError,
     navigationViews,
     homeView,
+    loading: viewsLoading,
     refresh: refreshViews,
     toggleNavigationView,
     moveNavigationView,
@@ -228,6 +229,8 @@ export function AppShell() {
               navigate({ page: "views" });
             }}
           />
+        ) : workspace.page === "home" && viewsLoading ? (
+          <HomeViewLoading />
         ) : workspace.page === "views" || workspace.page === "home" ? (
           <ViewsScreen
             documents={documents}
@@ -275,6 +278,7 @@ export function AppShell() {
         </aside>
       ) : null}
       {route.page !== "task" &&
+      !(workspace.page === "home" && viewsLoading) &&
       (workspace.page !== "views" ||
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
@@ -292,6 +296,24 @@ export function AppShell() {
         </nav>
       ) : null}
     </div>
+  );
+}
+
+function HomeViewLoading() {
+  return (
+    <section
+      aria-busy="true"
+      aria-labelledby="home-view-loading-title"
+      className="screen views-screen view-detail"
+    >
+      <header className="view-header operational">
+        <div>
+          <h1 id="home-view-loading-title">Opening your view</h1>
+          <small>Restoring your home view</small>
+        </div>
+      </header>
+      <LoadingRows count={6} />
+    </section>
   );
 }
 

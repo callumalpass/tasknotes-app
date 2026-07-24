@@ -73,6 +73,7 @@ export class CloudTaskRepository implements TaskRepository {
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private viewStore: TaskViewCache | null = null;
+  private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
   private status: RepositorySyncStatus = {
@@ -96,8 +97,9 @@ export class CloudTaskRepository implements TaskRepository {
     if (!hosted) {
       throw new Error("Connect an mdbase cloud collection to continue.");
     }
+    this.collectionId = hosted.collectionId;
     this.viewStore = new TaskViewCache(hosted.collectionId);
-    this.viewCache = await this.viewStore.readViewDocuments();
+    this.viewCache = await this.viewStore.readViewDocuments().catch(() => []);
     const store = new IndexedDbReplicaStore<CloudFrontmatter>(
       `tasknotes:${hosted.collectionId}:${hosted.replicaId}`,
       {
@@ -468,12 +470,28 @@ export class CloudTaskRepository implements TaskRepository {
       this.viewCache = normalizeViewDocuments(
         validResult(await this.connect.listViews()) as ProviderViewList,
       );
-      await this.viewStore?.writeViewDocuments(this.viewCache);
+      await this.viewStore
+        ?.writeViewDocuments(this.viewCache)
+        .catch(() => undefined);
       return structuredClone(this.viewCache);
     } catch (reason) {
       if (this.viewCache.length) return structuredClone(this.viewCache);
       throw reason;
     }
+  }
+
+  async cachedViews(): Promise<TaskViewDocument[]> {
+    return structuredClone(this.viewCache);
+  }
+
+  async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
+    const key = viewExecutionKey(view);
+    const cached =
+      this.viewExecutionCache.get(key) ??
+      (await this.viewStore?.readExecution(view).catch(() => null));
+    if (!cached) return null;
+    this.viewExecutionCache.set(key, cached);
+    return structuredClone(cached);
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
@@ -497,13 +515,11 @@ export class CloudTaskRepository implements TaskRepository {
           return null;
         }
       });
-      this.viewExecutionCache.set(view.key, execution);
-      await this.viewStore?.writeExecution(execution);
+      this.viewExecutionCache.set(viewExecutionKey(view), execution);
+      await this.viewStore?.writeExecution(execution).catch(() => undefined);
       return execution;
     } catch (reason) {
-      const cached =
-        this.viewExecutionCache.get(view.key) ??
-        (await this.viewStore?.readExecution(view.key));
+      const cached = await this.cachedViewExecution(view);
       if (cached) return { ...structuredClone(cached), stale: true };
       throw reason;
     }
@@ -552,13 +568,16 @@ export class CloudTaskRepository implements TaskRepository {
     this.viewCache = normalizeViewDocuments(
       validResult(await this.connect.listViews()) as ProviderViewList,
     );
-    await this.viewStore?.writeViewDocuments(this.viewCache);
+    await this.viewStore
+      ?.writeViewDocuments(this.viewCache)
+      .catch(() => undefined);
     this.emit();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {
     return {
       kind: "connect",
+      id: this.collectionId,
       name: "mdbase cloud",
       location: "Offline copy on this device",
       runtime: Capacitor.isNativePlatform() ? "native" : "browser",
@@ -924,6 +943,10 @@ export class CloudTaskRepository implements TaskRepository {
   private emit(): void {
     for (const listener of this.listeners) listener();
   }
+}
+
+function viewExecutionKey(view: TaskView): string {
+  return `${view.key}:${view.source.revision}`;
 }
 
 function frontmatterPatch(

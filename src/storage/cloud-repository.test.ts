@@ -119,6 +119,90 @@ function connect(
 }
 
 describe("cloud task repository", () => {
+  it("restores cached view definitions and revision-matched results before refresh", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const firstReplica = crypto.randomUUID();
+    const reopenedReplica = crypto.randomUUID();
+    for (const id of [firstReplica, reopenedReplica])
+      authority.registerReplica({
+        id,
+        name: "Phone",
+        mode: "read_write",
+        allowedTypes: ["task"],
+      });
+    const envelope = <T>(result: T) => ({
+      valid: true as const,
+      result,
+      diagnostics: [],
+    });
+    const providerDocument = {
+      id: "work",
+      name: "Work",
+      source: {
+        path: "Views/work.md",
+        format: "mdbase.view",
+        revision: "view-r1",
+        writable: true,
+      },
+      views: [{ id: "open", name: "Open work" }],
+    };
+    const operations = {
+      listViews: vi.fn(async () =>
+        envelope({
+          views: [providerDocument],
+          meta: { total_count: 1 },
+        }),
+      ),
+      executeView: vi.fn(async () =>
+        envelope({
+          results: [],
+          meta: {
+            total_count: 0,
+            has_more: false,
+            view: { path: "Views/work.md", id: "open" },
+            groups: [],
+          },
+        }),
+      ),
+    };
+    const first = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        firstReplica,
+        authority.transport(firstReplica),
+        operations,
+      ),
+    );
+    await first.initialize();
+    const [document] = await first.listViews();
+    const execution = await first.executeView(document.views[0]);
+
+    const reopened = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        reopenedReplica,
+        authority.transport(reopenedReplica),
+        {
+          listViews: vi.fn(async () => {
+            throw new Error("Still refreshing");
+          }),
+          executeView: vi.fn(async () => {
+            throw new Error("Still refreshing");
+          }),
+        },
+      ),
+    );
+    await reopened.initialize();
+
+    expect((await reopened.cachedViews())[0].views[0].name).toBe("Open work");
+    expect(await reopened.cachedViewExecution(document.views[0])).toEqual(
+      execution,
+    );
+    expect((await reopened.collectionInfo()).id).toBe(authority.collectionId);
+  });
+
   it("writes saved-view sources through cloud operations and refreshes the catalogue", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resources(),

@@ -19,6 +19,18 @@ describe("navigation view preferences", () => {
     ).toBe("connect:collection-1");
   });
 
+  it("prefers the durable collection id over display location", () => {
+    expect(
+      navigationViewScope({
+        kind: "connect",
+        id: "collection-2",
+        name: "Tasks",
+        location: "Offline copy on this device",
+        runtime: "browser",
+      }),
+    ).toBe("connect:collection-2");
+  });
+
   it("preserves other collection preferences when setting and clearing", () => {
     const storage = memoryStorage();
     writeNavigationViewKeys(storage, "local:a", ["view-a", "view-c"]);

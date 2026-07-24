@@ -110,6 +110,186 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   ).toBeVisible();
 });
 
+test("restores a custom home view and its cached rows before relay refresh", async ({
+  page,
+}) => {
+  const collectionId = "01933333-3333-7333-8333-333333333333";
+  const task = new TaskNotesTaskModel().create(
+    { title: "Visible from cached home" },
+    { id: "cached-home-task", now: "2026-07-22T00:00:00.000Z" },
+  );
+  const coldCatalog = deferred();
+  const warmRefresh = deferred();
+  let warm = false;
+
+  await page.route(
+    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    async (route) => {
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1)!;
+      let result: unknown;
+      if (operation === "describe") {
+        result = {
+          ...collectionDescription(),
+          collection_id: collectionId,
+          operations: [
+            "describe",
+            "query",
+            "list_views",
+            "execute_view",
+            "read_view_source",
+          ],
+        };
+      } else if (operation === "query") {
+        result = valid({
+          results: [
+            {
+              path: task.path,
+              frontmatter: task.frontmatter,
+              body: task.body,
+              types: ["task"],
+            },
+          ],
+          meta: { total_count: 1, has_more: false },
+        });
+      } else if (operation === "list_views") {
+        await (warm ? warmRefresh.promise : coldCatalog.promise);
+        result = valid({
+          views: [
+            {
+              id: "work",
+              name: "Work",
+              source: {
+                path: "Views/work.md",
+                format: "mdbase.view",
+                revision: "view-r1",
+                writable: false,
+              },
+              views: [{ id: "open", name: "Open work" }],
+            },
+          ],
+          meta: { total_count: 1 },
+        });
+      } else if (operation === "execute_view") {
+        if (warm) await warmRefresh.promise;
+        result = valid({
+          results: [
+            {
+              path: task.path,
+              frontmatter: task.frontmatter,
+              body: task.body,
+              types: ["task"],
+              values: { priority: task.priority },
+            },
+          ],
+          meta: {
+            total_count: 1,
+            has_more: false,
+            view: { path: "Views/work.md", id: "open" },
+            groups: [],
+          },
+        });
+      } else if (operation === "read_view_source") {
+        result = valid({
+          path: "Views/work.md",
+          format: "mdbase.view",
+          revision: "view-r1",
+          document: "---\ntype: view\nname: Work\n---\n",
+        });
+      } else {
+        result = valid({});
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ result }),
+      });
+    },
+  );
+
+  await page.goto("./");
+  await page.evaluate(
+    async ({ collectionId }) => {
+      localStorage.clear();
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.deleteDatabase(
+          `tasknotes-views:${collectionId}`,
+        );
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+      localStorage.setItem(
+        "tasknotes:navigation-views:v2",
+        JSON.stringify({
+          "connect:Live connection through mdbase": ["Views/work.md#open"],
+        }),
+      );
+      const manifestUrl = new URL(
+        ".well-known/mdbase-app.json",
+        new URL("./", location.href),
+      ).href;
+      localStorage.setItem(
+        `mdbase-connect:token:https://connect.mdbase.dev:${manifestUrl}`,
+        JSON.stringify({
+          accessToken: "mdb_cached_home",
+          refreshToken: "ref_cached_home",
+          clientId: "01911111-1111-7111-8111-111111111111",
+          collectionId,
+          operations: [
+            "describe",
+            "query",
+            "list_views",
+            "execute_view",
+            "read_view_source",
+          ],
+          scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
+          expiresAt: Date.now() + 60_000,
+          refreshExpiresAt: Date.now() + 120_000,
+        }),
+      );
+    },
+    { collectionId },
+  );
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Opening your view" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Today", exact: true }),
+  ).toHaveCount(0);
+
+  coldCatalog.resolve();
+  await expect(page.getByRole("heading", { name: "Open work" })).toBeVisible();
+  await expect(
+    page.getByText("Visible from cached home", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Updating", { exact: true })).toHaveCount(0);
+  expect(
+    await page.evaluate((scope) => {
+      const stored = JSON.parse(
+        localStorage.getItem("tasknotes:navigation-views:v2") ?? "{}",
+      ) as Record<string, string[]>;
+      return stored[scope];
+    }, `connect:${collectionId}`),
+  ).toEqual(["Views/work.md#open"]);
+
+  warm = true;
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Open work" })).toBeVisible();
+  await expect(
+    page.getByText("Visible from cached home", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Updating", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Today", exact: true }),
+  ).toHaveCount(0);
+
+  warmRefresh.resolve();
+  await expect(page.getByText("Updating", { exact: true })).toHaveCount(0);
+});
+
 test("edits a contract-defined task without collapsing custom status or fields", async ({
   page,
 }) => {
@@ -354,4 +534,16 @@ function status(
 
 function priority(value: string, label: string, weight: number) {
   return { id: value, value, label, color: "#808080", weight };
+}
+
+function valid<T>(result: T) {
+  return { valid: true as const, diagnostics: [], result };
+}
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
 }

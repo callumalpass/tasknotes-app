@@ -92,6 +92,9 @@ export function ViewsScreen({
     key: string;
     message: string;
   } | null>(null);
+  const [refreshingExecution, setRefreshingExecution] = useState<string | null>(
+    null,
+  );
   const [editing, setEditing] = useState<TaskView | "new" | null>(null);
   const [boardMoves, setBoardMoves] = useState<
     Map<string, { viewKey: string; property: string; value: unknown }>
@@ -126,15 +129,32 @@ export function ViewsScreen({
   useEffect(() => {
     if (!viewKey || !selected || isTaskNotesDefaultView(selected)) return;
     let active = true;
+    let refreshed = false;
+    const executionKey = `${selected.key}:${selected.source.revision}`;
+    queueMicrotask(() => {
+      if (active) setRefreshingExecution(executionKey);
+    });
+    void repository
+      .cachedViewExecution(selected)
+      .then((cached) => {
+        if (!active || refreshed || !cached) return;
+        setExecution({ ...cached, stale: true });
+      })
+      .catch(() => undefined);
     void repository.executeView(selected).then(
       (result) => {
         if (!active) return;
+        refreshed = true;
         setExecution(result);
         setExecutionError(null);
+        setRefreshingExecution(null);
       },
-      (reason) =>
-        active &&
-        setExecutionError({ key: selected.key, message: message(reason) }),
+      (reason) => {
+        if (!active) return;
+        refreshed = true;
+        setExecutionError({ key: selected.key, message: message(reason) });
+        setRefreshingExecution(null);
+      },
     );
     return () => {
       active = false;
@@ -171,6 +191,9 @@ export function ViewsScreen({
   }, [configuration, repository, selected, viewKey]);
   const visibleExecution =
     execution?.view.key === selected?.key ? execution : null;
+  const currentExecutionRefreshing =
+    refreshingExecution ===
+    (selected ? `${selected.key}:${selected.source.revision}` : null);
   const currentExecutionError =
     executionError && executionError.key === selected?.key
       ? executionError.message
@@ -485,7 +508,9 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
-            {visibleExecution?.stale ? (
+            {visibleExecution && currentExecutionRefreshing ? (
+              <small>Updating</small>
+            ) : visibleExecution?.stale ? (
               <small>Last available result</small>
             ) : operational ? (
               <small>In navigation</small>
@@ -881,6 +906,7 @@ function KanbanView({
                   const pending = moves.has(row.task.id);
                   return (
                     <div
+                      aria-busy={pending}
                       className={`kanban-card${pending ? " is-pending" : ""}${dragging?.row.task.id === row.task.id ? " is-dragging" : ""}`}
                       draggable={writable}
                       key={row.task.id}
