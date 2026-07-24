@@ -125,7 +125,8 @@ export class IndexedMarkdownRepository implements TaskRepository {
   ) {
     this.collection =
       options.collection ?? new MarkdownCollection(createPlatformVault());
-    this.index = options.index ?? new TaskIndex();
+    this.index =
+      options.index ?? new TaskIndex(indexName(this.collection.identifier()));
     this.views = new LocalViewExecutor(this.collection, () => [
       ...this.cache.values(),
     ]);
@@ -415,6 +416,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   async collectionInfo(): Promise<CollectionInfo> {
     return {
       kind: "local",
+      id: this.collection.identifier(),
       name: "On this device",
       location: this.collection.location(),
       runtime: this.collection.kind(),
@@ -614,6 +616,12 @@ export class IndexedMarkdownRepository implements TaskRepository {
     );
     return run;
   }
+}
+
+function indexName(identifier: string): string {
+  return identifier === "native-default" || identifier === "browser-default"
+    ? "tasknotes-index-v2"
+    : `tasknotes-index-v2:${identifier}`;
 }
 
 function errorMessage(reason: unknown): string {

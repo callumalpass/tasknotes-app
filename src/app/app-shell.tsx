@@ -35,7 +35,13 @@ type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
   const { status, error, refresh } = useRepository();
-  const { choice, changeConnectedCollection, choose } = useCollectionGate();
+  const {
+    canChooseLocalFolder,
+    choice,
+    changeConnectedCollection,
+    changeLocalCollection,
+    choose,
+  } = useCollectionGate();
   const {
     documents,
     views,
@@ -159,13 +165,24 @@ export function AppShell() {
               Reconnect to mdbase
             </button>
           ) : (
-            <button
-              className="outline-action"
-              type="button"
-              onClick={() => location.reload()}
-            >
-              Try again
-            </button>
+            <>
+              <button
+                className="outline-action"
+                type="button"
+                onClick={() => location.reload()}
+              >
+                Try again
+              </button>
+              {canChooseLocalFolder ? (
+                <button
+                  className="text-action"
+                  type="button"
+                  onClick={changeLocalCollection}
+                >
+                  Choose a folder
+                </button>
+              ) : null}
+            </>
           )}
           <button
             className="text-action"

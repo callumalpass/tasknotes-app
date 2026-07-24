@@ -43,7 +43,13 @@ export function MoreScreen({
     syncIssues,
     resolveSyncIssue,
   } = useRepository();
-  const { choice, choose, changeConnectedCollection } = useCollectionGate();
+  const {
+    canChooseLocalFolder,
+    choice,
+    choose,
+    changeConnectedCollection,
+    changeLocalCollection,
+  } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
   const [reminderNotifications, setReminderNotifications] =
     useState<string>("Checking");
@@ -221,6 +227,15 @@ export function MoreScreen({
             {lastRefresh.elapsedMs.toLocaleString()} ms.
           </p>
         ) : null}
+        {choice === "local" && canChooseLocalFolder ? (
+          <button
+            className="text-action"
+            type="button"
+            onClick={changeLocalCollection}
+          >
+            Choose another folder
+          </button>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection label="Views">
@@ -292,8 +307,8 @@ export function MoreScreen({
         {choice === "local" ? (
           <>
             <p className="section-copy">
-              Open a compatible collection from mdbase cloud or another
-              computer.
+              mdbase is usually the easiest way to use a collection across
+              devices.
             </p>
             <button
               className="text-action"

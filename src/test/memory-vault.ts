@@ -14,6 +14,10 @@ export class MemoryVault implements Vault {
   readonly files = new Map<string, StoredFile>();
   private clock = 1;
 
+  identifier(): string {
+    return "memory";
+  }
+
   async initialize(): Promise<void> {}
 
   async ensureText(path: string, contents: string): Promise<void> {

@@ -1951,6 +1951,11 @@ button:disabled {
   cursor: pointer;
 }
 
+.collection-choices button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .collection-choices svg {
   color: var(--accent);
 }
@@ -1962,6 +1967,27 @@ button:disabled {
 
 .collection-choices strong {
   font-size: 1.08rem;
+}
+
+.collection-choice-title {
+  display: flex !important;
+  align-items: center;
+  gap: 9px !important;
+}
+
+.recommendation-label {
+  display: inline-flex !important;
+  width: max-content;
+  padding: 2px 6px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--accent), var(--line) 70%);
+  border-radius: 4px;
 }
 
 .collection-choices small,
@@ -1980,6 +2006,17 @@ button:disabled {
 
 .cloud-welcome .inline-error {
   margin: 24px 0 0;
+}
+
+.local-location-welcome .inline-error {
+  margin: 24px 0 0;
+}
+
+.welcome-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 22px;
 }
 
 .welcome-actions {
