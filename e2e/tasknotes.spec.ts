@@ -803,14 +803,20 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await expect(
     page.getByText("Build the view editor", { exact: true }),
   ).toBeVisible();
-  await page.getByLabel("New task title").fill("Created from Open work");
+  await page.getByLabel("New task title").fill("View capture sample");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(
-    page.getByText("Created from Open work", { exact: true }),
+    page.getByText("View capture sample", { exact: true }),
   ).toBeVisible();
-  await page.getByText("Created from Open work", { exact: true }).click();
-  await page.getByText("Organize", { exact: true }).click();
-  await expect(page.getByLabel("Priority")).toHaveValue("high");
+  await page.getByText("View capture sample", { exact: true }).click();
+  const organize = page.locator("details.task-form-section").filter({
+    has: page.locator("summary strong", { hasText: "Organize" }),
+  });
+  await organize.locator("summary").click();
+  await expect(organize).toHaveAttribute("open", "");
+  await expect(
+    organize.getByRole("button", { name: "High", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Edit Open work" }).click();
