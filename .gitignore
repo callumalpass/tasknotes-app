@@ -9,5 +9,8 @@ test-results/
 android/.gradle/
 android/app/build/
 android/build/
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+ios/App/CapApp-SPM/symlinks/
 *.log
 *.tsbuildinfo

@@ -862,6 +862,10 @@ button:disabled {
   padding: 12px 0 4px;
 }
 
+.notification-error {
+  margin-top: 10px;
+}
+
 .cloud-actions {
   display: flex;
   flex-wrap: wrap;

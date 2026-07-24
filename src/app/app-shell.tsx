@@ -7,9 +7,10 @@ import {
   List,
   MoreHorizontal,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { nativeBackAction } from "../native/navigation";
 import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
@@ -32,7 +33,7 @@ type Route =
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
-  const { status, error } = useRepository();
+  const { status, error, refresh } = useRepository();
   const { choice, changeConnectedCollection, choose } = useCollectionGate();
   const {
     documents,
@@ -77,6 +78,14 @@ export function AppShell() {
     },
     [route],
   );
+  const routeRef = useRef(route);
+  const navigateRef = useRef(navigate);
+  const navigationViewKeysRef = useRef(navigationViews.map((view) => view.key));
+  useEffect(() => {
+    routeRef.current = route;
+    navigateRef.current = navigate;
+    navigationViewKeysRef.current = navigationViews.map((view) => view.key);
+  }, [navigate, navigationViews, route]);
 
   useEffect(
     () =>
@@ -85,16 +94,24 @@ export function AppShell() {
   );
 
   useEffect(() => {
+    if (choice !== "cloud") return;
+    return mdbaseNotifications.listen(({ opened }) => {
+      void refresh().catch(() => undefined);
+      if (opened) navigate({ page: "home" }, true);
+    });
+  }, [choice, navigate, refresh]);
+
+  useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let disposed = false;
     let remove: (() => Promise<void>) | undefined;
     void CapacitorApp.addListener("backButton", () => {
       const action = nativeBackAction(
-        route,
-        navigationViews.map((view) => view.key),
+        routeRef.current,
+        navigationViewKeysRef.current,
       );
       if (action === "back") window.history.back();
-      else if (action === "home") navigate({ page: "home" }, true);
+      else if (action === "home") navigateRef.current({ page: "home" }, true);
       else void CapacitorApp.exitApp();
     }).then((handle) => {
       if (disposed) void handle.remove();
@@ -104,7 +121,7 @@ export function AppShell() {
       disposed = true;
       void remove?.();
     };
-  }, [navigate, navigationViews, route]);
+  }, []);
 
   if (status === "opening") {
     return (

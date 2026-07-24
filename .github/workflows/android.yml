@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -42,6 +45,21 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate Firebase configuration
+        run: |
+          if [ -n "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "TASKNOTES_FIREBASE_PROJECT_ID requires GOOGLE_SERVICES_JSON_BASE64." >&2
+            exit 1
+          fi
+          if [ -z "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 requires TASKNOTES_FIREBASE_PROJECT_ID." >&2
+            exit 1
+          fi
+
+      - name: Configure Firebase for Android
+        if: env.GOOGLE_SERVICES_JSON_BASE64 != ''
+        run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
       - name: Verify web application and contracts
         run: pnpm verify
@@ -72,6 +90,8 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       TASKNOTES_ANDROID_VERSION_CODE: ${{ github.run_number }}
+      TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -111,6 +131,17 @@ jobs:
       - name: Install dependencies and sync native project
         run: |
           pnpm install --frozen-lockfile
+          if [ -n "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "TASKNOTES_FIREBASE_PROJECT_ID requires GOOGLE_SERVICES_JSON_BASE64." >&2
+            exit 1
+          fi
+          if [ -z "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 requires TASKNOTES_FIREBASE_PROJECT_ID." >&2
+            exit 1
+          fi
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          fi
           pnpm build
           pnpm exec cap sync android
 
