@@ -1,4 +1,5 @@
 import { taskViewKey } from "../domain/view";
+import { normalizePresentationType } from "../domain/view-renderer";
 
 import type { Task } from "../domain/task";
 import type {
@@ -61,7 +62,7 @@ export function normalizeViewDocuments(
       ...(view.presentation
         ? {
             presentation: {
-              type: view.presentation.type,
+              type: normalizePresentationType(view.presentation.type),
               ...(view.presentation.fallback
                 ? { fallback: view.presentation.fallback }
                 : {}),
@@ -79,15 +80,43 @@ export function normalizeViewExecution(
   result: ProviderViewExecution,
   readTask: (record: ProviderViewExecution["results"][number]) => Task | null,
 ): TaskViewExecution {
+  const normalizedView = inferExecutionPresentationMapping(view, result);
   const rows = result.results.flatMap((record) => {
     const task = readTask(record);
     return task ? [{ task, values: structuredClone(record.values ?? {}) }] : [];
   });
   return {
-    view,
+    view: normalizedView,
     rows,
     totalCount: result.meta.total_count,
     hasMore: result.meta.has_more,
     groups: structuredClone(result.meta.groups ?? []),
+  };
+}
+
+function inferExecutionPresentationMapping(
+  view: TaskView,
+  result: ProviderViewExecution,
+): TaskView {
+  const presentation = view.presentation;
+  if (presentation?.type !== "tasknotes.kanban" || presentation.mappings.column)
+    return view;
+
+  const groupProperties = new Set(
+    (result.meta.groups ?? []).flatMap((group) =>
+      Object.keys(group.values ?? {}),
+    ),
+  );
+  if (groupProperties.size !== 1) return view;
+
+  return {
+    ...view,
+    presentation: {
+      ...presentation,
+      mappings: {
+        ...presentation.mappings,
+        column: [...groupProperties][0],
+      },
+    },
   };
 }

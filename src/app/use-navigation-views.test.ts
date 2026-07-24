@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { TODAY_VIEW_KEY } from "../domain/default-views";
 import {
   readNavigationViewKeys,
   writeNavigationViewKeys,
@@ -33,7 +32,7 @@ describe("home view restoration", () => {
       storage,
     );
     expect(restored?.navigationKeys[0]).toBe("Views/work.md#open");
-    expect(restored?.documents?.[1].name).toBe("Work");
+    expect(restored?.documents?.[0].name).toBe("Work");
   });
 
   it("falls back cleanly after an authoritative refresh removes the home view", () => {
@@ -42,10 +41,18 @@ describe("home view restoration", () => {
       "Views/work.md#open",
     ]);
 
-    const resolved = resolveNavigationViewCatalog(info, [], false, storage);
-    expect(resolved?.navigationKeys).toEqual([TODAY_VIEW_KEY]);
+    const starter = starterViews();
+    const resolved = resolveNavigationViewCatalog(
+      info,
+      [starter],
+      false,
+      storage,
+    );
+    expect(resolved?.navigationKeys).toEqual(
+      starter.views.map((view) => view.key),
+    );
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual([
-      TODAY_VIEW_KEY,
+      ...starter.views.map((view) => view.key),
     ]);
   });
 
@@ -112,6 +119,29 @@ function workViews(): TaskViewDocument {
         source,
       },
     ],
+  };
+}
+
+function starterViews(): TaskViewDocument {
+  const source = {
+    path: "views/tasknotes-app.base",
+    format: "obsidian.base",
+    revision: "view-r1",
+    writable: true,
+  };
+  return {
+    id: "tasknotes-app",
+    name: "tasknotes-app",
+    source,
+    views: ["today", "upcoming", "calendar"].map((id) => ({
+      key: `${source.path}#${id}`,
+      documentId: "tasknotes-app",
+      documentName: "tasknotes-app",
+      id,
+      name: `${id[0].toUpperCase()}${id.slice(1)}`,
+      properties: [],
+      source,
+    })),
   };
 }
 

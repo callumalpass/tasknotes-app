@@ -121,6 +121,46 @@ async function dragKanbanHandle(
   }
 }
 
+async function dragCalendarEvent(
+  page: Page,
+  event: Locator,
+  destinationDay: Locator,
+) {
+  await event.scrollIntoViewIfNeeded();
+  const [source, destination] = await Promise.all([
+    event.boundingBox(),
+    destinationDay.boundingBox(),
+  ]);
+  if (!source || !destination)
+    throw new Error("Calendar drag elements are not laid out");
+
+  await page.mouse.move(
+    source.x + source.width / 2,
+    source.y + source.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    destination.x + destination.width / 2,
+    destination.y + Math.min(36, destination.height / 2),
+    { steps: 12 },
+  );
+  await page.mouse.up();
+}
+
+async function localTaskDocuments(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const tasks = await tasknotes.getDirectoryHandle("tasks");
+    const documents: string[] = [];
+    for await (const [, handle] of tasks.entries()) {
+      if (handle.kind !== "file") continue;
+      documents.push(await (await handle.getFile()).text());
+    }
+    return documents;
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(async () => {
@@ -172,7 +212,17 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
 
   await page.getByRole("button", { name: "Upcoming" }).click();
   await expect(
+    page.locator(".full-calendar-view.is-agenda .fc-list"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next period" }).click();
+  await expect(
     page.getByText("Prepare weekly review", { exact: true }).first(),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Calendar", exact: true }).click();
+  await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
+  await page.getByRole("button", { name: "Upcoming", exact: true }).click();
+  await expect(
+    page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Views", exact: true }).click();
   await page.getByRole("button", { name: "Search tasks" }).click();
@@ -254,6 +304,9 @@ test("archives and restores a Markdown task without deleting it", async ({
   await page.getByText("Keep archived history", { exact: true }).click();
   await page.getByLabel("Restore task").click();
   await expect(page.getByText("Nothing archived.")).toBeVisible();
+  const restoredDocuments = await localTaskDocuments(page);
+  expect(restoredDocuments).toHaveLength(1);
+  expect(restoredDocuments[0]).not.toMatch(/^\s*-\s+archived\s*$/m);
 
   await page.reload();
   await page.getByRole("button", { name: "Today", exact: true }).click();
@@ -302,6 +355,7 @@ test("projects, completes, and skips recurring occurrences by date", async ({
     .getByLabel("New task title")
     .fill("Daily standup today 9am every day");
   await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Upcoming" }).click();
   await page.getByRole("button", { name: /^Daily standup Today,/ }).click();
   await expect(page.getByText("Occurrence", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Complete", exact: true }).click();
@@ -311,7 +365,6 @@ test("projects, completes, and skips recurring occurrences by date", async ({
     page.getByRole("button", { name: /^Daily standup Today,/ }),
   ).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Upcoming" }).click();
   const firstUpcoming = page
     .getByText("Daily standup", { exact: true })
     .first();
@@ -328,6 +381,7 @@ test("materializes one durable occurrence and reconciles it after reload", async
     .getByLabel("New task title")
     .fill("Materialized review today every day");
   await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Upcoming" }).click();
   await page
     .getByRole("button", { name: /^Materialized review Today/ })
     .click();
@@ -343,7 +397,7 @@ test("materializes one durable occurrence and reconciles it after reload", async
     page.getByText("Occurrence note", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Upcoming" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^Materialized review Today/ }),
   ).toHaveCount(0);
@@ -592,7 +646,10 @@ views:
       .filter({ hasText: "Plan saved views" }),
   ).toHaveAttribute("aria-busy", "false");
   await expect(
-    page.getByRole("button", { name: "Work board", exact: true }),
+    page.getByRole("button", {
+      name: testInfo.project.name === "mobile" ? "More views" : "Work board",
+      exact: true,
+    }),
   ).toHaveAttribute("aria-current", "page");
 
   await page.reload();
@@ -603,7 +660,10 @@ views:
       .getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Work board", exact: true }),
+    page.getByRole("button", {
+      name: testInfo.project.name === "mobile" ? "More views" : "Work board",
+      exact: true,
+    }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "More", exact: true }).click();
@@ -628,16 +688,18 @@ views:
     .getByRole("button", { name: "Views", exact: true })
     .click();
   await page.getByText("Dates", { exact: true }).click();
-  await expect(page.getByRole("grid")).toBeVisible();
+  await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await expect(
     page
-      .locator(".calendar-agenda .task-row-title")
+      .locator(".full-calendar-inspector .task-row-title")
       .getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
   const calendarCapture = page.getByLabel("New task title");
   await expect(calendarCapture).toHaveAttribute("placeholder", "Add to Dates");
   const captureBounds = await page.locator(".capture-composer").boundingBox();
-  const calendarBounds = await page.locator(".calendar-view").boundingBox();
+  const calendarBounds = await page
+    .locator(".full-calendar-view")
+    .boundingBox();
   expect(captureBounds).not.toBeNull();
   expect(calendarBounds).not.toBeNull();
   expect(
@@ -647,17 +709,46 @@ views:
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(
     page
-      .locator(".calendar-agenda .task-row-title")
+      .locator(".full-calendar-inspector .task-row-title")
       .getByText("Created on the calendar", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Due", { exact: true }).first()).toBeVisible();
+  await expect(
+    page
+      .locator(".full-calendar-inspector")
+      .getByText("Due", { exact: true })
+      .first(),
+  ).toBeVisible();
   await expect(page.getByText("Progress", { exact: true })).toHaveCount(0);
   if (testInfo.project.name === "desktop") {
+    const nextDay = new Date(`${today}T12:00:00`);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDayValue = [
+      nextDay.getFullYear(),
+      String(nextDay.getMonth() + 1).padStart(2, "0"),
+      String(nextDay.getDate()).padStart(2, "0"),
+    ].join("-");
+    const destination = page.locator(
+      `.fc-daygrid-day[data-date="${nextDayValue}"]`,
+    );
+    await dragCalendarEvent(
+      page,
+      page.locator(".fc-daygrid-event").filter({ hasText: "Plan saved views" }),
+      destination,
+    );
     await expect(
-      page.locator(".calendar-cell-tasks").getByText("Plan saved views"),
+      destination.getByText("Plan saved views", { exact: true }),
     ).toBeVisible();
-    const calendar = await page.locator(".calendar-grid").boundingBox();
-    const agenda = await page.locator(".calendar-agenda").boundingBox();
+    await destination.getByText("Plan saved views", { exact: true }).click();
+    await expect(page.getByLabel("Due date", { exact: true })).toHaveValue(
+      nextDayValue,
+    );
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+
+    await expect(
+      page.locator(".fc-daygrid-event").getByText("Plan saved views"),
+    ).toBeVisible();
+    const calendar = await page.locator(".full-calendar-surface").boundingBox();
+    const agenda = await page.locator(".full-calendar-inspector").boundingBox();
     expect(calendar).not.toBeNull();
     expect(agenda).not.toBeNull();
     expect(agenda!.x).toBeGreaterThan(calendar!.x + calendar!.width);
@@ -701,7 +792,7 @@ test("orders several navigation views and keeps the rest behind the mobile overf
   await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: /Saved views/ }).click();
   await expect(
-    page.getByRole("heading", { name: "TaskNotes", exact: true }),
+    page.getByRole("heading", { name: "tasknotes-app", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "navigation", exact: true }),
@@ -710,13 +801,15 @@ test("orders several navigation views and keeps the rest behind the mobile overf
   await page.getByRole("button", { name: "Add Later to navigation" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
 
   const ordered = page.locator(".navigation-view-order li");
-  await expect(ordered).toHaveCount(4);
+  await expect(ordered).toHaveCount(5);
   await expect(ordered.nth(0)).toContainText("Focus");
   await expect(ordered.nth(1)).toContainText("Today");
   await expect(ordered.nth(2)).toContainText("Upcoming");
-  await expect(ordered.nth(3)).toContainText("Later");
+  await expect(ordered.nth(3)).toContainText("Calendar");
+  await expect(ordered.nth(4)).toContainText("Later");
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");

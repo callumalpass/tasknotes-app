@@ -10,7 +10,6 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
-import { TODAY_VIEW_KEY, UPCOMING_VIEW_KEY } from "../domain/default-views";
 import { nativeBackAction } from "../native/navigation";
 import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
@@ -332,6 +331,10 @@ function Navigation({
 }) {
   const visibleViews =
     mode === "mobile" ? navigationViews.slice(0, 3) : navigationViews;
+  const hiddenNavigationViewActive =
+    mode === "mobile" &&
+    active.startsWith("view:") &&
+    !visibleViews.some((view) => active === `view:${view.key}`);
   const items: {
     key: string;
     label: string;
@@ -365,8 +368,16 @@ function Navigation({
   ];
   return items.map(({ key, label, icon: Icon, route }) => (
     <button
-      aria-current={active === key ? "page" : undefined}
-      className={active === key ? "is-active" : undefined}
+      aria-current={
+        active === key || (key === "views" && hiddenNavigationViewActive)
+          ? "page"
+          : undefined
+      }
+      className={
+        active === key || (key === "views" && hiddenNavigationViewActive)
+          ? "is-active"
+          : undefined
+      }
       key={key}
       type="button"
       onClick={() => onNavigate(route)}
@@ -378,10 +389,12 @@ function Navigation({
 }
 
 function navigationViewIcon(view: TaskView): typeof CheckCircle2 {
-  if (view.key === TODAY_VIEW_KEY) return CheckCircle2;
-  if (view.key === UPCOMING_VIEW_KEY) return CalendarDays;
   if (view.presentation?.type === "tasknotes.kanban") return Columns3;
-  if (view.presentation?.type === "tasknotes.calendar") return CalendarDays;
+  if (
+    view.presentation?.type === "tasknotes.calendar" ||
+    view.presentation?.type === "tasknotes.mini-calendar"
+  )
+    return CalendarDays;
   return List;
 }
 
@@ -401,7 +414,6 @@ function parseRoute(): Route {
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
   if (path === "/archive") return { page: "archive" };
-  if (path === "/upcoming") return { page: "views", key: UPCOMING_VIEW_KEY };
   if (path === "/more") return { page: "more" };
   return { page: "home" };
 }

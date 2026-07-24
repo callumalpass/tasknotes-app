@@ -1,0 +1,1380 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#fbfcfe" />
+    <title>TaskNotes calendar concept</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.2.5/400.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.2.5/700.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/azeret-mono@5.2.5/500.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --paper: oklch(99.2% 0.004 255);
+        --paper-raised: oklch(99.7% 0.002 255);
+        --paper-soft: oklch(97.8% 0.006 255);
+        --ink: oklch(25% 0.018 255);
+        --ink-soft: oklch(43% 0.016 255);
+        --ink-muted: oklch(56% 0.014 255);
+        --line: oklch(92.5% 0.007 255);
+        --line-strong: oklch(84% 0.01 255);
+        --accent: oklch(50% 0.09 238);
+        --accent-soft: oklch(96% 0.018 238);
+        --danger: oklch(51% 0.09 28);
+        --success: oklch(49% 0.065 153);
+        --nav-width: 184px;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+        background: var(--paper);
+      }
+
+      button,
+      input {
+        color: inherit;
+        font: inherit;
+      }
+
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent), transparent 25%);
+        outline-offset: 2px;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: var(--nav-width) minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .navigation {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 26px 14px 18px;
+        background: var(--paper-soft);
+        border-right: 1px solid var(--line);
+      }
+
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 44px;
+        padding: 0 10px;
+        font-size: 1.03rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .mark {
+        display: grid;
+        grid-template-columns: repeat(2, 5px);
+        gap: 2px;
+      }
+
+      .mark i {
+        width: 5px;
+        height: 5px;
+        background: var(--accent);
+      }
+
+      .nav-list {
+        display: grid;
+        gap: 2px;
+        margin-top: 30px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 10px;
+        color: var(--ink-soft);
+        font-size: 0.94rem;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .nav-item:hover {
+        background: color-mix(in srgb, var(--paper), transparent 24%);
+      }
+
+      .nav-item[aria-current="page"] {
+        color: var(--ink);
+        font-weight: 700;
+        background: var(--paper);
+      }
+
+      .nav-item svg {
+        width: 18px;
+        height: 18px;
+        color: var(--ink-muted);
+        stroke-width: 1.65;
+      }
+
+      .nav-item[aria-current="page"] svg {
+        color: var(--accent);
+      }
+
+      .collection {
+        margin: auto 10px 0;
+        padding-top: 16px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.66rem;
+        line-height: 1.55;
+        border-top: 1px solid var(--line);
+      }
+
+      .main {
+        min-width: 0;
+        padding: 30px clamp(22px, 3vw, 44px) 48px;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 20px;
+      }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.67rem;
+        font-weight: 500;
+        letter-spacing: 0.045em;
+        line-height: 1.45;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.95rem;
+        letter-spacing: -0.025em;
+        line-height: 1.08;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quiet-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 40px;
+        padding: 0 12px;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .quiet-button:hover {
+        color: var(--ink);
+        border-color: color-mix(in srgb, var(--ink-muted), transparent 25%);
+      }
+
+      .quick-capture {
+        display: flex;
+        align-items: center;
+        min-height: 54px;
+        margin-bottom: 23px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .quick-capture > span {
+        width: 30px;
+        color: var(--accent);
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+
+      .quick-capture input {
+        flex: 1;
+        min-width: 0;
+        min-height: 52px;
+        padding: 0;
+        font-size: 1.08rem;
+        background: transparent;
+        border: 0;
+        outline: 0;
+      }
+
+      .quick-capture input::placeholder {
+        color: var(--ink-muted);
+        opacity: 1;
+      }
+
+      .quick-capture button {
+        min-height: 44px;
+        padding: 0 2px;
+        color: var(--accent);
+        font-weight: 700;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .calendar-commandbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 14px;
+      }
+
+      .date-navigation {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .icon-button {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      .icon-button:hover {
+        background: var(--accent-soft);
+      }
+
+      .icon-button svg {
+        width: 19px;
+        height: 19px;
+        stroke-width: 1.7;
+      }
+
+      .today-button {
+        min-height: 38px;
+        padding: 0 9px;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .period-title {
+        min-width: 0;
+        font-size: 1.11rem;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .view-switcher {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        background: var(--paper-soft);
+        border-radius: 7px;
+      }
+
+      .view-switcher button {
+        min-height: 35px;
+        padding: 0 10px;
+        color: var(--ink-muted);
+        font-size: 0.82rem;
+        background: transparent;
+        border: 0;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .view-switcher button:hover {
+        color: var(--ink);
+      }
+
+      .view-switcher button[aria-pressed="true"] {
+        color: var(--ink);
+        font-weight: 700;
+        background: var(--paper-raised);
+        box-shadow: 0 0 0 1px var(--line);
+      }
+
+      .calendar-workspace {
+        display: grid;
+        grid-template-columns: minmax(520px, 1fr) minmax(260px, 320px);
+        gap: clamp(24px, 3vw, 40px);
+        align-items: start;
+      }
+
+      .calendar-surface {
+        min-width: 0;
+      }
+
+      .day-inspector {
+        position: sticky;
+        top: 24px;
+        min-width: 0;
+      }
+
+      .inspector-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 38px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .inspector-header h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .inspector-header span {
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.66rem;
+      }
+
+      .agenda {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .agenda-item {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) 34px;
+        min-height: 65px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .agenda-item:last-child {
+        border-bottom: 0;
+      }
+
+      .completion {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .completion span {
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: 50%;
+      }
+
+      .agenda-item.is-complete .completion span {
+        background:
+          linear-gradient(var(--success), var(--success)) center / 7px 1px
+            no-repeat,
+          var(--paper);
+        border-color: var(--success);
+      }
+
+      .agenda-content {
+        display: grid;
+        align-content: center;
+        min-width: 0;
+        padding: 8px 10px;
+      }
+
+      .agenda-content strong {
+        overflow: hidden;
+        font-size: 0.94rem;
+        font-weight: 400;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .agenda-item.is-complete .agenda-content strong {
+        color: var(--ink-muted);
+        text-decoration: line-through;
+      }
+
+      .agenda-content small {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 10px;
+        margin-top: 3px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.64rem;
+        line-height: 1.4;
+      }
+
+      .more-button {
+        width: 34px;
+        padding: 0;
+        color: var(--ink-muted);
+        font-size: 1.1rem;
+        letter-spacing: 0.08em;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .day-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        padding: 15px 0;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.64rem;
+        line-height: 1.5;
+      }
+
+      .day-summary strong {
+        display: block;
+        color: var(--ink-soft);
+        font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+        font-size: 0.9rem;
+        font-weight: 400;
+      }
+
+      .empty-day {
+        padding: 24px 0;
+        color: var(--ink-muted);
+      }
+
+      /* FullCalendar is the engine. These rules make it feel like TaskNotes. */
+      .fc {
+        --fc-border-color: var(--line);
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: var(--paper-soft);
+        --fc-neutral-text-color: var(--ink-muted);
+        --fc-today-bg-color: transparent;
+        --fc-now-indicator-color: var(--accent);
+        --fc-event-bg-color: transparent;
+        --fc-event-border-color: transparent;
+        --fc-event-text-color: var(--ink);
+        font-family: inherit;
+        font-size: 0.88rem;
+      }
+
+      .fc .fc-header-toolbar {
+        display: none;
+      }
+
+      .fc .fc-scrollgrid,
+      .fc-theme-standard td,
+      .fc-theme-standard th {
+        border-color: var(--line);
+      }
+
+      .fc .fc-scrollgrid {
+        border-width: 1px 0 0 1px;
+        border-radius: 0;
+      }
+
+      .fc .fc-col-header-cell {
+        height: 34px;
+        vertical-align: middle;
+        background: transparent;
+      }
+
+      .fc .fc-col-header-cell-cushion {
+        padding: 0;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.63rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .fc .fc-daygrid-day {
+        transition: background-color 160ms var(--ease-out);
+      }
+
+      .fc .fc-daygrid-day:hover {
+        background: color-mix(in srgb, var(--accent-soft), transparent 45%);
+      }
+
+      .fc .fc-day-other {
+        background: color-mix(in srgb, var(--paper-soft), transparent 35%);
+      }
+
+      .fc .fc-day-other .fc-daygrid-day-top,
+      .fc .fc-day-other .task-event {
+        opacity: 0.48;
+      }
+
+      .fc .fc-day-today {
+        background: transparent !important;
+      }
+
+      .fc .fc-day-selected {
+        background: var(--accent-soft);
+        box-shadow: inset 0 2px 0 var(--accent);
+      }
+
+      .fc .fc-daygrid-day-top {
+        flex-direction: row;
+      }
+
+      .fc .fc-daygrid-day-number {
+        padding: 8px 9px 4px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.65rem;
+      }
+
+      .fc .fc-day-today .fc-daygrid-day-number {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .fc .fc-daygrid-day-frame {
+        min-height: 112px;
+      }
+
+      .fc .fc-daygrid-day-events {
+        margin: 1px 5px 5px;
+      }
+
+      .fc .fc-daygrid-event-harness {
+        margin-top: 1px;
+      }
+
+      .fc .fc-daygrid-more-link {
+        margin: 3px 4px;
+        color: var(--accent);
+        font-size: 0.72rem;
+      }
+
+      .fc .fc-event {
+        margin: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        cursor: pointer;
+      }
+
+      .task-event {
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+        min-width: 0;
+        padding: 2px 3px;
+        color: var(--ink-soft);
+        line-height: 1.25;
+      }
+
+      .task-event::before {
+        flex: 0 0 auto;
+        width: 5px;
+        height: 5px;
+        background: var(--event-color, var(--accent));
+        border-radius: 50%;
+        content: "";
+      }
+
+      .task-event time {
+        flex: 0 0 auto;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.58rem;
+      }
+
+      .task-event span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .task-event.is-complete span {
+        color: var(--ink-muted);
+        text-decoration: line-through;
+      }
+
+      .fc .fc-timegrid-slot {
+        height: 3.1em;
+      }
+
+      .fc .fc-timegrid-slot-label-cushion,
+      .fc .fc-timegrid-axis-cushion {
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.59rem;
+      }
+
+      .fc .fc-timegrid-event {
+        background: color-mix(
+          in srgb,
+          var(--event-color, var(--accent)) 9%,
+          var(--paper)
+        );
+        border: 1px solid
+          color-mix(in srgb, var(--event-color, var(--accent)), transparent 56%);
+        border-radius: 3px;
+        box-shadow: none;
+      }
+
+      .fc .fc-timegrid-event .task-event {
+        align-items: flex-start;
+        padding: 5px 6px;
+      }
+
+      .fc .fc-list {
+        border: 0;
+      }
+
+      .fc .fc-list-day-cushion {
+        padding: 9px 0;
+        background: transparent;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .fc .fc-list-day-text,
+      .fc .fc-list-day-side-text {
+        color: var(--ink);
+        font-size: 0.9rem;
+      }
+
+      .fc .fc-list-event:hover td {
+        background: var(--paper-soft);
+      }
+
+      .fc .fc-list-event td {
+        padding-top: 9px;
+        padding-bottom: 9px;
+        border-color: var(--line);
+      }
+
+      .fc .fc-list-event-dot {
+        border-color: var(--event-color, var(--accent));
+      }
+
+      .fc .fc-list-event-title a {
+        color: var(--ink);
+      }
+
+      .fc .fc-list-empty {
+        background: transparent;
+      }
+
+      .concept-note {
+        max-width: 62ch;
+        margin: 28px 0 0;
+        color: var(--ink-muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 1040px) {
+        .calendar-workspace {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .day-inspector {
+          position: static;
+          margin-top: 8px;
+        }
+
+        .agenda {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 22px;
+        }
+
+        .agenda-item:nth-child(odd) {
+          border-right: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 760px) {
+        .app-shell {
+          display: block;
+        }
+
+        .navigation {
+          display: none;
+        }
+
+        .main {
+          padding: 20px 18px 34px;
+        }
+
+        .page-header {
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        h1 {
+          font-size: 1.65rem;
+        }
+
+        .header-actions .quiet-button:first-child {
+          display: none;
+        }
+
+        .quick-capture {
+          margin-bottom: 18px;
+        }
+
+        .calendar-commandbar {
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 10px;
+        }
+
+        .period-title {
+          text-align: right;
+        }
+
+        .view-switcher {
+          grid-column: 1 / -1;
+          overflow-x: auto;
+        }
+
+        .view-switcher button {
+          flex: 1 0 auto;
+        }
+
+        .fc .fc-daygrid-day-frame {
+          min-height: 72px;
+        }
+
+        .fc .fc-daygrid-day-events {
+          margin-right: 2px;
+          margin-left: 2px;
+        }
+
+        .task-event {
+          padding-right: 1px;
+          padding-left: 1px;
+        }
+
+        .task-event time {
+          display: none;
+        }
+
+        .task-event span {
+          font-size: 0.69rem;
+        }
+
+        .agenda {
+          display: block;
+        }
+
+        .agenda-item:nth-child(odd) {
+          border-right: 0;
+        }
+
+        .concept-note {
+          display: none;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .page-header .eyebrow,
+        .today-button {
+          display: none;
+        }
+
+        .header-actions {
+          gap: 0;
+        }
+
+        .quiet-button {
+          min-width: 40px;
+          padding: 0 9px;
+          font-size: 0;
+        }
+
+        .quiet-button svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .calendar-commandbar {
+          margin-bottom: 9px;
+        }
+
+        .view-switcher button[data-view="timeGridThreeDay"],
+        .view-switcher button[data-view="timeGridDay"] {
+          display: none;
+        }
+
+        .fc .fc-col-header-cell-cushion {
+          font-size: 0.58rem;
+        }
+
+        .fc .fc-daygrid-day-number {
+          padding: 6px 6px 3px;
+        }
+
+        .fc .fc-daygrid-day-frame {
+          min-height: 58px;
+        }
+
+        .fc .fc-daygrid-day-events {
+          min-height: 8px;
+          margin: 0 2px 2px;
+        }
+
+        .fc .fc-daygrid-event-harness:not(:first-child) {
+          display: none;
+        }
+
+        .task-event {
+          justify-content: center;
+          padding: 2px 0;
+        }
+
+        .task-event::before {
+          width: 6px;
+          height: 6px;
+        }
+
+        .task-event span {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="navigation" aria-label="Main navigation">
+        <div class="wordmark">
+          <span class="mark" aria-hidden="true"
+            ><i></i><i></i><i></i><i></i
+          ></span>
+          tasknotes
+        </div>
+        <nav class="nav-list">
+          <button class="nav-item" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                d="M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"
+              />
+            </svg>
+            Today
+          </button>
+          <button class="nav-item" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                d="M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"
+              />
+              <path d="m9 15 2 2 4-4" />
+            </svg>
+            Upcoming
+          </button>
+          <button class="nav-item" aria-current="page" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="17" rx="1" />
+              <path
+                d="M8 2v4M16 2v4M3 9h18M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"
+              />
+            </svg>
+            Calendar
+          </button>
+          <button class="nav-item" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 5h16M4 12h16M4 19h10" />
+            </svg>
+            Views
+          </button>
+        </nav>
+        <p class="collection">TASKNOTES<br />LOCAL COLLECTION · READY</p>
+      </aside>
+
+      <main class="main">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Your schedule</p>
+            <h1>Calendar</h1>
+          </div>
+          <div class="header-actions">
+            <button class="quiet-button" type="button">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18M6 12h12M10 18h4" />
+              </svg>
+              Calendars
+            </button>
+            <button class="quiet-button" type="button">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"
+                />
+              </svg>
+              View settings
+            </button>
+          </div>
+        </header>
+
+        <form class="quick-capture" id="quick-capture">
+          <span aria-hidden="true">+</span>
+          <label for="new-task" hidden>New task</label>
+          <input
+            id="new-task"
+            autocomplete="off"
+            placeholder="Add to Friday, July 24"
+          />
+          <button type="submit" hidden>Add</button>
+        </form>
+
+        <div class="calendar-commandbar">
+          <div class="date-navigation">
+            <button class="icon-button" id="previous" aria-label="Previous">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <button class="today-button" id="today" type="button">Today</button>
+            <button class="icon-button" id="next" aria-label="Next">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+          <div class="period-title" id="period-title" aria-live="polite">
+            July 2026
+          </div>
+          <div class="view-switcher" aria-label="Calendar view">
+            <button type="button" data-view="dayGridMonth" aria-pressed="true">
+              Month
+            </button>
+            <button type="button" data-view="timeGridWeek" aria-pressed="false">
+              Week
+            </button>
+            <button
+              type="button"
+              data-view="timeGridThreeDay"
+              aria-pressed="false"
+            >
+              3 days
+            </button>
+            <button type="button" data-view="timeGridDay" aria-pressed="false">
+              Day
+            </button>
+            <button type="button" data-view="listWeek" aria-pressed="false">
+              Agenda
+            </button>
+          </div>
+        </div>
+
+        <div class="calendar-workspace">
+          <section class="calendar-surface" aria-label="Calendar">
+            <div id="calendar"></div>
+          </section>
+
+          <aside class="day-inspector" aria-label="Selected day">
+            <header class="inspector-header">
+              <h2 id="selected-date">Friday, July 24</h2>
+              <span id="task-count">3 tasks</span>
+            </header>
+            <div class="agenda" id="agenda"></div>
+            <div class="day-summary" id="day-summary"></div>
+          </aside>
+        </div>
+
+        <p class="concept-note">
+          The calendar carries position and time. Task properties stay in the
+          selected-day panel, where they remain readable and actionable.
+        </p>
+      </main>
+    </div>
+
+    <script>
+      const tasks = [
+        {
+          id: "workout",
+          title: "Workout",
+          start: "2026-07-24T07:30:00",
+          end: "2026-07-24T08:15:00",
+          project: "Personal",
+          status: "open",
+          tone: "oklch(50% 0.09 238)",
+        },
+        {
+          id: "relay",
+          title: "Review relay performance",
+          start: "2026-07-24T10:00:00",
+          end: "2026-07-24T11:00:00",
+          project: "mdbase",
+          status: "open",
+          tone: "oklch(49% 0.065 153)",
+        },
+        {
+          id: "brief",
+          title: "Write mobile release brief",
+          start: "2026-07-24",
+          allDay: true,
+          project: "TaskNotes",
+          status: "open",
+          tone: "oklch(51% 0.09 28)",
+        },
+        {
+          id: "claude",
+          title: "Claude training",
+          start: "2026-07-21T18:00:00",
+          end: "2026-07-21T19:00:00",
+          project: "Learning",
+          status: "done",
+          tone: "oklch(56% 0.014 255)",
+        },
+        {
+          id: "schema",
+          title: "Check task schema",
+          start: "2026-07-22",
+          allDay: true,
+          project: "mdbase",
+          status: "open",
+          tone: "oklch(49% 0.065 153)",
+        },
+        {
+          id: "design",
+          title: "Calendar interaction pass",
+          start: "2026-07-27T09:30:00",
+          end: "2026-07-27T11:00:00",
+          project: "TaskNotes",
+          status: "open",
+          tone: "oklch(50% 0.09 238)",
+        },
+        {
+          id: "docs",
+          title: "Update developer docs",
+          start: "2026-07-29",
+          allDay: true,
+          project: "mdbase",
+          status: "open",
+          tone: "oklch(49% 0.065 153)",
+        },
+        {
+          id: "sync",
+          title: "Sync design review",
+          start: "2026-07-30T14:00:00",
+          end: "2026-07-30T15:00:00",
+          project: "TaskNotes",
+          status: "open",
+          tone: "oklch(50% 0.09 238)",
+        },
+        {
+          id: "plan",
+          title: "Plan hosted collection launch",
+          start: "2026-07-16T11:00:00",
+          end: "2026-07-16T12:00:00",
+          project: "mdbase",
+          status: "done",
+          tone: "oklch(56% 0.014 255)",
+        },
+      ];
+
+      let selectedDate = "2026-07-24";
+
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"),
+        {
+          initialDate: selectedDate,
+          initialView: "dayGridMonth",
+          headerToolbar: false,
+          firstDay: 1,
+          now: "2026-07-24T09:12:00",
+          nowIndicator: true,
+          height: "auto",
+          dayMaxEvents: 3,
+          selectable: true,
+          editable: true,
+          eventResizableFromStart: true,
+          slotMinTime: "06:00:00",
+          slotMaxTime: "22:00:00",
+          slotDuration: "00:30:00",
+          allDayText: "All day",
+          views: {
+            timeGridThreeDay: {
+              type: "timeGrid",
+              duration: { days: 3 },
+            },
+          },
+          events: tasks,
+          eventDidMount(info) {
+            info.el.style.setProperty(
+              "--event-color",
+              info.event.extendedProps.tone,
+            );
+          },
+          eventContent(info) {
+            const event = info.event;
+            const wrapper = document.createElement("div");
+            wrapper.className = `task-event${event.extendedProps.status === "done" ? " is-complete" : ""}`;
+            wrapper.style.setProperty(
+              "--event-color",
+              event.extendedProps.tone,
+            );
+            if (info.timeText) {
+              const time = document.createElement("time");
+              time.textContent = info.timeText;
+              wrapper.append(time);
+            }
+            const title = document.createElement("span");
+            title.textContent = event.title;
+            wrapper.append(title);
+            return { domNodes: [wrapper] };
+          },
+          dateClick(info) {
+            selectDate(info.dateStr.slice(0, 10));
+          },
+          eventClick(info) {
+            selectDate(localDate(info.event.start));
+          },
+          datesSet(info) {
+            document.getElementById("period-title").textContent =
+              info.view.title;
+            document
+              .querySelectorAll("[data-view]")
+              .forEach((button) =>
+                button.setAttribute(
+                  "aria-pressed",
+                  String(button.dataset.view === info.view.type),
+                ),
+              );
+            markSelectedDay();
+          },
+        },
+      );
+
+      calendar.render();
+      renderAgenda();
+
+      document.getElementById("previous").addEventListener("click", () => {
+        calendar.prev();
+      });
+      document.getElementById("next").addEventListener("click", () => {
+        calendar.next();
+      });
+      document.getElementById("today").addEventListener("click", () => {
+        selectDate("2026-07-24");
+        calendar.today();
+      });
+
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          calendar.changeView(button.dataset.view);
+        });
+      });
+
+      document
+        .getElementById("quick-capture")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          const input = document.getElementById("new-task");
+          const title = input.value.trim();
+          if (!title) return;
+          const task = {
+            id: `task-${Date.now()}`,
+            title,
+            start: selectedDate,
+            allDay: true,
+            project: "Inbox",
+            status: "open",
+            tone: "oklch(50% 0.09 238)",
+          };
+          tasks.push(task);
+          calendar.addEvent(task);
+          input.value = "";
+          renderAgenda();
+        });
+
+      document.getElementById("new-task").addEventListener("input", (event) => {
+        document.querySelector("#quick-capture button").hidden =
+          !event.target.value.trim();
+      });
+
+      function selectDate(value) {
+        selectedDate = value;
+        document.getElementById("new-task").placeholder =
+          `Add to ${formatDate(value, "long")}`;
+        renderAgenda();
+        markSelectedDay();
+      }
+
+      function markSelectedDay() {
+        document
+          .querySelectorAll(".fc-day-selected")
+          .forEach((element) => element.classList.remove("fc-day-selected"));
+        document
+          .querySelector(`.fc [data-date="${CSS.escape(selectedDate)}"]`)
+          ?.classList.add("fc-day-selected");
+      }
+
+      function renderAgenda() {
+        const agenda = document.getElementById("agenda");
+        const selectedTasks = tasks.filter(
+          (task) => task.start.slice(0, 10) === selectedDate,
+        );
+        document.getElementById("selected-date").textContent = formatDate(
+          selectedDate,
+          "long",
+        );
+        document.getElementById("task-count").textContent =
+          `${selectedTasks.length} ${selectedTasks.length === 1 ? "task" : "tasks"}`;
+        agenda.replaceChildren();
+
+        if (!selectedTasks.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-day";
+          empty.textContent = "Nothing is scheduled.";
+          agenda.append(empty);
+        }
+
+        for (const task of selectedTasks) {
+          const row = document.createElement("article");
+          row.className = `agenda-item${task.status === "done" ? " is-complete" : ""}`;
+          row.innerHTML = `
+            <button class="completion" type="button" aria-label="Complete ${escapeHtml(task.title)}"><span></span></button>
+            <div class="agenda-content">
+              <strong>${escapeHtml(task.title)}</strong>
+              <small>
+                <span>${task.allDay ? "All day" : formatTime(task.start)}</span>
+                <span>${escapeHtml(task.project)}</span>
+              </small>
+            </div>
+            <button class="more-button" type="button" aria-label="Actions for ${escapeHtml(task.title)}">···</button>
+          `;
+          row.querySelector(".completion").addEventListener("click", () => {
+            task.status = task.status === "done" ? "open" : "done";
+            row.classList.toggle("is-complete", task.status === "done");
+            const event = calendar.getEventById(task.id);
+            event?.setExtendedProp("status", task.status);
+            renderSummary(selectedTasks);
+          });
+          agenda.append(row);
+        }
+        renderSummary(selectedTasks);
+      }
+
+      function renderSummary(selectedTasks) {
+        const summary = document.getElementById("day-summary");
+        const scheduledMinutes = selectedTasks.reduce((total, task) => {
+          if (!task.end || task.allDay) return total;
+          return (
+            total +
+            (new Date(task.end).getTime() - new Date(task.start).getTime()) /
+              60000
+          );
+        }, 0);
+        const open = selectedTasks.filter(
+          (task) => task.status !== "done",
+        ).length;
+        summary.innerHTML = `
+          <span>OPEN<strong>${open}</strong></span>
+          <span>SCHEDULED<strong>${formatDuration(scheduledMinutes)}</strong></span>
+        `;
+      }
+
+      function localDate(date) {
+        if (!date) return selectedDate;
+        return [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0"),
+        ].join("-");
+      }
+
+      function formatDate(value, length) {
+        const date = new Date(`${value}T12:00:00`);
+        return new Intl.DateTimeFormat(undefined, {
+          weekday: length === "long" ? "long" : undefined,
+          month: "long",
+          day: "numeric",
+        }).format(date);
+      }
+
+      function formatTime(value) {
+        return new Intl.DateTimeFormat(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(value));
+      }
+
+      function formatDuration(minutes) {
+        if (!minutes) return "None";
+        const hours = Math.floor(minutes / 60);
+        const rest = minutes % 60;
+        return rest ? `${hours}h ${rest}m` : `${hours}h`;
+      }
+
+      function escapeHtml(value) {
+        const element = document.createElement("span");
+        element.textContent = value;
+        return element.innerHTML;
+      }
+    </script>
+  </body>
+</html>

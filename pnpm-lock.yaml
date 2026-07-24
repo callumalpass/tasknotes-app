@@ -34,6 +34,24 @@ importers:
       "@fontsource/azeret-mono":
         specifier: 5.3.0
         version: 5.3.0
+      "@fullcalendar/core":
+        specifier: 6.1.17
+        version: 6.1.17
+      "@fullcalendar/daygrid":
+        specifier: 6.1.17
+        version: 6.1.17(@fullcalendar/core@6.1.17)
+      "@fullcalendar/interaction":
+        specifier: 6.1.17
+        version: 6.1.17(@fullcalendar/core@6.1.17)
+      "@fullcalendar/list":
+        specifier: 6.1.17
+        version: 6.1.17(@fullcalendar/core@6.1.17)
+      "@fullcalendar/react":
+        specifier: 6.1.17
+        version: 6.1.17(@fullcalendar/core@6.1.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      "@fullcalendar/timegrid":
+        specifier: 6.1.17
+        version: 6.1.17(@fullcalendar/core@6.1.17)
       "@mdbase/connect":
         specifier: file:vendor/mdbase-connect-0.1.0-alpha.1.tgz
         version: file:vendor/mdbase-connect-0.1.0-alpha.1.tgz
@@ -604,6 +622,54 @@ packages:
       {
         integrity: sha512-Ag/+gN67fUry7i1yLlTnk16Rr1nnTQI2YefA/G7tYcCSr/+TC/ayMrE8Km7O0OKRgI/B5Mfel46Gq9IGY50Uaw==,
       }
+
+  "@fullcalendar/core@6.1.17":
+    resolution:
+      {
+        integrity: sha512-0W7lnIrv18ruJ5zeWBeNZXO8qCWlzxDdp9COFEsZnyNjiEhUVnrW/dPbjRKYpL0edGG0/Lhs0ghp1z/5ekt8ZA==,
+      }
+
+  "@fullcalendar/daygrid@6.1.17":
+    resolution:
+      {
+        integrity: sha512-K7m+pd7oVJ9fW4h7CLDdDGJbc9szJ1xDU1DZ2ag+7oOo1aCNLv44CehzkkknM6r8EYlOOhgaelxQpKAI4glj7A==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.17
+
+  "@fullcalendar/interaction@6.1.17":
+    resolution:
+      {
+        integrity: sha512-AudvQvgmJP2FU89wpSulUUjeWv24SuyCx8FzH2WIPVaYg+vDGGYarI7K6PcM3TH7B/CyaBjm5Rqw9lXgnwt5YA==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.17
+
+  "@fullcalendar/list@6.1.17":
+    resolution:
+      {
+        integrity: sha512-fkyK49F9IxwlGUBVhJGsFpd/LTi/vRVERLIAe1HmBaGkjwpxnynm8TMLb9mZip97wvDk3CmZWduMe6PxscAlow==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.17
+
+  "@fullcalendar/react@6.1.17":
+    resolution:
+      {
+        integrity: sha512-AA8soHhlfRH5dUeqHnfAtzDiXa2vrgWocJSK/F5qzw/pOxc9MqpuoS/nQBROWtHHg6yQUg3DoGqOOhi7dmylXQ==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.17
+      react: ^16.7.0 || ^17 || ^18 || ^19
+      react-dom: ^16.7.0 || ^17 || ^18 || ^19
+
+  "@fullcalendar/timegrid@6.1.17":
+    resolution:
+      {
+        integrity: sha512-K4PlA3L3lclLOs3IX8cvddeiJI9ZVMD7RA9IqaWwbvac771971foc9tFze9YY+Pqesf6S+vhS2dWtEVlERaGlQ==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.17
 
   "@humanfs/core@0.19.2":
     resolution:
@@ -3693,6 +3759,12 @@ packages:
       }
     engines: { node: ^10 || ^12 || >=14 }
 
+  preact@10.12.1:
+    resolution:
+      {
+        integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==,
+      }
+
   prebuild-install@7.1.3:
     resolution:
       {
@@ -5344,6 +5416,33 @@ snapshots:
   "@fontsource/atkinson-hyperlegible@5.3.0": {}
 
   "@fontsource/azeret-mono@5.3.0": {}
+
+  "@fullcalendar/core@6.1.17":
+    dependencies:
+      preact: 10.12.1
+
+  "@fullcalendar/daygrid@6.1.17(@fullcalendar/core@6.1.17)":
+    dependencies:
+      "@fullcalendar/core": 6.1.17
+
+  "@fullcalendar/interaction@6.1.17(@fullcalendar/core@6.1.17)":
+    dependencies:
+      "@fullcalendar/core": 6.1.17
+
+  "@fullcalendar/list@6.1.17(@fullcalendar/core@6.1.17)":
+    dependencies:
+      "@fullcalendar/core": 6.1.17
+
+  "@fullcalendar/react@6.1.17(@fullcalendar/core@6.1.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)":
+    dependencies:
+      "@fullcalendar/core": 6.1.17
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  "@fullcalendar/timegrid@6.1.17(@fullcalendar/core@6.1.17)":
+    dependencies:
+      "@fullcalendar/core": 6.1.17
+      "@fullcalendar/daygrid": 6.1.17(@fullcalendar/core@6.1.17)
 
   "@humanfs/core@0.19.2":
     dependencies:
@@ -7130,6 +7229,8 @@ snapshots:
       nanoid: 3.3.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  preact@10.12.1: {}
 
   prebuild-install@7.1.3:
     dependencies:

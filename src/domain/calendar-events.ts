@@ -25,16 +25,28 @@ export function calendarEvents(
   const options = execution.view.presentation?.options ?? {};
   const showScheduled = options.showScheduled !== false;
   const showDue = options.showDue !== false;
+  const showRecurring = options.showRecurring !== false;
+  const showCompletedRecurring =
+    options.showCompletedRecurringInstances === true;
+  const showSkippedRecurring = options.showSkippedRecurringInstances === true;
   const materialized = materializedOccurrenceKeys(identityTasks);
   for (const row of execution.rows) {
     const { task } = row;
     if (task.recurrence) {
+      if (!showRecurring && !showCompletedRecurring && !showSkippedRecurring)
+        continue;
       for (const occurrence of taskOccurrencesBetween(
         task,
         todayString(rangeStart),
         todayString(rangeEnd),
       )) {
-        if (materialized.has(occurrence.key) || occurrence.skipped) continue;
+        if (materialized.has(occurrence.key)) continue;
+        if (
+          (occurrence.completed && !showCompletedRecurring) ||
+          (occurrence.skipped && !showSkippedRecurring) ||
+          (!occurrence.completed && !occurrence.skipped && !showRecurring)
+        )
+          continue;
         const projected = occurrenceTask(occurrence);
         const dates = new Set([
           ...(showScheduled && projected.scheduled
