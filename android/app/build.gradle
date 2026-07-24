@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 def tasknotesVersionCode = System.getenv('TASKNOTES_ANDROID_VERSION_CODE')
 def tasknotesVersionName = System.getenv('TASKNOTES_ANDROID_VERSION_NAME')
+def tasknotesApplicationId = System.getenv('TASKNOTES_ANDROID_APPLICATION_ID')
 def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
 def releaseKeystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
 def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
@@ -17,7 +18,7 @@ android {
     namespace = "dev.tasknotes.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "dev.tasknotes.app"
+        applicationId tasknotesApplicationId ?: "dev.tasknotes.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode tasknotesVersionCode ? tasknotesVersionCode.toInteger() : 1
@@ -61,6 +62,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.documentfile:documentfile:1.1.0"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

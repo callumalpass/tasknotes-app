@@ -16,9 +16,13 @@ import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
+  canChooseLocalFolder,
+  changeLocalCollection,
   choose,
   reset,
 }: {
+  canChooseLocalFolder: boolean;
+  changeLocalCollection(): void;
   choose(choice: CollectionChoice): void;
   reset(): void;
 }) {
@@ -82,7 +86,9 @@ export default function CloudCollection({
 
   return (
     <OpenedCollection
+      canChooseLocalFolder={canChooseLocalFolder}
       changeConnectedCollection={changeCollection}
+      changeLocalCollection={changeLocalCollection}
       choice="cloud"
       choose={choose}
       repository={repository}

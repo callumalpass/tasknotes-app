@@ -1,8 +1,11 @@
 import { execFileSync } from "node:child_process";
 
-const PACKAGE = "dev.tasknotes.app";
+const PACKAGE =
+  process.env.TASKNOTES_ANDROID_APPLICATION_ID ?? "dev.tasknotes.app";
 const COLLECTION = "/storage/emulated/0/Documents/TaskNotes";
 const TASKS = "/storage/emulated/0/Documents/TaskNotes/tasks";
+const FOLDER_COLLECTION = "/storage/emulated/0/Documents/TaskNotesFolderSmoke";
+const FOLDER_TASKS = `${FOLDER_COLLECTION}/tasks`;
 const DEVTOOLS_PORT = 9222;
 const runId = Date.now().toString(36);
 const initialTitle = `Android smoke ${runId}`;
@@ -85,6 +88,11 @@ async function main() {
       "the first-run collection choice",
     );
     await devtools.clickButton("On this device");
+    await waitFor(
+      () => devtools.hasText("Use the TaskNotes folder"),
+      "the local folder choice",
+    );
+    await devtools.clickButton("Use the TaskNotes folder");
     await waitFor(
       () =>
         devtools.evaluate(
@@ -397,6 +405,230 @@ views:
   }
 }
 
+async function folderMain() {
+  const devices = adb("devices")
+    .split("\n")
+    .slice(1)
+    .filter((line) => line.endsWith("\tdevice"));
+  if (devices.length !== 1)
+    throw new Error(`Expected one Android device; found ${devices.length}.`);
+
+  const backup = `${FOLDER_COLLECTION}.before-${runId}`;
+  const collectionPresent = pathExists(FOLDER_COLLECTION);
+  if (collectionPresent) adb("shell", "mv", "--", FOLDER_COLLECTION, backup);
+  adb("shell", "mkdir", "-p", FOLDER_COLLECTION);
+  adb("shell", "pm", "clear", PACKAGE);
+  adb("shell", "am", "force-stop", "com.google.android.documentsui");
+
+  let devtools;
+  try {
+    launch();
+    devtools = await connectToWebView();
+    await waitFor(
+      () => devtools.hasText("On this device"),
+      "the first-run collection choice",
+    );
+    await devtools.clickButton("On this device");
+    await waitFor(
+      () => devtools.hasText("Choose an existing folder"),
+      "the local folder choice",
+    );
+    await devtools.clickButton("Choose an existing folder");
+
+    await waitFor(
+      () => windowHierarchy().includes("com.google.android.documentsui"),
+      "the Android system folder picker",
+    );
+    await openPickerCollection();
+    await tapWindowText("USE THIS FOLDER");
+    await waitFor(
+      () =>
+        windowHierarchy().includes("ALLOW") ||
+        windowHierarchy().includes('text="Allow"'),
+      "the folder access confirmation",
+    );
+    await tapWindowText(["ALLOW", "Allow"]);
+    await waitFor(
+      () => windowHierarchy().includes(`package="${PACKAGE}"`),
+      "TaskNotes to resume after folder selection",
+    );
+
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `[...document.querySelectorAll("label")].some((label) => label.innerText.trim() === "New task title")`,
+        ),
+      "the Today quick capture after selecting a folder",
+      20_000,
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      throw new Error(`${reason.message}\n${text}`);
+    });
+    const selected = await devtools.evaluate(
+      `Capacitor.Plugins.FolderAccess.currentFolder()`,
+    );
+    if (selected.selection?.name !== "TaskNotesFolderSmoke")
+      throw new Error(
+        `Unexpected selected folder: ${JSON.stringify(selected.selection)}`,
+      );
+
+    const externalTitle = `External folder smoke ${runId}`;
+    await devtools.fillInput("New task title", externalTitle);
+    await devtools.clickButton("Add", true);
+    await waitFor(
+      () => sourceForFolderTitle(externalTitle),
+      "a Markdown task in the selected folder",
+    );
+
+    const benchmarkCount = Number.parseInt(
+      process.env.TASKNOTES_FOLDER_BENCHMARK_COUNT ?? "250",
+      10,
+    );
+    const benchmark = await devtools.evaluate(`(async () => {
+      const plugin = Capacitor.Plugins.FolderAccess;
+      const selectionId = ${JSON.stringify(selected.selection.id)};
+      const count = ${benchmarkCount};
+      const directory = "tasks/__folder_benchmark__";
+      await plugin.ensureDirectory({ selectionId, path: directory });
+
+      const writeStarted = performance.now();
+      for (let offset = 0; offset < count; offset += 24) {
+        const batch = [];
+        for (let index = offset; index < Math.min(offset + 24, count); index += 1) {
+          const id = "folder-benchmark-" + String(index).padStart(5, "0");
+          batch.push(plugin.writeText({
+            selectionId,
+            path: directory + "/" + id + ".md",
+            data: [
+              "---",
+              "id: " + id,
+              "title: Folder benchmark " + index,
+              "status: open",
+              "due: 2099-01-01",
+              "---",
+              "",
+              "Android Storage Access Framework benchmark.",
+              "",
+            ].join("\\n"),
+          }));
+        }
+        await Promise.all(batch);
+      }
+      const writeMs = performance.now() - writeStarted;
+
+      const listStarted = performance.now();
+      const listed = await plugin.listFiles({
+        selectionId,
+        path: directory,
+        extensions: [".md"],
+        recursive: true,
+      });
+      const listMs = performance.now() - listStarted;
+
+      const readStarted = performance.now();
+      for (let offset = 0; offset < listed.files.length; offset += 24) {
+        await Promise.all(
+          listed.files.slice(offset, offset + 24).map(({ path }) =>
+            plugin.readText({ selectionId, path })
+          ),
+        );
+      }
+      const readMs = performance.now() - readStarted;
+      return {
+        count: listed.files.length,
+        writeMs: Math.round(writeMs),
+        listMs: Math.round(listMs),
+        readMs: Math.round(readMs),
+      };
+    })()`);
+    if (benchmark.count !== benchmarkCount)
+      throw new Error(
+        `Expected ${benchmarkCount} benchmark files; found ${benchmark.count}.`,
+      );
+
+    console.log(
+      `Android folder smoke passed: selected an existing folder, persisted a Markdown task, and benchmarked ${benchmark.count} SAF records (write ${benchmark.writeMs} ms, recursive list ${benchmark.listMs} ms, read ${benchmark.readMs} ms).`,
+    );
+  } finally {
+    if (devtools) devtools.close();
+    adb("forward", "--remove", `tcp:${DEVTOOLS_PORT}`);
+    adb("shell", "am", "force-stop", PACKAGE);
+    adb("shell", "pm", "clear", PACKAGE);
+    if (pathExists(FOLDER_COLLECTION))
+      adb("shell", "rm", "-r", "--", FOLDER_COLLECTION);
+    if (collectionPresent) adb("shell", "mv", "--", backup, FOLDER_COLLECTION);
+  }
+}
+
+async function openPickerCollection() {
+  let hierarchy = windowHierarchy();
+  if (!hierarchy.includes('text="TaskNotesFolderSmoke"')) {
+    await waitFor(
+      () => windowHierarchy().includes('text="Documents"'),
+      "Documents in the Android system folder picker",
+    );
+    await tapWindowText("Documents");
+    await waitFor(
+      () => windowHierarchy().includes('text="TaskNotesFolderSmoke"'),
+      "TaskNotesFolderSmoke in Documents",
+    );
+  }
+  await tapWindowText("TaskNotesFolderSmoke");
+  await waitFor(() => {
+    hierarchy = windowHierarchy();
+    return /text="USE THIS FOLDER"[^>]*enabled="true"/.test(hierarchy);
+  }, "TaskNotesFolderSmoke to open in the Android system folder picker");
+}
+
+async function tapWindowText(expected) {
+  const values = Array.isArray(expected) ? expected : [expected];
+  const hierarchy = windowHierarchy();
+  for (const tag of hierarchy.matchAll(/<node\b[^>]*>/g)) {
+    const attributes = Object.fromEntries(
+      [...tag[0].matchAll(/([\w-]+)="([^"]*)"/g)].map((match) => [
+        match[1],
+        match[2],
+      ]),
+    );
+    if (
+      !values.includes(attributes.text) &&
+      !values.includes(attributes["content-desc"])
+    )
+      continue;
+    const bounds = attributes.bounds?.match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
+    if (!bounds) continue;
+    const [, left, top, right, bottom] = bounds.map(Number);
+    adb(
+      "shell",
+      "input",
+      "tap",
+      String(Math.round((left + right) / 2)),
+      String(Math.round((top + bottom) / 2)),
+    );
+    return;
+  }
+  throw new Error(
+    `Could not find ${values.join(" or ")} in the active window.`,
+  );
+}
+
+function windowHierarchy() {
+  adb("shell", "uiautomator", "dump", "/sdcard/tasknotes-folder-smoke.xml");
+  return adb("exec-out", "cat", "/sdcard/tasknotes-folder-smoke.xml");
+}
+
+function sourceForFolderTitle(title) {
+  try {
+    return adb("shell", "find", FOLDER_TASKS, "-type", "f", "-name", "*.md")
+      .split("\n")
+      .filter(Boolean)
+      .map((path) => adb("shell", "cat", path))
+      .find((source) => source.includes(`title: ${title}`));
+  } catch {
+    return undefined;
+  }
+}
+
 function pathExists(path) {
   try {
     adb("shell", "test", "-e", path);
@@ -662,4 +894,5 @@ function localDateTime(date) {
   return local.toISOString().slice(0, 16);
 }
 
-await main();
+if (process.argv.includes("--folder")) await folderMain();
+else await main();

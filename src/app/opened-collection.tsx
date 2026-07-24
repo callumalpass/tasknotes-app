@@ -10,19 +10,35 @@ import { RepositoryProvider } from "./repository-context";
 import type { TaskRepository } from "../storage/repository";
 
 export function OpenedCollection({
+  canChooseLocalFolder,
   choice,
   changeConnectedCollection,
+  changeLocalCollection,
   choose,
   repository,
 }: {
+  canChooseLocalFolder: boolean;
   choice: CollectionChoice;
   changeConnectedCollection(): void;
+  changeLocalCollection(): void;
   choose(choice: CollectionChoice): void;
   repository: TaskRepository;
 }) {
   const value = useMemo(
-    () => ({ choice, choose, changeConnectedCollection }),
-    [choice, choose, changeConnectedCollection],
+    () => ({
+      canChooseLocalFolder,
+      choice,
+      choose,
+      changeConnectedCollection,
+      changeLocalCollection,
+    }),
+    [
+      canChooseLocalFolder,
+      choice,
+      choose,
+      changeConnectedCollection,
+      changeLocalCollection,
+    ],
   );
   return (
     <CollectionGateContext.Provider value={value}>

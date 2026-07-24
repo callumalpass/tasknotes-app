@@ -12,6 +12,10 @@ const ROOT = "TaskNotes";
 export class CapacitorVault implements Vault {
   readonly kind = "native" as const;
 
+  identifier(): string {
+    return "native-default";
+  }
+
   async initialize(): Promise<void> {
     await this.ensureDirectory("tasks");
     await this.ensureDirectory("_types");

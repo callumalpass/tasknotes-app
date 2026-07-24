@@ -3,9 +3,11 @@ import { createContext, useContext } from "react";
 export type CollectionChoice = "local" | "cloud";
 
 export interface CollectionGateContextValue {
+  canChooseLocalFolder: boolean;
   choice: CollectionChoice;
   choose(choice: CollectionChoice): void;
   changeConnectedCollection(): void;
+  changeLocalCollection(): void;
 }
 
 export const CollectionGateContext =

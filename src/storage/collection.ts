@@ -386,6 +386,10 @@ export class MarkdownCollection {
     return this.vault.location();
   }
 
+  identifier(): string {
+    return this.vault.identifier();
+  }
+
   kind(): Vault["kind"] {
     return this.vault.kind;
   }

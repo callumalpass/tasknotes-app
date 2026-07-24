@@ -20,6 +20,7 @@ installed during migration.
 - Background saves that continue while the user navigates
 - Browser storage through OPFS
 - Android and iOS packaging through Capacitor
+- Existing-folder selection through the Android and iOS system file pickers
 - A disposable IndexedDB projection for startup, sorting, and client-side search
 - Shared validation and mapping from `@tasknotes/model`
 
@@ -28,11 +29,11 @@ signing it still requires macOS and Xcode.
 
 ## Storage model
 
-| Runtime | Durable collection                                | Derived index                    |
-| ------- | ------------------------------------------------- | -------------------------------- |
-| Browser | OPFS `TaskNotes/`                                 | IndexedDB                        |
-| Android | `Documents/TaskNotes/`                            | IndexedDB in the WebView profile |
-| iOS     | App Documents `TaskNotes/`, exposed through Files | IndexedDB in the WebView profile |
+| Runtime | Durable collection                                         | Derived index                    |
+| ------- | ---------------------------------------------------------- | -------------------------------- |
+| Browser | OPFS `TaskNotes/`                                          | IndexedDB                        |
+| Android | `Documents/TaskNotes/` or a user-selected folder           | IndexedDB in the WebView profile |
+| iOS     | App Documents `TaskNotes/` or a user-selected Files folder | IndexedDB in the WebView profile |
 
 mdbase cloud uses a provider-hosted mdbase collection as authority and keeps a
 persistent IndexedDB replica on each device. Creates and edits are applied to
@@ -44,6 +45,11 @@ and size, then reparses only changed files. Cloud collections use a durable
 offline replica because it may temporarily hold writes that have not reached
 the hosted authority. Mutations are serialized at the repository boundary,
 while UI saves can continue after navigation.
+
+Android retains access to selected folders through a persisted Storage Access
+Framework grant. iOS retains a security-scoped bookmark and coordinates access
+with the selected Files provider. Each folder has a separate disposable index,
+and the app asks the user to choose it again if access is revoked.
 
 See [docs/architecture.md](docs/architecture.md) for the invariants and
 migration plan, and [docs/conformance.md](docs/conformance.md) for the exact

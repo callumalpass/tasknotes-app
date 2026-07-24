@@ -6,6 +6,10 @@ export class OpfsVault implements Vault {
   readonly kind = "browser" as const;
   private root: FileSystemDirectoryHandle | null = null;
 
+  identifier(): string {
+    return "browser-default";
+  }
+
   async initialize(): Promise<void> {
     const storageRoot = await navigator.storage.getDirectory();
     this.root = await storageRoot.getDirectoryHandle(ROOT, { create: true });

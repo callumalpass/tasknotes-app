@@ -106,15 +106,22 @@ link according to collection configuration.
 
 ## Platform storage
 
-`OpfsVault` stores browser collections under OPFS. `CapacitorVault` stores
-native collections in the platform Documents directory. Android records are
-visible under `Documents/TaskNotes`. iOS enables file sharing and opening
-documents in place so the collection can be inspected through Files.
+`OpfsVault` stores browser collections under OPFS. `CapacitorVault` stores the
+default native collection in the platform Documents directory. Android records
+are visible under `Documents/TaskNotes`. iOS enables file sharing and opening
+documents in place so the default collection can be inspected through Files.
 
-The native Filesystem bridge is intentionally replaceable. If profiling later
-shows that directory enumeration or bulk reads dominate startup on physical
-devices, a batch-oriented native vault can implement the same contract without
-changing collection or UI code.
+`NativeFolderVault` opens an existing folder selected through the platform file
+picker. Android persists a Storage Access Framework tree grant. iOS persists a
+security-scoped bookmark and uses coordinated reads and writes. The native
+bridge enumerates collection entries in batches, validates every relative path,
+and requires the expected selection identifier on each operation so a
+repository cannot cross into a newly selected folder. Folder-specific
+IndexedDB projections keep cached tasks and navigation preferences isolated.
+
+Users may revoke a grant, move a folder, sign out of a provider, or make a
+cloud-backed folder temporarily unavailable. Those failures leave Markdown
+untouched and return the user to folder selection.
 
 ## Cloud lifecycle
 
