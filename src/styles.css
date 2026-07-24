@@ -806,15 +806,7 @@ button:disabled {
 }
 
 .theme-picker {
-  width: auto;
-  min-height: 38px;
-  padding: 0 30px 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink-soft);
-  background: var(--paper-raised);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.72rem;
+  width: 8rem;
 }
 
 .setting-explanation {
@@ -1179,6 +1171,10 @@ button:disabled {
   gap: 16px;
 }
 
+.time-entry-editor .date-time-field > span {
+  margin-bottom: 7px;
+}
+
 .time-entry-editor-actions {
   display: flex;
   justify-content: flex-end;
@@ -1191,10 +1187,6 @@ button:disabled {
   gap: 12px;
 }
 
-.date-time-field input[type="time"]:disabled {
-  opacity: 0.35;
-}
-
 .form-field input {
   width: 100%;
   min-height: 44px;
@@ -1203,6 +1195,387 @@ button:disabled {
   border: 0;
   border-bottom: 1px solid var(--line-strong);
   outline: 0;
+}
+
+.tasknotes-control-field {
+  min-width: 0;
+}
+
+.tasknotes-select,
+.tasknotes-combobox,
+.tasknotes-date-picker,
+.tasknotes-time-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.tasknotes-control-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.tasknotes-control-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasknotes-control-trigger > svg {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+}
+
+.tasknotes-control-trigger .is-placeholder,
+.tasknotes-control-trigger:disabled {
+  color: var(--ink-muted);
+}
+
+.tasknotes-control-trigger:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.tasknotes-control-trigger:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--accent), transparent 35%);
+  outline-offset: 2px;
+}
+
+.tasknotes-popover-scrim {
+  position: fixed;
+  z-index: 29;
+  inset: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+
+.tasknotes-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  min-width: 100%;
+  padding: 6px;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 14px 38px var(--color-shadow-soft);
+}
+
+.tasknotes-popover-title {
+  display: block;
+  padding: 7px 10px 6px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.tasknotes-option-list {
+  max-height: min(320px, 52vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tasknotes-option-list > button,
+.tasknotes-combobox-popover > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 10px;
+  color: var(--ink-soft);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tasknotes-option-list > button:hover,
+.tasknotes-option-list > button.is-active,
+.tasknotes-combobox-popover > button:hover,
+.tasknotes-combobox-popover > button.is-active {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
+.tasknotes-option-list > button[aria-selected="true"] {
+  color: var(--accent);
+}
+
+.tasknotes-option-list > button:disabled {
+  color: var(--ink-muted);
+  opacity: 0.5;
+}
+
+.tasknotes-option-list > button > span {
+  display: grid;
+  gap: 1px;
+}
+
+.tasknotes-option-list strong {
+  font-weight: 400;
+}
+
+.tasknotes-option-list small,
+.tasknotes-combobox-popover small {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.tasknotes-combobox > input {
+  width: 100%;
+}
+
+.tasknotes-combobox-popover {
+  width: 100%;
+  min-width: 240px;
+  max-height: min(280px, 45vh);
+  overflow-y: auto;
+}
+
+.tasknotes-combobox-popover > button {
+  gap: 10px;
+}
+
+.tasknotes-combobox-popover > button > span,
+.tasknotes-combobox-popover > button > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasknotes-combobox-popover > button > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.tasknotes-calendar-popover {
+  width: 278px;
+  padding: 9px;
+}
+
+.tasknotes-calendar-heading,
+.tasknotes-time-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.tasknotes-calendar-heading > button {
+  display: grid;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  place-items: center;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tasknotes-calendar-heading > button:hover {
+  background: var(--paper-soft);
+}
+
+.tasknotes-calendar-heading > strong {
+  font-size: 0.94rem;
+}
+
+.tasknotes-calendar-weekdays,
+.tasknotes-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.tasknotes-calendar-weekdays > span {
+  display: grid;
+  height: 30px;
+  place-items: center;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+}
+
+.tasknotes-calendar-grid > button {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tasknotes-calendar-grid > button:hover,
+.tasknotes-calendar-grid > button:focus-visible {
+  background: var(--paper-soft);
+}
+
+.tasknotes-calendar-grid > button[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent), transparent 70%);
+}
+
+.tasknotes-calendar-grid > button.is-outside {
+  color: color-mix(in srgb, var(--ink-muted), transparent 45%);
+}
+
+.tasknotes-calendar-grid > button.is-today::after {
+  position: absolute;
+  right: 15px;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  content: "";
+}
+
+.tasknotes-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  min-height: 47px;
+  padding: 3px 7px 0;
+  margin-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.tasknotes-time-popover {
+  right: 0;
+  left: auto;
+  width: 286px;
+  padding: 9px;
+}
+
+.tasknotes-time-heading {
+  padding: 0 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tasknotes-time-heading > span {
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.tasknotes-time-heading > strong {
+  font-size: 1.05rem;
+}
+
+.tasknotes-time-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.tasknotes-time-columns > div {
+  min-width: 0;
+}
+
+.tasknotes-time-columns > div > span {
+  display: block;
+  padding: 2px 9px 5px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+}
+
+.tasknotes-time-list {
+  height: 210px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+
+.tasknotes-time-list > button {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 9px;
+  color: var(--ink-soft);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.tasknotes-time-list > button:hover {
+  background: var(--paper-soft);
+}
+
+.tasknotes-time-list > button[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.view-editor-body .tasknotes-control-trigger {
+  min-height: 44px;
+  padding: 9px 10px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+}
+
+.view-editor-control-field {
+  display: grid;
+  gap: 7px;
+}
+
+.view-editor-control-field > span {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.theme-picker.tasknotes-select {
+  width: 8rem;
+}
+
+.theme-picker .tasknotes-control-trigger {
+  min-height: 38px;
+  padding: 0 8px 0 10px;
+  color: var(--ink-soft);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
 }
 
 .metadata-fields {
@@ -1408,12 +1781,8 @@ button:disabled {
   font-size: 0.88rem;
 }
 
-.occurrence-policy .repeat-heading select {
-  min-height: 40px;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
+.occurrence-policy .repeat-heading > .tasknotes-select {
+  width: min(17rem, 42vw);
 }
 
 .occurrence-policy > .form-field,
@@ -1463,7 +1832,7 @@ button:disabled {
 }
 
 .recurrence-interval input,
-.recurrence-interval select {
+.recurrence-interval .tasknotes-control-trigger {
   min-height: 44px;
   background: transparent;
   border: 0;
@@ -1506,19 +1875,16 @@ button:disabled {
 }
 
 .reminder-field {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
   padding: 25px 0 22px;
   border-bottom: 1px solid var(--line);
 }
 
-.reminder-field > div {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.reminder-field input {
-  flex: 1;
+.reminder-field > .date-time-field {
+  min-width: 0;
 }
 
 .notes-field {
@@ -2564,8 +2930,12 @@ button:disabled {
   gap: 8px;
 }
 
-.filter-group-heading select {
+.filter-group-heading > .tasknotes-select {
   width: auto;
+  min-width: 13rem;
+}
+
+.filter-group-heading .tasknotes-control-trigger {
   min-height: 38px;
 }
 
@@ -2628,7 +2998,7 @@ button:disabled {
   white-space: nowrap;
 }
 
-.add-view-property input {
+.add-view-property > .tasknotes-combobox {
   flex: 1;
 }
 
@@ -3560,6 +3930,82 @@ button:disabled {
     width: 100%;
     border-left: 0;
     box-shadow: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .tasknotes-popover-scrim {
+    background: color-mix(in srgb, var(--ink), transparent 88%);
+  }
+
+  .tasknotes-select-popover,
+  .tasknotes-calendar-popover,
+  .tasknotes-time-popover {
+    position: fixed;
+    z-index: 30;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    min-width: 0;
+    max-height: min(76vh, 620px);
+    max-height: min(76dvh, 620px);
+    padding: 10px var(--page-inset) calc(10px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -16px 44px var(--color-shadow);
+  }
+
+  .tasknotes-select-popover .tasknotes-option-list {
+    max-height: min(60vh, 480px);
+    max-height: min(60dvh, 480px);
+  }
+
+  .tasknotes-option-list > button {
+    min-height: 48px;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+
+  .tasknotes-calendar-popover {
+    padding-right: max(var(--page-inset), calc((100vw - 320px) / 2));
+    padding-left: max(var(--page-inset), calc((100vw - 320px) / 2));
+  }
+
+  .tasknotes-calendar-grid > button {
+    width: 100%;
+    max-width: 44px;
+    height: 44px;
+    justify-self: center;
+  }
+
+  .tasknotes-calendar-grid > button.is-today::after {
+    right: calc(50% - 2px);
+    bottom: 5px;
+  }
+
+  .tasknotes-time-columns {
+    width: min(100%, 340px);
+    margin: 0 auto;
+  }
+
+  .tasknotes-time-list {
+    height: min(36vh, 250px);
+    height: min(36dvh, 250px);
+  }
+
+  .tasknotes-combobox-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    box-shadow: 0 14px 38px var(--color-shadow-soft);
   }
 }
 

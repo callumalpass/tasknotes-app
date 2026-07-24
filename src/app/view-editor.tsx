@@ -6,6 +6,10 @@ import {
   type ExpressionField,
 } from "../components/expression-builder";
 import {
+  TaskNotesCombobox,
+  TaskNotesSelect,
+} from "../components/tasknotes-controls";
+import {
   createViewDocument,
   emptyViewDraft,
   readViewDraft,
@@ -345,27 +349,29 @@ export function ViewEditor({
 
             {draft.renderer === "tasknotes.calendar" ? (
               <>
-                <label>
+                <div className="view-editor-control-field">
                   <span>Opens as</span>
-                  <select
+                  <TaskNotesSelect
+                    ariaLabel="Opens as"
+                    options={[
+                      { value: "dayGridMonth", label: "Month" },
+                      { value: "timeGridWeek", label: "Week" },
+                      { value: "timeGridThreeDay", label: "3 days" },
+                      { value: "timeGridDay", label: "Day" },
+                      { value: "listWeek", label: "Agenda" },
+                    ]}
                     value={string(draft.options.calendarView) || "dayGridMonth"}
-                    onChange={(event) =>
+                    onChange={(calendarView) =>
                       setDraft({
                         ...draft,
                         options: {
                           ...draft.options,
-                          calendarView: event.target.value,
+                          calendarView,
                         },
                       })
                     }
-                  >
-                    <option value="dayGridMonth">Month</option>
-                    <option value="timeGridWeek">Week</option>
-                    <option value="timeGridThreeDay">3 days</option>
-                    <option value="timeGridDay">Day</option>
-                    <option value="listWeek">Agenda</option>
-                  </select>
-                </label>
+                  />
+                </div>
                 <fieldset className="calendar-source-options">
                   <legend>Repeating tasks</legend>
                   {[
@@ -415,50 +421,46 @@ export function ViewEditor({
                   </span>
                 </summary>
                 <div className="view-create-defaults-fields">
-                  <label>
+                  <div className="view-editor-control-field">
                     <span>Status</span>
-                    <select
+                    <TaskNotesSelect
+                      ariaLabel="Status"
+                      options={[
+                        { value: "", label: "From the task form" },
+                        ...configuration.statuses,
+                      ]}
                       value={string(createDefaults(draft).status)}
-                      onChange={(event) =>
+                      onChange={(status) =>
                         setDraft(
                           updateCreateDefault(
                             draft,
                             "status",
-                            event.target.value || undefined,
+                            status || undefined,
                           ),
                         )
                       }
-                    >
-                      <option value="">From the task form</option>
-                      {configuration.statuses.map((status) => (
-                        <option key={status.value} value={status.value}>
-                          {status.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
+                    />
+                  </div>
+                  <div className="view-editor-control-field">
                     <span>Priority</span>
-                    <select
+                    <TaskNotesSelect
+                      ariaLabel="Priority"
+                      options={[
+                        { value: "", label: "From the task form" },
+                        ...configuration.priorities,
+                      ]}
                       value={string(createDefaults(draft).priority)}
-                      onChange={(event) =>
+                      onChange={(priority) =>
                         setDraft(
                           updateCreateDefault(
                             draft,
                             "priority",
-                            event.target.value || undefined,
+                            priority || undefined,
                           ),
                         )
                       }
-                    >
-                      <option value="">From the task form</option>
-                      {configuration.priorities.map((priority) => (
-                        <option key={priority.value} value={priority.value}>
-                          {priority.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    />
+                  </div>
                   {(
                     [
                       ["projects", "Projects"],
@@ -552,12 +554,15 @@ export function ViewEditor({
                 ))}
               </div>
               <div className="add-view-property">
-                <input
-                  aria-label="Property to display"
-                  list="view-properties"
+                <TaskNotesCombobox
+                  ariaLabel="Property to display"
+                  options={fields.map((candidate) => ({
+                    value: candidate.key,
+                    label: candidate.label,
+                  }))}
                   placeholder="Add a property"
                   value={propertyInput}
-                  onChange={(event) => setPropertyInput(event.target.value)}
+                  onChange={setPropertyInput}
                 />
                 <button
                   disabled={
@@ -576,13 +581,6 @@ export function ViewEditor({
                   <Plus aria-hidden="true" size={16} /> Add
                 </button>
               </div>
-              <datalist id="view-properties">
-                {fields.map((candidate) => (
-                  <option key={candidate.key} value={candidate.key}>
-                    {candidate.label}
-                  </option>
-                ))}
-              </datalist>
             </section>
 
             {view && !inline ? (

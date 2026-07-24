@@ -522,7 +522,10 @@ test("edits a contract-defined task without collapsing custom status or fields",
   await page
     .getByText("Respect the collection contract", { exact: true })
     .click();
-  await expect(page.getByLabel("Status")).toHaveValue("doing");
+  await expect(page.getByLabel("Status")).toHaveAttribute(
+    "data-value",
+    "doing",
+  );
   await page
     .locator("details.task-form-section > summary")
     .filter({ hasText: /^Organize/ })

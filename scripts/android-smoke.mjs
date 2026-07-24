@@ -112,7 +112,13 @@ async function main() {
     await devtools.openTask(initialTitle);
     await waitFor(() => devtools.hasText("Markdown record"), "task details");
     const reminder = localDateTime(new Date(Date.now() + 60 * 60 * 1_000));
-    await devtools.fillNamedInput("Reminder date and time", reminder);
+    await devtools.clickSummary("Repeat and reminders");
+    await devtools.chooseDate("Reminder date", reminder.slice(0, 10));
+    await waitFor(
+      () => devtools.hasEnabledNamedButton("Reminder time"),
+      "the TaskNotes reminder time picker",
+    );
+    await devtools.chooseTime("Reminder time", reminder.slice(11, 16));
     await waitFor(
       () =>
         devtools.evaluate(`(async () => {
@@ -125,9 +131,12 @@ async function main() {
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () => devtools.hasHeading("Today"),
       "hardware Back to return to Today",
-    );
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      throw new Error(`${reason.message}\n${text}`);
+    });
     // Kill and relaunch to prove that the public Markdown record survives
     // process death and remains the source of truth.
     devtools.close();
@@ -198,7 +207,7 @@ views:
 
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () => devtools.hasHeading("Today"),
       "hardware Back from the operational view",
     );
 
@@ -221,10 +230,7 @@ views:
       "the first native timer",
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
-    await waitFor(
-      () => devtools.hasSelector("#today-title"),
-      "Today after timer",
-    );
+    await waitFor(() => devtools.hasHeading("Today"), "Today after timer");
     await devtools.fillInput("New task title", parallelTitle);
     await devtools.clickButton("Add", true);
     await waitFor(
@@ -250,7 +256,7 @@ views:
       throw new Error("Independent native timers were not both persisted.");
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () => devtools.hasHeading("Today"),
       "Today after parallel timer",
     );
 
@@ -265,11 +271,19 @@ views:
       () => devtools.hasTaskRow(recurringTitle),
       "the projected recurring task",
     );
-    await devtools.openTask(recurringTitle);
+    await devtools.clickButton("Upcoming", true);
+    await waitFor(
+      () => devtools.hasCalendarEvent(recurringTitle),
+      "the recurring calendar occurrence",
+    );
+    await devtools.openCalendarEvent(recurringTitle);
     await waitFor(
       () => devtools.hasText("Make occurrence note"),
       "the materialization action",
-    );
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      throw new Error(`${reason.message}\n${text}`);
+    });
     await devtools.clickButton("Make occurrence note", true);
     await waitFor(
       () => devtools.hasText("OCCURRENCE NOTE"),
@@ -348,7 +362,11 @@ views:
         .catch(() => undefined);
       devtools.close();
     }
-    adb("forward", "--remove", `tcp:${DEVTOOLS_PORT}`);
+    try {
+      adb("forward", "--remove", `tcp:${DEVTOOLS_PORT}`);
+    } catch {
+      // A failure before WebView attachment leaves no forwarding rule.
+    }
     adb("shell", "am", "force-stop", PACKAGE);
     if (pathExists(COLLECTION)) adb("shell", "rm", "-r", "--", COLLECTION);
     if (collectionPresent) adb("shell", "mv", "--", backup, COLLECTION);
@@ -433,10 +451,33 @@ class DevtoolsSession {
     );
   }
 
+  hasHeading(text) {
+    return this.evaluate(
+      `[...document.querySelectorAll("h1")].some((heading) => heading.innerText.trim() === ${JSON.stringify(text)})`,
+    );
+  }
+
   hasTaskRow(title) {
     return this.evaluate(
       `[...document.querySelectorAll("button.task-row-content")].some((button) => button.innerText.includes(${JSON.stringify(title)}))`,
     );
+  }
+
+  hasCalendarEvent(title) {
+    return this.evaluate(
+      `[...document.querySelectorAll(".full-calendar-event-content")].some((event) => event.innerText.includes(${JSON.stringify(title)}))`,
+    );
+  }
+
+  openCalendarEvent(title) {
+    return this.evaluate(`(() => {
+      const event = [...document.querySelectorAll(".full-calendar-event-content")].find(
+        (candidate) => candidate.innerText.includes(${JSON.stringify(title)})
+      );
+      if (!event) throw new Error("Calendar event not found: " + ${JSON.stringify(title)});
+      event.click();
+      return true;
+    })()`);
   }
 
   openTask(title) {
@@ -466,6 +507,14 @@ class DevtoolsSession {
     return this.evaluate(`
       [...document.querySelectorAll("button")].some(
         (candidate) => candidate.innerText.trim() === ${JSON.stringify(text)} && !candidate.disabled
+      )
+    `);
+  }
+
+  hasEnabledNamedButton(name) {
+    return this.evaluate(`
+      [...document.querySelectorAll("button")].some(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(name)} && !candidate.disabled
       )
     `);
   }
@@ -500,6 +549,70 @@ class DevtoolsSession {
       setter.call(input, ${JSON.stringify(value)});
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()`);
+  }
+
+  async chooseDate(name, value) {
+    await this.evaluate(`(() => {
+      const trigger = [...document.querySelectorAll("button")].find(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(name)}
+      );
+      if (!trigger) throw new Error("Date picker not found: " + ${JSON.stringify(name)});
+      trigger.click();
+      return true;
+    })()`);
+    await this.evaluate(`(() => {
+      const date = [...document.querySelectorAll("button[data-date]")].find(
+        (candidate) => candidate.dataset.date === ${JSON.stringify(value)}
+      );
+      if (!date) throw new Error("Date option not found: " + ${JSON.stringify(value)});
+      date.click();
+      return true;
+    })()`);
+  }
+
+  async chooseTime(name, value) {
+    await this.evaluate(`(() => {
+      const trigger = [...document.querySelectorAll("button")].find(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(name)}
+      );
+      if (!trigger || trigger.disabled)
+        throw new Error("Time picker not available: " + ${JSON.stringify(name)});
+      trigger.click();
+      return true;
+    })()`);
+    const [hour, minute] = value.split(":");
+    await this.chooseTimeOption(name, "Hour", hour);
+    await this.chooseTimeOption(name, "Minute", minute);
+    await this.evaluate(`(() => {
+      const dialog = [...document.querySelectorAll('[role="dialog"]')].find(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(name)}
+      );
+      if (!dialog) throw new Error("Time dialog not found: " + ${JSON.stringify(name)});
+      const done = [...dialog.querySelectorAll("button")].find(
+        (candidate) => candidate.innerText.trim() === "Done"
+      );
+      if (!done) throw new Error("Time picker Done action not found.");
+      done.click();
+      return true;
+    })()`);
+  }
+
+  chooseTimeOption(name, column, value) {
+    return this.evaluate(`(() => {
+      const dialog = [...document.querySelectorAll('[role="dialog"]')].find(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(name)}
+      );
+      const list = [...(dialog?.querySelectorAll('[role="listbox"]') ?? [])].find(
+        (candidate) => candidate.getAttribute("aria-label") === ${JSON.stringify(column)}
+      );
+      const option = [...(list?.querySelectorAll('[role="option"]') ?? [])].find(
+        (candidate) => candidate.innerText.trim() === ${JSON.stringify(value)}
+      );
+      if (!option)
+        throw new Error(${JSON.stringify(column)} + " option not found: " + ${JSON.stringify(value)});
+      option.click();
       return true;
     })()`);
   }
