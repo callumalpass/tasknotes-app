@@ -110,6 +110,116 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   ).toBeVisible();
 });
 
+test("acknowledges slow relay creates and prefetches revisions before delete", async ({
+  page,
+}) => {
+  const model = new TaskNotesTaskModel();
+  const existing = model.create(
+    { title: "Delete over the relay" },
+    { id: "relay-delete", now: "2026-07-22T00:00:00.000Z" },
+  );
+  let records = [
+    {
+      path: existing.path,
+      frontmatter: existing.frontmatter as JsonObject,
+      body: existing.body,
+      types: ["task"],
+      revision: "revision-1",
+    },
+  ];
+  const createGate = deferred();
+  const readGate = deferred();
+  let createRequests = 0;
+  let readRequests = 0;
+  let deleteRequests = 0;
+
+  await page.route(
+    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    async (route) => {
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1)!;
+      let result: unknown;
+      if (operation === "describe") result = collectionDescription();
+      else if (operation === "query") {
+        result = valid({
+          results: records.map((record) => ({
+            path: record.path,
+            frontmatter: record.frontmatter,
+            body: record.body,
+            types: record.types,
+          })),
+          meta: { total_count: records.length, has_more: false },
+        });
+      } else if (operation === "create") {
+        createRequests += 1;
+        const input = route.request().postDataJSON() as {
+          path: string;
+          frontmatter: JsonObject;
+          body: string;
+        };
+        await createGate.promise;
+        const created = {
+          ...input,
+          types: ["task"],
+          revision: "revision-2",
+        };
+        records.push(created);
+        result = valid(created);
+      } else if (operation === "read") {
+        readRequests += 1;
+        await readGate.promise;
+        result = valid(records[0]);
+      } else if (operation === "delete") {
+        deleteRequests += 1;
+        records = records.slice(1);
+        result = valid({
+          path: existing.path,
+          deleted: true,
+          broken_links: [],
+        });
+      } else result = valid({});
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ result }),
+      });
+    },
+  );
+
+  await installRelayAuthorization(page, [
+    "describe",
+    "query",
+    "read",
+    "create",
+    "delete",
+  ]);
+  await page.reload();
+  await expect(page.getByText("Delete over the relay")).toBeVisible();
+
+  const input = page.getByLabel("New task title");
+  await input.fill("Create over the relay");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect.poll(() => createRequests).toBe(1);
+  await expect(page.getByText("Adding “Create over the relay”…")).toBeVisible();
+  await expect(input).toHaveValue("");
+
+  createGate.resolve();
+  await expect(page.getByText("Create over the relay")).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Task actions for Delete over the relay" })
+    .click();
+  await expect.poll(() => readRequests).toBe(1);
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Delete permanently" }).click();
+  expect(deleteRequests).toBe(0);
+
+  readGate.resolve();
+  await expect.poll(() => deleteRequests).toBe(1);
+  await expect(page.getByText("Delete over the relay")).toHaveCount(0);
+  expect(readRequests).toBe(1);
+});
+
 test("restores a custom home view and its cached rows before relay refresh", async ({
   page,
 }) => {
@@ -489,9 +599,10 @@ function configuredCollectionDescription() {
 
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
+  operations = ["describe", "query", "read", "update"],
 ) {
   await page.goto("./");
-  await page.evaluate(() => {
+  await page.evaluate((authorizedOperations) => {
     localStorage.clear();
     localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
     const manifestUrl = new URL(
@@ -505,13 +616,13 @@ async function installRelayAuthorization(
         refreshToken: "ref_configured",
         clientId: "01911111-1111-7111-8111-111111111111",
         collectionId: "01922222-2222-7222-8222-222222222222",
-        operations: ["describe", "query", "read", "update"],
+        operations: authorizedOperations,
         scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
         expiresAt: Date.now() + 60_000,
         refreshExpiresAt: Date.now() + 120_000,
       }),
     );
-  });
+  }, operations);
 }
 
 function status(

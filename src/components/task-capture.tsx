@@ -44,6 +44,7 @@ export function TaskCapture({
   const [expanded, setExpanded] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [pendingTitle, setPendingTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState<{
@@ -51,6 +52,7 @@ export function TaskCapture({
     message: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef("");
   const followUpSequence = useRef(0);
   const creationDefaults = defaults ?? emptyDefaults;
 
@@ -112,6 +114,7 @@ export function TaskCapture({
   );
 
   function changeText(value: string) {
+    textRef.current = value;
     setText(value);
     if (value.trim()) {
       setParsing(true);
@@ -132,6 +135,8 @@ export function TaskCapture({
     if (!value || capturing) return;
     setCapturing(true);
     setError(null);
+    setWarning(null);
+    let submittedTitle = "";
     try {
       const next =
         result && parsedText === value
@@ -158,17 +163,20 @@ export function TaskCapture({
               });
       if (!next.input.title.trim())
         throw new Error("Add a title as well as task details.");
+      submittedTitle = next.input.title.trim();
+      setPendingTitle(submittedTitle);
+      textRef.current = "";
+      setText("");
+      setResult(null);
+      setParsedText("");
+      setExpanded(false);
+      setFollowUp(null);
+      inputRef.current?.blur();
       const created = await createTask(next.input);
       setWarning(
         created.operationWarnings?.map(cleanTemplateWarning).join(" ") ?? null,
       );
       successFeedback();
-      setText("");
-      setResult(null);
-      setParsedText("");
-      setExpanded(false);
-      inputRef.current?.blur();
-      setFollowUp(null);
       const sequence = followUpSequence.current + 1;
       followUpSequence.current = sequence;
       if (onCreated)
@@ -192,8 +200,18 @@ export function TaskCapture({
             },
           );
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      const message = reason instanceof Error ? reason.message : String(reason);
+      if (submittedTitle && !textRef.current.trim()) {
+        textRef.current = value;
+        setText(value);
+      }
+      setError(
+        submittedTitle
+          ? `Could not add “${submittedTitle}”. ${message}`
+          : message,
+      );
     } finally {
+      setPendingTitle("");
       setCapturing(false);
     }
   }
@@ -212,6 +230,7 @@ export function TaskCapture({
   return (
     <form
       className="capture-composer"
+      aria-busy={capturing}
       onSubmit={(event) => void capture(event)}
     >
       <div className="quick-capture">
@@ -271,6 +290,11 @@ export function TaskCapture({
       {error ? (
         <p className="inline-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {pendingTitle ? (
+        <p className="capture-pending" role="status">
+          Adding “{pendingTitle}”…
         </p>
       ) : null}
       {warning ? (

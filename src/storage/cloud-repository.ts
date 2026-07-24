@@ -72,6 +72,10 @@ export class CloudTaskRepository implements TaskRepository {
   private readonly cache = new Map<string, CachedCloudTask>();
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
+  private readonly viewExecutionInFlight = new Map<
+    string,
+    Promise<TaskViewExecution>
+  >();
   private viewStore: TaskViewCache | null = null;
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
@@ -495,6 +499,20 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
+    const key = viewExecutionKey(view);
+    const pending = this.viewExecutionInFlight.get(key);
+    if (pending) return pending;
+    const execution = this.executeViewUnlocked(view).finally(() => {
+      if (this.viewExecutionInFlight.get(key) === execution)
+        this.viewExecutionInFlight.delete(key);
+    });
+    this.viewExecutionInFlight.set(key, execution);
+    return execution;
+  }
+
+  private async executeViewUnlocked(
+    view: TaskView,
+  ): Promise<TaskViewExecution> {
     try {
       const result = validResult(
         await this.connect.executeView({

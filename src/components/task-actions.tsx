@@ -34,8 +34,13 @@ export function TaskActions({
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
 }) {
-  const { deleteTask, setTaskArchived, startTimeTracking, stopTimeTracking } =
-    useRepository();
+  const {
+    repository,
+    deleteTask,
+    setTaskArchived,
+    startTimeTracking,
+    stopTimeTracking,
+  } = useRepository();
   const [position, setPosition] = useState<MenuPosition | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +83,9 @@ export function TaskActions({
     const height = 300;
     setError("");
     setConfirmDelete(false);
+    // Relay query results do not carry a revision. Fetch it while the person is
+    // choosing an action so revision-guarded writes do not add a later round trip.
+    void repository.get(task.id).catch(() => undefined);
     setPosition({
       x: Math.max(8, Math.min(x - width, innerWidth - width - 8)),
       y: Math.max(8, Math.min(y + 4, innerHeight - height - 8)),

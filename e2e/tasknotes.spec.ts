@@ -636,6 +636,13 @@ views:
   ).toBeVisible();
   const calendarCapture = page.getByLabel("New task title");
   await expect(calendarCapture).toHaveAttribute("placeholder", "Add to Dates");
+  const captureBounds = await page.locator(".capture-composer").boundingBox();
+  const calendarBounds = await page.locator(".calendar-view").boundingBox();
+  expect(captureBounds).not.toBeNull();
+  expect(calendarBounds).not.toBeNull();
+  expect(
+    calendarBounds!.y - (captureBounds!.y + captureBounds!.height),
+  ).toBeGreaterThanOrEqual(18);
   await calendarCapture.fill("Created on the calendar");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(

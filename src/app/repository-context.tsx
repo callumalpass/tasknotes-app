@@ -96,6 +96,11 @@ export function RepositoryProvider({
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
 
   const bump = useCallback(() => setVersion((value) => value + 1), []);
+  const publishMutation = useCallback(() => {
+    // Repositories with subscriptions publish their own successful mutations.
+    // Local repositories still need the provider to invalidate consumers.
+    if (!repository.subscribe) bump();
+  }, [bump, repository]);
   const loadSync = useCallback(async () => {
     const [nextStatus, nextIssues] = await Promise.all([
       repository.syncStatus(),
@@ -112,7 +117,7 @@ export function RepositoryProvider({
       .then((result) => {
         setLastRefresh(result);
         setError(null);
-        bump();
+        publishMutation();
         void loadSync().catch(() => undefined);
         return result;
       })
@@ -127,7 +132,7 @@ export function RepositoryProvider({
       });
     refreshInFlight.current = run;
     return run;
-  }, [bump, loadSync, repository]);
+  }, [loadSync, publishMutation, repository]);
 
   useEffect(() => {
     let active = true;
@@ -201,38 +206,38 @@ export function RepositoryProvider({
   const createTask = useCallback(
     async (input: CreateTaskInput) => {
       const task = await repository.create(input);
-      bump();
+      publishMutation();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
-      bump();
+      publishMutation();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const toggleTask = useCallback(
     async (id: string, occurrenceDate?: string) => {
       const task = await repository.toggle(id, occurrenceDate);
-      bump();
+      publishMutation();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const skipTask = useCallback(
     async (id: string, occurrenceDate: string) => {
       const task = await repository.skip(id, occurrenceDate);
-      bump();
+      publishMutation();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const materializeOccurrence = useCallback(
     async (parentId: string, occurrenceDate: string) => {
@@ -240,68 +245,68 @@ export function RepositoryProvider({
         parentId,
         occurrenceDate,
       );
-      bump();
+      publishMutation();
       void syncTaskNotifications(result.task).catch(() => undefined);
       return result;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
       const task = await repository.startTimeTracking(id, description);
-      bump();
+      publishMutation();
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const stopTimeTracking = useCallback(
     async (id: string) => {
       const task = await repository.stopTimeTracking(id);
-      bump();
+      publishMutation();
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const replaceTimeEntries = useCallback(
     async (id: string, entries: TaskTimeEntry[]) => {
       const task = await repository.replaceTimeEntries(id, entries);
-      bump();
+      publishMutation();
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const removeTimeEntry = useCallback(
     async (id: string, index: number) => {
       const task = await repository.removeTimeEntry(id, index);
-      bump();
+      publishMutation();
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const setTaskArchived = useCallback(
     async (id: string, archived: boolean) => {
       const task = await repository.setArchived(id, archived);
-      bump();
+      publishMutation();
       void syncTaskNotifications(task).catch(() => undefined);
       return task;
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const deleteTask = useCallback(
     async (id: string) => {
       await repository.delete(id);
-      bump();
+      publishMutation();
       void removeTaskNotifications(id).catch(() => undefined);
     },
-    [bump, repository],
+    [publishMutation, repository],
   );
   const resolveSyncIssue = useCallback(
     async (id: string, resolution: "local" | "remote") => {
       await repository.resolveSyncIssue(id, resolution);
-      bump();
+      publishMutation();
       await loadSync();
     },
-    [bump, loadSync, repository],
+    [loadSync, publishMutation, repository],
   );
 
   const value = useMemo<RepositoryContextValue>(

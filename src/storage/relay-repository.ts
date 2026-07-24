@@ -72,10 +72,18 @@ export class RelayTaskRepository implements TaskRepository {
   private readonly cache = new Map<string, CachedRelayTask>();
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
+  private readonly viewExecutionInFlight = new Map<
+    string,
+    Promise<TaskViewExecution>
+  >();
   private viewStore: TaskViewCache | null = null;
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
+  private readonly revisionReads = new Map<
+    string,
+    Promise<Required<CachedRelayTask>>
+  >();
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
   private status: RepositorySyncStatus = {
@@ -179,7 +187,10 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async get(id: string): Promise<Task | null> {
-    return this.cache.get(id)?.task ?? null;
+    const cached = this.cache.get(id);
+    if (cached && !cached.revision)
+      void this.requireCurrent(id).catch(() => undefined);
+    return cached?.task ?? null;
   }
 
   create(input: CreateTaskInput): Promise<Task> {
@@ -427,6 +438,20 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
+    const key = viewExecutionKey(view);
+    const pending = this.viewExecutionInFlight.get(key);
+    if (pending) return pending;
+    const execution = this.executeViewUnlocked(view).finally(() => {
+      if (this.viewExecutionInFlight.get(key) === execution)
+        this.viewExecutionInFlight.delete(key);
+    });
+    this.viewExecutionInFlight.set(key, execution);
+    return execution;
+  }
+
+  private async executeViewUnlocked(
+    view: TaskView,
+  ): Promise<TaskViewExecution> {
     try {
       const result = validResult(
         await this.connect.executeView({
@@ -593,6 +618,19 @@ export class RelayTaskRepository implements TaskRepository {
     const cached = this.cache.get(id);
     if (!cached) throw new Error("Task not found.");
     if (cached.revision) return cached as Required<CachedRelayTask>;
+    const pending = this.revisionReads.get(id);
+    if (pending) return pending;
+    const read = this.readCurrent(id, cached).finally(() => {
+      if (this.revisionReads.get(id) === read) this.revisionReads.delete(id);
+    });
+    this.revisionReads.set(id, read);
+    return read;
+  }
+
+  private async readCurrent(
+    id: string,
+    cached: CachedRelayTask,
+  ): Promise<Required<CachedRelayTask>> {
     try {
       const result = validResult(
         await this.connect.read({ path: cached.task.path }),

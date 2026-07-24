@@ -351,6 +351,13 @@ button:disabled {
   line-height: 1.45;
 }
 
+.capture-pending {
+  margin: 12px 0;
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .capture-follow-up {
   display: flex;
   align-items: center;
@@ -380,6 +387,10 @@ button:disabled {
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
+}
+
+.view-detail > .capture-composer {
+  margin-bottom: 18px;
 }
 
 .task-groups {
@@ -582,7 +593,7 @@ button:disabled {
 .task-row-properties {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 5px 14px;
   color: var(--ink-soft);
   font-size: 0.78rem;
   line-height: 1.35;
@@ -590,19 +601,24 @@ button:disabled {
 
 .task-row-property {
   display: inline-flex;
+  align-items: baseline;
   min-width: 0;
   gap: 4px;
 }
 
 .task-row-property > span {
+  flex: 0 0 auto;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: 0.68rem;
+  line-height: 1.35;
 }
 
 .task-row-property > strong {
+  min-width: 0;
   overflow-wrap: anywhere;
   font-weight: 400;
+  line-height: 1.35;
 }
 
 .empty-state {

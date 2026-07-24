@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -46,6 +52,55 @@ it("applies view defaults and keeps a created task recoverable when the view exc
   );
 });
 
+it("acknowledges a task immediately while a remote create is pending", async () => {
+  const pending = deferred<Task>();
+  const create = vi.fn(() => pending.promise);
+
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+    />,
+  );
+
+  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  fireEvent.change(input, { target: { value: "Slow relay task" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+  expect(await screen.findByText("Adding “Slow relay task”…")).toBeVisible();
+  expect(input).toHaveValue("");
+
+  await act(async () => pending.resolve(task({ title: "Slow relay task" })));
+
+  expect(
+    screen.queryByText("Adding “Slow relay task”…"),
+  ).not.toBeInTheDocument();
+});
+
+it("restores the submitted text when a remote create fails", async () => {
+  const create = vi.fn(async () => {
+    throw new Error("The relay is unavailable.");
+  });
+
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+    />,
+  );
+
+  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  fireEvent.change(input, { target: { value: "Keep this draft" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+  expect(
+    await screen.findByText(
+      "Could not add “Keep this draft”. The relay is unavailable.",
+    ),
+  ).toBeVisible();
+  expect(input).toHaveValue("Keep this draft");
+});
+
 function task(input: CreateTaskInput): Task {
   return {
     id: "created",
@@ -69,4 +124,14 @@ function task(input: CreateTaskInput): Task {
     revision: 1,
     frontmatter: {},
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
 }

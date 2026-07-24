@@ -59,6 +59,22 @@ describe("relay task repository", () => {
     });
   });
 
+  it("prefetches one revision read and reuses it for a later delete", async () => {
+    const fixture = relayFixture([
+      taskRecord("delete-me", "Delete without a second wait", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    await repository.get("delete-me");
+    await repository.delete("delete-me");
+
+    expect(fixture.read).toHaveBeenCalledTimes(1);
+    expect(fixture.remove).toHaveBeenCalledWith(
+      expect.objectContaining({ if_revision: "r1" }),
+    );
+  });
+
   it("keeps the current session readable when a refresh cannot reach the connector", async () => {
     const fixture = relayFixture([
       taskRecord("cached", "Visible while unavailable", "r1"),
@@ -225,6 +241,28 @@ describe("relay task repository", () => {
         render: false,
       }),
     );
+  });
+
+  it("coalesces concurrent executions of the same saved view", async () => {
+    const fixture = relayFixture([
+      taskRecord("board", "Visible on the board", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    const view = document.views[0];
+    const response = await fixture.executeView();
+    const pending = deferred<typeof response>();
+    fixture.executeView.mockClear();
+    fixture.executeView.mockImplementationOnce(() => pending.promise);
+
+    const first = repository.executeView(view);
+    const second = repository.executeView(view);
+
+    expect(fixture.executeView).toHaveBeenCalledTimes(1);
+    pending.resolve(response);
+    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+    expect(fixture.executeView).toHaveBeenCalledTimes(1);
   });
 
   it("restores saved views and their last result across relay sessions", async () => {
@@ -626,6 +664,16 @@ function taskRecord(
     types: ["task"],
     revision,
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
 }
 
 function description(

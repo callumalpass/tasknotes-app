@@ -34,7 +34,7 @@ export function useNavigationViews(): {
   toggleNavigationView(key: string): void;
   moveNavigationView(key: string, direction: -1 | 1): void;
 } {
-  const { repository, status, version } = useRepository();
+  const { repository, status } = useRepository();
   const [catalog, setCatalog] = useState<ViewCatalog>({
     documents: null,
     error: "",
@@ -83,7 +83,7 @@ export function useNavigationViews(): {
 
   useEffect(() => {
     void refresh();
-  }, [refresh, version]);
+  }, [refresh]);
 
   const setNavigationKeys = useCallback(
     (update: (keys: string[]) => string[]) => {
