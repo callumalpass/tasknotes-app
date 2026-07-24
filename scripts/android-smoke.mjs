@@ -85,7 +85,13 @@ async function main() {
       "the first-run collection choice",
     );
     await devtools.clickButton("On this device");
-    await waitFor(() => devtools.hasText("Today"), "the Today screen");
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `[...document.querySelectorAll("label")].some((label) => label.innerText.trim() === "New task title")`,
+        ),
+      "the Today quick capture",
+    );
     await devtools.fillInput("New task title", initialTitle);
     await devtools.clickButton("Add", true);
 
@@ -125,7 +131,10 @@ async function main() {
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "hardware Back to return to Today",
     );
     // Kill and relaunch to prove that the public Markdown record survives
@@ -198,7 +207,10 @@ views:
 
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "hardware Back from the operational view",
     );
 
@@ -222,7 +234,10 @@ views:
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "Today after timer",
     );
     await devtools.fillInput("New task title", parallelTitle);
@@ -250,7 +265,10 @@ views:
       throw new Error("Independent native timers were not both persisted.");
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasSelector("#today-title"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "Today after parallel timer",
     );
 
@@ -261,15 +279,26 @@ views:
       `${recurringTitle} today every day`,
     );
     await devtools.clickButton("Add", true);
+    await devtools.clickButton("Upcoming");
     await waitFor(
-      () => devtools.hasTaskRow(recurringTitle),
+      () => devtools.hasText(recurringTitle),
       "the projected recurring task",
     );
-    await devtools.openTask(recurringTitle);
+    await devtools.evaluate(`(() => {
+      const event = [...document.querySelectorAll('[role="button"][aria-label]')].find(
+        (candidate) => candidate.getAttribute("aria-label")?.startsWith(${JSON.stringify(recurringTitle)})
+      );
+      if (!event) throw new Error("Projected occurrence not found");
+      event.click();
+      return true;
+    })()`);
     await waitFor(
       () => devtools.hasText("Make occurrence note"),
       "the materialization action",
-    );
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      throw new Error(`${reason.message}\n${text}`);
+    });
     await devtools.clickButton("Make occurrence note", true);
     await waitFor(
       () => devtools.hasText("OCCURRENCE NOTE"),

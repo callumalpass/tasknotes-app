@@ -29,6 +29,7 @@
     "android": "pnpm cap:sync && cap run android"
   },
   "dependencies": {
+    "@capacitor-firebase/messaging": "8.3.0",
     "@capacitor/app": "8.1.1",
     "@capacitor/browser": "8.0.2",
     "@capacitor/core": "8.4.2",
@@ -43,11 +44,12 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-alpha.1.tgz",
-    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz",
-    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-alpha.1.tgz",
+    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.1.tgz",
+    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz",
+    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.1.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.1.tgz",
     "dexie": "4.4.4",
+    "firebase": "12.16.0",
     "lucide-react": "1.25.0",
     "obsidian-bases-expression": "file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz",
     "react": "19.2.8",
@@ -83,7 +85,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-alpha.1.tgz"
+      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.1.tgz"
     }
   }
 }

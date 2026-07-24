@@ -3,6 +3,8 @@ const connectOrigin =
 const appOrigin =
   process.env.TASKNOTES_PRODUCTION_URL ??
   "https://callumalpass.github.io/tasknotes-app";
+const requireNotificationManifest =
+  process.env.TASKNOTES_REQUIRE_NOTIFICATION_MANIFEST !== "0";
 const retryDelays = [3_000, 6_000, 12_000, 20_000, 20_000];
 
 const checks = [
@@ -25,11 +27,21 @@ const checks = [
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
     const callback = `${appOrigin}/auth/mdbase/callback`;
     if (
-      manifest.manifest_version !== 1 ||
+      ![1, 2].includes(manifest.manifest_version) ||
       manifest.requirements?.access !== "full_collection" ||
       !manifest.redirect_uris?.includes(callback)
     )
       throw new Error("The deployed mdbase application manifest is invalid.");
+    if (
+      requireNotificationManifest &&
+      (manifest.manifest_version !== 2 ||
+        !manifest.notifications?.criteria?.some(
+          (criterion) => criterion.id === "task.changed",
+        ))
+    )
+      throw new Error(
+        "The deployed mdbase application manifest does not expose notifications.",
+      );
   },
   async () => {
     const callback = await text(`${appOrigin}/auth/mdbase/callback`);

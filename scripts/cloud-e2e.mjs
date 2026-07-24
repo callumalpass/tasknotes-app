@@ -99,8 +99,9 @@ try {
   await expect(page).toHaveURL(new RegExp(`^${escapeRegex(appUrl)}/?$`), {
     timeout: 15_000,
   });
-  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
-  await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Cloud board" }),
+  ).toBeVisible();
 
   phase("creating a task locally and synchronizing it to the authority");
   await page.getByLabel("New task title").fill("Cloud foundation");
@@ -123,8 +124,11 @@ try {
 
   phase("rendering a provider-owned saved view through mdbase cloud");
   await page.getByRole("button", { name: /Saved views/ }).click();
-  await expect(page.getByText("Cloud board", { exact: true })).toBeVisible();
-  await page.getByText("Cloud board", { exact: true }).click();
+  const cloudView = page
+    .getByLabel("Cloud views")
+    .getByRole("button", { name: "Cloud board", exact: true });
+  await expect(cloudView).toBeVisible();
+  await cloudView.click();
   await expect(page.getByLabel("Cloud board board")).toBeVisible();
   await expect(
     page.getByText("Cloud foundation", { exact: true }),
@@ -150,8 +154,11 @@ try {
   await page.getByRole("button", { name: "More", exact: true }).click();
 
   phase("saving immediately while the provider is offline, then resuming sync");
+  await page.getByRole("button", { name: "Cloud board" }).click();
+  await expect(
+    page.getByText("Cloud foundation", { exact: true }),
+  ).toBeVisible();
   provider.setOnline(false);
-  await page.getByRole("button", { name: "Today" }).click();
   await page.getByText("Cloud foundation", { exact: true }).click();
   await page
     .getByLabel("Task title", { exact: true })
@@ -189,8 +196,11 @@ try {
     }),
   );
   await laptop.initialize();
+  await page.getByRole("button", { name: "Cloud board" }).click();
+  await expect(
+    page.getByText("Cloud foundation offline", { exact: true }),
+  ).toBeVisible();
   provider.setOnline(false);
-  await page.getByRole("button", { name: "Today" }).click();
   await page.getByText("Cloud foundation offline", { exact: true }).click();
   await page.getByLabel("Task title", { exact: true }).fill("Phone version");
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({
@@ -225,7 +235,7 @@ try {
   phase("reopening the cached collection after a page reload");
   await page.reload();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
-  await page.getByRole("button", { name: "Today" }).click();
+  await page.getByRole("button", { name: "Cloud board" }).click();
   await expect(page.getByText("Phone version", { exact: true })).toBeVisible();
 
   phase("reopening cached saved views while the provider is offline");
@@ -234,12 +244,13 @@ try {
   await page.reload();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
   await page.getByRole("button", { name: /Saved views/ }).click();
-  await expect(page.getByText("Cloud board", { exact: true })).toBeVisible();
-  await page.getByText("Cloud board", { exact: true }).click();
+  const cachedCloudView = page
+    .getByLabel("Cloud views")
+    .getByRole("button", { name: "Cloud board", exact: true });
+  await expect(cachedCloudView).toBeVisible();
+  await cachedCloudView.click();
   await expect(page.getByText("Last available result")).toBeVisible();
-  await expect(
-    page.getByText("Cloud foundation", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Phone version", { exact: true })).toBeVisible();
   provider.setOnline(true);
   process.stdout.write("TaskNotes cloud browser vertical slice passed\n");
 } finally {
