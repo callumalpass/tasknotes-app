@@ -789,8 +789,12 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
-  await page.getByText("New tasks", { exact: true }).click();
-  await page.getByLabel("Priority", { exact: true }).selectOption("high");
+  const creationDefaults = page.locator("details.view-create-defaults");
+  await creationDefaults.locator("summary").click();
+  await expect(creationDefaults).toHaveAttribute("open", "");
+  await creationDefaults
+    .getByRole("combobox", { name: "Priority" })
+    .selectOption("high");
   await page.getByRole("button", { name: "Save", exact: true }).click();
 
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();
