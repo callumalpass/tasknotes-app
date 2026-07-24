@@ -15,6 +15,7 @@ installed during migration.
 - Grouped view sources and grouped list results
 - Capture, editing, completion, and client-side search
 - Projects, contexts, tags, recurrence, absolute reminders, and priorities
+- Opt-in, content-free native wake notifications for connected mdbase changes
 - Offline cloud replica with background synchronization and explicit conflict resolution
 - Background saves that continue while the user navigates
 - Browser storage through OPFS
@@ -108,6 +109,9 @@ pnpm exec cap open ios
 ```
 
 Run the second command on macOS with Xcode installed.
+
+Native change notifications require a Firebase project and Apple Push
+Notifications configuration. See [Notifications](docs/notifications.md).
 
 ## Verification
 

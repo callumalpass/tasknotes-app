@@ -29,7 +29,7 @@ export function SearchScreen({
     <section className="screen" aria-labelledby="search-title">
       <header className="screen-header compact-header detail-header">
         <button
-          aria-label="Back to views"
+          aria-label="Back"
           className="icon-action"
           type="button"
           onClick={onBack}

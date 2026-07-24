@@ -48,6 +48,7 @@ jobs:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
           TASKNOTES_WEB_ONLY: "1"
+          TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
 
       - name: Test GitHub Pages artifact
         run: pnpm test:e2e
@@ -68,3 +69,6 @@ jobs:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Smoke deployed Pages
+        run: pnpm test:production-smoke

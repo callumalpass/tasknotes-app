@@ -9,6 +9,7 @@ import {
   cloudConnect,
   isCloudCallback,
 } from "../cloud/connect";
+import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionChoice } from "./collection-context";
@@ -28,9 +29,12 @@ export default function CloudCollection({
       : null,
   );
   const changeCollection = useCallback(() => {
-    cloudConnect.disconnect();
     setCallbackError(null);
     setRepository(null);
+    void mdbaseNotifications
+      .disableIfEnabled()
+      .catch(() => undefined)
+      .finally(() => cloudConnect.disconnect());
   }, []);
 
   const complete = useCallback(async (url: string) => {

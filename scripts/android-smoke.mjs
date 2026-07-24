@@ -85,7 +85,13 @@ async function main() {
       "the first-run collection choice",
     );
     await devtools.clickButton("On this device");
-    await waitFor(() => devtools.hasText("Today"), "the Today screen");
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `[...document.querySelectorAll("label")].some((label) => label.innerText.trim() === "New task title")`,
+        ),
+      "the Today quick capture",
+    );
     await devtools.fillInput("New task title", initialTitle);
     await devtools.clickButton("Add", true);
 
@@ -131,7 +137,10 @@ async function main() {
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasHeading("Today"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "hardware Back to return to Today",
     ).catch(async (reason) => {
       const text = await devtools.evaluate("document.body?.innerText");
@@ -207,7 +216,10 @@ views:
 
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasHeading("Today"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "hardware Back from the operational view",
     );
 
@@ -230,7 +242,13 @@ views:
       "the first native timer",
     );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
-    await waitFor(() => devtools.hasHeading("Today"), "Today after timer");
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
+      "Today after timer",
+    );
     await devtools.fillInput("New task title", parallelTitle);
     await devtools.clickButton("Add", true);
     await waitFor(
@@ -256,7 +274,10 @@ views:
       throw new Error("Independent native timers were not both persisted.");
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
-      () => devtools.hasHeading("Today"),
+      () =>
+        devtools.evaluate(
+          `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
+        ),
       "Today after parallel timer",
     );
 
@@ -267,16 +288,19 @@ views:
       `${recurringTitle} today every day`,
     );
     await devtools.clickButton("Add", true);
+    await devtools.clickButton("Upcoming");
     await waitFor(
-      () => devtools.hasTaskRow(recurringTitle),
+      () => devtools.hasText(recurringTitle),
       "the projected recurring task",
     );
-    await devtools.clickButton("Upcoming", true);
-    await waitFor(
-      () => devtools.hasCalendarEvent(recurringTitle),
-      "the recurring calendar occurrence",
-    );
-    await devtools.openCalendarEvent(recurringTitle);
+    await devtools.evaluate(`(() => {
+      const event = [...document.querySelectorAll('[role="button"][aria-label]')].find(
+        (candidate) => candidate.getAttribute("aria-label")?.startsWith(${JSON.stringify(recurringTitle)})
+      );
+      if (!event) throw new Error("Projected occurrence not found");
+      event.click();
+      return true;
+    })()`);
     await waitFor(
       () => devtools.hasText("Make occurrence note"),
       "the materialization action",
@@ -451,33 +475,10 @@ class DevtoolsSession {
     );
   }
 
-  hasHeading(text) {
-    return this.evaluate(
-      `[...document.querySelectorAll("h1")].some((heading) => heading.innerText.trim() === ${JSON.stringify(text)})`,
-    );
-  }
-
   hasTaskRow(title) {
     return this.evaluate(
       `[...document.querySelectorAll("button.task-row-content")].some((button) => button.innerText.includes(${JSON.stringify(title)}))`,
     );
-  }
-
-  hasCalendarEvent(title) {
-    return this.evaluate(
-      `[...document.querySelectorAll(".full-calendar-event-content")].some((event) => event.innerText.includes(${JSON.stringify(title)}))`,
-    );
-  }
-
-  openCalendarEvent(title) {
-    return this.evaluate(`(() => {
-      const event = [...document.querySelectorAll(".full-calendar-event-content")].find(
-        (candidate) => candidate.innerText.includes(${JSON.stringify(title)})
-      );
-      if (!event) throw new Error("Calendar event not found: " + ${JSON.stringify(title)});
-      event.click();
-      return true;
-    })()`);
   }
 
   openTask(title) {

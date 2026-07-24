@@ -1,4 +1,5 @@
-import { parse } from "yaml";
+import { parseFrontmatter } from "@tasknotes/model/frontmatter";
+import { parse, stringify } from "yaml";
 import { describe, expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
@@ -6,6 +7,7 @@ import {
   defaultNavigationViewKeys,
   ensureTaskNotesDefaultViewSource,
   taskNotesDefaultBaseDocument,
+  taskNotesDefaultCanonicalDocument,
 } from "./default-view-source";
 
 import type { TaskViewDocument } from "./view";
@@ -28,6 +30,7 @@ describe("TaskNotes starter views", () => {
       ["Upcoming", "tasknotesCalendar"],
       ["Calendar", "tasknotesCalendar"],
       ["Projects", "tasknotesProjects"],
+      ["Archive", "tasknotesTaskList"],
     ]);
     expect(parsed.views[1].options).toMatchObject({
       calendarView: "listWeek",
@@ -37,6 +40,7 @@ describe("TaskNotes starter views", () => {
       calendarView: "dayGridMonth",
       showRecurring: true,
     });
+    expect(parsed.views[4].options).toEqual({ create: false });
   });
 
   it("creates the Base once and returns the provider-owned definitions", async () => {
@@ -74,12 +78,36 @@ describe("TaskNotes starter views", () => {
     expect(repository.createViewSource).toHaveBeenCalledTimes(1);
   });
 
-  it("adds Projects once to an older managed starter Base and marks the migration", async () => {
+  it("generates the same Archive behavior for canonical collections", () => {
+    const { frontmatter } = parseFrontmatter(
+      taskNotesDefaultCanonicalDocument(defaultTaskCollectionConfiguration()),
+    );
+    const views = frontmatter.views as Array<{
+      id: string;
+      where: string;
+      presentation: { options?: Record<string, unknown> };
+    }>;
+    const archive = views.find(({ id }) => id === "archive");
+
+    expect(archive?.where).toContain('file.hasTag("archived") == true');
+    expect(archive?.presentation.options).toEqual({ create: false });
+    expect(
+      views.find(({ id }) => id === "today")?.presentation.options,
+    ).toBeUndefined();
+  });
+
+  it("adds missing generated views once and marks the migration", async () => {
     const current = starterDocument();
-    const older = { ...current, views: current.views.slice(0, 3) };
-    const source = taskNotesDefaultBaseDocument(
-      defaultTaskCollectionConfiguration(),
-    ).replace(/x-tasknotes-app:\n[ ]{2}version: 2\n/, "");
+    const older = { ...current, views: current.views.slice(0, 4) };
+    const parsedSource = parse(
+      taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
+    ) as {
+      "x-tasknotes-app": { version: number };
+      views: unknown[];
+    };
+    parsedSource["x-tasknotes-app"].version = 2;
+    parsedSource.views = parsedSource.views.slice(0, 4);
+    const source = stringify(parsedSource, { lineWidth: 0 });
     const updateViewSource = vi.fn(
       async (input: import("./view").UpdateTaskViewSourceInput) => ({
         path: older.source.path,
@@ -93,7 +121,7 @@ describe("TaskNotes starter views", () => {
         path: older.source.path,
         format: "obsidian.base",
         revision: "1",
-        document: source.split("\n  - type: tasknotesProjects", 1).join(""),
+        document: source,
       })),
       updateViewSource,
       listViews: vi.fn(async () => [current]),
@@ -109,8 +137,9 @@ describe("TaskNotes starter views", () => {
     expect(updateViewSource).toHaveBeenCalledOnce();
     const updated = updateViewSource.mock.calls[0][0].document;
     expect(updated).toContain("type: tasknotesProjects");
+    expect(updated).toContain("name: Archive");
     expect(updated).toContain("x-tasknotes-app:");
-    expect(updated).toContain("version: 2");
+    expect(updated).toContain("version: 3");
   });
 
   it("uses the starter view order for first-run navigation", () => {
@@ -119,6 +148,7 @@ describe("TaskNotes starter views", () => {
       "views/tasknotes-app.base#upcoming",
       "views/tasknotes-app.base#calendar",
       "views/tasknotes-app.base#projects",
+      "views/tasknotes-app.base#archive",
     ]);
   });
 
@@ -143,6 +173,11 @@ describe("TaskNotes starter views", () => {
     expect(projectFilter).toContain("file.backlinks.filter");
     expect(projectFilter).toContain('value.asFile().properties["projects"]');
     expect(projectFilter).toContain(".length > 0");
+    expect(
+      parsed.views
+        .find(({ name }) => name === "Archive")
+        ?.filters?.and?.join("\n"),
+    ).toContain('file.hasTag("archived") == true');
   });
 
   it("keeps provider views when a read-only collection cannot create starter views", async () => {
@@ -200,14 +235,16 @@ function starterDocument(): TaskViewDocument {
     id: "tasknotes-app",
     name: "tasknotes-app",
     source,
-    views: ["today", "upcoming", "calendar", "projects"].map((id) => ({
-      key: `${source.path}#${id}`,
-      documentId: "tasknotes-app",
-      documentName: "tasknotes-app",
-      id,
-      name: `${id[0].toUpperCase()}${id.slice(1)}`,
-      properties: [],
-      source,
-    })),
+    views: ["today", "upcoming", "calendar", "projects", "archive"].map(
+      (id) => ({
+        key: `${source.path}#${id}`,
+        documentId: "tasknotes-app",
+        documentName: "tasknotes-app",
+        id,
+        name: `${id[0].toUpperCase()}${id.slice(1)}`,
+        properties: [],
+        source,
+      }),
+    ),
   };
 }

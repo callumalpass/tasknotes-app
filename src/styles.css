@@ -457,6 +457,55 @@ button:disabled {
   box-shadow: 0 16px 36px var(--color-shadow);
 }
 
+.navigation-views-menu {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  width: min(236px, calc(100vw - 16px));
+  max-height: min(520px, calc(100dvh - var(--nav-height) - 32px));
+  padding: 7px;
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: 0 16px 36px var(--color-shadow);
+}
+
+.navigation-views-menu button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.navigation-views-menu button:hover,
+.navigation-views-menu button:focus-visible,
+.navigation-views-menu button[aria-current="page"] {
+  background: var(--paper-soft);
+  outline: 0;
+}
+
+.navigation-views-menu button[aria-current="page"] {
+  color: var(--accent);
+}
+
+.navigation-views-menu hr {
+  width: 100%;
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line);
+  border: 0;
+}
+
 .task-actions-heading {
   display: none;
 }
@@ -852,6 +901,10 @@ button:disabled {
 
 .section-copy {
   padding: 12px 0 4px;
+}
+
+.notification-error {
+  margin-top: 10px;
 }
 
 .cloud-actions {

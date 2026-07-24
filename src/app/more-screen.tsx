@@ -8,13 +8,17 @@ import {
   Info,
   Bell,
   Columns3,
-  Archive,
   SunMoon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TaskNotesSelect } from "../components/tasknotes-controls";
+import {
+  mdbaseNotifications,
+  type MdbaseNotificationStatus,
+} from "../native/mdbase-notifications";
 import { notificationPermission } from "../native/notifications";
+import { CLOUD_OPERATIONS, cloudConnect } from "../cloud/connect";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -27,11 +31,9 @@ import { useCollectionSummary, useRepository } from "./repository-context";
 export function MoreScreen({
   navigationViewCount,
   onOpenViews,
-  onOpenArchive,
 }: {
   navigationViewCount: number;
   onOpenViews(): void;
-  onOpenArchive(): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
   const {
@@ -44,7 +46,17 @@ export function MoreScreen({
   } = useRepository();
   const { choice, choose, changeConnectedCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
-  const [notifications, setNotifications] = useState<string>("Checking");
+  const [reminderNotifications, setReminderNotifications] =
+    useState<string>("Checking");
+  const [changeNotifications, setChangeNotifications] =
+    useState<MdbaseNotificationStatus>({
+      state: "unavailable",
+      optedIn: false,
+    });
+  const [changeNotificationsBusy, setChangeNotificationsBusy] = useState(false);
+  const [changeNotificationsError, setChangeNotificationsError] = useState<
+    string | null
+  >(null);
   const [benchmark, setBenchmark] = useState<{
     state: "idle" | "writing" | "removing" | "done" | "error";
     detail: string;
@@ -53,7 +65,7 @@ export function MoreScreen({
 
   useEffect(() => {
     void notificationPermission().then((permission) =>
-      setNotifications(
+      setReminderNotifications(
         permission === "unavailable"
           ? "Available in the mobile app"
           : permission === "granted"
@@ -64,6 +76,41 @@ export function MoreScreen({
       ),
     );
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void mdbaseNotifications
+      .status()
+      .then((next) => {
+        if (active) setChangeNotifications(next);
+      })
+      .catch((reason: unknown) => {
+        if (active)
+          setChangeNotificationsError(
+            reason instanceof Error ? reason.message : String(reason),
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [choice]);
+
+  async function toggleChangeNotifications() {
+    setChangeNotificationsBusy(true);
+    setChangeNotificationsError(null);
+    try {
+      const next = changeNotifications.optedIn
+        ? await mdbaseNotifications.disable()
+        : await mdbaseNotifications.enable();
+      setChangeNotifications(next);
+    } catch (reason) {
+      setChangeNotificationsError(
+        reason instanceof Error ? reason.message : String(reason),
+      );
+    } finally {
+      setChangeNotificationsBusy(false);
+    }
+  }
 
   async function generateBenchmark() {
     setBenchmark({ state: "writing", detail: "Starting…" });
@@ -189,23 +236,6 @@ export function MoreScreen({
             {navigationViewCount
               ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
               : "Lists, boards, and calendars"}
-          </small>
-          <ChevronRight aria-hidden="true" size={17} />
-        </button>
-      </SettingsSection>
-
-      <SettingsSection label="Tasks">
-        <button
-          className="setting-row setting-link"
-          type="button"
-          onClick={onOpenArchive}
-        >
-          <Archive aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Archive</span>
-          <small>
-            {loading
-              ? "Opening"
-              : `${stats?.archived ?? 0} archived ${stats?.archived === 1 ? "task" : "tasks"}`}
           </small>
           <ChevronRight aria-hidden="true" size={17} />
         </button>
@@ -343,12 +373,60 @@ export function MoreScreen({
         </SettingsSection>
       ) : null}
 
-      <SettingsSection label="Reminders">
+      <SettingsSection label="Notifications">
         <div className="setting-row">
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Notifications</span>
-          <small>{notifications}</small>
+          <span>Task reminders</span>
+          <small>{reminderNotifications}</small>
         </div>
+        <div className="setting-row">
+          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Changes from mdbase</span>
+          <small>{changeNotificationLabel(changeNotifications)}</small>
+        </div>
+        <p className="section-copy">
+          Wake TaskNotes when your connected collection changes. Notification
+          text never includes task content.
+        </p>
+        {changeNotifications.state === "off" ||
+        changeNotifications.state === "enabled" ||
+        (changeNotifications.state === "denied" &&
+          changeNotifications.optedIn) ? (
+          <button
+            className="text-action"
+            disabled={changeNotificationsBusy}
+            type="button"
+            onClick={() => void toggleChangeNotifications()}
+          >
+            {changeNotificationsBusy
+              ? "Updating"
+              : changeNotifications.optedIn
+                ? "Turn off change notifications"
+                : "Turn on change notifications"}
+          </button>
+        ) : null}
+        {changeNotifications.state === "reauthorization_required" ? (
+          <button
+            className="text-action"
+            type="button"
+            onClick={() =>
+              void cloudConnect
+                .authorize([...CLOUD_OPERATIONS])
+                .catch((reason: unknown) =>
+                  setChangeNotificationsError(
+                    reason instanceof Error ? reason.message : String(reason),
+                  ),
+                )
+            }
+          >
+            Review notification access
+          </button>
+        ) : null}
+        {changeNotificationsError ? (
+          <p className="inline-error notification-error" role="alert">
+            {changeNotificationsError}
+          </p>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection label="Portability">
@@ -413,6 +491,25 @@ function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
     return `${sync.issues} sync ${sync.issues === 1 ? "issue" : "issues"}`;
   if (sync.pending) return `${sync.pending} waiting`;
   return sync.mode === "live" ? "Connected" : "Up to date";
+}
+
+function changeNotificationLabel(status: MdbaseNotificationStatus): string {
+  switch (status.state) {
+    case "enabled":
+      return "On";
+    case "off":
+      return "Off";
+    case "denied":
+      return "Disabled in system settings";
+    case "not_connected":
+      return "Connect mdbase first";
+    case "not_configured":
+      return "Firebase setup required";
+    case "reauthorization_required":
+      return "Approval required";
+    case "unavailable":
+      return "Available in the mobile app";
+  }
 }
 
 function SettingsSection({
