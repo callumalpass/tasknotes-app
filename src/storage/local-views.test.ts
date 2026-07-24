@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { MemoryVault } from "../test/memory-vault";
 import { MarkdownCollection } from "./collection";
 import { LocalViewExecutor } from "./local-views";
+import { taskNotesDefaultBaseDocument } from "../domain/default-view-source";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 
 import type { Task } from "../domain/task";
 
@@ -95,6 +98,51 @@ views:
       "2026-07-23",
       null,
     ]);
+  });
+
+  it("executes the project relationship view over collection records without per-project reads", async () => {
+    const vault = new MemoryVault();
+    const collection = new MarkdownCollection(vault);
+    await collection.initialize();
+    const linked = await task(
+      collection,
+      "linked",
+      "Ship mobile",
+      "open",
+      undefined,
+      1,
+    );
+    linked.projects = ["[[Projects/Roadmap]]"];
+    linked.frontmatter.projects = linked.projects;
+    await collection.write(linked);
+    await vault.writeText(
+      "Projects/Roadmap.md",
+      serializeMarkdownDocument(
+        { title: "Mobile roadmap", owner: "Callum" },
+        "Project notes",
+      ),
+    );
+    await vault.writeText(
+      "views/tasknotes-app.base",
+      taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
+    );
+    const executor = new LocalViewExecutor(collection, () => [linked]);
+    const projectView = (await executor.list())
+      .flatMap((document) => document.views)
+      .find(({ name }) => name === "Projects");
+
+    expect(projectView).toBeDefined();
+    const execution = await executor.execute(projectView!);
+    expect(execution.rows).toEqual([]);
+    expect(execution.records).toEqual([
+      expect.objectContaining({
+        record: expect.objectContaining({
+          path: "Projects/Roadmap.md",
+          label: "Mobile roadmap",
+        }),
+      }),
+    ]);
+    expect(execution.totalCount).toBe(1);
   });
 });
 

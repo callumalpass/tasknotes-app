@@ -21,9 +21,17 @@ export interface TaskArchiveConfiguration {
   folder: string;
 }
 
+export interface TaskFieldCompletionConfiguration {
+  kind: "values" | "records";
+  values?: Array<{ value: string; label?: string }>;
+  targetTypes?: string[];
+}
+
 export interface TaskCollectionConfiguration extends TaskNotesModelConfig {
   templating: TaskTemplatingConfiguration;
   archive: TaskArchiveConfiguration;
+  fieldCompletions: Record<string, TaskFieldCompletionConfiguration>;
+  linkWriteFormat: "wikilink" | "markdown";
 }
 
 export function defaultTaskCollectionConfiguration(): TaskCollectionConfiguration {
@@ -42,6 +50,7 @@ export function resolveTaskCollectionConfiguration(
   const extension = record(value["x-tasknotes"]);
   const schema = record(record(value.schema).value);
   const properties = record(schema.properties);
+  const nativeFields = record(value.fields);
   const statuses = resolveStatuses(base.statuses, record(extension.status));
   const priorities = resolvePriorities(
     base.priorities,
@@ -65,15 +74,20 @@ export function resolveTaskCollectionConfiguration(
       ],
     }),
     extension,
+    properties,
+    nativeFields,
   );
 }
 
 function withCollectionDefaults(
   model: TaskNotesModelConfig,
   extension: Record<string, unknown> = {},
+  properties: Record<string, unknown> = {},
+  nativeFields: Record<string, unknown> = {},
 ): TaskCollectionConfiguration {
   const templating = record(extension.templating);
   const archive = record(extension.archive);
+  const links = record(extension.links);
   return {
     ...model,
     templating: {
@@ -98,7 +112,62 @@ function withCollectionDefaults(
         false,
       folder: string(archive.folder) ?? "TaskNotes/Archive",
     },
+    fieldCompletions: completionConfiguration(model, properties, nativeFields),
+    linkWriteFormat:
+      links.write_format === "markdown" ||
+      links.writeFormat === "markdown" ||
+      links.use_markdown_format === true ||
+      links.useMarkdownFormat === true
+        ? "markdown"
+        : "wikilink",
   };
+}
+
+function completionConfiguration(
+  model: TaskNotesModelConfig,
+  properties: Record<string, unknown>,
+  nativeFields: Record<string, unknown>,
+): Record<string, TaskFieldCompletionConfiguration> {
+  const result: Record<string, TaskFieldCompletionConfiguration> = {
+    [model.fieldMapping.projects]: { kind: "records" },
+    [model.fieldMapping.contexts]: { kind: "values" },
+    tags: { kind: "values" },
+  };
+
+  for (const [key, raw] of Object.entries(properties)) {
+    const property = record(raw);
+    const values = enumValues(property);
+    if (values.length) result[key] = { kind: "values", values };
+  }
+
+  for (const [key, raw] of Object.entries(nativeFields)) {
+    const field = record(raw);
+    const items = record(field.items);
+    const link =
+      field.type === "link" ? field : items.type === "link" ? items : {};
+    const target = string(link.target);
+    if (Object.keys(link).length) {
+      result[key] = {
+        kind: "records",
+        ...(target ? { targetTypes: [target] } : {}),
+      };
+      continue;
+    }
+    const values = [
+      ...stringList(field.values),
+      ...stringList(items.values),
+    ].map((value) => ({ value }));
+    if (values.length) result[key] = { kind: "values", values };
+  }
+  return result;
+}
+
+function enumValues(
+  property: Record<string, unknown>,
+): Array<{ value: string }> {
+  const direct = stringList(property.enum);
+  const items = stringList(record(property.items).enum);
+  return [...new Set([...direct, ...items])].map((value) => ({ value }));
 }
 
 function resolveStatuses(

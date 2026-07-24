@@ -24,6 +24,7 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { CollectionRecord } from "../domain/completion";
 import type {
   CreateTaskViewSourceInput,
   TaskViewSourceDocument,
@@ -33,6 +34,14 @@ import type { Vault, VaultEntry } from "./vault";
 
 export class MarkdownCollection {
   private taskModel = new TaskNotesTaskModel();
+  private readonly collectionRecordCache = new Map<
+    string,
+    {
+      lastModified: number;
+      size: number;
+      record: CollectionRecord | null;
+    }
+  >();
 
   constructor(private readonly vault: Vault) {}
 
@@ -117,6 +126,54 @@ export class MarkdownCollection {
     ].sort((left, right) => left.path.localeCompare(right.path));
   }
 
+  async listCollectionRecords(): Promise<CollectionRecord[]> {
+    const entries = (await this.vault.listCollectionFiles([".md"])).filter(
+      ({ path }) => !isCollectionResource(path),
+    );
+    this.pruneCollectionRecordCache(entries);
+    await this.loadCollectionRecordEntries(
+      entries.filter((entry) => !this.cachedCollectionRecord(entry)),
+    );
+    return entries.flatMap((entry) => {
+      const record = this.collectionRecordCache.get(entry.path)?.record;
+      return record ? [record] : [];
+    });
+  }
+
+  async findCollectionRecords(
+    query: string,
+    limit: number,
+  ): Promise<CollectionRecord[]> {
+    const needle = query.trim().toLocaleLowerCase();
+    const entries = (await this.vault.listCollectionFiles([".md"])).filter(
+      ({ path }) => !isCollectionResource(path),
+    );
+    this.pruneCollectionRecordCache(entries);
+    const matches = new Map<string, CollectionRecord>();
+    const stale: VaultEntry[] = [];
+    for (const entry of entries) {
+      const cached = this.cachedCollectionRecord(entry);
+      if (!cached) {
+        stale.push(entry);
+        continue;
+      }
+      if (cached.record && recordMatchesSearch(cached.record, needle))
+        matches.set(entry.path, cached.record);
+    }
+    for (const batch of batches(stale, 64)) {
+      await this.loadCollectionRecordEntries(batch);
+      for (const entry of batch) {
+        const record = this.collectionRecordCache.get(entry.path)?.record;
+        if (record && recordMatchesSearch(record, needle))
+          matches.set(entry.path, record);
+      }
+      if (matches.size >= limit) break;
+    }
+    return [...matches.values()]
+      .sort((left, right) => left.path.localeCompare(right.path))
+      .slice(0, limit);
+  }
+
   listViewSources(): Promise<VaultEntry[]> {
     return this.vault.listFiles("views", [".base"]);
   }
@@ -181,6 +238,34 @@ export class MarkdownCollection {
         frontmatter: parsed.frontmatter,
         body: parsed.body,
       });
+    } catch {
+      return null;
+    }
+  }
+
+  private async readCollectionRecord(
+    document: VaultEntry,
+  ): Promise<CollectionRecord | null> {
+    try {
+      const parsed = parseFrontmatter(await this.vault.readText(document.path));
+      const types = explicitRecordTypes(parsed.frontmatter);
+      try {
+        this.taskModel.read({
+          path: document.path,
+          frontmatter: parsed.frontmatter,
+          body: parsed.body,
+        });
+        if (!types.includes("task")) types.push("task");
+      } catch {
+        // Other Markdown records remain available to links and project views.
+      }
+      return {
+        path: document.path,
+        label: recordLabelForPath(parsed.frontmatter, document.path),
+        frontmatter: parsed.frontmatter,
+        body: parsed.body,
+        types,
+      };
     } catch {
       return null;
     }
@@ -254,23 +339,43 @@ export class MarkdownCollection {
     return this.taskModel.configuration();
   }
 
-  write(task: Task): Promise<VaultEntry> {
-    return this.vault.writeText(
+  async write(task: Task): Promise<VaultEntry> {
+    const source = await this.vault.writeText(
       task.path,
       serializeMarkdownDocument(task.frontmatter, task.body),
     );
+    this.collectionRecordCache.set(task.path, {
+      lastModified: source.lastModified,
+      size: source.size,
+      record: taskCollectionRecord(task),
+    });
+    return source;
   }
 
-  rename(from: string, to: string): Promise<VaultEntry> {
-    return this.vault.rename(from, to);
+  async rename(from: string, to: string): Promise<VaultEntry> {
+    const source = await this.vault.rename(from, to);
+    const cached = this.collectionRecordCache.get(from);
+    this.collectionRecordCache.delete(from);
+    if (cached?.record)
+      this.collectionRecordCache.set(to, {
+        lastModified: source.lastModified,
+        size: source.size,
+        record: {
+          ...cached.record,
+          path: to,
+          label: recordLabelForPath(cached.record.frontmatter, to),
+        },
+      });
+    return source;
   }
 
   archiveDestination(task: Task, archived: boolean): string | undefined {
     return this.taskModel.archiveDestination(task, archived);
   }
 
-  delete(path: string): Promise<void> {
-    return this.vault.delete(path);
+  async delete(path: string): Promise<void> {
+    await this.vault.delete(path);
+    this.collectionRecordCache.delete(path);
   }
 
   exists(path: string): Promise<boolean> {
@@ -283,6 +388,42 @@ export class MarkdownCollection {
 
   kind(): Vault["kind"] {
     return this.vault.kind;
+  }
+
+  private cachedCollectionRecord(
+    entry: VaultEntry,
+  ):
+    | { lastModified: number; size: number; record: CollectionRecord | null }
+    | undefined {
+    const cached = this.collectionRecordCache.get(entry.path);
+    return cached?.lastModified === entry.lastModified &&
+      cached.size === entry.size
+      ? cached
+      : undefined;
+  }
+
+  private pruneCollectionRecordCache(entries: readonly VaultEntry[]): void {
+    const paths = new Set(entries.map(({ path }) => path));
+    for (const path of this.collectionRecordCache.keys())
+      if (!paths.has(path)) this.collectionRecordCache.delete(path);
+  }
+
+  private async loadCollectionRecordEntries(
+    entries: readonly VaultEntry[],
+  ): Promise<void> {
+    for (const batch of batches([...entries], 64)) {
+      const loaded = await Promise.all(
+        batch.map((entry) => this.readCollectionRecord(entry)),
+      );
+      for (let index = 0; index < batch.length; index += 1) {
+        const entry = batch[index];
+        this.collectionRecordCache.set(entry.path, {
+          lastModified: entry.lastModified,
+          size: entry.size,
+          record: loaded[index],
+        });
+      }
+    }
   }
 
   private async upgradeDocuments(completedField: string): Promise<void> {
@@ -356,6 +497,71 @@ export function batches<T>(values: T[], size: number): T[][] {
   for (let offset = 0; offset < values.length; offset += size)
     result.push(values.slice(offset, offset + size));
   return result;
+}
+
+function isCollectionResource(path: string): boolean {
+  const normalized = path.replaceAll("\\", "/").toLocaleLowerCase();
+  return (
+    normalized.startsWith("_types/") ||
+    normalized.includes("/_types/") ||
+    normalized.startsWith(".mdbase/") ||
+    normalized.startsWith("node_modules/")
+  );
+}
+
+function taskCollectionRecord(task: Task): CollectionRecord {
+  return {
+    path: task.path,
+    label: recordLabelForPath(task.frontmatter, task.path),
+    frontmatter: task.frontmatter,
+    body: task.body,
+    types: ["task"],
+  };
+}
+
+function recordLabelForPath(
+  frontmatter: Record<string, unknown>,
+  path: string,
+): string {
+  const title = frontmatter.title;
+  if (typeof title === "string" && title.trim()) return title.trim();
+  return (path.split("/").at(-1) ?? path).replace(/\.md$/i, "");
+}
+
+function recordMatchesSearch(record: CollectionRecord, query: string): boolean {
+  if (!query) return true;
+  const aliases = record.frontmatter.aliases;
+  const search = [
+    record.path,
+    record.label,
+    ...(Array.isArray(aliases)
+      ? aliases.filter((value): value is string => typeof value === "string")
+      : typeof aliases === "string"
+        ? [aliases]
+        : []),
+  ]
+    .join("\n")
+    .toLocaleLowerCase();
+  return query
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((token) => search.includes(token));
+}
+
+function explicitRecordTypes(frontmatter: Record<string, unknown>): string[] {
+  const values = [
+    ...(typeof frontmatter.type === "string" ? [frontmatter.type] : []),
+    ...(Array.isArray(frontmatter.types)
+      ? frontmatter.types.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : []),
+  ];
+  return [
+    ...new Set(
+      values.map((value) => value.trim().toLocaleLowerCase()).filter(Boolean),
+    ),
+  ];
 }
 
 function isMissingPath(reason: unknown): boolean {

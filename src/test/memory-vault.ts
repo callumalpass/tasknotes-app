@@ -24,15 +24,23 @@ export class MemoryVault implements Vault {
     return this.listFiles(path, [".md"]);
   }
 
+  async listCollectionFiles(extensions: string[]): Promise<VaultEntry[]> {
+    return this.entries(extensions);
+  }
+
   async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
     const prefix = `${safePath(path)}/`;
+    return this.entries(extensions).filter(({ path: name }) =>
+      name.startsWith(prefix),
+    );
+  }
+
+  private entries(extensions: string[]): VaultEntry[] {
     return [...this.files.entries()]
-      .filter(
-        ([name]) =>
-          name.startsWith(prefix) &&
-          extensions.some((extension) =>
-            name.toLowerCase().endsWith(extension.toLowerCase()),
-          ),
+      .filter(([name]) =>
+        extensions.some((extension) =>
+          name.toLowerCase().endsWith(extension.toLowerCase()),
+        ),
       )
       .map(([name, file]) => ({
         path: name,

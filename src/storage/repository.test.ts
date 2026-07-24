@@ -89,6 +89,38 @@ describe("IndexedMarkdownRepository", () => {
     expect(await repository.get(created.id)).toBeNull();
   });
 
+  it("completes project records by title and reuses indexed metadata", async () => {
+    await vault.writeText(
+      "Projects/mobile.md",
+      "---\ntitle: Mobile roadmap\n---\nProject notes\n",
+    );
+    const readText = vi.spyOn(vault, "readText");
+    readText.mockClear();
+
+    await expect(
+      repository.completeField({
+        field: "projects",
+        kind: "records",
+        query: "roadmap",
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        label: "Mobile roadmap",
+        value: "[[Projects/mobile]]",
+      }),
+    ]);
+    const firstReadCount = readText.mock.calls.length;
+
+    await expect(
+      repository.completeField({
+        field: "projects",
+        kind: "records",
+        query: "mobile",
+      }),
+    ).resolves.toHaveLength(1);
+    expect(readText).toHaveBeenCalledTimes(firstReadCount);
+  });
+
   it("serializes concurrent mutations without losing either task", async () => {
     const [first, second] = await Promise.all([
       repository.create({ title: "First" }),

@@ -25,7 +25,7 @@ test("follows the system theme and persists explicit overrides", async ({
   await expect.poll(readCanvas).not.toBe("");
   const systemDarkCanvas = await readCanvas();
 
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   const select = page.getByRole("combobox", { name: "Color theme" });
   await select.selectOption("light");
   await expect(root).toHaveAttribute("data-theme", "light");

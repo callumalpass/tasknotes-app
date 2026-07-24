@@ -8,6 +8,7 @@ export interface Vault {
   readonly kind: "native" | "browser";
   initialize(): Promise<void>;
   ensureText(path: string, contents: string): Promise<void>;
+  listCollectionFiles(extensions: string[]): Promise<VaultEntry[]>;
   listFiles(path: string, extensions: string[]): Promise<VaultEntry[]>;
   listMarkdownFiles(path: string): Promise<VaultEntry[]>;
   readText(path: string): Promise<string>;

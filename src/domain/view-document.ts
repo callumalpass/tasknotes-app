@@ -172,7 +172,7 @@ function updateObsidianDocument(
   setOrDelete(
     view,
     "groupBy",
-    !isCalendarRenderer(draft.renderer) && draft.groupProperty
+    supportsGrouping(draft.renderer) && draft.groupProperty
       ? { property: draft.groupProperty, direction: "ASC" }
       : undefined,
   );
@@ -224,7 +224,7 @@ function updateCanonicalDocument(
   const updated = { ...views[index], ...canonicalView(draft) };
   if (typeof draft.filter !== "string" || !draft.filter.trim())
     delete updated.where;
-  if (isCalendarRenderer(draft.renderer) || !draft.groupProperty)
+  if (!supportsGrouping(draft.renderer) || !draft.groupProperty)
     delete updated.group_by;
   views[index] = updated;
   frontmatter.views = views;
@@ -238,7 +238,7 @@ function obsidianView(draft: EditableViewDraft): Record<string, unknown> {
     filters: draft.filter,
     order: draft.properties,
     groupBy:
-      !isCalendarRenderer(draft.renderer) && draft.groupProperty
+      supportsGrouping(draft.renderer) && draft.groupProperty
         ? { property: draft.groupProperty, direction: "ASC" }
         : undefined,
     options: Object.keys(draft.options).length ? draft.options : undefined,
@@ -259,7 +259,7 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
         : undefined,
     select: draft.properties.length ? draft.properties : ["title"],
     group_by:
-      !isCalendarRenderer(draft.renderer) && draft.groupProperty
+      supportsGrouping(draft.renderer) && draft.groupProperty
         ? [{ field: draft.groupProperty, direction: "asc" }]
         : undefined,
     presentation: {
@@ -297,6 +297,10 @@ function groupProperty(value: unknown): string | undefined {
   return typeof value === "string"
     ? value
     : string(record(value).property) || undefined;
+}
+
+function supportsGrouping(renderer: ViewRenderer): boolean {
+  return !isCalendarRenderer(renderer) && renderer !== "tasknotes.projects";
 }
 
 function setOrDelete(map: YAMLMap, key: string, value: unknown): void {

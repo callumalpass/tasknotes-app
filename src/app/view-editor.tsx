@@ -218,6 +218,7 @@ export function ViewEditor({
                   ["tasknotes.kanban", "Board"],
                   ["tasknotes.calendar", "Calendar"],
                   ["tasknotes.mini-calendar", "Mini calendar"],
+                  ["tasknotes.projects", "Projects"],
                 ].map(([value, label]) => (
                   <button
                     aria-pressed={draft.renderer === value}
@@ -244,7 +245,13 @@ export function ViewEditor({
                 <summary>
                   <span>
                     <strong>Filter</strong>
-                    <small>Choose which tasks belong in this view</small>
+                    <small>
+                      Choose which{" "}
+                      {draft.renderer === "tasknotes.projects"
+                        ? "project notes"
+                        : "tasks"}{" "}
+                      belong in this view
+                    </small>
                   </span>
                 </summary>
                 <ExpressionBuilder
@@ -264,7 +271,13 @@ export function ViewEditor({
               >
                 <div>
                   <h2 id="view-filter-title">Filter</h2>
-                  <p>Choose which tasks belong in this view.</p>
+                  <p>
+                    Choose which{" "}
+                    {draft.renderer === "tasknotes.projects"
+                      ? "project notes"
+                      : "tasks"}{" "}
+                    belong in this view.
+                  </p>
                 </div>
                 <ExpressionBuilder
                   dialect={draft.dialect}
@@ -279,7 +292,8 @@ export function ViewEditor({
             )}
 
             {draft.renderer !== "tasknotes.calendar" &&
-            draft.renderer !== "tasknotes.mini-calendar" ? (
+            draft.renderer !== "tasknotes.mini-calendar" &&
+            draft.renderer !== "tasknotes.projects" ? (
               <label>
                 <span>
                   {draft.renderer === "tasknotes.kanban"

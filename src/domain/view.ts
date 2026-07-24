@@ -1,4 +1,5 @@
 import type { Task } from "./task";
+import type { CollectionRecord } from "./completion";
 
 export interface TaskViewPresentation {
   type: string;
@@ -52,6 +53,10 @@ export interface TaskViewGroup {
 export interface TaskViewExecution {
   view: TaskView;
   rows: TaskViewRow[];
+  records?: Array<{
+    record: CollectionRecord;
+    values: Record<string, unknown>;
+  }>;
   totalCount: number;
   hasMore: boolean;
   groups: TaskViewGroup[];

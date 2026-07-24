@@ -23,9 +23,21 @@ export class OpfsVault implements Vault {
     return this.listFiles(path, [".md"]);
   }
 
+  async listCollectionFiles(extensions: string[]): Promise<VaultEntry[]> {
+    return this.collectFiles(this.requireRoot(), "", extensions);
+  }
+
   async listFiles(path: string, extensions: string[]): Promise<VaultEntry[]> {
     const rootPath = safePath(path);
     const root = await this.directory(rootPath, false);
+    return this.collectFiles(root, rootPath, extensions);
+  }
+
+  private async collectFiles(
+    root: FileSystemDirectoryHandle,
+    rootPath: string,
+    extensions: string[],
+  ): Promise<VaultEntry[]> {
     const pending: { directory: FileSystemDirectoryHandle; path: string }[] = [
       { directory: root, path: rootPath },
     ];
@@ -33,7 +45,7 @@ export class OpfsVault implements Vault {
     while (pending.length) {
       const current = pending.shift()!;
       for await (const [name, handle] of current.directory.entries()) {
-        const nextPath = `${current.path}/${name}`;
+        const nextPath = current.path ? `${current.path}/${name}` : name;
         if (handle.kind === "directory") {
           if (!EXCLUDED_DIRECTORIES.has(name))
             pending.push({ directory: handle, path: nextPath });

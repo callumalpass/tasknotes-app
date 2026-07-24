@@ -15,15 +15,21 @@ import {
 } from "../domain/task";
 import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
+import { MultiValueField } from "./multi-value-field";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  FieldCompletion,
+  FieldCompletionRequest,
+} from "../domain/completion";
 
 const emptyDefaults: Partial<CreateTaskInput> = {};
 
 export function TaskCapture({
   configuration,
   createTask,
+  completeField,
   defaults,
   placeholder = "Add a task — tomorrow 9am, #tag, +project",
   focusRequest,
@@ -32,6 +38,7 @@ export function TaskCapture({
 }: {
   configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
+  completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   defaults?: Partial<CreateTaskInput>;
   placeholder?: string;
   focusRequest?: number;
@@ -282,6 +289,7 @@ export function TaskCapture({
       {expanded && result && parsedText === text.trim() ? (
         <CaptureDetails
           configuration={configuration}
+          completeField={completeField}
           input={result.input}
           onChange={change}
         />
@@ -326,10 +334,12 @@ export interface TaskCaptureFollowUp {
 
 function CaptureDetails({
   configuration,
+  completeField,
   input,
   onChange,
 }: {
   configuration: TaskCollectionConfiguration;
+  completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   input: CreateTaskInput;
   onChange(patch: Partial<CreateTaskInput>): void;
 }) {
@@ -373,18 +383,35 @@ function CaptureDetails({
           </select>
         </label>
         <CaptureList
+          field={configuration.fieldMapping.projects}
           label="Projects"
           value={input.projects}
+          completion={
+            configuration.fieldCompletions[
+              configuration.fieldMapping.projects
+            ] ?? { kind: "records" }
+          }
+          completeField={completeField}
           onChange={(projects) => onChange({ projects })}
         />
         <CaptureList
+          field={configuration.fieldMapping.contexts}
           label="Contexts"
           value={input.contexts}
+          completion={
+            configuration.fieldCompletions[
+              configuration.fieldMapping.contexts
+            ] ?? { kind: "values" }
+          }
+          completeField={completeField}
           onChange={(contexts) => onChange({ contexts })}
         />
         <CaptureList
+          field="tags"
           label="Tags"
           value={input.tags}
+          completion={configuration.fieldCompletions.tags ?? { kind: "values" }}
+          completeField={completeField}
           onChange={(tags) => onChange({ tags })}
         />
         <label className="form-field">
@@ -502,14 +529,32 @@ function CaptureDateTime({
 }
 
 function CaptureList({
+  field,
   label,
   value = [],
+  completion,
+  completeField,
   onChange,
 }: {
+  field: string;
   label: string;
   value?: string[];
+  completion: import("../domain/task-configuration").TaskFieldCompletionConfiguration;
+  completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   onChange(value: string[]): void;
 }) {
+  if (completeField)
+    return (
+      <MultiValueField
+        completion={completion}
+        completeField={completeField}
+        field={field}
+        label={label}
+        placeholder={`Add ${label.toLocaleLowerCase()}`}
+        values={value}
+        onChange={onChange}
+      />
+    );
   return (
     <label className="form-field">
       <span>{label}</span>

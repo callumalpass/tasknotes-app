@@ -1,5 +1,6 @@
 import { taskViewKey } from "../domain/view";
 import { normalizePresentationType } from "../domain/view-renderer";
+import { recordLabel } from "../domain/completion";
 
 import type { Task } from "../domain/task";
 import type {
@@ -88,6 +89,18 @@ export function normalizeViewExecution(
   return {
     view: normalizedView,
     rows,
+    records: result.results.map((record) => ({
+      record: {
+        path: record.path,
+        label: recordLabel(record),
+        frontmatter: structuredClone(
+          record.frontmatter ?? record.raw_frontmatter ?? {},
+        ),
+        ...(record.body === undefined ? {} : { body: record.body }),
+        types: [...(record.types ?? [])],
+      },
+      values: structuredClone(record.values ?? {}),
+    })),
     totalCount: result.meta.total_count,
     hasMore: result.meta.has_more,
     groups: structuredClone(result.meta.groups ?? []),

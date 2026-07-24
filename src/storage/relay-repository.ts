@@ -21,6 +21,11 @@ import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
+  completeRecords,
+  completeTaskValues,
+  completionLimit,
+} from "./completions";
+import {
   normalizeViewDocuments,
   normalizeViewExecution,
   type ProviderViewExecution,
@@ -37,6 +42,11 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  CollectionRecord,
+  FieldCompletion,
+  FieldCompletionRequest,
+} from "../domain/completion";
 import type {
   CreateTaskViewSourceInput,
   TaskView,
@@ -86,6 +96,14 @@ export class RelayTaskRepository implements TaskRepository {
   >();
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
+  private readonly completionCache = new Map<
+    string,
+    { expiresAt: number; values: FieldCompletion[] }
+  >();
+  private readonly completionsInFlight = new Map<
+    string,
+    Promise<FieldCompletion[]>
+  >();
   private status: RepositorySyncStatus = {
     mode: "live",
     state: "syncing",
@@ -191,6 +209,80 @@ export class RelayTaskRepository implements TaskRepository {
     if (cached && !cached.revision)
       void this.requireCurrent(id).catch(() => undefined);
     return cached?.task ?? null;
+  }
+
+  async completeField(
+    request: FieldCompletionRequest,
+  ): Promise<FieldCompletion[]> {
+    if (request.kind === "values")
+      return completeTaskValues(
+        [...this.cache.values()].map(({ task }) => task),
+        request,
+      );
+    const key = JSON.stringify({
+      field: request.field,
+      query: request.query?.trim().toLocaleLowerCase() ?? "",
+      limit: completionLimit(request),
+      targetTypes: [...(request.targetTypes ?? [])].sort(),
+    });
+    const cached = this.completionCache.get(key);
+    if (cached && cached.expiresAt > Date.now())
+      return structuredClone(cached.values);
+    const pending = this.completionsInFlight.get(key);
+    if (pending) return pending;
+    const run = this.completeRecordsFromProvider(request)
+      .then((values) => {
+        this.completionCache.set(key, {
+          expiresAt: Date.now() + 30_000,
+          values,
+        });
+        return structuredClone(values);
+      })
+      .finally(() => {
+        if (this.completionsInFlight.get(key) === run)
+          this.completionsInFlight.delete(key);
+      });
+    this.completionsInFlight.set(key, run);
+    return run;
+  }
+
+  private async completeRecordsFromProvider(
+    request: FieldCompletionRequest,
+  ): Promise<FieldCompletion[]> {
+    const query = request.query?.trim().toLocaleLowerCase() ?? "";
+    const response = await this.connect.query({
+      ...(request.targetTypes?.length
+        ? { types: [...request.targetTypes] }
+        : {}),
+      ...(query
+        ? {
+            where: [
+              `file.path.lower().contains(${JSON.stringify(query)})`,
+              `file.basename.lower().contains(${JSON.stringify(query)})`,
+              `note.title.lower().contains(${JSON.stringify(query)})`,
+            ].join(" || "),
+          }
+        : {}),
+      order_by: [{ field: "file.path", direction: "asc" }],
+      limit: Math.max(completionLimit(request) * 4, 48),
+    });
+    const result = validResult(response);
+    const records: CollectionRecord[] = result.results.map((record) => ({
+      path: record.path,
+      label:
+        typeof record.frontmatter.title === "string"
+          ? record.frontmatter.title
+          : (record.path.split("/").at(-1)?.replace(/\.md$/i, "") ??
+            record.path),
+      frontmatter: record.frontmatter,
+      body: record.body,
+      types: record.types,
+    }));
+    return completeRecords(
+      records,
+      request,
+      this.model.configuration().linkWriteFormat,
+    );
   }
 
   create(input: CreateTaskInput): Promise<Task> {
