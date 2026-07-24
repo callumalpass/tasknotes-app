@@ -162,7 +162,27 @@ async function localTaskDocuments(page: Page): Promise<string[]> {
 }
 
 async function openViewsCatalog(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /^(Views|More views)$/ }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: /Saved views/ }).click();
+}
+
+async function openNavigationView(page: Page, name: string): Promise<void> {
+  const navigation = page.locator(".bottom-navigation, .navigation-rail");
+  const direct = navigation.getByRole("button", { name, exact: true });
+  if (await direct.count()) {
+    await direct.click();
+    return;
+  }
+  await navigation.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name, exact: true }).click();
+}
+
+async function openSearch(page: Page): Promise<void> {
+  const navigation = page.locator(".bottom-navigation, .navigation-rail");
+  await navigation.getByRole("button", { name: "Views", exact: true }).click();
+  await page
+    .getByRole("menuitem", { name: "Search tasks", exact: true })
+    .click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -228,8 +248,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
-  await openViewsCatalog(page);
-  await page.getByRole("button", { name: "Search tasks" }).click();
+  await openSearch(page);
   await page.getByLabel("Search tasks").fill("mdbase computer release");
   await expect(
     page.getByText("Prepare weekly review", { exact: true }),
@@ -253,8 +272,7 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  await openViewsCatalog(page);
-  await page.getByRole("button", { name: "Search tasks" }).click();
+  await openSearch(page);
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -267,8 +285,7 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 
   await page.reload();
-  await openViewsCatalog(page);
-  await page.getByRole("button", { name: "Search tasks" }).click();
+  await openSearch(page);
   await page.getByLabel("Search tasks").fill("web-native");
   await expect(
     page.getByText("Review web-native storage", { exact: true }),
@@ -302,12 +319,11 @@ test("archives and restores a Markdown task without deleting it", async ({
     page.getByText("Keep archived history", { exact: true }),
   ).toHaveCount(0);
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Archive.*1 archived task/ }).click();
+  await openNavigationView(page, "Archive");
   await expect(page.getByRole("heading", { name: "Archive" })).toBeVisible();
   await page.getByText("Keep archived history", { exact: true }).click();
   await page.getByLabel("Restore task").click();
-  await expect(page.getByText("Nothing archived.")).toBeVisible();
+  await expect(page.getByText("Nothing here")).toBeVisible();
   const restoredDocuments = await localTaskDocuments(page);
   expect(restoredDocuments).toHaveLength(1);
   expect(restoredDocuments[0]).not.toMatch(/^\s*-\s+archived\s*$/m);
@@ -394,24 +410,7 @@ Project notes`);
   ).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  const directProjects = page.getByRole("button", {
-    name: "Projects",
-    exact: true,
-  });
-  if (await directProjects.count()) await directProjects.click();
-  else {
-    await openViewsCatalog(page);
-    await page
-      .locator(".view-document")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "tasknotes-app",
-          exact: true,
-        }),
-      })
-      .getByRole("button", { name: "Projects", exact: true })
-      .click();
-  }
+  await openNavigationView(page, "Projects");
 
   await expect(
     page.getByRole("heading", { name: "Mobile roadmap", level: 2 }),
@@ -736,7 +735,7 @@ views:
   ).toHaveAttribute("aria-busy", "false");
   await expect(
     page.getByRole("button", {
-      name: testInfo.project.name === "mobile" ? "More views" : "Work board",
+      name: testInfo.project.name === "mobile" ? "Views" : "Work board",
       exact: true,
     }),
   ).toHaveAttribute("aria-current", "page");
@@ -750,7 +749,7 @@ views:
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: testInfo.project.name === "mobile" ? "More views" : "Work board",
+      name: testInfo.project.name === "mobile" ? "Views" : "Work board",
       exact: true,
     }),
   ).toBeVisible();
@@ -850,7 +849,7 @@ views:
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
 });
 
-test("orders several navigation views and keeps the rest behind the mobile overflow", async ({
+test("orders several navigation views and exposes the rest from the mobile Views menu", async ({
   page,
 }, testInfo) => {
   await page.getByLabel("New task title").fill("Navigation task");
@@ -892,24 +891,32 @@ test("orders several navigation views and keeps the rest behind the mobile overf
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
 
   const ordered = page.locator(".navigation-view-order li");
-  await expect(ordered).toHaveCount(6);
+  await expect(ordered).toHaveCount(7);
   await expect(ordered.nth(0)).toContainText("Focus");
   await expect(ordered.nth(1)).toContainText("Today");
   await expect(ordered.nth(2)).toContainText("Upcoming");
   await expect(ordered.nth(3)).toContainText("Calendar");
   await expect(ordered.nth(4)).toContainText("Projects");
-  await expect(ordered.nth(5)).toContainText("Later");
+  await expect(ordered.nth(5)).toContainText("Archive");
+  await expect(ordered.nth(6)).toContainText("Later");
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
     await expect(
-      navigation.getByRole("button", { name: "More views", exact: true }),
+      navigation.getByRole("button", { name: "Views", exact: true }),
     ).toBeVisible();
     await expect(
       navigation.getByRole("button", { name: "Later", exact: true }),
     ).toHaveCount(0);
+    await navigation
+      .getByRole("button", { name: "Views", exact: true })
+      .click();
+    await expect(
+      page.getByRole("menuitem", { name: "Later", exact: true }),
+    ).toBeVisible();
   } else {
     await expect(
       page

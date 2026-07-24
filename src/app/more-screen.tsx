@@ -8,7 +8,6 @@ import {
   Info,
   Bell,
   Columns3,
-  Archive,
   SunMoon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -31,11 +30,9 @@ import { useCollectionSummary, useRepository } from "./repository-context";
 export function MoreScreen({
   navigationViewCount,
   onOpenViews,
-  onOpenArchive,
 }: {
   navigationViewCount: number;
   onOpenViews(): void;
-  onOpenArchive(): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
   const {
@@ -238,23 +235,6 @@ export function MoreScreen({
             {navigationViewCount
               ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
               : "Lists, boards, and calendars"}
-          </small>
-          <ChevronRight aria-hidden="true" size={17} />
-        </button>
-      </SettingsSection>
-
-      <SettingsSection label="Tasks">
-        <button
-          className="setting-row setting-link"
-          type="button"
-          onClick={onOpenArchive}
-        >
-          <Archive aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Archive</span>
-          <small>
-            {loading
-              ? "Opening"
-              : `${stats?.archived ?? 0} archived ${stats?.archived === 1 ? "task" : "tasks"}`}
           </small>
           <ChevronRight aria-hidden="true" size={17} />
         </button>
