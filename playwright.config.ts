@@ -7,6 +7,8 @@ const webServerCommand =
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  // Desktop and mobile exercise the same-origin OPFS collection.
+  workers: 1,
   use: {
     baseURL,
     trace: "retain-on-failure",

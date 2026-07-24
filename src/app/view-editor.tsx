@@ -217,6 +217,7 @@ export function ViewEditor({
                   ["tasknotes.task-list", "List"],
                   ["tasknotes.kanban", "Board"],
                   ["tasknotes.calendar", "Calendar"],
+                  ["tasknotes.mini-calendar", "Mini calendar"],
                 ].map(([value, label]) => (
                   <button
                     aria-pressed={draft.renderer === value}
@@ -277,7 +278,8 @@ export function ViewEditor({
               </section>
             )}
 
-            {draft.renderer !== "tasknotes.calendar" ? (
+            {draft.renderer !== "tasknotes.calendar" &&
+            draft.renderer !== "tasknotes.mini-calendar" ? (
               <label>
                 <span>
                   {draft.renderer === "tasknotes.kanban"
@@ -299,7 +301,8 @@ export function ViewEditor({
               </label>
             ) : null}
 
-            {draft.renderer === "tasknotes.calendar" ? (
+            {draft.renderer === "tasknotes.calendar" ||
+            draft.renderer === "tasknotes.mini-calendar" ? (
               <fieldset className="calendar-source-options">
                 <legend>Calendar dates</legend>
                 {[
@@ -324,6 +327,69 @@ export function ViewEditor({
                   </label>
                 ))}
               </fieldset>
+            ) : null}
+
+            {draft.renderer === "tasknotes.calendar" ? (
+              <>
+                <label>
+                  <span>Opens as</span>
+                  <select
+                    value={string(draft.options.calendarView) || "dayGridMonth"}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        options: {
+                          ...draft.options,
+                          calendarView: event.target.value,
+                        },
+                      })
+                    }
+                  >
+                    <option value="dayGridMonth">Month</option>
+                    <option value="timeGridWeek">Week</option>
+                    <option value="timeGridThreeDay">3 days</option>
+                    <option value="timeGridDay">Day</option>
+                    <option value="listWeek">Agenda</option>
+                  </select>
+                </label>
+                <fieldset className="calendar-source-options">
+                  <legend>Repeating tasks</legend>
+                  {[
+                    ["showRecurring", "Upcoming instances", true],
+                    [
+                      "showCompletedRecurringInstances",
+                      "Completed instances",
+                      false,
+                    ],
+                    [
+                      "showSkippedRecurringInstances",
+                      "Skipped instances",
+                      false,
+                    ],
+                  ].map(([key, label, fallback]) => (
+                    <label key={String(key)}>
+                      <input
+                        checked={
+                          draft.options[String(key)] === undefined
+                            ? Boolean(fallback)
+                            : draft.options[String(key)] === true
+                        }
+                        type="checkbox"
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            options: {
+                              ...draft.options,
+                              [String(key)]: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <span>{String(label)}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              </>
             ) : null}
 
             {configuration ? (

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  DEFAULT_NAVIGATION_VIEW_KEYS,
-  taskNotesDefaultViewDocument,
-} from "../domain/default-views";
+  defaultNavigationViewKeys,
+  ensureTaskNotesDefaultViewSource,
+} from "../domain/default-view-source";
 import { flattenViewDocuments } from "../domain/view";
 import { useRepository } from "./repository-context";
 import {
@@ -62,7 +62,11 @@ export function useNavigationViews(): {
             : current,
         );
 
-      const providerDocuments = await repository.listViews();
+      const providerDocuments = await ensureTaskNotesDefaultViewSource(
+        repository,
+        await repository.listViews(),
+        await repository.taskConfiguration(),
+      );
       if (request !== requestSequence.current) return;
       setCatalog(resolveNavigationViewCatalog(info, providerDocuments, false)!);
     } catch (reason) {
@@ -149,12 +153,7 @@ export function resolveNavigationViewCatalog(
   storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage,
 ): ViewCatalog | null {
   const scope = navigationViewScope(info);
-  const documents = [
-    taskNotesDefaultViewDocument(),
-    ...providerDocuments.filter(
-      (document) => document.id !== "tasknotes.default-views",
-    ),
-  ];
+  const documents = providerDocuments;
   const available = new Set(
     flattenViewDocuments(documents).map((view) => view.key),
   );
@@ -165,11 +164,15 @@ export function resolveNavigationViewCatalog(
   }
   if (requireStoredViews && stored?.[0] && !available.has(stored[0]))
     return null;
-  const requested = stored ?? [...DEFAULT_NAVIGATION_VIEW_KEYS];
+  const requested = stored ?? defaultNavigationViewKeys(documents);
   const navigationKeys = requested.filter((key) => available.has(key));
   if (!navigationKeys.length) {
-    const first = flattenViewDocuments(documents)[0];
-    if (first) navigationKeys.push(first.key);
+    const defaults = defaultNavigationViewKeys(documents);
+    if (defaults.length) navigationKeys.push(...defaults);
+    else {
+      const first = flattenViewDocuments(documents)[0];
+      if (first) navigationKeys.push(first.key);
+    }
   }
   if (
     !requireStoredViews &&

@@ -38,7 +38,20 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
                   meta: { total_count: 1, has_more: false },
                 },
               }
-            : { valid: true, diagnostics: [], result: {} };
+            : operation === "list_views"
+              ? valid(defaultViewDocuments())
+              : operation === "execute_view"
+                ? valid(
+                    defaultViewExecution([
+                      {
+                        path: task.path,
+                        frontmatter: task.frontmatter,
+                        body: task.body,
+                        types: ["task"],
+                      },
+                    ]),
+                  )
+                : { valid: true, diagnostics: [], result: {} };
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ result }),
@@ -70,6 +83,8 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
           "update",
           "delete",
           "rename",
+          "list_views",
+          "execute_view",
         ],
         scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
         expiresAt: Date.now() + 60_000,
@@ -151,6 +166,10 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
           })),
           meta: { total_count: records.length, has_more: false },
         });
+      } else if (operation === "list_views") {
+        result = valid(defaultViewDocuments());
+      } else if (operation === "execute_view") {
+        result = valid(defaultViewExecution(records));
       } else if (operation === "create") {
         createRequests += 1;
         const input = route.request().postDataJSON() as {
@@ -192,6 +211,8 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
     "read",
     "create",
     "delete",
+    "list_views",
+    "execute_view",
   ]);
   await page.reload();
   await expect(page.getByText("Delete over the relay")).toBeVisible();
@@ -461,6 +482,10 @@ test("edits a contract-defined task without collapsing custom status or fields",
           results: [record],
           meta: { total_count: 1, has_more: false },
         };
+      } else if (operation === "list_views") {
+        result = defaultViewDocuments();
+      } else if (operation === "execute_view") {
+        result = defaultViewExecution([record]);
       } else if (operation === "read") result = record;
       else if (operation === "update") {
         updateInput = route.request().postDataJSON() as {
@@ -538,7 +563,16 @@ function collectionDescription() {
     collection_id: "01922222-2222-7222-8222-222222222222",
     display_name: "Relay tasks",
     spec_version: "0.3.0",
-    operations: ["describe", "query", "read", "create", "update", "delete"],
+    operations: [
+      "describe",
+      "query",
+      "read",
+      "create",
+      "update",
+      "delete",
+      "list_views",
+      "execute_view",
+    ],
     change_cursor: 0,
     types: [
       {
@@ -599,7 +633,14 @@ function configuredCollectionDescription() {
 
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
-  operations = ["describe", "query", "read", "update"],
+  operations = [
+    "describe",
+    "query",
+    "read",
+    "update",
+    "list_views",
+    "execute_view",
+  ],
 ) {
   await page.goto("./");
   await page.evaluate((authorizedOperations) => {
@@ -649,6 +690,56 @@ function priority(value: string, label: string, weight: number) {
 
 function valid<T>(result: T) {
   return { valid: true as const, diagnostics: [], result };
+}
+
+function defaultViewDocuments() {
+  return {
+    views: [
+      {
+        id: "tasknotes-app",
+        name: "TaskNotes",
+        source: {
+          path: "Views/tasknotes-app.md",
+          format: "mdbase.view",
+          revision: "view-r1",
+          writable: false,
+        },
+        views: [
+          {
+            id: "today",
+            name: "Today",
+            properties: [],
+            presentation: {
+              type: "tasknotes.task-list",
+              fallback: "mdbase.table",
+              mappings: {},
+              options: {},
+            },
+          },
+        ],
+      },
+    ],
+    meta: { total_count: 1 },
+  };
+}
+
+function defaultViewExecution(
+  records: Array<{
+    path: string;
+    frontmatter: JsonObject;
+    body?: string;
+    types?: string[];
+  }>,
+) {
+  return {
+    results: records.map((record) => ({ ...record, values: {} })),
+    meta: {
+      total_count: records.length,
+      has_more: false,
+      view: { path: "Views/tasknotes-app.md", id: "today" },
+      groups: [],
+    },
+  };
 }
 
 function deferred() {

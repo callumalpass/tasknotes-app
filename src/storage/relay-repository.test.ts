@@ -518,8 +518,7 @@ function relayFixture(
               id: "kanban",
               name: "Kanban",
               presentation: {
-                type: "tasknotes.kanban",
-                mappings: { column: "status" },
+                type: "tasknotesKanban",
                 options: {},
               },
             },

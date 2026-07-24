@@ -16,6 +16,7 @@ import type {
   TaskViewGroup,
   TaskViewPresentation,
 } from "../domain/view";
+import { normalizePresentationType } from "../domain/view-renderer";
 import type { MarkdownCollection } from "./collection";
 import type { VaultEntry } from "./vault";
 
@@ -233,14 +234,7 @@ function propertyDescriptor(
 }
 
 function presentation(view: BaseView): TaskViewPresentation {
-  const type =
-    {
-      tasknotesKanban: "tasknotes.kanban",
-      tasknotesCalendar: "tasknotes.calendar",
-      tasknotesMiniCalendar: "tasknotes.calendar",
-      tasknotesTaskList: "tasknotes.task-list",
-      table: "mdbase.table",
-    }[view.type] ?? view.type;
+  const type = normalizePresentationType(view.type);
   const column = groupProperty(view.groupBy);
   return {
     type,
@@ -290,8 +284,26 @@ function taskFile(task: LocalViewTask) {
         ? validDate(task.updatedAt)
         : new Date(task.sourceMtime),
     properties: task.frontmatter,
-    tags: [...new Set([...task.tags, ...bodyTags(task.body)])],
+    tags: [
+      ...new Set([
+        ...frontmatterTags(task.frontmatter.tags),
+        ...bodyTags(task.body),
+      ]),
+    ],
   };
+}
+
+function frontmatterTags(value: unknown): string[] {
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[\s,]+/)
+      : [];
+  return values
+    .flatMap((entry) =>
+      typeof entry === "string" ? [entry.replace(/^#/, "").trim()] : [],
+    )
+    .filter(Boolean);
 }
 
 function validDate(value: string): Date {

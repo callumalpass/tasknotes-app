@@ -12,20 +12,18 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
 import { TaskCapture } from "../components/task-capture";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents } from "../domain/calendar-events";
-import { isTaskNotesDefaultView } from "../domain/default-views";
 import {
   kanbanMoveInput,
   kanbanPropertyRole,
   type KanbanFieldMapping,
 } from "../domain/kanban";
 import { dateFromStorage, todayString } from "../domain/task";
-import { occurrenceTask } from "../domain/task-occurrence";
 import {
   createPlanForView,
   mergeTaskCreationDefaults,
@@ -33,13 +31,16 @@ import {
   type ViewCreationPlan,
 } from "../domain/view-creation";
 import { groupTaskViewRows } from "../domain/view-grouping";
+import {
+  formatPropertyValue,
+  propertyLabel,
+  viewPropertyDetails,
+} from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
-import { TodayScreen } from "./today-screen";
-import { UpcomingScreen } from "./upcoming-screen";
 import { ViewEditor } from "./view-editor";
 
-import type { CreateTaskInput, Task } from "../domain/task";
+import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
 import type {
   TaskView,
@@ -48,6 +49,10 @@ import type {
   TaskViewProperty,
   TaskViewRow,
 } from "../domain/view";
+
+const FullCalendarView = lazy(async () => ({
+  default: (await import("./full-calendar-view")).FullCalendarView,
+}));
 
 export function ViewsScreen({
   viewKey,
@@ -117,6 +122,7 @@ export function ViewsScreen({
   const [calendarSelection, setCalendarSelection] = useState<{
     key: string;
     date: string;
+    createValue: string;
   } | null>(null);
   const boardMutationSequence = useRef(new Map<string, number>());
 
@@ -127,7 +133,7 @@ export function ViewsScreen({
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
   useEffect(() => {
-    if (!viewKey || !selected || isTaskNotesDefaultView(selected)) return;
+    if (!viewKey || !selected) return;
     let active = true;
     let refreshed = false;
     const executionKey = `${selected.key}:${selected.source.revision}`;
@@ -161,7 +167,7 @@ export function ViewsScreen({
     };
   }, [repository, selected, version, viewKey]);
   useEffect(() => {
-    if (!viewKey || !selected || isTaskNotesDefaultView(selected)) return;
+    if (!viewKey || !selected) return;
     let active = true;
     void repository
       .readViewSource(selected.source.path)
@@ -215,9 +221,14 @@ export function ViewsScreen({
     calendarSelection && calendarSelection.key === selected?.key
       ? calendarSelection.date
       : todayString();
+  const currentCalendarCreateValue =
+    calendarSelection && calendarSelection.key === selected?.key
+      ? calendarSelection.createValue
+      : currentCalendarSelection;
   const calendarCreateDefaults =
-    selected?.presentation?.type === "tasknotes.calendar"
-      ? calendarDateDefaults(selected, currentCalendarSelection)
+    selected?.presentation?.type === "tasknotes.calendar" ||
+    selected?.presentation?.type === "tasknotes.mini-calendar"
+      ? calendarDateDefaults(selected, currentCalendarCreateValue)
       : {};
   const captureDefaults = currentCreationPlan
     ? mergeTaskCreationDefaults(
@@ -322,6 +333,22 @@ export function ViewsScreen({
         };
   }
 
+  async function updateCalendarTask(task: Task, input: UpdateTaskInput) {
+    await updateTask(task.id, input);
+    if (!selected) return;
+    void repository.executeView(selected).then(
+      (refreshed) => {
+        if (selectedKeyRef.current !== selected.key) return;
+        setExecution(refreshed);
+        setExecutionError(null);
+      },
+      (reason) => {
+        if (selectedKeyRef.current !== selected.key) return;
+        setExecutionError({ key: selected.key, message: message(reason) });
+      },
+    );
+  }
+
   function createInBoardColumn(
     property: string,
     value: unknown,
@@ -346,21 +373,6 @@ export function ViewsScreen({
       ).length > 0
     );
   }
-
-  if (selected?.presentation?.type === "tasknotes.today")
-    return (
-      <TodayScreen
-        onBack={operational ? undefined : onBack}
-        onOpen={onOpenTask}
-      />
-    );
-  if (selected?.presentation?.type === "tasknotes.upcoming")
-    return (
-      <UpcomingScreen
-        onBack={operational ? undefined : onBack}
-        onOpen={onOpenTask}
-      />
-    );
 
   if (!viewKey) {
     return (
@@ -411,9 +423,7 @@ export function ViewsScreen({
                       <h2 id={`view-document-${safeId(document.id)}`}>
                         {document.name}
                       </h2>
-                      {document.source.format !== "tasknotes.builtin" ? (
-                        <small>{document.source.path}</small>
-                      ) : null}
+                      <small>{document.source.path}</small>
                     </header>
                     <div className="saved-view-list">
                       {document.views.map((view) => {
@@ -588,12 +598,43 @@ export function ViewsScreen({
           />
         ) : visibleExecution.view.presentation?.type ===
           "tasknotes.calendar" ? (
-          <CalendarView
+          <Suspense fallback={<LoadingRows count={6} />}>
+            <FullCalendarView
+              key={`${visibleExecution.view.key}:${visibleExecution.view.source.revision}`}
+              execution={visibleExecution}
+              identityTasks={identityTasks}
+              selected={currentCalendarSelection}
+              titleProperty={configuration.fieldMapping.title}
+              onSelect={(date, createValue = date) =>
+                selected &&
+                setCalendarSelection({
+                  key: selected.key,
+                  date,
+                  createValue,
+                })
+              }
+              onOpen={onOpenTask}
+              onToggle={(task, occurrenceDate) =>
+                void toggleTask(task.id, occurrenceDate)
+              }
+              onUpdate={updateCalendarTask}
+            />
+          </Suspense>
+        ) : visibleExecution.view.presentation?.type ===
+          "tasknotes.mini-calendar" ? (
+          <MiniCalendarView
+            key={`${visibleExecution.view.key}:${visibleExecution.view.source.revision}`}
             execution={visibleExecution}
             identityTasks={identityTasks}
             selected={currentCalendarSelection}
+            titleProperty={configuration.fieldMapping.title}
             onSelect={(date) =>
-              selected && setCalendarSelection({ key: selected.key, date })
+              selected &&
+              setCalendarSelection({
+                key: selected.key,
+                date,
+                createValue: date,
+              })
             }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
@@ -603,6 +644,7 @@ export function ViewsScreen({
         ) : (
           <TaskListView
             execution={visibleExecution}
+            titleProperty={configuration.fieldMapping.title}
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
@@ -996,6 +1038,7 @@ function KanbanView({
                       <ViewTaskRow
                         row={row}
                         properties={execution.view.properties}
+                        titleProperty={fieldMapping.title}
                         omittedProperties={[property]}
                         onOpen={onOpen}
                         onToggle={onToggle}
@@ -1015,16 +1058,18 @@ function KanbanView({
   );
 }
 
-function CalendarView({
+function MiniCalendarView({
   execution,
   identityTasks,
   selected,
+  titleProperty,
   onSelect,
   onOpen,
   onToggle,
 }: ViewProps & {
   identityTasks: readonly Task[];
   selected: string;
+  titleProperty: string;
   onSelect(date: string): void;
 }) {
   const initial = dateFromStorage(todayString()) ?? new Date();
@@ -1043,8 +1088,8 @@ function CalendarView({
     year: "numeric",
   }).format(month);
   return (
-    <div className="calendar-view">
-      <div className="calendar-toolbar">
+    <div className="mini-calendar-view">
+      <div className="mini-calendar-toolbar">
         <button
           aria-label="Previous month"
           type="button"
@@ -1065,12 +1110,12 @@ function CalendarView({
           <ChevronRight aria-hidden="true" size={20} />
         </button>
       </div>
-      <div className="calendar-weekdays" aria-hidden="true">
+      <div className="mini-calendar-weekdays" aria-hidden="true">
         {weekdays().map((day, index) => (
           <span key={`${day}:${index}`}>{day}</span>
         ))}
       </div>
-      <div className="calendar-grid" role="grid" aria-label={monthLabel}>
+      <div className="mini-calendar-grid" role="grid" aria-label={monthLabel}>
         {days.map((day) => {
           const date = storageDate(day);
           const entries = events.get(date) ?? [];
@@ -1085,9 +1130,9 @@ function CalendarView({
               type="button"
               onClick={() => onSelect(date)}
             >
-              <span className="calendar-date-number">{day.getDate()}</span>
+              <span className="mini-calendar-date-number">{day.getDate()}</span>
               {count ? (
-                <span className="calendar-cell-tasks" aria-hidden="true">
+                <span className="mini-calendar-cell-tasks" aria-hidden="true">
                   {entries.slice(0, 3).map((entry) => (
                     <span
                       key={entry.occurrence?.key ?? entry.task.id}
@@ -1104,7 +1149,7 @@ function CalendarView({
           );
         })}
       </div>
-      <section className="calendar-agenda">
+      <section className="mini-calendar-agenda">
         <h2>{agendaLabel(selected)}</h2>
         {selectedTasks.length ? (
           selectedTasks.map((entry) => (
@@ -1112,6 +1157,7 @@ function CalendarView({
               key={entry.occurrence?.key ?? entry.task.id}
               row={entry.row}
               properties={execution.view.properties}
+              titleProperty={titleProperty}
               occurrence={entry.occurrence}
               onOpen={onOpen}
               onToggle={onToggle}
@@ -1135,7 +1181,12 @@ function calendarDateDefaults(
   return {};
 }
 
-function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
+function TaskListView({
+  execution,
+  titleProperty,
+  onOpen,
+  onToggle,
+}: ViewProps & { titleProperty: string }) {
   if (!execution.rows.length)
     return (
       <div className="plain-empty">
@@ -1163,6 +1214,7 @@ function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
                   key={row.task.id}
                   row={row}
                   properties={execution.view.properties}
+                  titleProperty={titleProperty}
                   onOpen={onOpen}
                   onToggle={onToggle}
                 />
@@ -1179,6 +1231,7 @@ function TaskListView({ execution, onOpen, onToggle }: ViewProps) {
           key={row.task.id}
           row={row}
           properties={execution.view.properties}
+          titleProperty={titleProperty}
           onOpen={onOpen}
           onToggle={onToggle}
         />
@@ -1205,6 +1258,7 @@ function groupLabel(entries: Array<[string, unknown]>): string {
 function ViewTaskRow({
   row,
   properties,
+  titleProperty,
   omittedProperties = [],
   occurrence,
   onOpen,
@@ -1212,31 +1266,17 @@ function ViewTaskRow({
 }: {
   row: TaskViewRow;
   properties: TaskViewProperty[];
+  titleProperty?: string;
   omittedProperties?: string[];
   occurrence?: TaskOccurrence;
   onOpen(task: Task): void;
   onToggle(task: Task): void;
 }) {
-  const details = properties.length
-    ? properties.flatMap((property) => {
-        if (property.hidden || omittedProperties.includes(property.key))
-          return [];
-        const value = propertyValue(row, property.key, occurrence);
-        const formatted = formatPropertyValue(value, property.format);
-        return formatted === null
-          ? []
-          : [
-              {
-                key: property.key,
-                label: property.label ?? propertyLabel(property.key),
-                value: formatted,
-                ...(property.description
-                  ? { description: property.description }
-                  : {}),
-              },
-            ];
-      })
-    : undefined;
+  const details = viewPropertyDetails(row, properties, {
+    identityProperty: titleProperty,
+    omittedProperties,
+    occurrence,
+  });
   return (
     <TaskRow
       task={row.task}
@@ -1248,83 +1288,12 @@ function ViewTaskRow({
   );
 }
 
-function propertyValue(
-  row: TaskViewRow,
-  key: string,
-  occurrence?: TaskOccurrence,
-): unknown {
-  const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
-  const field = key.startsWith("note.") ? key.slice("note.".length) : key;
-  if (occurrence && Object.prototype.hasOwnProperty.call(displayed, field))
-    return displayed[field as keyof Task];
-  if (Object.prototype.hasOwnProperty.call(row.values, key))
-    return row.values[key];
-  return displayed.frontmatter[field];
-}
-
-function propertyLabel(key: string): string {
-  const name = key.split(".").at(-1) ?? key;
-  const words = name
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .trim();
-  return words ? `${words[0].toUpperCase()}${words.slice(1)}` : key;
-}
-
-function formatPropertyValue(value: unknown, format?: string): string | null {
-  if (value === null || value === undefined || value === "") return null;
-  if (Array.isArray(value)) {
-    const values = value
-      .map((item) => formatPropertyValue(item))
-      .filter((item): item is string => item !== null);
-    return values.length ? values.join(", ") : null;
-  }
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "number") return new Intl.NumberFormat().format(value);
-  if (typeof value === "string") {
-    if (format === "date" || /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const date = dateFromStorage(value);
-      if (date)
-        return new Intl.DateTimeFormat(undefined, {
-          day: "numeric",
-          month: "short",
-          year:
-            date.getFullYear() === new Date().getFullYear()
-              ? undefined
-              : "numeric",
-        }).format(date);
-    }
-    if (
-      value.includes("<") &&
-      value.includes(">") &&
-      typeof DOMParser !== "undefined"
-    ) {
-      const text = new DOMParser()
-        .parseFromString(value, "text/html")
-        .body.textContent?.trim();
-      if (text) return text;
-    }
-    return value;
-  }
-  if (typeof value === "object") {
-    const object = value as Record<string, unknown>;
-    if (typeof object.path === "string") return object.path;
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
-}
-
 function ViewIcon({ view }: { view: TaskView }) {
   const type = view.presentation?.type;
   const Icon =
     type === "tasknotes.kanban"
       ? Columns3
-      : type === "tasknotes.calendar"
+      : type === "tasknotes.calendar" || type === "tasknotes.mini-calendar"
         ? CalendarDays
         : List;
   return <Icon aria-hidden="true" size={21} strokeWidth={1.55} />;

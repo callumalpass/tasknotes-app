@@ -7,10 +7,15 @@ import { isMap, isSeq, parseDocument, stringify } from "yaml";
 import type { YAMLMap } from "yaml";
 
 import type { TaskViewSourceDocument } from "./view";
+import {
+  editableRenderer,
+  isCalendarRenderer,
+  obsidianRenderer,
+  type ViewRenderer,
+} from "./view-renderer";
 
 export type ViewDialect = "obsidian-bases" | "mdbase-cel";
-export type ViewRenderer =
-  "tasknotes.task-list" | "tasknotes.kanban" | "tasknotes.calendar";
+export type { ViewRenderer } from "./view-renderer";
 
 export interface EditableViewDraft {
   id: string;
@@ -126,7 +131,7 @@ function readObsidianDraft(source: string, viewId: string): EditableViewDraft {
   return {
     id: viewId,
     name: string(view.name) || "View",
-    renderer: normalizeRenderer(string(view.type)),
+    renderer: editableRenderer(string(view.type)),
     filter: view.filters,
     properties: stringList(view.order),
     groupProperty: groupProperty(view.groupBy),
@@ -167,7 +172,7 @@ function updateObsidianDocument(
   setOrDelete(
     view,
     "groupBy",
-    draft.renderer !== "tasknotes.calendar" && draft.groupProperty
+    !isCalendarRenderer(draft.renderer) && draft.groupProperty
       ? { property: draft.groupProperty, direction: "ASC" }
       : undefined,
   );
@@ -194,7 +199,7 @@ function readCanonicalDraft(source: string, viewId: string): EditableViewDraft {
   return {
     id: viewId,
     name: string(view.name) || "View",
-    renderer: normalizeRenderer(string(record(view.presentation).type)),
+    renderer: editableRenderer(string(record(view.presentation).type)),
     filter: view.where,
     properties: stringList(view.select),
     groupProperty: string(objectList(view.group_by)[0]?.field) || undefined,
@@ -219,7 +224,7 @@ function updateCanonicalDocument(
   const updated = { ...views[index], ...canonicalView(draft) };
   if (typeof draft.filter !== "string" || !draft.filter.trim())
     delete updated.where;
-  if (draft.renderer === "tasknotes.calendar" || !draft.groupProperty)
+  if (isCalendarRenderer(draft.renderer) || !draft.groupProperty)
     delete updated.group_by;
   views[index] = updated;
   frontmatter.views = views;
@@ -233,7 +238,7 @@ function obsidianView(draft: EditableViewDraft): Record<string, unknown> {
     filters: draft.filter,
     order: draft.properties,
     groupBy:
-      draft.renderer !== "tasknotes.calendar" && draft.groupProperty
+      !isCalendarRenderer(draft.renderer) && draft.groupProperty
         ? { property: draft.groupProperty, direction: "ASC" }
         : undefined,
     options: Object.keys(draft.options).length ? draft.options : undefined,
@@ -254,7 +259,7 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
         : undefined,
     select: draft.properties.length ? draft.properties : ["title"],
     group_by:
-      draft.renderer !== "tasknotes.calendar" && draft.groupProperty
+      !isCalendarRenderer(draft.renderer) && draft.groupProperty
         ? [{ field: draft.groupProperty, direction: "asc" }]
         : undefined,
     presentation: {
@@ -286,24 +291,6 @@ function identifier(value: string, fallback: string): string {
     .replace(/[^a-z0-9_.:]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return /^[a-z]/.test(normalized) ? normalized : `${fallback}-${normalized}`;
-}
-
-function normalizeRenderer(value: string): ViewRenderer {
-  if (value === "tasknotesKanban" || value === "tasknotes.kanban")
-    return "tasknotes.kanban";
-  if (
-    value === "tasknotesCalendar" ||
-    value === "tasknotesMiniCalendar" ||
-    value === "tasknotes.calendar"
-  )
-    return "tasknotes.calendar";
-  return "tasknotes.task-list";
-}
-
-function obsidianRenderer(value: ViewRenderer): string {
-  if (value === "tasknotes.kanban") return "tasknotesKanban";
-  if (value === "tasknotes.calendar") return "tasknotesCalendar";
-  return "tasknotesTaskList";
 }
 
 function groupProperty(value: unknown): string | undefined {

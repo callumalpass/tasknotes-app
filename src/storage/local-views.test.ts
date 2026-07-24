@@ -15,7 +15,10 @@ describe("local Obsidian Bases views", () => {
       task(collection, "one", "Write tests", "open", "2026-07-22", 2),
       task(collection, "two", "Ship views", "done", "2026-07-23", 1),
       task(collection, "three", "Document views", "open", undefined, 3),
+      task(collection, "four", "Archived work", "open", "2026-07-24", 4),
     ]);
+    tasks[0].tags = ["task", "archived"];
+    tasks[3].frontmatter.tags = ["task", "archived"];
     for (const item of tasks) await collection.write(item);
     await vault.writeText(
       "views/tasks.base",
@@ -23,6 +26,7 @@ describe("local Obsidian Bases views", () => {
 filters:
   and:
     - file.hasTag("task")
+    - file.hasTag("archived") != true
 formulas:
   rank: priority * 10
 properties:
