@@ -4,10 +4,15 @@ import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  activeCloudConnection,
+  authorizationReturnTo,
   cleanCallbackUrl,
   CLOUD_OPERATIONS,
   cloudConnect,
+  finishAuthorization,
   isCloudCallback,
+  savedCloudConnections,
+  selectCloudConnection,
 } from "../cloud/connect";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { createConnectTaskRepository } from "../storage/connect-repository";
@@ -27,39 +32,30 @@ export default function CloudCollection({
   reset(): void;
 }) {
   const [callbackError, setCallbackError] = useState<string | null>(null);
-  const [repository, setRepository] = useState(() =>
-    cloudConnect.connection()
-      ? createConnectTaskRepository(cloudConnect)
-      : null,
-  );
+  const [repository, setRepository] = useState(() => {
+    const connection = activeCloudConnection();
+    return connection ? createConnectTaskRepository(connection) : null;
+  });
   const changeCollection = useCallback(() => {
     setCallbackError(null);
     setRepository(null);
     void mdbaseNotifications
       .disableIfEnabled()
       .catch(() => undefined)
-      .finally(() => cloudConnect.disconnect());
+      .finally(() => undefined);
   }, []);
 
   const complete = useCallback(async (url: string) => {
     if (!isCloudCallback(url)) return;
-    const callback = new URL(url);
-    const denied = callback.searchParams.get("error");
-    if (denied) {
-      setCallbackError(
-        callback.searchParams.get("error_description") ??
-          "Cloud access was not approved.",
-      );
-      await finishBrowserCallback();
-      return;
-    }
     try {
-      await cloudConnect.completeAuthorization(url);
+      const result = await cloudConnect.completeAuthorization(url);
+      const connection = finishAuthorization(result);
       setCallbackError(null);
-      setRepository(createConnectTaskRepository(cloudConnect));
-      await finishBrowserCallback();
+      setRepository(createConnectTaskRepository(connection));
     } catch (reason) {
       setCallbackError(message(reason));
+    } finally {
+      await finishBrowserCallback();
     }
   }, []);
 
@@ -109,10 +105,17 @@ function CloudConnection({
   function connect() {
     setOpening(true);
     setStartError(null);
-    void cloudConnect.authorize([...CLOUD_OPERATIONS]).catch((reason) => {
-      setOpening(false);
-      setStartError(message(reason));
-    });
+    void cloudConnect
+      .authorize({
+        operations: [...CLOUD_OPERATIONS],
+        collectionId:
+          new URL(location.href).searchParams.get("collection") ?? undefined,
+        returnTo: authorizationReturnTo(),
+      })
+      .catch((reason) => {
+        setOpening(false);
+        setStartError(message(reason));
+      });
   }
 
   return (
@@ -132,13 +135,30 @@ function CloudConnection({
         </p>
       ) : null}
       <div className="welcome-actions">
+        {savedCloudConnections().map((connection) => (
+          <button
+            key={connection.collectionId}
+            className="outline-action"
+            type="button"
+            onClick={() => {
+              selectCloudConnection(connection.collectionId, true);
+              location.reload();
+            }}
+          >
+            Open {connection.displayName}
+          </button>
+        ))}
         <button
           className="outline-action"
           disabled={opening && !error}
           type="button"
           onClick={connect}
         >
-          {opening && !error ? "Opening mdbase…" : "Continue to mdbase"}
+          {opening && !error
+            ? "Opening mdbase…"
+            : savedCloudConnections().length
+              ? "Connect another collection"
+              : "Continue to mdbase"}
         </button>
         <button className="text-action" type="button" onClick={onBack}>
           Choose another location

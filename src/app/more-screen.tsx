@@ -18,7 +18,11 @@ import {
   type MdbaseNotificationStatus,
 } from "../native/mdbase-notifications";
 import { notificationPermission } from "../native/notifications";
-import { CLOUD_OPERATIONS, cloudConnect } from "../cloud/connect";
+import {
+  activeCloudConnection,
+  authorizationReturnTo,
+  CLOUD_OPERATIONS,
+} from "../cloud/connect";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -428,8 +432,11 @@ export function MoreScreen({
             className="text-action"
             type="button"
             onClick={() =>
-              void cloudConnect
-                .authorize([...CLOUD_OPERATIONS])
+              void activeCloudConnection()
+                ?.authorize({
+                  operations: [...CLOUD_OPERATIONS],
+                  returnTo: authorizationReturnTo(),
+                })
                 .catch((reason: unknown) =>
                   setChangeNotificationsError(
                     reason instanceof Error ? reason.message : String(reason),

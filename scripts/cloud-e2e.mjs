@@ -98,9 +98,15 @@ try {
     page.getByRole("combobox", { name: "Collection and location" }),
   ).toContainText("My tasks");
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
-  await expect(page).toHaveURL(new RegExp(`^${escapeRegex(appUrl)}/?$`), {
-    timeout: 15_000,
-  });
+  await expect(page).toHaveURL(
+    new RegExp(`^${escapeRegex(appUrl)}/?\\?collection=`),
+    {
+      timeout: 15_000,
+    },
+  );
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("collection"))
+    .toMatch(/^[0-9a-f-]{36}$/);
   await expect(
     page.getByRole("heading", { name: "Cloud board" }),
   ).toBeVisible();

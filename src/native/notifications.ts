@@ -5,7 +5,7 @@ import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 import type { ActionPerformed } from "@capacitor/local-notifications";
 import type { MdbaseDesiredTimer } from "@mdbase/connect";
-import { cloudConnect } from "../cloud/connect";
+import { activeCloudConnection } from "../cloud/connect";
 
 const REGISTRY_KEY = "tasknotes:notification-registry:v1";
 const CHANNEL_ID = "task-reminders";
@@ -216,7 +216,9 @@ function reconcileConnectNotifications(
     .catch(() => undefined)
     .then(async () => {
       const tasks = await repository.list({ status: "open", limit: 50_000 });
-      await cloudConnect.reconcileTimers({
+      const connection = activeCloudConnection();
+      if (!connection) throw new Error("TaskNotes is not connected.");
+      await connection.reconcileTimers({
         namespace: TIMER_NAMESPACE,
         criterion_id: TIMER_CRITERION,
         timers: await desiredTaskTimers(tasks),

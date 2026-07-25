@@ -1,6 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
-import type { MdbaseConnect } from "@mdbase/connect";
+import type { MdbaseConnection } from "@mdbase/connect";
 import type {
   JsonObject,
   MdbaseOperationEnvelope,
@@ -96,7 +96,7 @@ export class CloudTaskRepository implements TaskRepository {
   private initialization: Promise<void> | null = null;
   private syncInFlight: Promise<RefreshResult> | null = null;
 
-  constructor(private readonly connect: MdbaseConnect<CloudFrontmatter>) {}
+  constructor(private readonly connect: MdbaseConnection<CloudFrontmatter>) {}
 
   initialize(): Promise<void> {
     this.initialization ??= this.initializeUnlocked();
