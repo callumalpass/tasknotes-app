@@ -1,7 +1,7 @@
 import type {
   CollectionDescription,
   JsonObject,
-  MdbaseConnect,
+  MdbaseConnection,
   MdbaseOperationEnvelope,
   QueryResult,
   RecordResult,
@@ -343,7 +343,7 @@ describe("relay task repository", () => {
     const connect = {
       ...fixture.connect,
       readViewSource: undefined,
-    } as unknown as MdbaseConnect<JsonObject>;
+    } as unknown as MdbaseConnection<JsonObject>;
     const repository = new RelayTaskRepository(connect);
     await repository.initialize();
     const listener = vi.fn();
@@ -434,7 +434,7 @@ describe("relay task repository", () => {
     );
     const hosted = {
       hostedSync: () => ({ collectionId: "hosted", replicaId: "phone" }),
-    } as unknown as MdbaseConnect<JsonObject>;
+    } as unknown as MdbaseConnection<JsonObject>;
     expect(createConnectTaskRepository(hosted)).toBeInstanceOf(
       CloudTaskRepository,
     );
@@ -676,7 +676,7 @@ function relayFixture(
     createViewSource,
     updateViewSource,
     deleteViewSource,
-  } as unknown as MdbaseConnect<JsonObject>;
+  } as unknown as MdbaseConnection<JsonObject>;
   return {
     connect,
     query,

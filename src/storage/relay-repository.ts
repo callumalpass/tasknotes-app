@@ -3,7 +3,7 @@ import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import {
   MdbaseConnectError,
   type JsonObject,
-  type MdbaseConnect,
+  type MdbaseConnection,
   type MdbaseOperationEnvelope,
   type RecordResult,
   type RecordSummary,
@@ -111,7 +111,7 @@ export class RelayTaskRepository implements TaskRepository {
     issues: 0,
   };
 
-  constructor(private readonly connect: MdbaseConnect<JsonObject>) {}
+  constructor(private readonly connect: MdbaseConnection<JsonObject>) {}
 
   initialize(): Promise<void> {
     this.initialization ??= this.initializeUnlocked();

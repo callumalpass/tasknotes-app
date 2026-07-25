@@ -604,14 +604,20 @@ function parseRoute(): Route {
 function routeUrl(route: Route): string {
   const path =
     route.page === "task"
-      ? `/task/${encodeURIComponent(route.id)}${route.occurrence ? `?occurrence=${encodeURIComponent(route.occurrence)}` : ""}`
+      ? `/task/${encodeURIComponent(route.id)}`
       : route.page === "views" && route.key
         ? `/views/${encodeURIComponent(route.key)}`
         : route.page === "home"
           ? "/"
           : `/${route.page}`;
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  return `${base}${path}` || "/";
+  const url = new URL(location.href);
+  url.pathname = `${base}${path}` || "/";
+  url.searchParams.delete("occurrence");
+  if (route.page === "task" && route.occurrence) {
+    url.searchParams.set("occurrence", route.occurrence);
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function appPathname(): string {

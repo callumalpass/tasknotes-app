@@ -4,8 +4,11 @@ import { expect, test } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 
-const TASKNOTES_TOKEN_KEY =
-  "mdbase-connect:token:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
+const TASKNOTES_COLLECTION_ID = "01922222-2222-7222-8222-222222222222";
+const TASKNOTES_STORAGE_PREFIX =
+  "mdbase-connect:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
+const TASKNOTES_TOKEN_KEY = `${TASKNOTES_STORAGE_PREFIX}:token:${TASKNOTES_COLLECTION_ID}`;
+const TASKNOTES_CONNECTIONS_KEY = `${TASKNOTES_STORAGE_PREFIX}:connections`;
 
 test("opens an ordinary relay collection without requiring hosted sync", async ({
   page,
@@ -63,34 +66,44 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   );
 
   await page.goto("./");
-  await page.evaluate((tokenKey) => {
-    localStorage.clear();
-    localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-    localStorage.setItem(
-      tokenKey,
-      JSON.stringify({
-        accessToken: "mdb_local",
-        refreshToken: "ref_local",
-        clientId: "01911111-1111-7111-8111-111111111111",
-        collectionId: "01922222-2222-7222-8222-222222222222",
-        operations: [
-          "describe",
-          "changes",
-          "read",
-          "query",
-          "create",
-          "update",
-          "delete",
-          "rename",
-          "list_views",
-          "execute_view",
-        ],
-        scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
-        expiresAt: Date.now() + 60_000,
-        refreshExpiresAt: Date.now() + 120_000,
-      }),
-    );
-  }, TASKNOTES_TOKEN_KEY);
+  await page.evaluate(
+    ({ tokenKey, connectionsKey, collectionId }) => {
+      localStorage.clear();
+      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
+      localStorage.setItem(
+        tokenKey,
+        JSON.stringify({
+          accessToken: "mdb_local",
+          refreshToken: "ref_local",
+          clientId: "01911111-1111-7111-8111-111111111111",
+          collectionId,
+          collectionName: "TaskNotes E2E",
+          operations: [
+            "describe",
+            "changes",
+            "read",
+            "query",
+            "create",
+            "update",
+            "delete",
+            "rename",
+            "list_views",
+            "execute_view",
+          ],
+          scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
+          expiresAt: Date.now() + 60_000,
+          refreshExpiresAt: Date.now() + 120_000,
+          savedAt: Date.now(),
+        }),
+      );
+    },
+    {
+      tokenKey: TASKNOTES_TOKEN_KEY,
+      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
+      collectionId: TASKNOTES_COLLECTION_ID,
+    },
+  );
 
   await page.reload();
 
@@ -107,21 +120,23 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     page.getByRole("heading", { name: "Open your TaskNotes collection." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Continue to mdbase" }),
+    page.getByRole("button", { name: "Open TaskNotes E2E" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Connect another collection" }),
   ).toBeVisible();
   expect(
     await page.evaluate(() => ({
       choice: localStorage.getItem("tasknotes:collection-choice:v1"),
       hasConnection: Object.keys(localStorage).some((key) =>
-        key.startsWith("mdbase-connect:token:"),
+        key.includes(":token:"),
       ),
     })),
-  ).toEqual({ choice: "cloud", hasConnection: false });
+  ).toEqual({ choice: "cloud", hasConnection: true });
 
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Open your TaskNotes collection." }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Today" }).click();
+  await expect(page.getByText("Task from the relay")).toBeVisible();
 });
 
 test("acknowledges slow relay creates and prefetches revisions before delete", async ({
@@ -339,7 +354,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
 
   await page.goto("./");
   await page.evaluate(
-    async ({ collectionId, tokenKey }) => {
+    async ({ collectionId, tokenKey, connectionsKey }) => {
       localStorage.clear();
       await new Promise<void>((resolve, reject) => {
         const request = indexedDB.deleteDatabase(
@@ -349,6 +364,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
         request.onerror = () => reject(request.error);
       });
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
       localStorage.setItem(
         "tasknotes:navigation-views:v2",
         JSON.stringify({
@@ -362,6 +378,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
           refreshToken: "ref_cached_home",
           clientId: "01911111-1111-7111-8111-111111111111",
           collectionId,
+          collectionName: "Live connection through mdbase",
           operations: [
             "describe",
             "query",
@@ -372,10 +389,15 @@ test("restores a custom home view and its cached rows before relay refresh", asy
           scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
           expiresAt: Date.now() + 60_000,
           refreshExpiresAt: Date.now() + 120_000,
+          savedAt: Date.now(),
         }),
       );
     },
-    { collectionId, tokenKey: TASKNOTES_TOKEN_KEY },
+    {
+      collectionId,
+      tokenKey: `${TASKNOTES_STORAGE_PREFIX}:token:${collectionId}`,
+      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
+    },
   );
 
   await page.reload();
@@ -642,24 +664,32 @@ async function installRelayAuthorization(
 ) {
   await page.goto("./");
   await page.evaluate(
-    ({ authorizedOperations, tokenKey }) => {
+    ({ authorizedOperations, tokenKey, connectionsKey, collectionId }) => {
       localStorage.clear();
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
       localStorage.setItem(
         tokenKey,
         JSON.stringify({
           accessToken: "mdb_configured",
           refreshToken: "ref_configured",
           clientId: "01911111-1111-7111-8111-111111111111",
-          collectionId: "01922222-2222-7222-8222-222222222222",
+          collectionId,
+          collectionName: "TaskNotes E2E",
           operations: authorizedOperations,
           scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
           expiresAt: Date.now() + 60_000,
           refreshExpiresAt: Date.now() + 120_000,
+          savedAt: Date.now(),
         }),
       );
     },
-    { authorizedOperations: operations, tokenKey: TASKNOTES_TOKEN_KEY },
+    {
+      authorizedOperations: operations,
+      tokenKey: TASKNOTES_TOKEN_KEY,
+      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
+      collectionId: TASKNOTES_COLLECTION_ID,
+    },
   );
 }
 

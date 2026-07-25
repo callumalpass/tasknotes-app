@@ -3,11 +3,12 @@ import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import {
   MdbaseConnectError,
   parseMdbaseNativeNotificationData,
-  type MdbaseConnect,
+  type MdbaseConnectionInfo,
+  type MdbaseNativeNotificationRegistration,
   type MdbaseNativeNotificationData,
 } from "@mdbase/connect";
 
-import { cloudConnect } from "../cloud/connect";
+import { activeCloudConnection, cloudConnect } from "../cloud/connect";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
@@ -32,13 +33,14 @@ export interface MdbaseNotificationWake {
   opened: boolean;
 }
 
-type NotificationConnect = Pick<
-  MdbaseConnect,
-  | "connection"
-  | "register"
-  | "registerNativeNotifications"
-  | "unregisterNativeNotifications"
->;
+interface NotificationConnect {
+  connection(): MdbaseConnectionInfo | null;
+  register(): ReturnType<typeof cloudConnect.register>;
+  registerNativeNotifications(options: {
+    token: string;
+  }): Promise<MdbaseNativeNotificationRegistration>;
+  unregisterNativeNotifications(): Promise<void>;
+}
 
 interface NativeMessaging {
   checkPermissions(): Promise<{ receive: string }>;
@@ -310,7 +312,18 @@ async function firebaseMessaging() {
 }
 
 export const mdbaseNotifications = new MdbaseNotificationManager({
-  connect: cloudConnect,
+  connect: {
+    connection: () => activeCloudConnection()?.info() ?? null,
+    register: () => cloudConnect.register(),
+    registerNativeNotifications: (options) => {
+      const connection = activeCloudConnection();
+      if (!connection) throw new Error("TaskNotes is not connected.");
+      return connection.registerNativeNotifications(options);
+    },
+    unregisterNativeNotifications: async () => {
+      await activeCloudConnection()?.unregisterNativeNotifications();
+    },
+  },
   messaging: new LazyFirebaseMessaging(),
   storage: localStorage,
   isNative: () => Capacitor.isNativePlatform(),

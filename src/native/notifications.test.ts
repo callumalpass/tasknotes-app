@@ -12,7 +12,9 @@ vi.mock("@capacitor/local-notifications", () => ({
   LocalNotifications: { cancel: mocks.cancel },
 }));
 vi.mock("../cloud/connect", () => ({
-  cloudConnect: { reconcileTimers: mocks.reconcileTimers },
+  activeCloudConnection: () => ({
+    reconcileTimers: mocks.reconcileTimers,
+  }),
 }));
 
 import {

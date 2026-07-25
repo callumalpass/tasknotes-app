@@ -1,4 +1,4 @@
-import type { MdbaseConnect } from "@mdbase/connect";
+import type { MdbaseConnection } from "@mdbase/connect";
 import type {
   JsonObject,
   SyncCollectionResources,
@@ -111,11 +111,11 @@ function connect(
   replicaId: string,
   transport: SyncTransport<JsonObject>,
   operations: object = {},
-): MdbaseConnect<JsonObject> {
+): MdbaseConnection<JsonObject> {
   return {
     hostedSync: () => ({ collectionId, replicaId, transport }),
     ...operations,
-  } as unknown as MdbaseConnect<JsonObject>;
+  } as unknown as MdbaseConnection<JsonObject>;
 }
 
 describe("cloud task repository", () => {
