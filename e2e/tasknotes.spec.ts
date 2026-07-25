@@ -476,7 +476,7 @@ test("interprets natural-language capture and preserves timed task fields", asyn
   await expect(page.getByLabel("Estimate (minutes)")).toHaveValue("45");
 });
 
-test("completes project links and creates tasks from the Projects view", async ({
+test("completes project links and groups the ordinary Projects view", async ({
   page,
 }) => {
   await page.evaluate(async () => {
@@ -515,22 +515,15 @@ Project notes`);
   await openNavigationView(page, "Projects");
 
   await expect(
-    page.getByRole("heading", { name: "Mobile roadmap", level: 2 }),
+    page.getByRole("heading", { name: /Projects\/mobile/, level: 2 }),
   ).toBeVisible();
   await expect(
     page.getByText("Prepare mobile release", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Add task to Mobile roadmap" })
-    .click();
-  await page.getByLabel("New task title").fill("Review mobile milestone");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await expect(
-    page.getByText("Review mobile milestone", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("New task title")).toHaveCount(0);
 
   const documents = await localTaskDocuments(page);
-  expect(documents).toHaveLength(2);
+  expect(documents).toHaveLength(1);
   expect(
     documents.some((source) =>
       /projects:\s*\n\s*-\s+['"]?\[\[Projects\/mobile\]\]['"]?/.test(source),
@@ -1163,10 +1156,12 @@ test("uses one responsive editor for every saved view layout", async ({
       create: true,
     });
     const writable = await file.createWritable();
-    await writable.write(`views:
+    await writable.write(`formulas:
+  score: 'if(priority == "high", 2, 1)'
+views:
   - type: tasknotesTaskList
     name: Editor List
-    order: [status, due]
+    order: [status, due, formula.score]
     sort: [{ property: priority, direction: DESC }]
   - type: tasknotesKanban
     name: Editor Board
@@ -1177,8 +1172,6 @@ test("uses one responsive editor for every saved view layout", async ({
   - type: tasknotesMiniCalendar
     name: Editor Mini
     options: { showScheduled: true }
-  - type: tasknotesProjects
-    name: Editor Projects
 `);
     await writable.close();
   });
@@ -1189,21 +1182,30 @@ test("uses one responsive editor for every saved view layout", async ({
     ["Editor Board", "Board"],
     ["Editor Calendar", "Calendar"],
     ["Editor Mini", "Mini calendar"],
-    ["Editor Projects", "Projects"],
   ] as const;
 
   for (const [name, layout] of layouts) {
     await page.getByRole("button", { name: `Edit ${name}` }).click();
     const editor = page.getByRole("dialog", { name: "Edit view" });
     await expect(editor).toBeVisible();
-    await expect(editor.getByLabel("Name")).toHaveValue(name);
+    await expect(editor.getByLabel("Name", { exact: true })).toHaveValue(name);
     await expect(
       editor.getByRole("button", { name: layout, exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
-    for (const section of ["View", "Filter", "Arrange", "New tasks"])
+    for (const section of [
+      "View",
+      "Computed properties",
+      "Filter",
+      "Arrange",
+      "New tasks",
+    ])
       await expect(
         editor.getByRole("heading", { name: section, exact: true }),
       ).toBeVisible();
+    await expect(editor.locator(".view-layout-preview")).toHaveCount(0);
+    await expect(editor.getByLabel("Computed property name 1")).toHaveValue(
+      "score",
+    );
 
     if (layout === "Board")
       await expect(editor.getByLabel("Board column")).toHaveValue("status");
@@ -1234,6 +1236,69 @@ test("uses one responsive editor for every saved view layout", async ({
     await editor.getByRole("button", { name: "Close view editor" }).click();
     await expect(editor).toHaveCount(0);
   }
+});
+
+test("edits formulas and makes them available to view controls", async ({
+  page,
+}) => {
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("computed.base", { create: true });
+    const writable = await file.createWritable();
+    await writable.write(`formulas:
+  score: 'if(priority == "high", 2, 1)'
+views:
+  - type: tasknotesTaskList
+    name: Computed work
+    order: [title]
+`);
+    await writable.close();
+  });
+
+  await openViewsCatalog(page);
+  await page.getByRole("button", { name: "Edit Computed work" }).click();
+  const editor = page.getByRole("dialog", { name: "Edit view" });
+  await editor
+    .getByLabel("Computed property expression 1")
+    .fill('if(priority == "high", 4, 1)');
+  await editor.getByRole("button", { name: "Add formula" }).click();
+  await editor.getByLabel("Computed property name 2").fill("label");
+  await editor
+    .getByLabel("Computed property expression 2")
+    .fill('if(formula.score > 1, "urgent", "normal")');
+  await expect(editor.getByText("Computed properties are valid")).toBeVisible();
+
+  await editor.getByLabel("Property to display").fill("formula.label");
+  await editor.getByRole("option", { name: /Label formula\.label/ }).click();
+  await editor
+    .locator(".add-view-property")
+    .last()
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await editor.getByRole("button", { name: "Save view" }).click();
+  await expect(editor).toHaveCount(0);
+
+  const source = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const views = await tasknotes.getDirectoryHandle("views");
+    const file = await views.getFileHandle("computed.base");
+    return (await file.getFile()).text();
+  });
+  expect(source).toContain('if(priority == "high", 4, 1)');
+  expect(source).toContain('if(formula.score > 1, "urgent", "normal")');
+  expect(source).toContain("formula.label");
+
+  await page.getByRole("button", { name: "Edit Computed work" }).click();
+  await expect(page.getByLabel("Computed property name 2")).toHaveValue(
+    "label",
+  );
 });
 
 test("offers task actions without opening the editor", async ({ page }) => {

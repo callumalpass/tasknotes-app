@@ -575,7 +575,7 @@ export class CloudTaskRepository implements TaskRepository {
     const created = validResult(
       await this.connect.createViewSource({ ...input }),
     );
-    await this.refreshViewsAfterMutation();
+    this.invalidateViewsAfterMutation();
     return created;
   }
 
@@ -589,7 +589,7 @@ export class CloudTaskRepository implements TaskRepository {
         if_revision: input.ifRevision,
       }),
     );
-    await this.refreshViewsAfterMutation();
+    this.invalidateViewsAfterMutation();
     return updated;
   }
 
@@ -600,18 +600,11 @@ export class CloudTaskRepository implements TaskRepository {
         if_revision: ifRevision,
       }),
     );
-    await this.refreshViewsAfterMutation();
+    this.invalidateViewsAfterMutation();
   }
 
-  private async refreshViewsAfterMutation(): Promise<void> {
+  private invalidateViewsAfterMutation(): void {
     this.viewExecutionCache.clear();
-    this.viewCache = normalizeViewDocuments(
-      validResult(await this.connect.listViews()) as ProviderViewList,
-    );
-    await this.viewStore
-      ?.writeViewDocuments(this.viewCache)
-      .catch(() => undefined);
-    this.emit();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

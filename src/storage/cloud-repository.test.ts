@@ -203,7 +203,7 @@ describe("cloud task repository", () => {
     expect((await reopened.collectionInfo()).id).toBe(authority.collectionId);
   });
 
-  it("writes saved-view sources through cloud operations and refreshes the catalogue", async () => {
+  it("writes saved-view sources without serial catalogue reloads", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resources(),
     });
@@ -272,7 +272,7 @@ describe("cloud task repository", () => {
       path: document.path,
       if_revision: "view-r2",
     });
-    expect(listViews).toHaveBeenCalledTimes(3);
+    expect(listViews).not.toHaveBeenCalled();
   });
 
   it("keeps local mutations immediate, synchronizes devices, and survives an outage", async () => {

@@ -590,7 +590,7 @@ export class RelayTaskRepository implements TaskRepository {
           ...input,
         }),
       );
-      await this.refreshViewsAfterMutation();
+      this.invalidateViewsAfterMutation();
       return created;
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -609,7 +609,7 @@ export class RelayTaskRepository implements TaskRepository {
           if_revision: input.ifRevision,
         }),
       );
-      await this.refreshViewsAfterMutation();
+      this.invalidateViewsAfterMutation();
       return updated;
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -625,22 +625,15 @@ export class RelayTaskRepository implements TaskRepository {
           if_revision: ifRevision,
         }),
       );
-      await this.refreshViewsAfterMutation();
+      this.invalidateViewsAfterMutation();
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
     }
   }
 
-  private async refreshViewsAfterMutation(): Promise<void> {
+  private invalidateViewsAfterMutation(): void {
     this.viewExecutionCache.clear();
-    this.viewCache = normalizeViewDocuments(
-      validResult(await this.connect.listViews()) as ProviderViewList,
-    );
-    await this.viewStore
-      ?.writeViewDocuments(this.viewCache)
-      .catch(() => undefined);
-    this.emit();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

@@ -396,6 +396,7 @@ describe("relay task repository", () => {
     await expect(repository.readViewSource(updated.path)).rejects.toThrow(
       "View source not found",
     );
+    expect(fixture.listViews).not.toHaveBeenCalled();
   });
 
   it("creates from the configured template through the live relay", async () => {

@@ -22,8 +22,7 @@ export function editableRenderer(value: string): ViewRenderer {
   if (
     normalized === "tasknotes.kanban" ||
     normalized === "tasknotes.calendar" ||
-    normalized === "tasknotes.mini-calendar" ||
-    normalized === "tasknotes.projects"
+    normalized === "tasknotes.mini-calendar"
   )
     return normalized;
   return "tasknotes.task-list";
@@ -33,7 +32,6 @@ export function obsidianRenderer(value: ViewRenderer): string {
   if (value === "tasknotes.kanban") return "tasknotesKanban";
   if (value === "tasknotes.calendar") return "tasknotesCalendar";
   if (value === "tasknotes.mini-calendar") return "tasknotesMiniCalendar";
-  if (value === "tasknotes.projects") return "tasknotesProjects";
   return "tasknotesTaskList";
 }
 

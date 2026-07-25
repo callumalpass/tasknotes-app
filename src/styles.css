@@ -2924,8 +2924,7 @@ button:disabled {
   color: var(--accent);
 }
 
-.view-editor-section,
-.view-layout-preview {
+.view-editor-section {
   display: grid;
   gap: 18px;
   padding: 28px 0;
@@ -3221,135 +3220,87 @@ button:disabled {
   font-size: 0.78rem;
 }
 
-.view-layout-preview {
-  gap: 14px;
-}
-
-.view-layout-preview .eyebrow {
-  margin: 0 0 2px;
-}
-
-.view-layout-preview .view-editor-section-heading small {
-  color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-}
-
-.view-layout-preview-canvas {
-  min-height: 112px;
-  padding: 14px;
-  overflow: hidden;
-  background: var(--paper-soft);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-}
-
-.preview-list,
-.preview-board,
-.preview-projects {
-  display: grid;
-  gap: 8px;
-}
-
-.preview-list > div {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-}
-
-.preview-list i {
-  width: 11px;
-  height: 11px;
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.preview-list span,
-.preview-board span,
-.preview-projects span,
-.preview-projects strong {
-  display: block;
-  height: 7px;
-  background: var(--line);
-  border-radius: 3px;
-}
-
-.preview-list span {
-  width: 68%;
-}
-
-.preview-board {
-  grid-template-columns: repeat(3, 1fr);
-  height: 82px;
-}
-
-.preview-board > div {
-  display: grid;
-  align-content: start;
-  gap: 7px;
-  padding: 8px;
-  border-top: 1px solid var(--line-strong);
-}
-
-.preview-board i {
-  width: 34%;
-  height: 5px;
-  background: var(--line-strong);
-}
-
-.preview-board span {
-  height: 18px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-}
-
-.preview-calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  height: 82px;
-}
-
-.preview-calendar i {
-  position: relative;
+.view-computed-properties {
   border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
 }
 
-.preview-calendar i:nth-child(7n) {
-  border-right: 1px solid var(--line);
-}
-
-.preview-calendar i:nth-last-child(-n + 7) {
+.view-computed-property {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.7fr);
+  gap: 12px;
+  padding: 16px 0;
   border-bottom: 1px solid var(--line);
 }
 
-.preview-calendar i.has-event::after {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  width: 58%;
-  height: 4px;
-  content: "";
-  background: var(--accent);
-  border-radius: 2px;
+.view-computed-property > label,
+.view-computed-expression {
+  display: grid;
+  gap: 6px;
 }
 
-.preview-projects {
-  grid-template-columns: 26% 1fr;
-  align-items: center;
-  min-height: 80px;
+.view-computed-property > label > span {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
 }
 
-.preview-projects strong {
-  background: var(--line-strong);
+.view-computed-expression,
+.view-computed-property-footer {
+  grid-column: 1 / -1;
 }
 
-.view-layout-preview-properties {
-  margin: 0;
-  color: var(--ink-muted);
+.view-computed-expression textarea {
+  min-height: 74px;
+  padding: 10px 11px;
+  resize: vertical;
+  color: var(--ink);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+}
+
+.view-computed-property-footer,
+.view-computed-actions {
+  display: flex;
+  align-items: center;
+}
+
+.view-computed-property-footer {
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.view-computed-property-footer code {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-computed-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.view-computed-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.view-computed-actions small {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
 }
 
 .view-editor-loading {
@@ -4508,7 +4459,8 @@ button:disabled {
   }
 
   .view-create-defaults-fields,
-  .view-editor-grid {
+  .view-editor-grid,
+  .view-computed-property {
     grid-template-columns: 1fr;
   }
 
