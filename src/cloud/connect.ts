@@ -23,18 +23,16 @@ export const CLOUD_OPERATIONS = [
 
 const serverUrl =
   import.meta.env.VITE_MDBASE_CONNECT_URL ?? "https://connect.mdbase.dev";
-const manifestUrl =
+const manifest =
   import.meta.env.VITE_MDBASE_MANIFEST_URL ??
-  (Capacitor.isNativePlatform()
-    ? "https://tasknotes.dev/app/.well-known/mdbase-app.json"
-    : `${location.origin}${joinBase(".well-known/mdbase-app.json")}`);
+  `${location.origin}${joinBase(".well-known/mdbase-app.json")}`;
 const redirectUri = Capacitor.isNativePlatform()
   ? "dev.tasknotes.app://auth/mdbase/callback"
   : `${location.origin}${joinBase("auth/mdbase/callback")}`;
 
 export const cloudConnect = new MdbaseConnect<JsonObject>({
   serverUrl,
-  manifestUrl,
+  manifest,
   redirectUri,
   navigate: Capacitor.isNativePlatform()
     ? async (url) => Browser.open({ url })
