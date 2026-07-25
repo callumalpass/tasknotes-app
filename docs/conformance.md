@@ -23,8 +23,9 @@ valid completion, and validation.
 
 Hosted collections advertise the same `tasknotes.task` contract through the
 mdbase sync session. The cloud repository resolves its field mapping, status
-vocabulary, type name, and record folder from those resources instead of
-assuming one physical schema.
+vocabulary, type name, path pattern, and editable JSON Schema fields from those
+resources instead of assuming one physical schema. Local, live relay, and
+offline cloud repositories re-resolve changed resources at refresh boundaries.
 
 ## Commands
 
