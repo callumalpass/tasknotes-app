@@ -40,6 +40,7 @@ export class MarkdownCollection {
   private typesFolder = "_types";
   private taskTypePath = "_types/task.md";
   private typeFingerprint = "";
+  private typeDirectoryFingerprint = "";
   private declinedUpgradeFingerprint = "";
   private readonly collectionRecordCache = new Map<
     string,
@@ -115,6 +116,16 @@ export class MarkdownCollection {
   async refreshConfiguration(): Promise<boolean> {
     const nextTypesFolder = await this.readTypesFolder("mdbase.yaml");
     const typeFiles = await this.listTypeFiles(nextTypesFolder);
+    const directoryFingerprint = typeFiles
+      .map(
+        ({ path, lastModified, size }) => `${path}\0${lastModified}\0${size}`,
+      )
+      .join("\n");
+    if (
+      nextTypesFolder === this.typesFolder &&
+      directoryFingerprint === this.typeDirectoryFingerprint
+    )
+      return false;
     const matches = (
       await Promise.all(
         typeFiles.map(async (entry) => {
@@ -150,6 +161,7 @@ export class MarkdownCollection {
         this.taskTypePath === match.entry.path)
     ) {
       this.typesFolder = nextTypesFolder;
+      this.typeDirectoryFingerprint = directoryFingerprint;
       return false;
     }
 
@@ -187,6 +199,9 @@ export class MarkdownCollection {
     this.typeFingerprint = nextFingerprint;
     this.typesFolder = nextTypesFolder;
     this.taskTypePath = match.entry.path;
+    this.typeDirectoryFingerprint = upgraded.changed
+      ? ""
+      : directoryFingerprint;
     this.collectionRecordCache.clear();
     return true;
   }
