@@ -4,13 +4,26 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 import type { ActionPerformed } from "@capacitor/local-notifications";
+import type { MdbaseDesiredTimer } from "@mdbase/connect";
+import { cloudConnect } from "../cloud/connect";
 
 const REGISTRY_KEY = "tasknotes:notification-registry:v1";
 const CHANNEL_ID = "task-reminders";
+const TIMER_NAMESPACE = "task-reminders";
+const TIMER_CRITERION = "task.reminder";
+
+export type ReminderAuthority = "device" | "connect";
+
+let connectReconciliation = Promise.resolve();
 
 export async function reconcileTaskNotifications(
   repository: TaskRepository,
+  authority: ReminderAuthority = "device",
 ): Promise<void> {
+  if (authority === "connect") {
+    await clearDeviceNotifications();
+    return reconcileConnectNotifications(repository);
+  }
   if (!Capacitor.isNativePlatform()) return;
   const tasks = await repository.list({ status: "open", limit: 50_000 });
   const registry = readRegistry();
@@ -20,10 +33,16 @@ export async function reconcileTaskNotifications(
       notifications: currentIds.map((id) => ({ id })),
     }).catch(() => undefined);
   localStorage.removeItem(REGISTRY_KEY);
-  for (const task of tasks) await syncTaskNotifications(task);
+  for (const task of tasks)
+    await syncTaskNotifications(repository, task, "device");
 }
 
-export async function syncTaskNotifications(task: Task): Promise<void> {
+export async function syncTaskNotifications(
+  repository: TaskRepository,
+  task: Task,
+  authority: ReminderAuthority = "device",
+): Promise<void> {
+  if (authority === "connect") return reconcileConnectNotifications(repository);
   if (!Capacitor.isNativePlatform()) return;
   const registry = readRegistry();
   const prefix = `${task.id}:`;
@@ -84,7 +103,12 @@ export async function syncTaskNotifications(task: Task): Promise<void> {
   writeRegistry(registry);
 }
 
-export async function removeTaskNotifications(taskId: string): Promise<void> {
+export async function removeTaskNotifications(
+  repository: TaskRepository,
+  taskId: string,
+  authority: ReminderAuthority = "device",
+): Promise<void> {
+  if (authority === "connect") return reconcileConnectNotifications(repository);
   if (!Capacitor.isNativePlatform()) return;
   const registry = readRegistry();
   const entries = Object.entries(registry).filter(([key]) =>
@@ -173,4 +197,73 @@ function readRegistry(): Record<string, number> {
 
 function writeRegistry(value: Record<string, number>): void {
   localStorage.setItem(REGISTRY_KEY, JSON.stringify(value));
+}
+
+async function clearDeviceNotifications(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  const ids = Object.values(readRegistry());
+  if (ids.length)
+    await LocalNotifications.cancel({
+      notifications: ids.map((id) => ({ id })),
+    }).catch(() => undefined);
+  localStorage.removeItem(REGISTRY_KEY);
+}
+
+function reconcileConnectNotifications(
+  repository: TaskRepository,
+): Promise<void> {
+  const reconciliation = connectReconciliation
+    .catch(() => undefined)
+    .then(async () => {
+      const tasks = await repository.list({ status: "open", limit: 50_000 });
+      await cloudConnect.reconcileTimers({
+        namespace: TIMER_NAMESPACE,
+        criterion_id: TIMER_CRITERION,
+        timers: await desiredTaskTimers(tasks),
+      });
+    });
+  connectReconciliation = reconciliation;
+  return reconciliation;
+}
+
+export async function desiredTaskTimers(
+  tasks: Task[],
+  now = Date.now(),
+): Promise<MdbaseDesiredTimer[]> {
+  const desired = tasks.flatMap((task) => {
+    if (task.completed || task.archived) return [];
+    return task.reminders.flatMap((reminder) => {
+      const fireAt = reminder.absoluteTime;
+      const timestamp = fireAt ? Date.parse(fireAt) : Number.NaN;
+      if (
+        reminder.type !== "absolute" ||
+        !fireAt ||
+        !Number.isFinite(timestamp) ||
+        timestamp <= now
+      )
+        return [];
+      return [
+        {
+          sourceId: JSON.stringify([task.id, reminder.id]),
+          fire_at: new Date(timestamp).toISOString(),
+        },
+      ];
+    });
+  });
+  return Promise.all(
+    desired.map(async ({ sourceId, ...timer }) => ({
+      ...timer,
+      id: await stableTimerId(sourceId),
+    })),
+  );
+}
+
+async function stableTimerId(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }

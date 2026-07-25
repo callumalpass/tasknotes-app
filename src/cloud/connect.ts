@@ -20,6 +20,7 @@ export const CLOUD_OPERATIONS = [
   "update",
   "delete",
   "rename",
+  "reconcile_timers",
 ] as const;
 
 const serverUrl =

@@ -16,11 +16,16 @@ describe("TaskNotes mdbase manifest", () => {
     });
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.id).toBe("dev.tasknotes.app");
-    expect(manifest.notifications.criteria.map(({ id }) => id)).toEqual([
-      "task.created",
-      "task.changed",
-      "task.moved",
-      "task.removed",
+    expect(manifest.notifications.criteria).toEqual([
+      {
+        id: "task.reminder",
+        event: { id: "timer.fired", version: 1 },
+        presentation: {
+          title: "Task reminder",
+          body: "Open TaskNotes to view your task.",
+          tag: "tasknotes-reminders",
+        },
+      },
     ]);
     expect(manifest.notifications.native_delivery).toBeUndefined();
     expect(JSON.stringify(manifest.notifications)).not.toContain("path");
