@@ -426,10 +426,17 @@ button:disabled {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) 44px;
   min-height: 64px;
+  background: transparent;
   border-bottom: 1px solid var(--line);
   content-visibility: auto;
   contain-intrinsic-size: auto 64px;
-  transition: opacity 180ms var(--ease-out);
+  transition:
+    opacity 180ms var(--ease-out),
+    background-color 180ms var(--ease-out);
+}
+
+.task-row.is-tracking {
+  background: var(--paper-soft);
 }
 
 .task-actions-trigger {
@@ -644,6 +651,19 @@ button:disabled {
 
 .task-row-meta .is-overdue {
   color: var(--danger);
+}
+
+.task-row-tracking {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .task-row-properties {

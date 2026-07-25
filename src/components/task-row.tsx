@@ -1,4 +1,6 @@
-import { taskMeta } from "../domain/task";
+import { Square } from "lucide-react";
+
+import { activeTimeEntry, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { TaskActions } from "./task-actions";
@@ -21,9 +23,10 @@ export function TaskRow({
 }) {
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
+  const tracking = Boolean(activeTimeEntry(task.timeEntries));
   return (
     <div
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}`}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
       onContextMenu={(event) => {
         const trigger = event.currentTarget.querySelector<HTMLButtonElement>(
           ".task-actions-trigger",
@@ -52,8 +55,9 @@ export function TaskRow({
       >
         <span className="task-row-title">{task.title}</span>
         {details ? (
-          details.length ? (
+          tracking || details.length ? (
             <span className="task-row-properties">
+              {tracking ? <TrackingIndicator /> : null}
               {details.map((detail) => (
                 <span
                   className="task-row-property"
@@ -66,8 +70,9 @@ export function TaskRow({
               ))}
             </span>
           ) : null
-        ) : metadata.length ? (
+        ) : tracking || metadata.length ? (
           <span className="task-row-meta">
+            {tracking ? <TrackingIndicator /> : null}
             {metadata.map((item) => (
               <span
                 className={item.overdue ? "is-overdue" : undefined}
@@ -86,6 +91,15 @@ export function TaskRow({
         onToggle={onToggle}
       />
     </div>
+  );
+}
+
+function TrackingIndicator() {
+  return (
+    <span className="task-row-tracking">
+      <Square aria-hidden="true" fill="currentColor" size={8} strokeWidth={0} />
+      Timer running
+    </span>
   );
 }
 
