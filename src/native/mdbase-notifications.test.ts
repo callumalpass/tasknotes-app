@@ -137,7 +137,7 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
         collectionId: "collection",
         operations: ["reconcile_timers"],
       })),
-    discover: vi.fn(async () => ({
+    register: vi.fn(async () => ({
       notifications: {
         criteria: [{ id: "task.reminder" }],
         native_delivery: {

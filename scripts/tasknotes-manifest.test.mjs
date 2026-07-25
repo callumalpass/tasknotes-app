@@ -14,7 +14,7 @@ describe("TaskNotes mdbase manifest", () => {
       webOnly: true,
       resources,
     });
-    expect(manifest.manifest_version).toBe(3);
+    expect(manifest.manifest_version).toBe(1);
     expect(manifest.id).toBe("dev.tasknotes.app");
     expect(manifest.notifications.criteria).toEqual([
       {

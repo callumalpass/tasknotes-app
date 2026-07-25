@@ -94,8 +94,10 @@ try {
   await page
     .getByRole("button", { name: "Create an mdbase cloud collection" })
     .click();
-  await expect(page.getByLabel("Collection")).toContainText("My tasks");
-  await page.getByRole("button", { name: "Allow access" }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Collection and location" }),
+  ).toContainText("My tasks");
+  await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(new RegExp(`^${escapeRegex(appUrl)}/?$`), {
     timeout: 15_000,
   });
