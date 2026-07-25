@@ -4,6 +4,9 @@ import { expect, test } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 
+const TASKNOTES_TOKEN_KEY =
+  "mdbase-connect:token:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
+
 test("opens an ordinary relay collection without requiring hosted sync", async ({
   page,
 }) => {
@@ -60,15 +63,11 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   );
 
   await page.goto("./");
-  await page.evaluate(() => {
+  await page.evaluate((tokenKey) => {
     localStorage.clear();
     localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-    const manifestUrl = new URL(
-      ".well-known/mdbase-app.json",
-      new URL("./", location.href),
-    ).href;
     localStorage.setItem(
-      `mdbase-connect:token:https://connect.mdbase.dev:${manifestUrl}`,
+      tokenKey,
       JSON.stringify({
         accessToken: "mdb_local",
         refreshToken: "ref_local",
@@ -91,7 +90,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
         refreshExpiresAt: Date.now() + 120_000,
       }),
     );
-  });
+  }, TASKNOTES_TOKEN_KEY);
 
   await page.reload();
 
@@ -340,7 +339,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
 
   await page.goto("./");
   await page.evaluate(
-    async ({ collectionId }) => {
+    async ({ collectionId, tokenKey }) => {
       localStorage.clear();
       await new Promise<void>((resolve, reject) => {
         const request = indexedDB.deleteDatabase(
@@ -356,12 +355,8 @@ test("restores a custom home view and its cached rows before relay refresh", asy
           "connect:Live connection through mdbase": ["Views/work.md#open"],
         }),
       );
-      const manifestUrl = new URL(
-        ".well-known/mdbase-app.json",
-        new URL("./", location.href),
-      ).href;
       localStorage.setItem(
-        `mdbase-connect:token:https://connect.mdbase.dev:${manifestUrl}`,
+        tokenKey,
         JSON.stringify({
           accessToken: "mdb_cached_home",
           refreshToken: "ref_cached_home",
@@ -380,7 +375,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
         }),
       );
     },
-    { collectionId },
+    { collectionId, tokenKey: TASKNOTES_TOKEN_KEY },
   );
 
   await page.reload();
@@ -646,27 +641,26 @@ async function installRelayAuthorization(
   ],
 ) {
   await page.goto("./");
-  await page.evaluate((authorizedOperations) => {
-    localStorage.clear();
-    localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-    const manifestUrl = new URL(
-      ".well-known/mdbase-app.json",
-      new URL("./", location.href),
-    ).href;
-    localStorage.setItem(
-      `mdbase-connect:token:https://connect.mdbase.dev:${manifestUrl}`,
-      JSON.stringify({
-        accessToken: "mdb_configured",
-        refreshToken: "ref_configured",
-        clientId: "01911111-1111-7111-8111-111111111111",
-        collectionId: "01922222-2222-7222-8222-222222222222",
-        operations: authorizedOperations,
-        scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
-        expiresAt: Date.now() + 60_000,
-        refreshExpiresAt: Date.now() + 120_000,
-      }),
-    );
-  }, operations);
+  await page.evaluate(
+    ({ authorizedOperations, tokenKey }) => {
+      localStorage.clear();
+      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+      localStorage.setItem(
+        tokenKey,
+        JSON.stringify({
+          accessToken: "mdb_configured",
+          refreshToken: "ref_configured",
+          clientId: "01911111-1111-7111-8111-111111111111",
+          collectionId: "01922222-2222-7222-8222-222222222222",
+          operations: authorizedOperations,
+          scope: { contracts: [{ id: "tasknotes.task", version: 1 }] },
+          expiresAt: Date.now() + 60_000,
+          refreshExpiresAt: Date.now() + 120_000,
+        }),
+      );
+    },
+    { authorizedOperations: operations, tokenKey: TASKNOTES_TOKEN_KEY },
+  );
 }
 
 function status(

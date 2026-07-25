@@ -1,0 +1,107 @@
+{
+  "manifest_version": 3,
+  "id": "dev.tasknotes.app",
+  "name": "TaskNotes",
+  "homepage": "https://tasknotes.dev/app/",
+  "icon": "https://tasknotes.dev/app/icon.png",
+  "redirect_uris": [
+    "https://tasknotes.dev/app/auth/mdbase/callback",
+    "dev.tasknotes.app://auth/mdbase/callback"
+  ],
+  "requirements": {
+    "contracts": [
+      {
+        "id": "tasknotes.task",
+        "version": 1
+      }
+    ],
+    "access": "full_collection"
+  },
+  "provisions": {
+    "types": [
+      {
+        "name": "task",
+        "path": "_types/task.md",
+        "document": "---\nkind: mdbase.type\nname: task\nversion: 1\ndescription: A TaskNotes-compatible task.\nmatch:\n  path_glob: tasks/**/*.md\nschema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    type: object\n    required:\n      - type\n      - id\n      - title\n      - status\n      - dateCreated\n      - dateModified\n    additionalProperties: true\n    properties:\n      type:\n        const: task\n      id:\n        type: string\n        minLength: 1\n      title:\n        type: string\n        minLength: 1\n      status:\n        enum: &a3\n          - none\n          - open\n          - in-progress\n          - done\n          - cancelled\n      priority:\n        enum: &a5\n          - none\n          - low\n          - normal\n          - high\n      due: &a1\n        anyOf:\n          - type: string\n            format: date\n          - type: string\n            format: date-time\n      scheduled: *a1\n      completedDate:\n        type: string\n        format: date\n      dateCreated:\n        type: string\n        format: date-time\n      dateModified:\n        type: string\n        format: date-time\n      contexts:\n        type: array\n        items:\n          type: string\n      projects:\n        type: array\n        items:\n          type: string\n      timeEstimate:\n        type: integer\n        minimum: 0\n      recurrence:\n        type: string\n        minLength: 1\n      recurrence_anchor:\n        enum:\n          - scheduled\n          - completion\n      complete_instances: &a2\n        type: array\n        items:\n          type: string\n          format: date\n        uniqueItems: true\n      skipped_instances: *a2\n      recurrence_parent:\n        type: string\n        minLength: 1\n      occurrence_date:\n        type: string\n        format: date\n      occurrence_materialization:\n        enum:\n          - manual\n          - on_completion\n          - rolling\n      occurrence_next_trigger:\n        enum:\n          - completion\n          - completion_or_skip\n      occurrence_template:\n        type: string\n      occurrence_past_horizon:\n        type: string\n      occurrence_future_horizon:\n        type: string\n      timeEntries:\n        type: array\n        items:\n          type: object\n          required:\n            - startTime\n          additionalProperties: true\n          properties:\n            startTime:\n              type: string\n              format: date-time\n            endTime:\n              type: string\n              format: date-time\n            description:\n              type: string\n      blockedBy:\n        type: array\n        items:\n          type: object\n      reminders:\n        type: array\n        items:\n          type: object\n      tags:\n        type: array\n        items:\n          type: string\n      mobileRevision:\n        type: integer\n        minimum: 1\n    allOf:\n      - if:\n          required:\n            - status\n          properties:\n            status:\n              enum: &a4\n                - done\n          not:\n            required:\n              - recurrence\n        then:\n          required:\n            - completedDate\ncollection:\n  display:\n    name_field: title\n    icon: check-circle\n  read_defaults:\n    status: open\n    priority: normal\n  unique:\n    - field: id\n      scope: type\n  path:\n    pattern: tasks/{id}.md\nlifecycle:\n  on_create:\n    set:\n      id:\n        uuid: true\n      dateCreated:\n        now: true\n      dateModified:\n        now: true\n  on_update:\n    set:\n      dateModified:\n        now: true\nx-tasknotes:\n  contract: tasknotes.task\n  version: 1\n  spec_version: 0.2.0\n  profiles:\n    - core-lite\n    - recurrence\n    - materialized-occurrences\n  field_roles:\n    id: id\n    tags: tags\n    title: title\n    status: status\n    priority: priority\n    due: due\n    scheduled: scheduled\n    completedDate: completedDate\n    contexts: contexts\n    projects: projects\n    timeEstimate: timeEstimate\n    dateCreated: dateCreated\n    dateModified: dateModified\n    recurrence: recurrence\n    recurrenceAnchor: recurrence_anchor\n    completeInstances: complete_instances\n    skippedInstances: skipped_instances\n    recurrenceParent: recurrence_parent\n    occurrenceDate: occurrence_date\n    occurrenceMaterialization: occurrence_materialization\n    occurrenceNextTrigger: occurrence_next_trigger\n    occurrenceTemplate: occurrence_template\n    occurrencePastHorizon: occurrence_past_horizon\n    occurrenceFutureHorizon: occurrence_future_horizon\n    timeEntries: timeEntries\n    blockedBy: blockedBy\n    reminders: reminders\n  status:\n    values: *a3\n    completed_values: *a4\n    default: open\n    skipped_values:\n      - cancelled\n    default_skipped: cancelled\n  priority:\n    values: *a5\n    default: normal\n  title:\n    storage: frontmatter\n  compatibility:\n    read_aliases: true\n  occurrences:\n    default_materialization: manual\n    default_next_trigger: completion\n    past_horizon: P0D\n    future_horizon: P14D\n---\n# Task\n\nTask records live under `tasks/`.\n",
+        "provides": [
+          {
+            "id": "tasknotes.task",
+            "version": 1
+          }
+        ]
+      }
+    ]
+  },
+  "notifications": {
+    "criteria": [
+      {
+        "id": "task.created",
+        "event": {
+          "id": "mdbase.record.created",
+          "version": 1
+        },
+        "if": {
+          "$expr": "\"task\" in event.payload.types"
+        },
+        "debounce": "5s",
+        "minimum_interval": "15s",
+        "presentation": {
+          "title": "A task was added",
+          "body": "Open TaskNotes to see the latest changes.",
+          "tag": "tasknotes-changes"
+        }
+      },
+      {
+        "id": "task.changed",
+        "event": {
+          "id": "mdbase.record.modified",
+          "version": 1
+        },
+        "if": {
+          "$expr": "\"task\" in event.payload.types"
+        },
+        "debounce": "5s",
+        "minimum_interval": "15s",
+        "presentation": {
+          "title": "Tasks changed",
+          "body": "Open TaskNotes to see the latest changes.",
+          "tag": "tasknotes-changes"
+        }
+      },
+      {
+        "id": "task.moved",
+        "event": {
+          "id": "mdbase.record.renamed",
+          "version": 1
+        },
+        "if": {
+          "$expr": "\"task\" in event.payload.types"
+        },
+        "debounce": "5s",
+        "minimum_interval": "15s",
+        "presentation": {
+          "title": "Tasks changed",
+          "body": "Open TaskNotes to see the latest changes.",
+          "tag": "tasknotes-changes"
+        }
+      },
+      {
+        "id": "task.removed",
+        "event": {
+          "id": "mdbase.record.deleted",
+          "version": 1
+        },
+        "if": {
+          "$expr": "\"task\" in event.payload.types"
+        },
+        "debounce": "5s",
+        "minimum_interval": "15s",
+        "presentation": {
+          "title": "A task was removed",
+          "body": "Open TaskNotes to see the latest changes.",
+          "tag": "tasknotes-changes"
+        }
+      }
+    ]
+  }
+}
