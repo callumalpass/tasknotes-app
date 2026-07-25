@@ -747,7 +747,7 @@ function description(
       folder: "TaskNotes/Archive",
     };
   return {
-    protocol_version: 2,
+    protocol_version: 1,
     collection_id: collectionId,
     display_name: "Local tasks",
     spec_version: "0.3.0",

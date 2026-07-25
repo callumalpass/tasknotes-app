@@ -557,7 +557,7 @@ function collectionDescription() {
     "x-tasknotes": JsonObject;
   };
   return {
-    protocol_version: 2,
+    protocol_version: 1,
     collection_id: "01922222-2222-7222-8222-222222222222",
     display_name: "Relay tasks",
     spec_version: "0.3.0",

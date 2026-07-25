@@ -5,7 +5,7 @@ export function buildTaskNotesManifest({
   resources,
 }) {
   return {
-    manifest_version: 3,
+    manifest_version: 1,
     id: "dev.tasknotes.app",
     name: "TaskNotes",
     homepage: `${appUrl}/`,

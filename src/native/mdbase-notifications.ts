@@ -35,7 +35,7 @@ export interface MdbaseNotificationWake {
 type NotificationConnect = Pick<
   MdbaseConnect,
   | "connection"
-  | "discover"
+  | "register"
   | "registerNativeNotifications"
   | "unregisterNativeNotifications"
 >;
@@ -208,7 +208,7 @@ export class MdbaseNotificationManager {
   }
 
   private async managedDeliveryDeclared(): Promise<boolean> {
-    const application = await this.options.connect.discover();
+    const application = await this.options.connect.register();
     return application.notifications?.native_delivery?.mode === "managed_fcm";
   }
 

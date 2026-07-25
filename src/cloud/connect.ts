@@ -2,7 +2,7 @@ import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import { MdbaseConnect } from "@mdbase/connect";
 
-import type { JsonObject, MdbaseAppManifestV3 } from "@mdbase/connect-protocol";
+import type { JsonObject, MdbaseAppManifest } from "@mdbase/connect-protocol";
 import bundledManifest from "../generated/mdbase-app.json";
 
 export const CLOUD_OPERATIONS = [
@@ -27,7 +27,7 @@ const serverUrl =
   import.meta.env.VITE_MDBASE_CONNECT_URL ?? "https://connect.mdbase.dev";
 const manifest =
   import.meta.env.VITE_MDBASE_MANIFEST_URL ??
-  (bundledManifest as MdbaseAppManifestV3);
+  (bundledManifest as MdbaseAppManifest);
 const redirectUri = Capacitor.isNativePlatform()
   ? "dev.tasknotes.app://auth/mdbase/callback"
   : `${location.origin}${joinBase("auth/mdbase/callback")}`;

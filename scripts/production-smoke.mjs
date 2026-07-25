@@ -27,15 +27,14 @@ const checks = [
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
     const callback = `${appOrigin}/auth/mdbase/callback`;
     if (
-      ![1, 2, 3].includes(manifest.manifest_version) ||
+      manifest.manifest_version !== 1 ||
       manifest.requirements?.access !== "full_collection" ||
       !manifest.redirect_uris?.includes(callback)
     )
       throw new Error("The deployed mdbase application manifest is invalid.");
     if (
       requireNotificationManifest &&
-      (![2, 3].includes(manifest.manifest_version) ||
-        manifest.notifications?.criteria?.length !== 1 ||
+      (manifest.notifications?.criteria?.length !== 1 ||
         manifest.notifications.criteria[0]?.id !== "task.reminder" ||
         manifest.notifications.criteria[0]?.event?.id !== "timer.fired" ||
         manifest.notifications.criteria[0]?.event?.version !== 1)
