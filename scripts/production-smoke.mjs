@@ -35,12 +35,13 @@ const checks = [
     if (
       requireNotificationManifest &&
       (![2, 3].includes(manifest.manifest_version) ||
-        !manifest.notifications?.criteria?.some(
-          (criterion) => criterion.id === "task.changed",
-        ))
+        manifest.notifications?.criteria?.length !== 1 ||
+        manifest.notifications.criteria[0]?.id !== "task.reminder" ||
+        manifest.notifications.criteria[0]?.event?.id !== "timer.fired" ||
+        manifest.notifications.criteria[0]?.event?.version !== 1)
     )
       throw new Error(
-        "The deployed mdbase application manifest does not expose notifications.",
+        "The deployed mdbase application manifest is not reminder-only.",
       );
   },
   async () => {
