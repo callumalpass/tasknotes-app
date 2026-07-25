@@ -658,6 +658,36 @@ describe("cloud task repository", () => {
     });
   });
 
+  it("reloads canonical resources after the authority changes them", async () => {
+    const authority = new MemoryHostedAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+    await repository.initialize();
+
+    (authority as unknown as { resources: SyncCollectionResources }).resources =
+      resourcesWithType("todo", "canonical/cloud");
+    authority.updateReplicaScope(replicaId, ["todo"]);
+    await repository.refresh();
+
+    const created = await repository.create({ title: "New cloud contract" });
+    expect(created.frontmatter.type).toBe("todo");
+    expect(created.path).toMatch(/^canonical\/cloud\//);
+  });
+
   it("creates from a raw template resource while offline", async () => {
     const authority = new MemoryHostedAuthority<JsonObject>({
       resources: resourcesWithTemplate(),

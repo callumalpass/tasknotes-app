@@ -7,10 +7,8 @@ import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { viewSourceRevision } from "./local-views";
-import {
-  defaultTaskCollectionConfiguration,
-  resolveTaskCollectionConfiguration,
-} from "../domain/task-configuration";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { resolveTaskTypeDefinition } from "./tasknotes-collection";
 import {
   upgradeManagedTaskDocument,
   upgradeManagedTaskType,
@@ -32,8 +30,17 @@ import type {
 } from "../domain/view";
 import type { Vault, VaultEntry } from "./vault";
 
+export interface ManagedTypeUpgradeRequest {
+  typePath: string;
+  message: string;
+}
+
 export class MarkdownCollection {
   private taskModel = new TaskNotesTaskModel();
+  private typesFolder = "_types";
+  private taskTypePath = "_types/task.md";
+  private typeFingerprint = "";
+  private declinedUpgradeFingerprint = "";
   private readonly collectionRecordCache = new Map<
     string,
     {
@@ -43,7 +50,14 @@ export class MarkdownCollection {
     }
   >();
 
-  constructor(private readonly vault: Vault) {}
+  constructor(
+    private readonly vault: Vault,
+    private readonly options: {
+      approveManagedTypeUpgrade?: (
+        request: ManagedTypeUpgradeRequest,
+      ) => boolean | Promise<boolean>;
+    } = {},
+  ) {}
 
   async initialize(): Promise<void> {
     await this.vault.initialize();
@@ -88,24 +102,93 @@ export class MarkdownCollection {
       resources.configDocument,
     );
     await this.ensureViewConfiguration(resources.paths.config);
-    await this.vault.ensureText(
-      resources.paths.type,
-      serializeMarkdownDocument(generatedType, generated.body),
-    );
-    const parsedType = parseFrontmatter(
-      await this.vault.readText(resources.paths.type),
-    );
-    const upgraded = upgradeManagedTaskType(parsedType.frontmatter);
-    if (upgraded.changed) {
-      await this.upgradeDocuments(upgraded.completedField);
-      await this.vault.writeText(
-        resources.paths.type,
-        serializeMarkdownDocument(upgraded.frontmatter, parsedType.body),
+    this.typesFolder = await this.readTypesFolder(resources.paths.config);
+    const existingTypes = await this.listTypeFiles(this.typesFolder);
+    if (!existingTypes.length)
+      await this.vault.ensureText(
+        `${this.typesFolder}/task.md`,
+        serializeMarkdownDocument(generatedType, generated.body),
       );
+    await this.refreshConfiguration();
+  }
+
+  async refreshConfiguration(): Promise<boolean> {
+    const nextTypesFolder = await this.readTypesFolder("mdbase.yaml");
+    const typeFiles = await this.listTypeFiles(nextTypesFolder);
+    const matches = (
+      await Promise.all(
+        typeFiles.map(async (entry) => {
+          const source = await this.vault.readText(entry.path);
+          const parsed = parseFrontmatter(source);
+          const extension = parsed.frontmatter["x-tasknotes"];
+          const contract =
+            extension &&
+            typeof extension === "object" &&
+            !Array.isArray(extension)
+              ? (extension as Record<string, unknown>).contract
+              : undefined;
+          return contract === "tasknotes.task"
+            ? [{ entry, source, parsed }]
+            : [];
+        }),
+      )
+    ).flat();
+    if (!matches.length)
+      throw new Error(
+        `No type providing x-tasknotes.contract: tasknotes.task was found in ${nextTypesFolder}/.`,
+      );
+    if (matches.length > 1)
+      throw new Error(
+        `Multiple types in ${nextTypesFolder}/ provide the TaskNotes task contract.`,
+      );
+
+    const match = matches[0];
+    const sourceFingerprint = `${match.entry.path}\0${match.source}`;
+    if (
+      sourceFingerprint === this.typeFingerprint ||
+      (sourceFingerprint === this.declinedUpgradeFingerprint &&
+        this.taskTypePath === match.entry.path)
+    ) {
+      this.typesFolder = nextTypesFolder;
+      return false;
     }
-    this.taskModel = new TaskNotesTaskModel(
-      resolveTaskCollectionConfiguration(upgraded.frontmatter),
-    );
+
+    let frontmatter = match.parsed.frontmatter;
+    let nextFingerprint = sourceFingerprint;
+    let nextDeclinedFingerprint = "";
+    const upgraded = upgradeManagedTaskType(frontmatter);
+    if (upgraded.changed) {
+      const approved =
+        sourceFingerprint !== this.declinedUpgradeFingerprint &&
+        (await this.options.approveManagedTypeUpgrade?.({
+          typePath: match.entry.path,
+          message:
+            `TaskNotes can upgrade its managed type at ${match.entry.path} ` +
+            "and migrate affected task records. Continue?",
+        }));
+      if (approved) {
+        this.taskModel = resolveTaskTypeDefinition(frontmatter).model;
+        await this.upgradeDocuments(upgraded.completedField);
+        frontmatter = upgraded.frontmatter;
+        const upgradedSource = serializeMarkdownDocument(
+          frontmatter,
+          match.parsed.body,
+        );
+        await this.vault.writeText(match.entry.path, upgradedSource);
+        nextFingerprint = `${match.entry.path}\0${upgradedSource}`;
+      } else {
+        nextDeclinedFingerprint = sourceFingerprint;
+      }
+    }
+
+    const nextModel = resolveTaskTypeDefinition(frontmatter).model;
+    this.taskModel = nextModel;
+    this.declinedUpgradeFingerprint = nextDeclinedFingerprint;
+    this.typeFingerprint = nextFingerprint;
+    this.typesFolder = nextTypesFolder;
+    this.taskTypePath = match.entry.path;
+    this.collectionRecordCache.clear();
+    return true;
   }
 
   async list(): Promise<VaultEntry[]> {
@@ -128,7 +211,7 @@ export class MarkdownCollection {
 
   async listCollectionRecords(): Promise<CollectionRecord[]> {
     const entries = (await this.vault.listCollectionFiles([".md"])).filter(
-      ({ path }) => !isCollectionResource(path),
+      ({ path }) => !this.isCollectionResource(path),
     );
     this.pruneCollectionRecordCache(entries);
     await this.loadCollectionRecordEntries(
@@ -146,7 +229,7 @@ export class MarkdownCollection {
   ): Promise<CollectionRecord[]> {
     const needle = query.trim().toLocaleLowerCase();
     const entries = (await this.vault.listCollectionFiles([".md"])).filter(
-      ({ path }) => !isCollectionResource(path),
+      ({ path }) => !this.isCollectionResource(path),
     );
     this.pruneCollectionRecordCache(entries);
     const matches = new Map<string, CollectionRecord>();
@@ -467,6 +550,37 @@ export class MarkdownCollection {
     });
     await this.vault.writeText(configPath, String(document));
   }
+
+  private async readTypesFolder(configPath: string): Promise<string> {
+    const source = await this.vault.readText(configPath);
+    const document = parseDocument(source);
+    if (document.errors.length) throw new Error(document.errors[0].message);
+    const value = document.toJS() as {
+      settings?: { types_folder?: unknown; typesFolder?: unknown };
+    } | null;
+    const configured =
+      value?.settings?.types_folder ?? value?.settings?.typesFolder;
+    if (typeof configured !== "string" || !configured.trim()) return "_types";
+    return normalizeResourceFolder(configured);
+  }
+
+  private listTypeFiles(folder: string): Promise<VaultEntry[]> {
+    return this.vault.listMarkdownFiles(folder).catch((reason: unknown) => {
+      if (isMissingPath(reason)) return [];
+      throw reason;
+    });
+  }
+
+  private isCollectionResource(path: string): boolean {
+    const normalized = path.replaceAll("\\", "/").toLocaleLowerCase();
+    const typeRoot = `${this.typesFolder.toLocaleLowerCase()}/`;
+    return (
+      normalized.startsWith(typeRoot) ||
+      normalized.includes(`/${typeRoot}`) ||
+      normalized.startsWith(".mdbase/") ||
+      normalized.startsWith("node_modules/")
+    );
+  }
 }
 
 function assertLocalViewPath(path: string): void {
@@ -501,16 +615,6 @@ export function batches<T>(values: T[], size: number): T[][] {
   for (let offset = 0; offset < values.length; offset += size)
     result.push(values.slice(offset, offset + size));
   return result;
-}
-
-function isCollectionResource(path: string): boolean {
-  const normalized = path.replaceAll("\\", "/").toLocaleLowerCase();
-  return (
-    normalized.startsWith("_types/") ||
-    normalized.includes("/_types/") ||
-    normalized.startsWith(".mdbase/") ||
-    normalized.startsWith("node_modules/")
-  );
 }
 
 function taskCollectionRecord(task: Task): CollectionRecord {
@@ -573,4 +677,18 @@ function isMissingPath(reason: unknown): boolean {
     (reason instanceof DOMException && reason.name === "NotFoundError") ||
     /not exist|not found/i.test(String(reason))
   );
+}
+
+function normalizeResourceFolder(value: string): string {
+  const normalized = value
+    .trim()
+    .replaceAll("\\", "/")
+    .replace(/^\/+|\/+$/g, "");
+  if (
+    !normalized ||
+    normalized.includes("\0") ||
+    normalized.split("/").some((part) => !part || part === "." || part === "..")
+  )
+    throw new Error("The mdbase types folder is unsafe.");
+  return normalized;
 }

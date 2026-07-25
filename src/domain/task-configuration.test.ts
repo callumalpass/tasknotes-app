@@ -186,4 +186,58 @@ describe("TaskNotes collection configuration", () => {
     });
     expect(configuration.linkWriteFormat).toBe("markdown");
   });
+
+  it("preserves required, read-only, enum, and date-time schema semantics", () => {
+    const configuration = resolveTaskCollectionConfiguration({
+      schema: {
+        value: {
+          type: "object",
+          required: ["owner", "reviewedAt"],
+          properties: {
+            owner: {
+              type: "string",
+              title: "Owner",
+              enum: ["Alex", "Sam"],
+            },
+            reviewedAt: {
+              type: "string",
+              format: "date-time",
+            },
+            externalId: {
+              type: "string",
+              readOnly: true,
+            },
+          },
+        },
+      },
+      "x-tasknotes": {},
+    });
+
+    expect(configuration.userFields).toEqual([
+      {
+        id: "schema:owner",
+        key: "owner",
+        displayName: "Owner",
+        type: "text",
+        required: true,
+        inputKind: "enum",
+        options: [{ value: "Alex" }, { value: "Sam" }],
+      },
+      {
+        id: "schema:reviewedAt",
+        key: "reviewedAt",
+        displayName: "Reviewed At",
+        type: "text",
+        required: true,
+        inputKind: "datetime",
+      },
+      {
+        id: "schema:externalId",
+        key: "externalId",
+        displayName: "External Id",
+        type: "text",
+        readOnly: true,
+      },
+    ]);
+  });
 });

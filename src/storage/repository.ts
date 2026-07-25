@@ -124,7 +124,13 @@ export class IndexedMarkdownRepository implements TaskRepository {
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
   ) {
     this.collection =
-      options.collection ?? new MarkdownCollection(createPlatformVault());
+      options.collection ??
+      new MarkdownCollection(createPlatformVault(), {
+        approveManagedTypeUpgrade: ({ message }) =>
+          typeof globalThis.confirm === "function"
+            ? globalThis.confirm(message)
+            : false,
+      });
     this.index =
       options.index ?? new TaskIndex(indexName(this.collection.identifier()));
     this.views = new LocalViewExecutor(this.collection, () => [
@@ -437,6 +443,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   private async refreshUnlocked(): Promise<RefreshResult> {
     const startedAt = performance.now();
+    const configurationChanged = await this.collection.refreshConfiguration();
     const documents = await this.collection.list();
     const storedByPath = new Map(
       [...this.cache.values()].map((task) => [task.path, task]),
@@ -445,6 +452,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
     const changed = documents.filter((document) => {
       const cached = storedByPath.get(document.path);
       return (
+        configurationChanged ||
         !cached ||
         cached.sourceMtime !== document.lastModified ||
         cached.sourceSize !== document.size
