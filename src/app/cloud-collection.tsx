@@ -61,9 +61,12 @@ export default function CloudCollection({
   }, []);
 
   useEffect(
-    () => onCloudConnectionChange((connection) => {
-      setRepository(connection ? createConnectTaskRepository(connection) : null);
-    }),
+    () =>
+      onCloudConnectionChange((connection) => {
+        setRepository(
+          connection ? createConnectTaskRepository(connection) : null,
+        );
+      }),
     [],
   );
 
