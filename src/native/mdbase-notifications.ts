@@ -11,6 +11,7 @@ import { cloudConnect } from "../cloud/connect";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
+const TIMER_OPERATIONS = ["reconcile_timers"] as const;
 
 export type MdbaseNotificationState =
   | "unavailable"
@@ -78,8 +79,14 @@ export class MdbaseNotificationManager {
     const optedIn = this.enabled();
     if (!this.options.isNative())
       return { state: "unavailable", optedIn: false };
-    if (!this.options.connect.connection())
-      return { state: "not_connected", optedIn };
+    const connection = this.options.connect.connection();
+    if (!connection) return { state: "not_connected", optedIn };
+    if (
+      TIMER_OPERATIONS.some(
+        (operation) => !connection.operations.includes(operation),
+      )
+    )
+      return { state: "reauthorization_required", optedIn: false };
     if (!(await this.managedDeliveryDeclared()))
       return { state: "not_configured", optedIn };
     const permission = await this.options.messaging.checkPermissions();
@@ -93,8 +100,14 @@ export class MdbaseNotificationManager {
   async enable(): Promise<MdbaseNotificationStatus> {
     if (!this.options.isNative())
       return { state: "unavailable", optedIn: false };
-    if (!this.options.connect.connection())
-      return { state: "not_connected", optedIn: false };
+    const connection = this.options.connect.connection();
+    if (!connection) return { state: "not_connected", optedIn: false };
+    if (
+      TIMER_OPERATIONS.some(
+        (operation) => !connection.operations.includes(operation),
+      )
+    )
+      return { state: "reauthorization_required", optedIn: false };
     if (!(await this.managedDeliveryDeclared()))
       return { state: "not_configured", optedIn: false };
     const current = await this.options.messaging.checkPermissions();
@@ -203,9 +216,9 @@ export class MdbaseNotificationManager {
     await this.options.messaging
       .createChannel({
         id: CHANNEL_ID,
-        name: "Task updates",
-        description: "Changes to your connected TaskNotes collection",
-        importance: 3,
+        name: "Task reminders",
+        description: "Reminders scheduled by TaskNotes through mdbase",
+        importance: 4,
       })
       .catch(() => undefined);
     const { token } = await this.options.messaging.getToken();

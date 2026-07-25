@@ -1,23 +1,29 @@
 # Notifications
 
-TaskNotes has two independent notification paths:
+TaskNotes uses one reminder experience with two authorities:
 
-- task reminders are scheduled locally and never leave the device;
-- mdbase change notifications are content-free wake-up signals evaluated by
-  the mdbase Runtime and delivered through Connect-managed FCM.
+- local-folder reminders are scheduled in the device operating system;
+- connected-collection reminders are stored as grant-scoped one-shot timers at
+  the local connector or hosted provider and delivered through Connect-managed
+  FCM.
 
-Change notifications are available only for a connected mdbase collection in
-the native Android or iOS app. TaskNotes asks for system permission only after
-the user selects **Turn on change notifications**. A received notification
-refreshes the offline replica; opening one returns to the task view. Titles and
-bodies are fixed manifest text and never contain task names, paths, or record
-content.
+TaskNotes does not subscribe to general collection-change notifications.
+Connected timers continue running when the app and phone are offline. The
+phone keeps only its FCM registration and opt-in state; it does not keep an OS
+schedule or reminder-ID registry for the connected collection. Task and
+reminder IDs, descriptions, paths, and record content remain at the collection
+authority. Pushes use fixed manifest text and act only as a wake-up hint.
+
+Connected delivery is available in the native Android or iOS app. TaskNotes
+asks for system permission only after the user selects **Turn on reminders**.
+A received reminder refreshes current authorized state; it never embeds task
+content in the notification.
 
 If an existing connection predates the notification criteria, TaskNotes shows
 **Approval required** after the first enable attempt. Select **Review
 notification access**, approve the updated application manifest in mdbase, and
-then turn notifications on. Manifest updates never silently broaden an
-existing collection grant.
+then turn reminders on. Manifest updates never silently broaden an existing
+collection grant.
 
 ## Firebase project setup
 

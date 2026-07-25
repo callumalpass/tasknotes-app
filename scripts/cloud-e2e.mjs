@@ -109,6 +109,31 @@ try {
   await expect(
     page.getByText("Cloud foundation", { exact: true }),
   ).toBeVisible();
+  await page.getByText("Cloud foundation", { exact: true }).click();
+  await page.getByText("Repeat and reminders", { exact: true }).click();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowValue = [
+    tomorrow.getFullYear(),
+    String(tomorrow.getMonth() + 1).padStart(2, "0"),
+    String(tomorrow.getDate()).padStart(2, "0"),
+  ].join("-");
+  await chooseDate(page, "Reminder date", tomorrowValue);
+  await chooseTime(page, "Reminder time", "09:00");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => provider.timerReconciliations().at(-1)?.timers.length, {
+      timeout: 5_000,
+    })
+    .toBe(1);
+  const desiredTimer = provider.timerReconciliations().at(-1).timers[0];
+  assert.match(desiredTimer.id, /^[a-f0-9]{64}$/);
+  assert.equal(desiredTimer.data, undefined);
+  assert.equal(
+    JSON.stringify(desiredTimer).includes("Cloud foundation"),
+    false,
+  );
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
@@ -138,10 +163,16 @@ try {
 
   phase("editing the cloud-owned saved-view source through the public API");
   await page.getByRole("button", { name: "Edit Cloud board" }).click();
-  const viewSettings = page.getByRole("region", { name: "View settings" });
-  await viewSettings.getByLabel("Property to display").fill("due");
-  await viewSettings.getByRole("button", { name: "Add", exact: true }).click();
-  await viewSettings.getByRole("button", { name: "Save", exact: true }).click();
+  const viewEditor = page.getByRole("dialog", { name: "Edit view" });
+  await expect(viewEditor).toBeVisible();
+  await viewEditor.getByLabel("Property to display").fill("due");
+  await viewEditor
+    .locator('.add-view-property:has([aria-label="Property to display"])')
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await viewEditor
+    .getByRole("button", { name: "Save view", exact: true })
+    .click();
   await expect(page.getByLabel("Cloud board board")).toBeVisible();
   const savedView = markdownFrontmatter(provider.viewSource().document)
     .views[0];
@@ -272,6 +303,7 @@ async function startMemoryProvider() {
   const collections = new Map();
   const replicas = new Map();
   const tokens = new Map();
+  const timerReconciliations = [];
   let online = true;
   const server = createServer(async (request, response) => {
     response.setHeader("access-control-allow-origin", "*");
@@ -294,7 +326,7 @@ async function startMemoryProvider() {
         /^\/v1\/hosted\/collections\/([^/]+)\/sync\/(sessions|snapshot|changes|mutations)$/,
       );
       const operationMatch = url.pathname.match(
-        /^\/v1\/hosted\/collections\/([^/]+)\/operations\/(list_views|execute_view|read_view_source|create_view_source|update_view_source|delete_view_source)$/,
+        /^\/v1\/hosted\/collections\/([^/]+)\/operations\/(list_views|execute_view|read_view_source|create_view_source|update_view_source|delete_view_source|reconcile_timers)$/,
       );
       if (!match && !operationMatch) {
         send(response, 404, error("not_found", "Not found."));
@@ -321,7 +353,31 @@ async function startMemoryProvider() {
       if (operationMatch) {
         const input = await requestJson(request);
         const operation = operationMatch[2];
-        if (operation === "list_views") {
+        if (!enrollment.allowedOperations?.includes(operation)) {
+          throw new SyncError(
+            "insufficient_access",
+            "Operation is not authorized.",
+          );
+        }
+        if (operation === "reconcile_timers") {
+          timerReconciliations.push(structuredClone(input));
+          const now = new Date().toISOString();
+          send(response, 200, {
+            result: {
+              namespace: input.namespace,
+              timers: input.timers.map((timer) => ({
+                ...timer,
+                criterion_id: input.criterion_id,
+                generation: 1,
+                status: "scheduled",
+                created_at: now,
+                updated_at: now,
+                fired_at: null,
+              })),
+              cancelled_ids: [],
+            },
+          });
+        } else if (operation === "list_views") {
           send(response, 200, { result: cloudViewList(viewSource) });
         } else if (operation === "execute_view") {
           send(response, 200, {
@@ -435,6 +491,7 @@ async function startMemoryProvider() {
           collectionId,
           replicaId: replica.id,
           allowedOrigin: replica.allowedOrigin,
+          allowedOperations: replica.allowedOperations,
         });
       },
       rotateReplicaToken: async (replicaId, token) => {
@@ -445,6 +502,7 @@ async function startMemoryProvider() {
           collectionId: replica.collectionId,
           replicaId,
           allowedOrigin: replica.allowedOrigin,
+          allowedOperations: replica.allowedOperations,
         });
       },
       updateApplicationReplica: async (replicaId, policy) => {
@@ -464,6 +522,8 @@ async function startMemoryProvider() {
       compactThrough: async (collectionId, sequence) => {
         collections.get(collectionId).authority.compactThrough(sequence);
       },
+      upsertNotificationGrant: async () => undefined,
+      revokeNotificationGrant: async () => undefined,
     },
     setOnline(value) {
       online = value;
@@ -471,12 +531,35 @@ async function startMemoryProvider() {
     viewSource() {
       return structuredClone(viewSource);
     },
+    timerReconciliations() {
+      return structuredClone(timerReconciliations);
+    },
     onlyCollection() {
       assert.equal(collections.size, 1, "Expected one hosted collection");
       return collections.values().next().value;
     },
     close: () => new Promise((resolveClose) => server.close(resolveClose)),
   };
+}
+
+async function chooseDate(page, label, value) {
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.locator(`[data-date="${value}"]`).last().click();
+}
+
+async function chooseTime(page, label, value) {
+  const [hour, minute] = value.split(":");
+  await page.getByRole("button", { name: label, exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: label, exact: true });
+  await dialog
+    .getByRole("listbox", { name: "Hour" })
+    .getByRole("option", { name: hour, exact: true })
+    .click();
+  await dialog
+    .getByRole("listbox", { name: "Minute" })
+    .getByRole("option", { name: minute, exact: true })
+    .click();
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
 }
 
 async function availablePort() {

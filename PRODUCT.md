@@ -45,6 +45,7 @@ Obsidian UI at phone scale.
 3. Keep structure legible. Dates, status, priority, and recurrence should scan clearly without becoming a control panel.
 4. Reveal portability gently. Let users inspect the Markdown record and collection location when they choose.
 5. Use one vocabulary across storage providers. Local and cloud collections should behave like the same product.
+6. Keep reminders dependable. Local folders use device scheduling; connected collections use their mdbase authority so reminders do not depend on one phone staying online.
 
 ## Accessibility & Inclusion
 

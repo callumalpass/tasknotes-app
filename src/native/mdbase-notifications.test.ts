@@ -24,7 +24,7 @@ describe("mdbase native notifications", () => {
     expect(fixture.messaging.createChannel).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "mdbase-updates",
-        importance: 3,
+        importance: 4,
       }),
     );
     expect(fixture.connect.registerNativeNotifications).toHaveBeenCalledWith({
@@ -48,6 +48,20 @@ describe("mdbase native notifications", () => {
     expect(fixture.storage.getItem("tasknotes:mdbase-notifications:v1")).toBe(
       null,
     );
+  });
+
+  it("requires renewed timer access before asking for notification permission", async () => {
+    const fixture = manager({
+      connection: vi.fn(() => ({
+        collectionId: "collection",
+        operations: ["read"],
+      })),
+    });
+    expect(await fixture.subject.enable()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
   });
 
   it("does not contact either service when a disconnected collection was not opted in", async () => {
@@ -117,10 +131,15 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
   const storage = localStorage;
   storage.clear();
   const connect = {
-    connection: vi.fn(() => ({ collectionId: "collection" })),
+    connection:
+      overrides.connection ??
+      vi.fn(() => ({
+        collectionId: "collection",
+        operations: ["reconcile_timers"],
+      })),
     discover: vi.fn(async () => ({
       notifications: {
-        criteria: [{ id: "task.changed" }],
+        criteria: [{ id: "task.reminder" }],
         native_delivery: {
           mode: "managed_fcm" as const,
           firebase_project_id: "tasknotes-production",

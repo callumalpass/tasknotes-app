@@ -17,6 +17,7 @@ import {
   reconcileTaskNotifications,
   removeTaskNotifications,
   syncTaskNotifications,
+  type ReminderAuthority,
 } from "../native/notifications";
 
 import type {
@@ -72,9 +73,11 @@ const RepositoryContext = createContext<RepositoryContextValue | null>(null);
 export function RepositoryProvider({
   children,
   repository: supplied,
+  reminderAuthority = "device",
 }: {
   children: ReactNode;
   repository?: TaskRepository;
+  reminderAuthority?: ReminderAuthority;
 }) {
   const [repository] = useState<TaskRepository>(
     () => supplied ?? new IndexedMarkdownRepository(),
@@ -119,6 +122,10 @@ export function RepositoryProvider({
         setError(null);
         publishMutation();
         void loadSync().catch(() => undefined);
+        if (reminderAuthority === "connect")
+          void reconcileTaskNotifications(repository, reminderAuthority).catch(
+            () => undefined,
+          );
         return result;
       })
       .catch((reason: unknown) => {
@@ -132,7 +139,7 @@ export function RepositoryProvider({
       });
     refreshInFlight.current = run;
     return run;
-  }, [loadSync, publishMutation, repository]);
+  }, [loadSync, publishMutation, reminderAuthority, repository]);
 
   useEffect(() => {
     let active = true;
@@ -144,7 +151,9 @@ export function RepositoryProvider({
         setConfiguration(nextConfiguration);
         setStatus("ready");
         void loadSync().catch(() => undefined);
-        void reconcileTaskNotifications(repository).catch(() => undefined);
+        void reconcileTaskNotifications(repository, reminderAuthority).catch(
+          () => undefined,
+        );
         void refresh().catch(() => undefined);
       })
       .catch((reason: unknown) => {
@@ -155,7 +164,7 @@ export function RepositoryProvider({
     return () => {
       active = false;
     };
-  }, [loadSync, refresh, repository]);
+  }, [loadSync, refresh, reminderAuthority, repository]);
 
   useEffect(() => {
     if (!repository.subscribe) return;
@@ -207,37 +216,45 @@ export function RepositoryProvider({
     async (input: CreateTaskInput) => {
       const task = await repository.create(input);
       publishMutation();
-      void syncTaskNotifications(task).catch(() => undefined);
+      void syncTaskNotifications(repository, task, reminderAuthority).catch(
+        () => undefined,
+      );
       return task;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
       publishMutation();
-      void syncTaskNotifications(task).catch(() => undefined);
+      void syncTaskNotifications(repository, task, reminderAuthority).catch(
+        () => undefined,
+      );
       return task;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const toggleTask = useCallback(
     async (id: string, occurrenceDate?: string) => {
       const task = await repository.toggle(id, occurrenceDate);
       publishMutation();
-      void syncTaskNotifications(task).catch(() => undefined);
+      void syncTaskNotifications(repository, task, reminderAuthority).catch(
+        () => undefined,
+      );
       return task;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const skipTask = useCallback(
     async (id: string, occurrenceDate: string) => {
       const task = await repository.skip(id, occurrenceDate);
       publishMutation();
-      void syncTaskNotifications(task).catch(() => undefined);
+      void syncTaskNotifications(repository, task, reminderAuthority).catch(
+        () => undefined,
+      );
       return task;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const materializeOccurrence = useCallback(
     async (parentId: string, occurrenceDate: string) => {
@@ -246,10 +263,14 @@ export function RepositoryProvider({
         occurrenceDate,
       );
       publishMutation();
-      void syncTaskNotifications(result.task).catch(() => undefined);
+      void syncTaskNotifications(
+        repository,
+        result.task,
+        reminderAuthority,
+      ).catch(() => undefined);
       return result;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
@@ -287,18 +308,22 @@ export function RepositoryProvider({
     async (id: string, archived: boolean) => {
       const task = await repository.setArchived(id, archived);
       publishMutation();
-      void syncTaskNotifications(task).catch(() => undefined);
+      void syncTaskNotifications(repository, task, reminderAuthority).catch(
+        () => undefined,
+      );
       return task;
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const deleteTask = useCallback(
     async (id: string) => {
       await repository.delete(id);
       publishMutation();
-      void removeTaskNotifications(id).catch(() => undefined);
+      void removeTaskNotifications(repository, id, reminderAuthority).catch(
+        () => undefined,
+      );
     },
-    [publishMutation, repository],
+    [publishMutation, reminderAuthority, repository],
   );
   const resolveSyncIssue = useCallback(
     async (id: string, resolution: "local" | "remote") => {

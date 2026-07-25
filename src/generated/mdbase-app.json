@@ -35,71 +35,15 @@
   "notifications": {
     "criteria": [
       {
-        "id": "task.created",
+        "id": "task.reminder",
         "event": {
-          "id": "mdbase.record.created",
+          "id": "timer.fired",
           "version": 1
         },
-        "if": {
-          "$expr": "\"task\" in event.payload.types"
-        },
-        "debounce": "5s",
-        "minimum_interval": "15s",
         "presentation": {
-          "title": "A task was added",
-          "body": "Open TaskNotes to see the latest changes.",
-          "tag": "tasknotes-changes"
-        }
-      },
-      {
-        "id": "task.changed",
-        "event": {
-          "id": "mdbase.record.modified",
-          "version": 1
-        },
-        "if": {
-          "$expr": "\"task\" in event.payload.types"
-        },
-        "debounce": "5s",
-        "minimum_interval": "15s",
-        "presentation": {
-          "title": "Tasks changed",
-          "body": "Open TaskNotes to see the latest changes.",
-          "tag": "tasknotes-changes"
-        }
-      },
-      {
-        "id": "task.moved",
-        "event": {
-          "id": "mdbase.record.renamed",
-          "version": 1
-        },
-        "if": {
-          "$expr": "\"task\" in event.payload.types"
-        },
-        "debounce": "5s",
-        "minimum_interval": "15s",
-        "presentation": {
-          "title": "Tasks changed",
-          "body": "Open TaskNotes to see the latest changes.",
-          "tag": "tasknotes-changes"
-        }
-      },
-      {
-        "id": "task.removed",
-        "event": {
-          "id": "mdbase.record.deleted",
-          "version": 1
-        },
-        "if": {
-          "$expr": "\"task\" in event.payload.types"
-        },
-        "debounce": "5s",
-        "minimum_interval": "15s",
-        "presentation": {
-          "title": "A task was removed",
-          "body": "Open TaskNotes to see the latest changes.",
-          "tag": "tasknotes-changes"
+          "title": "Task reminder",
+          "body": "Open TaskNotes to view your task.",
+          "tag": "tasknotes-reminders"
         }
       }
     ]

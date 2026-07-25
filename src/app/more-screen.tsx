@@ -70,6 +70,7 @@ export function MoreScreen({
   const benchmarkTools = import.meta.env.VITE_BENCHMARK_TOOLS === "1";
 
   useEffect(() => {
+    if (choice !== "local") return;
     void notificationPermission().then((permission) =>
       setReminderNotifications(
         permission === "unavailable"
@@ -81,7 +82,7 @@ export function MoreScreen({
               : "Asked when you add a reminder",
       ),
     );
-  }, []);
+  }, [choice]);
 
   useEffect(() => {
     let active = true;
@@ -392,21 +393,22 @@ export function MoreScreen({
         <div className="setting-row">
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Task reminders</span>
-          <small>{reminderNotifications}</small>
-        </div>
-        <div className="setting-row">
-          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Changes from mdbase</span>
-          <small>{changeNotificationLabel(changeNotifications)}</small>
+          <small>
+            {choice === "cloud"
+              ? changeNotificationLabel(changeNotifications)
+              : reminderNotifications}
+          </small>
         </div>
         <p className="section-copy">
-          Wake TaskNotes when your connected collection changes. Notification
-          text never includes task content.
+          {choice === "cloud"
+            ? "mdbase keeps connected reminders running when this app is closed. Notification text never includes task content."
+            : "This device schedules reminders for tasks in the local collection."}
         </p>
-        {changeNotifications.state === "off" ||
-        changeNotifications.state === "enabled" ||
-        (changeNotifications.state === "denied" &&
-          changeNotifications.optedIn) ? (
+        {choice === "cloud" &&
+        (changeNotifications.state === "off" ||
+          changeNotifications.state === "enabled" ||
+          (changeNotifications.state === "denied" &&
+            changeNotifications.optedIn)) ? (
           <button
             className="text-action"
             disabled={changeNotificationsBusy}
@@ -416,11 +418,12 @@ export function MoreScreen({
             {changeNotificationsBusy
               ? "Updating"
               : changeNotifications.optedIn
-                ? "Turn off change notifications"
-                : "Turn on change notifications"}
+                ? "Turn off reminders"
+                : "Turn on reminders"}
           </button>
         ) : null}
-        {changeNotifications.state === "reauthorization_required" ? (
+        {choice === "cloud" &&
+        changeNotifications.state === "reauthorization_required" ? (
           <button
             className="text-action"
             type="button"
@@ -437,7 +440,7 @@ export function MoreScreen({
             Review notification access
           </button>
         ) : null}
-        {changeNotificationsError ? (
+        {choice === "cloud" && changeNotificationsError ? (
           <p className="inline-error notification-error" role="alert">
             {changeNotificationsError}
           </p>
