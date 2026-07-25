@@ -135,6 +135,7 @@ Keep this body.
       id: "today",
       name: "Today",
       renderer: "tasknotes.task-list" as const,
+      computedProperties: [],
       properties: ["title", "due"],
       sort: [],
       groupDirection: "asc" as const,
@@ -223,6 +224,143 @@ Keep this body.
     expect(canonicalDraft.sort).toEqual([
       { property: "due", direction: "desc" },
     ]);
+  });
+
+  it("edits Obsidian formulas and exposes them to the rest of the view", () => {
+    const source = baseSource(`formulas:
+  score: 'if(priority == "high", 2, 1)'
+properties:
+  formula.score: { displayName: Score }
+views:
+  - type: tasknotesTaskList
+    name: Ranked
+    filters: formula.score > 1
+    order: [title, formula.score]
+`);
+    const draft = readViewDraft(source, "ranked");
+    expect(draft.computedProperties).toEqual([
+      {
+        name: "score",
+        expression: 'if(priority == "high", 2, 1)',
+        scope: "source",
+        originalName: "score",
+      },
+    ]);
+    expect(draft.availableProperties).toContain("formula.score");
+
+    const updated = parse(
+      updateViewDocument(source, {
+        ...draft,
+        computedProperties: [
+          {
+            ...draft.computedProperties[0],
+            expression: 'if(priority == "high", 3, 1)',
+          },
+          {
+            name: "label",
+            expression: 'if(formula.score > 1, "urgent", "normal")',
+            scope: "source",
+          },
+        ],
+        properties: ["title", "formula.label"],
+      }),
+    ) as Record<string, unknown>;
+
+    expect(updated.formulas).toEqual({
+      score: 'if(priority == "high", 3, 1)',
+      label: 'if(formula.score > 1, "urgent", "normal")',
+    });
+    expect(updated.properties).toEqual({
+      "formula.score": { displayName: "Score" },
+    });
+    expect((updated.views as Array<Record<string, unknown>>)[0].order).toEqual([
+      "title",
+      "formula.label",
+    ]);
+  });
+
+  it("preserves canonical projection scope and extension data", () => {
+    const source: TaskViewSourceDocument = {
+      path: "views/ranked.md",
+      format: "mdbase.view",
+      revision: "sha256:ranked",
+      document: `---
+type: view
+id: ranked
+version: 1
+name: Ranked
+query:
+  types: [task]
+  projections:
+    score:
+      expr: 'priority == "high" ? 2 : 1'
+      description: Shared score
+      x-owner: tasknotes
+views:
+  - id: ranked
+    name: Ranked
+    projections:
+      label:
+        expr: 'string(projection.score)'
+        description: View label
+    where: projection.score > 1
+    select: [title, projection.label]
+    presentation: { type: tasknotes.task-list }
+---
+`,
+    };
+    const draft = readViewDraft(source, "ranked");
+    expect(draft.computedProperties).toEqual([
+      {
+        name: "score",
+        expression: 'priority == "high" ? 2 : 1',
+        scope: "source",
+        originalName: "score",
+        originalDefinition: {
+          expr: 'priority == "high" ? 2 : 1',
+          description: "Shared score",
+          "x-owner": "tasknotes",
+        },
+      },
+      {
+        name: "label",
+        expression: "string(projection.score)",
+        scope: "view",
+        originalName: "label",
+        originalDefinition: {
+          expr: "string(projection.score)",
+          description: "View label",
+        },
+      },
+    ]);
+
+    const updated = parseFrontmatter(
+      updateViewDocument(source, {
+        ...draft,
+        computedProperties: draft.computedProperties.map((property) =>
+          property.name === "label"
+            ? { ...property, name: "display_label", scope: "source" }
+            : property,
+        ),
+      }),
+    ).frontmatter;
+    const query = updated.query as Record<string, unknown>;
+    const projections = query.projections as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const view = (updated.views as Array<Record<string, unknown>>)[0];
+
+    expect(projections.score).toEqual({
+      expr: 'priority == "high" ? 2 : 1',
+      description: "Shared score",
+      "x-owner": "tasknotes",
+    });
+    expect(projections.display_label).toEqual({
+      expr: "string(projection.score)",
+      description: "View label",
+    });
+    expect(view).not.toHaveProperty("projections");
   });
 });
 

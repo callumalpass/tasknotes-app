@@ -1,15 +1,11 @@
-import {
-  parseFrontmatter,
-  serializeMarkdownDocument,
-} from "@tasknotes/model/frontmatter";
-import { isSeq, parse, parseDocument, stringify } from "yaml";
+import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import { stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { TaskViewDocument } from "./view";
 import type { TaskRepository } from "../storage/repository";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
-const TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION = 3;
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Today",
   "Upcoming",
@@ -26,6 +22,7 @@ export function taskNotesDefaultBaseDocument(
   const scheduled = note(fields.scheduled);
   const due = note(fields.due);
   const priority = note(fields.priority);
+  const projects = note(fields.projects);
   const title = note(fields.title);
   const taskDate = `if(${scheduled}.isEmpty() == false, ${scheduled}, ${due})`;
   const taskDay =
@@ -34,9 +31,6 @@ export function taskNotesDefaultBaseDocument(
 
   return stringify(
     {
-      "x-tasknotes-app": {
-        version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
-      },
       formulas: {
         taskDate,
         taskDay,
@@ -105,11 +99,18 @@ export function taskNotesDefaultBaseDocument(
           },
         },
         {
-          type: "tasknotesProjects",
+          type: "tasknotesTaskList",
           name: "Projects",
-          filters: projectRelationshipFilter(configuration),
-          order: ["file.name", "file.folder"],
-          sort: [{ property: "file.name", direction: "ASC" }],
+          filters: {
+            and: [
+              ...activeTaskFilters(configuration),
+              `${projects}.isEmpty() == false`,
+            ],
+          },
+          order: [title, status, scheduled, due, priority],
+          sort: [{ property: title, direction: "ASC" }],
+          groupBy: { property: projects, direction: "ASC" },
+          options: { create: false },
         },
         {
           type: "tasknotesTaskList",
@@ -147,13 +148,10 @@ export function taskNotesDefaultCanonicalDocument(
       id: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
       version: 1,
       name: "TaskNotes",
-      "x-tasknotes-app": {
-        version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
-      },
       query: {
         projections: {
-          task_date: taskDate,
-          task_day: taskDay,
+          task_date: { expr: taskDate },
+          task_day: { expr: taskDay },
         },
       },
       views: [
@@ -189,12 +187,14 @@ export function taskNotesDefaultCanonicalDocument(
         {
           id: "projects",
           name: "Projects",
-          where: projectRelationshipExpression(configuration),
-          select: ["file.name", "file.folder"],
-          order_by: [{ field: "file.name", direction: "asc" }],
+          where: `(${sharedWhere}) && (note[${literal(fields.projects)}].isEmpty() == false)`,
+          select: selection,
+          order_by: [{ field: fields.title, direction: "asc" }],
+          group_by: [{ field: fields.projects, direction: "asc" }],
           presentation: {
-            type: "tasknotes.projects",
+            type: "tasknotes.task-list",
             fallback: "mdbase.table",
+            options: { create: false },
           },
         },
         {
@@ -243,15 +243,7 @@ export async function ensureTaskNotesDefaultViewSource(
   configuration: TaskCollectionConfiguration,
 ): Promise<TaskViewDocument[]> {
   const existing = documents.find(isTaskNotesDefaultViewDocument);
-  if (existing) {
-    if (existing.views.some(({ name }) => name === "Archive")) return documents;
-    return upgradeTaskNotesDefaultViewSource(
-      repository,
-      documents,
-      existing,
-      configuration,
-    );
-  }
+  if (existing) return documents;
 
   try {
     await repository.createViewSource({
@@ -272,116 +264,6 @@ export async function ensureTaskNotesDefaultViewSource(
     });
   }
   return repository.listViews();
-}
-
-async function upgradeTaskNotesDefaultViewSource(
-  repository: TaskRepository,
-  documents: TaskViewDocument[],
-  existing: TaskViewDocument,
-  configuration: TaskCollectionConfiguration,
-): Promise<TaskViewDocument[]> {
-  if (!existing.source.writable) return documents;
-  try {
-    const source = await repository.readViewSource(existing.source.path);
-    if (source.format === "obsidian.base") {
-      const document = parseDocument(source.document);
-      const value = document.toJS() as Record<string, unknown> | null;
-      const metadata =
-        value?.["x-tasknotes-app"] &&
-        typeof value["x-tasknotes-app"] === "object"
-          ? (value["x-tasknotes-app"] as Record<string, unknown>)
-          : {};
-      if (
-        typeof metadata.version === "number" &&
-        metadata.version >= TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION
-      )
-        return documents;
-      const views = document.get("views", true);
-      if (!isSeq(views)) return documents;
-      const generated = parse(
-        taskNotesDefaultBaseDocument(configuration),
-      ) as Record<string, unknown>;
-      const existingNames = new Set(
-        (Array.isArray(value?.views) ? value.views : []).flatMap((view) =>
-          view &&
-          typeof view === "object" &&
-          typeof (view as Record<string, unknown>).name === "string"
-            ? [(view as Record<string, string>).name]
-            : [],
-        ),
-      );
-      for (const view of generated.views as Array<Record<string, unknown>>) {
-        if (typeof view.name === "string" && !existingNames.has(view.name))
-          views.add(view);
-      }
-      document.set("x-tasknotes-app", {
-        version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
-      });
-      await repository.updateViewSource({
-        path: source.path,
-        document: String(document),
-        ifRevision: source.revision,
-      });
-      return repository.listViews();
-    }
-    if (source.format === "mdbase.view") {
-      const parsed = parseFrontmatter(source.document);
-      const metadata =
-        parsed.frontmatter["x-tasknotes-app"] &&
-        typeof parsed.frontmatter["x-tasknotes-app"] === "object"
-          ? (parsed.frontmatter["x-tasknotes-app"] as Record<string, unknown>)
-          : {};
-      if (
-        typeof metadata.version === "number" &&
-        metadata.version >= TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION
-      )
-        return documents;
-      const generated = parseFrontmatter(
-        taskNotesDefaultCanonicalDocument(configuration),
-      ).frontmatter;
-      const currentViews = Array.isArray(parsed.frontmatter.views)
-        ? parsed.frontmatter.views
-        : [];
-      const existingIds = new Set(
-        currentViews.flatMap((view) =>
-          view &&
-          typeof view === "object" &&
-          typeof (view as Record<string, unknown>).id === "string"
-            ? [(view as Record<string, string>).id]
-            : [],
-        ),
-      );
-      if (Array.isArray(generated.views))
-        for (const view of generated.views) {
-          if (
-            view &&
-            typeof view === "object" &&
-            typeof (view as Record<string, unknown>).id === "string" &&
-            !existingIds.has((view as Record<string, string>).id)
-          )
-            currentViews.push(view);
-        }
-      parsed.frontmatter.views = currentViews;
-      parsed.frontmatter["x-tasknotes-app"] = {
-        version: TASKNOTES_DEFAULT_VIEW_SOURCE_VERSION,
-      };
-      await repository.updateViewSource({
-        path: source.path,
-        document: serializeMarkdownDocument(parsed.frontmatter, parsed.body),
-        ifRevision: source.revision,
-      });
-      return repository.listViews();
-    }
-  } catch {
-    const concurrent = await repository.listViews().catch(() => documents);
-    if (
-      concurrent
-        .find(isTaskNotesDefaultViewDocument)
-        ?.views.some(({ name }) => name === "Archive")
-    )
-      return concurrent;
-  }
-  return documents;
 }
 
 function calendarCanonicalView(
@@ -411,28 +293,6 @@ function calendarCanonicalView(
       },
     },
   };
-}
-
-function projectRelationshipFilter(
-  configuration: TaskCollectionConfiguration,
-): { and: string[] } {
-  return { and: [projectRelationshipExpression(configuration)] };
-}
-
-function projectRelationshipExpression(
-  configuration: TaskCollectionConfiguration,
-): string {
-  const backlink = "value.asFile()";
-  const projectValues = `${backlink}.properties[${literal(
-    configuration.fieldMapping.projects,
-  )}]`;
-  const normalizedProject =
-    'file(value.replace(/^\\[[^\\]]+\\]\\((.*)\\)$/, "$1").replace("[[", "").replace("]]", "").split("|")[0].split("#")[0].replace(/%20/g, " ")).asLink()';
-  const relationship = `list(${projectValues}).map(${normalizedProject}).contains(file.asLink())`;
-  const active = activeTaskFilters(configuration, backlink);
-  return `file.backlinks.filter(${[...active, relationship]
-    .map((expression) => `(${expression})`)
-    .join(" && ")}).length > 0`;
 }
 
 function activeTaskFilters(

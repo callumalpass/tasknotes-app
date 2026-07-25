@@ -43,8 +43,17 @@ describe("ViewEditor", () => {
     expect(dialog).toBeVisible();
     await waitFor(() => expect(dialog).toHaveFocus());
     await screen.findByRole("heading", { name: "View" });
-    for (const name of ["View", "Filter", "Arrange", "New tasks", "Work"])
+    for (const name of [
+      "View",
+      "Computed properties",
+      "Filter",
+      "Arrange",
+      "New tasks",
+    ])
       expect(screen.getByRole("heading", { name })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Preview" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Group by" })).toHaveValue(
       "status",
     );
@@ -99,7 +108,7 @@ describe("ViewEditor", () => {
     expect(screen.getByRole("combobox", { name: "Opens as" })).toBeVisible();
     expect(screen.getByText("Scheduled dates")).toBeVisible();
     expect(screen.getByText("Upcoming recurring instances")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Schedule" })).toBeVisible();
+    expect(screen.getByText("No computed properties.")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
     await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
@@ -154,7 +163,7 @@ describe("ViewEditor", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("does not retry a successful write when the follow-up refresh fails", async () => {
+  it("closes after the write without waiting for catalogue reconciliation", async () => {
     const source = baseSource(
       "views: [{ type: tasknotesTaskList, name: Work }]\n",
     );
@@ -166,13 +175,16 @@ describe("ViewEditor", () => {
       }),
     );
     const onClose = vi.fn();
+    let finishRefresh!: () => void;
+    const refresh = new Promise<void>((resolve) => {
+      finishRefresh = resolve;
+    });
+    const onChanged = vi.fn(() => refresh);
     renderEditor({
       repository: repository({ source, updateViewSource }),
       view: savedView(),
       onClose,
-      onChanged: vi.fn(async () => {
-        throw new Error("Collection is temporarily unavailable.");
-      }),
+      onChanged,
     });
     await screen.findByRole("dialog", { name: "Edit view" });
     fireEvent.change(await screen.findByLabelText("Name"), {
@@ -180,13 +192,63 @@ describe("ViewEditor", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The view was saved, but TaskNotes could not refresh it.",
-    );
-    expect(updateViewSource).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Save view" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
+    expect(onChanged).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
+    finishRefresh();
+  });
+
+  it("creates and edits formulas that become available to the view", async () => {
+    const source = baseSource(`formulas:
+  score: 'if(priority == "high", 2, 1)'
+views:
+  - type: tasknotesTaskList
+    name: Work
+    order: [title, formula.score]
+`);
+    const updateViewSource = vi.fn(
+      async (input: UpdateTaskViewSourceInput) => ({
+        ...source,
+        document: input.document,
+      }),
+    );
+    renderEditor({
+      repository: repository({ source, updateViewSource }),
+      view: savedView(),
+    });
+
+    await screen.findByRole("dialog", { name: "Edit view" });
+    expect(screen.getByLabelText("Computed property name 1")).toHaveValue(
+      "score",
+    );
+    expect(screen.getAllByText("formula.score").length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Computed property expression 1"), {
+      target: { value: 'if(priority == "high", 3, 1)' },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add formula" }));
+    fireEvent.change(screen.getByLabelText("Computed property name 2"), {
+      target: { value: "label" },
+    });
+    fireEvent.change(screen.getByLabelText("Computed property expression 2"), {
+      target: { value: 'if(formula.score > 1, "urgent", "normal")' },
+    });
+    await screen.findByText("Computed properties are valid");
+    const save = screen.getByRole("button", { name: "Save view" });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+
+    await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
+    expect(
+      (
+        parse(updateViewSource.mock.calls[0][0].document) as Record<
+          string,
+          unknown
+        >
+      ).formulas,
+    ).toEqual({
+      score: 'if(priority == "high", 3, 1)',
+      label: 'if(formula.score > 1, "urgent", "normal")',
+    });
   });
 });
 

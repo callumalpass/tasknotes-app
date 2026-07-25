@@ -4,12 +4,11 @@ import {
   CalendarDays,
   CalendarRange,
   Columns3,
-  Folder,
   List,
   Plus,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ExpressionBuilder,
@@ -20,6 +19,8 @@ import {
   TaskNotesCombobox,
   TaskNotesSelect,
 } from "../components/tasknotes-controls";
+import { validateComputedProperties } from "../domain/view-computed-properties";
+import { computedPropertyReference } from "../domain/view-document";
 
 import type { LucideIcon } from "lucide-react";
 import type {
@@ -37,6 +38,7 @@ interface ViewEditorFormProps {
   repository: TaskRepository;
   onChange(draft: EditableViewDraft): void;
   onFilterValidityChange(valid: boolean): void;
+  onComputedValidityChange(valid: boolean): void;
 }
 
 export function ViewEditorForm({
@@ -46,13 +48,32 @@ export function ViewEditorForm({
   repository,
   onChange,
   onFilterValidityChange,
+  onComputedValidityChange,
 }: ViewEditorFormProps) {
   const [propertyInput, setPropertyInput] = useState("");
   const [sortPropertyInput, setSortPropertyInput] = useState("");
   const fields = useMemo(
-    () => viewFields(configuration, draft.availableProperties),
-    [configuration, draft.availableProperties],
+    () =>
+      viewFields(configuration, [
+        ...draft.availableProperties,
+        ...draft.computedProperties.map(({ name }) =>
+          computedPropertyReference(draft.dialect, name.trim()),
+        ),
+      ]),
+    [
+      configuration,
+      draft.availableProperties,
+      draft.computedProperties,
+      draft.dialect,
+    ],
   );
+  const computedError = useMemo(
+    () => validateComputedProperties(draft.dialect, draft.computedProperties),
+    [draft.computedProperties, draft.dialect],
+  );
+  useEffect(() => {
+    onComputedValidityChange(!computedError);
+  }, [computedError, onComputedValidityChange]);
   const selectedFields = draft.properties.map(
     (key) =>
       fields.find((candidate) => candidate.key === key) ??
@@ -71,10 +92,14 @@ export function ViewEditorForm({
         onChange={onChange}
       />
 
+      <ComputedPropertiesSection
+        draft={draft}
+        error={computedError}
+        onChange={onChange}
+      />
+
       <EditorSection
-        description={`Choose which ${
-          draft.renderer === "tasknotes.projects" ? "project notes" : "tasks"
-        } belong in this view.`}
+        description="Choose which tasks belong in this view."
         id="view-filter"
         title="Filter"
       >
@@ -242,9 +267,160 @@ export function ViewEditorForm({
         repository={repository}
         onChange={onChange}
       />
-
-      <LayoutPreview draft={draft} fields={fields} />
     </div>
+  );
+}
+
+function ComputedPropertiesSection({
+  draft,
+  error,
+  onChange,
+}: {
+  draft: EditableViewDraft;
+  error: string;
+  onChange(draft: EditableViewDraft): void;
+}) {
+  const noun = draft.dialect === "obsidian-bases" ? "formula" : "projection";
+
+  return (
+    <EditorSection
+      description="Define values for filters, sorting, grouping, and displayed properties."
+      id="view-computed"
+      title="Computed properties"
+    >
+      {draft.computedProperties.length ? (
+        <div className="view-computed-properties">
+          {draft.computedProperties.map((property, index) => {
+            const reference = computedPropertyReference(
+              draft.dialect,
+              property.name.trim() || "name",
+            );
+            return (
+              <div
+                className="view-computed-property"
+                key={`${property.scope}:${property.originalName ?? "new"}:${index}`}
+              >
+                <label>
+                  <span>Name</span>
+                  <input
+                    aria-label={`Computed property name ${index + 1}`}
+                    spellCheck={false}
+                    value={property.name}
+                    onChange={(event) =>
+                      onChange({
+                        ...draft,
+                        computedProperties: replace(
+                          draft.computedProperties,
+                          index,
+                          { ...property, name: event.target.value },
+                        ),
+                      })
+                    }
+                  />
+                </label>
+                {draft.dialect === "mdbase-cel" ? (
+                  <label>
+                    <span>Available in</span>
+                    <TaskNotesSelect
+                      ariaLabel={`Computed property scope ${index + 1}`}
+                      options={[
+                        { value: "view", label: "This view" },
+                        { value: "source", label: "Every view in this file" },
+                      ]}
+                      value={property.scope}
+                      onChange={(scope) =>
+                        onChange({
+                          ...draft,
+                          computedProperties: replace(
+                            draft.computedProperties,
+                            index,
+                            {
+                              ...property,
+                              scope: scope as "source" | "view",
+                            },
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                ) : null}
+                <label className="view-computed-expression">
+                  <span>Expression</span>
+                  <textarea
+                    aria-label={`Computed property expression ${index + 1}`}
+                    rows={2}
+                    spellCheck={false}
+                    value={property.expression}
+                    onChange={(event) =>
+                      onChange({
+                        ...draft,
+                        computedProperties: replace(
+                          draft.computedProperties,
+                          index,
+                          { ...property, expression: event.target.value },
+                        ),
+                      })
+                    }
+                  />
+                </label>
+                <div className="view-computed-property-footer">
+                  <code>{reference}</code>
+                  <button
+                    aria-label={`Remove computed property ${property.name || index + 1}`}
+                    className="quiet-icon"
+                    type="button"
+                    onClick={() =>
+                      onChange({
+                        ...draft,
+                        computedProperties: draft.computedProperties.filter(
+                          (_, candidate) => candidate !== index,
+                        ),
+                      })
+                    }
+                  >
+                    <Trash2 aria-hidden="true" size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="view-editor-empty-row">No computed properties.</p>
+      )}
+      <div className="view-computed-actions">
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...draft,
+              computedProperties: [
+                ...draft.computedProperties,
+                {
+                  name: nextComputedName(draft.computedProperties),
+                  expression: "",
+                  scope: draft.dialect === "obsidian-bases" ? "source" : "view",
+                },
+              ],
+            })
+          }
+        >
+          <Plus aria-hidden="true" size={15} /> Add {noun}
+        </button>
+        {draft.dialect === "obsidian-bases" ? (
+          <small>Formulas are shared by every view in this Base file.</small>
+        ) : null}
+      </div>
+      <p
+        className={error ? "expression-status is-error" : "expression-status"}
+        role={error ? "alert" : undefined}
+      >
+        {error ||
+          (draft.computedProperties.length
+            ? "Computed properties are valid"
+            : "")}
+      </p>
+    </EditorSection>
   );
 }
 
@@ -617,80 +793,6 @@ function OrderButtons({
   );
 }
 
-function LayoutPreview({
-  draft,
-  fields,
-}: {
-  draft: EditableViewDraft;
-  fields: ExpressionField[];
-}) {
-  const propertyLabels = draft.properties
-    .slice(0, 3)
-    .map(
-      (key) =>
-        fields.find((candidate) => candidate.key === key)?.label ??
-        humanize(key),
-    );
-  return (
-    <section
-      aria-labelledby="view-layout-preview-title"
-      className={`view-layout-preview is-${rendererName(draft.renderer)}`}
-    >
-      <div className="view-editor-section-heading">
-        <div>
-          <p className="eyebrow">Preview</p>
-          <h2 id="view-layout-preview-title">
-            {draft.name || "Untitled view"}
-          </h2>
-        </div>
-        <small>{layoutLabel(draft.renderer)}</small>
-      </div>
-      <div aria-hidden="true" className="view-layout-preview-canvas">
-        {draft.renderer === "tasknotes.kanban" ? (
-          <div className="preview-board">
-            {[0, 1, 2].map((column) => (
-              <div key={column}>
-                <i />
-                <span />
-                {column !== 2 ? <span /> : null}
-              </div>
-            ))}
-          </div>
-        ) : isCalendar(draft.renderer) ? (
-          <div className="preview-calendar">
-            {Array.from({ length: 21 }, (_, index) => (
-              <i
-                className={index === 9 || index === 16 ? "has-event" : ""}
-                key={index}
-              />
-            ))}
-          </div>
-        ) : draft.renderer === "tasknotes.projects" ? (
-          <div className="preview-projects">
-            <strong />
-            <span />
-            <span />
-            <strong />
-            <span />
-          </div>
-        ) : (
-          <div className="preview-list">
-            {[0, 1, 2].map((row) => (
-              <div key={row}>
-                <i />
-                <span />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <p className="view-layout-preview-properties">
-        {propertyLabels.length ? propertyLabels.join(" · ") : "Title only"}
-      </p>
-    </section>
-  );
-}
-
 function EditorSection({
   id,
   title,
@@ -770,12 +872,6 @@ const layouts: Array<{
     label: "Mini calendar",
     description: "Date and agenda",
     icon: CalendarRange,
-  },
-  {
-    value: "tasknotes.projects",
-    label: "Projects",
-    description: "Linked notes",
-    icon: Folder,
   },
 ];
 
@@ -864,7 +960,7 @@ function changeRenderer(
 }
 
 function supportsGrouping(renderer: ViewRenderer): boolean {
-  return !isCalendar(renderer) && renderer !== "tasknotes.projects";
+  return !isCalendar(renderer);
 }
 
 function isCalendar(renderer: ViewRenderer): boolean {
@@ -920,12 +1016,20 @@ function move<T>(values: T[], from: number, to: number): T[] {
   return next;
 }
 
-function rendererName(renderer: ViewRenderer): string {
-  return renderer.replace("tasknotes.", "");
+function replace<T>(values: T[], index: number, value: T): T[] {
+  return values.map((candidate, candidateIndex) =>
+    candidateIndex === index ? value : candidate,
+  );
 }
 
-function layoutLabel(renderer: ViewRenderer): string {
-  return layouts.find(({ value }) => value === renderer)?.label ?? "List";
+function nextComputedName(
+  properties: EditableViewDraft["computedProperties"],
+): string {
+  const names = new Set(properties.map(({ name }) => name.trim()));
+  let suffix = 1;
+  while (names.has(suffix === 1 ? "calculated" : `calculated_${suffix}`))
+    suffix += 1;
+  return suffix === 1 ? "calculated" : `calculated_${suffix}`;
 }
 
 function record(value: unknown): Record<string, unknown> {

@@ -44,6 +44,7 @@ export function ViewEditor({
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration | null>(null);
   const [filterValid, setFilterValid] = useState(true);
+  const [computedValid, setComputedValid] = useState(true);
   const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(
     null,
   );
@@ -160,7 +161,7 @@ export function ViewEditor({
   }, [confirmation, requestClose, status]);
 
   async function save() {
-    if (!draft || !draft.name.trim() || !filterValid) return;
+    if (!draft || !draft.name.trim() || !filterValid || !computedValid) return;
     setStatus("saving");
     setError("");
     try {
@@ -182,16 +183,8 @@ export function ViewEditor({
       }
       setSource(persisted);
       setInitialFingerprint(draftFingerprint(draft));
-      try {
-        await onChanged();
-      } catch (reason) {
-        setError(
-          `The view was saved, but TaskNotes could not refresh it. ${message(reason)}`,
-        );
-        setStatus("ready");
-        return;
-      }
       onClose();
+      void onChanged().catch(() => undefined);
     } catch (reason) {
       setError(message(reason));
       setStatus("ready");
@@ -214,8 +207,8 @@ export function ViewEditor({
           document: result.document!,
         });
       }
-      await onChanged();
       onClose();
+      void onChanged().catch(() => undefined);
     } catch (reason) {
       setError(message(reason));
       setStatus("ready");
@@ -224,7 +217,11 @@ export function ViewEditor({
 
   const title = view ? "Edit view" : "Create a view";
   const canSave =
-    Boolean(draft?.name.trim()) && filterValid && status === "ready" && dirty;
+    Boolean(draft?.name.trim()) &&
+    filterValid &&
+    computedValid &&
+    status === "ready" &&
+    dirty;
 
   return (
     <div className="view-editor-layer">
@@ -282,6 +279,7 @@ export function ViewEditor({
                 draft={draft}
                 repository={repository}
                 onChange={setDraft}
+                onComputedValidityChange={setComputedValid}
                 onFilterValidityChange={setFilterValid}
               />
             </Suspense>
@@ -406,6 +404,7 @@ function draftFingerprint(draft: EditableViewDraft | null): string {
     name: draft.name,
     renderer: draft.renderer,
     filter: draft.filter,
+    computedProperties: draft.computedProperties,
     properties: draft.properties,
     sort: draft.sort,
     groupProperty: draft.groupProperty,

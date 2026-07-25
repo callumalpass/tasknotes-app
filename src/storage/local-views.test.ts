@@ -100,7 +100,7 @@ views:
     ]);
   });
 
-  it("executes the project relationship view over collection records without per-project reads", async () => {
+  it("executes Projects as an ordinary grouped task view", async () => {
     const vault = new MemoryVault();
     const collection = new MarkdownCollection(vault);
     await collection.initialize();
@@ -133,14 +133,28 @@ views:
 
     expect(projectView).toBeDefined();
     const execution = await executor.execute(projectView!);
-    expect(execution.rows).toEqual([]);
+    expect(execution.rows).toEqual([
+      expect.objectContaining({
+        task: expect.objectContaining({ id: "linked", title: "Ship mobile" }),
+        values: expect.objectContaining({
+          'note["projects"]': ["[[Projects/Roadmap]]"],
+        }),
+      }),
+    ]);
     expect(execution.records).toEqual([
       expect.objectContaining({
         record: expect.objectContaining({
-          path: "Projects/Roadmap.md",
-          label: "Mobile roadmap",
+          path: "tasks/linked.md",
+          label: "Ship mobile",
         }),
       }),
+    ]);
+    expect(execution.groups).toEqual([
+      {
+        values: { 'note["projects"]': ["[[Projects/Roadmap]]"] },
+        count: 1,
+        summaries: {},
+      },
     ]);
     expect(execution.totalCount).toBe(1);
   });
