@@ -1244,6 +1244,7 @@ test("offers task actions without opening the editor", async ({ page }) => {
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
   await page.getByRole("menuitem", { name: "Start timer" }).click();
+  await expect(page.getByText("Timer running", { exact: true })).toBeVisible();
 
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
@@ -1251,6 +1252,12 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await expect(
     page.getByRole("menuitem", { name: "Stop timer" }),
   ).toBeVisible();
+  await page.getByRole("menuitem", { name: "Stop timer" }).click();
+  await expect(page.getByText("Timer running", { exact: true })).toHaveCount(0);
+
+  await page
+    .getByRole("button", { name: "Task actions for Act from the task row" })
+    .click();
   await page.getByRole("menuitem", { name: "Archive" }).click();
   await expect(
     page.getByText("Act from the task row", { exact: true }),
