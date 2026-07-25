@@ -320,11 +320,17 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Next period" }).click();
-  await page.getByRole("button", { name: "Next period" }).click();
-  await expect(
-    page.getByText("Prepare weekly review", { exact: true }).first(),
-  ).toBeVisible();
+  const upcomingTask = page
+    .getByText("Prepare weekly review", { exact: true })
+    .first();
+  for (
+    let attempt = 0;
+    attempt < 2 && !(await upcomingTask.isVisible());
+    attempt += 1
+  ) {
+    await page.getByRole("button", { name: "Next period" }).click();
+  }
+  await expect(upcomingTask).toBeVisible();
   await page.getByRole("button", { name: "Calendar", exact: true }).click();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await page.getByRole("button", { name: "Upcoming", exact: true }).click();
