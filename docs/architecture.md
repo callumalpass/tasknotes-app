@@ -33,8 +33,8 @@ and issue vocabulary for every collection location.
    only copy of an unsynchronized write until the hosted authority accepts it.
 2. Every persisted task passes through `@tasknotes/model` for mapping and
    mutation semantics.
-3. `mdbase.yaml` and `_types/task.md` are generated from the same shared model
-   package and live beside the records.
+3. `mdbase.yaml` and the type providing `tasknotes.task` are canonical
+   collection resources. The type may use a custom name and types folder.
 4. Paths crossing the vault boundary are relative, normalized, and may not
    traverse above the collection root.
 5. Repository mutations are serialized. A screen can navigate immediately;
@@ -51,9 +51,16 @@ and issue vocabulary for every collection location.
 
 ## Collection lifecycle
 
-On first local open, the vault creates `tasks/` and `_types/`, then installs the
-managed mdbase configuration and TaskNotes type when absent. Managed schema
-migrations run before records are projected.
+On first local open, the vault installs the managed mdbase configuration and
+TaskNotes type when absent. Each refresh re-resolves the canonical type from
+the configured types folder before projecting records. Compatible field,
+status, and path changes apply immediately; an incompatible definition is
+reported while the last usable projection remains available.
+
+Managed schema upgrades show their affected type path and require user
+approval before the type or task records are rewritten. Declining keeps the
+canonical files untouched and suppresses repeat prompts until that type
+changes.
 
 When the index is empty, startup performs a full scan. Later startups load the
 index first and reconcile the filesystem in the background. A full 10,000-file
@@ -104,6 +111,11 @@ requests are debounced, coalesced while in flight, bounded, and cached briefly.
 The selected record is persisted as a collection-root wikilink or Markdown
 link according to collection configuration.
 
+Custom fields also inherit JSON Schema editing semantics. Required fields are
+validated on create and update, read-only values cannot be overwritten by the
+app, enums use strict selectors, and `date-time` values are stored as RFC 3339
+instants.
+
 ## Platform storage
 
 `OpfsVault` stores browser collections under OPFS. `CapacitorVault` stores the
@@ -128,15 +140,18 @@ untouched and return the user to folder selection.
 TaskNotes discovers and authorizes through mdbase connect using Authorization
 Code with PKCE. The application manifest requires the `tasknotes.task` contract
 and provides the portable TaskNotes type document when a collection needs it.
-The portal can create a compatible hosted collection during approval, so a new
-user does not need to prepare storage first.
+During approval, the generic Connect portal provisions that app-owned type into
+the selected hosted collection, so Connect itself contains no TaskNotes
+knowledge.
 
 After token exchange, the mdbase client supplies a credential-owning sync
 transport to `OfflineReplica`. First open downloads collection resources and a
 snapshot. Later opens load the persistent IndexedDB replica immediately and
 pull changes in the background. A failed pull leaves the collection usable and
 marks queued mutations as waiting. Resume pushes local mutations and then
-pulls the authoritative change stream.
+pulls the authoritative change stream. Resource revisions are re-resolved
+before records after every sync, so hosted schema changes take effect without
+reconnecting.
 
 Native authorization opens the system browser and returns through
 `dev.tasknotes.app://auth/mdbase/callback`. Web authorization returns to the

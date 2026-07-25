@@ -69,6 +69,126 @@ describe("TaskNotes task model app boundary", () => {
     expect(updated.frontmatter).not.toHaveProperty("client");
   });
 
+  it("enforces required fields and protects read-only custom values", () => {
+    const schemaModel = new TaskNotesTaskModel({
+      ...model.configuration(),
+      userFields: [
+        {
+          id: "owner",
+          key: "owner",
+          displayName: "Owner",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "external",
+          key: "external",
+          displayName: "External ID",
+          type: "text",
+          readOnly: true,
+          defaultValue: "generated",
+        },
+      ],
+    });
+    expect(() =>
+      schemaModel.create({ title: "Missing owner" }, { id: "missing" }),
+    ).toThrow(/required_custom_field: Owner/);
+
+    const created = schemaModel.create(
+      {
+        title: "Protected",
+        customProperties: { owner: "Alex", external: "spoofed" },
+      },
+      { id: "protected" },
+    );
+    expect(created.customProperties).toEqual({
+      owner: "Alex",
+      external: "generated",
+    });
+    const updated = schemaModel.update(created, {
+      customProperties: { owner: "Sam", external: "changed" },
+    });
+    expect(updated.customProperties).toEqual({
+      owner: "Sam",
+      external: "generated",
+    });
+  });
+
+  it("creates canonical paths from the type path pattern", () => {
+    const patterned = new TaskNotesTaskModel(model.configuration(), {
+      pathPattern: "work/{status}/{id}",
+    });
+    expect(
+      patterned.create({ title: "Patterned" }, { id: "patterned" }).path,
+    ).toBe("work/todo/patterned.md");
+
+    const missing = new TaskNotesTaskModel(model.configuration(), {
+      pathPattern: "work/{owner}/{id}.md",
+    });
+    expect(() =>
+      missing.create({ title: "Missing path field" }, { id: "missing" }),
+    ).toThrow(/path_required/);
+
+    const unsafe = new TaskNotesTaskModel(
+      {
+        ...model.configuration(),
+        userFields: [
+          {
+            id: "owner",
+            key: "owner",
+            displayName: "Owner",
+            type: "text",
+          },
+        ],
+      },
+      { pathPattern: "work/{owner}/{id}.md" },
+    );
+    expect(() =>
+      unsafe.create(
+        { title: "Unsafe", customProperties: { owner: ".." } },
+        { id: "unsafe" },
+      ),
+    ).toThrow(/path_invalid/);
+  });
+
+  it("rejects custom enum and date-time values outside the schema", () => {
+    const schemaModel = new TaskNotesTaskModel({
+      ...model.configuration(),
+      userFields: [
+        {
+          id: "owner",
+          key: "owner",
+          displayName: "Owner",
+          type: "text",
+          inputKind: "enum",
+          options: [{ value: "Alex" }, { value: "Sam" }],
+        },
+        {
+          id: "reviewedAt",
+          key: "reviewedAt",
+          displayName: "Reviewed At",
+          type: "text",
+          inputKind: "datetime",
+        },
+      ],
+    });
+    expect(() =>
+      schemaModel.create(
+        { title: "Invalid enum", customProperties: { owner: "Other" } },
+        { id: "enum" },
+      ),
+    ).toThrow(/allowed value/);
+    expect(() =>
+      schemaModel.create(
+        {
+          title: "Invalid datetime",
+          customProperties: { reviewedAt: "2026-07-22T10:00" },
+        },
+        { id: "datetime" },
+      ),
+    ).toThrow(/RFC 3339/);
+  });
+
   it("persists status, timed dates, and estimates from capture", () => {
     const created = model.create(
       {

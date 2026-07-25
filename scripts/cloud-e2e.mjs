@@ -96,7 +96,7 @@ try {
     .click();
   await expect(
     page.getByRole("combobox", { name: "Collection and location" }),
-  ).toContainText("My tasks");
+  ).toContainText("My collection · mdbase cloud · setup required");
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(
     new RegExp(`^${escapeRegex(appUrl)}/?\\?collection=`),
@@ -480,10 +480,18 @@ async function startMemoryProvider() {
       deleteCollection: async (collectionId) => {
         collections.delete(collectionId);
       },
-      provisionTypes: async () => {
-        throw new Error(
-          "The memory provider cannot provision additional types.",
+      provisionTypes: async (collectionId, provisions) => {
+        const collection = collections.get(collectionId);
+        if (!collection) throw new Error("Collection not found");
+        const resources = provisionedResources(
+          collection.authority.serialize().resources,
+          provisions,
         );
+        collection.authority = new MemoryHostedAuthority({
+          id: collectionId,
+          resources,
+        });
+        return resources.contracts;
       },
       registerReplica: async (collectionId, replica) => {
         const collection = collections.get(collectionId);
@@ -635,6 +643,62 @@ function markdownFrontmatter(document) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(document);
   assert.ok(match, "Expected a Markdown frontmatter document");
   return parse(match[1]);
+}
+
+function provisionedResources(resources, provisions) {
+  const types = [...(resources?.types ?? [])];
+  const contracts = [...(resources?.contracts ?? [])];
+  const documents = [...(resources?.documents ?? [])];
+  for (const provision of provisions) {
+    const definition = markdownFrontmatter(provision.document);
+    const extensions = Object.fromEntries(
+      Object.entries(definition).filter(
+        ([key, value]) =>
+          key.startsWith("x-") &&
+          value !== null &&
+          typeof value === "object" &&
+          !Array.isArray(value),
+      ),
+    );
+    const typeName = definition.name ?? provision.name;
+    types.push({
+      name: typeName,
+      version: definition.version ?? 1,
+      schema: definition.schema?.value ?? {},
+      collection: definition.collection,
+      definition,
+      extensions,
+    });
+    documents.push({
+      path: provision.path,
+      kind: "type",
+      revision: crypto.randomUUID(),
+      document: provision.document,
+    });
+    for (const provided of provision.provides) {
+      const match = Object.entries(extensions).find(
+        ([, value]) => value.contract === provided.id,
+      );
+      if (!match)
+        throw new Error(
+          `Provisioned type ${typeName} does not define ${provided.id}.`,
+        );
+      contracts.push({
+        id: provided.id,
+        version: provided.version,
+        type_name: typeName,
+        extension: match[0],
+        configuration: match[1],
+      });
+    }
+  }
+  return {
+    revision: crypto.randomUUID(),
+    spec_version: resources?.spec_version ?? "0.3.0",
+    types,
+    contracts,
+    documents,
+  };
 }
 
 function cloudViewList(source) {

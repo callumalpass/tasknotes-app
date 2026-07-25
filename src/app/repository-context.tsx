@@ -117,7 +117,9 @@ export function RepositoryProvider({
     setRefreshing(true);
     const run = repository
       .refresh()
-      .then((result) => {
+      .then(async (result) => {
+        const nextConfiguration = await repository.taskConfiguration();
+        setConfiguration(nextConfiguration);
         setLastRefresh(result);
         setError(null);
         publishMutation();

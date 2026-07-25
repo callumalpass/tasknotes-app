@@ -124,11 +124,11 @@ async function dragKanbanHandle(
 async function dragCalendarEvent(event: Locator, destinationDay: Locator) {
   await event.scrollIntoViewIfNeeded();
   const destination = await destinationDay.boundingBox();
-  if (!destination) throw new Error("Calendar drag elements are not laid out");
+  if (!destination) throw new Error("Calendar destination is not laid out");
   await event.dragTo(destinationDay, {
     targetPosition: {
       x: destination.width / 2,
-      y: Math.min(48, destination.height / 2),
+      y: Math.min(36, destination.height / 2),
     },
   });
 }
@@ -323,8 +323,13 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   const upcomingTask = page
     .getByText("Prepare weekly review", { exact: true })
     .first();
-  if (!(await upcomingTask.isVisible()))
+  for (
+    let attempt = 0;
+    attempt < 2 && !(await upcomingTask.isVisible());
+    attempt += 1
+  ) {
     await page.getByRole("button", { name: "Next period" }).click();
+  }
   await expect(upcomingTask).toBeVisible();
   await page.getByRole("button", { name: "Calendar", exact: true }).click();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
