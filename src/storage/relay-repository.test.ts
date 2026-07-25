@@ -104,6 +104,30 @@ describe("relay task repository", () => {
     });
   });
 
+  it("reloads the canonical description and lets the provider own create paths", async () => {
+    const collectionId = crypto.randomUUID();
+    const fixture = relayFixture([], false, false, collectionId);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const next = description(false, false, collectionId);
+    next.types[0] = {
+      ...next.types[0],
+      name: "todo",
+      collection: { path: { pattern: "canonical/{id}.md" } },
+    };
+    next.contracts[0] = { ...next.contracts[0], type_name: "todo" };
+    fixture.describe.mockResolvedValueOnce(next);
+
+    await repository.refresh();
+    const created = await repository.create({ title: "Provider path" });
+
+    expect(created.frontmatter.type).toBe("todo");
+    expect(fixture.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "todo" }),
+    );
+    expect(fixture.create.mock.calls.at(-1)?.[0]).not.toHaveProperty("path");
+  });
+
   it("prefetches one revision read and reuses it for a later delete", async () => {
     const fixture = relayFixture([
       taskRecord("delete-me", "Delete without a second wait", "r1"),
@@ -679,6 +703,7 @@ function relayFixture(
   } as unknown as MdbaseConnection<JsonObject>;
   return {
     connect,
+    describe: describeCollection,
     query,
     read,
     create,

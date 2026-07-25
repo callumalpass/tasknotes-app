@@ -307,12 +307,14 @@ export function TaskNotesDateTimeField({
   label,
   value,
   onChange,
+  disabled = false,
   splitValue = splitLocalDateTime,
   combineValue = combineLocalDateTime,
 }: {
   label: string;
   value?: string;
   onChange(value?: string): void;
+  disabled?: boolean;
   splitValue?(value?: string): { date?: string; time?: string };
   combineValue?(date?: string, time?: string): string | undefined;
 }) {
@@ -323,12 +325,13 @@ export function TaskNotesDateTimeField({
       <div>
         <TaskNotesDatePicker
           ariaLabel={`${label} date`}
+          disabled={disabled}
           value={date}
           onChange={(next) => onChange(combineValue(next, time))}
         />
         <TaskNotesTimePicker
           ariaLabel={`${label} time`}
-          disabled={!date}
+          disabled={disabled || !date}
           value={time}
           onChange={(next) => onChange(combineValue(date, next))}
         />
@@ -342,11 +345,13 @@ export function TaskNotesDateField({
   value,
   onChange,
   className,
+  disabled = false,
 }: {
   label: string;
   value?: string;
   onChange(value?: string): void;
   className?: string;
+  disabled?: boolean;
 }) {
   const id = useId();
   return (
@@ -354,6 +359,7 @@ export function TaskNotesDateField({
       <span id={`${id}-label`}>{label}</span>
       <TaskNotesDatePicker
         ariaLabelledBy={`${id}-label`}
+        disabled={disabled}
         value={value}
         onChange={onChange}
       />

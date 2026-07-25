@@ -97,13 +97,20 @@ export class TaskNotesTaskModel {
   readonly config: TaskCollectionConfiguration;
   private readonly typeName: string;
   private readonly recordsFolder: string;
+  private readonly pathPattern?: string;
 
   constructor(
     config: Partial<TaskCollectionConfiguration> = {},
-    options: { typeName?: string; recordsFolder?: string } = {},
+    options: {
+      typeName?: string;
+      recordsFolder?: string;
+      pathPattern?: string;
+    } = {},
   ) {
+    const model = resolveModelConfig(config);
     this.config = {
-      ...resolveModelConfig(config),
+      ...model,
+      userFields: structuredClone(config.userFields ?? model.userFields),
       templating: config.templating ?? {
         enabled: false,
         failureMode: "warning_fallback",
@@ -118,11 +125,13 @@ export class TaskNotesTaskModel {
     };
     this.typeName = options.typeName ?? "task";
     this.recordsFolder = options.recordsFolder ?? "tasks";
+    this.pathPattern = options.pathPattern;
   }
 
   configuration(): TaskCollectionConfiguration {
     return {
       ...resolveModelConfig(this.config),
+      userFields: structuredClone(this.config.userFields),
       templating: { ...this.config.templating },
       archive: { ...this.config.archive },
       fieldCompletions: structuredClone(this.config.fieldCompletions),
@@ -190,8 +199,13 @@ export class TaskNotesTaskModel {
       archived: false,
     };
     this.assertValid(info);
+    this.assertCustomFields(info.customProperties);
     const frontmatter = this.writeFrontmatter({}, info, context.id, 1);
-    return this.toTask(info, frontmatter, 1);
+    const withPath = {
+      ...info,
+      path: this.taskPath(frontmatter, title, context.id),
+    };
+    return this.toTask(withPath, frontmatter, 1);
   }
 
   async createWithTemplate(
@@ -303,7 +317,11 @@ export class TaskNotesTaskModel {
     if (input.timeEntries !== undefined)
       updates.timeEntries = normalizeTimeEntries(input.timeEntries);
     if (input.customProperties !== undefined)
-      updates.customProperties = input.customProperties;
+      updates.customProperties = updatedCustomProperties(
+        this.config,
+        original.customProperties,
+        input.customProperties,
+      );
 
     const plan = buildTaskUpdatePlan({
       originalTask: original,
@@ -324,11 +342,14 @@ export class TaskNotesTaskModel {
       now,
     );
     this.assertValid(updatedTask);
+    this.assertCustomFields(updatedTask.customProperties);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
     const patched = applyFrontmatterPatch(base, plan.frontmatterPatch);
     if (input.customProperties !== undefined) {
-      for (const field of this.config.userFields) {
+      for (const field of this.config.userFields.filter(
+        (candidate) => !candidate.readOnly,
+      )) {
         const value = input.customProperties[field.key];
         if (isEmptyCustomValue(value)) delete patched[field.key];
       }
@@ -791,6 +812,67 @@ export class TaskNotesTaskModel {
       throw new TaskNotesValidationError(validation.issues);
   }
 
+  private assertCustomFields(
+    values: Record<string, unknown> | undefined,
+  ): void {
+    for (const field of this.config.userFields) {
+      const value = values?.[field.key];
+      if (field.required && !field.readOnly && isEmptyCustomValue(value))
+        throw new Error(
+          `required_custom_field: ${field.displayName || field.key} is required.`,
+        );
+      if (isEmptyCustomValue(value)) continue;
+      if (
+        field.inputKind === "enum" &&
+        !field.options?.some((option) => option.value === value)
+      )
+        throw new Error(
+          `invalid_custom_field: ${field.displayName || field.key} must use an allowed value.`,
+        );
+      if (
+        field.inputKind === "datetime" &&
+        (typeof value !== "string" ||
+          !/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ||
+          Number.isNaN(Date.parse(value)))
+      )
+        throw new Error(
+          `invalid_custom_field: ${field.displayName || field.key} must be an RFC 3339 date-time.`,
+        );
+    }
+  }
+
+  private taskPath(
+    frontmatter: Record<string, unknown>,
+    title: string,
+    id: string,
+  ): string {
+    if (!this.pathPattern) return makeTaskPath(title, id, this.recordsFolder);
+    const expanded = this.pathPattern.replace(
+      /\{(\w+)\}/g,
+      (_placeholder, key: string) => {
+        const value = frontmatter[key];
+        if (
+          value === undefined ||
+          value === null ||
+          (typeof value === "string" && !value.trim())
+        )
+          throw new Error(
+            `path_required: The canonical path requires "${key}".`,
+          );
+        if (
+          typeof value !== "string" &&
+          typeof value !== "number" &&
+          typeof value !== "boolean"
+        )
+          throw new Error(
+            `path_required: The canonical path field "${key}" must be scalar.`,
+          );
+        return String(value);
+      },
+    );
+    return normalizeCanonicalPath(expanded);
+  }
+
   private taskInfo(current: Task): TaskInfo {
     return this.completeTaskInfo(
       mapTaskFromFrontmatter(
@@ -837,19 +919,26 @@ export class TaskNotesTaskModel {
     base: Record<string, unknown>,
   ): Task {
     const title = requiredTitle(planned.title ?? "");
+    const fallbackPath = makeTaskPath(title, id, this.recordsFolder);
     const info = this.completeTaskInfo(
       {
         ...planned,
         id,
-        path: makeTaskPath(title, id, this.recordsFolder),
+        path: fallbackPath,
         title,
         archived: false,
       },
-      makeTaskPath(title, id, this.recordsFolder),
+      fallbackPath,
       planned.details ?? "",
     );
     this.assertValid(info);
-    return this.toTask(info, this.writeFrontmatter(base, info, id, 1), 1);
+    this.assertCustomFields(info.customProperties);
+    const frontmatter = this.writeFrontmatter(base, info, id, 1);
+    const withPath = {
+      ...info,
+      path: this.taskPath(frontmatter, title, id),
+    };
+    return this.toTask(withPath, frontmatter, 1);
   }
 
   recordsFolderPath(): string {
@@ -958,7 +1047,7 @@ function canonicalMutationInstant(
 }
 
 function withUserFieldDefaults(
-  config: TaskNotesModelConfig,
+  config: TaskCollectionConfiguration,
   supplied: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
   const values: Record<string, unknown> = {};
@@ -966,8 +1055,26 @@ function withUserFieldDefaults(
     if (field.defaultValue !== undefined)
       values[field.key] = field.defaultValue;
   }
-  Object.assign(values, supplied);
+  for (const [key, value] of Object.entries(supplied ?? {})) {
+    const field = config.userFields.find((candidate) => candidate.key === key);
+    if (!field?.readOnly) values[key] = value;
+  }
   return Object.keys(values).length ? values : undefined;
+}
+
+function updatedCustomProperties(
+  config: TaskCollectionConfiguration,
+  current: Record<string, unknown> | undefined,
+  supplied: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...supplied };
+  for (const field of config.userFields) {
+    if (!field.readOnly) continue;
+    if (current && Object.prototype.hasOwnProperty.call(current, field.key))
+      result[field.key] = current[field.key];
+    else delete result[field.key];
+  }
+  return result;
 }
 
 function taskAsCreateInput(task: Task): CreateTaskInput {
@@ -1007,6 +1114,19 @@ function normalizeCollectionFolder(value: string): string {
   )
     throw new Error("archive_path_invalid: The archive folder is unsafe.");
   return normalized;
+}
+
+function normalizeCanonicalPath(value: string): string {
+  const normalized = value.trim().replaceAll("\\", "/").replace(/^\/+/, "");
+  const parts = normalized.split("/");
+  if (
+    !normalized ||
+    value.trim().startsWith("/") ||
+    normalized.includes("\0") ||
+    parts.some((part) => !part || part === "." || part === "..")
+  )
+    throw new Error("path_invalid: The canonical task path is unsafe.");
+  return /\.md$/i.test(normalized) ? normalized : `${normalized}.md`;
 }
 
 function requiredTitle(value: string): string {

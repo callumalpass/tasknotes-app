@@ -27,12 +27,23 @@ export interface TaskFieldCompletionConfiguration {
   targetTypes?: string[];
 }
 
-export interface TaskCollectionConfiguration extends TaskNotesModelConfig {
+export interface TaskUserMappedField extends UserMappedField {
+  required?: true;
+  readOnly?: true;
+  inputKind?: "enum" | "datetime";
+  options?: Array<{ value: string; label?: string }>;
+}
+
+export type TaskCollectionConfiguration = Omit<
+  TaskNotesModelConfig,
+  "userFields"
+> & {
+  userFields: TaskUserMappedField[];
   templating: TaskTemplatingConfiguration;
   archive: TaskArchiveConfiguration;
   fieldCompletions: Record<string, TaskFieldCompletionConfiguration>;
   linkWriteFormat: "wikilink" | "markdown";
-}
+};
 
 export function defaultTaskCollectionConfiguration(): TaskCollectionConfiguration {
   return withCollectionDefaults(resolveModelConfig());
@@ -50,14 +61,22 @@ export function resolveTaskCollectionConfiguration(
   const extension = record(value["x-tasknotes"]);
   const schema = record(record(value.schema).value);
   const properties = record(schema.properties);
+  const required = new Set(stringList(schema.required));
   const nativeFields = record(value.fields);
   const statuses = resolveStatuses(base.statuses, record(extension.status));
   const priorities = resolvePriorities(
     base.priorities,
     record(extension.priority),
   );
-  const inferredFields = inferUserFields(properties, base.fieldMapping);
+  const inferredFields = inferUserFields(
+    properties,
+    base.fieldMapping,
+    required,
+  );
   const explicitKeys = new Set(base.userFields.map((field) => field.key));
+  const explicitFields = base.userFields.map((field) =>
+    enrichUserField(field, record(properties[field.key]), required),
+  );
 
   return withCollectionDefaults(
     resolveModelConfig({
@@ -69,7 +88,7 @@ export function resolveTaskCollectionConfiguration(
         record(extension.occurrences),
       ),
       userFields: [
-        ...base.userFields,
+        ...explicitFields,
         ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
       ],
     }),
@@ -280,7 +299,8 @@ function resolvePriorities(
 function inferUserFields(
   properties: Record<string, unknown>,
   fieldMapping: TaskNotesModelConfig["fieldMapping"],
-): UserMappedField[] {
+  required: ReadonlySet<string>,
+): TaskUserMappedField[] {
   const reserved = new Set([
     ...Object.values(fieldMapping),
     "type",
@@ -296,20 +316,51 @@ function inferUserFields(
     if (!type) return [];
     const defaultValue = editableDefault(property.default, type);
     return [
-      {
-        id: `schema:${key}`,
-        key,
-        displayName: string(property.title) ?? humanize(key),
-        type,
-        ...(defaultValue === undefined ? {} : { defaultValue }),
-      },
+      enrichUserField(
+        {
+          id: `schema:${key}`,
+          key,
+          displayName: string(property.title) ?? humanize(key),
+          type,
+          ...(defaultValue === undefined ? {} : { defaultValue }),
+        },
+        property,
+        required,
+      ),
     ];
   });
+}
+
+function enrichUserField(
+  field: UserMappedField,
+  property: Record<string, unknown>,
+  required: ReadonlySet<string>,
+): TaskUserMappedField {
+  const options = enumValues(property);
+  const format =
+    string(property.format) ??
+    (Array.isArray(property.anyOf)
+      ? property.anyOf
+          .map(record)
+          .map((value) => string(value.format))
+          .find(Boolean)
+      : undefined);
+  return {
+    ...field,
+    ...(required.has(field.key) ? { required: true as const } : {}),
+    ...(property.readOnly === true ? { readOnly: true as const } : {}),
+    ...(options.length
+      ? { inputKind: "enum" as const, options }
+      : format === "date-time"
+        ? { inputKind: "datetime" as const }
+        : {}),
+  };
 }
 
 function editableFieldType(
   property: Record<string, unknown>,
 ): UserMappedFieldType | null {
+  if (enumValues(property).length) return "text";
   if (property.type === "boolean") return "boolean";
   if (property.type === "number" || property.type === "integer")
     return "number";

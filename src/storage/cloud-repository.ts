@@ -163,6 +163,7 @@ export class CloudTaskRepository implements TaskRepository {
     if (rollingCreated) {
       try {
         await this.requireReplica().sync();
+        await this.reloadResources();
         await this.reloadCache();
       } catch (reason) {
         this.setOffline(reason);
@@ -191,9 +192,11 @@ export class CloudTaskRepository implements TaskRepository {
     this.emit();
     try {
       await replica.sync();
+      await this.reloadResources();
       await this.reloadCache();
       if (await this.maintainRollingOccurrencesUnlocked()) {
         await replica.sync();
+        await this.reloadResources();
         await this.reloadCache();
       }
       await this.updateStatusCounts();
@@ -645,10 +648,17 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   private configureModel(resources: SyncCollectionResources): void {
-    this.resources = structuredClone(resources);
     const resolved = resolveTaskCollection(resources);
+    this.resources = structuredClone(resources);
     this.taskTypeName = resolved.typeName;
     this.model = resolved.model;
+  }
+
+  private async reloadResources(): Promise<void> {
+    const resources = await this.requireReplica().collectionResources();
+    if (!resources)
+      throw new Error("The cloud collection has no TaskNotes definition.");
+    this.configureModel(resources);
   }
 
   private async loadTemplate(path: string): Promise<string> {

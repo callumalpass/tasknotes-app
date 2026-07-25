@@ -465,6 +465,24 @@ test("edits a contract-defined task without collapsing custom status or fields",
         displayName: "Client",
         type: "text" as const,
       },
+      {
+        id: "owner",
+        key: "owner",
+        displayName: "Owner",
+        type: "text" as const,
+      },
+      {
+        id: "reviewedAt",
+        key: "reviewedAt",
+        displayName: "Reviewed At",
+        type: "text" as const,
+      },
+      {
+        id: "externalId",
+        key: "externalId",
+        displayName: "External ID",
+        type: "text" as const,
+      },
     ],
   };
   const model = new TaskNotesTaskModel(configuration);
@@ -472,7 +490,13 @@ test("edits a contract-defined task without collapsing custom status or fields",
     {
       title: "Respect the collection contract",
       priority: "now",
-      customProperties: { energy: 4, client: "Acme" },
+      customProperties: {
+        energy: 4,
+        client: "Acme",
+        owner: "Alex",
+        reviewedAt: "2026-07-22T10:00:00Z",
+        externalId: "server-owned",
+      },
     },
     { id: "configured-task", now: "2026-07-22T00:00:00.000Z" },
   );
@@ -553,17 +577,28 @@ test("edits a contract-defined task without collapsing custom status or fields",
   );
   await expect(page.getByLabel("Energy level")).toHaveValue("4");
   await expect(page.getByLabel("Client")).toHaveValue("Acme");
+  await expect(page.getByRole("combobox", { name: "Owner *" })).toHaveAttribute(
+    "data-value",
+    "Alex",
+  );
+  await expect(
+    page.getByRole("button", { name: "Reviewed At date" }),
+  ).toHaveAttribute("data-value", "2026-07-22");
+  await expect(page.getByLabel("External ID")).toHaveAttribute("readonly", "");
 
   await page
     .getByLabel("Task title", { exact: true })
     .fill("Preserve the collection contract");
   await page.getByLabel("Client").fill("");
+  await page.getByRole("combobox", { name: "Owner *" }).click();
+  await page.getByRole("option").filter({ hasText: "Sam" }).click();
   await expect.poll(() => updateInput).toBeTruthy();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 
   expect(updateInput?.patch).toMatchObject({
     title: "Preserve the collection contract",
     client: null,
+    owner: "Sam",
   });
   expect(updateInput?.patch).not.toHaveProperty("status");
   expect(record.frontmatter.status).toBe("doing");
@@ -626,7 +661,19 @@ function configuredCollectionDescription() {
       priority: { enum: ["later", "now"] },
       energy: { type: "integer", title: "Energy level" },
       client: { type: "string", title: "Client" },
+      owner: { type: "string", title: "Owner", enum: ["Alex", "Sam"] },
+      reviewedAt: {
+        type: "string",
+        title: "Reviewed At",
+        format: "date-time",
+      },
+      externalId: {
+        type: "string",
+        title: "External ID",
+        readOnly: true,
+      },
     },
+    required: [...((type.schema.required as string[]) ?? []), "owner"],
   };
   const tasknotes = type.extensions["x-tasknotes"] as JsonObject;
   tasknotes.status = {

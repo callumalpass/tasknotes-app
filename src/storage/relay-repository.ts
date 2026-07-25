@@ -120,10 +120,7 @@ export class RelayTaskRepository implements TaskRepository {
 
   private async initializeUnlocked(): Promise<void> {
     const description = await this.connect.describe();
-    const resolved = resolveTaskCollection(description);
-    this.model = resolved.model;
-    this.taskTypeName = resolved.typeName;
-    this.displayName = description.display_name;
+    this.configureDescription(description);
     this.collectionId = description.collection_id;
     this.viewStore = new TaskViewCache(description.collection_id);
     this.viewCache = await this.viewStore.readViewDocuments().catch(() => []);
@@ -150,6 +147,7 @@ export class RelayTaskRepository implements TaskRepository {
     this.status = { ...this.status, state: "syncing", message: undefined };
     this.emit();
     try {
+      this.configureDescription(await this.connect.describe());
       await this.reloadCache();
       this.setConnected();
       await this.maintainRollingOccurrencesUnlocked();
@@ -302,7 +300,6 @@ export class RelayTaskRepository implements TaskRepository {
       try {
         const result = validResult(
           await this.connect.create({
-            path: task.path,
             type: this.taskTypeName,
             frontmatter: asJson(task.frontmatter),
             body: task.body,
@@ -732,6 +729,17 @@ export class RelayTaskRepository implements TaskRepository {
     }
   }
 
+  private configureDescription(
+    description: Awaited<ReturnType<MdbaseConnection<JsonObject>["describe"]>>,
+  ): void {
+    const resolved = resolveTaskCollection(description);
+    if (this.collectionId && description.collection_id !== this.collectionId)
+      throw new Error("The connected mdbase collection changed unexpectedly.");
+    this.model = resolved.model;
+    this.taskTypeName = resolved.typeName;
+    this.displayName = description.display_name;
+  }
+
   private async persistUpdate(
     current: Required<CachedRelayTask>,
     next: Task,
@@ -818,7 +826,6 @@ export class RelayTaskRepository implements TaskRepository {
       const saved = this.storeResult(
         validResult(
           await this.connect.create({
-            path: result.task.path,
             type: this.taskTypeName,
             frontmatter: asJson(result.task.frontmatter),
             body: result.task.body,

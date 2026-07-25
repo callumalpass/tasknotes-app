@@ -89,6 +89,122 @@ describe("IndexedMarkdownRepository", () => {
     expect(await repository.get(created.id)).toBeNull();
   });
 
+  it("reloads the canonical local type and applies its path and fields", async () => {
+    const source = parseFrontmatter(await vault.readText("_types/task.md"));
+    const schema = source.frontmatter.schema as {
+      value: {
+        properties: Record<string, unknown>;
+        required: string[];
+      };
+    };
+    schema.value.properties.client = {
+      type: "string",
+      title: "Client",
+    };
+    schema.value.required.push("client");
+    source.frontmatter.collection = {
+      path: { pattern: "canonical/{priority}/{id}.md" },
+    };
+    await vault.writeText(
+      "_types/task.md",
+      serializeMarkdownDocument(source.frontmatter, source.body),
+    );
+
+    const refreshed = await repository.refresh();
+    expect(refreshed.changed).toBeGreaterThanOrEqual(0);
+    expect(await repository.taskConfiguration()).toMatchObject({
+      userFields: [
+        expect.objectContaining({
+          key: "client",
+          required: true,
+        }),
+      ],
+    });
+    const created = await repository.create({
+      title: "Canonical",
+      priority: "high",
+      customProperties: { client: "Acme" },
+    });
+    expect(created.path).toBe(`canonical/high/${created.id}.md`);
+  });
+
+  it("follows a custom mdbase types folder", async () => {
+    const source = await vault.readText("_types/task.md");
+    await vault.writeText(
+      "mdbase.yaml",
+      "version: 1\nsettings:\n  types_folder: definitions\n",
+    );
+    await vault.writeText("definitions/work-item.md", source);
+    await vault.delete("_types/task.md");
+
+    await repository.refresh();
+    const created = await repository.create({ title: "Custom type folder" });
+    expect(created.frontmatter.type).toBe("task");
+    expect(created.path).toBe(`tasks/${created.id}.md`);
+  });
+
+  it("asks before upgrading a managed canonical type", async () => {
+    const migrationVault = new MemoryVault();
+    const resources = buildTaskNotesMdbaseResources({
+      profiles: ["core-lite"],
+    });
+    const parsed = parseFrontmatter(resources.typeDocument);
+    const schema = parsed.frontmatter.schema as {
+      value: { properties: Record<string, unknown> };
+    };
+    schema.value.properties.completedDate = {
+      type: "string",
+      format: "date-time",
+    };
+    const oldType = serializeMarkdownDocument(parsed.frontmatter, parsed.body);
+    await migrationVault.writeText(resources.paths.type, oldType);
+    await migrationVault.writeText(
+      "tasks/completed.md",
+      serializeMarkdownDocument(
+        {
+          type: "task",
+          id: "completed",
+          title: "Completed",
+          status: "done",
+          priority: "normal",
+          completedDate: "2026-07-22T10:00:00Z",
+          dateCreated: "2026-07-22T00:00:00Z",
+          dateModified: "2026-07-22T10:00:00Z",
+        },
+        "",
+      ),
+    );
+    const requests: string[] = [];
+    const declined = new MarkdownCollection(migrationVault, {
+      approveManagedTypeUpgrade: ({ message }) => {
+        requests.push(message);
+        return false;
+      },
+    });
+    await declined.initialize();
+    expect(requests).toHaveLength(1);
+    expect(await migrationVault.readText(resources.paths.type)).toBe(oldType);
+    await declined.refreshConfiguration();
+    expect(requests).toHaveLength(1);
+
+    const approved = new MarkdownCollection(migrationVault, {
+      approveManagedTypeUpgrade: () => true,
+    });
+    await approved.initialize();
+    expect(
+      (
+        parseFrontmatter(await migrationVault.readText(resources.paths.type))
+          .frontmatter.schema as {
+          value: { properties: { completedDate: { format: string } } };
+        }
+      ).value.properties.completedDate.format,
+    ).toBe("date");
+    expect(
+      parseFrontmatter(await migrationVault.readText("tasks/completed.md"))
+        .frontmatter.completedDate,
+    ).toBe("2026-07-22");
+  });
+
   it("completes project records by title and reuses indexed metadata", async () => {
     await vault.writeText(
       "Projects/mobile.md",
