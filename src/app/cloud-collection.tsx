@@ -9,9 +9,11 @@ import {
   cleanCallbackUrl,
   CLOUD_OPERATIONS,
   cloudConnect,
-  finishAuthorization,
+  completeCloudAuthorization,
   isCloudCallback,
+  onCloudConnectionChange,
   savedCloudConnections,
+  selectedCloudCollectionId,
   selectCloudConnection,
 } from "../cloud/connect";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
@@ -48,8 +50,7 @@ export default function CloudCollection({
   const complete = useCallback(async (url: string) => {
     if (!isCloudCallback(url)) return;
     try {
-      const result = await cloudConnect.completeAuthorization(url);
-      const connection = finishAuthorization(result);
+      const connection = await completeCloudAuthorization(url);
       setCallbackError(null);
       setRepository(createConnectTaskRepository(connection));
     } catch (reason) {
@@ -58,6 +59,13 @@ export default function CloudCollection({
       await finishBrowserCallback();
     }
   }, []);
+
+  useEffect(
+    () => onCloudConnectionChange((connection) => {
+      setRepository(connection ? createConnectTaskRepository(connection) : null);
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (isCloudCallback(location.href)) {
@@ -108,8 +116,7 @@ function CloudConnection({
     void cloudConnect
       .authorize({
         operations: [...CLOUD_OPERATIONS],
-        collectionId:
-          new URL(location.href).searchParams.get("collection") ?? undefined,
+        collectionId: selectedCloudCollectionId() ?? undefined,
         returnTo: authorizationReturnTo(),
       })
       .catch((reason) => {

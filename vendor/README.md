@@ -5,8 +5,11 @@ the mdbase Connect and TaskNotes packages are still under active prerelease
 development. They are ordinary package-manager artifacts rather than forks of
 their source repositories.
 
-The current snapshots were packed from sibling checkouts after their full test
-suites passed:
+The Connect SDK snapshots are produced by its `package:consumer` command. Their
+filenames include the exact source revision and `mdbase-connect-sdk.json`
+records that revision plus a SHA-512 digest for every artifact. Other current
+snapshots were packed from sibling checkouts after their full test suites
+passed:
 
 - `../mdbase-connect/packages/protocol`
 - `../mdbase-connect/packages/client`
@@ -17,8 +20,9 @@ suites passed:
 - `../mdbase`
 - `../obsidian-bases-expression`
 
-Refresh a snapshot with `pnpm pack --pack-destination
-/path/to/tasknotes-app/vendor` from the relevant package directory, update the
-`file:` reference in `package.json` if its version changed, then run `pnpm
-install` and the complete verification matrix. Once stable packages are
-published, replace these snapshots with registry versions.
+Refresh Connect snapshots from its repository with `pnpm package:consumer --
+--destination /path/to/tasknotes-app/vendor`. Update the `file:` references,
+run `pnpm install`, and commit the new provenance file with the artifacts and
+lockfile. Refresh other snapshots with `pnpm pack --pack-destination
+/path/to/tasknotes-app/vendor` from the relevant package directory. Once stable
+packages are published, replace these snapshots with registry versions.

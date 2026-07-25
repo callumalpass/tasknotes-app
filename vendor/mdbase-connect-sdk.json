@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/mdbase-dev/mdbase-connect",
+  "revision": "9a45ef62632cb8d22b658ff3cdcbffc2f592fa8d",
+  "artifacts": [
+    {
+      "package": "connect",
+      "file": "mdbase-connect-0.1.0-beta.1-9a45ef62632c.tgz",
+      "bytes": 31745,
+      "sha512": "V4iGiB0PeXb32t3WH1bbSibNPAGrh279bLFnSB3RTjB2sV5+gNdd4mxTG2M4J8ywdc6bCwnRKYIDyLuBkLLJ2w=="
+    },
+    {
+      "package": "protocol",
+      "file": "mdbase-connect-protocol-0.1.0-beta.1-9a45ef62632c.tgz",
+      "bytes": 9459,
+      "sha512": "/Lx2zhzbjRK9boZm4i6pT5sf9PN+q3/A3W+Uiq/Az7GGTHIGaulIXldl4Em9DExBJgT7gjdSglyI9zxLE/rTWw=="
+    },
+    {
+      "package": "sync",
+      "file": "mdbase-connect-sync-0.1.0-beta.1-9a45ef62632c.tgz",
+      "bytes": 23917,
+      "sha512": "9RQ2WAnEZBQnZUCFdTo8gmW6n26hEWIk1lQ0l6uaHBKGbVbAQ2iwSmjlQc2GE8LPX8D+rA2Cpq7BrRoddshSQQ=="
+    }
+  ]
+}
