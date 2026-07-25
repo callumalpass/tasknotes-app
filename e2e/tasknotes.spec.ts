@@ -121,30 +121,16 @@ async function dragKanbanHandle(
   }
 }
 
-async function dragCalendarEvent(
-  page: Page,
-  event: Locator,
-  destinationDay: Locator,
-) {
+async function dragCalendarEvent(event: Locator, destinationDay: Locator) {
   await event.scrollIntoViewIfNeeded();
-  const [source, destination] = await Promise.all([
-    event.boundingBox(),
-    destinationDay.boundingBox(),
-  ]);
-  if (!source || !destination)
-    throw new Error("Calendar drag elements are not laid out");
-
-  await page.mouse.move(
-    source.x + source.width / 2,
-    source.y + source.height / 2,
-  );
-  await page.mouse.down();
-  await page.mouse.move(
-    destination.x + destination.width / 2,
-    destination.y + Math.min(36, destination.height / 2),
-    { steps: 12 },
-  );
-  await page.mouse.up();
+  const destination = await destinationDay.boundingBox();
+  if (!destination) throw new Error("Calendar drag elements are not laid out");
+  await event.dragTo(destinationDay, {
+    targetPosition: {
+      x: destination.width / 2,
+      y: Math.min(48, destination.height / 2),
+    },
+  });
 }
 
 async function localTaskDocuments(page: Page): Promise<string[]> {
@@ -334,10 +320,12 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Next period" }).click();
-  await expect(
-    page.getByText("Prepare weekly review", { exact: true }).first(),
-  ).toBeVisible();
+  const upcomingTask = page
+    .getByText("Prepare weekly review", { exact: true })
+    .first();
+  if (!(await upcomingTask.isVisible()))
+    await page.getByRole("button", { name: "Next period" }).click();
+  await expect(upcomingTask).toBeVisible();
   await page.getByRole("button", { name: "Calendar", exact: true }).click();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await page.getByRole("button", { name: "Upcoming", exact: true }).click();
@@ -914,7 +902,6 @@ views:
       `.fc-daygrid-day[data-date="${nextDayValue}"]`,
     );
     await dragCalendarEvent(
-      page,
       page.locator(".fc-daygrid-event").filter({ hasText: "Plan saved views" }),
       destination,
     );
