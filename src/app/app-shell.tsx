@@ -6,12 +6,14 @@ import {
   Columns3,
   List,
   MoreHorizontal,
+  Plus,
   Search,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { LoadingRows } from "../components/loading";
+import { GlobalTaskCapture } from "../components/global-task-capture";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { nativeBackAction } from "../native/navigation";
 import { listenForTaskNotificationActions } from "../native/notifications";
@@ -54,6 +56,8 @@ export function AppShell() {
     moveNavigationView,
   } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const closeCapture = useCallback(() => setCaptureOpen(false), []);
   const [workspaceRoute, setWorkspaceRoute] = useState<WorkspaceRoute>(() => {
     const initial = parseRoute();
     return initial.page === "task" ? { page: "home" } : initial;
@@ -67,6 +71,21 @@ export function AppShell() {
     };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
+  }, []);
+
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if (
+        event.key.toLocaleLowerCase() !== "n" ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey
+      )
+        return;
+      event.preventDefault();
+      setCaptureOpen(true);
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
   }, []);
 
   const navigate = useCallback(
@@ -195,6 +214,17 @@ export function AppShell() {
           <img alt="" src={tasknotesMarkUrl} />
           <span>TaskNotes</span>
         </button>
+        <button
+          aria-keyshortcuts="Control+N Meta+N"
+          aria-label="New task"
+          className="global-capture-navigation"
+          type="button"
+          onClick={() => setCaptureOpen(true)}
+        >
+          <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
+          <span>New task</span>
+          <kbd>⌘N</kbd>
+        </button>
         <Navigation
           active={activePage}
           homeViewKey={homeView?.key}
@@ -283,6 +313,22 @@ export function AppShell() {
           />
         </nav>
       ) : null}
+      {route.page !== "task" ? (
+        <button
+          aria-keyshortcuts="Control+N Meta+N"
+          aria-label="New task"
+          className="global-capture-fab"
+          type="button"
+          onClick={() => setCaptureOpen(true)}
+        >
+          <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
+        </button>
+      ) : null}
+      <GlobalTaskCapture
+        open={captureOpen}
+        onClose={closeCapture}
+        onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+      />
     </div>
   );
 }

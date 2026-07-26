@@ -330,6 +330,72 @@ test("organizes the Today list into declarative day sections", async ({
   expect(sectionRenderMs).toBeLessThan(750);
 });
 
+test("captures into the collection from anywhere", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "New task", exact: true });
+  const triggerBox = await trigger.boundingBox();
+  expect(triggerBox).not.toBeNull();
+  expect(triggerBox!.width).toBeGreaterThanOrEqual(44);
+  expect(triggerBox!.height).toBeGreaterThanOrEqual(44);
+
+  const openedAt = await page.evaluate(() => performance.now());
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "New task" });
+  await expect(dialog).toBeVisible();
+  const openLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    openedAt,
+  );
+  await expect(dialog.getByLabel("New task title")).toBeFocused();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  const duplicateIds = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll<HTMLElement>("[id]")].map(
+      (element) => element.id,
+    );
+    return ids.filter((id, index) => ids.indexOf(id) !== index);
+  });
+  expect(duplicateIds).toEqual([]);
+
+  if (testInfo.project.name === "mobile") {
+    const [box, viewport] = await Promise.all([
+      dialog.boundingBox(),
+      Promise.resolve(page.viewportSize()),
+    ]);
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(viewport!.width - 1);
+    expect(
+      Math.abs(box!.y + box!.height - viewport!.height),
+    ).toBeLessThanOrEqual(1);
+  }
+
+  await dialog.getByLabel("New task title").fill("Captured from More");
+  const createdAt = await page.evaluate(() => performance.now());
+  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const createLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    createdAt,
+  );
+  await testInfo.attach("global-capture-profile.json", {
+    body: JSON.stringify({ openLatencyMs, createLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(openLatencyMs).toBeLessThan(500);
+  expect(createLatencyMs).toBeLessThan(750);
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(
+    page.getByText("Captured from More", { exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+n");
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 test("uses responsive TaskNotes controls instead of browser pickers", async ({
   page,
 }, testInfo) => {

@@ -2740,6 +2740,68 @@ button:disabled {
   display: none;
 }
 
+.global-capture-navigation kbd {
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+}
+
+.global-capture-fab {
+  position: fixed;
+  z-index: 9;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 10px 24px var(--color-shadow);
+  cursor: pointer;
+}
+
+.global-capture-scrim {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px
+    max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--ink), transparent 72%);
+}
+
+.global-capture-dialog {
+  width: min(100%, 680px);
+  max-height: calc(100dvh - 48px);
+  padding: 22px 24px 26px;
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 24px 70px var(--color-shadow);
+}
+
+.global-capture-dialog > header {
+  display: flex;
+  min-height: 52px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.global-capture-dialog h2 {
+  margin: 2px 0 0;
+  font-size: 1.45rem;
+}
+
 .collection-welcome {
   display: flex;
   flex-direction: column;
@@ -4583,6 +4645,22 @@ button:disabled {
     background: var(--accent-soft);
   }
 
+  .navigation-rail > .global-capture-navigation {
+    min-height: 44px;
+    margin-bottom: 20px;
+    color: var(--color-on-accent);
+    background: var(--accent);
+  }
+
+  .navigation-rail > .global-capture-navigation kbd {
+    color: inherit;
+    opacity: 0.72;
+  }
+
+  .global-capture-fab {
+    display: none;
+  }
+
   .page-surface {
     padding-bottom: 0;
   }
@@ -4813,6 +4891,21 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .global-capture-dialog {
+    width: 100%;
+    max-height: calc(100dvh - env(safe-area-inset-top));
+    padding: 18px var(--page-inset) calc(22px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .global-capture-scrim {
+    align-items: end;
+    padding: env(safe-area-inset-top) 0 0;
+  }
+
   .task-model-settings-grid {
     grid-template-columns: 1fr;
   }

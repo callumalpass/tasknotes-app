@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -84,6 +85,8 @@ export function TaskCapture({
     message: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const suggestionsId = useId();
   const textRef = useRef("");
   const followUpSequence = useRef(0);
   const creationDefaults = defaults ?? emptyDefaults;
@@ -151,7 +154,8 @@ export function TaskCapture({
 
   useEffect(() => {
     if (focusRequest === undefined) return;
-    inputRef.current?.focus();
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
   }, [focusRequest]);
 
   useEffect(() => {
@@ -360,20 +364,20 @@ export function TaskCapture({
         <span aria-hidden="true" className="capture-plus">
           +
         </span>
-        <label className="visually-hidden" htmlFor="quick-task">
+        <label className="visually-hidden" htmlFor={inputId}>
           New task title
         </label>
         <input
-          id="quick-task"
+          id={inputId}
           ref={inputRef}
           role="combobox"
           aria-activedescendant={
             suggestions.length
-              ? `capture-suggestion-${selectedSuggestion}`
+              ? `${suggestionsId}-option-${selectedSuggestion}`
               : undefined
           }
           aria-autocomplete="list"
-          aria-controls="capture-suggestions"
+          aria-controls={suggestionsId}
           aria-expanded={suggestions.length > 0}
           autoComplete="off"
           enterKeyHint="done"
@@ -403,14 +407,14 @@ export function TaskCapture({
 
       {suggestions.length ? (
         <div
-          id="capture-suggestions"
+          id={suggestionsId}
           className="capture-suggestions"
           role="listbox"
           aria-label="Task field suggestions"
         >
           {suggestions.map((suggestion, index) => (
             <button
-              id={`capture-suggestion-${index}`}
+              id={`${suggestionsId}-option-${index}`}
               className={index === selectedSuggestion ? "is-selected" : ""}
               key={`${suggestion.kind}:${suggestion.value}`}
               role="option"
