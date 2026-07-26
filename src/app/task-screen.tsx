@@ -11,13 +11,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
 import { MultiValueField } from "../components/multi-value-field";
+import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateField,
-  TaskNotesDatePicker,
   TaskNotesDateTimeField,
   TaskNotesSelect,
   TaskNotesSelectField,
-  TaskNotesTimePicker,
 } from "../components/tasknotes-controls";
 import {
   buildRecurrenceRule,
@@ -700,8 +699,10 @@ function TaskEditor({
               onChange={(patch) => change(patch)}
             />
           ) : null}
-          <ReminderField
+          <ReminderEditor
+            due={draft.due}
             reminders={draft.reminders}
+            scheduled={draft.scheduled}
             onChange={(reminders) => change({ reminders })}
           />
         </TaskFormSection>
@@ -1424,80 +1425,6 @@ function formatOccurrenceDate(value: string): string {
     day: "numeric",
     month: "long",
   }).format(date);
-}
-
-function ReminderField({
-  reminders,
-  onChange,
-}: {
-  reminders: Task["reminders"];
-  onChange(reminders: Task["reminders"]): void;
-}) {
-  const absolute = reminders.find(
-    (reminder) => reminder.type === "absolute" && reminder.absoluteTime,
-  );
-  const initial = toLocalDateTime(absolute?.absoluteTime);
-  const [date, setDate] = useState(initial.slice(0, 10));
-  const [time, setTime] = useState(initial.slice(11, 16));
-
-  function commit(nextDate: string, nextTime: string) {
-    onChange([
-      ...reminders.filter((reminder) => reminder !== absolute),
-      {
-        id: absolute?.id ?? crypto.randomUUID(),
-        type: "absolute",
-        absoluteTime: new Date(`${nextDate}T${nextTime}`).toISOString(),
-      },
-    ]);
-  }
-
-  function remove() {
-    onChange(reminders.filter((reminder) => reminder !== absolute));
-  }
-
-  return (
-    <div className="reminder-field">
-      <div className="form-field date-time-field tasknotes-control-field">
-        <span>Reminder</span>
-        <div>
-          <TaskNotesDatePicker
-            ariaLabel="Reminder date"
-            value={date || undefined}
-            onChange={(next) => {
-              const nextDate = next ?? "";
-              setDate(nextDate);
-              if (nextDate && time) commit(nextDate, time);
-              else if (!nextDate && absolute) remove();
-            }}
-          />
-          <TaskNotesTimePicker
-            ariaLabel="Reminder time"
-            disabled={!date}
-            value={time || undefined}
-            onChange={(next) => {
-              const nextTime = next ?? "";
-              setTime(nextTime);
-              if (date && nextTime) commit(date, nextTime);
-              else if (!nextTime && absolute) remove();
-            }}
-          />
-        </div>
-      </div>
-      {absolute ? (
-        <button
-          className="text-action danger"
-          type="button"
-          onClick={() => {
-            setDate("");
-            setTime("");
-            remove();
-          }}
-        >
-          Remove
-        </button>
-      ) : null}
-    </div>
-  );
 }
 
 function toDraft(task: Task): Draft {

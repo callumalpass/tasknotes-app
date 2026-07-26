@@ -2000,17 +2000,85 @@ button:disabled {
   padding-top: 22px;
 }
 
-.reminder-field {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 18px;
+.reminder-editor {
   padding: 25px 0 22px;
   border-bottom: 1px solid var(--line);
 }
 
-.reminder-field > .date-time-field {
-  min-width: 0;
+.reminder-editor-heading,
+.reminder-row-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.reminder-editor-heading p,
+.reminder-empty {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+}
+
+.reminder-editor-heading .text-action,
+.reminder-row-heading .text-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.reminder-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 0 4px;
+}
+
+.reminder-quick-actions button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--accent);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+}
+
+.reminder-quick-actions button:is(:hover, :focus-visible) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  outline: 0;
+}
+
+.reminder-list {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.reminder-row {
+  padding: 18px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.reminder-row:last-child {
+  border-bottom: 0;
+}
+
+.reminder-row-heading strong {
+  font-size: 0.94rem;
+}
+
+.reminder-fields {
+  padding: 18px 0 0;
+}
+
+.reminder-description {
+  display: block;
+  padding-top: 18px;
 }
 
 .notes-field {
@@ -2076,7 +2144,7 @@ button:disabled {
 .task-form-section-content > .field-grid,
 .task-form-section-content > .time-tracking,
 .task-form-section-content > .repeat-fields,
-.task-form-section-content > .reminder-field {
+.task-form-section-content > .reminder-editor {
   border-bottom: 0;
 }
 

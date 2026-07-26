@@ -335,9 +335,39 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByRole("button", { name: "Monday" }).click();
   await chooseOption(page, "Ends", "After occurrences");
   await page.getByRole("spinbutton", { name: "Occurrences" }).fill("6");
+  await page
+    .getByRole("button", { name: "Add 15 minutes before scheduled" })
+    .click();
+  const firstReminder = page.getByRole("region", { name: "Reminder 1" });
+  await firstReminder.getByLabel("Amount").fill("30");
+  await page.getByRole("button", { name: "Add reminder" }).click();
+  const secondReminder = page.getByRole("region", { name: "Reminder 2" });
+  await chooseOption(secondReminder, "Type", "Fixed date and time");
   await chooseDate(page, "Reminder date", tomorrowValue);
   await chooseTime(page, "Reminder time", "09:00");
+  await expect(page.getByRole("region", { name: /Reminder \d/ })).toHaveCount(
+    2,
+  );
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Prepare weekly review"),
+      );
+      return {
+        absolute: source?.includes("type: absolute") ?? false,
+        relative: source?.includes("type: relative") ?? false,
+      };
+    })
+    .toEqual({ absolute: true, relative: true });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByText("Repeat and reminders", { exact: true }).click();
+  await expect(page.getByRole("region", { name: /Reminder \d/ })).toHaveCount(
+    2,
+  );
+  await expect(
+    page.getByRole("region", { name: "Reminder 1" }).getByLabel("Amount"),
+  ).toHaveValue("30");
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Upcoming" }).click();

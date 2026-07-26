@@ -40,11 +40,12 @@ describe("notification task routing", () => {
     ).toBe("b");
   });
 
-  it("projects only future absolute reminders into content-free authority timers", async () => {
+  it("projects future absolute and relative reminders into content-free authority timers", async () => {
     const task = {
       id: "task-a",
       completed: false,
       archived: false,
+      scheduled: "2026-07-25T12:00:00Z",
       reminders: [
         {
           id: "future",
@@ -57,7 +58,13 @@ describe("notification task routing", () => {
           type: "absolute",
           absoluteTime: "2026-07-24T10:00:00Z",
         },
-        { id: "relative", type: "relative", offset: "PT15M" },
+        {
+          id: "relative",
+          type: "relative",
+          relatedTo: "scheduled",
+          offset: "-PT1H",
+          description: "Another private reminder",
+        },
       ],
     } as Task;
 
@@ -65,15 +72,21 @@ describe("notification task routing", () => {
       [task],
       Date.parse("2026-07-25T00:00:00Z"),
     );
-    expect(timers).toHaveLength(1);
-    expect(timers[0]).toEqual({
-      id: expect.stringMatching(/^[a-f0-9]{64}$/),
-      fire_at: "2026-07-26T00:00:00.000Z",
-    });
+    expect(timers).toEqual([
+      {
+        id: expect.stringMatching(/^[a-f0-9]{64}$/),
+        fire_at: "2026-07-26T00:00:00.000Z",
+      },
+      {
+        id: expect.stringMatching(/^[a-f0-9]{64}$/),
+        fire_at: "2026-07-25T11:00:00.000Z",
+      },
+    ]);
     expect(
       await desiredTaskTimers([task], Date.parse("2026-07-25T00:00:00Z")),
     ).toEqual(timers);
     expect(JSON.stringify(timers)).not.toContain("Private reminder text");
+    expect(JSON.stringify(timers)).not.toContain("Another private reminder");
     expect(JSON.stringify(timers)).not.toContain("task-a");
     expect(JSON.stringify(timers)).not.toContain("future");
   });
