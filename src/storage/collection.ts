@@ -334,14 +334,27 @@ export class MarkdownCollection {
   async read(document: VaultEntry): Promise<Task | null> {
     try {
       const parsed = parseFrontmatter(await this.vault.readText(document.path));
-      return this.taskModel.read({
+      const task = this.taskModel.read({
         path: document.path,
         frontmatter: parsed.frontmatter,
         body: parsed.body,
       });
+      this.cacheTaskRecord(task, document);
+      return task;
     } catch {
       return null;
     }
+  }
+
+  cacheTaskRecord(
+    task: Task,
+    source: Pick<VaultEntry, "lastModified" | "size">,
+  ): void {
+    this.collectionRecordCache.set(task.path, {
+      lastModified: source.lastModified,
+      size: source.size,
+      record: taskCollectionRecord(task),
+    });
   }
 
   private async readCollectionRecord(
@@ -480,11 +493,7 @@ export class MarkdownCollection {
       task.path,
       serializeMarkdownDocument(task.frontmatter, task.body),
     );
-    this.collectionRecordCache.set(task.path, {
-      lastModified: source.lastModified,
-      size: source.size,
-      record: taskCollectionRecord(task),
-    });
+    this.cacheTaskRecord(task, source);
     return source;
   }
 

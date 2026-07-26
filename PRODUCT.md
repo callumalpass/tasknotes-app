@@ -40,12 +40,12 @@ Obsidian UI at phone scale.
 
 ## Design Principles
 
-1. Open into the work. A returning user should immediately see useful tasks.
+1. Open into the work. Cached tasks appear immediately; a first local index streams useful results without holding the application closed.
 2. Make local the default experience. Capture and editing must never wait for a network round trip.
 3. Keep structure legible. Dates, status, priority, and recurrence should scan clearly without becoming a control panel.
 4. Reveal portability gently. Let users inspect the Markdown record and collection location when they choose.
 5. Use one vocabulary across storage providers. Local and cloud collections should behave like the same product.
-6. Keep reminders dependable. Local folders use device scheduling; connected collections use their mdbase authority so reminders do not depend on one phone staying online.
+6. Keep reminders dependable. Mdbase hosted collections use their authority so reminders do not depend on one phone staying online. Local Markdown and live connector collections retain reminder data but do not deliver notifications.
 
 ## Accessibility & Inclusion
 

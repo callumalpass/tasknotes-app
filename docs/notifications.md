@@ -1,11 +1,9 @@
 # Notifications
 
-TaskNotes uses one reminder experience with two authorities:
-
-- local-folder reminders are scheduled in the device operating system;
-- connected-collection reminders are stored as grant-scoped one-shot timers at
-  the local connector or hosted provider and delivered through Connect-managed
-  FCM.
+TaskNotes delivers reminders only for mdbase hosted collections. Connected
+reminders are stored as grant-scoped one-shot timers at the hosted provider and
+delivered through Connect-managed FCM. Local Markdown and live connector
+collections retain portable reminder data but do not schedule notifications.
 
 TaskNotes does not subscribe to general collection-change notifications.
 Connected timers continue running when the app and phone are offline. The
@@ -80,8 +78,7 @@ Unit tests cover browser/native distinction, missing native configuration,
 permission flow, FCM token registration errors, and a registration timeout.
 The Android smoke test must cross the official plugin boundary, obtain a real
 FCM token, send a content-free signal through FCM HTTP v1, and observe it in
-the foreground. A test that schedules only `LocalNotifications` does not cover
-connected reminders. `TASKNOTES_ANDROID_SKIP_FCM_DELIVERY=1` may be used to
+the foreground. `TASKNOTES_ANDROID_SKIP_FCM_DELIVERY=1` may be used to
 continue diagnosing unrelated smoke steps during a confirmed FCM outage, but
 that run does not count as a push-delivery pass.
 

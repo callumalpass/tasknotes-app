@@ -56,6 +56,13 @@ export interface CollectionInfo {
 export interface TaskRepository {
   initialize(): Promise<void>;
   refresh(): Promise<RefreshResult>;
+  indexingProgress?(): RepositoryIndexingProgress;
+  subscribeIndexing?(
+    listener: (
+      progress: RepositoryIndexingProgress,
+      publishTasks: boolean,
+    ) => void,
+  ): () => void;
   list(query?: TaskListQuery): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
@@ -123,13 +130,32 @@ export interface RefreshResult {
   elapsedMs: number;
 }
 
+export interface RepositoryIndexingProgress {
+  phase: "idle" | "scanning" | "indexing";
+  completed: number;
+  total: number;
+  complete: boolean;
+}
+
 export class IndexedMarkdownRepository implements TaskRepository {
   private readonly collection: MarkdownCollection;
   private readonly index: TaskIndex;
   private readonly cache = new Map<string, IndexedTask>();
   private initialization: Promise<void> | null = null;
+  private refreshInFlight: Promise<RefreshResult> | null = null;
   private writeTail: Promise<void> = Promise.resolve();
   private readonly views: LocalViewExecutor;
+  private indexing: RepositoryIndexingProgress = {
+    phase: "idle",
+    completed: 0,
+    total: 0,
+    complete: true,
+  };
+  private readonly indexingListeners = new Set<
+    (progress: RepositoryIndexingProgress, publishTasks: boolean) => void
+  >();
+  private mutationVersion = 0;
+  private readonly pathMutationVersions = new Map<string, number>();
 
   constructor(
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
@@ -144,18 +170,42 @@ export class IndexedMarkdownRepository implements TaskRepository {
       });
     this.index =
       options.index ?? new TaskIndex(indexName(this.collection.identifier()));
-    this.views = new LocalViewExecutor(this.collection, () => [
-      ...this.cache.values(),
-    ]);
+    this.views = new LocalViewExecutor(
+      this.collection,
+      () => [...this.cache.values()],
+      () => this.indexing.phase === "idle" && this.indexing.complete,
+    );
   }
 
   initialize(): Promise<void> {
     if (!this.initialization) {
       this.initialization = this.exclusive(async () => {
         await this.collection.initialize();
-        const cached = await this.index.tasks.toArray();
-        for (const task of cached) this.cache.set(task.id, task);
-        if (!cached.length) await this.refreshUnlocked();
+        const [cached, storedProjection] = await Promise.all([
+          this.index.tasks.toArray(),
+          this.index.metadata.get("projection"),
+        ]);
+        for (const task of cached) {
+          this.cache.set(task.id, task);
+          this.collection.cacheTaskRecord(task, {
+            lastModified: task.sourceMtime,
+            size: task.sourceSize,
+          });
+        }
+        const complete = cached.length
+          ? (storedProjection?.complete ?? true)
+          : false;
+        await this.index.metadata.put({ key: "projection", complete });
+        if (!complete)
+          this.publishIndexing(
+            {
+              phase: "scanning",
+              completed: 0,
+              total: 0,
+              complete: false,
+            },
+            false,
+          );
         await this.maintainRollingOccurrencesUnlocked();
       });
     }
@@ -163,11 +213,48 @@ export class IndexedMarkdownRepository implements TaskRepository {
   }
 
   refresh(): Promise<RefreshResult> {
-    return this.exclusive(async () => {
-      const result = await this.refreshUnlocked();
-      await this.maintainRollingOccurrencesUnlocked();
-      return result;
-    });
+    if (this.refreshInFlight) return this.refreshInFlight;
+    this.publishIndexing(
+      {
+        phase: "scanning",
+        completed: 0,
+        total: 0,
+        complete: this.indexing.complete,
+      },
+      false,
+    );
+    const run = this.refreshProgressively()
+      .catch((reason: unknown) => {
+        this.publishIndexing(
+          {
+            phase: "idle",
+            completed: this.indexing.completed,
+            total: this.indexing.total,
+            complete: this.indexing.complete,
+          },
+          false,
+        );
+        throw reason;
+      })
+      .finally(() => {
+        if (this.refreshInFlight === run) this.refreshInFlight = null;
+      });
+    this.refreshInFlight = run;
+    return run;
+  }
+
+  indexingProgress(): RepositoryIndexingProgress {
+    return { ...this.indexing };
+  }
+
+  subscribeIndexing(
+    listener: (
+      progress: RepositoryIndexingProgress,
+      publishTasks: boolean,
+    ) => void,
+  ): () => void {
+    this.indexingListeners.add(listener);
+    return () => this.indexingListeners.delete(listener);
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {
@@ -358,6 +445,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
         const indexed = indexTask(moved, source);
         await this.index.tasks.put(indexed);
         this.cache.set(id, indexed);
+        this.markPathsChanged(next.path, destination);
         return moved;
       } catch (reason) {
         const warning = archiveMoveWarning(reason, archived);
@@ -376,6 +464,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
       await this.collection.delete(current.path);
       this.cache.delete(id);
       await this.index.tasks.delete(id);
+      this.markPathsChanged(current.path);
     });
   }
 
@@ -471,28 +560,132 @@ export class IndexedMarkdownRepository implements TaskRepository {
     throw new Error("This collection has no sync issues.");
   }
 
-  private async refreshUnlocked(): Promise<RefreshResult> {
+  private async refreshProgressively(): Promise<RefreshResult> {
     const startedAt = performance.now();
-    const configurationChanged = await this.collection.refreshConfiguration();
-    const documents = await this.collection.list();
-    const storedByPath = new Map(
-      [...this.cache.values()].map((task) => [task.path, task]),
-    );
-    const currentPaths = new Set(documents.map((document) => document.path));
-    const changed = documents.filter((document) => {
-      const cached = storedByPath.get(document.path);
-      return (
-        configurationChanged ||
-        !cached ||
-        cached.sourceMtime !== document.lastModified ||
-        cached.sourceSize !== document.size
+    const plan = await this.exclusive(async () => {
+      const configurationChanged = await this.collection.refreshConfiguration();
+      const documents = await this.collection.list();
+      const storedByPath = new Map(
+        [...this.cache.values()].map((task) => [task.path, task]),
       );
+      const currentPaths = new Set(documents.map((document) => document.path));
+      const changed = documents.filter((document) => {
+        const cached = storedByPath.get(document.path);
+        return (
+          configurationChanged ||
+          !cached ||
+          cached.sourceMtime !== document.lastModified ||
+          cached.sourceSize !== document.size
+        );
+      });
+      const removed = [...storedByPath.values()].filter(
+        (task) => !currentPaths.has(task.path),
+      );
+      return {
+        documents,
+        changed,
+        removed,
+        storedByPath,
+        mutationVersion: this.mutationVersion,
+      };
     });
+    let completed = plan.documents.length - plan.changed.length;
+    let lastPublishedCompleted = completed;
+    let lastPublishedAt = performance.now();
+    const removedIds = new Set<string>();
+    if (plan.changed.length)
+      this.publishIndexing(
+        {
+          phase: "indexing",
+          completed,
+          total: plan.documents.length,
+          complete: this.indexing.complete,
+        },
+        false,
+      );
+    for (const documentBatch of batches(plan.changed, 256)) {
+      const batchRemoved = await this.exclusive(() =>
+        this.indexDocumentBatch(
+          documentBatch,
+          plan.storedByPath,
+          plan.mutationVersion,
+        ),
+      );
+      for (const id of batchRemoved) removedIds.add(id);
+      completed += documentBatch.length;
+      const now = performance.now();
+      const publishTasks =
+        completed < plan.documents.length &&
+        (lastPublishedCompleted ===
+          plan.documents.length - plan.changed.length ||
+          completed - lastPublishedCompleted >= 2_048 ||
+          now - lastPublishedAt >= 500);
+      if (publishTasks) {
+        lastPublishedCompleted = completed;
+        lastPublishedAt = now;
+      }
+      this.publishIndexing(
+        {
+          phase: "indexing",
+          completed,
+          total: plan.documents.length,
+          complete: this.indexing.complete,
+        },
+        publishTasks,
+      );
+      if (completed < plan.documents.length) await yieldToMainThread();
+    }
+    const removed = await this.exclusive(async () => {
+      const removable = plan.removed.filter((snapshot) => {
+        if (this.pathChangedAfter(snapshot.path, plan.mutationVersion))
+          return false;
+        const current = this.cache.get(snapshot.id);
+        return (
+          current?.path === snapshot.path &&
+          current.sourceMtime === snapshot.sourceMtime &&
+          current.sourceSize === snapshot.sourceSize
+        );
+      });
+      if (removable.length)
+        await this.index.tasks.bulkDelete(removable.map((task) => task.id));
+      for (const task of removable) {
+        this.cache.delete(task.id);
+        removedIds.add(task.id);
+      }
+      await this.maintainRollingOccurrencesUnlocked();
+      await this.index.metadata.put({ key: "projection", complete: true });
+      return removedIds.size;
+    });
+    this.publishIndexing(
+      {
+        phase: "idle",
+        completed: plan.documents.length,
+        total: plan.documents.length,
+        complete: true,
+      },
+      false,
+    );
+    return {
+      scanned: plan.documents.length,
+      changed: plan.changed.length,
+      removed,
+      elapsedMs: Math.round(performance.now() - startedAt),
+    };
+  }
+
+  private async indexDocumentBatch(
+    documents: Awaited<ReturnType<MarkdownCollection["list"]>>,
+    storedByPath: Map<string, IndexedTask>,
+    planMutationVersion: number,
+  ): Promise<Set<string>> {
+    const eligible = documents.filter(
+      (document) => !this.pathChangedAfter(document.path, planMutationVersion),
+    );
     const indexed: IndexedTask[] = [];
     const replacedIds = new Set<string>();
-    for (const batch of batches(changed, 64)) {
+    for (const readBatch of batches(eligible, 64)) {
       const read = await Promise.all(
-        batch.map(async (document) => ({
+        readBatch.map(async (document) => ({
           document,
           task: await this.collection.read(document),
         })),
@@ -504,22 +697,13 @@ export class IndexedMarkdownRepository implements TaskRepository {
         if (task) indexed.push(indexTask(task, document));
       }
     }
-    const removedIds = [...this.cache.values()]
-      .filter((task) => !currentPaths.has(task.path))
-      .map((task) => task.id);
-    const allRemoved = [...new Set([...removedIds, ...replacedIds])];
     await this.index.transaction("rw", this.index.tasks, async () => {
-      if (allRemoved.length) await this.index.tasks.bulkDelete(allRemoved);
+      if (replacedIds.size) await this.index.tasks.bulkDelete([...replacedIds]);
       if (indexed.length) await this.index.tasks.bulkPut(indexed);
     });
-    for (const id of allRemoved) this.cache.delete(id);
+    for (const id of replacedIds) this.cache.delete(id);
     for (const task of indexed) this.cache.set(task.id, task);
-    return {
-      scanned: documents.length,
-      changed: changed.length,
-      removed: allRemoved.length,
-      elapsedMs: Math.round(performance.now() - startedAt),
-    };
+    return replacedIds;
   }
 
   private async write(task: Task): Promise<void> {
@@ -527,6 +711,26 @@ export class IndexedMarkdownRepository implements TaskRepository {
     const indexed = indexTask(task, source);
     await this.index.tasks.put(indexed);
     this.cache.set(task.id, indexed);
+    this.markPathsChanged(task.path);
+  }
+
+  private pathChangedAfter(path: string, version: number): boolean {
+    return (this.pathMutationVersions.get(path) ?? 0) > version;
+  }
+
+  private markPathsChanged(...paths: string[]): void {
+    this.mutationVersion += 1;
+    for (const path of paths)
+      this.pathMutationVersions.set(path, this.mutationVersion);
+  }
+
+  private publishIndexing(
+    progress: RepositoryIndexingProgress,
+    publishTasks: boolean,
+  ): void {
+    this.indexing = progress;
+    for (const listener of this.indexingListeners)
+      listener({ ...progress }, publishTasks);
   }
 
   private async materializeOccurrenceUnlocked(
@@ -664,6 +868,10 @@ function indexName(identifier: string): string {
 
 function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function yieldToMainThread(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 export function compareTasks(left: Task, right: Task): number {

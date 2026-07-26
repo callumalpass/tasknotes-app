@@ -13,7 +13,6 @@ dependencies {
     implementation project(':capacitor-browser')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-haptics')
-    implementation project(':capacitor-local-notifications')
 
 }
 

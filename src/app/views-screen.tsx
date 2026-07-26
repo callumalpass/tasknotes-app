@@ -55,6 +55,7 @@ import {
 import { useRepository, useTasks } from "./repository-context";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
+import { localIndexingLabel } from "./indexing-progress";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -105,6 +106,7 @@ export function ViewsScreen({
     toggleTask,
     updateTask,
     configuration,
+    indexing,
     version,
   } = useRepository();
   const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
@@ -562,7 +564,11 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
-            {visibleExecution && currentExecutionRefreshing ? (
+            {!indexing.complete ? (
+              <small aria-live="polite" role="status">
+                {localIndexingLabel(indexing)}
+              </small>
+            ) : visibleExecution && currentExecutionRefreshing ? (
               <small aria-live="polite" role="status">
                 Updating
               </small>
@@ -587,6 +593,12 @@ export function ViewsScreen({
             </button>
           ) : null}
         </header>
+        {!indexing.complete ? (
+          <p className="indexing-detail" role="status">
+            Results will appear while TaskNotes finishes checking this
+            collection.
+          </p>
+        ) : null}
         {error ? (
           <p className="inline-error" role="alert">
             {error}
@@ -718,6 +730,7 @@ export function ViewsScreen({
           />
         ) : (
           <TaskListView
+            collectionComplete={indexing.complete}
             execution={visibleExecution}
             titleProperty={configuration.fieldMapping.title}
             onOpen={onOpenTask}
@@ -1257,16 +1270,21 @@ function calendarDateDefaults(
 }
 
 function TaskListView({
+  collectionComplete,
   execution,
   titleProperty,
   onOpen,
   onToggle,
-}: ViewProps & { titleProperty: string }) {
+}: ViewProps & { collectionComplete: boolean; titleProperty: string }) {
   if (!execution.rows.length)
     return (
       <div className="plain-empty task-list-view">
-        <h2>Nothing here</h2>
-        <p>This view has no matching tasks.</p>
+        <h2>{collectionComplete ? "Nothing here" : "Indexing your tasks"}</h2>
+        <p>
+          {collectionComplete
+            ? "This view has no matching tasks."
+            : "Matching tasks will appear as they are found."}
+        </p>
       </div>
     );
   const groups = groupTaskViewRows(execution);

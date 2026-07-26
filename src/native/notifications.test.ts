@@ -1,45 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  cancel: vi.fn(async () => undefined),
   reconcileTimers: vi.fn(async (input: unknown) => input),
 }));
 
-vi.mock("@capacitor/core", () => ({
-  Capacitor: { isNativePlatform: () => true },
-}));
-vi.mock("@capacitor/local-notifications", () => ({
-  LocalNotifications: { cancel: mocks.cancel },
-}));
 vi.mock("../cloud/connect", () => ({
   activeCloudConnection: () => ({
     reconcileTimers: mocks.reconcileTimers,
   }),
 }));
 
-import {
-  desiredTaskTimers,
-  reconcileTaskNotifications,
-  taskIdFromNotificationAction,
-} from "./notifications";
+import { desiredTaskTimers, reconcileTaskNotifications } from "./notifications";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 
-describe("notification task routing", () => {
-  it("reads task IDs from native object and serialized extras", () => {
-    expect(
-      taskIdFromNotificationAction({
-        notification: { extra: { taskId: "a" } },
-      }),
-    ).toBe("a");
-    expect(
-      taskIdFromNotificationAction({
-        notification: { extra: JSON.stringify({ taskId: "b" }) },
-      }),
-    ).toBe("b");
-  });
-
+describe("hosted task reminders", () => {
   it("projects future absolute and relative reminders into content-free authority timers", async () => {
     const task = {
       id: "task-a",
@@ -91,12 +67,14 @@ describe("notification task routing", () => {
     expect(JSON.stringify(timers)).not.toContain("future");
   });
 
-  it("clears the device registry and keeps connected reminders only at the authority", async () => {
-    localStorage.setItem(
-      "tasknotes:notification-registry:v1",
-      JSON.stringify({ "local-reminder": 42 }),
-    );
+  it("keeps connected reminders only at the hosted authority", async () => {
     const repository = {
+      syncStatus: vi.fn(async () => ({
+        mode: "replicated",
+        state: "synced",
+        pending: 0,
+        issues: 0,
+      })),
       list: vi.fn(async () => [
         {
           id: "task with an imported ID",
@@ -115,12 +93,6 @@ describe("notification task routing", () => {
 
     await reconcileTaskNotifications(repository, "connect");
 
-    expect(mocks.cancel).toHaveBeenCalledWith({
-      notifications: [{ id: 42 }],
-    });
-    expect(
-      localStorage.getItem("tasknotes:notification-registry:v1"),
-    ).toBeNull();
     expect(mocks.reconcileTimers).toHaveBeenCalledWith({
       namespace: "task-reminders",
       criterion_id: "task.reminder",
@@ -133,13 +105,29 @@ describe("notification task routing", () => {
     });
   });
 
-  it("ignores malformed or unrelated notification actions", () => {
-    expect(taskIdFromNotificationAction(null)).toBeNull();
-    expect(
-      taskIdFromNotificationAction({ notification: { extra: "not-json" } }),
-    ).toBeNull();
-    expect(
-      taskIdFromNotificationAction({ notification: { extra: { path: "x" } } }),
-    ).toBeNull();
+  it("does no reminder work for a local collection", async () => {
+    const repository = {
+      list: vi.fn(async () => []),
+    } as unknown as TaskRepository;
+
+    await reconcileTaskNotifications(repository, "none");
+
+    expect(repository.list).not.toHaveBeenCalled();
+  });
+
+  it("does no reminder work for a live connector collection", async () => {
+    const repository = {
+      syncStatus: vi.fn(async () => ({
+        mode: "live",
+        state: "synced",
+        pending: 0,
+        issues: 0,
+      })),
+      list: vi.fn(async () => []),
+    } as unknown as TaskRepository;
+
+    await reconcileTaskNotifications(repository, "connect");
+
+    expect(repository.list).not.toHaveBeenCalled();
   });
 });

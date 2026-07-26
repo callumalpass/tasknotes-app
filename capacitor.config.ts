@@ -17,7 +17,6 @@ const sharedNativePlugins = [
   "@capacitor/browser",
   "@capacitor/filesystem",
   "@capacitor/haptics",
-  "@capacitor/local-notifications",
 ];
 
 const config: CapacitorConfig = {

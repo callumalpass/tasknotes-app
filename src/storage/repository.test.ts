@@ -11,6 +11,8 @@ import { TaskIndex } from "./index";
 import { IndexedMarkdownRepository } from "./repository";
 import { MemoryVault } from "../test/memory-vault";
 
+import type { Task } from "../domain/task";
+
 describe("IndexedMarkdownRepository", () => {
   let vault: MemoryVault;
   let index: TaskIndex;
@@ -62,6 +64,143 @@ describe("IndexedMarkdownRepository", () => {
       mobileRevision: 3,
     });
     expect(parsed.body).toBe("Keep this note.");
+  });
+
+  it("reuses the durable task projection when collection views reopen", async () => {
+    const created = await repository.create({
+      title: "Warm indexed task",
+      body: "Do not read this file again.",
+    });
+    const reopenedCollection = new MarkdownCollection(vault);
+    const reopened = new IndexedMarkdownRepository({
+      collection: reopenedCollection,
+      index,
+    });
+    await reopened.initialize();
+    const readText = vi.spyOn(vault, "readText");
+    readText.mockClear();
+
+    const records = await reopenedCollection.listCollectionRecords();
+
+    expect(records).toEqual([
+      expect.objectContaining({
+        path: created.path,
+        label: "Warm indexed task",
+      }),
+    ]);
+    expect(readText).not.toHaveBeenCalledWith(created.path);
+  });
+
+  it("opens an uncached collection before progressively indexing its tasks", async () => {
+    const coldVault = new MemoryVault();
+    for (let task = 1; task <= 300; task += 1)
+      await coldVault.writeText(
+        `tasks/external-${task}.md`,
+        externalTaskDocument(task),
+      );
+    const coldIndex = new TaskIndex(
+      `tasknotes-progressive-test-${crypto.randomUUID()}`,
+    );
+    const cold = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(coldVault),
+      index: coldIndex,
+    });
+    const readText = vi.spyOn(coldVault, "readText");
+    try {
+      await cold.initialize();
+
+      expect(
+        readText.mock.calls.filter(([path]) => path.startsWith("tasks/")),
+      ).toHaveLength(0);
+      expect(cold.indexingProgress()).toMatchObject({
+        phase: "scanning",
+        complete: false,
+      });
+      expect(await cold.list({ status: "all", limit: 1_000 })).toEqual([]);
+
+      const progress: Array<{
+        completed: number;
+        publishTasks: boolean;
+      }> = [];
+      let refreshFinished = false;
+      let createdBeforeRefreshFinished = false;
+      let created: Promise<Task> | null = null;
+      cold.subscribeIndexing((next, publishTasks) => {
+        if (next.phase !== "indexing") return;
+        progress.push({ completed: next.completed, publishTasks });
+        if (!publishTasks || created) return;
+        created = cold
+          .create({ title: "Created while indexing" })
+          .then((task) => {
+            createdBeforeRefreshFinished = !refreshFinished;
+            return task;
+          });
+      });
+
+      const refreshed = await cold.refresh();
+      refreshFinished = true;
+      expect(await created).toMatchObject({ title: "Created while indexing" });
+      expect(createdBeforeRefreshFinished).toBe(true);
+      expect(refreshed).toMatchObject({ scanned: 300, changed: 300 });
+      expect(progress).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ completed: 256, publishTasks: true }),
+          expect.objectContaining({ completed: 300 }),
+        ]),
+      );
+      expect(cold.indexingProgress()).toEqual({
+        phase: "idle",
+        completed: 300,
+        total: 300,
+        complete: true,
+      });
+      expect(await cold.list({ status: "all", limit: 1_000 })).toHaveLength(
+        301,
+      );
+    } finally {
+      coldIndex.close();
+      await coldIndex.delete();
+    }
+  });
+
+  it("remembers that a first projection was interrupted across restarts", async () => {
+    const interruptedVault = new MemoryVault();
+    await interruptedVault.writeText(
+      "tasks/external.md",
+      externalTaskDocument(1),
+    );
+    const name = `tasknotes-interrupted-test-${crypto.randomUUID()}`;
+    const firstIndex = new TaskIndex(name);
+    const first = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(interruptedVault),
+      index: firstIndex,
+    });
+    await first.initialize();
+    await first.create({ title: "Created before restart" });
+    expect(await firstIndex.metadata.get("projection")).toEqual({
+      key: "projection",
+      complete: false,
+    });
+    firstIndex.close();
+
+    const reopenedIndex = new TaskIndex(name);
+    const reopened = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(interruptedVault),
+      index: reopenedIndex,
+    });
+    try {
+      await reopened.initialize();
+      expect(reopened.indexingProgress()).toMatchObject({
+        phase: "scanning",
+        complete: false,
+      });
+      expect(await reopened.list({ status: "all" })).toEqual([
+        expect.objectContaining({ title: "Created before restart" }),
+      ]);
+    } finally {
+      reopenedIndex.close();
+      await reopenedIndex.delete();
+    }
   });
 
   it("derives dependency and project inverses from the repository cache", async () => {
@@ -680,3 +819,17 @@ describe("IndexedMarkdownRepository", () => {
     }
   });
 });
+
+function externalTaskDocument(index: number): string {
+  return `---
+type: task
+id: external-${index}
+title: External task ${index}
+status: open
+priority: normal
+dateCreated: 2026-07-27T00:00:00.000Z
+dateModified: 2026-07-27T00:00:00.000Z
+mobileRevision: 1
+---
+`;
+}

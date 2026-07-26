@@ -43,7 +43,7 @@ export function OpenedCollection({
   return (
     <CollectionGateContext.Provider value={value}>
       <RepositoryProvider
-        reminderAuthority={choice === "cloud" ? "connect" : "device"}
+        reminderAuthority={choice === "cloud" ? "connect" : "none"}
         repository={repository}
       >
         <AppShell />
