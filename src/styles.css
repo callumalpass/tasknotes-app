@@ -475,6 +475,10 @@ button:disabled {
   font: inherit;
 }
 
+.day-task-sections .task-section.is-overdue .section-heading {
+  color: var(--danger);
+}
+
 .task-row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) 44px;

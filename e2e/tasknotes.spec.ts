@@ -259,6 +259,77 @@ test("suggests capture values from the collection contract", async ({
   await expect(page.getByText("Call plumber", { exact: true })).toBeVisible();
 });
 
+test("organizes the Today list into declarative day sections", async ({
+  page,
+}, testInfo) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateValue = (date: Date) =>
+    [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+
+  await page.getByLabel("New task title").fill("Anytime hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Anytime hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("New task title").fill("Current hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Current hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Current hierarchy task", { exact: true }).click();
+  await chooseDate(page, "Scheduled date", dateValue(today));
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  await page.getByLabel("New task title").fill("Late hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Late hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Late hierarchy task", { exact: true }).click();
+  await chooseDate(page, "Due date", dateValue(yesterday));
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  const headings = page.locator(".day-task-sections .section-heading h2");
+  await expect(headings).toHaveText(["Overdue", "Today", "Anytime"]);
+  await expect(
+    page
+      .locator(".task-section.is-overdue")
+      .getByText("Late hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".task-section.is-today")
+      .getByText("Current hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".task-section.is-anytime")
+      .getByText("Anytime hierarchy task", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  const startedAt = await page.evaluate(() => performance.now());
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(headings).toHaveCount(3);
+  const sectionRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("today-sections-profile.json", {
+    body: JSON.stringify({ sectionRenderMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(sectionRenderMs).toBeLessThan(750);
+});
+
 test("uses responsive TaskNotes controls instead of browser pickers", async ({
   page,
 }, testInfo) => {

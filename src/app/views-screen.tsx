@@ -40,6 +40,7 @@ import {
   type ViewCreationPlan,
 } from "../domain/view-creation";
 import { groupTaskViewRows } from "../domain/view-grouping";
+import { sectionTaskViewRows } from "../domain/task-list-sections";
 import {
   formatPropertyValue,
   propertyLabel,
@@ -1277,6 +1278,38 @@ function TaskListView({
             </div>
             <div className="saved-task-list">
               {group.rows.map((row) => (
+                <ViewTaskRow
+                  key={row.task.id}
+                  row={row}
+                  properties={execution.view.properties}
+                  titleProperty={titleProperty}
+                  onOpen={onOpen}
+                  onToggle={onToggle}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  const sections = sectionTaskViewRows(
+    execution.rows,
+    execution.view.presentation?.options.sections,
+  );
+  if (sections.length)
+    return (
+      <div className="task-groups saved-view-groups task-list-view day-task-sections">
+        {sections.map((section) => (
+          <section
+            className={`task-section is-${section.key}`}
+            key={section.key}
+          >
+            <div className="section-heading">
+              <h2>{section.label}</h2>
+              <span>{section.rows.length}</span>
+            </div>
+            <div className="saved-task-list">
+              {section.rows.map((row) => (
                 <ViewTaskRow
                   key={row.task.id}
                   row={row}
