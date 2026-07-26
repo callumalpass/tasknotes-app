@@ -8,14 +8,27 @@ export interface IndexedTask extends Task {
   searchText: string;
 }
 
+export interface IndexMetadata {
+  key: "projection";
+  complete: boolean;
+}
+
 export class TaskIndex extends Dexie {
   tasks!: EntityTable<IndexedTask, "id">;
+  metadata!: EntityTable<IndexMetadata, "key">;
 
   constructor(name = "tasknotes-index-v2") {
     super(name);
     this.version(1).stores({
       tasks:
         "&id,&path,completed,status,scheduled,due,priority,updatedAt,sourceMtime",
+    });
+    this.version(2).stores({
+      tasks: "&id",
+    });
+    this.version(3).stores({
+      tasks: "&id",
+      metadata: "&key",
     });
   }
 }

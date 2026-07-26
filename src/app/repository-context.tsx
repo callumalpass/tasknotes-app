@@ -39,6 +39,7 @@ import type { TaskRelationships } from "../domain/task-relationships";
 import type {
   CollectionInfo,
   RefreshResult,
+  RepositoryIndexingProgress,
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
@@ -51,6 +52,7 @@ interface RepositoryContextValue {
   status: StorageStatus;
   error: Error | null;
   refreshing: boolean;
+  indexing: RepositoryIndexingProgress;
   lastRefresh: RefreshResult | null;
   sync: RepositorySyncStatus;
   syncIssues: RepositorySyncIssue[];
@@ -82,7 +84,7 @@ const RepositoryContext = createContext<RepositoryContextValue | null>(null);
 export function RepositoryProvider({
   children,
   repository: supplied,
-  reminderAuthority = "device",
+  reminderAuthority = "none",
 }: {
   children: ReactNode;
   repository?: TaskRepository;
@@ -94,6 +96,12 @@ export function RepositoryProvider({
   const [status, setStatus] = useState<StorageStatus>("opening");
   const [error, setError] = useState<Error | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [indexing, setIndexing] = useState<RepositoryIndexingProgress>({
+    phase: "idle",
+    completed: 0,
+    total: 0,
+    complete: true,
+  });
   const [lastRefresh, setLastRefresh] = useState<RefreshResult | null>(null);
   const [sync, setSync] = useState<RepositorySyncStatus>({
     mode: "local",
@@ -135,7 +143,7 @@ export function RepositoryProvider({
         await autoArchiveRef.current?.reconcile();
         setLastRefresh(result);
         setError(null);
-        publishMutation();
+        if (result.changed || result.removed) publishMutation();
         void loadSync().catch(() => undefined);
         if (reminderAuthority === "connect")
           void reconcileTaskNotifications(repository, reminderAuthority).catch(
@@ -184,6 +192,14 @@ export function RepositoryProvider({
         await autoArchive.start();
         if (!active) return;
         setConfiguration(nextConfiguration);
+        setIndexing(
+          repository.indexingProgress?.() ?? {
+            phase: "idle",
+            completed: 0,
+            total: 0,
+            complete: true,
+          },
+        );
         setStatus("ready");
         void loadSync().catch(() => undefined);
         void reconcileTaskNotifications(repository, reminderAuthority).catch(
@@ -211,6 +227,14 @@ export function RepositoryProvider({
       void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
   }, [bump, loadSync, repository]);
+
+  useEffect(() => {
+    if (!repository.subscribeIndexing) return;
+    return repository.subscribeIndexing((progress, publishTasks) => {
+      setIndexing(progress);
+      if (publishTasks) bump();
+    });
+  }, [bump, repository]);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -255,9 +279,10 @@ export function RepositoryProvider({
       const task = await repository.create(input);
       await autoArchiveRef.current?.observe(task);
       publishMutation();
-      void syncTaskNotifications(repository, task, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(repository, task, reminderAuthority).catch(
+          () => undefined,
+        );
       return task;
     },
     [publishMutation, reminderAuthority, repository],
@@ -267,9 +292,10 @@ export function RepositoryProvider({
       const task = await repository.update(id, input);
       await autoArchiveRef.current?.observe(task);
       publishMutation();
-      void syncTaskNotifications(repository, task, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(repository, task, reminderAuthority).catch(
+          () => undefined,
+        );
       return task;
     },
     [publishMutation, reminderAuthority, repository],
@@ -279,9 +305,10 @@ export function RepositoryProvider({
       const task = await repository.toggle(id, occurrenceDate);
       await autoArchiveRef.current?.observe(task);
       publishMutation();
-      void syncTaskNotifications(repository, task, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(repository, task, reminderAuthority).catch(
+          () => undefined,
+        );
       return task;
     },
     [publishMutation, reminderAuthority, repository],
@@ -291,9 +318,10 @@ export function RepositoryProvider({
       const task = await repository.skip(id, occurrenceDate);
       await autoArchiveRef.current?.observe(task);
       publishMutation();
-      void syncTaskNotifications(repository, task, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(repository, task, reminderAuthority).catch(
+          () => undefined,
+        );
       return task;
     },
     [publishMutation, reminderAuthority, repository],
@@ -306,11 +334,12 @@ export function RepositoryProvider({
       );
       await autoArchiveRef.current?.observe(result.task);
       publishMutation();
-      void syncTaskNotifications(
-        repository,
-        result.task,
-        reminderAuthority,
-      ).catch(() => undefined);
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(
+          repository,
+          result.task,
+          reminderAuthority,
+        ).catch(() => undefined);
       return result;
     },
     [publishMutation, reminderAuthority, repository],
@@ -356,9 +385,10 @@ export function RepositoryProvider({
       const task = await repository.setArchived(id, archived);
       await autoArchiveRef.current?.observe(task);
       publishMutation();
-      void syncTaskNotifications(repository, task, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void syncTaskNotifications(repository, task, reminderAuthority).catch(
+          () => undefined,
+        );
       return task;
     },
     [publishMutation, reminderAuthority, repository],
@@ -368,9 +398,10 @@ export function RepositoryProvider({
       await repository.delete(id);
       await autoArchiveRef.current?.forget(id);
       publishMutation();
-      void removeTaskNotifications(repository, id, reminderAuthority).catch(
-        () => undefined,
-      );
+      if (reminderAuthority === "connect")
+        void removeTaskNotifications(repository, id, reminderAuthority).catch(
+          () => undefined,
+        );
     },
     [publishMutation, reminderAuthority, repository],
   );
@@ -400,6 +431,7 @@ export function RepositoryProvider({
       status,
       error,
       refreshing,
+      indexing,
       lastRefresh,
       sync,
       syncIssues,
@@ -425,6 +457,7 @@ export function RepositoryProvider({
       status,
       error,
       refreshing,
+      indexing,
       lastRefresh,
       sync,
       syncIssues,

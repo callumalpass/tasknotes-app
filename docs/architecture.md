@@ -62,10 +62,14 @@ approval before the type or task records are rewritten. Declining keeps the
 canonical files untouched and suppresses repeat prompts until that type
 changes.
 
-When the index is empty, startup performs a full scan. Later startups load the
-index first and reconcile the filesystem in the background. A full 10,000-file
-parse currently takes about 7.2 seconds on the Android emulator; an unchanged
-scan takes about 0.8 seconds.
+Startup loads any existing projection before reconciling the filesystem. When
+the projection is empty, the application still opens after collection
+configuration is ready, then indexes Markdown in bounded background batches.
+Each batch commits durable projection rows, yields so foreground mutations can
+run, and publishes progressive results. Empty states remain explicitly marked
+as incomplete until the scan finishes. Saved views use the streamed task cache
+during reconciliation so rendering a partial result cannot trigger a second
+full parse.
 
 The in-memory projection supports immediate list and token search operations.
 Large Today lists are revealed in 300-row increments so the DOM does not grow
@@ -170,7 +174,7 @@ chunks, keeping the first-run location screen small.
 - The cloud browser vertical slice crosses the portal, OAuth server, SDK,
   provider HTTP boundary, offline replica, and conflict UI.
 - The Android smoke test crosses the real WebView-to-Filesystem bridge and
-  verifies the resulting public Markdown file, local scheduling, official
+  verifies the resulting public Markdown file, official
   PushNotifications FCM registration and foreground delivery, process restart,
   and private-use OAuth callback.
 - Debug-only benchmark controls create and remove app-owned large-vault

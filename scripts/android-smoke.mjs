@@ -113,8 +113,7 @@ async function main() {
     if (!readTask(createdFile).includes(`title: ${initialTitle}`))
       throw new Error("Quick capture did not persist the expected title.");
 
-    // Schedule through the real LocalNotifications bridge and confirm the
-    // native plugin has retained the reminder.
+    // Confirm hosted mdbase notifications through the native push bridge.
     adb(
       "shell",
       "pm",
@@ -123,30 +122,6 @@ async function main() {
       "android.permission.POST_NOTIFICATIONS",
     );
     await verifyAndroidPush(devtools);
-    await waitFor(
-      () => devtools.hasTaskRow(initialTitle),
-      "the created task row",
-    );
-    await devtools.openTask(initialTitle);
-    await waitFor(() => devtools.hasText("Markdown record"), "task details");
-    const reminder = localDateTime(new Date(Date.now() + 60 * 60 * 1_000));
-    await devtools.clickSummary("Repeat and reminders");
-    await devtools.chooseDate("Reminder date", reminder.slice(0, 10));
-    await waitFor(
-      () => devtools.hasEnabledNamedButton("Reminder time"),
-      "the TaskNotes reminder time picker",
-    );
-    await devtools.chooseTime("Reminder time", reminder.slice(11, 16));
-    await waitFor(
-      () =>
-        devtools.evaluate(`(async () => {
-          const pending = await Capacitor.Plugins.LocalNotifications.getPending();
-          return pending.notifications.some((notification) =>
-            notification.title === ${JSON.stringify(initialTitle)}
-          );
-        })()`),
-      "the native scheduled reminder",
-    );
     adb("shell", "input", "keyevent", "KEYCODE_BACK");
     await waitFor(
       () =>
@@ -403,22 +378,10 @@ views:
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, FCM registration and foreground push, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, FCM registration and foreground push, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
-      await devtools
-        .evaluate(
-          `(async () => {
-          const pending = await Capacitor.Plugins.LocalNotifications.getPending();
-          if (pending.notifications.length) {
-            await Capacitor.Plugins.LocalNotifications.cancel({
-              notifications: pending.notifications.map(({ id }) => ({ id }))
-            });
-          }
-        })()`,
-        )
-        .catch(() => undefined);
       devtools.close();
     }
     try {
@@ -1019,11 +982,6 @@ class DevtoolsSession {
   close() {
     this.socket?.close();
   }
-}
-
-function localDateTime(date) {
-  const local = new Date(date.valueOf() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
 }
 
 if (process.argv.includes("--folder")) await folderMain();

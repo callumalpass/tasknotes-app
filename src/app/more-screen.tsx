@@ -18,7 +18,6 @@ import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
 } from "../native/mdbase-notifications";
-import { notificationPermission } from "../native/notifications";
 import {
   activeCloudConnection,
   authorizationReturnTo,
@@ -33,6 +32,7 @@ import {
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
+import { localIndexingLabel } from "./indexing-progress";
 import { storageExplanation } from "./storage-trust";
 
 export function MoreScreen({
@@ -44,6 +44,7 @@ export function MoreScreen({
 }) {
   const { info, stats, loading } = useCollectionSummary();
   const {
+    indexing,
     lastRefresh,
     refresh,
     refreshing,
@@ -59,8 +60,6 @@ export function MoreScreen({
     changeLocalCollection,
   } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
-  const [reminderNotifications, setReminderNotifications] =
-    useState<string>("Checking");
   const [changeNotifications, setChangeNotifications] =
     useState<MdbaseNotificationStatus>({
       state: "checking",
@@ -75,23 +74,10 @@ export function MoreScreen({
     detail: string;
   }>({ state: "idle", detail: "" });
   const benchmarkTools = import.meta.env.VITE_BENCHMARK_TOOLS === "1";
+  const hostedReminders = choice === "cloud" && sync.mode === "replicated";
 
   useEffect(() => {
-    if (choice !== "local") return;
-    void notificationPermission().then((permission) =>
-      setReminderNotifications(
-        permission === "unavailable"
-          ? "Available in the mobile app"
-          : permission === "granted"
-            ? "Allowed"
-            : permission === "denied"
-              ? "Disabled in system settings"
-              : "Asked when you add a reminder",
-      ),
-    );
-  }, [choice]);
-
-  useEffect(() => {
+    if (!hostedReminders) return;
     let active = true;
     void mdbaseNotifications
       .status()
@@ -109,7 +95,7 @@ export function MoreScreen({
     return () => {
       active = false;
     };
-  }, [choice]);
+  }, [hostedReminders]);
 
   async function toggleChangeNotifications() {
     setChangeNotificationsBusy(true);
@@ -226,6 +212,11 @@ export function MoreScreen({
                 ? "Refresh now"
                 : "Check files now"}
         </button>
+        {choice === "local" && indexing.phase !== "idle" ? (
+          <p className="refresh-detail" role="status">
+            {localIndexingLabel(indexing)}
+          </p>
+        ) : null}
         {lastRefresh ? (
           <p className="refresh-detail">
             {lastRefresh.scanned.toLocaleString()} records checked in{" "}
@@ -401,17 +392,17 @@ export function MoreScreen({
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Task reminders</span>
           <small>
-            {choice === "cloud"
+            {hostedReminders
               ? changeNotificationLabel(changeNotifications)
-              : reminderNotifications}
+              : "Hosted collections only"}
           </small>
         </div>
         <p className="section-copy">
-          {choice === "cloud"
+          {hostedReminders
             ? "mdbase keeps connected reminders running when this app is closed. Notification text never includes task content."
-            : "This device schedules reminders for tasks in the local collection."}
+            : "Task reminder delivery requires an mdbase hosted collection."}
         </p>
-        {choice === "cloud" &&
+        {hostedReminders &&
         (changeNotifications.state === "off" ||
           changeNotifications.state === "enabled" ||
           (changeNotifications.state === "denied" &&
@@ -429,7 +420,7 @@ export function MoreScreen({
                 : "Turn on reminders"}
           </button>
         ) : null}
-        {choice === "cloud" &&
+        {hostedReminders &&
         changeNotifications.state === "reauthorization_required" ? (
           <button
             className="text-action"

@@ -16,7 +16,6 @@ import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { nativeBackAction } from "../native/navigation";
-import { listenForTaskNotificationActions } from "../native/notifications";
 import { tasknotesMarkUrl } from "./assets";
 import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
 import { useCollectionGate } from "./collection-context";
@@ -112,12 +111,6 @@ export function AppShell() {
     navigateRef.current = navigate;
     navigationViewKeysRef.current = navigationViews.map((view) => view.key);
   }, [navigate, navigationViews, route]);
-
-  useEffect(
-    () =>
-      listenForTaskNotificationActions((id) => navigate({ page: "task", id })),
-    [navigate],
-  );
 
   useEffect(() => {
     if (choice !== "cloud") return;

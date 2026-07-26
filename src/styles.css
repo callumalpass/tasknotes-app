@@ -1160,6 +1160,14 @@ button:disabled {
   font-size: 0.84rem;
 }
 
+.indexing-detail {
+  margin: 0;
+  padding: 0 0 14px;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .section-copy {
   padding: 12px 0 4px;
 }

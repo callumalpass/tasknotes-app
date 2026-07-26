@@ -72,6 +72,7 @@ export class LocalViewExecutor {
   constructor(
     private readonly collection: MarkdownCollection,
     private readonly tasks: () => LocalViewTask[],
+    private readonly collectionRecordsReady: () => boolean = () => true,
   ) {}
 
   async list(): Promise<TaskViewDocument[]> {
@@ -132,7 +133,9 @@ export class LocalViewExecutor {
 
     const tasks = this.tasks();
     const tasksByPath = new Map(tasks.map((task) => [task.path, task]));
-    const records = await this.collection.listCollectionRecords();
+    const records = this.collectionRecordsReady()
+      ? await this.collection.listCollectionRecords()
+      : [];
     const recordPaths = new Set(records.map((record) => record.path));
     for (const task of tasks) {
       if (recordPaths.has(task.path)) continue;
@@ -150,9 +153,18 @@ export class LocalViewExecutor {
       configuration.fieldMapping.projects,
       tasksByPath,
     );
+    const filesByPath = new Map(files.map((file) => [file.path, file]));
+    const properties = selectedProperties(view);
+    const expressions = new Map(
+      properties.flatMap((property) =>
+        isExpressionProperty(property)
+          ? [[property, compileExpression(property)] as const]
+          : [],
+      ),
+    );
     const rows = records.flatMap((record) => {
       const task = tasksByPath.get(record.path);
-      const file = files.find((candidate) => candidate.path === record.path)!;
+      const file = filesByPath.get(record.path)!;
       const context = createEvaluationContext({
         note: record.frontmatter,
         file,
@@ -167,10 +179,10 @@ export class LocalViewExecutor {
       }
       const formulaValues = formulas.evaluateToPlain(context);
       const computedValues: Record<string, unknown> = {};
-      for (const property of selectedProperties(view)) {
+      for (const property of properties) {
         computedValues[property] = property.startsWith("formula.")
           ? (formulaValues[property.slice("formula.".length)] ?? null)
-          : evaluateProperty(property, context, record);
+          : evaluateProperty(property, context, record, expressions);
       }
       const values = Object.fromEntries(
         (view.order ?? []).map((property) => [
@@ -279,14 +291,19 @@ function evaluateProperty(
   property: string,
   context: ReturnType<typeof createEvaluationContext>,
   record: CollectionRecord,
+  expressions: ReadonlyMap<string, ReturnType<typeof compileExpression>>,
 ): unknown {
-  if (
+  const expression = expressions.get(property);
+  if (expression) return expression.evaluateToPlain(context);
+  return record.frontmatter[property] ?? null;
+}
+
+function isExpressionProperty(property: string): boolean {
+  return (
     property.startsWith("file.") ||
     property.startsWith("note.") ||
     property.startsWith("note[")
-  )
-    return compileExpression(property).evaluateToPlain(context);
-  return record.frontmatter[property] ?? null;
+  );
 }
 
 function recordFiles(
@@ -298,13 +315,14 @@ function recordFiles(
     recordFile(record, tasksByPath.get(record.path)),
   );
   const byPath = new Map(files.map((file) => [file.path, file]));
+  const resolution = fileResolutionIndex(files);
   const backlinks = new Map<string, Set<string>>();
   for (const record of records) {
     const targets = extractRecordLinks(record, projectsField);
     const file = byPath.get(record.path);
     if (!file) continue;
     file.links = targets.map((target) => {
-      const resolvedPath = resolveLocalLink(target, record.path, files);
+      const resolvedPath = resolveLocalLink(target, record.path, resolution);
       if (resolvedPath) {
         const sources = backlinks.get(resolvedPath) ?? new Set<string>();
         sources.add(record.path);
@@ -396,32 +414,50 @@ function extractRecordLinks(
 function resolveLocalLink(
   value: string,
   sourcePath: string,
-  files: Array<{ path: string; basename: string }>,
+  files: FileResolutionIndex,
 ): string | undefined {
   const target = linkTarget(value);
   if (!target) return undefined;
   const lower = target.toLocaleLowerCase();
-  const exact = files.find(
-    ({ path }) =>
-      path.replace(/\.md$/i, "").toLocaleLowerCase() === lower ||
-      path.toLocaleLowerCase() === lower,
-  );
-  if (exact) return exact.path;
+  const exact = files.exact.get(lower);
+  if (exact) return exact;
   if (target.startsWith("./") || target.startsWith("../")) {
     const folder = sourcePath.includes("/")
       ? sourcePath.slice(0, sourcePath.lastIndexOf("/"))
       : "";
     const resolved = normalizeRelativePath(`${folder}/${target}`);
-    return files.find(
-      ({ path }) =>
-        path.replace(/\.md$/i, "").toLocaleLowerCase() ===
-        resolved.toLocaleLowerCase(),
-    )?.path;
+    return files.exact.get(resolved.toLocaleLowerCase());
   }
   if (target.includes("/")) return undefined;
-  return files
-    .filter(({ basename }) => basename.toLocaleLowerCase() === lower)
-    .sort((left, right) => left.path.localeCompare(right.path))[0]?.path;
+  return files.basename.get(lower);
+}
+
+interface FileResolutionIndex {
+  exact: Map<string, string>;
+  basename: Map<string, string>;
+}
+
+function fileResolutionIndex(
+  files: Array<{ path: string; basename: string }>,
+): FileResolutionIndex {
+  const exact = new Map<string, string>();
+  const basename = new Map<string, string>();
+  for (const file of files) {
+    const path = file.path.toLocaleLowerCase();
+    setPreferredPath(exact, path, file.path);
+    setPreferredPath(exact, path.replace(/\.md$/i, ""), file.path);
+    setPreferredPath(basename, file.basename.toLocaleLowerCase(), file.path);
+  }
+  return { exact, basename };
+}
+
+function setPreferredPath(
+  index: Map<string, string>,
+  key: string,
+  path: string,
+): void {
+  const current = index.get(key);
+  if (!current || path.localeCompare(current) < 0) index.set(key, path);
 }
 
 function normalizeRelativePath(value: string): string {
