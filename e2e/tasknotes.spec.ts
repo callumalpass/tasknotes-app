@@ -1526,6 +1526,100 @@ test("offers task actions without opening the editor", async ({ page }) => {
   ).toHaveCount(0);
 });
 
+test("uses the plugin-inspired task action hierarchy", async ({
+  page,
+  context,
+}, testInfo) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByLabel("New task title").fill("Context action parent");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  const title = page.getByText("Context action parent", { exact: true });
+  const startedAt = await page.evaluate(() => performance.now());
+  await title.click({ button: "right" });
+  await expect(
+    page.getByRole("menu", { name: "Actions for Context action parent" }),
+  ).toBeVisible();
+  const menuOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("task-action-menu-profile.json", {
+    body: JSON.stringify({ menuOpenMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(menuOpenMs).toBeLessThan(500);
+
+  await page.getByRole("menuitem", { name: /Status/ }).click();
+  await page.getByRole("menuitem", { name: "In progress" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  const trigger = page.getByRole("button", {
+    name: "Task actions for Context action parent",
+  });
+  await trigger.click();
+  await page.getByRole("menuitem", { name: /Priority/ }).click();
+  await page.getByRole("menuitem", { name: "High" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: /Dates/ }).click();
+  await page.getByRole("menuitem", { name: "Due today" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Organize" }).click();
+  await page.getByRole("menuitem", { name: "Create subtask" }).click();
+  await page.getByLabel("Subtask title").fill("Context action child");
+  await page.getByRole("button", { name: "Add subtask" }).click();
+  await expect(
+    page.getByText("Context action child", { exact: true }),
+  ).toBeVisible();
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Copy" }).click();
+  await page.getByRole("menuitem", { name: /Copy task link/ }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toMatch(/^\[\[tasks\/\d+\]\]$/);
+  const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
+
+  const today = await page.evaluate(() => {
+    const value = new Date();
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, "0"),
+      String(value.getDate()).padStart(2, "0"),
+    ].join("-");
+  });
+  await expect
+    .poll(async () => {
+      const documents = await localTaskDocuments(page);
+      const parent = documents.find((source) =>
+        source.includes("Context action parent"),
+      );
+      const child = documents.find((source) =>
+        source.includes("Context action child"),
+      );
+      return {
+        parent:
+          parent?.includes("status: in-progress") &&
+          parent.includes("priority: high") &&
+          parent.includes(`due: ${today}`),
+        child: child?.includes(copiedLink),
+      };
+    })
+    .toEqual({ parent: true, child: true });
+
+  await page.reload();
+  await expect(
+    page.getByText("Context action parent", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Context action child", { exact: true }),
+  ).toBeVisible();
+});
+
 test("keeps the task workspace visible beside the desktop editor", async ({
   page,
 }, testInfo) => {
