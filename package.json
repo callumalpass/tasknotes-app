@@ -49,7 +49,7 @@
     "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.3-c94d4c035b2d.tgz",
     "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.3-c94d4c035b2d.tgz",
     "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.3-c94d4c035b2d.tgz",
-    "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.2.tgz",
+    "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.3.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
     "lucide-react": "1.25.0",

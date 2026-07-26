@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { TaskNotesSelect } from "../components/tasknotes-controls";
+import { TaskModelSettingsEditor } from "../components/task-model-settings";
 import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
@@ -262,6 +263,10 @@ export function MoreScreen({
           </small>
           <ChevronRight aria-hidden="true" size={17} />
         </button>
+      </SettingsSection>
+
+      <SettingsSection label="Task model">
+        <TaskModelSettingsEditor />
       </SettingsSection>
 
       <SettingsSection label="Appearance">

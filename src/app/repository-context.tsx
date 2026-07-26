@@ -30,6 +30,7 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskModelSettingsPatch } from "../domain/task-configuration";
 import type { TaskRelationships } from "../domain/task-relationships";
 import type {
   CollectionInfo,
@@ -65,6 +66,9 @@ interface RepositoryContextValue {
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setTaskArchived(id: string, archived: boolean): Promise<Task>;
   deleteTask(id: string): Promise<void>;
+  updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration>;
   refresh(): Promise<RefreshResult>;
   resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
 }
@@ -336,6 +340,15 @@ export function RepositoryProvider({
     },
     [loadSync, publishMutation, repository],
   );
+  const updateTaskModelSettings = useCallback(
+    async (patch: TaskModelSettingsPatch) => {
+      const next = await repository.updateTaskModelSettings(patch);
+      setConfiguration(next);
+      publishMutation();
+      return next;
+    },
+    [publishMutation, repository],
+  );
 
   const value = useMemo<RepositoryContextValue>(
     () => ({
@@ -359,6 +372,7 @@ export function RepositoryProvider({
       removeTimeEntry,
       setTaskArchived,
       deleteTask,
+      updateTaskModelSettings,
       refresh,
       resolveSyncIssue,
     }),
@@ -383,6 +397,7 @@ export function RepositoryProvider({
       removeTimeEntry,
       setTaskArchived,
       deleteTask,
+      updateTaskModelSettings,
       refresh,
       resolveSyncIssue,
     ],

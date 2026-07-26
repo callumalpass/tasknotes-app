@@ -3,6 +3,7 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -22,6 +23,7 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskModelSettingsPatch } from "../domain/task-configuration";
 import type { CollectionRecord } from "../domain/completion";
 import type {
   CreateTaskViewSourceInput,
@@ -449,6 +451,28 @@ export class MarkdownCollection {
 
   taskConfiguration(): TaskCollectionConfiguration {
     return this.taskModel.configuration();
+  }
+
+  taskModelSettingsSource(): string {
+    return this.taskTypePath;
+  }
+
+  async updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration> {
+    const source = parseFrontmatter(
+      await this.vault.readText(this.taskTypePath),
+    );
+    const frontmatter = patchTaskNotesMdbaseTypeSettings(
+      source.frontmatter,
+      patch,
+    );
+    await this.vault.writeText(
+      this.taskTypePath,
+      serializeMarkdownDocument(frontmatter, source.body),
+    );
+    await this.refreshConfiguration();
+    return this.taskConfiguration();
   }
 
   async write(task: Task): Promise<VaultEntry> {

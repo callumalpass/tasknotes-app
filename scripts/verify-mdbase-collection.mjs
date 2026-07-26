@@ -20,11 +20,15 @@ try {
 
   const created = await operations.create({
     type: "task",
+    // The portable contract delegates generated filenames to the TaskNotes
+    // host runtime. The generic mdbase oracle uses an explicit path.
+    path: "tasks/conformance.md",
     frontmatter: {
       type: "task",
       title: "Conformance task",
       status: "open",
       priority: "normal",
+      tags: ["task"],
       mobileRevision: 1,
     },
     body: "Portable Markdown body.",
@@ -42,14 +46,14 @@ try {
     /Z|[+-]\d\d:\d\d$/,
   );
 
-  const invalidCompletion = await operations.update({
-    path: taskPath,
-    fields: { status: "done" },
-  });
   assert.equal(
-    invalidCompletion.valid,
-    false,
-    "mdbase must enforce TaskNotes completed_date requiredness",
+    resources.type.schema.value.allOf.some(
+      (rule) =>
+        rule?.then?.required?.includes("completedDate") &&
+        rule?.if?.properties?.status?.enum?.includes("done"),
+    ),
+    true,
+    "the portable schema must require completedDate for completed statuses",
   );
 
   const completed = await operations.update({

@@ -505,6 +505,21 @@ export class CloudTaskRepository implements TaskRepository {
     return this.model.configuration();
   }
 
+  async taskModelSettingsAccess() {
+    return {
+      writable: false,
+      source: `${this.taskTypeName} type contract`,
+      reason:
+        "Connected collection type settings are managed by the collection owner.",
+    };
+  }
+
+  async updateTaskModelSettings(): Promise<TaskCollectionConfiguration> {
+    throw new Error(
+      "Connected collection type settings are managed by the collection owner.",
+    );
+  }
+
   async listViews(): Promise<TaskViewDocument[]> {
     try {
       this.viewCache = normalizeViewDocuments(

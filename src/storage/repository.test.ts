@@ -98,6 +98,83 @@ describe("IndexedMarkdownRepository", () => {
     expect(relationships.subtasks.map((task) => task.id)).toEqual([child.id]);
   });
 
+  it("updates portable model settings in the task type document", async () => {
+    const source = parseFrontmatter(await vault.readText("_types/task.md"));
+    (
+      (source.frontmatter.schema as { value: { properties: object } }).value
+        .properties as Record<string, unknown>
+    ).client = {
+      type: "string",
+      description: "Keep this custom field.",
+    };
+    source.frontmatter["x-host"] = { keep: true };
+    await vault.writeText(
+      "_types/task.md",
+      serializeMarkdownDocument(source.frontmatter, source.body),
+    );
+    await repository.refresh();
+
+    const startedAt = performance.now();
+    const configuration = await repository.updateTaskModelSettings({
+      defaultStatus: "in-progress",
+      defaultPriority: "high",
+      recurrence: {
+        maintainDueDateOffset: false,
+        resetCheckboxesOnRecurrence: true,
+      },
+      occurrences: {
+        defaultMaterialization: "rolling",
+        defaultNextTrigger: "completion_or_skip",
+        pastHorizon: "P2D",
+        futureHorizon: "P30D",
+      },
+      timeTracking: { autoStopOnComplete: true },
+      links: { writeFormat: "markdown" },
+      archive: {
+        moveOnArchive: true,
+        folder: "TaskNotes/Filed",
+      },
+      templating: {
+        enabled: true,
+        templatePath: "Templates/Task.md",
+      },
+    });
+    const elapsedMs = performance.now() - startedAt;
+    const updated = parseFrontmatter(await vault.readText("_types/task.md"));
+
+    expect(configuration).toMatchObject({
+      defaults: { status: "in-progress", priority: "high" },
+      recurrence: {
+        maintainDueDateOffset: false,
+        resetCheckboxesOnRecurrence: true,
+      },
+      occurrences: {
+        defaultMaterialization: "rolling",
+        defaultNextTrigger: "completion_or_skip",
+        pastHorizon: "P2D",
+        futureHorizon: "P30D",
+      },
+      timeTracking: { autoStopOnComplete: true },
+      linkWriteFormat: "markdown",
+      archive: { moveOnArchive: true, folder: "TaskNotes/Filed" },
+      templating: {
+        enabled: true,
+        templatePath: "Templates/Task.md",
+      },
+    });
+    expect(
+      (
+        (updated.frontmatter.schema as { value: { properties: object } }).value
+          .properties as Record<string, unknown>
+      ).client,
+    ).toEqual({
+      type: "string",
+      description: "Keep this custom field.",
+    });
+    expect(updated.frontmatter["x-host"]).toEqual({ keep: true });
+    expect(elapsedMs).toBeLessThan(500);
+  });
+
   it("allocates unique paths when two canonical filenames collide", async () => {
     const collection = new MarkdownCollection(vault);
     await collection.initialize();

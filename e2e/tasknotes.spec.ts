@@ -143,6 +143,16 @@ async function localTaskDocuments(page: Page): Promise<string[]> {
   });
 }
 
+async function localTaskTypeDocument(page: Page): Promise<string> {
+  return page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const types = await tasknotes.getDirectoryHandle("_types");
+    const task = await types.getFileHandle("task.md");
+    return (await task.getFile()).text();
+  });
+}
+
 async function openViewsCatalog(page: Page): Promise<void> {
   await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: /Saved views/ }).click();
@@ -307,6 +317,61 @@ test("uses responsive TaskNotes controls instead of browser pickers", async ({
     page.getByRole("button", { name: "Scheduled time", exact: true }),
   ).toHaveAttribute("data-value", "07:05");
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+});
+
+test("edits task model settings in the portable type contract", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await chooseOption(page, "Default status", "In progress");
+  await chooseOption(page, "Default priority", "High");
+  await chooseOption(page, "Record links", "Markdown links");
+  await page.getByLabel("Future occurrence horizon").fill("P30D");
+  await page.getByLabel("Stop a running timer when its task completes").check();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await page
+    .getByRole("button", { name: "Save task settings", exact: true })
+    .click();
+  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+  const saveLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("task-model-settings-profile.json", {
+    body: JSON.stringify({ saveLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(saveLatencyMs).toBeLessThan(750);
+
+  const typeSource = await localTaskTypeDocument(page);
+  expect(typeSource).toContain("default: in-progress");
+  expect(typeSource).toContain("default: high");
+  expect(typeSource).toContain("write_format: markdown");
+  expect(typeSource).toContain("future_horizon: P30D");
+  expect(typeSource).toContain("auto_stop_on_complete: true");
+
+  await page.reload();
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Default status" }),
+  ).toHaveAttribute("data-value", "in-progress");
+  await expect(
+    page.getByRole("combobox", { name: "Default priority" }),
+  ).toHaveAttribute("data-value", "high");
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByLabel("New task title").fill("Contract default task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Contract default task", { exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
+    "data-value",
+    "in-progress",
+  );
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "High", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({

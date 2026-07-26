@@ -27,7 +27,11 @@ import type {
   TaskTimeEntry,
 } from "../domain/task";
 import type { TaskRelationships } from "../domain/task-relationships";
-import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  TaskCollectionConfiguration,
+  TaskModelSettingsAccess,
+  TaskModelSettingsPatch,
+} from "../domain/task-configuration";
 import type {
   FieldCompletion,
   FieldCompletionRequest,
@@ -84,6 +88,10 @@ export interface TaskRepository {
   ): Promise<TaskViewSourceDocument>;
   deleteViewSource(path: string, ifRevision?: string): Promise<void>;
   taskConfiguration(): Promise<TaskCollectionConfiguration>;
+  taskModelSettingsAccess(): Promise<TaskModelSettingsAccess>;
+  updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   syncStatus(): Promise<RepositorySyncStatus>;
   syncIssues(): Promise<RepositorySyncIssue[]>;
@@ -426,6 +434,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
     return this.collection.taskConfiguration();
+  }
+
+  async taskModelSettingsAccess(): Promise<TaskModelSettingsAccess> {
+    return {
+      writable: true,
+      source: this.collection.taskModelSettingsSource(),
+    };
+  }
+
+  updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration> {
+    return this.exclusive(() => this.collection.updateTaskModelSettings(patch));
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

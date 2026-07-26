@@ -976,6 +976,78 @@ button:disabled {
   padding: 12px 0 4px;
 }
 
+.task-model-settings fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.task-model-setting-row small {
+  overflow-wrap: anywhere;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+}
+
+.task-model-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+  padding: 18px 0 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-model-toggles {
+  border-bottom: 1px solid var(--line);
+}
+
+.task-model-toggle {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  min-height: 48px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.task-model-toggle:last-child {
+  border-bottom: 0;
+}
+
+.task-model-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.task-model-toggle span {
+  color: var(--ink-soft);
+}
+
+.task-model-save {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.task-model-save .text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.task-model-save > span,
+.settings-read-only {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+}
+
+.settings-read-only {
+  padding: 10px 0 14px;
+}
+
 .notification-error {
   margin-top: 10px;
 }
@@ -4558,6 +4630,17 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .task-model-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-model-save {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
   .tasknotes-popover-scrim {
     background: color-mix(in srgb, var(--ink), transparent 88%);
   }
