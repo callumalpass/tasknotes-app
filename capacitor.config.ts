@@ -1,4 +1,5 @@
 /// <reference types="@capacitor-firebase/messaging" />
+/// <reference types="@capacitor/push-notifications" />
 
 import type { CapacitorConfig } from "@capacitor/cli";
 
@@ -11,13 +12,12 @@ const androidFirebaseConfigured =
 const iosFirebaseConfigured =
   firebaseProjectConfigured &&
   existsSync("ios/App/App/GoogleService-Info.plist");
-const nativePlugins = (firebaseConfigured: boolean) => [
+const sharedNativePlugins = [
   "@capacitor/app",
   "@capacitor/browser",
   "@capacitor/filesystem",
   "@capacitor/haptics",
   "@capacitor/local-notifications",
-  ...(firebaseConfigured ? ["@capacitor-firebase/messaging"] : []),
 ];
 
 const config: CapacitorConfig = {
@@ -32,16 +32,21 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: "#fbfcfe",
-    includePlugins: nativePlugins(androidFirebaseConfigured),
-    // Some OEM WebViews advertise WEB_MESSAGE_LISTENER support without
-    // exposing the bridge object. The bundled app serves only trusted local
-    // assets, so the JavaScript interface bridge is the reliable option.
-    useLegacyBridge: true,
+    includePlugins: [
+      ...sharedNativePlugins,
+      ...(androidFirebaseConfigured ? ["@capacitor/push-notifications"] : []),
+    ],
   },
   ios: {
-    includePlugins: nativePlugins(iosFirebaseConfigured),
+    includePlugins: [
+      ...sharedNativePlugins,
+      ...(iosFirebaseConfigured ? ["@capacitor-firebase/messaging"] : []),
+    ],
   },
   plugins: {
+    PushNotifications: {
+      presentationOptions: ["alert", "badge", "sound"],
+    },
     FirebaseMessaging: {
       presentationOptions: ["alert", "badge", "sound"],
     },

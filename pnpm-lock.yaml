@@ -31,6 +31,9 @@ importers:
       "@capacitor/local-notifications":
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.4.2)
+      "@capacitor/push-notifications":
+        specifier: 8.0.2
+        version: 8.0.2(@capacitor/core@8.4.2)
       "@fontsource/atkinson-hyperlegible":
         specifier: 5.3.0
         version: 5.3.0
@@ -465,6 +468,14 @@ packages:
     resolution:
       {
         integrity: sha512-X7KE/I4ZutMTGVHNUyTjIugYcQEcHJRLks+TsPnOriuS+lo0geSTuaRln6zAZlJSSXSoVMSSzHexdSbIjR/8iw==,
+      }
+    peerDependencies:
+      "@capacitor/core": ">=8.0.0"
+
+  "@capacitor/push-notifications@8.0.2":
+    resolution:
+      {
+        integrity: sha512-mej8Eh4EU4JXbaeyMX2l+4NNK6IdY5iRsEXpBOTHLD29fuCACBP7kOJTiJv6piw134zdlbFH0rR+sDKHIiFOFg==,
       }
     peerDependencies:
       "@capacitor/core": ">=8.0.0"
@@ -5833,6 +5844,10 @@ snapshots:
       "@capacitor/core": 8.4.2
 
   "@capacitor/local-notifications@8.0.2(@capacitor/core@8.4.2)":
+    dependencies:
+      "@capacitor/core": 8.4.2
+
+  "@capacitor/push-notifications@8.0.2(@capacitor/core@8.4.2)":
     dependencies:
       "@capacitor/core": 8.4.2
 

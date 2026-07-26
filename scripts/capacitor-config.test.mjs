@@ -4,12 +4,13 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("native Capacitor configuration", () => {
-  it("uses the Android bridge that is available across OEM WebViews", async () => {
+  it("uses the proven Android push plugin without forcing a legacy bridge", async () => {
     const source = await readFile(
       resolve(process.cwd(), "capacitor.config.ts"),
       "utf8",
     );
 
-    expect(source).toMatch(/useLegacyBridge:\s*true/);
+    expect(source).toMatch(/@capacitor\/push-notifications/);
+    expect(source).not.toMatch(/useLegacyBridge/);
   });
 });

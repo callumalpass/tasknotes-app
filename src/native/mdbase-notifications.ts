@@ -8,20 +8,27 @@ import {
   type MdbaseNativeNotificationData,
 } from "@mdbase/connect";
 
-import { activeCloudConnection, cloudConnect } from "../cloud/connect";
+import { activeCloudConnection } from "../cloud/connect";
+import {
+  androidPushMessaging,
+  type NativeMessaging,
+  type NativeNotification,
+} from "./android-push-messaging";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
 const TIMER_OPERATIONS = ["reconcile_timers"] as const;
 
 export type MdbaseNotificationState =
+  | "checking"
   | "unavailable"
   | "not_connected"
   | "not_configured"
   | "reauthorization_required"
   | "off"
   | "enabled"
-  | "denied";
+  | "denied"
+  | "error";
 
 export interface MdbaseNotificationStatus {
   state: MdbaseNotificationState;
@@ -35,36 +42,10 @@ export interface MdbaseNotificationWake {
 
 interface NotificationConnect {
   connection(): MdbaseConnectionInfo | null;
-  register(): ReturnType<typeof cloudConnect.register>;
   registerNativeNotifications(options: {
     token: string;
   }): Promise<MdbaseNativeNotificationRegistration>;
   unregisterNativeNotifications(): Promise<void>;
-}
-
-interface NativeMessaging {
-  checkPermissions(): Promise<{ receive: string }>;
-  requestPermissions(): Promise<{ receive: string }>;
-  getToken(): Promise<{ token: string }>;
-  deleteToken(): Promise<void>;
-  createChannel(options: {
-    id: string;
-    name: string;
-    description: string;
-    importance: number;
-  }): Promise<void>;
-  addListener(
-    eventName: "tokenReceived",
-    listener: (event: { token: string }) => void,
-  ): Promise<PluginListenerHandle>;
-  addListener(
-    eventName: "notificationReceived",
-    listener: (event: { notification: Notification }) => void,
-  ): Promise<PluginListenerHandle>;
-  addListener(
-    eventName: "notificationActionPerformed",
-    listener: (event: { notification: Notification }) => void,
-  ): Promise<PluginListenerHandle>;
 }
 
 export interface MdbaseNotificationManagerOptions {
@@ -72,6 +53,7 @@ export interface MdbaseNotificationManagerOptions {
   messaging: NativeMessaging;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   isNative(): boolean;
+  isConfigured(): boolean;
 }
 
 export class MdbaseNotificationManager {
@@ -89,7 +71,7 @@ export class MdbaseNotificationManager {
       )
     )
       return { state: "reauthorization_required", optedIn: false };
-    if (!(await this.managedDeliveryDeclared()))
+    if (!this.options.isConfigured())
       return { state: "not_configured", optedIn };
     const permission = await this.options.messaging.checkPermissions();
     if (permission.receive === "denied") return { state: "denied", optedIn };
@@ -110,7 +92,7 @@ export class MdbaseNotificationManager {
       )
     )
       return { state: "reauthorization_required", optedIn: false };
-    if (!(await this.managedDeliveryDeclared()))
+    if (!this.options.isConfigured())
       return { state: "not_configured", optedIn: false };
     const current = await this.options.messaging.checkPermissions();
     const permission =
@@ -128,6 +110,12 @@ export class MdbaseNotificationManager {
         error.code === "notification_reauthorization_required"
       ) {
         return { state: "reauthorization_required", optedIn: false };
+      }
+      if (
+        error instanceof MdbaseConnectError &&
+        error.code === "managed_fcm_not_declared"
+      ) {
+        return { state: "not_configured", optedIn: false };
       }
       throw error;
     }
@@ -154,7 +142,7 @@ export class MdbaseNotificationManager {
       !this.options.isNative() ||
       !this.enabled() ||
       !this.options.connect.connection() ||
-      !(await this.managedDeliveryDeclared())
+      !this.options.isConfigured()
     )
       return;
     const permission = await this.options.messaging.checkPermissions();
@@ -209,11 +197,6 @@ export class MdbaseNotificationManager {
     return this.options.storage.getItem(ENABLED_KEY) === "1";
   }
 
-  private async managedDeliveryDeclared(): Promise<boolean> {
-    const application = await this.options.connect.register();
-    return application.notifications?.native_delivery?.mode === "managed_fcm";
-  }
-
   private async registerCurrentToken(): Promise<void> {
     await this.options.messaging
       .createChannel({
@@ -231,7 +214,7 @@ export class MdbaseNotificationManager {
 }
 
 export function mdbaseNotificationData(
-  notification: Pick<Notification, "data">,
+  notification: Pick<NativeNotification, "data">,
 ): MdbaseNativeNotificationData | null {
   try {
     return parseMdbaseNativeNotificationData(notification.data);
@@ -272,18 +255,18 @@ class LazyFirebaseMessaging implements NativeMessaging {
   ): Promise<PluginListenerHandle>;
   addListener(
     eventName: "notificationReceived",
-    listener: (event: { notification: Notification }) => void,
+    listener: (event: { notification: NativeNotification }) => void,
   ): Promise<PluginListenerHandle>;
   addListener(
     eventName: "notificationActionPerformed",
-    listener: (event: { notification: Notification }) => void,
+    listener: (event: { notification: NativeNotification }) => void,
   ): Promise<PluginListenerHandle>;
   async addListener(
     eventName:
       "tokenReceived" | "notificationReceived" | "notificationActionPerformed",
     listener:
       | ((event: { token: string }) => void)
-      | ((event: { notification: Notification }) => void),
+      | ((event: { notification: NativeNotification }) => void),
   ): Promise<PluginListenerHandle> {
     const messaging = await firebaseMessaging();
     if (eventName === "tokenReceived")
@@ -314,7 +297,6 @@ async function firebaseMessaging() {
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
     connection: () => activeCloudConnection()?.info() ?? null,
-    register: () => cloudConnect.register(),
     registerNativeNotifications: (options) => {
       const connection = activeCloudConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
@@ -324,7 +306,14 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
       await activeCloudConnection()?.unregisterNativeNotifications();
     },
   },
-  messaging: new LazyFirebaseMessaging(),
+  messaging:
+    Capacitor.getPlatform() === "android"
+      ? androidPushMessaging
+      : new LazyFirebaseMessaging(),
   storage: localStorage,
   isNative: () => Capacitor.isNativePlatform(),
+  isConfigured: () =>
+    Capacitor.getPlatform() === "android"
+      ? Capacitor.isPluginAvailable("PushNotifications")
+      : Capacitor.isPluginAvailable("FirebaseMessaging"),
 });

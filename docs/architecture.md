@@ -170,8 +170,9 @@ chunks, keeping the first-run location screen small.
 - The cloud browser vertical slice crosses the portal, OAuth server, SDK,
   provider HTTP boundary, offline replica, and conflict UI.
 - The Android smoke test crosses the real WebView-to-Filesystem bridge and
-  verifies the resulting public Markdown file, notification bridge, process
-  restart, and private-use OAuth callback.
+  verifies the resulting public Markdown file, local scheduling, official
+  PushNotifications FCM registration and foreground delivery, process restart,
+  and private-use OAuth callback.
 - Debug-only benchmark controls create and remove app-owned large-vault
   fixtures, avoiding misleading results from Android scoped-storage ownership.
 
