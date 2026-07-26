@@ -8,7 +8,7 @@ const development = process.argv.includes("--development");
 const webOnly = process.env.TASKNOTES_WEB_ONLY === "1";
 const appUrl = (
   process.env.TASKNOTES_APP_URL ??
-  (development ? "http://127.0.0.1:4173" : "https://tasknotes.dev/app")
+  (development ? "http://127.0.0.1:4173" : "https://app.tasknotes.dev")
 ).replace(/\/$/, "");
 const resources = buildAppTaskNotesResources();
 const firebaseProjectId =

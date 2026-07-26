@@ -1,8 +1,7 @@
 const connectOrigin =
   process.env.MDBASE_CONNECT_ORIGIN ?? "https://connect.mdbase.dev";
 const appOrigin =
-  process.env.TASKNOTES_PRODUCTION_URL ??
-  "https://callumalpass.github.io/tasknotes-app";
+  process.env.TASKNOTES_PRODUCTION_URL ?? "https://app.tasknotes.dev";
 const requireNotificationManifest =
   process.env.TASKNOTES_REQUIRE_NOTIFICATION_MANIFEST !== "0";
 const retryDelays = [3_000, 6_000, 12_000, 20_000, 20_000];

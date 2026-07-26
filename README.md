@@ -143,15 +143,22 @@ The production smoke check verifies the deployed web shell, OAuth callback,
 application manifest, and the public mdbase connect health and readiness
 boundaries. GitHub Actions runs it every six hours.
 
-## Test deployment
+## Web deployment
 
-Pushes to `main` deploy the web application to
-<https://callumalpass.github.io/tasknotes-app/> through GitHub Actions. The
-Pages build uses `/tasknotes-app/` as its asset and callback base and publishes
-a web-only mdbase manifest. The build includes an explicit authorization
-callback document and a Pages-compatible fallback so OAuth deep links load the
-application. Native builds continue to use the TaskNotes-hosted manifest and
-private-use callback.
+The production web application is deployed to
+<https://app.tasknotes.dev/> with Cloudflare Pages. The deployment runs only
+after the repository's verification suite and publishes a web-only mdbase
+manifest for that exact origin. Configure the `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` repository secrets, then set the
+`CLOUDFLARE_PAGES_ENABLED` repository variable to `1`. After the custom domain
+is live, set the `TASKNOTES_PRODUCTION_URL` repository variable to
+`https://app.tasknotes.dev` so scheduled smoke checks follow production.
+
+The legacy <https://callumalpass.github.io/tasknotes-app/> deployment remains a
+rollback target. Its workflow builds explicitly for `/tasknotes-app/`, so its
+assets and authorization callback remain independent from the production
+origin. Native builds use the generated TaskNotes manifest and private-use
+callback.
 
 ## Large-vault result
 

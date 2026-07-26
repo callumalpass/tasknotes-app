@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Deploy Cloudflare Pages
 
 on:
   push:
@@ -7,18 +7,18 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  deployments: write
 
 concurrency:
-  group: github-pages
+  group: cloudflare-pages
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: vars.CLOUDFLARE_PAGES_ENABLED == '1'
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: cloudflare-pages
+      url: https://app.tasknotes.dev/
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -42,35 +42,31 @@ jobs:
       - name: Verify application
         run: pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm test:conformance
 
-      - name: Build GitHub Pages application
+      - name: Build Cloudflare Pages application
         run: pnpm build
         env:
-          VITE_BASE_PATH: /tasknotes-app/
-          TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
+          VITE_BASE_PATH: /
+          TASKNOTES_APP_URL: https://app.tasknotes.dev
           TASKNOTES_WEB_ONLY: "1"
           TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
 
-      - name: Test GitHub Pages artifact
+      - name: Test Cloudflare Pages artifact
         run: pnpm test:e2e
         env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/tasknotes-app/
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/
           PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173
-          VITE_BASE_PATH: /tasknotes-app/
+          VITE_BASE_PATH: /
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Deploy Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
-          path: dist
-          include-hidden-files: true
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=tasknotes-app --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: "4.114.0"
 
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
-
-      - name: Smoke deployed Pages
+      - name: Smoke production domain
         run: pnpm test:production-smoke
         env:
-          TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
+          TASKNOTES_PRODUCTION_URL: https://app.tasknotes.dev

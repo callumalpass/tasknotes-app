@@ -2,10 +2,10 @@
   "manifest_version": 1,
   "id": "dev.tasknotes.app",
   "name": "TaskNotes",
-  "homepage": "https://tasknotes.dev/app/",
-  "icon": "https://tasknotes.dev/app/icon.png",
+  "homepage": "https://app.tasknotes.dev/",
+  "icon": "https://app.tasknotes.dev/icon.png",
   "redirect_uris": [
-    "https://tasknotes.dev/app/auth/mdbase/callback",
+    "https://app.tasknotes.dev/auth/mdbase/callback",
     "dev.tasknotes.app://auth/mdbase/callback"
   ],
   "requirements": {
