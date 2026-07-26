@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import bundledManifest from "../generated/mdbase-app.json";
-import { cloudConnect } from "./connect";
+import {
+  authorizeCloudCollection,
+  cloudConnect,
+  savedCloudConnections,
+} from "./connect";
+
+const STORAGE_PREFIX =
+  "mdbase-connect:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
 
 describe("TaskNotes mdbase connection", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
 
   it("registers the generated declaration inline", async () => {
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -29,4 +39,60 @@ describe("TaskNotes mdbase connection", () => {
       manifest: bundledManifest,
     });
   });
+
+  it("retains independently authorized collections", () => {
+    const collectionIds = ["collection-home", "collection-work"];
+    localStorage.setItem(
+      `${STORAGE_PREFIX}:connections`,
+      JSON.stringify(collectionIds),
+    );
+    localStorage.setItem(
+      `${STORAGE_PREFIX}:token:${collectionIds[0]}`,
+      JSON.stringify(token(collectionIds[0], "Home tasks")),
+    );
+    localStorage.setItem(
+      `${STORAGE_PREFIX}:token:${collectionIds[1]}`,
+      JSON.stringify(token(collectionIds[1], "Work tasks")),
+    );
+
+    expect(
+      savedCloudConnections().map(({ collectionId, displayName }) => ({
+        collectionId,
+        displayName,
+      })),
+    ).toEqual([
+      { collectionId: "collection-home", displayName: "Home tasks" },
+      { collectionId: "collection-work", displayName: "Work tasks" },
+    ]);
+  });
+
+  it("does not pin the current collection when authorizing another one", () => {
+    const authorize = vi
+      .spyOn(cloudConnect, "authorize")
+      .mockResolvedValue({} as never);
+
+    void authorizeCloudCollection();
+
+    expect(authorize).toHaveBeenCalledWith(
+      expect.not.objectContaining({ collectionId: expect.anything() }),
+    );
+  });
 });
+
+function token(collectionId: string, collectionName: string) {
+  return {
+    accessToken: `access-${collectionId}`,
+    refreshToken: `refresh-${collectionId}`,
+    clientId: "tasknotes",
+    collectionId,
+    collectionName,
+    operations: ["describe", "read", "query"],
+    scope: {
+      contracts: [{ id: "tasknotes.task", version: 1 }],
+      access: "full_collection",
+    },
+    expiresAt: Date.now() + 60_000,
+    refreshExpiresAt: Date.now() + 120_000,
+    savedAt: Date.now(),
+  };
+}

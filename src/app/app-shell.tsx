@@ -136,70 +136,28 @@ export function AppShell() {
         <img alt="" src={tasknotesMarkUrl} />
         <p>Opening your tasks</p>
         <LoadingRows count={4} />
+        {choice === "cloud" ? (
+          <button
+            className="text-action opening-change-collection"
+            type="button"
+            onClick={changeConnectedCollection}
+          >
+            Choose another mdbase collection
+          </button>
+        ) : null}
       </main>
     );
   }
   if (status === "error") {
-    const authorizationExpired =
-      choice === "cloud" && isAuthorizationError(error);
     return (
-      <main className="opening-screen storage-error">
-        <img alt="" src={tasknotesMarkUrl} />
-        <h1>
-          {authorizationExpired
-            ? "Reconnect to mdbase."
-            : "TaskNotes could not open."}
-        </h1>
-        <p>
-          {authorizationExpired
-            ? "Your connection has expired. Your tasks and offline data remain unchanged."
-            : "The collection is unavailable right now."}
-        </p>
-        <div className="welcome-actions">
-          {authorizationExpired ? (
-            <button
-              className="outline-action"
-              type="button"
-              onClick={changeConnectedCollection}
-            >
-              Reconnect to mdbase
-            </button>
-          ) : (
-            <>
-              <button
-                className="outline-action"
-                type="button"
-                onClick={() => location.reload()}
-              >
-                Try again
-              </button>
-              {canChooseLocalFolder ? (
-                <button
-                  className="text-action"
-                  type="button"
-                  onClick={changeLocalCollection}
-                >
-                  Choose a folder
-                </button>
-              ) : null}
-            </>
-          )}
-          <button
-            className="text-action"
-            type="button"
-            onClick={() => {
-              if (choice === "cloud") changeConnectedCollection();
-              choose(choice === "local" ? "cloud" : "local");
-            }}
-          >
-            {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
-          </button>
-        </div>
-        <details className="technical-details">
-          <summary>Technical details</summary>
-          <p>{technicalErrorMessage(error)}</p>
-        </details>
-      </main>
+      <StorageErrorScreen
+        canChooseLocalFolder={canChooseLocalFolder}
+        changeConnectedCollection={changeConnectedCollection}
+        changeLocalCollection={changeLocalCollection}
+        choice={choice}
+        choose={choose}
+        error={error}
+      />
     );
   }
 
@@ -326,6 +284,93 @@ export function AppShell() {
         </nav>
       ) : null}
     </div>
+  );
+}
+
+export function StorageErrorScreen({
+  canChooseLocalFolder,
+  changeConnectedCollection,
+  changeLocalCollection,
+  choice,
+  choose,
+  error,
+}: {
+  canChooseLocalFolder: boolean;
+  changeConnectedCollection(): void;
+  changeLocalCollection(): void;
+  choice: "local" | "cloud";
+  choose(choice: "local" | "cloud"): void;
+  error: Error | null;
+}) {
+  const authorizationExpired =
+    choice === "cloud" && isAuthorizationError(error);
+  return (
+    <main className="opening-screen storage-error">
+      <img alt="" src={tasknotesMarkUrl} />
+      <h1>
+        {authorizationExpired
+          ? "Reconnect to mdbase."
+          : "TaskNotes could not open."}
+      </h1>
+      <p>
+        {authorizationExpired
+          ? "Your connection has expired. Your tasks and offline data remain unchanged."
+          : "The collection is unavailable right now."}
+      </p>
+      <div className="welcome-actions">
+        {authorizationExpired ? (
+          <button
+            className="outline-action"
+            type="button"
+            onClick={changeConnectedCollection}
+          >
+            Reconnect to mdbase
+          </button>
+        ) : (
+          <>
+            <button
+              className="outline-action"
+              type="button"
+              onClick={() => location.reload()}
+            >
+              Try again
+            </button>
+            {choice === "cloud" ? (
+              <button
+                className="text-action"
+                type="button"
+                onClick={changeConnectedCollection}
+              >
+                Choose another mdbase collection
+              </button>
+            ) : null}
+            {canChooseLocalFolder ? (
+              <button
+                className="text-action"
+                type="button"
+                onClick={changeLocalCollection}
+              >
+                Choose a folder
+              </button>
+            ) : null}
+          </>
+        )}
+        <button
+          className="text-action"
+          type="button"
+          onClick={() => {
+            if (choice === "cloud") changeConnectedCollection();
+            choose(choice === "local" ? "cloud" : "local");
+          }}
+        >
+          {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
+        </button>
+      </div>
+      <details className="technical-details">
+        <summary>Technical details</summary>
+        <p>{technicalErrorMessage(error)}</p>
+      </details>
+    </main>
   );
 }
 

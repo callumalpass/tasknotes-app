@@ -54,6 +54,16 @@ export function savedCloudConnections(): MdbaseConnectionInfo[] {
   return cloudConnect.connections();
 }
 
+export function authorizeCloudCollection(
+  collectionId?: string,
+): ReturnType<typeof cloudConnect.authorize> {
+  return cloudConnect.authorize({
+    operations: [...CLOUD_OPERATIONS],
+    ...(collectionId ? { collectionId } : {}),
+    returnTo: authorizationReturnTo(),
+  });
+}
+
 export function activeCloudConnection(): MdbaseConnection<JsonObject> | null {
   return cloudLocation.activeConnection();
 }

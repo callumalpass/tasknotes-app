@@ -5,10 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   activeCloudConnection,
-  authorizationReturnTo,
+  authorizeCloudCollection,
   cleanCallbackUrl,
-  CLOUD_OPERATIONS,
-  cloudConnect,
   completeCloudAuthorization,
   isCloudCallback,
   onCloudConnectionChange,
@@ -103,29 +101,28 @@ export default function CloudCollection({
   );
 }
 
-function CloudConnection({
+export function CloudConnection({
   error,
   onBack,
 }: {
   error: string | null;
   onBack(): void;
 }) {
-  const [opening, setOpening] = useState(false);
+  const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
+  const connections = savedCloudConnections();
+  const selectedCollectionId = selectedCloudCollectionId();
+  const selectedConnection = connections.find(
+    (connection) => connection.collectionId === selectedCollectionId,
+  );
 
-  function connect() {
-    setOpening(true);
+  function connect(kind: "another" | "reconnect", collectionId?: string) {
+    setOpening(kind);
     setStartError(null);
-    void cloudConnect
-      .authorize({
-        operations: [...CLOUD_OPERATIONS],
-        collectionId: selectedCloudCollectionId() ?? undefined,
-        returnTo: authorizationReturnTo(),
-      })
-      .catch((reason) => {
-        setOpening(false);
-        setStartError(message(reason));
-      });
+    void authorizeCloudCollection(collectionId).catch((reason) => {
+      setOpening(null);
+      setStartError(message(reason));
+    });
   }
 
   return (
@@ -145,10 +142,11 @@ function CloudConnection({
         </p>
       ) : null}
       <div className="welcome-actions">
-        {savedCloudConnections().map((connection) => (
+        {connections.map((connection) => (
           <button
             key={connection.collectionId}
             className="outline-action"
+            disabled={opening !== null}
             type="button"
             onClick={() => {
               selectCloudConnection(connection.collectionId, true);
@@ -160,16 +158,28 @@ function CloudConnection({
         ))}
         <button
           className="outline-action"
-          disabled={opening && !error}
+          disabled={opening !== null && !error}
           type="button"
-          onClick={connect}
+          onClick={() => connect("another")}
         >
-          {opening && !error
+          {opening === "another" && !error
             ? "Opening mdbase…"
-            : savedCloudConnections().length
+            : connections.length
               ? "Connect another collection"
               : "Continue to mdbase"}
         </button>
+        {selectedCollectionId ? (
+          <button
+            className="text-action"
+            disabled={opening !== null && !error}
+            type="button"
+            onClick={() => connect("reconnect", selectedCollectionId)}
+          >
+            {opening === "reconnect" && !error
+              ? "Opening mdbase…"
+              : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
+          </button>
+        ) : null}
         <button className="text-action" type="button" onClick={onBack}>
           Choose another location
         </button>

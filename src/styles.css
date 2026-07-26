@@ -400,6 +400,15 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.view-detail.has-list-capture > .capture-composer {
+  margin-bottom: 0;
+}
+
+.view-detail.has-list-capture > .task-list-view {
+  /* The capture row owns this shared boundary. */
+  border-top: 0;
+}
+
 .task-groups {
   padding-top: 18px;
 }
@@ -2449,6 +2458,10 @@ button:disabled {
 
 .opening-screen .loading-rows {
   margin-top: 28px;
+}
+
+.opening-change-collection {
+  margin-top: 24px;
 }
 
 .storage-error h1 {

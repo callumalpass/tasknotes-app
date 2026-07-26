@@ -85,6 +85,17 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
   );
 
   const input = await screen.findByLabelText("New task title");
+  const viewSurface = input.closest(".view-detail");
+  const emptyResult = screen.getByText("Nothing here").closest("div");
+  expect(viewSurface).toHaveClass("has-list-capture");
+  expect(emptyResult).toHaveClass("plain-empty", "task-list-view");
+  expect(
+    viewSurface?.querySelector(":scope > .capture-composer"),
+  ).not.toBeNull();
+  expect(viewSurface?.querySelector(":scope > .task-list-view")).toBe(
+    emptyResult,
+  );
+
   fireEvent.change(input, { target: { value: "Ship saved-view capture" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
