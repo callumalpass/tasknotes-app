@@ -1,4 +1,4 @@
-import { recordMatchesLink } from "./completion";
+import { linkTarget, recordMatchesLink } from "./completion";
 
 import type { Task, TaskDependency } from "./task";
 
@@ -23,9 +23,15 @@ export function taskRelationships(
   tasks: readonly Task[],
 ): TaskRelationships {
   const taskById = new Map(tasks.map((task) => [task.id, task]));
+  const taskByPath = new Map<string, Task>();
+  for (const task of tasks) {
+    const normalized = normalizeLinkTarget(task.path);
+    taskByPath.set(normalized, task);
+    const basename = normalized.split("/").at(-1);
+    if (basename && !taskByPath.has(basename)) taskByPath.set(basename, task);
+  }
   const resolve = (value: string) =>
-    taskById.get(value) ??
-    tasks.find((candidate) => recordMatchesLink(candidate.path, value));
+    taskById.get(value) ?? taskByPath.get(normalizeLinkTarget(value));
 
   const blockedBy = current.blockedBy.map((dependency) => ({
     dependency,
@@ -61,4 +67,8 @@ export function taskRelationships(
       return task ? [task] : [];
     }),
   };
+}
+
+function normalizeLinkTarget(value: string): string {
+  return linkTarget(value).toLocaleLowerCase();
 }

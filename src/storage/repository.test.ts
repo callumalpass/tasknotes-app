@@ -91,6 +91,49 @@ describe("IndexedMarkdownRepository", () => {
     expect(readText).not.toHaveBeenCalledWith(created.path);
   });
 
+  it("skips the redundant first OPFS scan after a verified projection reopens", async () => {
+    const browserVault = new MemoryVault();
+    const firstCollection = new MarkdownCollection(browserVault);
+    vi.spyOn(firstCollection, "identifier").mockReturnValue("browser-default");
+    const name = `tasknotes-private-browser-test-${crypto.randomUUID()}`;
+    const firstIndex = new TaskIndex(name);
+    const first = new IndexedMarkdownRepository({
+      collection: firstCollection,
+      index: firstIndex,
+    });
+    await first.initialize();
+    await first.create({ title: "Cached browser task" });
+    await first.refresh();
+    firstIndex.close();
+
+    const reopenedIndex = new TaskIndex(name);
+    const reopenedCollection = new MarkdownCollection(browserVault);
+    vi.spyOn(reopenedCollection, "identifier").mockReturnValue(
+      "browser-default",
+    );
+    const list = vi.spyOn(reopenedCollection, "list");
+    const reopened = new IndexedMarkdownRepository({
+      collection: reopenedCollection,
+      index: reopenedIndex,
+    });
+    try {
+      await reopened.initialize();
+
+      expect(await reopened.refresh()).toMatchObject({
+        scanned: 1,
+        changed: 0,
+        elapsedMs: 0,
+      });
+      expect(list).not.toHaveBeenCalled();
+
+      await reopened.refresh();
+      expect(list).toHaveBeenCalledOnce();
+    } finally {
+      reopenedIndex.close();
+      await reopenedIndex.delete();
+    }
+  });
+
   it("opens an uncached collection before progressively indexing its tasks", async () => {
     const coldVault = new MemoryVault();
     for (let task = 1; task <= 300; task += 1)

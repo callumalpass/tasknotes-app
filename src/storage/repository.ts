@@ -45,6 +45,8 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../domain/view";
 
+const PROJECTION_CONSISTENCY_VERSION = 1;
+
 export interface CollectionInfo {
   kind: "local" | "connect";
   id?: string;
@@ -141,6 +143,13 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private readonly collection: MarkdownCollection;
   private readonly index: TaskIndex;
   private readonly cache = new Map<string, IndexedTask>();
+  private readonly rollingParentIds = new Set<string>();
+  private readonly cachedStats: TaskStats = {
+    total: 0,
+    open: 0,
+    completed: 0,
+    archived: 0,
+  };
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
   private writeTail: Promise<void> = Promise.resolve();
@@ -156,6 +165,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   >();
   private mutationVersion = 0;
   private readonly pathMutationVersions = new Map<string, number>();
+  private skipNextPrivateBrowserRefresh = false;
 
   constructor(
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
@@ -186,7 +196,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
           this.index.metadata.get("projection"),
         ]);
         for (const task of cached) {
-          this.cache.set(task.id, task);
+          this.cacheTask(task);
           this.collection.cacheTaskRecord(task, {
             lastModified: task.sourceMtime,
             size: task.sourceSize,
@@ -195,7 +205,16 @@ export class IndexedMarkdownRepository implements TaskRepository {
         const complete = cached.length
           ? (storedProjection?.complete ?? true)
           : false;
-        await this.index.metadata.put({ key: "projection", complete });
+        const consistencyVersion = storedProjection?.consistencyVersion;
+        await this.index.metadata.put({
+          key: "projection",
+          complete,
+          ...(consistencyVersion === undefined ? {} : { consistencyVersion }),
+        });
+        this.skipNextPrivateBrowserRefresh =
+          complete &&
+          consistencyVersion === PROJECTION_CONSISTENCY_VERSION &&
+          this.collection.identifier() === "browser-default";
         if (!complete)
           this.publishIndexing(
             {
@@ -214,6 +233,25 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   refresh(): Promise<RefreshResult> {
     if (this.refreshInFlight) return this.refreshInFlight;
+    if (this.skipNextPrivateBrowserRefresh) {
+      this.skipNextPrivateBrowserRefresh = false;
+      const result = {
+        scanned: this.cache.size,
+        changed: 0,
+        removed: 0,
+        elapsedMs: 0,
+      };
+      this.publishIndexing(
+        {
+          phase: "idle",
+          completed: this.cache.size,
+          total: this.cache.size,
+          complete: true,
+        },
+        false,
+      );
+      return Promise.resolve(result);
+    }
     this.publishIndexing(
       {
         phase: "scanning",
@@ -263,22 +301,22 @@ export class IndexedMarkdownRepository implements TaskRepository {
       .toLocaleLowerCase()
       .split(/\s+/)
       .filter(Boolean);
-    const tasks = [...this.cache.values()]
-      .filter((task) => {
-        if (!matchesArchiveFilter(task, query)) return false;
-        if (query.status === "completed" && !task.completed) return false;
-        if (
-          query.status !== "completed" &&
-          query.status !== "all" &&
-          task.completed
-        )
-          return false;
-        return tokens.every((token) => task.searchText.includes(token));
-      })
-      .sort(compareTasks)
-      .slice(0, query.limit ?? 500)
-      .map(withoutIndexFields);
-    return tasks;
+    const limit = Math.max(0, Math.floor(query.limit ?? 500));
+    if (!limit) return [];
+    const matches = (task: IndexedTask) => {
+      if (!matchesArchiveFilter(task, query)) return false;
+      if (query.status === "completed" && !task.completed) return false;
+      if (
+        query.status !== "completed" &&
+        query.status !== "all" &&
+        task.completed
+      )
+        return false;
+      return tokens.every((token) => task.searchText.includes(token));
+    };
+    return selectFirstTasks(this.cache.values(), matches, limit).map(
+      withoutIndexFields,
+    );
   }
 
   async get(id: string): Promise<Task | null> {
@@ -444,14 +482,14 @@ export class IndexedMarkdownRepository implements TaskRepository {
         const moved = { ...next, path: destination };
         const indexed = indexTask(moved, source);
         await this.index.tasks.put(indexed);
-        this.cache.set(id, indexed);
+        this.cacheTask(indexed);
         this.markPathsChanged(next.path, destination);
         return moved;
       } catch (reason) {
         const warning = archiveMoveWarning(reason, archived);
         const retained = { ...next, operationWarnings: [warning] };
         const cached = this.cache.get(id);
-        if (cached) this.cache.set(id, { ...cached, ...retained });
+        if (cached) this.cacheTask({ ...cached, ...retained });
         return retained;
       }
     });
@@ -462,27 +500,14 @@ export class IndexedMarkdownRepository implements TaskRepository {
       const current = this.cache.get(id);
       if (!current) return;
       await this.collection.delete(current.path);
-      this.cache.delete(id);
+      this.removeCachedTask(id);
       await this.index.tasks.delete(id);
       this.markPathsChanged(current.path);
     });
   }
 
   async stats(): Promise<TaskStats> {
-    let archived = 0;
-    let completed = 0;
-    let open = 0;
-    for (const task of this.cache.values()) {
-      if (task.archived) archived += 1;
-      else if (task.completed) completed += 1;
-      else open += 1;
-    }
-    return {
-      total: open + completed,
-      open,
-      completed,
-      archived,
-    };
+    return { ...this.cachedStats };
   }
 
   listViews(): Promise<TaskViewDocument[]> {
@@ -649,11 +674,15 @@ export class IndexedMarkdownRepository implements TaskRepository {
       if (removable.length)
         await this.index.tasks.bulkDelete(removable.map((task) => task.id));
       for (const task of removable) {
-        this.cache.delete(task.id);
+        this.removeCachedTask(task.id);
         removedIds.add(task.id);
       }
       await this.maintainRollingOccurrencesUnlocked();
-      await this.index.metadata.put({ key: "projection", complete: true });
+      await this.index.metadata.put({
+        key: "projection",
+        complete: true,
+        consistencyVersion: PROJECTION_CONSISTENCY_VERSION,
+      });
       return removedIds.size;
     });
     this.publishIndexing(
@@ -701,8 +730,8 @@ export class IndexedMarkdownRepository implements TaskRepository {
       if (replacedIds.size) await this.index.tasks.bulkDelete([...replacedIds]);
       if (indexed.length) await this.index.tasks.bulkPut(indexed);
     });
-    for (const id of replacedIds) this.cache.delete(id);
-    for (const task of indexed) this.cache.set(task.id, task);
+    for (const id of replacedIds) this.removeCachedTask(id);
+    for (const task of indexed) this.cacheTask(task);
     return replacedIds;
   }
 
@@ -710,8 +739,33 @@ export class IndexedMarkdownRepository implements TaskRepository {
     const source = await this.collection.write(task);
     const indexed = indexTask(task, source);
     await this.index.tasks.put(indexed);
-    this.cache.set(task.id, indexed);
+    this.cacheTask(indexed);
     this.markPathsChanged(task.path);
+  }
+
+  private cacheTask(task: IndexedTask): void {
+    const current = this.cache.get(task.id);
+    if (current) this.adjustStats(current, -1);
+    this.cache.set(task.id, task);
+    this.adjustStats(task, 1);
+    if (task.recurrence && task.occurrenceMaterialization === "rolling")
+      this.rollingParentIds.add(task.id);
+    else this.rollingParentIds.delete(task.id);
+  }
+
+  private removeCachedTask(id: string): void {
+    const current = this.cache.get(id);
+    if (!current) return;
+    this.cache.delete(id);
+    this.rollingParentIds.delete(id);
+    this.adjustStats(current, -1);
+  }
+
+  private adjustStats(task: Task, direction: 1 | -1): void {
+    if (task.archived) this.cachedStats.archived += direction;
+    else if (task.completed) this.cachedStats.completed += direction;
+    else this.cachedStats.open += direction;
+    this.cachedStats.total = this.cachedStats.open + this.cachedStats.completed;
   }
 
   private pathChangedAfter(path: string, version: number): boolean {
@@ -802,16 +856,15 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!warnings.length) return transition.occurrence;
     const stored = { ...transition.occurrence, operationWarnings: warnings };
     const cached = this.cache.get(stored.id);
-    if (cached) this.cache.set(stored.id, { ...cached, ...stored });
+    if (cached) this.cacheTask({ ...cached, ...stored });
     return stored;
   }
 
   private async maintainRollingOccurrencesUnlocked(): Promise<string[]> {
     const warnings: string[] = [];
-    const parents = [...this.cache.values()].filter(
-      (task) => task.recurrence && task.occurrenceMaterialization === "rolling",
-    );
-    for (const parent of parents) {
+    for (const id of this.rollingParentIds) {
+      const parent = this.cache.get(id);
+      if (!parent) continue;
       warnings.push(...(await this.materializeRollingWindow(parent)));
     }
     return warnings;
@@ -824,7 +877,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!warnings.length) return task;
     const retained = { ...task, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    if (cached) this.cache.set(task.id, { ...cached, ...retained });
+    if (cached) this.cacheTask({ ...cached, ...retained });
     return retained;
   }
 
@@ -872,6 +925,55 @@ function errorMessage(reason: unknown): string {
 
 function yieldToMainThread(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function selectFirstTasks(
+  tasks: Iterable<IndexedTask>,
+  matches: (task: IndexedTask) => boolean,
+  limit: number,
+): IndexedTask[] {
+  if (!Number.isFinite(limit) || limit === Number.MAX_SAFE_INTEGER)
+    return [...tasks].filter(matches).sort(compareTasks);
+
+  const selected: IndexedTask[] = [];
+  for (const task of tasks) {
+    if (!matches(task)) continue;
+    if (selected.length < limit) {
+      heapPushWorst(selected, task);
+      continue;
+    }
+    if (compareTasks(task, selected[0]) >= 0) continue;
+    selected[0] = task;
+    heapifyWorst(selected, 0);
+  }
+  return selected.sort(compareTasks);
+}
+
+function heapPushWorst(heap: IndexedTask[], task: IndexedTask): void {
+  heap.push(task);
+  let child = heap.length - 1;
+  while (child > 0) {
+    const parent = Math.floor((child - 1) / 2);
+    if (compareTasks(heap[child], heap[parent]) <= 0) break;
+    [heap[parent], heap[child]] = [heap[child], heap[parent]];
+    child = parent;
+  }
+}
+
+function heapifyWorst(heap: IndexedTask[], start: number): void {
+  let parent = start;
+  while (true) {
+    const left = parent * 2 + 1;
+    const right = left + 1;
+    let worst = parent;
+    if (left < heap.length && compareTasks(heap[left], heap[worst]) > 0)
+      worst = left;
+    if (right < heap.length && compareTasks(heap[right], heap[worst]) > 0)
+      worst = right;
+    if (worst === parent) return;
+    [heap[parent], heap[worst]] = [heap[worst], heap[parent]];
+    parent = worst;
+  }
 }
 
 export function compareTasks(left: Task, right: Task): number {

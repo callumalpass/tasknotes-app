@@ -11,6 +11,7 @@ export interface IndexedTask extends Task {
 export interface IndexMetadata {
   key: "projection";
   complete: boolean;
+  consistencyVersion?: number;
 }
 
 export class TaskIndex extends Dexie {
