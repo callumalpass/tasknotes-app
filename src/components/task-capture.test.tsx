@@ -101,6 +101,41 @@ it("restores the submitted text when a remote create fails", async () => {
   expect(input).toHaveValue("Keep this draft");
 });
 
+it("offers contract-aware inline suggestions with keyboard selection", async () => {
+  const complete = vi.fn(async () => [
+    {
+      kind: "value" as const,
+      value: "home",
+      label: "Home",
+    },
+  ]);
+
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+      completeField={complete}
+    />,
+  );
+
+  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  fireEvent.change(input, {
+    target: { value: "Call plumber @ho", selectionStart: 16 },
+  });
+
+  expect(await screen.findByRole("option", { name: "Home" })).toBeVisible();
+  expect(complete).toHaveBeenCalledWith(
+    expect.objectContaining({
+      field: "contexts",
+      query: "ho",
+      limit: 8,
+    }),
+  );
+
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(input).toHaveValue("Call plumber @home ");
+});
+
 function task(input: CreateTaskInput): Task {
   return {
     id: "created",

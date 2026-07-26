@@ -88,9 +88,15 @@ function pathPattern(collection: JsonObject | undefined): string | undefined {
     return undefined;
   const descriptor = path as Record<string, unknown>;
   const pattern = descriptor.pattern ?? descriptor.template;
-  return typeof pattern === "string" && pattern.trim()
-    ? pattern.trim()
-    : undefined;
+  if (typeof pattern !== "string" || !pattern.trim()) return undefined;
+  const template = pattern.trim().replace(/^\/+/, "");
+  const folder =
+    typeof descriptor.folder === "string"
+      ? descriptor.folder.trim().replace(/^\/+|\/+$/g, "")
+      : "";
+  if (!folder || template === folder || template.startsWith(`${folder}/`))
+    return template;
+  return `${folder}/${template}`;
 }
 
 function recordsFolder(collection: JsonObject | undefined): string {

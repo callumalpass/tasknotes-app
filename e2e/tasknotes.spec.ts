@@ -3,16 +3,12 @@ import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
 import type { Locator, Page } from "@playwright/test";
 
-const templatedType = buildTaskNotesMdbaseResources().typeDocument.replace(
-  "  compatibility:\n",
-  `  templating:
-    enabled: true
-    template_path: Templates/Task.md
-    failure_mode: error
-    unknown_variable_policy: preserve
-  compatibility:
-`,
-);
+const templatedType = buildTaskNotesMdbaseResources({
+  templating: {
+    enabled: true,
+    templatePath: "Templates/Task.md",
+  },
+}).typeDocument;
 
 async function dragKanbanHandle(
   page: Page,
@@ -223,6 +219,34 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();
+});
+
+test("suggests capture values from the collection contract", async ({
+  page,
+}, testInfo) => {
+  const capture = page.getByLabel("New task title");
+  await capture.fill("Seed context @home");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Seed context", { exact: true })).toBeVisible();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await capture.fill("Call plumber @ho");
+  const suggestion = page.getByRole("option", { name: "home", exact: true });
+  await expect(suggestion).toBeVisible();
+  const suggestionLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("capture-suggestion-profile.json", {
+    body: JSON.stringify({ suggestionLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(suggestionLatencyMs).toBeLessThan(750);
+
+  await capture.press("Enter");
+  await expect(capture).toHaveValue("Call plumber @home ");
+  await capture.press("Enter");
+  await expect(page.getByText("Call plumber", { exact: true })).toBeVisible();
 });
 
 test("uses responsive TaskNotes controls instead of browser pickers", async ({

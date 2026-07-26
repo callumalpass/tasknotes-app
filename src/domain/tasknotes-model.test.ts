@@ -129,6 +129,16 @@ describe("TaskNotes task model app boundary", () => {
       missing.create({ title: "Missing path field" }, { id: "missing" }),
     ).toThrow(/path_required/);
 
+    const generated = new TaskNotesTaskModel(model.configuration(), {
+      pathPattern: "tasks/{{zettel}}",
+    });
+    expect(
+      generated.create(
+        { title: "Generated filename" },
+        { id: "generated", now: "2026-07-26T12:34:56" },
+      ).path,
+    ).toBe("tasks/20260726123456.md");
+
     const unsafe = new TaskNotesTaskModel(
       {
         ...model.configuration(),

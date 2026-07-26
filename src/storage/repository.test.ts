@@ -37,7 +37,7 @@ describe("IndexedMarkdownRepository", () => {
       priority: "high",
       body: "Keep this note.",
     });
-    expect(created.path).toBe(`tasks/${created.id}.md`);
+    expect(created.path).toMatch(/^tasks\/\d{14}\.md$/);
     expect(await repository.list({ search: "storage" })).toHaveLength(1);
 
     const updated = await repository.update(created.id, {
@@ -62,6 +62,24 @@ describe("IndexedMarkdownRepository", () => {
       mobileRevision: 3,
     });
     expect(parsed.body).toBe("Keep this note.");
+  });
+
+  it("allocates unique paths when two canonical filenames collide", async () => {
+    const collection = new MarkdownCollection(vault);
+    await collection.initialize();
+    const now = "2026-07-26T12:34:56";
+    const first = await collection.createTask({ title: "First" }, "first", now);
+    await collection.write(first);
+    const second = await collection.createTask(
+      { title: "Second" },
+      "second",
+      now,
+    );
+    await collection.write(second);
+
+    expect(second.path).toBe(first.path.replace(/\.md$/, "-2.md"));
+    expect(await vault.exists(first.path)).toBe(true);
+    expect(await vault.exists(second.path)).toBe(true);
   });
 
   it("reconciles externally changed, added, and removed Markdown", async () => {
@@ -140,7 +158,7 @@ describe("IndexedMarkdownRepository", () => {
     await repository.refresh();
     const created = await repository.create({ title: "Custom type folder" });
     expect(created.frontmatter.type).toBe("task");
-    expect(created.path).toBe(`tasks/${created.id}.md`);
+    expect(created.path).toMatch(/^tasks\/\d{14}\.md$/);
   });
 
   it("asks before upgrading a managed canonical type", async () => {
@@ -152,6 +170,8 @@ describe("IndexedMarkdownRepository", () => {
     const schema = parsed.frontmatter.schema as {
       value: { properties: Record<string, unknown> };
     };
+    parsed.frontmatter.description = "A TaskNotes-compatible task.";
+    schema.value.properties.mobileRevision = { type: "integer" };
     schema.value.properties.completedDate = {
       type: "string",
       format: "date-time",
@@ -337,7 +357,7 @@ describe("IndexedMarkdownRepository", () => {
     });
     expect(first.task).toMatchObject({
       occurrenceDate: "2026-08-05",
-      recurrenceParent: `[[tasks/${parent.id}]]`,
+      recurrenceParent: `[[${parent.path.replace(/\.md$/, "")}]]`,
     });
     expect(await vault.exists(first.task.path)).toBe(true);
 
@@ -495,7 +515,7 @@ describe("IndexedMarkdownRepository", () => {
       await moving.initialize();
       const created = await moving.create({ title: "Move me" });
       const archived = await moving.setArchived(created.id, true);
-      expect(archived.path).toBe(`archive/${created.id}.md`);
+      expect(archived.path).toBe(created.path.replace(/^tasks\//, "archive/"));
       expect(await movingVault.exists(created.path)).toBe(false);
       expect(await movingVault.exists(archived.path)).toBe(true);
       await moving.refresh();
@@ -510,7 +530,7 @@ describe("IndexedMarkdownRepository", () => {
       expect(await movingVault.exists(created.path)).toBe(true);
 
       const colliding = await moving.create({ title: "Do not overwrite" });
-      const collisionPath = `archive/${colliding.id}.md`;
+      const collisionPath = colliding.path.replace(/^tasks\//, "archive/");
       await movingVault.writeText(collisionPath, "existing archive record");
       const retained = await moving.setArchived(colliding.id, true);
       expect(retained).toMatchObject({

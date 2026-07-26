@@ -513,7 +513,7 @@ describe("cloud task repository", () => {
     const archived = await phone.setArchived(task.id, true);
     expect(archived).toMatchObject({
       archived: true,
-      path: `TaskNotes/Archive/${task.id}.md`,
+      path: task.path.replace(/^tasks\//, "TaskNotes/Archive/"),
     });
     expect(await phone.list({ status: "all" })).toEqual([]);
     await phone.refresh();
@@ -524,7 +524,7 @@ describe("cloud task repository", () => {
     await tablet.refresh();
     expect(await tablet.get(task.id)).toMatchObject({
       archived: true,
-      path: `TaskNotes/Archive/${task.id}.md`,
+      path: task.path.replace(/^tasks\//, "TaskNotes/Archive/"),
     });
 
     function network<T>(operation: () => Promise<T>): Promise<T> {
@@ -573,7 +573,7 @@ describe("cloud task repository", () => {
     await tablet.refresh();
     expect(await tablet.get(occurrence.task.id)).toMatchObject({
       occurrenceDate: "2026-08-05",
-      recurrenceParent: `[[tasks/${parent.id}]]`,
+      recurrenceParent: `[[${parent.path.replace(/\.md$/, "")}]]`,
     });
 
     await tablet.toggle(occurrence.task.id);

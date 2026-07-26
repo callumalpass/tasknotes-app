@@ -287,6 +287,50 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.capture-suggestions {
+  position: relative;
+  z-index: 2;
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--line-strong);
+  box-shadow: 0 12px 22px rgb(24 29 26 / 9%);
+}
+
+.capture-suggestions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px 8px 30px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.capture-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.capture-suggestions button:is(:hover, :focus-visible, .is-selected) {
+  background: var(--accent-soft);
+  outline: 0;
+}
+
+.capture-suggestions small {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .capture-interpretation {
   display: flex;
   align-items: flex-start;

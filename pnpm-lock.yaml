@@ -68,8 +68,8 @@ importers:
         specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.3-c94d4c035b2d.tgz
         version: file:vendor/mdbase-connect-sync-0.1.0-beta.3-c94d4c035b2d.tgz
       "@tasknotes/model":
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.1.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.1.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.2.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.2.tgz
       dexie:
         specifier: 4.4.4
         version: 4.4.4
@@ -1481,13 +1481,13 @@ packages:
         integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==,
       }
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.1.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.2.tgz":
     resolution:
       {
-        integrity: sha512-z691423cEI1LxKxeyAk8ZTscchmHZPfoY+VLmEsLwpJtCEdVRCJc93Qb0QRTDfqSkitHvxktWrBYpDN2w/FyWA==,
-        tarball: file:vendor/tasknotes-model-0.3.0-rc.1.tgz,
+        integrity: sha512-LaLI7lbfcqNzC31f9VZlld1FzDPsfV5boSFY2RnjT4SO4G4P1cj6bynNiZaPIbgyrlxDJXYGzZDuZLRhdEcSgw==,
+        tarball: file:vendor/tasknotes-model-0.3.0-rc.2.tgz,
       }
-    version: 0.3.0-rc.1
+    version: 0.3.0-rc.2
 
   "@testing-library/dom@10.4.1":
     resolution:
@@ -6567,7 +6567,7 @@ snapshots:
 
   "@standard-schema/spec@1.1.0": {}
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.1.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.2.tgz":
     dependencies:
       "@callumalpass/mdbase-runtime": 0.1.0-rc.1
       rrule: 2.8.1

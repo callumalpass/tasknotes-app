@@ -9,13 +9,32 @@ describe("managed TaskNotes type upgrades", () => {
     const original = parseFrontmatter(
       buildTaskNotesMdbaseResources({ profiles: ["core-lite"] }).typeDocument,
     ).frontmatter;
+    original.description = "A TaskNotes-compatible task.";
+    const schema = original.schema as {
+      value: { properties: Record<string, unknown> };
+    };
+    schema.value.properties.mobileRevision = { type: "integer" };
+    const extension = original["x-tasknotes"] as Record<string, unknown>;
+    extension.profiles = ["core-lite"];
+    delete extension.occurrences;
+    extension.status = {
+      ...(extension.status as Record<string, unknown>),
+      values: ["none", "open", "in-progress", "done"],
+      skipped_values: [],
+    };
+    (schema.value.properties.status as Record<string, unknown>).enum = [
+      "none",
+      "open",
+      "in-progress",
+      "done",
+    ];
     const upgraded = upgradeManagedTaskType(original);
     expect(upgraded.changed).toBe(true);
-    const extension = upgraded.frontmatter["x-tasknotes"] as Record<
+    const upgradedExtension = upgraded.frontmatter["x-tasknotes"] as Record<
       string,
       unknown
     >;
-    expect(extension).toMatchObject({
+    expect(upgradedExtension).toMatchObject({
       profiles: expect.arrayContaining([
         "core-lite",
         "recurrence",

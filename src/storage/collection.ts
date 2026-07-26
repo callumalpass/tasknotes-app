@@ -42,6 +42,7 @@ export class MarkdownCollection {
   private typeFingerprint = "";
   private typeDirectoryFingerprint = "";
   private declinedUpgradeFingerprint = "";
+  private readonly reservedTaskPaths = new Set<string>();
   private readonly collectionRecordCache = new Map<
     string,
     {
@@ -369,10 +370,18 @@ export class MarkdownCollection {
     }
   }
 
-  createTask(input: CreateTaskInput, id: string, now: string): Promise<Task> {
-    return this.taskModel.createWithTemplate(input, { id, now }, (path) =>
-      this.vault.readText(path),
+  async createTask(
+    input: CreateTaskInput,
+    id: string,
+    now: string,
+  ): Promise<Task> {
+    const task = await this.taskModel.createWithTemplate(
+      input,
+      { id, now },
+      (path) => this.vault.readText(path),
     );
+    const path = await this.availableTaskPath(task.path);
+    return path === task.path ? task : { ...task, path };
   }
 
   updateTask(task: Task, input: UpdateTaskInput, now: string): Task {
@@ -387,20 +396,25 @@ export class MarkdownCollection {
     return this.taskModel.skip(task, { now, currentDate });
   }
 
-  materializeOccurrence(
+  async materializeOccurrence(
     parent: Task,
     targetDate: string,
     existingOccurrences: readonly Task[],
     id: string,
     now: string,
   ): Promise<MaterializeOccurrenceResult> {
-    return this.taskModel.materializeOccurrence(
+    const result = await this.taskModel.materializeOccurrence(
       parent,
       targetDate,
       existingOccurrences,
       { id, now },
       (path) => this.vault.readText(path),
     );
+    if (!result.created) return result;
+    const path = await this.availableTaskPath(result.task.path);
+    return path === result.task.path
+      ? result
+      : { ...result, task: { ...result.task, path } };
   }
 
   transitionMaterializedOccurrence(
@@ -478,6 +492,27 @@ export class MarkdownCollection {
 
   exists(path: string): Promise<boolean> {
     return this.vault.exists(path);
+  }
+
+  private async availableTaskPath(path: string): Promise<string> {
+    const pathExists = await this.vault.exists(path);
+    if (!pathExists && !this.reservedTaskPaths.has(path)) {
+      this.reservedTaskPaths.add(path);
+      return path;
+    }
+    const extension = /\.md$/i.test(path) ? ".md" : "";
+    const stem = extension ? path.slice(0, -extension.length) : path;
+    for (let index = 2; index < 10_000; index += 1) {
+      const candidate = `${stem}-${index}${extension}`;
+      const candidateExists = await this.vault.exists(candidate);
+      if (!candidateExists && !this.reservedTaskPaths.has(candidate)) {
+        this.reservedTaskPaths.add(candidate);
+        return candidate;
+      }
+    }
+    throw new Error(
+      "task_path_collision: Could not allocate a unique task path.",
+    );
   }
 
   location(): string {

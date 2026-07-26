@@ -144,7 +144,7 @@ views:
     expect(execution.records).toEqual([
       expect.objectContaining({
         record: expect.objectContaining({
-          path: "tasks/linked.md",
+          path: linked.path,
           label: "Ship mobile",
         }),
       }),

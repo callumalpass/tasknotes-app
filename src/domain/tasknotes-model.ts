@@ -203,7 +203,7 @@ export class TaskNotesTaskModel {
     const frontmatter = this.writeFrontmatter({}, info, context.id, 1);
     const withPath = {
       ...info,
-      path: this.taskPath(frontmatter, title, context.id),
+      path: this.taskPath(frontmatter, title, context.id, new Date(now)),
     };
     return this.toTask(withPath, frontmatter, 1);
   }
@@ -382,15 +382,19 @@ export class TaskNotesTaskModel {
         current.body,
       );
       const now = context.now ?? new Date().toISOString();
-      const plan = buildRecurringTaskCompletePlan({
-        freshTask: original,
+      const rawPlan = buildRecurringTaskCompletePlan({
+        freshTask: withFloatingTaskTimes(original),
         targetDate: context.currentDate
-          ? new Date(`${context.currentDate}T12:00:00Z`)
+          ? new Date(`${context.currentDate}T12:00:00`)
           : undefined,
         currentTimestamp: now,
         maintainDueDateOffsetInRecurring:
           this.config.recurrence.maintainDueDateOffset,
       });
+      const plan = {
+        ...rawPlan,
+        updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
+      };
       const base = this.canonicalizeAliases(current.frontmatter, true);
       const patched = applyFrontmatterPatch(
         base,
@@ -439,15 +443,19 @@ export class TaskNotesTaskModel {
       current.body,
     );
     const now = context.now ?? new Date().toISOString();
-    const plan = buildRecurringTaskSkippedPlan({
-      freshTask: original,
+    const rawPlan = buildRecurringTaskSkippedPlan({
+      freshTask: withFloatingTaskTimes(original),
       targetDate: context.currentDate
-        ? new Date(`${context.currentDate}T12:00:00Z`)
+        ? new Date(`${context.currentDate}T12:00:00`)
         : undefined,
       currentTimestamp: now,
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
+    const plan = {
+      ...rawPlan,
+      updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
+    };
     const base = this.canonicalizeAliases(current.frontmatter, true);
     const patched = applyFrontmatterPatch(
       base,
@@ -845,12 +853,19 @@ export class TaskNotesTaskModel {
     frontmatter: Record<string, unknown>,
     title: string,
     id: string,
+    now = new Date(),
   ): string {
     if (!this.pathPattern) return makeTaskPath(title, id, this.recordsFolder);
+    const values = canonicalPathValues(frontmatter, title, id, now);
     const expanded = this.pathPattern.replace(
-      /\{(\w+)\}/g,
-      (_placeholder, key: string) => {
-        const value = frontmatter[key];
+      /\{\{\s*(\w+)\s*\}\}|\{(\w+)\}/g,
+      (
+        _placeholder,
+        doubleKey: string | undefined,
+        singleKey: string | undefined,
+      ) => {
+        const key = (doubleKey ?? singleKey)!;
+        const value = values[key];
         if (
           value === undefined ||
           value === null ||
@@ -867,7 +882,7 @@ export class TaskNotesTaskModel {
           throw new Error(
             `path_required: The canonical path field "${key}" must be scalar.`,
           );
-        return String(value);
+        return sanitizePathTemplateValue(String(value));
       },
     );
     return normalizeCanonicalPath(expanded);
@@ -1127,6 +1142,91 @@ function normalizeCanonicalPath(value: string): string {
   )
     throw new Error("path_invalid: The canonical task path is unsafe.");
   return /\.md$/i.test(normalized) ? normalized : `${normalized}.md`;
+}
+
+function canonicalPathValues(
+  frontmatter: Record<string, unknown>,
+  title: string,
+  id: string,
+  now: Date,
+): Record<string, unknown> {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const year = String(now.getFullYear());
+  const month = pad(now.getMonth() + 1);
+  const day = pad(now.getDate());
+  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const words = title.match(/[\p{L}\p{N}]+/gu) ?? [];
+  const capitalize = (word: string) =>
+    `${word[0]?.toLocaleUpperCase() ?? ""}${word.slice(1).toLocaleLowerCase()}`;
+  const scalar = (value: unknown) =>
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+      ? String(value)
+      : "";
+  const priority = scalar(frontmatter.priority);
+  const status = scalar(frontmatter.status);
+  return {
+    ...frontmatter,
+    id,
+    title,
+    titleKebab: words.map((word) => word.toLocaleLowerCase()).join("-"),
+    titleSnake: words.map((word) => word.toLocaleLowerCase()).join("_"),
+    titleCamel: words.length
+      ? `${words[0]!.toLocaleLowerCase()}${words.slice(1).map(capitalize).join("")}`
+      : "",
+    titlePascal: words.map(capitalize).join(""),
+    titleUpper: title.toLocaleUpperCase(),
+    titleLower: title.toLocaleLowerCase(),
+    priority,
+    priorityShort: priority.slice(0, 3).toLocaleLowerCase(),
+    status,
+    statusShort: status.slice(0, 3).toLocaleLowerCase(),
+    dueDate: scalar(frontmatter.due),
+    scheduledDate: scalar(frontmatter.scheduled),
+    year,
+    month,
+    day,
+    date: `${year}-${month}-${day}`,
+    shortDate: `${year}${month}${day}`,
+    time,
+    timestamp: `${year}${month}${day}${time}`,
+    zettel: `${year}${month}${day}${time}`,
+  };
+}
+
+function sanitizePathTemplateValue(value: string): string {
+  return value
+    .replace(/[\p{Cc}<>:"|?*]/gu, "")
+    .replace(/[\\/]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function withFloatingTaskTimes(task: TaskInfo): TaskInfo {
+  return {
+    ...task,
+    scheduled: floatingLocalDateTime(task.scheduled),
+    due: floatingLocalDateTime(task.due),
+  };
+}
+
+function withCanonicalTaskTimes(task: TaskInfo): TaskInfo {
+  return {
+    ...task,
+    scheduled: normalizeTaskDateTime(task.scheduled),
+    due: normalizeTaskDateTime(task.due),
+  };
+}
+
+function floatingLocalDateTime(value?: string): string | undefined {
+  if (!value || /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) return value;
+  const local = new Date(
+    parsed.valueOf() - parsed.getTimezoneOffset() * 60_000,
+  );
+  return local.toISOString().replace(/\.\d{3}Z$/, "");
 }
 
 function requiredTitle(value: string): string {
