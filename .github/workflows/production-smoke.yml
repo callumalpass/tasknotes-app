@@ -40,6 +40,7 @@ jobs:
       - name: Check production boundaries
         run: pnpm test:production-smoke
         env:
+          TASKNOTES_PRODUCTION_URL: ${{ vars.TASKNOTES_PRODUCTION_URL || 'https://callumalpass.github.io/tasknotes-app' }}
           # Pull requests inspect the currently deployed base revision. The
           # Pages workflow performs the strict notification-manifest check
           # after it deploys main.

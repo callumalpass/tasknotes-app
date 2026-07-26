@@ -72,3 +72,5 @@ jobs:
 
       - name: Smoke deployed Pages
         run: pnpm test:production-smoke
+        env:
+          TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app

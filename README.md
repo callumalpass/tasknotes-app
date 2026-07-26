@@ -143,15 +143,42 @@ The production smoke check verifies the deployed web shell, OAuth callback,
 application manifest, and the public mdbase connect health and readiness
 boundaries. GitHub Actions runs it every six hours.
 
-## Test deployment
+## Web deployment
 
-Pushes to `main` deploy the web application to
-<https://callumalpass.github.io/tasknotes-app/> through GitHub Actions. The
-Pages build uses `/tasknotes-app/` as its asset and callback base and publishes
-a web-only mdbase manifest. The build includes an explicit authorization
-callback document and a Pages-compatible fallback so OAuth deep links load the
-application. Native builds continue to use the TaskNotes-hosted manifest and
-private-use callback.
+The production web application is configured for
+<https://app.tasknotes.dev/> on Cloudflare Pages. Connect the
+`callumalpass/tasknotes-app` repository with Cloudflare's native Git integration
+so each push to `main` is built and deployed automatically. Create the Pages
+project with:
+
+- project name: `tasknotes-app`
+- production branch: `main`
+- framework preset: none
+- build command: `pnpm build`
+- build output directory: `dist`
+- root directory: repository root (leave blank)
+- preview branch deployments: disabled
+
+Set these production build variables in Cloudflare:
+
+```text
+NODE_VERSION=22
+PNPM_VERSION=10.7.0
+VITE_BASE_PATH=/
+TASKNOTES_APP_URL=https://app.tasknotes.dev
+TASKNOTES_WEB_ONLY=1
+```
+
+No Cloudflare API token or manual artifact upload is required. GitHub Actions
+continues to run the full verification and browser suites. After the custom
+domain is live, set the `TASKNOTES_PRODUCTION_URL` GitHub repository variable
+to `https://app.tasknotes.dev` so scheduled smoke checks follow production.
+
+The legacy <https://callumalpass.github.io/tasknotes-app/> deployment remains a
+rollback target. Its workflow builds explicitly for `/tasknotes-app/`, so its
+assets and authorization callback remain independent from the production
+origin. Native builds use the generated TaskNotes manifest and private-use
+callback.
 
 ## Large-vault result
 

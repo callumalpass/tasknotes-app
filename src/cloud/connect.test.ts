@@ -23,7 +23,7 @@ describe("TaskNotes mdbase connection", () => {
           application: {
             id: "00000000-0000-0000-0000-000000000001",
             name: "TaskNotes",
-            homepage: "https://tasknotes.dev/app/",
+            homepage: "https://app.tasknotes.dev/",
           },
         }),
         {
