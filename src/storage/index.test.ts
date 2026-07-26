@@ -27,6 +27,7 @@ describe("TaskIndex", () => {
         title: "Preserved task",
       });
       expect(upgraded.metadata.schema.primKey.name).toBe("key");
+      expect(upgraded.mutations.schema.primKey.name).toBe("taskId");
     } finally {
       upgraded.close();
       await upgraded.delete();

@@ -1,5 +1,7 @@
 import {
+  indexedTaskNeedsNormalization,
   indexTask,
+  normalizeIndexedTask,
   TaskIndex,
   withoutIndexFields,
   type IndexedTask,
@@ -16,6 +18,14 @@ import {
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import { taskRelationships } from "../domain/task-relationships";
+import {
+  pendingTaskDelete,
+  pendingTaskMove,
+  pendingTaskWrite,
+  recordMutationFailure,
+  type PendingLocalMutation,
+  type PendingTaskMove,
+} from "./mutation-outbox";
 
 import type {
   CreateTaskInput,
@@ -44,6 +54,9 @@ import type {
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
 } from "../domain/view";
+
+const PROJECTION_CONSISTENCY_VERSION = 1;
+const TASK_PROJECTION_SHAPE_VERSION = 1;
 
 export interface CollectionInfo {
   kind: "local" | "connect";
@@ -141,6 +154,13 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private readonly collection: MarkdownCollection;
   private readonly index: TaskIndex;
   private readonly cache = new Map<string, IndexedTask>();
+  private readonly rollingParentIds = new Set<string>();
+  private readonly cachedStats: TaskStats = {
+    total: 0,
+    open: 0,
+    completed: 0,
+    archived: 0,
+  };
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
   private writeTail: Promise<void> = Promise.resolve();
@@ -156,6 +176,8 @@ export class IndexedMarkdownRepository implements TaskRepository {
   >();
   private mutationVersion = 0;
   private readonly pathMutationVersions = new Map<string, number>();
+  private skipNextPrivateBrowserRefresh = false;
+  private forceProjectionReindex = false;
 
   constructor(
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
@@ -181,22 +203,47 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!this.initialization) {
       this.initialization = this.exclusive(async () => {
         await this.collection.initialize();
-        const [cached, storedProjection] = await Promise.all([
-          this.index.tasks.toArray(),
-          this.index.metadata.get("projection"),
-        ]);
-        for (const task of cached) {
-          this.cache.set(task.id, task);
+        await this.replayPendingMutationsUnlocked();
+        const [storedTasks, storedProjection, pendingMutations] =
+          await Promise.all([
+            this.index.tasks.toArray(),
+            this.index.metadata.get("projection"),
+            this.index.mutations.count(),
+          ]);
+        const normalizedTasks = storedTasks.map(normalizeIndexedTask);
+        const repairedProjection = storedTasks.some(
+          indexedTaskNeedsNormalization,
+        );
+        if (repairedProjection) await this.index.tasks.bulkPut(normalizedTasks);
+        for (const task of normalizedTasks) {
+          this.cacheTask(task);
           this.collection.cacheTaskRecord(task, {
             lastModified: task.sourceMtime,
             size: task.sourceSize,
           });
         }
-        const complete = cached.length
+        this.forceProjectionReindex =
+          storedProjection?.needsReindex === true || repairedProjection;
+        const complete = normalizedTasks.length
           ? (storedProjection?.complete ?? true)
           : false;
-        await this.index.metadata.put({ key: "projection", complete });
-        if (!complete)
+        const consistencyVersion = storedProjection?.consistencyVersion;
+        await this.index.metadata.put({
+          key: "projection",
+          complete: complete && !this.forceProjectionReindex,
+          ...(consistencyVersion === undefined ? {} : { consistencyVersion }),
+          taskShapeVersion: TASK_PROJECTION_SHAPE_VERSION,
+          needsReindex: this.forceProjectionReindex,
+        });
+        this.skipNextPrivateBrowserRefresh =
+          complete &&
+          !this.forceProjectionReindex &&
+          storedProjection?.taskShapeVersion ===
+            TASK_PROJECTION_SHAPE_VERSION &&
+          consistencyVersion === PROJECTION_CONSISTENCY_VERSION &&
+          pendingMutations === 0 &&
+          this.collection.identifier() === "browser-default";
+        if (!complete || this.forceProjectionReindex)
           this.publishIndexing(
             {
               phase: "scanning",
@@ -214,6 +261,25 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   refresh(): Promise<RefreshResult> {
     if (this.refreshInFlight) return this.refreshInFlight;
+    if (this.skipNextPrivateBrowserRefresh) {
+      this.skipNextPrivateBrowserRefresh = false;
+      const result = {
+        scanned: this.cache.size,
+        changed: 0,
+        removed: 0,
+        elapsedMs: 0,
+      };
+      this.publishIndexing(
+        {
+          phase: "idle",
+          completed: this.cache.size,
+          total: this.cache.size,
+          complete: true,
+        },
+        false,
+      );
+      return Promise.resolve(result);
+    }
     this.publishIndexing(
       {
         phase: "scanning",
@@ -263,22 +329,22 @@ export class IndexedMarkdownRepository implements TaskRepository {
       .toLocaleLowerCase()
       .split(/\s+/)
       .filter(Boolean);
-    const tasks = [...this.cache.values()]
-      .filter((task) => {
-        if (!matchesArchiveFilter(task, query)) return false;
-        if (query.status === "completed" && !task.completed) return false;
-        if (
-          query.status !== "completed" &&
-          query.status !== "all" &&
-          task.completed
-        )
-          return false;
-        return tokens.every((token) => task.searchText.includes(token));
-      })
-      .sort(compareTasks)
-      .slice(0, query.limit ?? 500)
-      .map(withoutIndexFields);
-    return tasks;
+    const limit = Math.max(0, Math.floor(query.limit ?? 500));
+    if (!limit) return [];
+    const matches = (task: IndexedTask) => {
+      if (!matchesArchiveFilter(task, query)) return false;
+      if (query.status === "completed" && !task.completed) return false;
+      if (
+        query.status !== "completed" &&
+        query.status !== "all" &&
+        task.completed
+      )
+        return false;
+      return tokens.every((token) => task.searchText.includes(token));
+    };
+    return selectFirstTasks(this.cache.values(), matches, limit).map(
+      withoutIndexFields,
+    );
   }
 
   async get(id: string): Promise<Task | null> {
@@ -436,22 +502,25 @@ export class IndexedMarkdownRepository implements TaskRepository {
         { archived },
         new Date().toISOString(),
       );
-      await this.write(next);
       const destination = this.collection.archiveDestination(next, archived);
-      if (!destination) return next;
+      if (!destination) {
+        await this.write(next);
+        return next;
+      }
+      const mutation = pendingTaskMove(next, destination);
+      await this.index.mutations.put(mutation);
       try {
-        const source = await this.collection.rename(next.path, destination);
-        const moved = { ...next, path: destination };
-        const indexed = indexTask(moved, source);
-        await this.index.tasks.put(indexed);
-        this.cache.set(id, indexed);
-        this.markPathsChanged(next.path, destination);
-        return moved;
+        return await this.applyMoveMutationUnlocked(mutation);
       } catch (reason) {
+        if (!(reason instanceof LocalMoveFailure)) {
+          await this.recordFailedMutationUnlocked(mutation, reason);
+          throw reason;
+        }
+        await this.settleFailedMoveUnlocked(mutation, reason.source);
         const warning = archiveMoveWarning(reason, archived);
         const retained = { ...next, operationWarnings: [warning] };
         const cached = this.cache.get(id);
-        if (cached) this.cache.set(id, { ...cached, ...retained });
+        if (cached) this.cacheTask({ ...cached, ...retained });
         return retained;
       }
     });
@@ -461,28 +530,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
     return this.exclusive(async () => {
       const current = this.cache.get(id);
       if (!current) return;
-      await this.collection.delete(current.path);
-      this.cache.delete(id);
-      await this.index.tasks.delete(id);
-      this.markPathsChanged(current.path);
+      const mutation = pendingTaskDelete(current);
+      await this.index.mutations.put(mutation);
+      try {
+        await this.applyDeleteMutationUnlocked(mutation);
+      } catch (reason) {
+        await this.recordFailedMutationUnlocked(mutation, reason);
+        throw reason;
+      }
     });
   }
 
   async stats(): Promise<TaskStats> {
-    let archived = 0;
-    let completed = 0;
-    let open = 0;
-    for (const task of this.cache.values()) {
-      if (task.archived) archived += 1;
-      else if (task.completed) completed += 1;
-      else open += 1;
-    }
-    return {
-      total: open + completed,
-      open,
-      completed,
-      archived,
-    };
+    return { ...this.cachedStats };
   }
 
   listViews(): Promise<TaskViewDocument[]> {
@@ -549,7 +609,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
   }
 
   async syncStatus(): Promise<RepositorySyncStatus> {
-    return { mode: "local", state: "local", pending: 0, issues: 0 };
+    const pending = await this.index.mutations.count();
+    return {
+      mode: "local",
+      state: "local",
+      pending,
+      issues: 0,
+      ...(pending
+        ? {
+            message:
+              "Some local changes are waiting to be written to Markdown. TaskNotes will retry them automatically.",
+          }
+        : {}),
+    };
   }
 
   async syncIssues(): Promise<RepositorySyncIssue[]> {
@@ -563,6 +635,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private async refreshProgressively(): Promise<RefreshResult> {
     const startedAt = performance.now();
     const plan = await this.exclusive(async () => {
+      await this.replayPendingMutationsUnlocked();
       const configurationChanged = await this.collection.refreshConfiguration();
       const documents = await this.collection.list();
       const storedByPath = new Map(
@@ -573,6 +646,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
         const cached = storedByPath.get(document.path);
         return (
           configurationChanged ||
+          this.forceProjectionReindex ||
           !cached ||
           cached.sourceMtime !== document.lastModified ||
           cached.sourceSize !== document.size
@@ -649,11 +723,18 @@ export class IndexedMarkdownRepository implements TaskRepository {
       if (removable.length)
         await this.index.tasks.bulkDelete(removable.map((task) => task.id));
       for (const task of removable) {
-        this.cache.delete(task.id);
+        this.removeCachedTask(task.id);
         removedIds.add(task.id);
       }
       await this.maintainRollingOccurrencesUnlocked();
-      await this.index.metadata.put({ key: "projection", complete: true });
+      await this.index.metadata.put({
+        key: "projection",
+        complete: true,
+        consistencyVersion: PROJECTION_CONSISTENCY_VERSION,
+        taskShapeVersion: TASK_PROJECTION_SHAPE_VERSION,
+        needsReindex: false,
+      });
+      this.forceProjectionReindex = false;
       return removedIds.size;
     });
     this.publishIndexing(
@@ -701,17 +782,196 @@ export class IndexedMarkdownRepository implements TaskRepository {
       if (replacedIds.size) await this.index.tasks.bulkDelete([...replacedIds]);
       if (indexed.length) await this.index.tasks.bulkPut(indexed);
     });
-    for (const id of replacedIds) this.cache.delete(id);
-    for (const task of indexed) this.cache.set(task.id, task);
+    for (const id of replacedIds) this.removeCachedTask(id);
+    for (const task of indexed) this.cacheTask(task);
     return replacedIds;
   }
 
   private async write(task: Task): Promise<void> {
-    const source = await this.collection.write(task);
-    const indexed = indexTask(task, source);
-    await this.index.tasks.put(indexed);
-    this.cache.set(task.id, indexed);
-    this.markPathsChanged(task.path);
+    const mutation = pendingTaskWrite(task);
+    await this.index.mutations.put(mutation);
+    try {
+      await this.applyWriteMutationUnlocked(mutation);
+    } catch (reason) {
+      await this.recordFailedMutationUnlocked(mutation, reason);
+      throw reason;
+    }
+  }
+
+  private async replayPendingMutationsUnlocked(): Promise<void> {
+    const pending = await this.index.mutations.orderBy("enqueuedAt").toArray();
+    for (const mutation of pending) {
+      try {
+        if (mutation.kind === "write")
+          await this.applyWriteMutationUnlocked(mutation);
+        else if (mutation.kind === "move")
+          await this.applyMoveMutationUnlocked(mutation);
+        else await this.applyDeleteMutationUnlocked(mutation);
+      } catch (reason) {
+        await this.recordFailedMutationUnlocked(mutation, reason);
+      }
+    }
+  }
+
+  private async recordFailedMutationUnlocked(
+    mutation: PendingLocalMutation,
+    reason: unknown,
+  ): Promise<void> {
+    await this.index.transaction("rw", this.index.mutations, async () => {
+      const current = await this.index.mutations.get(mutation.taskId);
+      if (current?.operationId === mutation.operationId)
+        await this.index.mutations.put(recordMutationFailure(mutation, reason));
+    });
+  }
+
+  private async applyWriteMutationUnlocked(
+    mutation: Extract<PendingLocalMutation, { kind: "write" }>,
+  ): Promise<void> {
+    const source = await this.collection.write(mutation.task);
+    const indexed = indexTask(mutation.task, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.cacheTask(indexed);
+    this.markPathsChanged(mutation.task.path);
+  }
+
+  private async applyMoveMutationUnlocked(
+    mutation: PendingTaskMove,
+  ): Promise<Task> {
+    const [sourceExists, destinationExists] = await Promise.all([
+      this.collection.exists(mutation.from),
+      this.collection.exists(mutation.to),
+    ]);
+    const moved = { ...mutation.task, path: mutation.to };
+    if (!sourceExists && destinationExists) {
+      const source = await this.collection.write(moved);
+      await this.commitMovedTaskUnlocked(mutation, moved, source);
+      return moved;
+    }
+    if (sourceExists && destinationExists && mutation.sourceWritten) {
+      const source = await this.collection.write(moved);
+      await this.collection.delete(mutation.from);
+      await this.commitMovedTaskUnlocked(mutation, moved, source);
+      return moved;
+    }
+
+    const written = await this.collection.write(mutation.task);
+    const prepared = await this.markMoveSourceWrittenUnlocked(mutation);
+    let source;
+    try {
+      source = await this.collection.rename(mutation.from, mutation.to);
+    } catch (reason) {
+      throw new LocalMoveFailure(reason, written);
+    }
+    await this.commitMovedTaskUnlocked(prepared, moved, source);
+    return moved;
+  }
+
+  private async markMoveSourceWrittenUnlocked(
+    mutation: PendingTaskMove,
+  ): Promise<PendingTaskMove> {
+    const prepared = { ...mutation, sourceWritten: true };
+    await this.index.transaction("rw", this.index.mutations, async () => {
+      const current = await this.index.mutations.get(mutation.taskId);
+      if (current?.operationId === mutation.operationId)
+        await this.index.mutations.put(prepared);
+    });
+    return prepared;
+  }
+
+  private async commitMovedTaskUnlocked(
+    mutation: PendingTaskMove,
+    moved: Task,
+    source: { lastModified: number; size: number },
+  ): Promise<void> {
+    const indexed = indexTask(moved, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.cacheTask(indexed);
+    this.markPathsChanged(mutation.from, mutation.to);
+  }
+
+  private async settleFailedMoveUnlocked(
+    mutation: PendingTaskMove,
+    source: { lastModified: number; size: number },
+  ): Promise<void> {
+    const indexed = indexTask(mutation.task, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.cacheTask(indexed);
+    this.markPathsChanged(mutation.from);
+  }
+
+  private async applyDeleteMutationUnlocked(
+    mutation: Extract<PendingLocalMutation, { kind: "delete" }>,
+  ): Promise<void> {
+    if (await this.collection.exists(mutation.path))
+      await this.collection.delete(mutation.path);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.delete(mutation.taskId);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.removeCachedTask(mutation.taskId);
+    this.markPathsChanged(mutation.path);
+  }
+
+  private async completeMutationUnlocked(
+    mutation: PendingLocalMutation,
+  ): Promise<void> {
+    const current = await this.index.mutations.get(mutation.taskId);
+    if (current?.operationId === mutation.operationId)
+      await this.index.mutations.delete(mutation.taskId);
+  }
+
+  private cacheTask(task: IndexedTask): void {
+    const current = this.cache.get(task.id);
+    if (current) this.adjustStats(current, -1);
+    this.cache.set(task.id, task);
+    this.adjustStats(task, 1);
+    if (task.recurrence && task.occurrenceMaterialization === "rolling")
+      this.rollingParentIds.add(task.id);
+    else this.rollingParentIds.delete(task.id);
+  }
+
+  private removeCachedTask(id: string): void {
+    const current = this.cache.get(id);
+    if (!current) return;
+    this.cache.delete(id);
+    this.rollingParentIds.delete(id);
+    this.adjustStats(current, -1);
+  }
+
+  private adjustStats(task: Task, direction: 1 | -1): void {
+    if (task.archived) this.cachedStats.archived += direction;
+    else if (task.completed) this.cachedStats.completed += direction;
+    else this.cachedStats.open += direction;
+    this.cachedStats.total = this.cachedStats.open + this.cachedStats.completed;
   }
 
   private pathChangedAfter(path: string, version: number): boolean {
@@ -802,16 +1062,15 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!warnings.length) return transition.occurrence;
     const stored = { ...transition.occurrence, operationWarnings: warnings };
     const cached = this.cache.get(stored.id);
-    if (cached) this.cache.set(stored.id, { ...cached, ...stored });
+    if (cached) this.cacheTask({ ...cached, ...stored });
     return stored;
   }
 
   private async maintainRollingOccurrencesUnlocked(): Promise<string[]> {
     const warnings: string[] = [];
-    const parents = [...this.cache.values()].filter(
-      (task) => task.recurrence && task.occurrenceMaterialization === "rolling",
-    );
-    for (const parent of parents) {
+    for (const id of this.rollingParentIds) {
+      const parent = this.cache.get(id);
+      if (!parent) continue;
       warnings.push(...(await this.materializeRollingWindow(parent)));
     }
     return warnings;
@@ -824,7 +1083,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!warnings.length) return task;
     const retained = { ...task, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    if (cached) this.cache.set(task.id, { ...cached, ...retained });
+    if (cached) this.cacheTask({ ...cached, ...retained });
     return retained;
   }
 
@@ -870,8 +1129,67 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
 }
 
+class LocalMoveFailure extends Error {
+  readonly source: { lastModified: number; size: number };
+
+  constructor(reason: unknown, source: { lastModified: number; size: number }) {
+    super(errorMessage(reason), { cause: reason });
+    this.name = "LocalMoveFailure";
+    this.source = source;
+  }
+}
+
 function yieldToMainThread(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function selectFirstTasks(
+  tasks: Iterable<IndexedTask>,
+  matches: (task: IndexedTask) => boolean,
+  limit: number,
+): IndexedTask[] {
+  if (!Number.isFinite(limit) || limit === Number.MAX_SAFE_INTEGER)
+    return [...tasks].filter(matches).sort(compareTasks);
+
+  const selected: IndexedTask[] = [];
+  for (const task of tasks) {
+    if (!matches(task)) continue;
+    if (selected.length < limit) {
+      heapPushWorst(selected, task);
+      continue;
+    }
+    if (compareTasks(task, selected[0]) >= 0) continue;
+    selected[0] = task;
+    heapifyWorst(selected, 0);
+  }
+  return selected.sort(compareTasks);
+}
+
+function heapPushWorst(heap: IndexedTask[], task: IndexedTask): void {
+  heap.push(task);
+  let child = heap.length - 1;
+  while (child > 0) {
+    const parent = Math.floor((child - 1) / 2);
+    if (compareTasks(heap[child], heap[parent]) <= 0) break;
+    [heap[parent], heap[child]] = [heap[child], heap[parent]];
+    child = parent;
+  }
+}
+
+function heapifyWorst(heap: IndexedTask[], start: number): void {
+  let parent = start;
+  while (true) {
+    const left = parent * 2 + 1;
+    const right = left + 1;
+    let worst = parent;
+    if (left < heap.length && compareTasks(heap[left], heap[worst]) > 0)
+      worst = left;
+    if (right < heap.length && compareTasks(heap[right], heap[worst]) > 0)
+      worst = right;
+    if (worst === parent) return;
+    [heap[parent], heap[worst]] = [heap[worst], heap[parent]];
+    parent = worst;
+  }
 }
 
 export function compareTasks(left: Task, right: Task): number {

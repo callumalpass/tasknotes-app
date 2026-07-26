@@ -9,9 +9,15 @@ import { MarkdownCollection } from "./collection";
 import { todayString } from "../domain/task";
 import { TaskIndex } from "./index";
 import { IndexedMarkdownRepository } from "./repository";
+import {
+  pendingTaskDelete,
+  pendingTaskMove,
+  pendingTaskWrite,
+} from "./mutation-outbox";
 import { MemoryVault } from "../test/memory-vault";
 
 import type { Task } from "../domain/task";
+import type { IndexedTask } from "./index";
 
 describe("IndexedMarkdownRepository", () => {
   let vault: MemoryVault;
@@ -66,6 +72,199 @@ describe("IndexedMarkdownRepository", () => {
     expect(parsed.body).toBe("Keep this note.");
   });
 
+  it("replays a durable write after the Markdown write is interrupted", async () => {
+    const created = await repository.create({ title: "Original title" });
+    const name = index.name;
+    const writeText = vi
+      .spyOn(vault, "writeText")
+      .mockRejectedValueOnce(new Error("simulated storage interruption"));
+
+    await expect(
+      repository.update(created.id, { title: "Recovered title" }),
+    ).rejects.toThrow("simulated storage interruption");
+    expect(await index.mutations.get(created.id)).toMatchObject({
+      taskId: created.id,
+      kind: "write",
+      attempts: 1,
+      lastError: "simulated storage interruption",
+      task: { title: "Recovered title", revision: 2 },
+    });
+    expect(await repository.syncStatus()).toMatchObject({ pending: 1 });
+    writeText.mockRestore();
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toMatchObject({
+      title: "Recovered title",
+      revision: 2,
+    });
+    expect(await index.mutations.count()).toBe(0);
+    expect(
+      parseFrontmatter(await vault.readText(created.path)).frontmatter,
+    ).toMatchObject({
+      title: "Recovered title",
+      mobileRevision: 2,
+    });
+  });
+
+  it("coalesces queued writes to the latest desired task revision", async () => {
+    const created = await repository.create({ title: "First revision" });
+    await index.mutations.put(
+      pendingTaskWrite({ ...created, title: "Queued revision" }),
+    );
+    await index.mutations.put(
+      pendingTaskWrite({
+        ...created,
+        title: "Latest queued revision",
+        revision: created.revision + 1,
+      }),
+    );
+
+    expect(await index.mutations.count()).toBe(1);
+    expect(await index.mutations.get(created.id)).toMatchObject({
+      kind: "write",
+      task: {
+        title: "Latest queued revision",
+        revision: created.revision + 1,
+      },
+    });
+  });
+
+  it("repairs the projection when a write completed before its commit", async () => {
+    const created = await repository.create({ title: "Before crash" });
+    const originalProjection = await index.tasks.get(created.id);
+    const updated = await repository.update(created.id, {
+      title: "Written before crash",
+    });
+    await index.tasks.put(originalProjection!);
+    await index.mutations.put(pendingTaskWrite(updated));
+    const name = index.name;
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toMatchObject({
+      title: "Written before crash",
+      revision: 2,
+    });
+    expect(await index.mutations.count()).toBe(0);
+  });
+
+  it("replays an idempotent delete after storage is interrupted", async () => {
+    const created = await repository.create({ title: "Delete after restart" });
+    const name = index.name;
+    const remove = vi
+      .spyOn(vault, "delete")
+      .mockRejectedValueOnce(new Error("simulated delete interruption"));
+
+    await expect(repository.delete(created.id)).rejects.toThrow(
+      "simulated delete interruption",
+    );
+    expect(await index.mutations.get(created.id)).toMatchObject({
+      kind: "delete",
+      path: created.path,
+      attempts: 1,
+    });
+    remove.mockRestore();
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toBeNull();
+    expect(await vault.exists(created.path)).toBe(false);
+    expect(await index.mutations.count()).toBe(0);
+  });
+
+  it("finishes a delete whose file removal completed before projection commit", async () => {
+    const created = await repository.create({
+      title: "Removed before restart",
+    });
+    await index.mutations.put(pendingTaskDelete(created));
+    await vault.delete(created.path);
+    const name = index.name;
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toBeNull();
+    expect(await index.mutations.count()).toBe(0);
+  });
+
+  it("finishes a move whose file operation completed before projection commit", async () => {
+    const created = await repository.create({ title: "Move after restart" });
+    const archived = await repository.update(created.id, { archived: true });
+    const destination = "archive/recovered-move.md";
+    await index.mutations.put(pendingTaskMove(archived, destination));
+    await vault.rename(created.path, destination);
+    const name = index.name;
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toMatchObject({
+      archived: true,
+      path: destination,
+    });
+    expect(await vault.exists(created.path)).toBe(false);
+    expect(await vault.exists(destination)).toBe(true);
+    expect(await index.mutations.count()).toBe(0);
+  });
+
+  it("finishes a fallback move interrupted between copy and source deletion", async () => {
+    const created = await repository.create({
+      title: "Fallback move after restart",
+    });
+    const archived = await repository.update(created.id, { archived: true });
+    const destination = "archive/recovered-fallback-move.md";
+    const mutation = pendingTaskMove(archived, destination);
+    mutation.sourceWritten = true;
+    await index.mutations.put(mutation);
+    await vault.writeText(destination, await vault.readText(created.path));
+    const name = index.name;
+    index.close();
+
+    index = new TaskIndex(name);
+    repository = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await repository.initialize();
+
+    expect(await repository.get(created.id)).toMatchObject({
+      archived: true,
+      path: destination,
+    });
+    expect(await vault.exists(created.path)).toBe(false);
+    expect(await vault.exists(destination)).toBe(true);
+    expect(await index.mutations.count()).toBe(0);
+  });
+
   it("reuses the durable task projection when collection views reopen", async () => {
     const created = await repository.create({
       title: "Warm indexed task",
@@ -89,6 +288,95 @@ describe("IndexedMarkdownRepository", () => {
       }),
     ]);
     expect(readText).not.toHaveBeenCalledWith(created.path);
+  });
+
+  it("repairs and reindexes cached tasks from an older projection shape", async () => {
+    const created = await repository.create({ title: "Legacy projection" });
+    const stored = await index.tasks.get(created.id);
+    const legacy = { ...stored } as Partial<IndexedTask>;
+    delete legacy.blockedBy;
+    delete legacy.reminders;
+    delete legacy.timeEntries;
+    delete legacy.customProperties;
+    await index.tasks.put(legacy as IndexedTask);
+    await index.metadata.put({
+      key: "projection",
+      complete: true,
+      consistencyVersion: 1,
+      taskShapeVersion: 0,
+    });
+
+    const reopened = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await reopened.initialize();
+
+    expect(await reopened.get(created.id)).toMatchObject({
+      blockedBy: [],
+      reminders: [],
+      timeEntries: [],
+      customProperties: {},
+    });
+    expect(await reopened.relationships(created.id)).toMatchObject({
+      blockedBy: [],
+      blocking: [],
+    });
+    expect(await index.metadata.get("projection")).toMatchObject({
+      complete: false,
+      needsReindex: true,
+      taskShapeVersion: 1,
+    });
+
+    expect(await reopened.refresh()).toMatchObject({ changed: 1 });
+    expect(await index.metadata.get("projection")).toMatchObject({
+      complete: true,
+      needsReindex: false,
+      taskShapeVersion: 1,
+    });
+  });
+
+  it("skips the redundant first OPFS scan after a verified projection reopens", async () => {
+    const browserVault = new MemoryVault();
+    const firstCollection = new MarkdownCollection(browserVault);
+    vi.spyOn(firstCollection, "identifier").mockReturnValue("browser-default");
+    const name = `tasknotes-private-browser-test-${crypto.randomUUID()}`;
+    const firstIndex = new TaskIndex(name);
+    const first = new IndexedMarkdownRepository({
+      collection: firstCollection,
+      index: firstIndex,
+    });
+    await first.initialize();
+    await first.create({ title: "Cached browser task" });
+    await first.refresh();
+    firstIndex.close();
+
+    const reopenedIndex = new TaskIndex(name);
+    const reopenedCollection = new MarkdownCollection(browserVault);
+    vi.spyOn(reopenedCollection, "identifier").mockReturnValue(
+      "browser-default",
+    );
+    const list = vi.spyOn(reopenedCollection, "list");
+    const reopened = new IndexedMarkdownRepository({
+      collection: reopenedCollection,
+      index: reopenedIndex,
+    });
+    try {
+      await reopened.initialize();
+
+      expect(await reopened.refresh()).toMatchObject({
+        scanned: 1,
+        changed: 0,
+        elapsedMs: 0,
+      });
+      expect(list).not.toHaveBeenCalled();
+
+      await reopened.refresh();
+      expect(list).toHaveBeenCalledOnce();
+    } finally {
+      reopenedIndex.close();
+      await reopenedIndex.delete();
+    }
   });
 
   it("opens an uncached collection before progressively indexing its tasks", async () => {
@@ -177,7 +465,7 @@ describe("IndexedMarkdownRepository", () => {
     });
     await first.initialize();
     await first.create({ title: "Created before restart" });
-    expect(await firstIndex.metadata.get("projection")).toEqual({
+    expect(await firstIndex.metadata.get("projection")).toMatchObject({
       key: "projection",
       complete: false,
     });

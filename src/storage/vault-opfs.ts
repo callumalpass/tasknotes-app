@@ -46,6 +46,23 @@ export class OpfsVault implements Vault {
       { directory: root, path: rootPath },
     ];
     const entries: VaultEntry[] = [];
+    let files: Array<{ handle: FileSystemFileHandle; path: string }> = [];
+    const flushFiles = async () => {
+      const batch = files;
+      files = [];
+      entries.push(
+        ...(await Promise.all(
+          batch.map(async ({ handle, path }) => {
+            const file = await handle.getFile();
+            return {
+              path,
+              lastModified: file.lastModified,
+              size: file.size,
+            };
+          }),
+        )),
+      );
+    };
     while (pending.length) {
       const current = pending.shift()!;
       for await (const [name, handle] of current.directory.entries()) {
@@ -61,14 +78,11 @@ export class OpfsVault implements Vault {
           )
         )
           continue;
-        const file = await handle.getFile();
-        entries.push({
-          path: nextPath,
-          lastModified: file.lastModified,
-          size: file.size,
-        });
+        files.push({ handle, path: nextPath });
+        if (files.length >= 128) await flushFiles();
       }
     }
+    if (files.length) await flushFiles();
     return entries.sort((left, right) => left.path.localeCompare(right.path));
   }
 
