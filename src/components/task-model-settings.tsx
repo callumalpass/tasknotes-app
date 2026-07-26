@@ -23,6 +23,10 @@ interface TaskModelSettingsDraft {
   archiveFolder: string;
   templatingEnabled: boolean;
   templatePath: string;
+  statusAutomation: Record<
+    string,
+    { autoArchive: boolean; autoArchiveDelay: number }
+  >;
 }
 
 export function TaskModelSettingsEditor() {
@@ -98,6 +102,10 @@ export function TaskModelSettingsEditor() {
           enabled: draft.templatingEnabled,
           templatePath: draft.templatePath,
         },
+        statusAutomation: changedStatusAutomation(
+          draft.statusAutomation,
+          original.statusAutomation,
+        ),
       });
       setSaveState("saved");
     } catch (reason) {
@@ -258,6 +266,74 @@ export function TaskModelSettingsEditor() {
             onChange={(templatingEnabled) => change({ templatingEnabled })}
           />
         </div>
+        <section
+          aria-labelledby="auto-archive-settings-title"
+          className="status-automation-settings"
+        >
+          <div>
+            <h3 id="auto-archive-settings-title">Auto archive</h3>
+            <p className="section-copy">
+              Archive tasks after they enter a selected status. Recurring series
+              are always excluded.
+            </p>
+          </div>
+          <div className="status-automation-list">
+            {configuration.statuses.map((status) => {
+              const automation = draft.statusAutomation[status.value] ?? {
+                autoArchive: false,
+                autoArchiveDelay: 5,
+              };
+              return (
+                <div className="status-automation-row" key={status.value}>
+                  <label className="task-model-toggle">
+                    <input
+                      checked={automation.autoArchive}
+                      type="checkbox"
+                      onChange={(event) =>
+                        change({
+                          statusAutomation: {
+                            ...draft.statusAutomation,
+                            [status.value]: {
+                              ...automation,
+                              autoArchive: event.target.checked,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <span>{status.label}</span>
+                  </label>
+                  <label className="auto-archive-delay">
+                    <span>Delay</span>
+                    <input
+                      aria-label={`${status.label} auto-archive delay in minutes`}
+                      disabled={!automation.autoArchive}
+                      min="0"
+                      step="1"
+                      type="number"
+                      value={automation.autoArchiveDelay}
+                      onChange={(event) =>
+                        change({
+                          statusAutomation: {
+                            ...draft.statusAutomation,
+                            [status.value]: {
+                              ...automation,
+                              autoArchiveDelay: Math.max(
+                                0,
+                                Number.parseInt(event.target.value, 10) || 0,
+                              ),
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <span>min</span>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </fieldset>
       {error ? (
         <p className="inline-error" role="alert">
@@ -280,6 +356,22 @@ export function TaskModelSettingsEditor() {
         </div>
       ) : null}
     </form>
+  );
+}
+
+function changedStatusAutomation(
+  draft: TaskModelSettingsDraft["statusAutomation"],
+  original: TaskModelSettingsDraft["statusAutomation"],
+) {
+  return Object.fromEntries(
+    Object.entries(draft).filter(([status, automation]) => {
+      const previous = original[status];
+      return (
+        !previous ||
+        previous.autoArchive !== automation.autoArchive ||
+        previous.autoArchiveDelay !== automation.autoArchiveDelay
+      );
+    }),
   );
 }
 
@@ -323,5 +415,14 @@ function settingsDraft(
     archiveFolder: configuration.archive.folder,
     templatingEnabled: configuration.templating.enabled,
     templatePath: configuration.templating.templatePath ?? "",
+    statusAutomation: Object.fromEntries(
+      configuration.statuses.map((status) => [
+        status.value,
+        {
+          autoArchive: status.autoArchive,
+          autoArchiveDelay: status.autoArchiveDelay,
+        },
+      ]),
+    ),
   };
 }

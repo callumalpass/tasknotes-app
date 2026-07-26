@@ -1115,6 +1115,66 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
+.status-automation-settings {
+  padding: 22px 0 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.status-automation-settings h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.status-automation-settings .section-copy {
+  padding-top: 6px;
+}
+
+.status-automation-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.status-automation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 56px;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.status-automation-row:last-child {
+  border-bottom: 0;
+}
+
+.status-automation-row .task-model-toggle {
+  border-bottom: 0;
+}
+
+.auto-archive-delay {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.auto-archive-delay input {
+  width: 5rem;
+  min-height: 40px;
+  padding: 0 8px;
+  color: var(--ink);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.auto-archive-delay input:disabled {
+  opacity: 0.45;
+}
+
 .task-model-toggle {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -4758,6 +4818,16 @@ button:disabled {
     flex-direction: column;
     justify-content: center;
     padding: 8px 0;
+  }
+
+  .status-automation-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 4px 0 10px;
+  }
+
+  .auto-archive-delay {
+    padding-left: 28px;
   }
 
   .tasknotes-popover-scrim {

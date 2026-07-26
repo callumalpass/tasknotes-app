@@ -374,6 +374,54 @@ test("edits task model settings in the portable type contract", async ({
   ).toHaveAttribute("aria-pressed", "true");
 });
 
+test("auto-archives from a contract status event without polling", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  const doneAutomation = page
+    .locator(".status-automation-row")
+    .filter({ hasText: "Done" });
+  await doneAutomation.getByRole("checkbox").check();
+  await doneAutomation.getByRole("spinbutton").fill("0");
+  await page
+    .getByRole("button", { name: "Save task settings", exact: true })
+    .click();
+  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+
+  const typeSource = await localTaskTypeDocument(page);
+  expect(typeSource).toContain("auto_archive: true");
+  expect(typeSource).toContain("auto_archive_delay_minutes: 0");
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByLabel("New task title").fill("File completed report");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const startedAt = await page.evaluate(() => performance.now());
+  await page
+    .getByRole("button", { name: "Complete File completed report" })
+    .click();
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toHaveCount(0);
+  const archiveLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("auto-archive-profile.json", {
+    body: JSON.stringify({ archiveLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(archiveLatencyMs).toBeLessThan(750);
+
+  await openNavigationView(page, "Archive");
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toBeVisible();
+});
+
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({
   page,
 }) => {

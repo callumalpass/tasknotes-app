@@ -138,6 +138,9 @@ describe("IndexedMarkdownRepository", () => {
         enabled: true,
         templatePath: "Templates/Task.md",
       },
+      statusAutomation: {
+        done: { autoArchive: true, autoArchiveDelay: 15 },
+      },
     });
     const elapsedMs = performance.now() - startedAt;
     const updated = parseFrontmatter(await vault.readText("_types/task.md"));
@@ -163,6 +166,12 @@ describe("IndexedMarkdownRepository", () => {
       },
     });
     expect(
+      configuration.statuses.find((status) => status.value === "done"),
+    ).toMatchObject({
+      autoArchive: true,
+      autoArchiveDelay: 15,
+    });
+    expect(
       (
         (updated.frontmatter.schema as { value: { properties: object } }).value
           .properties as Record<string, unknown>
@@ -172,6 +181,18 @@ describe("IndexedMarkdownRepository", () => {
       description: "Keep this custom field.",
     });
     expect(updated.frontmatter["x-host"]).toEqual({ keep: true });
+    expect(
+      (
+        updated.frontmatter["x-tasknotes"] as {
+          status: { definitions: unknown[] };
+        }
+      ).status.definitions.find(
+        (definition) => (definition as { value?: string }).value === "done",
+      ),
+    ).toMatchObject({
+      auto_archive: true,
+      auto_archive_delay_minutes: 15,
+    });
     expect(elapsedMs).toBeLessThan(500);
   });
 

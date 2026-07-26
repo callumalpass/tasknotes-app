@@ -12,6 +12,10 @@ import {
 } from "react";
 
 import { IndexedMarkdownRepository } from "../storage/repository";
+import {
+  createRepositoryAutoArchiveActivity,
+  type AutoArchiveActivity,
+} from "../domain/auto-archive-activity";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   reconcileTaskNotifications,
@@ -102,6 +106,8 @@ export function RepositoryProvider({
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
+  const configurationRef = useRef(configuration);
+  const autoArchiveRef = useRef<AutoArchiveActivity | null>(null);
 
   const bump = useCallback(() => setVersion((value) => value + 1), []);
   const publishMutation = useCallback(() => {
@@ -124,7 +130,9 @@ export function RepositoryProvider({
       .refresh()
       .then(async (result) => {
         const nextConfiguration = await repository.taskConfiguration();
+        configurationRef.current = nextConfiguration;
         setConfiguration(nextConfiguration);
+        await autoArchiveRef.current?.reconcile();
         setLastRefresh(result);
         setError(null);
         publishMutation();
@@ -155,6 +163,26 @@ export function RepositoryProvider({
       .then(async () => {
         const nextConfiguration = await repository.taskConfiguration();
         if (!active) return;
+        configurationRef.current = nextConfiguration;
+        const autoArchive = await createRepositoryAutoArchiveActivity({
+          repository,
+          configuration: () => configurationRef.current,
+          onArchived: (task) => {
+            publishMutation();
+            void syncTaskNotifications(
+              repository,
+              task,
+              reminderAuthority,
+            ).catch(() => undefined);
+          },
+        });
+        if (!active) {
+          autoArchive.dispose();
+          return;
+        }
+        autoArchiveRef.current = autoArchive;
+        await autoArchive.start();
+        if (!active) return;
         setConfiguration(nextConfiguration);
         setStatus("ready");
         void loadSync().catch(() => undefined);
@@ -170,14 +198,17 @@ export function RepositoryProvider({
       });
     return () => {
       active = false;
+      autoArchiveRef.current?.dispose();
+      autoArchiveRef.current = null;
     };
-  }, [loadSync, refresh, reminderAuthority, repository]);
+  }, [loadSync, publishMutation, refresh, reminderAuthority, repository]);
 
   useEffect(() => {
     if (!repository.subscribe) return;
     return repository.subscribe(() => {
       bump();
       void loadSync().catch(() => undefined);
+      void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
   }, [bump, loadSync, repository]);
 
@@ -222,6 +253,7 @@ export function RepositoryProvider({
   const createTask = useCallback(
     async (input: CreateTaskInput) => {
       const task = await repository.create(input);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       void syncTaskNotifications(repository, task, reminderAuthority).catch(
         () => undefined,
@@ -233,6 +265,7 @@ export function RepositoryProvider({
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       void syncTaskNotifications(repository, task, reminderAuthority).catch(
         () => undefined,
@@ -244,6 +277,7 @@ export function RepositoryProvider({
   const toggleTask = useCallback(
     async (id: string, occurrenceDate?: string) => {
       const task = await repository.toggle(id, occurrenceDate);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       void syncTaskNotifications(repository, task, reminderAuthority).catch(
         () => undefined,
@@ -255,6 +289,7 @@ export function RepositoryProvider({
   const skipTask = useCallback(
     async (id: string, occurrenceDate: string) => {
       const task = await repository.skip(id, occurrenceDate);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       void syncTaskNotifications(repository, task, reminderAuthority).catch(
         () => undefined,
@@ -269,6 +304,7 @@ export function RepositoryProvider({
         parentId,
         occurrenceDate,
       );
+      await autoArchiveRef.current?.observe(result.task);
       publishMutation();
       void syncTaskNotifications(
         repository,
@@ -282,6 +318,7 @@ export function RepositoryProvider({
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
       const task = await repository.startTimeTracking(id, description);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       return task;
     },
@@ -290,6 +327,7 @@ export function RepositoryProvider({
   const stopTimeTracking = useCallback(
     async (id: string) => {
       const task = await repository.stopTimeTracking(id);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       return task;
     },
@@ -298,6 +336,7 @@ export function RepositoryProvider({
   const replaceTimeEntries = useCallback(
     async (id: string, entries: TaskTimeEntry[]) => {
       const task = await repository.replaceTimeEntries(id, entries);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       return task;
     },
@@ -306,6 +345,7 @@ export function RepositoryProvider({
   const removeTimeEntry = useCallback(
     async (id: string, index: number) => {
       const task = await repository.removeTimeEntry(id, index);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       return task;
     },
@@ -314,6 +354,7 @@ export function RepositoryProvider({
   const setTaskArchived = useCallback(
     async (id: string, archived: boolean) => {
       const task = await repository.setArchived(id, archived);
+      await autoArchiveRef.current?.observe(task);
       publishMutation();
       void syncTaskNotifications(repository, task, reminderAuthority).catch(
         () => undefined,
@@ -325,6 +366,7 @@ export function RepositoryProvider({
   const deleteTask = useCallback(
     async (id: string) => {
       await repository.delete(id);
+      await autoArchiveRef.current?.forget(id);
       publishMutation();
       void removeTaskNotifications(repository, id, reminderAuthority).catch(
         () => undefined,
@@ -343,7 +385,9 @@ export function RepositoryProvider({
   const updateTaskModelSettings = useCallback(
     async (patch: TaskModelSettingsPatch) => {
       const next = await repository.updateTaskModelSettings(patch);
+      configurationRef.current = next;
       setConfiguration(next);
+      await autoArchiveRef.current?.reconcile();
       publishMutation();
       return next;
     },

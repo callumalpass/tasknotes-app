@@ -46,6 +46,11 @@ describe("TaskModelSettingsEditor", () => {
     fireEvent.change(screen.getByLabelText("Future occurrence horizon"), {
       target: { value: "P30D" },
     });
+    fireEvent.click(screen.getByLabelText("Done"));
+    fireEvent.change(
+      screen.getByLabelText("Done auto-archive delay in minutes"),
+      { target: { value: "12" } },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Save task settings" }));
 
     expect(
@@ -56,6 +61,13 @@ describe("TaskModelSettingsEditor", () => {
         defaults: { status: "in-progress" },
         occurrences: { futureHorizon: "P30D" },
         timeTracking: { autoStopOnComplete: true },
+        statuses: expect.arrayContaining([
+          expect.objectContaining({
+            value: "done",
+            autoArchive: true,
+            autoArchiveDelay: 12,
+          }),
+        ]),
       }),
     );
   });
