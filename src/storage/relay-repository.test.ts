@@ -3,8 +3,8 @@ import type {
   JsonObject,
   MdbaseConnection,
   MdbaseOperationEnvelope,
+  QueryRecord,
   QueryResult,
-  RecordResult,
 } from "@mdbase/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
@@ -16,8 +16,24 @@ import { createConnectTaskRepository } from "./connect-repository";
 import { RelayTaskRepository } from "./relay-repository";
 
 describe("relay task repository", () => {
+  it("loads canonical effective-frontmatter query rows", async () => {
+    const fixture = relayFixture([
+      taskRecord("canonical", "Visible canonical task", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+
+    await repository.initialize();
+
+    expect(await repository.list()).toMatchObject([
+      { id: "canonical", title: "Visible canonical task" },
+    ]);
+    expect(fixture.query).toHaveBeenCalledWith(
+      expect.objectContaining({ frontmatter_mode: "effective" }),
+    );
+  });
+
   it("coalesces record completion into one small provider query", async () => {
-    const project: RecordResult<JsonObject> = {
+    const project: TestRecord = {
       path: "Projects/Mobile.md",
       frontmatter: { title: "Mobile roadmap" },
       body: "",
@@ -54,6 +70,7 @@ describe("relay task repository", () => {
     const completionQuery = fixture.query.mock.calls[1]?.[0];
     expect(completionQuery).toMatchObject({
       limit: 48,
+      frontmatter_mode: "effective",
       order_by: [{ field: "file.path", direction: "asc" }],
     });
     expect(String(completionQuery?.where)).toContain(
@@ -466,7 +483,7 @@ describe("relay task repository", () => {
 });
 
 function relayFixture(
-  initial: RecordResult<JsonObject>[],
+  initial: TestRecord[],
   templating = false,
   archive = false,
   collectionId = crypto.randomUUID(),
@@ -481,11 +498,11 @@ function relayFixture(
     return valid<QueryResult<JsonObject>>({
       results: [...records.values()].map((record) => ({
         path: record.path,
-        frontmatter: record.frontmatter,
-        raw_frontmatter: record.raw_frontmatter,
+        effective_frontmatter:
+          record.effective_frontmatter ?? record.frontmatter,
         body: record.body,
         types: record.types,
-        file: record.file,
+        file: record.file ?? testQueryFile(record.path),
       })),
       meta: { total_count: records.size, has_more: false, snapshot: "tasks-1" },
     });
@@ -503,7 +520,7 @@ function relayFixture(
       body?: string;
     }) => {
       const path = input.path ?? `tasks/${crypto.randomUUID()}.md`;
-      const record: RecordResult<JsonObject> = {
+      const record: TestRecord = {
         path,
         frontmatter: structuredClone(input.frontmatter),
         body: input.body ?? "",
@@ -530,7 +547,7 @@ function relayFixture(
         if (value === null) delete frontmatter[key];
         else frontmatter[key] = structuredClone(value);
       }
-      const record: RecordResult<JsonObject> = {
+      const record: TestRecord = {
         ...current,
         frontmatter,
         body: input.body ?? current.body,
@@ -562,7 +579,7 @@ function relayFixture(
       if (records.has(input.to)) throw new Error("Destination already exists.");
       if (input.if_revision !== current.revision)
         throw new Error("Revision conflict.");
-      const record: RecordResult<JsonObject> = {
+      const record: TestRecord = {
         ...current,
         path: input.to,
         revision: `r${revision++}`,
@@ -603,7 +620,8 @@ function relayFixture(
     valid({
       results: [...records.values()].map((record) => ({
         path: record.path,
-        frontmatter: record.frontmatter,
+        effective_frontmatter:
+          record.effective_frontmatter ?? record.frontmatter,
         body: record.body,
         types: record.types,
         values: { status: record.frontmatter.status ?? "open" },
@@ -723,7 +741,7 @@ function taskRecord(
   id: string,
   title: string,
   revision: string,
-): RecordResult<JsonObject> {
+): TestRecord {
   const task = new TaskNotesTaskModel().create(
     { title },
     { id, now: "2026-07-22T00:00:00.000Z" },
@@ -734,6 +752,27 @@ function taskRecord(
     body: task.body,
     types: ["task"],
     revision,
+  };
+}
+
+interface TestRecord {
+  path: string;
+  frontmatter: JsonObject;
+  effective_frontmatter?: JsonObject;
+  body: string;
+  types: string[];
+  revision: string;
+  file?: QueryRecord<JsonObject>["file"];
+}
+
+function testQueryFile(path: string): QueryRecord<JsonObject>["file"] {
+  const segments = path.split("/");
+  return {
+    path,
+    name: segments.at(-1) ?? path,
+    folder: segments.slice(0, -1).join("/"),
+    size: 0,
+    mtime: "2026-07-22T00:00:00.000Z",
   };
 }
 
