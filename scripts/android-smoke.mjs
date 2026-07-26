@@ -2,6 +2,9 @@ import { execFileSync } from "node:child_process";
 
 const PACKAGE =
   process.env.TASKNOTES_ANDROID_APPLICATION_ID ?? "dev.tasknotes.app";
+const FIREBASE_PROJECT =
+  process.env.TASKNOTES_FIREBASE_PROJECT_ID ?? "tasknotes-462906";
+const skipFcmDelivery = process.env.TASKNOTES_ANDROID_SKIP_FCM_DELIVERY === "1";
 const COLLECTION = "/storage/emulated/0/Documents/TaskNotes";
 const TASKS = "/storage/emulated/0/Documents/TaskNotes/tasks";
 const FOLDER_COLLECTION = "/storage/emulated/0/Documents/TaskNotesFolderSmoke";
@@ -119,6 +122,7 @@ async function main() {
       PACKAGE,
       "android.permission.POST_NOTIFICATIONS",
     );
+    await verifyAndroidPush(devtools);
     await waitFor(
       () => devtools.hasTaskRow(initialTitle),
       "the created task row",
@@ -399,7 +403,7 @@ views:
     );
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, scheduled reminder, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, public Markdown write, scheduled reminder, FCM registration and foreground push, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
@@ -425,6 +429,111 @@ views:
     adb("shell", "am", "force-stop", PACKAGE);
     if (pathExists(COLLECTION)) adb("shell", "rm", "-r", "--", COLLECTION);
     if (collectionPresent) adb("shell", "mv", "--", backup, COLLECTION);
+  }
+}
+
+async function verifyAndroidPush(devtools) {
+  const signalId = `tasknotes-android-smoke-${Date.now()}`;
+  const token = await devtools.evaluate(`(async () => {
+    const plugin = Capacitor.Plugins.PushNotifications;
+    if (!plugin) throw new Error("PushNotifications is not packaged.");
+    localStorage.removeItem("tasknotes.android-smoke.push");
+    await plugin.createChannel({
+      id: "mdbase-updates",
+      name: "Task reminders",
+      description: "Reminders scheduled by TaskNotes through mdbase",
+      importance: 4
+    });
+    const received = await plugin.addListener(
+      "pushNotificationReceived",
+      ({ data }) => {
+        if (data?.signal_id) {
+          localStorage.setItem("tasknotes.android-smoke.push", data.signal_id);
+        }
+      }
+    );
+    globalThis.__tasknotesAndroidPushReceived = received;
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("FCM registration timed out.")),
+        15000
+      );
+      Promise.all([
+        plugin.addListener("registration", ({ value }) => {
+          clearTimeout(timeout);
+          resolve(value);
+        }),
+        plugin.addListener("registrationError", ({ error }) => {
+          clearTimeout(timeout);
+          reject(new Error(error || "FCM registration failed."));
+        })
+      ]).then(
+        (handles) => {
+          globalThis.__tasknotesAndroidPushRegistration = handles;
+          return plugin.register();
+        },
+        reject
+      );
+    });
+  })()`);
+  if (skipFcmDelivery) {
+    console.warn(
+      "Skipping FCM delivery after successful native token registration.",
+    );
+    return;
+  }
+  await sendPushNotification(token, signalId);
+  await waitFor(
+    () =>
+      devtools.evaluate(
+        `localStorage.getItem("tasknotes.android-smoke.push") === ${JSON.stringify(signalId)}`,
+      ),
+    "the foreground FCM notification signal",
+    20_000,
+  );
+}
+
+async function sendPushNotification(token, signalId) {
+  const accessToken = execFileSync("gcloud", ["auth", "print-access-token"], {
+    encoding: "utf8",
+  }).trim();
+  const response = await fetch(
+    `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT}/messages:send`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+        "x-goog-user-project": FIREBASE_PROJECT,
+      },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: {
+            title: "Task reminder",
+            body: "Open TaskNotes to view your task.",
+          },
+          data: {
+            type: "mdbase.notification",
+            version: "1",
+            signal_id: signalId,
+            criterion_id: "task.reminder",
+            cursor: "android-smoke",
+          },
+          android: {
+            priority: "high",
+            notification: {
+              channel_id: "mdbase-updates",
+              tag: "tasknotes-reminders",
+            },
+          },
+        },
+      }),
+    },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`FCM send failed (${response.status}): ${body}`);
   }
 }
 

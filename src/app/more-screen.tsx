@@ -30,6 +30,7 @@ import {
   type ThemePreference,
 } from "../theme";
 import { useCollectionGate } from "./collection-context";
+import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
 export function MoreScreen({
@@ -60,7 +61,7 @@ export function MoreScreen({
     useState<string>("Checking");
   const [changeNotifications, setChangeNotifications] =
     useState<MdbaseNotificationStatus>({
-      state: "unavailable",
+      state: "checking",
       optedIn: false,
     });
   const [changeNotificationsBusy, setChangeNotificationsBusy] = useState(false);
@@ -96,10 +97,12 @@ export function MoreScreen({
         if (active) setChangeNotifications(next);
       })
       .catch((reason: unknown) => {
-        if (active)
+        if (active) {
+          setChangeNotifications({ state: "error", optedIn: false });
           setChangeNotificationsError(
             reason instanceof Error ? reason.message : String(reason),
           );
+        }
       });
     return () => {
       active = false;
@@ -516,25 +519,6 @@ function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
     return `${sync.issues} sync ${sync.issues === 1 ? "issue" : "issues"}`;
   if (sync.pending) return `${sync.pending} waiting`;
   return sync.mode === "live" ? "Connected" : "Up to date";
-}
-
-function changeNotificationLabel(status: MdbaseNotificationStatus): string {
-  switch (status.state) {
-    case "enabled":
-      return "On";
-    case "off":
-      return "Off";
-    case "denied":
-      return "Disabled in system settings";
-    case "not_connected":
-      return "Connect mdbase first";
-    case "not_configured":
-      return "Firebase setup required";
-    case "reauthorization_required":
-      return "Approval required";
-    case "unavailable":
-      return "Available in the mobile app";
-  }
 }
 
 function SettingsSection({

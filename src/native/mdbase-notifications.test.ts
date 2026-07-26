@@ -64,6 +64,30 @@ describe("mdbase native notifications", () => {
     expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
   });
 
+  it("reports native configuration without performing application discovery", async () => {
+    const fixture = manager({
+      isConfigured: vi.fn(() => false),
+    });
+
+    expect(await fixture.subject.status()).toEqual({
+      state: "not_configured",
+      optedIn: false,
+    });
+    expect(fixture.messaging.checkPermissions).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes a browser from a native setup failure", async () => {
+    const fixture = manager({
+      isNative: vi.fn(() => false),
+    });
+
+    expect(await fixture.subject.status()).toEqual({
+      state: "unavailable",
+      optedIn: false,
+    });
+    expect(fixture.messaging.checkPermissions).not.toHaveBeenCalled();
+  });
+
   it("does not contact either service when a disconnected collection was not opted in", async () => {
     const fixture = manager();
     await fixture.subject.disableIfEnabled();
@@ -137,15 +161,6 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
         collectionId: "collection",
         operations: ["reconcile_timers"],
       })),
-    register: vi.fn(async () => ({
-      notifications: {
-        criteria: [{ id: "task.reminder" }],
-        native_delivery: {
-          mode: "managed_fcm" as const,
-          firebase_project_id: "tasknotes-production",
-        },
-      },
-    })),
     registerNativeNotifications:
       overrides.registerNativeNotifications ?? vi.fn(async () => ({})),
     unregisterNativeNotifications:
@@ -166,7 +181,8 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
     connect,
     messaging,
     storage,
-    isNative: () => true,
+    isNative: overrides.isNative ?? (() => true),
+    isConfigured: overrides.isConfigured ?? (() => true),
   } as unknown as MdbaseNotificationManagerOptions);
   return { subject, connect, messaging, storage };
 }
