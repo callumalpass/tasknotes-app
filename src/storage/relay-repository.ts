@@ -5,8 +5,7 @@ import {
   type JsonObject,
   type MdbaseConnection,
   type MdbaseOperationEnvelope,
-  type RecordResult,
-  type RecordSummary,
+  type RecordDocument,
 } from "@mdbase/connect";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -66,6 +65,13 @@ import type {
 interface CachedRelayTask {
   task: Task;
   revision?: string;
+}
+
+interface ReadableRelayRecord {
+  path: string;
+  frontmatter?: JsonObject;
+  effective_frontmatter?: JsonObject;
+  body?: string;
 }
 
 const PAGE_SIZE = 1_000;
@@ -263,19 +269,23 @@ export class RelayTaskRepository implements TaskRepository {
         : {}),
       order_by: [{ field: "file.path", direction: "asc" }],
       limit: Math.max(completionLimit(request) * 4, 48),
+      frontmatter_mode: "effective",
     });
     const result = validResult(response);
-    const records: CollectionRecord[] = result.results.map((record) => ({
-      path: record.path,
-      label:
-        typeof record.frontmatter.title === "string"
-          ? record.frontmatter.title
-          : (record.path.split("/").at(-1)?.replace(/\.md$/i, "") ??
-            record.path),
-      frontmatter: record.frontmatter,
-      body: record.body,
-      types: record.types,
-    }));
+    const records: CollectionRecord[] = result.results.map((record) => {
+      const frontmatter = relayFrontmatter(record);
+      return {
+        path: record.path,
+        label:
+          typeof frontmatter.title === "string"
+            ? frontmatter.title
+            : (record.path.split("/").at(-1)?.replace(/\.md$/i, "") ??
+              record.path),
+        frontmatter,
+        body: record.body,
+        types: record.types,
+      };
+    });
     return completeRecords(
       records,
       request,
@@ -291,10 +301,7 @@ export class RelayTaskRepository implements TaskRepository {
         { id, now: new Date().toISOString() },
         async (path) => {
           const template = validResult(await this.connect.read({ path }));
-          return serializeMarkdownDocument(
-            template.raw_frontmatter ?? template.frontmatter,
-            template.body ?? "",
-          );
+          return serializeMarkdownDocument(template.frontmatter, template.body);
         },
       );
       try {
@@ -551,12 +558,7 @@ export class RelayTaskRepository implements TaskRepository {
         }),
       ) as ProviderViewExecution;
       const execution = normalizeViewExecution(view, result, (record) =>
-        this.readRecord({
-          path: record.path,
-          frontmatter: record.frontmatter ?? {},
-          body: record.body,
-          types: record.types ?? [],
-        }),
+        this.readRecord(record),
       );
       this.viewExecutionCache.set(viewExecutionKey(view), execution);
       await this.viewStore?.writeExecution(execution).catch(() => undefined);
@@ -669,6 +671,7 @@ export class RelayTaskRepository implements TaskRepository {
       const response = await this.connect.query({
         types: [this.taskTypeName],
         include_body: true,
+        frontmatter_mode: "effective",
         limit: PAGE_SIZE,
         offset,
         ...(snapshot ? { snapshot } : {}),
@@ -770,7 +773,7 @@ export class RelayTaskRepository implements TaskRepository {
     });
   }
 
-  private storeResult(result: RecordResult<JsonObject>): Task {
+  private storeResult(result: RecordDocument<JsonObject>): Task {
     const task = this.readRecord(result);
     if (!task) throw new Error("The saved task could not be read.");
     this.cache.set(task.id, { task, revision: result.revision });
@@ -779,11 +782,11 @@ export class RelayTaskRepository implements TaskRepository {
     return task;
   }
 
-  private readRecord(record: RecordSummary<JsonObject>): Task | null {
+  private readRecord(record: ReadableRelayRecord): Task | null {
     try {
       return this.model.read({
         path: record.path,
-        frontmatter: record.frontmatter,
+        frontmatter: relayFrontmatter(record),
         body: record.body ?? "",
       });
     } catch {
@@ -815,10 +818,7 @@ export class RelayTaskRepository implements TaskRepository {
       },
       async (path) => {
         const template = validResult(await this.connect.read({ path }));
-        return serializeMarkdownDocument(
-          template.raw_frontmatter ?? template.frontmatter,
-          template.body ?? "",
-        );
+        return serializeMarkdownDocument(template.frontmatter, template.body);
       },
     );
     if (!result.created) return result;
@@ -1053,6 +1053,10 @@ function frontmatterPatch(
 
 function asJson(value: Record<string, unknown>): JsonObject {
   return structuredClone(value) as JsonObject;
+}
+
+function relayFrontmatter(record: ReadableRelayRecord): JsonObject {
+  return record.effective_frontmatter ?? record.frontmatter ?? {};
 }
 
 function signature(task: Task): string {

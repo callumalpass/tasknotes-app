@@ -33,6 +33,8 @@ export interface ProviderViewExecution {
   results: Array<{
     path: string;
     frontmatter?: Record<string, unknown>;
+    effective_frontmatter?: Record<string, unknown>;
+    /** Compatibility with pre-0.1.0-beta.3 Connect providers. */
     raw_frontmatter?: Record<string, unknown>;
     body?: string;
     types?: string[];
@@ -89,18 +91,23 @@ export function normalizeViewExecution(
   return {
     view: normalizedView,
     rows,
-    records: result.results.map((record) => ({
-      record: {
-        path: record.path,
-        label: recordLabel(record),
-        frontmatter: structuredClone(
-          record.frontmatter ?? record.raw_frontmatter ?? {},
-        ),
-        ...(record.body === undefined ? {} : { body: record.body }),
-        types: [...(record.types ?? [])],
-      },
-      values: structuredClone(record.values ?? {}),
-    })),
+    records: result.results.map((record) => {
+      const frontmatter =
+        record.effective_frontmatter ??
+        record.frontmatter ??
+        record.raw_frontmatter ??
+        {};
+      return {
+        record: {
+          path: record.path,
+          label: recordLabel({ path: record.path, frontmatter }),
+          frontmatter: structuredClone(frontmatter),
+          ...(record.body === undefined ? {} : { body: record.body }),
+          types: [...(record.types ?? [])],
+        },
+        values: structuredClone(record.values ?? {}),
+      };
+    }),
     totalCount: result.meta.total_count,
     hasMore: result.meta.has_more,
     groups: structuredClone(result.meta.groups ?? []),

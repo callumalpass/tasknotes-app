@@ -114,4 +114,41 @@ describe("provider view documents", () => {
     expect(execution.view.presentation?.mappings.column).toBe("project");
     expect(view.presentation?.mappings).toEqual({});
   });
+
+  it("uses canonical effective frontmatter for saved-view records", () => {
+    const view: TaskView = {
+      key: "views/work.base#list",
+      documentId: "work",
+      documentName: "Work",
+      id: "list",
+      name: "List",
+      properties: [],
+      source: {
+        path: "views/work.base",
+        format: "obsidian.base",
+        revision: "one",
+        writable: true,
+      },
+    };
+
+    const execution = normalizeViewExecution(
+      view,
+      {
+        results: [
+          {
+            path: "tasks/canonical.md",
+            effective_frontmatter: { title: "Canonical title" },
+            types: ["task"],
+          },
+        ],
+        meta: { total_count: 1, has_more: false },
+      },
+      () => null,
+    );
+
+    expect(execution.records?.[0].record).toMatchObject({
+      label: "Canonical title",
+      frontmatter: { title: "Canonical title" },
+    });
+  });
 });
