@@ -17,6 +17,7 @@ import {
 import { MemoryVault } from "../test/memory-vault";
 
 import type { Task } from "../domain/task";
+import type { IndexedTask } from "./index";
 
 describe("IndexedMarkdownRepository", () => {
   let vault: MemoryVault;
@@ -289,6 +290,52 @@ describe("IndexedMarkdownRepository", () => {
     expect(readText).not.toHaveBeenCalledWith(created.path);
   });
 
+  it("repairs and reindexes cached tasks from an older projection shape", async () => {
+    const created = await repository.create({ title: "Legacy projection" });
+    const stored = await index.tasks.get(created.id);
+    const legacy = { ...stored } as Partial<IndexedTask>;
+    delete legacy.blockedBy;
+    delete legacy.reminders;
+    delete legacy.timeEntries;
+    delete legacy.customProperties;
+    await index.tasks.put(legacy as IndexedTask);
+    await index.metadata.put({
+      key: "projection",
+      complete: true,
+      consistencyVersion: 1,
+      taskShapeVersion: 0,
+    });
+
+    const reopened = new IndexedMarkdownRepository({
+      collection: new MarkdownCollection(vault),
+      index,
+    });
+    await reopened.initialize();
+
+    expect(await reopened.get(created.id)).toMatchObject({
+      blockedBy: [],
+      reminders: [],
+      timeEntries: [],
+      customProperties: {},
+    });
+    expect(await reopened.relationships(created.id)).toMatchObject({
+      blockedBy: [],
+      blocking: [],
+    });
+    expect(await index.metadata.get("projection")).toMatchObject({
+      complete: false,
+      needsReindex: true,
+      taskShapeVersion: 1,
+    });
+
+    expect(await reopened.refresh()).toMatchObject({ changed: 1 });
+    expect(await index.metadata.get("projection")).toMatchObject({
+      complete: true,
+      needsReindex: false,
+      taskShapeVersion: 1,
+    });
+  });
+
   it("skips the redundant first OPFS scan after a verified projection reopens", async () => {
     const browserVault = new MemoryVault();
     const firstCollection = new MarkdownCollection(browserVault);
@@ -418,7 +465,7 @@ describe("IndexedMarkdownRepository", () => {
     });
     await first.initialize();
     await first.create({ title: "Created before restart" });
-    expect(await firstIndex.metadata.get("projection")).toEqual({
+    expect(await firstIndex.metadata.get("projection")).toMatchObject({
       key: "projection",
       complete: false,
     });

@@ -341,6 +341,60 @@ test("surfaces a quiet warning while a durable local mutation is pending", async
   });
 });
 
+test("rehydrates older cached task shapes without a render failure", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) =>
+    pageErrors.push(error.stack ?? error.message),
+  );
+  await page.getByLabel("New task title").fill("Legacy cached task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Legacy cached task", { exact: true }),
+  ).toBeVisible();
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("tasknotes-index-v2");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const database = request.result;
+          const transaction = database.transaction("tasks", "readwrite");
+          const store = transaction.objectStore("tasks");
+          const cursor = store.openCursor();
+          cursor.onerror = () => reject(cursor.error);
+          cursor.onsuccess = () => {
+            const current = cursor.result;
+            if (!current) return;
+            const legacy = current.value;
+            delete legacy.blockedBy;
+            delete legacy.reminders;
+            delete legacy.timeEntries;
+            delete legacy.customProperties;
+            current.update(legacy);
+          };
+          transaction.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+          transaction.onerror = () => reject(transaction.error);
+        };
+      }),
+  );
+  await page.reload();
+  await page.getByText("Legacy cached task", { exact: true }).click();
+
+  await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
+    "Legacy cached task",
+  );
+  await expect(
+    page.getByRole("heading", { name: "TaskNotes needs to restart." }),
+  ).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
+
 test("suggests capture values from the collection contract", async ({
   page,
 }, testInfo) => {

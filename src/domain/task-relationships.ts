@@ -33,7 +33,7 @@ export function taskRelationships(
   const resolve = (value: string) =>
     taskById.get(value) ?? taskByPath.get(normalizeLinkTarget(value));
 
-  const blockedBy = current.blockedBy.map((dependency) => ({
+  const blockedBy = (current.blockedBy ?? []).map((dependency) => ({
     dependency,
     task: resolve(dependency.uid),
   }));
@@ -43,7 +43,7 @@ export function taskRelationships(
   for (const candidate of tasks) {
     if (candidate.id === current.id) continue;
     if (
-      candidate.blockedBy.some(
+      (candidate.blockedBy ?? []).some(
         (dependency) =>
           dependency.uid === current.id ||
           recordMatchesLink(current.path, dependency.uid),
@@ -51,7 +51,7 @@ export function taskRelationships(
     )
       blocking.push(candidate);
     if (
-      candidate.projects.some((project) =>
+      (candidate.projects ?? []).some((project) =>
         recordMatchesLink(current.path, project),
       )
     )
@@ -62,7 +62,7 @@ export function taskRelationships(
     blockedBy,
     blocking,
     subtasks,
-    projectTasks: current.projects.flatMap((project) => {
+    projectTasks: (current.projects ?? []).flatMap((project) => {
       const task = resolve(project);
       return task ? [task] : [];
     }),

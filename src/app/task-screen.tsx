@@ -1534,10 +1534,10 @@ function toDraft(task: Task): Draft {
     due: task.due,
     scheduled: task.scheduled,
     body: task.body,
-    tags: task.tags,
-    contexts: task.contexts,
-    projects: task.projects,
-    blockedBy: task.blockedBy,
+    tags: task.tags ?? [],
+    contexts: task.contexts ?? [],
+    projects: task.projects ?? [],
+    blockedBy: task.blockedBy ?? [],
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
     occurrenceMaterialization: task.occurrenceMaterialization,
@@ -1545,9 +1545,9 @@ function toDraft(task: Task): Draft {
     occurrenceTemplate: task.occurrenceTemplate,
     occurrencePastHorizon: task.occurrencePastHorizon,
     occurrenceFutureHorizon: task.occurrenceFutureHorizon,
-    reminders: task.reminders,
+    reminders: task.reminders ?? [],
     timeEstimate: task.timeEstimate,
-    customProperties: { ...task.customProperties },
+    customProperties: { ...(task.customProperties ?? {}) },
   };
 }
 

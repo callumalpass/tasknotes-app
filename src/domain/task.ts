@@ -120,12 +120,12 @@ export interface TaskTimeTotals {
 
 /** Task detail surfaces report live minutes; historical rows report closed minutes. */
 export function taskTimeTotals(
-  entries: readonly TaskTimeEntry[],
+  entries: readonly TaskTimeEntry[] | undefined,
   now = new Date(),
 ): TaskTimeTotals {
   let closedMinutes = 0;
   let liveMinutes = 0;
-  for (const entry of entries) {
+  for (const entry of entries ?? []) {
     const start = new Date(entry.startTime).getTime();
     const end = entry.endTime
       ? new Date(entry.endTime).getTime()
@@ -140,9 +140,9 @@ export function taskTimeTotals(
 }
 
 export function activeTimeEntry(
-  entries: readonly TaskTimeEntry[],
+  entries: readonly TaskTimeEntry[] | undefined,
 ): TaskTimeEntry | undefined {
-  return entries.find((entry) => !entry.endTime);
+  return entries?.find((entry) => !entry.endTime);
 }
 
 export interface TaskListQuery {

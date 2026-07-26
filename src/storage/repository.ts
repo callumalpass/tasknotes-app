@@ -1,5 +1,7 @@
 import {
+  indexedTaskNeedsNormalization,
   indexTask,
+  normalizeIndexedTask,
   TaskIndex,
   withoutIndexFields,
   type IndexedTask,
@@ -54,6 +56,7 @@ import type {
 } from "../domain/view";
 
 const PROJECTION_CONSISTENCY_VERSION = 1;
+const TASK_PROJECTION_SHAPE_VERSION = 1;
 
 export interface CollectionInfo {
   kind: "local" | "connect";
@@ -174,6 +177,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private mutationVersion = 0;
   private readonly pathMutationVersions = new Map<string, number>();
   private skipNextPrivateBrowserRefresh = false;
+  private forceProjectionReindex = false;
 
   constructor(
     options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
@@ -200,33 +204,46 @@ export class IndexedMarkdownRepository implements TaskRepository {
       this.initialization = this.exclusive(async () => {
         await this.collection.initialize();
         await this.replayPendingMutationsUnlocked();
-        const [cached, storedProjection, pendingMutations] = await Promise.all([
-          this.index.tasks.toArray(),
-          this.index.metadata.get("projection"),
-          this.index.mutations.count(),
-        ]);
-        for (const task of cached) {
+        const [storedTasks, storedProjection, pendingMutations] =
+          await Promise.all([
+            this.index.tasks.toArray(),
+            this.index.metadata.get("projection"),
+            this.index.mutations.count(),
+          ]);
+        const normalizedTasks = storedTasks.map(normalizeIndexedTask);
+        const repairedProjection = storedTasks.some(
+          indexedTaskNeedsNormalization,
+        );
+        if (repairedProjection) await this.index.tasks.bulkPut(normalizedTasks);
+        for (const task of normalizedTasks) {
           this.cacheTask(task);
           this.collection.cacheTaskRecord(task, {
             lastModified: task.sourceMtime,
             size: task.sourceSize,
           });
         }
-        const complete = cached.length
+        this.forceProjectionReindex =
+          storedProjection?.needsReindex === true || repairedProjection;
+        const complete = normalizedTasks.length
           ? (storedProjection?.complete ?? true)
           : false;
         const consistencyVersion = storedProjection?.consistencyVersion;
         await this.index.metadata.put({
           key: "projection",
-          complete,
+          complete: complete && !this.forceProjectionReindex,
           ...(consistencyVersion === undefined ? {} : { consistencyVersion }),
+          taskShapeVersion: TASK_PROJECTION_SHAPE_VERSION,
+          needsReindex: this.forceProjectionReindex,
         });
         this.skipNextPrivateBrowserRefresh =
           complete &&
+          !this.forceProjectionReindex &&
+          storedProjection?.taskShapeVersion ===
+            TASK_PROJECTION_SHAPE_VERSION &&
           consistencyVersion === PROJECTION_CONSISTENCY_VERSION &&
           pendingMutations === 0 &&
           this.collection.identifier() === "browser-default";
-        if (!complete)
+        if (!complete || this.forceProjectionReindex)
           this.publishIndexing(
             {
               phase: "scanning",
@@ -629,6 +646,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
         const cached = storedByPath.get(document.path);
         return (
           configurationChanged ||
+          this.forceProjectionReindex ||
           !cached ||
           cached.sourceMtime !== document.lastModified ||
           cached.sourceSize !== document.size
@@ -713,7 +731,10 @@ export class IndexedMarkdownRepository implements TaskRepository {
         key: "projection",
         complete: true,
         consistencyVersion: PROJECTION_CONSISTENCY_VERSION,
+        taskShapeVersion: TASK_PROJECTION_SHAPE_VERSION,
+        needsReindex: false,
       });
+      this.forceProjectionReindex = false;
       return removedIds.size;
     });
     this.publishIndexing(

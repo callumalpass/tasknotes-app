@@ -13,6 +13,8 @@ export interface IndexMetadata {
   key: "projection";
   complete: boolean;
   consistencyVersion?: number;
+  taskShapeVersion?: number;
+  needsReindex?: boolean;
 }
 
 export class TaskIndex extends Dexie {
@@ -67,4 +69,53 @@ export function withoutIndexFields(task: IndexedTask): Task {
   delete plain.sourceSize;
   delete plain.searchText;
   return plain as Task;
+}
+
+export function indexedTaskNeedsNormalization(task: IndexedTask): boolean {
+  return (
+    !Array.isArray(task.tags) ||
+    !Array.isArray(task.contexts) ||
+    !Array.isArray(task.projects) ||
+    !Array.isArray(task.blockedBy) ||
+    !Array.isArray(task.completeInstances) ||
+    !Array.isArray(task.skippedInstances) ||
+    !Array.isArray(task.reminders) ||
+    !Array.isArray(task.timeEntries) ||
+    !isRecord(task.customProperties) ||
+    !isRecord(task.frontmatter) ||
+    typeof task.searchText !== "string"
+  );
+}
+
+export function normalizeIndexedTask(task: IndexedTask): IndexedTask {
+  if (!indexedTaskNeedsNormalization(task)) return task;
+  const normalized: Task = {
+    ...task,
+    tags: stringArray(task.tags),
+    contexts: stringArray(task.contexts),
+    projects: stringArray(task.projects),
+    blockedBy: Array.isArray(task.blockedBy) ? task.blockedBy : [],
+    completeInstances: stringArray(task.completeInstances),
+    skippedInstances: stringArray(task.skippedInstances),
+    reminders: Array.isArray(task.reminders) ? task.reminders : [],
+    timeEntries: Array.isArray(task.timeEntries) ? task.timeEntries : [],
+    customProperties: isRecord(task.customProperties)
+      ? task.customProperties
+      : {},
+    frontmatter: isRecord(task.frontmatter) ? task.frontmatter : {},
+  };
+  return indexTask(normalized, {
+    lastModified: Number.isFinite(task.sourceMtime) ? task.sourceMtime : 0,
+    size: Number.isFinite(task.sourceSize) ? task.sourceSize : 0,
+  });
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
