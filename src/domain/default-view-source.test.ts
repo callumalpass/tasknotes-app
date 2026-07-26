@@ -120,7 +120,7 @@ describe("TaskNotes starter views", () => {
     });
     expect(
       views.find(({ id }) => id === "today")?.presentation.options,
-    ).toBeUndefined();
+    ).toEqual({ sections: "day" });
   });
 
   it("leaves an existing default source untouched", async () => {
@@ -165,6 +165,7 @@ describe("TaskNotes starter views", () => {
         filters?: { and?: Array<string | Record<string, unknown>> };
         groupBy?: { property: string; direction: string };
         order?: string[];
+        options?: Record<string, unknown>;
       }>;
     };
 
@@ -172,6 +173,9 @@ describe("TaskNotes starter views", () => {
     expect(
       parsed.views.find(({ name }) => name === "Today")?.filters?.and,
     ).toContain('note["status"].isEmpty() == false');
+    expect(parsed.views.find(({ name }) => name === "Today")?.options).toEqual({
+      sections: "day",
+    });
     const projectFilter = parsed.views
       .find(({ name }) => name === "Projects")
       ?.filters?.and?.join("\n");

@@ -66,6 +66,7 @@ export function taskNotesDefaultBaseDocument(
             { property: priority, direction: "ASC" },
             { property: title, direction: "ASC" },
           ],
+          options: { sections: "day" },
         },
         {
           type: "tasknotesCalendar",
@@ -168,6 +169,7 @@ export function taskNotesDefaultCanonicalDocument(
           presentation: {
             type: "tasknotes.task-list",
             fallback: "mdbase.table",
+            options: { sections: "day" },
           },
         },
         calendarCanonicalView(

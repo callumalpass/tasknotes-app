@@ -7,17 +7,25 @@ import {
   Square,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { LoadingRows } from "../components/loading";
+import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { MultiValueField } from "../components/multi-value-field";
+import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateField,
-  TaskNotesDatePicker,
   TaskNotesDateTimeField,
   TaskNotesSelect,
   TaskNotesSelectField,
-  TaskNotesTimePicker,
 } from "../components/tasknotes-controls";
 import {
   buildRecurrenceRule,
@@ -33,7 +41,12 @@ import {
   taskTimeTotals,
   taskTimePart,
 } from "../domain/task";
-import { useRepository, useTask } from "./repository-context";
+import { recordMatchesLink } from "../domain/completion";
+import {
+  useRepository,
+  useTask,
+  useTaskRelationships,
+} from "./repository-context";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 import type {
@@ -44,6 +57,10 @@ import type {
   TaskFieldCompletionConfiguration,
   TaskUserMappedField,
 } from "../domain/task-configuration";
+
+const MarkdownPreview = lazy(async () => ({
+  default: (await import("../components/markdown-preview")).MarkdownPreview,
+}));
 
 type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
@@ -57,6 +74,7 @@ type Draft = Pick<
   | "tags"
   | "contexts"
   | "projects"
+  | "blockedBy"
   | "recurrence"
   | "recurrenceAnchor"
   | "occurrenceMaterialization"
@@ -134,11 +152,44 @@ function TaskEditor({
     configuration,
     repository,
   } = useRepository();
+  const { relationships: repositoryRelationships } = useTaskRelationships(
+    task.id,
+  );
   const completeField = useCallback(
     (request: FieldCompletionRequest) => repository.completeField(request),
     [repository],
   );
+  const completeDependencyField = useCallback(
+    async (request: FieldCompletionRequest) => {
+      const options = await repository.completeField(request);
+      return options.filter(
+        (option) =>
+          option.value !== task.id &&
+          !recordMatchesLink(task.path, option.value),
+      );
+    },
+    [repository, task.id, task.path],
+  );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
+  const [notesMode, setNotesMode] = useState<"write" | "preview">("write");
+  const relationships = useMemo(
+    () => ({
+      ...repositoryRelationships,
+      blockedBy: draft.blockedBy.map((dependency) => {
+        const resolved = repositoryRelationships.blockedBy.find(
+          (candidate) =>
+            candidate.dependency.uid === dependency.uid ||
+            (candidate.task &&
+              recordMatchesLink(candidate.task.path, dependency.uid)),
+        );
+        return {
+          dependency,
+          task: resolved?.task,
+        };
+      }),
+    }),
+    [draft.blockedBy, repositoryRelationships],
+  );
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -189,6 +240,7 @@ function TaskEditor({
             tags: value.tags,
             contexts: value.contexts,
             projects: value.projects,
+            blockedBy: value.blockedBy,
             recurrence: value.recurrence ?? null,
             recurrenceAnchor: value.recurrenceAnchor,
             occurrenceMaterialization: value.occurrenceMaterialization,
@@ -519,7 +571,6 @@ function TaskEditor({
           Task title
         </label>
         <textarea
-          autoFocus
           className="title-field"
           id="task-title"
           rows={2}
@@ -559,15 +610,42 @@ function TaskEditor({
           />
         </div>
 
-        <label className="notes-field">
-          <span>Notes</span>
-          <textarea
-            placeholder="Add a note"
-            rows={8}
-            value={draft.body}
-            onChange={(event) => change({ body: event.target.value })}
-          />
-        </label>
+        <section className="notes-field">
+          <header className="notes-field-heading">
+            <h2 id="task-notes-title">Notes</h2>
+            <div aria-label="Editor mode" role="group">
+              <button
+                aria-pressed={notesMode === "write"}
+                type="button"
+                onClick={() => setNotesMode("write")}
+              >
+                Write
+              </button>
+              <button
+                aria-pressed={notesMode === "preview"}
+                type="button"
+                onClick={() => setNotesMode("preview")}
+              >
+                Preview
+              </button>
+            </div>
+          </header>
+          {notesMode === "write" ? (
+            <textarea
+              aria-labelledby="task-notes-title"
+              placeholder="Add Markdown notes"
+              rows={8}
+              value={draft.body}
+              onChange={(event) => change({ body: event.target.value })}
+            />
+          ) : (
+            <Suspense
+              fallback={<p className="markdown-preview-empty">Rendering…</p>}
+            >
+              <MarkdownPreview source={draft.body} />
+            </Suspense>
+          )}
+        </section>
 
         <TaskFormSection summary={organizeSummary(draft)} title="Organize">
           <Fieldset legend="Priority">
@@ -620,6 +698,20 @@ function TaskEditor({
               onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
+          <DependencyEditor
+            completeField={completeDependencyField}
+            dependencies={draft.blockedBy}
+            field={configuration.fieldMapping.blockedBy}
+            labels={
+              new Map(
+                relationships.blockedBy.flatMap(({ dependency, task }) =>
+                  task ? [[dependency.uid, task.title] as const] : [],
+                ),
+              )
+            }
+            onChange={(blockedBy) => change({ blockedBy })}
+          />
+          <RelatedWork relationships={relationships} />
           {configuration.userFields.length ? (
             <section
               className="custom-fields"
@@ -700,8 +792,10 @@ function TaskEditor({
               onChange={(patch) => change(patch)}
             />
           ) : null}
-          <ReminderField
+          <ReminderEditor
+            due={draft.due}
             reminders={draft.reminders}
+            scheduled={draft.scheduled}
             onChange={(reminders) => change({ reminders })}
           />
         </TaskFormSection>
@@ -750,6 +844,10 @@ function organizeSummary(draft: Draft): string {
     values.push(`${humanizeValue(draft.priority)} priority`);
   if (draft.projects.length)
     values.push(listSummary(draft.projects, "project"));
+  if (draft.blockedBy.length)
+    values.push(
+      `${draft.blockedBy.length} ${draft.blockedBy.length === 1 ? "dependency" : "dependencies"}`,
+    );
   if (draft.contexts.length)
     values.push(listSummary(draft.contexts, "context"));
   const tags = draft.tags.filter((tag) => tag !== "task");
@@ -762,7 +860,9 @@ function organizeSummary(draft: Draft): string {
     values.push(
       `${customCount} ${customCount === 1 ? "property" : "properties"}`,
     );
-  return values.join(" · ") || "Priority, projects, contexts and tags";
+  return (
+    values.join(" · ") || "Priority, projects, dependencies, contexts and tags"
+  );
 }
 
 function timeSummary(task: Task, estimate?: number): string {
@@ -1426,80 +1526,6 @@ function formatOccurrenceDate(value: string): string {
   }).format(date);
 }
 
-function ReminderField({
-  reminders,
-  onChange,
-}: {
-  reminders: Task["reminders"];
-  onChange(reminders: Task["reminders"]): void;
-}) {
-  const absolute = reminders.find(
-    (reminder) => reminder.type === "absolute" && reminder.absoluteTime,
-  );
-  const initial = toLocalDateTime(absolute?.absoluteTime);
-  const [date, setDate] = useState(initial.slice(0, 10));
-  const [time, setTime] = useState(initial.slice(11, 16));
-
-  function commit(nextDate: string, nextTime: string) {
-    onChange([
-      ...reminders.filter((reminder) => reminder !== absolute),
-      {
-        id: absolute?.id ?? crypto.randomUUID(),
-        type: "absolute",
-        absoluteTime: new Date(`${nextDate}T${nextTime}`).toISOString(),
-      },
-    ]);
-  }
-
-  function remove() {
-    onChange(reminders.filter((reminder) => reminder !== absolute));
-  }
-
-  return (
-    <div className="reminder-field">
-      <div className="form-field date-time-field tasknotes-control-field">
-        <span>Reminder</span>
-        <div>
-          <TaskNotesDatePicker
-            ariaLabel="Reminder date"
-            value={date || undefined}
-            onChange={(next) => {
-              const nextDate = next ?? "";
-              setDate(nextDate);
-              if (nextDate && time) commit(nextDate, time);
-              else if (!nextDate && absolute) remove();
-            }}
-          />
-          <TaskNotesTimePicker
-            ariaLabel="Reminder time"
-            disabled={!date}
-            value={time || undefined}
-            onChange={(next) => {
-              const nextTime = next ?? "";
-              setTime(nextTime);
-              if (date && nextTime) commit(date, nextTime);
-              else if (!nextTime && absolute) remove();
-            }}
-          />
-        </div>
-      </div>
-      {absolute ? (
-        <button
-          className="text-action danger"
-          type="button"
-          onClick={() => {
-            setDate("");
-            setTime("");
-            remove();
-          }}
-        >
-          Remove
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 function toDraft(task: Task): Draft {
   return {
     title: task.title,
@@ -1511,6 +1537,7 @@ function toDraft(task: Task): Draft {
     tags: task.tags,
     contexts: task.contexts,
     projects: task.projects,
+    blockedBy: task.blockedBy,
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
     occurrenceMaterialization: task.occurrenceMaterialization,

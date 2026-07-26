@@ -1,6 +1,8 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
+import { reminderFireTime } from "../domain/reminder";
+
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 import type { ActionPerformed } from "@capacitor/local-notifications";
@@ -59,11 +61,10 @@ export async function syncTaskNotifications(
   const reminders =
     task.completed || task.archived
       ? []
-      : task.reminders.filter((reminder) => {
-          const timestamp = reminder.absoluteTime
-            ? Date.parse(reminder.absoluteTime)
-            : Number.NaN;
-          return reminder.type === "absolute" && timestamp > Date.now();
+      : task.reminders.flatMap((reminder) => {
+          const fireAt = reminderFireTime(task, reminder);
+          const timestamp = fireAt ? Date.parse(fireAt) : Number.NaN;
+          return fireAt && timestamp > Date.now() ? [{ reminder, fireAt }] : [];
         });
   if (!reminders.length) {
     writeRegistry(registry);
@@ -86,7 +87,7 @@ export async function syncTaskNotifications(
     importance: 4,
   }).catch(() => undefined);
   const used = new Set(Object.values(registry));
-  const notifications = reminders.map((reminder) => {
+  const notifications = reminders.map(({ reminder, fireAt }) => {
     const key = `${task.id}:${reminder.id}`;
     const id = allocateId(key, used);
     registry[key] = id;
@@ -94,7 +95,7 @@ export async function syncTaskNotifications(
       id,
       title: task.title,
       body: reminder.description ?? "Task reminder",
-      schedule: { at: new Date(reminder.absoluteTime!) },
+      schedule: { at: new Date(fireAt) },
       channelId: CHANNEL_ID,
       extra: { taskId: task.id },
     };
@@ -235,15 +236,9 @@ export async function desiredTaskTimers(
   const desired = tasks.flatMap((task) => {
     if (task.completed || task.archived) return [];
     return task.reminders.flatMap((reminder) => {
-      const fireAt = reminder.absoluteTime;
+      const fireAt = reminderFireTime(task, reminder);
       const timestamp = fireAt ? Date.parse(fireAt) : Number.NaN;
-      if (
-        reminder.type !== "absolute" ||
-        !fireAt ||
-        !Number.isFinite(timestamp) ||
-        timestamp <= now
-      )
-        return [];
+      if (!fireAt || !Number.isFinite(timestamp) || timestamp <= now) return [];
       return [
         {
           sourceId: JSON.stringify([task.id, reminder.id]),

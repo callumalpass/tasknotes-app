@@ -106,4 +106,22 @@ describe("task capture", () => {
     );
     expect(result.input).toEqual({ title: "Prepare weekly review" });
   });
+
+  it("uses configured triggers", async () => {
+    const result = await parseTaskCapture(
+      "Tidy desk ~home",
+      {
+        ...configuration,
+        nlp: {
+          triggers: [{ propertyId: "contexts", trigger: "~", enabled: true }],
+        },
+      },
+      "en-AU",
+    );
+
+    expect(result.input).toMatchObject({
+      title: "Tidy desk",
+      contexts: ["home"],
+    });
+  });
 });

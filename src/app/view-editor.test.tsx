@@ -54,6 +54,7 @@ describe("ViewEditor", () => {
     expect(
       screen.queryByRole("heading", { name: "Preview" }),
     ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("heading", { name: "Arrange" }));
     expect(screen.getByRole("combobox", { name: "Group by" })).toHaveValue(
       "status",
     );
@@ -105,9 +106,13 @@ describe("ViewEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
 
     expect(screen.getByRole("heading", { name: "Calendar" })).toBeVisible();
+    fireEvent.click(screen.getByRole("heading", { name: "Calendar" }));
     expect(screen.getByRole("combobox", { name: "Opens as" })).toBeVisible();
     expect(screen.getByText("Scheduled dates")).toBeVisible();
     expect(screen.getByText("Upcoming recurring instances")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("heading", { name: "Computed properties" }),
+    );
     expect(screen.getByText("No computed properties.")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
@@ -218,6 +223,9 @@ views:
     });
 
     await screen.findByRole("dialog", { name: "Edit view" });
+    fireEvent.click(
+      screen.getByRole("heading", { name: "Computed properties" }),
+    );
     expect(screen.getByLabelText("Computed property name 1")).toHaveValue(
       "score",
     );

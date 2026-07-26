@@ -16,6 +16,7 @@ export function MultiValueField({
   values,
   completion,
   completeField,
+  valueLabel = displayValue,
   onChange,
 }: {
   label: string;
@@ -24,6 +25,7 @@ export function MultiValueField({
   values: string[];
   completion: TaskFieldCompletionConfiguration;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
+  valueLabel?(value: string): string;
   onChange(values: string[]): void;
 }) {
   const id = useId();
@@ -140,9 +142,9 @@ export function MultiValueField({
       >
         {values.map((value) => (
           <span className="field-token" key={value}>
-            <span>{displayValue(value)}</span>
+            <span>{valueLabel(value)}</span>
             <button
-              aria-label={`Remove ${displayValue(value)}`}
+              aria-label={`Remove ${valueLabel(value)}`}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();

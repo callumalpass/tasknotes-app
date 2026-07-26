@@ -1,5 +1,20 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
+import {
+  activeCaptureToken,
+  applyCaptureSuggestion,
+  captureSuggestionRequest,
+  captureTriggers,
+  configuredCaptureSuggestions,
+} from "../domain/capture-autosuggest";
 import {
   parseTaskCapture,
   preloadTaskCapture,
@@ -15,6 +30,7 @@ import {
 } from "../domain/task";
 import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
+import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
 import {
   TaskNotesDateTimeField,
@@ -53,6 +69,12 @@ export function TaskCapture({
   const [parsedText, setParsedText] = useState("");
   const [result, setResult] = useState<TaskCaptureResult | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [cursor, setCursor] = useState(0);
+  const [suggestionResult, setSuggestionResult] = useState<{
+    key: string;
+    items: FieldCompletion[];
+  }>({ key: "", items: [] });
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [parsing, setParsing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [pendingTitle, setPendingTitle] = useState("");
@@ -63,9 +85,65 @@ export function TaskCapture({
     message: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const suggestionsId = useId();
   const textRef = useRef("");
   const followUpSequence = useRef(0);
   const creationDefaults = defaults ?? emptyDefaults;
+  const triggers = useMemo(
+    () => captureTriggers(configuration),
+    [configuration],
+  );
+  const activeToken = useMemo(
+    () => activeCaptureToken(text, cursor, triggers),
+    [cursor, text, triggers],
+  );
+  const suggestionRequest = useMemo(
+    () =>
+      activeToken
+        ? captureSuggestionRequest(activeToken, configuration)
+        : undefined,
+    [activeToken, configuration],
+  );
+  const suggestionKey = suggestionRequest
+    ? [
+        suggestionRequest.field,
+        suggestionRequest.kind,
+        suggestionRequest.query ?? "",
+        activeToken?.start ?? 0,
+      ].join("\0")
+    : "";
+  const suggestions =
+    suggestionKey && suggestionResult.key === suggestionKey
+      ? suggestionResult.items
+      : [];
+
+  useEffect(() => {
+    if (!suggestionRequest || !suggestionKey) return;
+    let active = true;
+    const fallback = configuredCaptureSuggestions(suggestionRequest);
+    const completion = completeField
+      ? completeField(suggestionRequest)
+      : Promise.resolve(fallback);
+    void completion.then(
+      (next) => {
+        if (!active) return;
+        setSuggestionResult({
+          key: suggestionKey,
+          items: next.length ? next : fallback,
+        });
+        setSelectedSuggestion(0);
+      },
+      () => {
+        if (!active) return;
+        setSuggestionResult({ key: suggestionKey, items: fallback });
+        setSelectedSuggestion(0);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [completeField, suggestionKey, suggestionRequest]);
 
   useEffect(() => {
     // Start after the first paint: collection opening stays lean, while the
@@ -76,7 +154,8 @@ export function TaskCapture({
 
   useEffect(() => {
     if (focusRequest === undefined) return;
-    inputRef.current?.focus();
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
   }, [focusRequest]);
 
   useEffect(() => {
@@ -124,9 +203,10 @@ export function TaskCapture({
     [configuration, parsedText, result, text],
   );
 
-  function changeText(value: string) {
+  function changeText(value: string, nextCursor = value.length) {
     textRef.current = value;
     setText(value);
+    setCursor(nextCursor);
     if (value.trim()) {
       setParsing(true);
       return;
@@ -138,6 +218,42 @@ export function TaskCapture({
     setError(null);
     setWarning(null);
     setFollowUp(null);
+  }
+
+  function chooseSuggestion(completion: FieldCompletion) {
+    if (!activeToken) return;
+    const next = applyCaptureSuggestion(text, activeToken, completion.value);
+    changeText(next.text, next.cursor);
+    setSuggestionResult({ key: "", items: [] });
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(next.cursor, next.cursor);
+    });
+  }
+
+  function handleCaptureKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!suggestions.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedSuggestion((index) => (index + 1) % suggestions.length);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedSuggestion(
+        (index) => (index - 1 + suggestions.length) % suggestions.length,
+      );
+      return;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      chooseSuggestion(suggestions[selectedSuggestion]);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSuggestionResult({ key: "", items: [] });
+    }
   }
 
   async function capture(event: FormEvent) {
@@ -248,18 +364,39 @@ export function TaskCapture({
         <span aria-hidden="true" className="capture-plus">
           +
         </span>
-        <label className="visually-hidden" htmlFor="quick-task">
+        <label className="visually-hidden" htmlFor={inputId}>
           New task title
         </label>
         <input
-          id="quick-task"
+          id={inputId}
           ref={inputRef}
+          role="combobox"
+          aria-activedescendant={
+            suggestions.length
+              ? `${suggestionsId}-option-${selectedSuggestion}`
+              : undefined
+          }
+          aria-autocomplete="list"
+          aria-controls={suggestionsId}
+          aria-expanded={suggestions.length > 0}
           autoComplete="off"
           enterKeyHint="done"
           placeholder={placeholder}
           value={text}
-          onChange={(event) => changeText(event.target.value)}
+          onChange={(event) =>
+            changeText(
+              event.target.value,
+              event.target.selectionStart ?? event.target.value.length,
+            )
+          }
+          onClick={(event) =>
+            setCursor(event.currentTarget.selectionStart ?? text.length)
+          }
           onFocus={preloadTaskCapture}
+          onKeyDown={handleCaptureKeyDown}
+          onKeyUp={(event) =>
+            setCursor(event.currentTarget.selectionStart ?? text.length)
+          }
         />
         {text.trim() ? (
           <button disabled={capturing} type="submit">
@@ -267,6 +404,31 @@ export function TaskCapture({
           </button>
         ) : null}
       </div>
+
+      {suggestions.length ? (
+        <div
+          id={suggestionsId}
+          className="capture-suggestions"
+          role="listbox"
+          aria-label="Task field suggestions"
+        >
+          {suggestions.map((suggestion, index) => (
+            <button
+              id={`${suggestionsId}-option-${index}`}
+              className={index === selectedSuggestion ? "is-selected" : ""}
+              key={`${suggestion.kind}:${suggestion.value}`}
+              role="option"
+              aria-selected={index === selectedSuggestion}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => chooseSuggestion(suggestion)}
+            >
+              <span>{suggestion.label}</span>
+              {suggestion.detail ? <small>{suggestion.detail}</small> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {text.trim() ? (
         <div className="capture-interpretation" aria-live="polite">
@@ -444,6 +606,12 @@ function CaptureDetails({
           }
         />
       </div>
+      <DependencyEditor
+        completeField={completeField ?? (async () => [])}
+        dependencies={input.blockedBy ?? []}
+        field={configuration.fieldMapping.blockedBy}
+        onChange={(blockedBy) => onChange({ blockedBy })}
+      />
       <label className="notes-field capture-notes">
         <span>Notes</span>
         <textarea

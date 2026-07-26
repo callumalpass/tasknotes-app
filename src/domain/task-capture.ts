@@ -4,6 +4,7 @@ import {
   recurrenceLabel,
   type CreateTaskInput,
 } from "./task";
+import { captureTriggers } from "./capture-autosuggest";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type {
@@ -53,48 +54,42 @@ function captureParser(
   parserCache.set(configuration, cached);
   const existing = cached.get(key);
   if (existing) return existing;
-  const created = loadParserModule().then(
-    ({ DEFAULT_NLP_TRIGGERS, NaturalLanguageParserCore }) => {
-      const triggers = {
-        triggers: DEFAULT_NLP_TRIGGERS.triggers.map((trigger) =>
-          trigger.propertyId === "priority"
-            ? { ...trigger, enabled: true }
-            : trigger,
-        ),
-      };
-      return new NaturalLanguageParserCore(
-        configuration.statuses.map((status, order) => ({
-          id: status.id,
-          value: status.value,
-          label: status.label,
-          color: status.color,
-          icon: status.icon,
-          isCompleted: status.isCompleted,
-          order: status.order ?? order,
-          autoArchive: status.autoArchive ?? false,
-          autoArchiveDelay: status.autoArchiveDelay ?? 0,
-        })),
-        configuration.priorities.map((priority, weight) => ({
-          id: priority.id,
-          value: priority.value,
-          label: priority.label,
-          color: priority.color,
-          weight: priority.weight ?? weight,
-        })),
-        true,
-        language,
-        triggers,
-        configuration.userFields.map((field) => ({
-          id: field.id,
-          displayName: field.displayName,
-          key: field.key,
-          type: field.type,
-          defaultValue: field.defaultValue,
-        })),
-        { dateLocale: locale },
-      );
-    },
-  );
+  const created = loadParserModule().then(({ NaturalLanguageParserCore }) => {
+    const triggers = {
+      triggers: captureTriggers(configuration),
+    };
+    return new NaturalLanguageParserCore(
+      configuration.statuses.map((status, order) => ({
+        id: status.id,
+        value: status.value,
+        label: status.label,
+        color: status.color,
+        icon: status.icon,
+        isCompleted: status.isCompleted,
+        order: status.order ?? order,
+        autoArchive: status.autoArchive ?? false,
+        autoArchiveDelay: status.autoArchiveDelay ?? 0,
+      })),
+      configuration.priorities.map((priority, weight) => ({
+        id: priority.id,
+        value: priority.value,
+        label: priority.label,
+        color: priority.color,
+        weight: priority.weight ?? weight,
+      })),
+      true,
+      language,
+      triggers,
+      configuration.userFields.map((field) => ({
+        id: field.id,
+        displayName: field.displayName,
+        key: field.key,
+        type: field.type,
+        defaultValue: field.defaultValue,
+      })),
+      { dateLocale: locale },
+    );
+  });
   cached.set(key, created);
   return created;
 }

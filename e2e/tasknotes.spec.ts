@@ -3,16 +3,12 @@ import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 
 import type { Locator, Page } from "@playwright/test";
 
-const templatedType = buildTaskNotesMdbaseResources().typeDocument.replace(
-  "  compatibility:\n",
-  `  templating:
-    enabled: true
-    template_path: Templates/Task.md
-    failure_mode: error
-    unknown_variable_policy: preserve
-  compatibility:
-`,
-);
+const templatedType = buildTaskNotesMdbaseResources({
+  templating: {
+    enabled: true,
+    templatePath: "Templates/Task.md",
+  },
+}).typeDocument;
 
 async function dragKanbanHandle(
   page: Page,
@@ -147,9 +143,79 @@ async function localTaskDocuments(page: Page): Promise<string[]> {
   });
 }
 
+async function localTaskTypeDocument(page: Page): Promise<string> {
+  return page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const types = await tasknotes.getDirectoryHandle("_types");
+    const task = await types.getFileHandle("task.md");
+    return (await task.getFile()).text();
+  });
+}
+
 async function openViewsCatalog(page: Page): Promise<void> {
   await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: /Saved views/ }).click();
+}
+
+async function openSettingsSection(
+  scope: Page | Locator,
+  name: string,
+): Promise<Locator> {
+  const section = scope
+    .getByRole("heading", { name, exact: true })
+    .locator("..")
+    .locator("..");
+  if ((await section.getAttribute("open")) === null)
+    await section.locator("summary").click();
+  return section;
+}
+
+async function openViewEditorSection(
+  scope: Locator,
+  name: string,
+): Promise<Locator> {
+  const section = scope
+    .getByRole("heading", { name, exact: true })
+    .locator("..")
+    .locator("..")
+    .locator("..");
+  if ((await section.getAttribute("open")) === null)
+    await section.locator("summary").click();
+  return section;
+}
+
+async function expectTouchTargets(scope: Locator): Promise<void> {
+  const undersized = await scope
+    .locator(
+      "button, summary, input:not([type='checkbox']):not([type='radio']), [role='combobox']",
+    )
+    .evaluateAll((elements) =>
+      elements.flatMap((element) => {
+        const node = element as HTMLElement;
+        const style = getComputedStyle(node);
+        const bounds = node.getBoundingClientRect();
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          bounds.width === 0 ||
+          bounds.height === 0
+        )
+          return [];
+        if (bounds.width >= 43.5 && bounds.height >= 43.5) return [];
+        return [
+          {
+            name:
+              node.getAttribute("aria-label") ??
+              node.textContent?.trim().slice(0, 60) ??
+              node.tagName,
+            width: Math.round(bounds.width * 10) / 10,
+            height: Math.round(bounds.height * 10) / 10,
+          },
+        ];
+      }),
+    );
+  expect(undersized).toEqual([]);
 }
 
 async function openNavigationView(page: Page, name: string): Promise<void> {
@@ -225,6 +291,171 @@ test.beforeEach(async ({ page }) => {
   ).toBeVisible();
 });
 
+test("suggests capture values from the collection contract", async ({
+  page,
+}, testInfo) => {
+  const capture = page.getByLabel("New task title");
+  await capture.fill("Seed context @home");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Seed context", { exact: true })).toBeVisible();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await capture.fill("Call plumber @ho");
+  const suggestion = page.getByRole("option", { name: "home", exact: true });
+  await expect(suggestion).toBeVisible();
+  const suggestionLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("capture-suggestion-profile.json", {
+    body: JSON.stringify({ suggestionLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(suggestionLatencyMs).toBeLessThan(750);
+
+  await capture.press("Enter");
+  await expect(capture).toHaveValue("Call plumber @home ");
+  await capture.press("Enter");
+  await expect(page.getByText("Call plumber", { exact: true })).toBeVisible();
+});
+
+test("organizes the Today list into declarative day sections", async ({
+  page,
+}, testInfo) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateValue = (date: Date) =>
+    [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+
+  await page.getByLabel("New task title").fill("Anytime hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Anytime hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("New task title").fill("Current hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Current hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Current hierarchy task", { exact: true }).click();
+  await chooseDate(page, "Scheduled date", dateValue(today));
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  await page.getByLabel("New task title").fill("Late hierarchy task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Late hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Late hierarchy task", { exact: true }).click();
+  await chooseDate(page, "Due date", dateValue(yesterday));
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  const headings = page.locator(".day-task-sections .section-heading h2");
+  await expect(headings).toHaveText(["Overdue", "Today", "Anytime"]);
+  await expect(
+    page
+      .locator(".task-section.is-overdue")
+      .getByText("Late hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".task-section.is-today")
+      .getByText("Current hierarchy task", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".task-section.is-anytime")
+      .getByText("Anytime hierarchy task", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  const startedAt = await page.evaluate(() => performance.now());
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(headings).toHaveCount(3);
+  const sectionRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("today-sections-profile.json", {
+    body: JSON.stringify({ sectionRenderMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(sectionRenderMs).toBeLessThan(750);
+});
+
+test("captures into the collection from anywhere", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "New task", exact: true });
+  const triggerBox = await trigger.boundingBox();
+  expect(triggerBox).not.toBeNull();
+  expect(triggerBox!.width).toBeGreaterThanOrEqual(44);
+  expect(triggerBox!.height).toBeGreaterThanOrEqual(44);
+
+  const openedAt = await page.evaluate(() => performance.now());
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "New task" });
+  await expect(dialog).toBeVisible();
+  const openLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    openedAt,
+  );
+  await expect(dialog.getByLabel("New task title")).toBeFocused();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  const duplicateIds = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll<HTMLElement>("[id]")].map(
+      (element) => element.id,
+    );
+    return ids.filter((id, index) => ids.indexOf(id) !== index);
+  });
+  expect(duplicateIds).toEqual([]);
+
+  if (testInfo.project.name === "mobile") {
+    const [box, viewport] = await Promise.all([
+      dialog.boundingBox(),
+      Promise.resolve(page.viewportSize()),
+    ]);
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(viewport!.width - 1);
+    expect(
+      Math.abs(box!.y + box!.height - viewport!.height),
+    ).toBeLessThanOrEqual(1);
+  }
+
+  await dialog.getByLabel("New task title").fill("Captured from More");
+  const createdAt = await page.evaluate(() => performance.now());
+  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const createLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    createdAt,
+  );
+  await testInfo.attach("global-capture-profile.json", {
+    body: JSON.stringify({ openLatencyMs, createLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(openLatencyMs).toBeLessThan(500);
+  expect(createLatencyMs).toBeLessThan(750);
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(
+    page.getByText("Captured from More", { exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+n");
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 test("uses responsive TaskNotes controls instead of browser pickers", async ({
   page,
 }, testInfo) => {
@@ -285,6 +516,131 @@ test("uses responsive TaskNotes controls instead of browser pickers", async ({
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 });
 
+test("edits task model settings in the portable type contract", async ({
+  page,
+}, testInfo) => {
+  const settingsStartedAt = await page.evaluate(() => performance.now());
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  const settingsRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    settingsStartedAt,
+  );
+  expect(settingsRenderMs).toBeLessThan(500);
+  const disclosureStartedAt = await page.evaluate(() => performance.now());
+  await openSettingsSection(page, "Task model");
+  const disclosureOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    disclosureStartedAt,
+  );
+  expect(disclosureOpenMs).toBeLessThan(500);
+  if (testInfo.project.name === "mobile")
+    await expectTouchTargets(page.locator(".settings-screen"));
+  await chooseOption(page, "Default status", "In progress");
+  await chooseOption(page, "Default priority", "High");
+  await chooseOption(page, "Record links", "Markdown links");
+  await page.getByLabel("Future occurrence horizon").fill("P30D");
+  await page.getByLabel("Stop a running timer when its task completes").check();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await page
+    .getByRole("button", { name: "Save task settings", exact: true })
+    .click();
+  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+  const saveLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("task-model-settings-profile.json", {
+    body: JSON.stringify(
+      { settingsRenderMs, disclosureOpenMs, saveLatencyMs },
+      null,
+      2,
+    ),
+    contentType: "application/json",
+  });
+  expect(saveLatencyMs).toBeLessThan(750);
+
+  const typeSource = await localTaskTypeDocument(page);
+  expect(typeSource).toContain("default: in-progress");
+  expect(typeSource).toContain("default: high");
+  expect(typeSource).toContain("write_format: markdown");
+  expect(typeSource).toContain("future_horizon: P30D");
+  expect(typeSource).toContain("auto_stop_on_complete: true");
+
+  await page.reload();
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await openSettingsSection(page, "Task model");
+  await expect(
+    page.getByRole("combobox", { name: "Default status" }),
+  ).toHaveAttribute("data-value", "in-progress");
+  await expect(
+    page.getByRole("combobox", { name: "Default priority" }),
+  ).toHaveAttribute("data-value", "high");
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByLabel("New task title").fill("Contract default task");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Contract default task", { exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
+    "data-value",
+    "in-progress",
+  );
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "High", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("auto-archives from a contract status event without polling", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await openSettingsSection(page, "Task model");
+  const doneAutomation = page
+    .locator(".status-automation-row")
+    .filter({ hasText: "Done" });
+  await doneAutomation.getByRole("checkbox").check();
+  await doneAutomation.getByRole("spinbutton").fill("0");
+  await page
+    .getByRole("button", { name: "Save task settings", exact: true })
+    .click();
+  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+
+  const typeSource = await localTaskTypeDocument(page);
+  expect(typeSource).toContain("auto_archive: true");
+  expect(typeSource).toContain("auto_archive_delay_minutes: 0");
+
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByLabel("New task title").fill("File completed report");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const startedAt = await page.evaluate(() => performance.now());
+  await page
+    .getByRole("button", { name: "Complete File completed report" })
+    .click();
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toHaveCount(0);
+  const archiveLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("auto-archive-profile.json", {
+    body: JSON.stringify({ archiveLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(archiveLatencyMs).toBeLessThan(750);
+
+  await openNavigationView(page, "Archive");
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText("File completed report", { exact: true }),
+  ).toBeVisible();
+});
+
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({
   page,
 }) => {
@@ -311,9 +667,39 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByRole("button", { name: "Monday" }).click();
   await chooseOption(page, "Ends", "After occurrences");
   await page.getByRole("spinbutton", { name: "Occurrences" }).fill("6");
+  await page
+    .getByRole("button", { name: "Add 15 minutes before scheduled" })
+    .click();
+  const firstReminder = page.getByRole("region", { name: "Reminder 1" });
+  await firstReminder.getByLabel("Amount").fill("30");
+  await page.getByRole("button", { name: "Add reminder" }).click();
+  const secondReminder = page.getByRole("region", { name: "Reminder 2" });
+  await chooseOption(secondReminder, "Type", "Fixed date and time");
   await chooseDate(page, "Reminder date", tomorrowValue);
   await chooseTime(page, "Reminder time", "09:00");
+  await expect(page.getByRole("region", { name: /Reminder \d/ })).toHaveCount(
+    2,
+  );
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Prepare weekly review"),
+      );
+      return {
+        absolute: source?.includes("type: absolute") ?? false,
+        relative: source?.includes("type: relative") ?? false,
+      };
+    })
+    .toEqual({ absolute: true, relative: true });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByText("Repeat and reminders", { exact: true }).click();
+  await expect(page.getByRole("region", { name: /Reminder \d/ })).toHaveCount(
+    2,
+  );
+  await expect(
+    page.getByRole("region", { name: "Reminder 1" }).getByLabel("Amount"),
+  ).toHaveValue("30");
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Upcoming" }).click();
@@ -382,6 +768,81 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   await expect(
     page.getByRole("button", { name: "Reopen Review web-native storage" }),
   ).toBeVisible();
+});
+
+test("writes and safely previews Markdown task notes on demand", async ({
+  page,
+}, testInfo) => {
+  await page.getByLabel("New task title").fill("Document launch checks");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Document launch checks", { exact: true }).click();
+  const notes = page.getByLabel("Notes");
+  await notes.fill(`## Launch checklist
+
+- [x] Contract checked
+- [ ] Publish build
+
+| Surface | State |
+| --- | --- |
+| Mobile | Ready |
+
+[Reference](https://example.com/docs)
+
+<script>window.markdownInjected = true</script>`);
+  await expect
+    .poll(async () =>
+      (await localTaskDocuments(page)).some((source) =>
+        source.includes("## Launch checklist"),
+      ),
+    )
+    .toBe(true);
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+
+  const previewButton = page.getByRole("button", {
+    name: "Preview",
+    exact: true,
+  });
+  const buttonBox = await previewButton.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
+  const loadedBefore = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .some((entry) => entry.name.includes("markdown-preview")),
+  );
+  expect(loadedBefore).toBe(false);
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await previewButton.click();
+  const preview = page.locator(".markdown-preview");
+  await expect(
+    preview.getByRole("heading", { name: "Launch checklist" }),
+  ).toBeVisible();
+  const previewLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await expect(preview.getByRole("table")).toBeVisible();
+  await expect(preview.getByRole("checkbox")).toHaveCount(2);
+  await expect(
+    preview.getByRole("link", { name: "Reference" }),
+  ).toHaveAttribute("rel", "noreferrer");
+  await expect(preview.locator("script")).toHaveCount(0);
+  expect(await page.evaluate(() => "markdownInjected" in window)).toBe(false);
+  const loadedAfter = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .some((entry) => entry.name.includes("markdown-preview")),
+  );
+  expect(loadedAfter).toBe(true);
+  await testInfo.attach("markdown-preview-profile.json", {
+    body: JSON.stringify({ previewLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(previewLatencyMs).toBeLessThan(750);
+
+  await page.reload();
+  await expect(page.getByLabel("Notes")).toHaveValue(/Launch checklist/);
 });
 
 test("saves in the background while navigating away", async ({ page }) => {
@@ -522,6 +983,92 @@ Project notes`);
       /projects:\s*\n\s*-\s+['"]?\[\[Projects\/mobile\]\]['"]?/.test(source),
     ),
   ).toBe(true);
+});
+
+test("persists dependencies and derives blocking tasks and subtasks", async ({
+  page,
+}, testInfo) => {
+  for (const title of [
+    "Dependency parent",
+    "Dependency blocker",
+    "Dependency child",
+  ]) {
+    await page.getByLabel("New task title").fill(title);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+  }
+
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await page.getByLabel("Blocked by").fill("blocker");
+  await page
+    .getByRole("option", { name: /Dependency blocker.*tasks\// })
+    .click();
+  await chooseOption(page, "Relationship", "Start to start");
+  await page.getByLabel("Gap", { exact: true }).fill("P2D");
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Dependency parent"),
+      );
+      return (
+        source?.includes("blockedBy:") &&
+        source.includes("reltype: STARTTOSTART") &&
+        source.includes("gap: P2D")
+      );
+    })
+    .toBe(true);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  await page.getByText("Dependency child", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await page.getByLabel("Projects").fill("parent");
+  await page
+    .getByRole("option", { name: /Dependency parent.*tasks\// })
+    .click();
+  await page.getByLabel("Blocked by").fill("parent");
+  await page
+    .getByRole("option", { name: /Dependency parent.*tasks\// })
+    .click();
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Dependency child"),
+      );
+      return source?.includes("blockedBy:") && source.includes("projects:");
+    })
+    .toBe(true);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Related work" }),
+  ).toBeVisible();
+  const relationshipRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("dependency-relationship-profile.json", {
+    body: JSON.stringify({ relationshipRenderMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(relationshipRenderMs).toBeLessThan(1_000);
+  await expect(page.getByText("Dependency child", { exact: true })).toHaveCount(
+    2,
+  );
+
+  await page.reload();
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Relationship" }),
+  ).toHaveAttribute("data-value", "STARTTOSTART");
+  await expect(page.getByLabel("Gap", { exact: true })).toHaveValue("P2D");
+  await expect(
+    page.getByRole("button", { name: "Remove Dependency blocker" }),
+  ).toBeVisible();
 });
 
 test("projects, completes, and skips recurring occurrences by date", async ({
@@ -1055,7 +1602,9 @@ test("keeps a task recoverable when a view filter cannot be inverted", async ({
   );
 });
 
-test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
+test("creates, edits, executes, and deletes a saved view", async ({
+  page,
+}, testInfo) => {
   await page.getByLabel("New task title").fill("Build the view editor");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
@@ -1067,6 +1616,18 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
 
   await page.getByLabel("Name").fill("Open work");
   await page.getByRole("button", { name: "Board", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Create a view" });
+  const disclosureStartedAt = await page.evaluate(() => performance.now());
+  await openViewEditorSection(editor, "Filter");
+  const disclosureOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    disclosureStartedAt,
+  );
+  expect(disclosureOpenMs).toBeLessThan(500);
+  await testInfo.attach("view-editor-disclosure-profile.json", {
+    body: JSON.stringify({ disclosureOpenMs }, null, 2),
+    contentType: "application/json",
+  });
   await page.getByRole("button", { name: "Expression", exact: true }).click();
   await page.getByLabel("Filter expression").fill("status == (");
   await expect(
@@ -1076,15 +1637,21 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("Filter property").fill("status");
   await chooseOption(page, "Filter condition", "is");
   await chooseOption(page, "Filter value", "Open");
+  await openViewEditorSection(editor, "Arrange");
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
+  await openViewEditorSection(editor, "New tasks");
   await chooseOption(page, "Default priority", "High");
   await page.getByRole("button", { name: "Save view", exact: true }).click();
 
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();
   await page.getByText("Open work", { exact: true }).click();
   await expect(page.getByLabel("Open work board")).toBeVisible();
+  await expect(page.locator(".views-screen.view-detail")).not.toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
   await expect(
     page.getByText("Build the view editor", { exact: true }),
   ).toBeVisible();
@@ -1195,13 +1762,17 @@ views:
         editor.getByRole("heading", { name: section, exact: true }),
       ).toBeVisible();
     await expect(editor.locator(".view-layout-preview")).toHaveCount(0);
+    await openViewEditorSection(editor, "Computed properties");
     await expect(editor.getByLabel("Computed property name 1")).toHaveValue(
       "score",
     );
 
-    if (layout === "Board")
+    if (layout === "Board") {
+      await openViewEditorSection(editor, "Arrange");
       await expect(editor.getByLabel("Board column")).toHaveValue("status");
+    }
     if (layout === "Calendar") {
+      await openViewEditorSection(editor, "Calendar");
       await expect(editor.getByLabel("Opens as")).toHaveAttribute(
         "data-value",
         "listWeek",
@@ -1210,8 +1781,11 @@ views:
         editor.getByText("Upcoming recurring instances"),
       ).toBeVisible();
     }
-    if (layout === "Mini calendar")
+    if (layout === "Mini calendar") {
+      await openViewEditorSection(editor, "Calendar");
       await expect(editor.getByText("Scheduled dates")).toBeVisible();
+    }
+    if (testInfo.project.name === "mobile") await expectTouchTargets(editor);
 
     const box = await editor.boundingBox();
     const viewport = page.viewportSize();
@@ -1256,6 +1830,7 @@ views:
   await openViewsCatalog(page);
   await page.getByRole("button", { name: "Edit Computed work" }).click();
   const editor = page.getByRole("dialog", { name: "Edit view" });
+  await openViewEditorSection(editor, "Computed properties");
   await editor
     .getByLabel("Computed property expression 1")
     .fill('if(priority == "high", 4, 1)');
@@ -1266,6 +1841,7 @@ views:
     .fill('if(formula.score > 1, "urgent", "normal")');
   await expect(editor.getByText("Computed properties are valid")).toBeVisible();
 
+  await openViewEditorSection(editor, "Arrange");
   await editor.getByLabel("Property to display").fill("formula.label");
   await editor.getByRole("option", { name: /Label formula\.label/ }).click();
   await editor
@@ -1288,6 +1864,10 @@ views:
   expect(source).toContain("formula.label");
 
   await page.getByRole("button", { name: "Edit Computed work" }).click();
+  await openViewEditorSection(
+    page.getByRole("dialog", { name: "Edit view" }),
+    "Computed properties",
+  );
   await expect(page.getByLabel("Computed property name 2")).toHaveValue(
     "label",
   );
@@ -1319,6 +1899,127 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await expect(
     page.getByText("Act from the task row", { exact: true }),
   ).toHaveCount(0);
+});
+
+test("uses the plugin-inspired task action hierarchy", async ({
+  page,
+  context,
+}, testInfo) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByLabel("New task title").fill("Context action parent");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  const title = page.getByText("Context action parent", { exact: true });
+  const startedAt = await page.evaluate(() => performance.now());
+  await title.click({ button: "right" });
+  await expect(
+    page.getByRole("menu", { name: "Actions for Context action parent" }),
+  ).toBeVisible();
+  const menuOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("task-action-menu-profile.json", {
+    body: JSON.stringify({ menuOpenMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(menuOpenMs).toBeLessThan(500);
+
+  await page.getByRole("menuitem", { name: /Status/ }).click();
+  await page.getByRole("menuitem", { name: "In progress" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  const trigger = page.getByRole("button", {
+    name: "Task actions for Context action parent",
+  });
+  await trigger.click();
+  await page.getByRole("menuitem", { name: /Priority/ }).click();
+  await page.getByRole("menuitem", { name: "High" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: /Dates/ }).click();
+  await page.getByRole("menuitem", { name: "Due today" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  await trigger.click();
+  const organizeStartedAt = await page.evaluate(() => performance.now());
+  await page.getByRole("menuitem", { name: "Organize" }).click();
+  const relationshipsAction = page.getByRole("menuitem", {
+    name: /Edit relationships/,
+  });
+  await expect(relationshipsAction).toBeVisible();
+  const organizePanelMs = await page.evaluate(
+    (start) => performance.now() - start,
+    organizeStartedAt,
+  );
+  expect(organizePanelMs).toBeLessThan(500);
+  await testInfo.attach("task-action-organize-profile.json", {
+    body: JSON.stringify({ organizePanelMs }, null, 2),
+    contentType: "application/json",
+  });
+  const [relationshipLabel, relationshipDetail, relationshipButton] =
+    await Promise.all([
+      relationshipsAction.locator("span").boundingBox(),
+      relationshipsAction.locator("small").boundingBox(),
+      relationshipsAction.boundingBox(),
+    ]);
+  expect(relationshipLabel).not.toBeNull();
+  expect(relationshipDetail).not.toBeNull();
+  expect(relationshipButton).not.toBeNull();
+  expect(relationshipDetail!.y).toBeGreaterThan(relationshipLabel!.y);
+  expect(relationshipDetail!.x + relationshipDetail!.width).toBeLessThanOrEqual(
+    relationshipButton!.x + relationshipButton!.width - 8,
+  );
+  await page.getByRole("menuitem", { name: "Create subtask" }).click();
+  await page.getByLabel("Subtask title").fill("Context action child");
+  await page.getByRole("button", { name: "Add subtask" }).click();
+  await expect(
+    page.getByText("Context action child", { exact: true }),
+  ).toBeVisible();
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Copy" }).click();
+  await page.getByRole("menuitem", { name: /Copy task link/ }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toMatch(/^\[\[tasks\/\d+\]\]$/);
+  const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
+
+  const today = await page.evaluate(() => {
+    const value = new Date();
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, "0"),
+      String(value.getDate()).padStart(2, "0"),
+    ].join("-");
+  });
+  await expect
+    .poll(async () => {
+      const documents = await localTaskDocuments(page);
+      const parent = documents.find((source) =>
+        source.includes("Context action parent"),
+      );
+      const child = documents.find((source) =>
+        source.includes("Context action child"),
+      );
+      return {
+        parent:
+          parent?.includes("status: in-progress") &&
+          parent.includes("priority: high") &&
+          parent.includes(`due: ${today}`),
+        child: child?.includes(copiedLink),
+      };
+    })
+    .toEqual({ parent: true, child: true });
+
+  await page.reload();
+  await expect(
+    page.getByText("Context action parent", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Context action child", { exact: true }),
+  ).toBeVisible();
 });
 
 test("keeps the task workspace visible beside the desktop editor", async ({

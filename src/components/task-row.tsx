@@ -28,12 +28,21 @@ export function TaskRow({
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
       onContextMenu={(event) => {
+        if ((event.target as HTMLElement).closest(".task-actions-trigger"))
+          return;
         const trigger = event.currentTarget.querySelector<HTMLButtonElement>(
           ".task-actions-trigger",
         );
         if (!trigger) return;
         event.preventDefault();
-        trigger.click();
+        event.stopPropagation();
+        trigger.dispatchEvent(
+          new MouseEvent("contextmenu", {
+            bubbles: true,
+            clientX: event.clientX,
+            clientY: event.clientY,
+          }),
+        );
       }}
     >
       <button

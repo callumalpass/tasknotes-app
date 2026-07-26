@@ -129,6 +129,16 @@ describe("TaskNotes task model app boundary", () => {
       missing.create({ title: "Missing path field" }, { id: "missing" }),
     ).toThrow(/path_required/);
 
+    const generated = new TaskNotesTaskModel(model.configuration(), {
+      pathPattern: "tasks/{{zettel}}",
+    });
+    expect(
+      generated.create(
+        { title: "Generated filename" },
+        { id: "generated", now: "2026-07-26T12:34:56" },
+      ).path,
+    ).toBe("tasks/20260726123456.md");
+
     const unsafe = new TaskNotesTaskModel(
       {
         ...model.configuration(),
@@ -211,6 +221,63 @@ describe("TaskNotes task model app boundary", () => {
       scheduled: canonicalLocal("2026-08-05T09:00"),
       timeEstimate: 45,
     });
+  });
+
+  it("round-trips structured dependencies through the task contract", () => {
+    const created = model.create(
+      {
+        title: "Dependent task",
+        blockedBy: [
+          {
+            uid: " [[tasks/Blocker]] ",
+            reltype: "STARTTOSTART",
+            gap: " P2D ",
+          },
+          {
+            uid: "[[tasks/Blocker]]",
+            reltype: "FINISHTOSTART",
+          },
+        ],
+      },
+      { id: "dependent", now: "2026-07-22T00:00:00.000Z" },
+    );
+
+    expect(created.blockedBy).toEqual([
+      {
+        uid: "tasks/Blocker",
+        reltype: "STARTTOSTART",
+        gap: "P2D",
+      },
+    ]);
+    expect(created.frontmatter.blockedBy).toEqual([
+      {
+        uid: "[[tasks/Blocker]]",
+        reltype: "STARTTOSTART",
+        gap: "P2D",
+      },
+    ]);
+
+    const updated = model.update(created, {
+      blockedBy: [
+        {
+          uid: "[Blocker](/tasks/Blocker.md)",
+          reltype: "FINISHTOFINISH",
+        },
+      ],
+    });
+    expect(updated.frontmatter.blockedBy).toEqual([
+      {
+        uid: "[[/tasks/Blocker.md]]",
+        reltype: "FINISHTOFINISH",
+      },
+    ]);
+    expect(
+      model.read({
+        path: updated.path,
+        body: updated.body,
+        frontmatter: updated.frontmatter,
+      }).blockedBy,
+    ).toEqual(updated.blockedBy);
   });
 
   it("completes and skips individual recurring occurrences", () => {

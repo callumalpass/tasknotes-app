@@ -233,6 +233,7 @@ function boardExecution(): TaskViewExecution {
     tags: [],
     contexts: [],
     projects: [],
+    blockedBy: [],
     completeInstances: [],
     skippedInstances: [],
     reminders: [],

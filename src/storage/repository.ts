@@ -15,6 +15,7 @@ import {
   occurrenceRecordId,
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
+import { taskRelationships } from "../domain/task-relationships";
 
 import type {
   CreateTaskInput,
@@ -25,7 +26,12 @@ import type {
   UpdateTaskInput,
   TaskTimeEntry,
 } from "../domain/task";
-import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskRelationships } from "../domain/task-relationships";
+import type {
+  TaskCollectionConfiguration,
+  TaskModelSettingsAccess,
+  TaskModelSettingsPatch,
+} from "../domain/task-configuration";
 import type {
   FieldCompletion,
   FieldCompletionRequest,
@@ -52,6 +58,7 @@ export interface TaskRepository {
   refresh(): Promise<RefreshResult>;
   list(query?: TaskListQuery): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
+  relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
@@ -81,6 +88,10 @@ export interface TaskRepository {
   ): Promise<TaskViewSourceDocument>;
   deleteViewSource(path: string, ifRevision?: string): Promise<void>;
   taskConfiguration(): Promise<TaskCollectionConfiguration>;
+  taskModelSettingsAccess(): Promise<TaskModelSettingsAccess>;
+  updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   syncStatus(): Promise<RepositorySyncStatus>;
   syncIssues(): Promise<RepositorySyncIssue[]>;
@@ -186,6 +197,12 @@ export class IndexedMarkdownRepository implements TaskRepository {
   async get(id: string): Promise<Task | null> {
     const task = this.cache.get(id);
     return task ? withoutIndexFields(task) : null;
+  }
+
+  async relationships(id: string): Promise<TaskRelationships> {
+    const current = this.cache.get(id);
+    if (!current) throw new Error("Task not found.");
+    return taskRelationships(current, [...this.cache.values()]);
   }
 
   async completeField(
@@ -417,6 +434,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
     return this.collection.taskConfiguration();
+  }
+
+  async taskModelSettingsAccess(): Promise<TaskModelSettingsAccess> {
+    return {
+      writable: true,
+      source: this.collection.taskModelSettingsSource(),
+    };
+  }
+
+  updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration> {
+    return this.exclusive(() => this.collection.updateTaskModelSettings(patch));
   }
 
   async collectionInfo(): Promise<CollectionInfo> {

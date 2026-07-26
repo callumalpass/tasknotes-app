@@ -37,7 +37,7 @@ describe("IndexedMarkdownRepository", () => {
       priority: "high",
       body: "Keep this note.",
     });
-    expect(created.path).toBe(`tasks/${created.id}.md`);
+    expect(created.path).toMatch(/^tasks\/\d{14}\.md$/);
     expect(await repository.list({ search: "storage" })).toHaveLength(1);
 
     const updated = await repository.update(created.id, {
@@ -62,6 +62,156 @@ describe("IndexedMarkdownRepository", () => {
       mobileRevision: 3,
     });
     expect(parsed.body).toBe("Keep this note.");
+  });
+
+  it("derives dependency and project inverses from the repository cache", async () => {
+    const parent = await repository.create({ title: "Parent" });
+    const blocker = await repository.create({ title: "Blocker" });
+    const child = await repository.create({ title: "Child" });
+    const link = (path: string) => `[[${path.replace(/\.md$/, "")}]]`;
+
+    await repository.update(parent.id, {
+      blockedBy: [
+        {
+          uid: link(blocker.path),
+          reltype: "STARTTOSTART",
+          gap: "P1D",
+        },
+      ],
+    });
+    await repository.update(child.id, {
+      blockedBy: [
+        {
+          uid: link(parent.path),
+          reltype: "FINISHTOSTART",
+        },
+      ],
+      projects: [link(parent.path)],
+    });
+
+    const relationships = await repository.relationships(parent.id);
+    expect(relationships.blockedBy[0]).toMatchObject({
+      dependency: { reltype: "STARTTOSTART", gap: "P1D" },
+      task: { id: blocker.id, title: "Blocker" },
+    });
+    expect(relationships.blocking.map((task) => task.id)).toEqual([child.id]);
+    expect(relationships.subtasks.map((task) => task.id)).toEqual([child.id]);
+  });
+
+  it("updates portable model settings in the task type document", async () => {
+    const source = parseFrontmatter(await vault.readText("_types/task.md"));
+    (
+      (source.frontmatter.schema as { value: { properties: object } }).value
+        .properties as Record<string, unknown>
+    ).client = {
+      type: "string",
+      description: "Keep this custom field.",
+    };
+    source.frontmatter["x-host"] = { keep: true };
+    await vault.writeText(
+      "_types/task.md",
+      serializeMarkdownDocument(source.frontmatter, source.body),
+    );
+    await repository.refresh();
+
+    const startedAt = performance.now();
+    const configuration = await repository.updateTaskModelSettings({
+      defaultStatus: "in-progress",
+      defaultPriority: "high",
+      recurrence: {
+        maintainDueDateOffset: false,
+        resetCheckboxesOnRecurrence: true,
+      },
+      occurrences: {
+        defaultMaterialization: "rolling",
+        defaultNextTrigger: "completion_or_skip",
+        pastHorizon: "P2D",
+        futureHorizon: "P30D",
+      },
+      timeTracking: { autoStopOnComplete: true },
+      links: { writeFormat: "markdown" },
+      archive: {
+        moveOnArchive: true,
+        folder: "TaskNotes/Filed",
+      },
+      templating: {
+        enabled: true,
+        templatePath: "Templates/Task.md",
+      },
+      statusAutomation: {
+        done: { autoArchive: true, autoArchiveDelay: 15 },
+      },
+    });
+    const elapsedMs = performance.now() - startedAt;
+    const updated = parseFrontmatter(await vault.readText("_types/task.md"));
+
+    expect(configuration).toMatchObject({
+      defaults: { status: "in-progress", priority: "high" },
+      recurrence: {
+        maintainDueDateOffset: false,
+        resetCheckboxesOnRecurrence: true,
+      },
+      occurrences: {
+        defaultMaterialization: "rolling",
+        defaultNextTrigger: "completion_or_skip",
+        pastHorizon: "P2D",
+        futureHorizon: "P30D",
+      },
+      timeTracking: { autoStopOnComplete: true },
+      linkWriteFormat: "markdown",
+      archive: { moveOnArchive: true, folder: "TaskNotes/Filed" },
+      templating: {
+        enabled: true,
+        templatePath: "Templates/Task.md",
+      },
+    });
+    expect(
+      configuration.statuses.find((status) => status.value === "done"),
+    ).toMatchObject({
+      autoArchive: true,
+      autoArchiveDelay: 15,
+    });
+    expect(
+      (
+        (updated.frontmatter.schema as { value: { properties: object } }).value
+          .properties as Record<string, unknown>
+      ).client,
+    ).toEqual({
+      type: "string",
+      description: "Keep this custom field.",
+    });
+    expect(updated.frontmatter["x-host"]).toEqual({ keep: true });
+    expect(
+      (
+        updated.frontmatter["x-tasknotes"] as {
+          status: { definitions: unknown[] };
+        }
+      ).status.definitions.find(
+        (definition) => (definition as { value?: string }).value === "done",
+      ),
+    ).toMatchObject({
+      auto_archive: true,
+      auto_archive_delay_minutes: 15,
+    });
+    expect(elapsedMs).toBeLessThan(500);
+  });
+
+  it("allocates unique paths when two canonical filenames collide", async () => {
+    const collection = new MarkdownCollection(vault);
+    await collection.initialize();
+    const now = "2026-07-26T12:34:56";
+    const first = await collection.createTask({ title: "First" }, "first", now);
+    await collection.write(first);
+    const second = await collection.createTask(
+      { title: "Second" },
+      "second",
+      now,
+    );
+    await collection.write(second);
+
+    expect(second.path).toBe(first.path.replace(/\.md$/, "-2.md"));
+    expect(await vault.exists(first.path)).toBe(true);
+    expect(await vault.exists(second.path)).toBe(true);
   });
 
   it("reconciles externally changed, added, and removed Markdown", async () => {
@@ -140,7 +290,7 @@ describe("IndexedMarkdownRepository", () => {
     await repository.refresh();
     const created = await repository.create({ title: "Custom type folder" });
     expect(created.frontmatter.type).toBe("task");
-    expect(created.path).toBe(`tasks/${created.id}.md`);
+    expect(created.path).toMatch(/^tasks\/\d{14}\.md$/);
   });
 
   it("asks before upgrading a managed canonical type", async () => {
@@ -152,6 +302,8 @@ describe("IndexedMarkdownRepository", () => {
     const schema = parsed.frontmatter.schema as {
       value: { properties: Record<string, unknown> };
     };
+    parsed.frontmatter.description = "A TaskNotes-compatible task.";
+    schema.value.properties.mobileRevision = { type: "integer" };
     schema.value.properties.completedDate = {
       type: "string",
       format: "date-time",
@@ -337,7 +489,7 @@ describe("IndexedMarkdownRepository", () => {
     });
     expect(first.task).toMatchObject({
       occurrenceDate: "2026-08-05",
-      recurrenceParent: `[[tasks/${parent.id}]]`,
+      recurrenceParent: `[[${parent.path.replace(/\.md$/, "")}]]`,
     });
     expect(await vault.exists(first.task.path)).toBe(true);
 
@@ -495,7 +647,7 @@ describe("IndexedMarkdownRepository", () => {
       await moving.initialize();
       const created = await moving.create({ title: "Move me" });
       const archived = await moving.setArchived(created.id, true);
-      expect(archived.path).toBe(`archive/${created.id}.md`);
+      expect(archived.path).toBe(created.path.replace(/^tasks\//, "archive/"));
       expect(await movingVault.exists(created.path)).toBe(false);
       expect(await movingVault.exists(archived.path)).toBe(true);
       await moving.refresh();
@@ -510,7 +662,7 @@ describe("IndexedMarkdownRepository", () => {
       expect(await movingVault.exists(created.path)).toBe(true);
 
       const colliding = await moving.create({ title: "Do not overwrite" });
-      const collisionPath = `archive/${colliding.id}.md`;
+      const collisionPath = colliding.path.replace(/^tasks\//, "archive/");
       await movingVault.writeText(collisionPath, "existing archive record");
       const retained = await moving.setArchived(colliding.id, true);
       expect(retained).toMatchObject({

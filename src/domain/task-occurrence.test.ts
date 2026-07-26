@@ -28,6 +28,7 @@ const task: Task = {
   tags: ["task"],
   contexts: [],
   projects: [],
+  blockedBy: [],
   recurrence: "FREQ=WEEKLY;BYDAY=MO,WE",
   completeInstances: ["2026-08-05"],
   skippedInstances: ["2026-08-10"],

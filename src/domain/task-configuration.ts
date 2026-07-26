@@ -8,6 +8,15 @@ import type {
   UserMappedField,
   UserMappedFieldType,
 } from "@tasknotes/model/types";
+import type { TaskNotesMdbaseTypeSettingsPatch } from "@tasknotes/model/mdbase";
+
+export type TaskModelSettingsPatch = TaskNotesMdbaseTypeSettingsPatch;
+
+export interface TaskModelSettingsAccess {
+  writable: boolean;
+  source: string;
+  reason?: string;
+}
 
 export interface TaskTemplatingConfiguration {
   enabled: boolean;

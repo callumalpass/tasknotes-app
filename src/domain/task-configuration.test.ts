@@ -3,6 +3,26 @@ import { describe, expect, it } from "vitest";
 import { resolveTaskCollectionConfiguration } from "./task-configuration";
 
 describe("TaskNotes collection configuration", () => {
+  it("resolves optional capture triggers from the TaskNotes contract", () => {
+    const configuration = resolveTaskCollectionConfiguration({
+      "x-tasknotes": {
+        nlp: {
+          triggers: [
+            { property_id: "tags", trigger: "##", enabled: true },
+            { property_id: "priority", trigger: "!", enabled: false },
+          ],
+        },
+      },
+    });
+
+    expect(configuration.nlp).toEqual({
+      triggers: [
+        { propertyId: "tags", trigger: "##", enabled: true },
+        { propertyId: "priority", trigger: "!", enabled: false },
+      ],
+    });
+  });
+
   it("resolves template and archive behavior from the collection contract", () => {
     const configuration = resolveTaskCollectionConfiguration({
       "x-tasknotes": {

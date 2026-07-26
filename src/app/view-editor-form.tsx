@@ -3,6 +3,7 @@ import {
   ArrowUp,
   CalendarDays,
   CalendarRange,
+  ChevronDown,
   Columns3,
   List,
   Plus,
@@ -101,6 +102,7 @@ export function ViewEditorForm({
       <EditorSection
         description="Choose which tasks belong in this view."
         id="view-filter"
+        summary={draft.filter ? "Custom filter" : "All tasks"}
         title="Filter"
       >
         <ExpressionBuilder
@@ -115,6 +117,7 @@ export function ViewEditorForm({
       <EditorSection
         description="Control grouping, order, and the information shown on each item."
         id="view-arrange"
+        summary={arrangeSummary(draft)}
         title="Arrange"
       >
         <div className="view-editor-grid">
@@ -286,6 +289,11 @@ function ComputedPropertiesSection({
     <EditorSection
       description="Define values for filters, sorting, grouping, and displayed properties."
       id="view-computed"
+      summary={
+        draft.computedProperties.length
+          ? `${draft.computedProperties.length} ${draft.computedProperties.length === 1 ? noun : `${noun}s`}`
+          : `No ${noun}s`
+      }
       title="Computed properties"
     >
       {draft.computedProperties.length ? (
@@ -435,8 +443,10 @@ function ViewIdentitySection({
 }) {
   return (
     <EditorSection
+      defaultOpen
       description="Name the view and choose how its results are presented."
       id="view-identity"
+      summary={`${humanizeRenderer(draft.renderer)} layout`}
       title="View"
     >
       <label className="view-name-field">
@@ -489,6 +499,7 @@ function CalendarOptionsSection({
     <EditorSection
       description="Choose the calendar mode and which task dates become events."
       id="view-calendar"
+      summary={calendarSummary(draft)}
       title="Calendar"
     >
       {draft.renderer === "tasknotes.calendar" ? (
@@ -571,6 +582,7 @@ function NewTaskSection({
     <EditorSection
       description="Set what happens when a task is added from this view."
       id="view-new-tasks"
+      summary={newTaskSummary(enabled, defaults)}
       title="New tasks"
     >
       <ViewToggle
@@ -797,23 +809,34 @@ function EditorSection({
   id,
   title,
   description,
+  summary = description,
+  defaultOpen = false,
   children,
 }: {
   id: string;
   title: string;
   description: string;
+  summary?: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <section aria-labelledby={`${id}-title`} className="view-editor-section">
-      <div className="view-editor-section-heading">
+    <details
+      aria-labelledby={`${id}-title`}
+      className="view-editor-section"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary className="view-editor-section-heading">
         <div>
           <h2 id={`${id}-title`}>{title}</h2>
-          <p>{description}</p>
+          <p>{summary}</p>
         </div>
-      </div>
-      {children}
-    </section>
+        <ChevronDown aria-hidden="true" size={18} strokeWidth={1.7} />
+      </summary>
+      <div className="view-editor-section-content">{children}</div>
+    </details>
   );
 }
 
@@ -874,6 +897,56 @@ const layouts: Array<{
     icon: CalendarRange,
   },
 ];
+
+function humanizeRenderer(renderer: ViewRenderer): string {
+  return layouts.find(({ value }) => value === renderer)?.label ?? "List";
+}
+
+function arrangeSummary(draft: EditableViewDraft): string {
+  const parts = [
+    draft.groupProperty ? `Grouped by ${humanize(draft.groupProperty)}` : "",
+    draft.sort.length
+      ? `${draft.sort.length} ${draft.sort.length === 1 ? "sort" : "sorts"}`
+      : "",
+    `${draft.properties.length} ${draft.properties.length === 1 ? "property" : "properties"}`,
+  ].filter(Boolean);
+  return parts.join(" · ");
+}
+
+function calendarSummary(draft: EditableViewDraft): string {
+  const dates = [
+    draft.options.showDue !== false ? "due" : "",
+    draft.options.showScheduled !== false ? "scheduled" : "",
+  ].filter(Boolean);
+  const mode =
+    draft.renderer === "tasknotes.calendar"
+      ? calendarModeLabel(string(draft.options.calendarView))
+      : "Mini calendar";
+  return dates.length ? `${mode} · ${dates.join(" and ")}` : mode;
+}
+
+function calendarModeLabel(value: string): string {
+  return (
+    {
+      dayGridMonth: "Month",
+      timeGridWeek: "Week",
+      timeGridThreeDay: "3 days",
+      timeGridDay: "Day",
+      listWeek: "Agenda",
+    }[value || "dayGridMonth"] ?? "Month"
+  );
+}
+
+function newTaskSummary(
+  enabled: boolean,
+  defaults: Record<string, unknown>,
+): string {
+  if (!enabled) return "Task creation off";
+  const count = Object.keys(defaults).length;
+  return count
+    ? `${count} ${count === 1 ? "default" : "defaults"}`
+    : "Task creation on";
+}
 
 const defaultFields: ExpressionField[] = [
   field("title", "Title", "text"),

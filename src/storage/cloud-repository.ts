@@ -21,6 +21,7 @@ import {
   occurrenceRecordId,
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
+import { taskRelationships } from "../domain/task-relationships";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -264,6 +265,15 @@ export class CloudTaskRepository implements TaskRepository {
     return this.cache.get(id)?.task ?? null;
   }
 
+  async relationships(id: string) {
+    const current = this.cache.get(id)?.task;
+    if (!current) throw new Error("Task not found.");
+    return taskRelationships(
+      current,
+      [...this.cache.values()].map(({ task }) => task),
+    );
+  }
+
   async completeField(
     request: FieldCompletionRequest,
   ): Promise<FieldCompletion[]> {
@@ -281,11 +291,12 @@ export class CloudTaskRepository implements TaskRepository {
 
   async create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
-    const task = await this.model.createWithTemplate(
+    const created = await this.model.createWithTemplate(
       input,
       { id, now: new Date().toISOString() },
       (path) => this.loadTemplate(path),
     );
+    const task = await this.withAvailableTaskPath(created);
     const record = await this.requireReplica().queueCreate({
       recordId: id,
       path: task.path,
@@ -492,6 +503,21 @@ export class CloudTaskRepository implements TaskRepository {
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
     return this.model.configuration();
+  }
+
+  async taskModelSettingsAccess() {
+    return {
+      writable: false,
+      source: `${this.taskTypeName} type contract`,
+      reason:
+        "Connected collection type settings are managed by the collection owner.",
+    };
+  }
+
+  async updateTaskModelSettings(): Promise<TaskCollectionConfiguration> {
+    throw new Error(
+      "Connected collection type settings are managed by the collection owner.",
+    );
   }
 
   async listViews(): Promise<TaskViewDocument[]> {
@@ -751,19 +777,35 @@ export class CloudTaskRepository implements TaskRepository {
       (path) => this.loadTemplate(path),
     );
     if (!result.created) return result;
+    const created = await this.withAvailableTaskPath(result.task);
     const record = await this.requireReplica().queueCreate({
-      recordId: result.task.id,
-      path: result.task.path,
-      frontmatter: asJson(result.task.frontmatter),
-      body: result.task.body,
+      recordId: created.id,
+      path: created.path,
+      frontmatter: asJson(created.frontmatter),
+      body: created.body,
       types: [this.taskTypeName],
     });
     const task = result.warnings.length
-      ? { ...result.task, operationWarnings: result.warnings }
-      : result.task;
+      ? { ...created, operationWarnings: result.warnings }
+      : created;
     this.cache.set(task.id, { task, recordId: record.record_id });
     if (notify) await this.afterLocalMutation();
     return { ...result, task };
+  }
+
+  private async withAvailableTaskPath(task: Task): Promise<Task> {
+    const records = await this.requireReplica().records();
+    const occupied = new Set([
+      ...records.map((record) => record.path),
+      ...[...this.cache.values()].map(({ task: cached }) => cached.path),
+    ]);
+    if (!occupied.has(task.path)) return task;
+    const extension = /\.md$/i.test(task.path) ? ".md" : "";
+    const stem = extension ? task.path.slice(0, -extension.length) : task.path;
+    const shortId = task.id.replaceAll("-", "").slice(0, 8);
+    const candidate = `${stem}-${shortId}${extension}`;
+    if (!occupied.has(candidate)) return { ...task, path: candidate };
+    return { ...task, path: `${stem}-${task.id}${extension}` };
   }
 
   private async transitionMaterializedUnlocked(

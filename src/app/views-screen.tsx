@@ -40,6 +40,7 @@ import {
   type ViewCreationPlan,
 } from "../domain/view-creation";
 import { groupTaskViewRows } from "../domain/view-grouping";
+import { sectionTaskViewRows } from "../domain/task-list-sections";
 import {
   formatPropertyValue,
   propertyLabel,
@@ -551,7 +552,6 @@ export function ViewsScreen({
             ? " has-list-capture"
             : ""
         }`}
-        aria-live="polite"
       >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
@@ -563,9 +563,13 @@ export function ViewsScreen({
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
             {visibleExecution && currentExecutionRefreshing ? (
-              <small>Updating</small>
+              <small aria-live="polite" role="status">
+                Updating
+              </small>
             ) : visibleExecution?.stale ? (
-              <small>Last available result</small>
+              <small aria-live="polite" role="status">
+                Last available result
+              </small>
             ) : operational ? (
               <small>In navigation</small>
             ) : null}
@@ -583,7 +587,11 @@ export function ViewsScreen({
             </button>
           ) : null}
         </header>
-        {error ? <p className="inline-error">{error}</p> : null}
+        {error ? (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         {currentViewActionError ? (
           <p className="inline-error" role="alert">
             {currentViewActionError}
@@ -1277,6 +1285,38 @@ function TaskListView({
             </div>
             <div className="saved-task-list">
               {group.rows.map((row) => (
+                <ViewTaskRow
+                  key={row.task.id}
+                  row={row}
+                  properties={execution.view.properties}
+                  titleProperty={titleProperty}
+                  onOpen={onOpen}
+                  onToggle={onToggle}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  const sections = sectionTaskViewRows(
+    execution.rows,
+    execution.view.presentation?.options.sections,
+  );
+  if (sections.length)
+    return (
+      <div className="task-groups saved-view-groups task-list-view day-task-sections">
+        {sections.map((section) => (
+          <section
+            className={`task-section is-${section.key}`}
+            key={section.key}
+          >
+            <div className="section-heading">
+              <h2>{section.label}</h2>
+              <span>{section.rows.length}</span>
+            </div>
+            <div className="saved-task-list">
+              {section.rows.map((row) => (
                 <ViewTaskRow
                   key={row.task.id}
                   row={row}

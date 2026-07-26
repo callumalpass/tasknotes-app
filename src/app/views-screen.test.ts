@@ -131,5 +131,6 @@ function task(overrides: Partial<Task>): Task {
     revision: 1,
     frontmatter: {},
     ...overrides,
+    blockedBy: overrides.blockedBy ?? [],
   };
 }
