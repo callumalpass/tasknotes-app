@@ -688,6 +688,81 @@ test("creates, edits, searches, completes, and reloads a Markdown task", async (
   ).toBeVisible();
 });
 
+test("writes and safely previews Markdown task notes on demand", async ({
+  page,
+}, testInfo) => {
+  await page.getByLabel("New task title").fill("Document launch checks");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Document launch checks", { exact: true }).click();
+  const notes = page.getByLabel("Notes");
+  await notes.fill(`## Launch checklist
+
+- [x] Contract checked
+- [ ] Publish build
+
+| Surface | State |
+| --- | --- |
+| Mobile | Ready |
+
+[Reference](https://example.com/docs)
+
+<script>window.markdownInjected = true</script>`);
+  await expect
+    .poll(async () =>
+      (await localTaskDocuments(page)).some((source) =>
+        source.includes("## Launch checklist"),
+      ),
+    )
+    .toBe(true);
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+
+  const previewButton = page.getByRole("button", {
+    name: "Preview",
+    exact: true,
+  });
+  const buttonBox = await previewButton.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
+  const loadedBefore = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .some((entry) => entry.name.includes("markdown-preview")),
+  );
+  expect(loadedBefore).toBe(false);
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await previewButton.click();
+  const preview = page.locator(".markdown-preview");
+  await expect(
+    preview.getByRole("heading", { name: "Launch checklist" }),
+  ).toBeVisible();
+  const previewLatencyMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await expect(preview.getByRole("table")).toBeVisible();
+  await expect(preview.getByRole("checkbox")).toHaveCount(2);
+  await expect(
+    preview.getByRole("link", { name: "Reference" }),
+  ).toHaveAttribute("rel", "noreferrer");
+  await expect(preview.locator("script")).toHaveCount(0);
+  expect(await page.evaluate(() => "markdownInjected" in window)).toBe(false);
+  const loadedAfter = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .some((entry) => entry.name.includes("markdown-preview")),
+  );
+  expect(loadedAfter).toBe(true);
+  await testInfo.attach("markdown-preview-profile.json", {
+    body: JSON.stringify({ previewLatencyMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(previewLatencyMs).toBeLessThan(750);
+
+  await page.reload();
+  await expect(page.getByLabel("Notes")).toHaveValue(/Launch checklist/);
+});
+
 test("saves in the background while navigating away", async ({ page }) => {
   await page.getByLabel("New task title").fill("Background save");
   await page.getByRole("button", { name: "Add", exact: true }).click();

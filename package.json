@@ -56,6 +56,8 @@
     "obsidian-bases-expression": "file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "tasknotes-nlp-core": "0.1.5",
     "yaml": "2.9.0"
   },

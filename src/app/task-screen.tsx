@@ -7,7 +7,15 @@ import {
   Square,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { LoadingRows } from "../components/loading";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
@@ -49,6 +57,10 @@ import type {
   TaskFieldCompletionConfiguration,
   TaskUserMappedField,
 } from "../domain/task-configuration";
+
+const MarkdownPreview = lazy(async () => ({
+  default: (await import("../components/markdown-preview")).MarkdownPreview,
+}));
 
 type SaveState = "saved" | "saving" | "error";
 type Draft = Pick<
@@ -159,6 +171,7 @@ function TaskEditor({
     [repository, task.id, task.path],
   );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
+  const [notesMode, setNotesMode] = useState<"write" | "preview">("write");
   const relationships = useMemo(
     () => ({
       ...repositoryRelationships,
@@ -558,7 +571,6 @@ function TaskEditor({
           Task title
         </label>
         <textarea
-          autoFocus
           className="title-field"
           id="task-title"
           rows={2}
@@ -598,15 +610,42 @@ function TaskEditor({
           />
         </div>
 
-        <label className="notes-field">
-          <span>Notes</span>
-          <textarea
-            placeholder="Add a note"
-            rows={8}
-            value={draft.body}
-            onChange={(event) => change({ body: event.target.value })}
-          />
-        </label>
+        <section className="notes-field">
+          <header className="notes-field-heading">
+            <h2 id="task-notes-title">Notes</h2>
+            <div aria-label="Editor mode" role="group">
+              <button
+                aria-pressed={notesMode === "write"}
+                type="button"
+                onClick={() => setNotesMode("write")}
+              >
+                Write
+              </button>
+              <button
+                aria-pressed={notesMode === "preview"}
+                type="button"
+                onClick={() => setNotesMode("preview")}
+              >
+                Preview
+              </button>
+            </div>
+          </header>
+          {notesMode === "write" ? (
+            <textarea
+              aria-labelledby="task-notes-title"
+              placeholder="Add Markdown notes"
+              rows={8}
+              value={draft.body}
+              onChange={(event) => change({ body: event.target.value })}
+            />
+          ) : (
+            <Suspense
+              fallback={<p className="markdown-preview-empty">Rendering…</p>}
+            >
+              <MarkdownPreview source={draft.body} />
+            </Suspense>
+          )}
+        </section>
 
         <TaskFormSection summary={organizeSummary(draft)} title="Organize">
           <Fieldset legend="Priority">

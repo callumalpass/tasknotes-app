@@ -2417,6 +2417,45 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
+.notes-field-heading {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.notes-field-heading h2 {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.notes-field-heading > div {
+  display: flex;
+  padding: 2px;
+  background: var(--paper-soft);
+  border-radius: 7px;
+}
+
+.notes-field-heading button {
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.notes-field-heading button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--paper-raised);
+  box-shadow: 0 1px 4px var(--color-shadow-soft);
+}
+
 .notes-field textarea {
   display: block;
   width: 100%;
@@ -2428,6 +2467,112 @@ button:disabled {
   background: transparent;
   border: 0;
   outline: 0;
+}
+
+.markdown-preview {
+  min-height: 150px;
+  overflow-wrap: anywhere;
+  font-size: 1.04rem;
+  line-height: 1.6;
+}
+
+.markdown-preview > :first-child {
+  margin-top: 0;
+}
+
+.markdown-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  margin: 1.25em 0 0.45em;
+  line-height: 1.25;
+}
+
+.markdown-preview h1 {
+  font-size: 1.45rem;
+}
+
+.markdown-preview h2 {
+  font-size: 1.25rem;
+}
+
+.markdown-preview h3 {
+  font-size: 1.08rem;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 1.5rem;
+}
+
+.markdown-preview li + li {
+  margin-top: 0.25rem;
+}
+
+.markdown-preview li:has(> input[type="checkbox"]) {
+  list-style: none;
+}
+
+.markdown-preview input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin: 0 7px 0 -1.4rem;
+  vertical-align: -3px;
+  accent-color: var(--accent);
+}
+
+.markdown-preview a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.markdown-preview code {
+  padding: 0.12em 0.3em;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.86em;
+  background: var(--paper-soft);
+  border-radius: 4px;
+}
+
+.markdown-preview pre {
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--paper-soft);
+  border-radius: 6px;
+}
+
+.markdown-preview pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.markdown-preview blockquote {
+  padding-left: 14px;
+  margin-left: 0;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--line-strong);
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  padding: 7px 9px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.markdown-preview-empty {
+  min-height: 150px;
+  margin: 0;
+  padding: 8px 0;
+  color: var(--ink-muted);
 }
 
 .task-form-section {
