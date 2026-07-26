@@ -265,7 +265,7 @@ export function MoreScreen({
         </button>
       </SettingsSection>
 
-      <SettingsSection label="Task model">
+      <SettingsSection collapsible label="Task model">
         <TaskModelSettingsEditor />
       </SettingsSection>
 
@@ -529,14 +529,31 @@ function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
 function SettingsSection({
   label,
   children,
+  collapsible = false,
 }: {
   label: string;
   children: React.ReactNode;
+  collapsible?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  if (!collapsible)
+    return (
+      <section className="settings-section">
+        <h2>{label}</h2>
+        <div className="settings-content">{children}</div>
+      </section>
+    );
   return (
-    <section className="settings-section">
-      <h2>{label}</h2>
+    <details
+      className="settings-section settings-disclosure"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>
+        <h2>{label}</h2>
+        <ChevronDown aria-hidden="true" size={17} strokeWidth={1.7} />
+      </summary>
       <div className="settings-content">{children}</div>
-    </section>
+    </details>
   );
 }

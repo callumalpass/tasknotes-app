@@ -237,7 +237,7 @@ export function TaskActions({
                   <strong>{panelTitle(panel)}</strong>
                 </div>
               ) : null}
-              <div className="task-actions-items">
+              <div className={`task-actions-items is-${panel}`}>
                 {panel === "actions" ? (
                   <>
                     <MenuAction

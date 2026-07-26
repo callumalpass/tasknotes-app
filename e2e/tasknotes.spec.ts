@@ -158,6 +158,33 @@ async function openViewsCatalog(page: Page): Promise<void> {
   await page.getByRole("button", { name: /Saved views/ }).click();
 }
 
+async function openSettingsSection(
+  scope: Page | Locator,
+  name: string,
+): Promise<Locator> {
+  const section = scope
+    .getByRole("heading", { name, exact: true })
+    .locator("..")
+    .locator("..");
+  if ((await section.getAttribute("open")) === null)
+    await section.locator("summary").click();
+  return section;
+}
+
+async function openViewEditorSection(
+  scope: Locator,
+  name: string,
+): Promise<Locator> {
+  const section = scope
+    .getByRole("heading", { name, exact: true })
+    .locator("..")
+    .locator("..")
+    .locator("..");
+  if ((await section.getAttribute("open")) === null)
+    await section.locator("summary").click();
+  return section;
+}
+
 async function openNavigationView(page: Page, name: string): Promise<void> {
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
   const direct = navigation.getByRole("button", { name, exact: true });
@@ -460,6 +487,13 @@ test("edits task model settings in the portable type contract", async ({
   page,
 }, testInfo) => {
   await page.getByRole("button", { name: "More", exact: true }).click();
+  const disclosureStartedAt = await page.evaluate(() => performance.now());
+  await openSettingsSection(page, "Task model");
+  const disclosureOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    disclosureStartedAt,
+  );
+  expect(disclosureOpenMs).toBeLessThan(500);
   await chooseOption(page, "Default status", "In progress");
   await chooseOption(page, "Default priority", "High");
   await chooseOption(page, "Record links", "Markdown links");
@@ -476,7 +510,7 @@ test("edits task model settings in the portable type contract", async ({
     startedAt,
   );
   await testInfo.attach("task-model-settings-profile.json", {
-    body: JSON.stringify({ saveLatencyMs }, null, 2),
+    body: JSON.stringify({ disclosureOpenMs, saveLatencyMs }, null, 2),
     contentType: "application/json",
   });
   expect(saveLatencyMs).toBeLessThan(750);
@@ -490,6 +524,7 @@ test("edits task model settings in the portable type contract", async ({
 
   await page.reload();
   await page.getByRole("button", { name: "More", exact: true }).click();
+  await openSettingsSection(page, "Task model");
   await expect(
     page.getByRole("combobox", { name: "Default status" }),
   ).toHaveAttribute("data-value", "in-progress");
@@ -515,6 +550,7 @@ test("auto-archives from a contract status event without polling", async ({
   page,
 }, testInfo) => {
   await page.getByRole("button", { name: "More", exact: true }).click();
+  await openSettingsSection(page, "Task model");
   const doneAutomation = page
     .locator(".status-automation-row")
     .filter({ hasText: "Done" });
@@ -1520,7 +1556,9 @@ test("keeps a task recoverable when a view filter cannot be inverted", async ({
   );
 });
 
-test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
+test("creates, edits, executes, and deletes a saved view", async ({
+  page,
+}, testInfo) => {
   await page.getByLabel("New task title").fill("Build the view editor");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
@@ -1532,6 +1570,18 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
 
   await page.getByLabel("Name").fill("Open work");
   await page.getByRole("button", { name: "Board", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Create a view" });
+  const disclosureStartedAt = await page.evaluate(() => performance.now());
+  await openViewEditorSection(editor, "Filter");
+  const disclosureOpenMs = await page.evaluate(
+    (start) => performance.now() - start,
+    disclosureStartedAt,
+  );
+  expect(disclosureOpenMs).toBeLessThan(500);
+  await testInfo.attach("view-editor-disclosure-profile.json", {
+    body: JSON.stringify({ disclosureOpenMs }, null, 2),
+    contentType: "application/json",
+  });
   await page.getByRole("button", { name: "Expression", exact: true }).click();
   await page.getByLabel("Filter expression").fill("status == (");
   await expect(
@@ -1541,9 +1591,11 @@ test("creates, edits, executes, and deletes a saved view", async ({ page }) => {
   await page.getByLabel("Filter property").fill("status");
   await chooseOption(page, "Filter condition", "is");
   await chooseOption(page, "Filter value", "Open");
+  await openViewEditorSection(editor, "Arrange");
   await page.getByLabel("Board column").fill("status");
   await page.getByLabel("Property to display").fill("priority");
   await page.getByRole("button", { name: "Add", exact: true }).last().click();
+  await openViewEditorSection(editor, "New tasks");
   await chooseOption(page, "Default priority", "High");
   await page.getByRole("button", { name: "Save view", exact: true }).click();
 
@@ -1660,13 +1712,17 @@ views:
         editor.getByRole("heading", { name: section, exact: true }),
       ).toBeVisible();
     await expect(editor.locator(".view-layout-preview")).toHaveCount(0);
+    await openViewEditorSection(editor, "Computed properties");
     await expect(editor.getByLabel("Computed property name 1")).toHaveValue(
       "score",
     );
 
-    if (layout === "Board")
+    if (layout === "Board") {
+      await openViewEditorSection(editor, "Arrange");
       await expect(editor.getByLabel("Board column")).toHaveValue("status");
+    }
     if (layout === "Calendar") {
+      await openViewEditorSection(editor, "Calendar");
       await expect(editor.getByLabel("Opens as")).toHaveAttribute(
         "data-value",
         "listWeek",
@@ -1675,8 +1731,10 @@ views:
         editor.getByText("Upcoming recurring instances"),
       ).toBeVisible();
     }
-    if (layout === "Mini calendar")
+    if (layout === "Mini calendar") {
+      await openViewEditorSection(editor, "Calendar");
       await expect(editor.getByText("Scheduled dates")).toBeVisible();
+    }
 
     const box = await editor.boundingBox();
     const viewport = page.viewportSize();
@@ -1721,6 +1779,7 @@ views:
   await openViewsCatalog(page);
   await page.getByRole("button", { name: "Edit Computed work" }).click();
   const editor = page.getByRole("dialog", { name: "Edit view" });
+  await openViewEditorSection(editor, "Computed properties");
   await editor
     .getByLabel("Computed property expression 1")
     .fill('if(priority == "high", 4, 1)');
@@ -1731,6 +1790,7 @@ views:
     .fill('if(formula.score > 1, "urgent", "normal")');
   await expect(editor.getByText("Computed properties are valid")).toBeVisible();
 
+  await openViewEditorSection(editor, "Arrange");
   await editor.getByLabel("Property to display").fill("formula.label");
   await editor.getByRole("option", { name: /Label formula\.label/ }).click();
   await editor
@@ -1753,6 +1813,10 @@ views:
   expect(source).toContain("formula.label");
 
   await page.getByRole("button", { name: "Edit Computed work" }).click();
+  await openViewEditorSection(
+    page.getByRole("dialog", { name: "Edit view" }),
+    "Computed properties",
+  );
   await expect(page.getByLabel("Computed property name 2")).toHaveValue(
     "label",
   );
@@ -1828,7 +1892,34 @@ test("uses the plugin-inspired task action hierarchy", async ({
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   await trigger.click();
+  const organizeStartedAt = await page.evaluate(() => performance.now());
   await page.getByRole("menuitem", { name: "Organize" }).click();
+  const relationshipsAction = page.getByRole("menuitem", {
+    name: /Edit relationships/,
+  });
+  await expect(relationshipsAction).toBeVisible();
+  const organizePanelMs = await page.evaluate(
+    (start) => performance.now() - start,
+    organizeStartedAt,
+  );
+  expect(organizePanelMs).toBeLessThan(500);
+  await testInfo.attach("task-action-organize-profile.json", {
+    body: JSON.stringify({ organizePanelMs }, null, 2),
+    contentType: "application/json",
+  });
+  const [relationshipLabel, relationshipDetail, relationshipButton] =
+    await Promise.all([
+      relationshipsAction.locator("span").boundingBox(),
+      relationshipsAction.locator("small").boundingBox(),
+      relationshipsAction.boundingBox(),
+    ]);
+  expect(relationshipLabel).not.toBeNull();
+  expect(relationshipDetail).not.toBeNull();
+  expect(relationshipButton).not.toBeNull();
+  expect(relationshipDetail!.y).toBeGreaterThan(relationshipLabel!.y);
+  expect(relationshipDetail!.x + relationshipDetail!.width).toBeLessThanOrEqual(
+    relationshipButton!.x + relationshipButton!.width - 8,
+  );
   await page.getByRole("menuitem", { name: "Create subtask" }).click();
   await page.getByLabel("Subtask title").fill("Context action child");
   await page.getByRole("button", { name: "Add subtask" }).click();
