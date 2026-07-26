@@ -115,7 +115,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=tasknotes-app --branch=main
-          packageManager: pnpm
+          packageManager: npm
           wranglerVersion: "4.114.0"
 
       - name: Smoke production domain
