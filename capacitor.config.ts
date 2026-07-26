@@ -33,6 +33,10 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: "#fbfcfe",
     includePlugins: nativePlugins(androidFirebaseConfigured),
+    // Some OEM WebViews advertise WEB_MESSAGE_LISTENER support without
+    // exposing the bridge object. The bundled app serves only trusted local
+    // assets, so the JavaScript interface bridge is the reliable option.
+    useLegacyBridge: true,
   },
   ios: {
     includePlugins: nativePlugins(iosFirebaseConfigured),
