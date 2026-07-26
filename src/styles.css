@@ -4378,6 +4378,74 @@ button:disabled {
   border-top: 1px solid var(--line-strong);
 }
 
+.manual-order-row {
+  position: relative;
+}
+
+.manual-order-list .manual-order-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: stretch;
+  transition: opacity 140ms var(--ease-out);
+}
+
+.manual-order-row.is-dragging {
+  opacity: 0.42;
+}
+
+.manual-order-row.is-drop-before::before,
+.manual-order-row.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 44px;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.manual-order-row.is-drop-before::before {
+  top: -1px;
+}
+
+.manual-order-row.is-drop-after::after {
+  bottom: -1px;
+}
+
+.manual-order-handle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  touch-action: none;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.manual-order-handle:hover,
+.manual-order-handle:focus-visible {
+  color: var(--accent);
+}
+
+.manual-order-handle:active {
+  cursor: grabbing;
+}
+
+.manual-order-handle:disabled {
+  cursor: wait;
+  opacity: 0.42;
+}
+
+.manual-order-row > .task-row {
+  min-width: 0;
+}
+
 .projects-view {
   display: grid;
   gap: 30px;
@@ -4498,6 +4566,7 @@ button:disabled {
 }
 
 .kanban-card {
+  position: relative;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   align-items: stretch;
@@ -4506,6 +4575,26 @@ button:disabled {
   transition:
     opacity 140ms var(--ease-out),
     transform 140ms var(--ease-out);
+}
+
+.kanban-card.is-drop-before::before,
+.kanban-card.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 44px;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.kanban-card.is-drop-before::before {
+  top: -1px;
+}
+
+.kanban-card.is-drop-after::after {
+  bottom: -1px;
 }
 
 .kanban-card.is-pending {
@@ -4534,6 +4623,11 @@ button:disabled {
 
 .kanban-drag-handle:active {
   cursor: grabbing;
+}
+
+.kanban-drag-handle:disabled {
+  cursor: wait;
+  opacity: 0.42;
 }
 
 .kanban-card .task-row {

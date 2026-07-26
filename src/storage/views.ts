@@ -19,6 +19,18 @@ export interface ProviderViewList {
       id: string;
       name: string;
       properties?: TaskView["properties"];
+      sort?: Array<{
+        property?: string;
+        column?: string;
+        field?: string;
+        direction?: string;
+      }>;
+      order_by?: Array<{
+        property?: string;
+        column?: string;
+        field?: string;
+        direction?: string;
+      }>;
       presentation?: {
         type: string;
         fallback?: string;
@@ -61,6 +73,7 @@ export function normalizeViewDocuments(
       id: view.id,
       name: view.name,
       properties: structuredClone(view.properties ?? []),
+      sort: providerSort(view.sort ?? view.order_by),
       source: { ...document.source },
       ...(view.presentation
         ? {
@@ -76,6 +89,32 @@ export function normalizeViewDocuments(
         : {}),
     })),
   }));
+}
+
+function providerSort(
+  value:
+    | Array<{
+        property?: string;
+        column?: string;
+        field?: string;
+        direction?: string;
+      }>
+    | undefined,
+): NonNullable<TaskView["sort"]> {
+  return (value ?? []).flatMap((sort) => {
+    const property = sort.property ?? sort.column ?? sort.field;
+    return property
+      ? [
+          {
+            property,
+            direction:
+              sort.direction?.toLocaleLowerCase() === "desc"
+                ? ("desc" as const)
+                : ("asc" as const),
+          },
+        ]
+      : [];
+  });
 }
 
 export function normalizeViewExecution(

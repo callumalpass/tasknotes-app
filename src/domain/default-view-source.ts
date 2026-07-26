@@ -24,6 +24,7 @@ export function taskNotesDefaultBaseDocument(
   const priority = note(fields.priority);
   const projects = note(fields.projects);
   const title = note(fields.title);
+  const manualOrder = basesProperty(fields.sortOrder);
   const taskDate = `if(${scheduled}.isEmpty() == false, ${scheduled}, ${due})`;
   const taskDay =
     'if(formula.taskDate.isEmpty(), null, date(formula.taskDate).format("YYYY-MM-DD"))';
@@ -44,6 +45,10 @@ export function taskNotesDefaultBaseDocument(
           displayName: "Task day",
           hidden: true,
         },
+        [manualOrder]: {
+          displayName: "Manual order",
+          hidden: true,
+        },
       },
       views: [
         {
@@ -62,6 +67,7 @@ export function taskNotesDefaultBaseDocument(
           },
           order: [title, status, scheduled, due, priority],
           sort: [
+            { property: manualOrder, direction: "DESC" },
             { property: "formula.taskDay", direction: "ASC" },
             { property: priority, direction: "ASC" },
             { property: title, direction: "ASC" },
@@ -73,6 +79,7 @@ export function taskNotesDefaultBaseDocument(
           name: "Upcoming",
           filters: { and: activeTaskFilters(configuration) },
           order: [status, scheduled, due, priority],
+          sort: [{ property: manualOrder, direction: "DESC" }],
           options: {
             calendarView: "listWeek",
             listDayCount: 7,
@@ -88,6 +95,7 @@ export function taskNotesDefaultBaseDocument(
           name: "Calendar",
           filters: { and: activeTaskFilters(configuration) },
           order: [status, scheduled, due, priority],
+          sort: [{ property: manualOrder, direction: "DESC" }],
           options: {
             calendarView: "dayGridMonth",
             listDayCount: 7,
@@ -109,7 +117,10 @@ export function taskNotesDefaultBaseDocument(
             ],
           },
           order: [title, status, scheduled, due, priority],
-          sort: [{ property: title, direction: "ASC" }],
+          sort: [
+            { property: manualOrder, direction: "DESC" },
+            { property: title, direction: "ASC" },
+          ],
           groupBy: { property: projects, direction: "ASC" },
           options: { create: false },
         },
@@ -118,7 +129,10 @@ export function taskNotesDefaultBaseDocument(
           name: "Archive",
           filters: { and: [archivedTaskFilter(configuration)] },
           order: [title, status, scheduled, due, priority],
-          sort: [{ property: title, direction: "ASC" }],
+          sort: [
+            { property: manualOrder, direction: "DESC" },
+            { property: title, direction: "ASC" },
+          ],
           options: { create: false },
         },
       ],
@@ -162,6 +176,7 @@ export function taskNotesDefaultCanonicalDocument(
           where: `(${sharedWhere}) && (projection.task_day.isEmpty() || projection.task_day <= today().format("YYYY-MM-DD"))`,
           select: selection,
           order_by: [
+            { field: fields.sortOrder, direction: "desc" },
             { field: "projection.task_day", direction: "asc" },
             { field: fields.priority, direction: "asc" },
             { field: fields.title, direction: "asc" },
@@ -178,6 +193,7 @@ export function taskNotesDefaultCanonicalDocument(
           selection,
           "listWeek",
           sharedWhere,
+          fields.sortOrder,
         ),
         calendarCanonicalView(
           "calendar",
@@ -185,13 +201,17 @@ export function taskNotesDefaultCanonicalDocument(
           selection,
           "dayGridMonth",
           sharedWhere,
+          fields.sortOrder,
         ),
         {
           id: "projects",
           name: "Projects",
           where: `(${sharedWhere}) && (note[${literal(fields.projects)}].isEmpty() == false)`,
           select: selection,
-          order_by: [{ field: fields.title, direction: "asc" }],
+          order_by: [
+            { field: fields.sortOrder, direction: "desc" },
+            { field: fields.title, direction: "asc" },
+          ],
           group_by: [{ field: fields.projects, direction: "asc" }],
           presentation: {
             type: "tasknotes.task-list",
@@ -204,7 +224,10 @@ export function taskNotesDefaultCanonicalDocument(
           name: "Archive",
           where: archivedTaskFilter(configuration),
           select: selection,
-          order_by: [{ field: fields.title, direction: "asc" }],
+          order_by: [
+            { field: fields.sortOrder, direction: "desc" },
+            { field: fields.title, direction: "asc" },
+          ],
           presentation: {
             type: "tasknotes.task-list",
             fallback: "mdbase.table",
@@ -274,12 +297,14 @@ function calendarCanonicalView(
   selection: string[],
   calendarView: "dayGridMonth" | "listWeek",
   where: string,
+  sortOrderField: string,
 ): Record<string, unknown> {
   return {
     id,
     name,
     where,
     select: selection,
+    order_by: [{ field: sortOrderField, direction: "desc" }],
     presentation: {
       type: "tasknotes.calendar",
       fallback: "mdbase.table",
@@ -323,6 +348,12 @@ function archivedTaskFilter(
 
 function note(field: string): string {
   return `note[${literal(field)}]`;
+}
+
+function basesProperty(field: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(field)
+    ? `note.${field}`
+    : note(field);
 }
 
 function literal(value: string): string {

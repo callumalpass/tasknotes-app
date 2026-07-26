@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
+import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const resources = {
   paths: { type: ".mdbase/types/task.md" },
@@ -44,6 +45,17 @@ describe("TaskNotes mdbase manifest", () => {
     });
     expect(manifest.redirect_uris).toContain(
       "dev.tasknotes.app://auth/mdbase/callback",
+    );
+  });
+
+  it("provisions TaskNotes-compatible string ranks for manual order", () => {
+    const generated = buildAppTaskNotesResources();
+    const field = generated.type["x-tasknotes"].field_roles.sortOrder;
+    expect(generated.type.schema.value.properties[field]).toEqual({
+      type: "string",
+    });
+    expect(generated.typeDocument).toContain(
+      "tasknotes_manual_order:\n        type: string",
     );
   });
 });

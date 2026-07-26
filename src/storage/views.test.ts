@@ -71,6 +71,40 @@ describe("provider view documents", () => {
     expect(document.views[1].presentation?.type).toBe("exampleCustomRenderer");
   });
 
+  it("normalizes provider manual sort metadata from canonical fields", () => {
+    const source = {
+      path: "views/work.md",
+      format: "mdbase.view",
+      revision: "one",
+      writable: true,
+    };
+    const [document] = normalizeViewDocuments({
+      views: [
+        {
+          id: "work",
+          name: "Work",
+          source,
+          views: [
+            {
+              id: "manual",
+              name: "Manual",
+              order_by: [
+                {
+                  field: "tasknotes_manual_order",
+                  direction: "desc",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(document.views[0].sort).toEqual([
+      { property: "tasknotes_manual_order", direction: "desc" },
+    ]);
+  });
+
   it("infers a kanban column role from generic execution groups", () => {
     const view: TaskView = {
       key: "views/work.base#board",

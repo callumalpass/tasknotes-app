@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { parse } from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -123,6 +129,59 @@ describe("ViewEditor", () => {
         name: "Schedule",
       }),
     );
+  });
+
+  it("offers Manual order as a first-class descending sort", async () => {
+    const createViewSource = vi.fn(
+      async (input: CreateTaskViewSourceInput) => ({
+        path: "views/manual.base",
+        format: "obsidian.base",
+        revision: "two",
+        document: input.document,
+      }),
+    );
+    renderEditor({ repository: repository({ createViewSource }) });
+
+    await screen.findByRole("dialog", { name: "Create a view" });
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Manual" },
+    });
+    fireEvent.click(screen.getByRole("heading", { name: "Arrange" }));
+    const property = screen.getByRole("combobox", {
+      name: "Property to sort",
+    });
+    fireEvent.change(property, {
+      target: { value: "tasknotes_manual_order" },
+    });
+    fireEvent.click(
+      within(property.closest(".add-view-property")!).getByRole("button", {
+        name: "Add",
+      }),
+    );
+
+    expect(
+      screen.getByText(
+        "Manual order is active. Drag handles will appear on tasks.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("combobox", { name: "Sort property 1" }),
+    ).toHaveValue("tasknotes_manual_order");
+    expect(
+      screen.getByRole("combobox", { name: "Sort direction 1" }),
+    ).toHaveAttribute("data-value", "desc");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+    await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
+    const parsed = parse(createViewSource.mock.calls[0][0].document) as {
+      views: Array<{ sort: unknown }>;
+    };
+    expect(parsed.views[0].sort).toEqual([
+      {
+        property: "tasknotes_manual_order",
+        direction: "DESC",
+      },
+    ]);
   });
 
   it("guards unsaved changes but closes an untouched existing view directly", async () => {

@@ -439,7 +439,8 @@ function groupProperty(value: unknown): string | undefined {
 
 function obsidianSort(value: unknown): EditableViewSort[] {
   return objectList(value).flatMap((sort) => {
-    const property = string(sort.property);
+    const property =
+      string(sort.property) || string(sort.column) || string(sort.field);
     return property ? [{ property, direction: direction(sort.direction) }] : [];
   });
 }

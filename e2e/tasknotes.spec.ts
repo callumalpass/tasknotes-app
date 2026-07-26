@@ -117,6 +117,61 @@ async function dragKanbanHandle(
   }
 }
 
+async function dragManualOrderHandle(
+  page: Page,
+  handle: Locator,
+  destination: Locator,
+  touch: boolean,
+) {
+  await handle.scrollIntoViewIfNeeded();
+  await destination.scrollIntoViewIfNeeded();
+  const sourceBox = await handle.boundingBox();
+  const destinationBox = await destination.boundingBox();
+  if (!sourceBox || !destinationBox)
+    throw new Error("Manual order elements are not laid out");
+  const start = {
+    x: sourceBox.x + sourceBox.width / 2,
+    y: sourceBox.y + sourceBox.height / 2,
+  };
+  const end = {
+    x: destinationBox.x + destinationBox.width / 2,
+    y: destinationBox.y + destinationBox.height * 0.76,
+  };
+
+  if (!touch) {
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 8 });
+    await page.mouse.up();
+    return;
+  }
+
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ ...start, id: 1 }],
+    });
+    for (let step = 1; step <= 8; step += 1)
+      await session.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [
+          {
+            id: 1,
+            x: start.x + ((end.x - start.x) * step) / 8,
+            y: start.y + ((end.y - start.y) * step) / 8,
+          },
+        ],
+      });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await session.detach();
+  }
+}
+
 async function dragCalendarEvent(event: Locator, destinationDay: Locator) {
   await event.scrollIntoViewIfNeeded();
   const destination = await destinationDay.boundingBox();
@@ -150,6 +205,16 @@ async function localTaskTypeDocument(page: Page): Promise<string> {
     const types = await tasknotes.getDirectoryHandle("_types");
     const task = await types.getFileHandle("task.md");
     return (await task.getFile()).text();
+  });
+}
+
+async function localDefaultViewDocument(page: Page): Promise<string> {
+  return page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const views = await tasknotes.getDirectoryHandle("views");
+    const view = await views.getFileHandle("tasknotes-app.base");
+    return (await view.getFile()).text();
   });
 }
 
@@ -289,6 +354,93 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();
+});
+
+test("manually reorders starter-view tasks with pointer and keyboard", async ({
+  page,
+}, testInfo) => {
+  for (const title of ["Manual first", "Manual second", "Manual third"]) {
+    await page.getByLabel("New task title").fill(title);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+  }
+
+  const list = page.locator(".task-list-view");
+  const rows = list.locator(".manual-order-row");
+  await expect(rows).toHaveCount(3);
+  if (testInfo.project.name === "mobile") await expectTouchTargets(list);
+
+  const firstHandle = page.getByRole("button", {
+    name: "Reorder Manual first. Drag, or use up and down arrow keys.",
+  });
+  const thirdRow = rows.filter({
+    has: page.getByText("Manual third", { exact: true }),
+  });
+  await dragManualOrderHandle(
+    page,
+    firstHandle,
+    thirdRow,
+    testInfo.project.name === "mobile",
+  );
+  await expect
+    .poll(() => rows.locator(".task-row-title").allTextContents())
+    .toEqual(["Manual second", "Manual third", "Manual first"]);
+
+  const movedHandle = page.getByRole("button", {
+    name: "Reorder Manual first. Drag, or use up and down arrow keys.",
+  });
+  await expect(movedHandle).toBeEnabled();
+  await movedHandle.press("ArrowUp");
+  await expect
+    .poll(() => rows.locator(".task-row-title").allTextContents())
+    .toEqual(["Manual second", "Manual first", "Manual third"]);
+  await expect(
+    page.getByRole("button", {
+      name: "Reorder Manual first. Drag, or use up and down arrow keys.",
+    }),
+  ).toBeEnabled();
+
+  const documents = await localTaskDocuments(page);
+  const ranks = documents.flatMap(
+    (source) =>
+      source.match(/tasknotes_manual_order:\s*(tn[a-z]{10})/)?.[1] ?? [],
+  );
+  expect(new Set(ranks).size).toBe(3);
+  const defaultViews = await localDefaultViewDocument(page);
+  expect(
+    defaultViews.match(
+      /property: note\.tasknotes_manual_order\s+direction: DESC/g,
+    ),
+  ).toHaveLength(5);
+
+  await testInfo.attach("manual-order.png", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+  await page.getByRole("button", { name: "Edit Today" }).click();
+  const editor = page.getByRole("dialog", { name: "Edit view" });
+  await openViewEditorSection(editor, "Arrange");
+  await expect(
+    editor.getByText(
+      "Manual order is active. Drag handles will appear on tasks.",
+    ),
+  ).toBeVisible();
+  await expect(
+    editor.getByRole("combobox", { name: "Sort property 1" }),
+  ).toHaveValue("note.tasknotes_manual_order");
+  await testInfo.attach("manual-order-editor.png", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+  await editor.getByRole("button", { name: "Close view editor" }).click();
+  await page.reload();
+  await expect
+    .poll(() =>
+      page
+        .locator(".task-list-view .manual-order-row .task-row-title")
+        .allTextContents(),
+    )
+    .toEqual(["Manual second", "Manual first", "Manual third"]);
 });
 
 test("surfaces a quiet warning while a durable local mutation is pending", async ({
@@ -1410,6 +1562,9 @@ views:
     groupBy:
       property: status
       direction: ASC
+    sort:
+      - column: note.tasknotes_manual_order
+        direction: DESC
     order: [status, formula.progress]
   - type: tasknotesTaskList
     name: Task details
@@ -1466,7 +1621,7 @@ views:
     inProgressColumn.getByText("Column capture", { exact: true }),
   ).toBeVisible();
   const movePlan = page.getByRole("button", {
-    name: "Move Plan saved views. Drag, or use left and right arrow keys.",
+    name: "Move Plan saved views. Drag, or use arrow keys.",
   });
   await dragKanbanHandle(
     page,
@@ -1482,6 +1637,14 @@ views:
       .locator(".kanban-card")
       .filter({ hasText: "Plan saved views" }),
   ).toHaveAttribute("aria-busy", "false");
+  const reorderedPlan = page.getByRole("button", {
+    name: "Move Plan saved views. Drag, or use arrow keys.",
+  });
+  await expect(reorderedPlan).toBeEnabled();
+  await reorderedPlan.press("ArrowUp");
+  await expect
+    .poll(() => inProgressColumn.locator(".task-row-title").allTextContents())
+    .toEqual(["Plan saved views", "Column capture"]);
   await expect(
     page.getByRole("button", {
       name: testInfo.project.name === "mobile" ? "Views" : "Work board",

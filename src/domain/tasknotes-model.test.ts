@@ -223,6 +223,20 @@ describe("TaskNotes task model app boundary", () => {
     });
   });
 
+  it("round-trips TaskNotes string ranks through the configured sort field", () => {
+    const created = model.create(
+      { title: "Ranked", sortOrder: "tnnnnnnnnnnn" },
+      { id: "ranked", now: "2026-07-22T00:00:00.000Z" },
+    );
+
+    expect(created.sortOrder).toBe("tnnnnnnnnnnn");
+    expect(created.frontmatter.tasknotes_manual_order).toBe("tnnnnnnnnnnn");
+
+    const updated = model.update(created, { sortOrder: "tnaaaaaaaaaa" });
+    expect(updated.sortOrder).toBe("tnaaaaaaaaaa");
+    expect(updated.frontmatter.tasknotes_manual_order).toBe("tnaaaaaaaaaa");
+  });
+
   it("round-trips structured dependencies through the task contract", () => {
     const created = model.create(
       {
