@@ -151,6 +151,7 @@ function task(input: CreateTaskInput): Task {
     tags: input.tags ?? [],
     contexts: input.contexts ?? [],
     projects: input.projects ?? [],
+    blockedBy: input.blockedBy ?? [],
     completeInstances: [],
     skippedInstances: [],
     reminders: [],

@@ -64,6 +64,40 @@ describe("IndexedMarkdownRepository", () => {
     expect(parsed.body).toBe("Keep this note.");
   });
 
+  it("derives dependency and project inverses from the repository cache", async () => {
+    const parent = await repository.create({ title: "Parent" });
+    const blocker = await repository.create({ title: "Blocker" });
+    const child = await repository.create({ title: "Child" });
+    const link = (path: string) => `[[${path.replace(/\.md$/, "")}]]`;
+
+    await repository.update(parent.id, {
+      blockedBy: [
+        {
+          uid: link(blocker.path),
+          reltype: "STARTTOSTART",
+          gap: "P1D",
+        },
+      ],
+    });
+    await repository.update(child.id, {
+      blockedBy: [
+        {
+          uid: link(parent.path),
+          reltype: "FINISHTOSTART",
+        },
+      ],
+      projects: [link(parent.path)],
+    });
+
+    const relationships = await repository.relationships(parent.id);
+    expect(relationships.blockedBy[0]).toMatchObject({
+      dependency: { reltype: "STARTTOSTART", gap: "P1D" },
+      task: { id: blocker.id, title: "Blocker" },
+    });
+    expect(relationships.blocking.map((task) => task.id)).toEqual([child.id]);
+    expect(relationships.subtasks.map((task) => task.id)).toEqual([child.id]);
+  });
+
   it("allocates unique paths when two canonical filenames collide", async () => {
     const collection = new MarkdownCollection(vault);
     await collection.initialize();

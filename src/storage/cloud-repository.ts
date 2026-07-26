@@ -21,6 +21,7 @@ import {
   occurrenceRecordId,
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
+import { taskRelationships } from "../domain/task-relationships";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -262,6 +263,15 @@ export class CloudTaskRepository implements TaskRepository {
 
   async get(id: string): Promise<Task | null> {
     return this.cache.get(id)?.task ?? null;
+  }
+
+  async relationships(id: string) {
+    const current = this.cache.get(id)?.task;
+    if (!current) throw new Error("Task not found.");
+    return taskRelationships(
+      current,
+      [...this.cache.values()].map(({ task }) => task),
+    );
   }
 
   async completeField(

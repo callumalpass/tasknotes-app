@@ -30,6 +30,7 @@ import type {
   UpdateTaskInput,
 } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskRelationships } from "../domain/task-relationships";
 import type {
   CollectionInfo,
   RefreshResult,
@@ -477,6 +478,46 @@ export function useTask(id: string | null): {
   };
 }
 
+export function useTaskRelationships(id: string): {
+  relationships: TaskRelationships;
+  loading: boolean;
+  error: Error | null;
+} {
+  const { repository, status, version } = useRepository();
+  const [relationships, setRelationships] = useState<TaskRelationships>(
+    emptyTaskRelationships,
+  );
+  const [error, setError] = useState<Error | null>(null);
+  const [resolved, setResolved] = useState("");
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    let active = true;
+    repository
+      .relationships(id)
+      .then((result) => {
+        if (!active) return;
+        setRelationships(result);
+        setError(null);
+        setResolved(id);
+      })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        setError(asError(reason));
+        setResolved(id);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, repository, status, version]);
+
+  return {
+    relationships,
+    loading: status === "opening" || resolved !== id,
+    error,
+  };
+}
+
 export function useCollectionSummary(): {
   info: CollectionInfo | null;
   stats: TaskStats | null;
@@ -504,4 +545,13 @@ export function useCollectionSummary(): {
 
 function asError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
+}
+
+function emptyTaskRelationships(): TaskRelationships {
+  return {
+    blockedBy: [],
+    blocking: [],
+    subtasks: [],
+    projectTasks: [],
+  };
 }

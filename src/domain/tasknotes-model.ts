@@ -181,6 +181,7 @@ export class TaskNotesTaskModel {
       tags: input.tags,
       contexts: input.contexts,
       projects: input.projects,
+      blockedBy: normalizeDependencies(input.blockedBy),
       recurrence: input.recurrence,
       recurrence_anchor: input.recurrenceAnchor,
       occurrence_materialization: input.occurrenceMaterialization,
@@ -295,6 +296,8 @@ export class TaskNotesTaskModel {
     if (input.tags !== undefined) updates.tags = input.tags;
     if (input.contexts !== undefined) updates.contexts = input.contexts;
     if (input.projects !== undefined) updates.projects = input.projects;
+    if (input.blockedBy !== undefined)
+      updates.blockedBy = normalizeDependencies(input.blockedBy);
     if (input.recurrence !== undefined)
       updates.recurrence = input.recurrence ?? undefined;
     if (input.recurrenceAnchor !== undefined)
@@ -725,6 +728,15 @@ export class TaskNotesTaskModel {
     frontmatter: Record<string, unknown>,
     revision: number,
   ): Task {
+    const storedDependencies = mapTaskFromFrontmatter(
+      this.config.fieldMapping,
+      frontmatter,
+      info.path,
+      this.config.storeTitleInFilename,
+      this.config.userFields,
+      this.config.statuses,
+      this.config.priorities,
+    ).blockedBy;
     return {
       id: info.id ?? info.path,
       path: info.path,
@@ -742,6 +754,7 @@ export class TaskNotesTaskModel {
       tags: info.tags ?? [],
       contexts: info.contexts ?? [],
       projects: info.projects ?? [],
+      blockedBy: storedDependencies ?? info.blockedBy ?? [],
       recurrence: info.recurrence,
       recurrenceAnchor: info.recurrence_anchor,
       recurrenceParent: info.recurrence_parent,
@@ -1103,10 +1116,32 @@ function taskAsCreateInput(task: Task): CreateTaskInput {
     tags: task.tags,
     contexts: task.contexts,
     projects: task.projects,
+    blockedBy: task.blockedBy,
     reminders: task.reminders,
     timeEstimate: task.timeEstimate,
     customProperties: task.customProperties,
   };
+}
+
+function normalizeDependencies(
+  dependencies: CreateTaskInput["blockedBy"],
+): NonNullable<CreateTaskInput["blockedBy"]> | undefined {
+  if (dependencies === undefined) return undefined;
+  const seen = new Set<string>();
+  return dependencies.flatMap((dependency) => {
+    const uid = dependency.uid.trim();
+    const key = uid.toLocaleLowerCase();
+    if (!uid || seen.has(key)) return [];
+    seen.add(key);
+    const gap = dependency.gap?.trim();
+    return [
+      {
+        uid,
+        reltype: dependency.reltype ?? "FINISHTOSTART",
+        ...(gap ? { gap } : {}),
+      },
+    ];
+  });
 }
 
 function isEmptyCustomValue(value: unknown): boolean {

@@ -24,6 +24,7 @@ const task: Task = {
   tags: ["task"],
   contexts: [],
   projects: ["mdbase"],
+  blockedBy: [],
   completeInstances: [],
   skippedInstances: [],
   reminders: [],

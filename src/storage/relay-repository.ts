@@ -16,6 +16,7 @@ import {
   occurrenceRecordId,
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
+import { taskRelationships } from "../domain/task-relationships";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -213,6 +214,15 @@ export class RelayTaskRepository implements TaskRepository {
     if (cached && !cached.revision)
       void this.requireCurrent(id).catch(() => undefined);
     return cached?.task ?? null;
+  }
+
+  async relationships(id: string) {
+    const current = this.cache.get(id)?.task;
+    if (!current) throw new Error("Task not found.");
+    return taskRelationships(
+      current,
+      [...this.cache.values()].map(({ task }) => task),
+    );
   }
 
   async completeField(

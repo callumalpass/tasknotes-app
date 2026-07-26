@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingRows } from "../components/loading";
+import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { MultiValueField } from "../components/multi-value-field";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
@@ -32,7 +33,12 @@ import {
   taskTimeTotals,
   taskTimePart,
 } from "../domain/task";
-import { useRepository, useTask } from "./repository-context";
+import { recordMatchesLink } from "../domain/completion";
+import {
+  useRepository,
+  useTask,
+  useTaskRelationships,
+} from "./repository-context";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 import type {
@@ -56,6 +62,7 @@ type Draft = Pick<
   | "tags"
   | "contexts"
   | "projects"
+  | "blockedBy"
   | "recurrence"
   | "recurrenceAnchor"
   | "occurrenceMaterialization"
@@ -133,11 +140,43 @@ function TaskEditor({
     configuration,
     repository,
   } = useRepository();
+  const { relationships: repositoryRelationships } = useTaskRelationships(
+    task.id,
+  );
   const completeField = useCallback(
     (request: FieldCompletionRequest) => repository.completeField(request),
     [repository],
   );
+  const completeDependencyField = useCallback(
+    async (request: FieldCompletionRequest) => {
+      const options = await repository.completeField(request);
+      return options.filter(
+        (option) =>
+          option.value !== task.id &&
+          !recordMatchesLink(task.path, option.value),
+      );
+    },
+    [repository, task.id, task.path],
+  );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
+  const relationships = useMemo(
+    () => ({
+      ...repositoryRelationships,
+      blockedBy: draft.blockedBy.map((dependency) => {
+        const resolved = repositoryRelationships.blockedBy.find(
+          (candidate) =>
+            candidate.dependency.uid === dependency.uid ||
+            (candidate.task &&
+              recordMatchesLink(candidate.task.path, dependency.uid)),
+        );
+        return {
+          dependency,
+          task: resolved?.task,
+        };
+      }),
+    }),
+    [draft.blockedBy, repositoryRelationships],
+  );
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -188,6 +227,7 @@ function TaskEditor({
             tags: value.tags,
             contexts: value.contexts,
             projects: value.projects,
+            blockedBy: value.blockedBy,
             recurrence: value.recurrence ?? null,
             recurrenceAnchor: value.recurrenceAnchor,
             occurrenceMaterialization: value.occurrenceMaterialization,
@@ -619,6 +659,20 @@ function TaskEditor({
               onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
+          <DependencyEditor
+            completeField={completeDependencyField}
+            dependencies={draft.blockedBy}
+            field={configuration.fieldMapping.blockedBy}
+            labels={
+              new Map(
+                relationships.blockedBy.flatMap(({ dependency, task }) =>
+                  task ? [[dependency.uid, task.title] as const] : [],
+                ),
+              )
+            }
+            onChange={(blockedBy) => change({ blockedBy })}
+          />
+          <RelatedWork relationships={relationships} />
           {configuration.userFields.length ? (
             <section
               className="custom-fields"
@@ -751,6 +805,10 @@ function organizeSummary(draft: Draft): string {
     values.push(`${humanizeValue(draft.priority)} priority`);
   if (draft.projects.length)
     values.push(listSummary(draft.projects, "project"));
+  if (draft.blockedBy.length)
+    values.push(
+      `${draft.blockedBy.length} ${draft.blockedBy.length === 1 ? "dependency" : "dependencies"}`,
+    );
   if (draft.contexts.length)
     values.push(listSummary(draft.contexts, "context"));
   const tags = draft.tags.filter((tag) => tag !== "task");
@@ -763,7 +821,9 @@ function organizeSummary(draft: Draft): string {
     values.push(
       `${customCount} ${customCount === 1 ? "property" : "properties"}`,
     );
-  return values.join(" · ") || "Priority, projects, contexts and tags";
+  return (
+    values.join(" · ") || "Priority, projects, dependencies, contexts and tags"
+  );
 }
 
 function timeSummary(task: Task, estimate?: number): string {
@@ -1438,6 +1498,7 @@ function toDraft(task: Task): Draft {
     tags: task.tags,
     contexts: task.contexts,
     projects: task.projects,
+    blockedBy: task.blockedBy,
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
     occurrenceMaterialization: task.occurrenceMaterialization,

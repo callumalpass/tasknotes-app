@@ -1,3 +1,10 @@
+import type {
+  TaskDependency,
+  TaskDependencyRelType,
+} from "@tasknotes/model/types";
+
+export type { TaskDependency, TaskDependencyRelType };
+
 export type TaskStatus = string;
 export type TaskPriority = string;
 
@@ -33,6 +40,7 @@ export interface Task {
   tags: string[];
   contexts: string[];
   projects: string[];
+  blockedBy: TaskDependency[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
   occurrenceMaterialization?: "manual" | "on_completion" | "rolling";
@@ -64,6 +72,7 @@ export interface CreateTaskInput {
   tags?: string[];
   contexts?: string[];
   projects?: string[];
+  blockedBy?: TaskDependency[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
   occurrenceMaterialization?: "manual" | "on_completion" | "rolling";
@@ -90,6 +99,7 @@ export interface UpdateTaskInput {
   tags?: string[];
   contexts?: string[];
   projects?: string[];
+  blockedBy?: TaskDependency[];
   recurrence?: string | null;
   recurrenceAnchor?: "scheduled" | "completion";
   occurrenceMaterialization?: "manual" | "on_completion" | "rolling";

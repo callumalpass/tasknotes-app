@@ -578,6 +578,92 @@ Project notes`);
   ).toBe(true);
 });
 
+test("persists dependencies and derives blocking tasks and subtasks", async ({
+  page,
+}, testInfo) => {
+  for (const title of [
+    "Dependency parent",
+    "Dependency blocker",
+    "Dependency child",
+  ]) {
+    await page.getByLabel("New task title").fill(title);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+  }
+
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await page.getByLabel("Blocked by").fill("blocker");
+  await page
+    .getByRole("option", { name: /Dependency blocker.*tasks\// })
+    .click();
+  await chooseOption(page, "Relationship", "Start to start");
+  await page.getByLabel("Gap", { exact: true }).fill("P2D");
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Dependency parent"),
+      );
+      return (
+        source?.includes("blockedBy:") &&
+        source.includes("reltype: STARTTOSTART") &&
+        source.includes("gap: P2D")
+      );
+    })
+    .toBe(true);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  await page.getByText("Dependency child", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await page.getByLabel("Projects").fill("parent");
+  await page
+    .getByRole("option", { name: /Dependency parent.*tasks\// })
+    .click();
+  await page.getByLabel("Blocked by").fill("parent");
+  await page
+    .getByRole("option", { name: /Dependency parent.*tasks\// })
+    .click();
+  await expect
+    .poll(async () => {
+      const source = (await localTaskDocuments(page)).find((document) =>
+        document.includes("Dependency child"),
+      );
+      return source?.includes("blockedBy:") && source.includes("projects:");
+    })
+    .toBe(true);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Related work" }),
+  ).toBeVisible();
+  const relationshipRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    startedAt,
+  );
+  await testInfo.attach("dependency-relationship-profile.json", {
+    body: JSON.stringify({ relationshipRenderMs }, null, 2),
+    contentType: "application/json",
+  });
+  expect(relationshipRenderMs).toBeLessThan(1_000);
+  await expect(page.getByText("Dependency child", { exact: true })).toHaveCount(
+    2,
+  );
+
+  await page.reload();
+  await page.getByText("Dependency parent", { exact: true }).click();
+  await page.getByText("Organize", { exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Relationship" }),
+  ).toHaveAttribute("data-value", "STARTTOSTART");
+  await expect(page.getByLabel("Gap", { exact: true })).toHaveValue("P2D");
+  await expect(
+    page.getByRole("button", { name: "Remove Dependency blocker" }),
+  ).toBeVisible();
+});
+
 test("projects, completes, and skips recurring occurrences by date", async ({
   page,
 }) => {

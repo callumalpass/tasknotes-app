@@ -29,6 +29,7 @@ import {
 } from "../domain/task";
 import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
+import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
 import {
   TaskNotesDateTimeField,
@@ -601,6 +602,12 @@ function CaptureDetails({
           }
         />
       </div>
+      <DependencyEditor
+        completeField={completeField ?? (async () => [])}
+        dependencies={input.blockedBy ?? []}
+        field={configuration.fieldMapping.blockedBy}
+        onChange={(blockedBy) => onChange({ blockedBy })}
+      />
       <label className="notes-field capture-notes">
         <span>Notes</span>
         <textarea

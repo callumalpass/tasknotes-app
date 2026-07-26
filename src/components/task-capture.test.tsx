@@ -136,6 +136,50 @@ it("offers contract-aware inline suggestions with keyboard selection", async () 
   expect(input).toHaveValue("Call plumber @home ");
 });
 
+it("creates a task with a structured dependency from capture details", async () => {
+  const create = vi.fn(async (input: CreateTaskInput) => task(input));
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+      completeField={async (request) =>
+        request.field === "blockedBy"
+          ? [
+              {
+                kind: "record",
+                label: "Draft proposal",
+                value: "[[tasks/Draft proposal]]",
+              },
+            ]
+          : []
+      }
+    />,
+  );
+
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Review proposal" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Details" }));
+  fireEvent.focus(await screen.findByRole("combobox", { name: "Blocked by" }));
+  fireEvent.click(
+    await screen.findByRole("option", { name: /Draft proposal/ }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+  await waitFor(() =>
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockedBy: [
+          {
+            uid: "[[tasks/Draft proposal]]",
+            reltype: "FINISHTOSTART",
+          },
+        ],
+      }),
+    ),
+  );
+});
+
 function task(input: CreateTaskInput): Task {
   return {
     id: "created",
@@ -151,6 +195,7 @@ function task(input: CreateTaskInput): Task {
     tags: input.tags ?? [],
     contexts: input.contexts ?? [],
     projects: input.projects ?? [],
+    blockedBy: input.blockedBy ?? [],
     completeInstances: [],
     skippedInstances: [],
     reminders: [],
