@@ -2977,6 +2977,9 @@ button:disabled {
   border-radius: 50%;
   box-shadow: 0 10px 24px var(--color-shadow);
   cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .global-capture-scrim {
@@ -5134,6 +5137,44 @@ button:disabled {
   .view-editor-footer {
     padding-right: var(--page-inset);
     padding-left: var(--page-inset);
+  }
+
+  .settings-screen button,
+  .settings-screen input:not([type="checkbox"]),
+  .settings-screen .tasknotes-control-trigger,
+  .view-editor button,
+  .view-editor summary,
+  .view-editor input:not([type="checkbox"]) {
+    min-height: 44px;
+  }
+
+  .view-editor .quiet-icon,
+  .view-editor .view-order-actions button,
+  .saved-view-edit {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .task-actions-subheading {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .task-actions-subheading button,
+  .browse-fields button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .view-editor .filter-group-heading .tasknotes-control-trigger,
+  .view-editor .view-editor-footer .save-view-action {
+    min-height: 44px;
+  }
+
+  body:has(.settings-disclosure[open]) .global-capture-fab {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 

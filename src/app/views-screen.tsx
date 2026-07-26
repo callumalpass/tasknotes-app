@@ -552,7 +552,6 @@ export function ViewsScreen({
             ? " has-list-capture"
             : ""
         }`}
-        aria-live="polite"
       >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
@@ -564,9 +563,13 @@ export function ViewsScreen({
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
             {visibleExecution && currentExecutionRefreshing ? (
-              <small>Updating</small>
+              <small aria-live="polite" role="status">
+                Updating
+              </small>
             ) : visibleExecution?.stale ? (
-              <small>Last available result</small>
+              <small aria-live="polite" role="status">
+                Last available result
+              </small>
             ) : operational ? (
               <small>In navigation</small>
             ) : null}
@@ -584,7 +587,11 @@ export function ViewsScreen({
             </button>
           ) : null}
         </header>
-        {error ? <p className="inline-error">{error}</p> : null}
+        {error ? (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         {currentViewActionError ? (
           <p className="inline-error" role="alert">
             {currentViewActionError}

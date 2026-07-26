@@ -185,6 +185,39 @@ async function openViewEditorSection(
   return section;
 }
 
+async function expectTouchTargets(scope: Locator): Promise<void> {
+  const undersized = await scope
+    .locator(
+      "button, summary, input:not([type='checkbox']):not([type='radio']), [role='combobox']",
+    )
+    .evaluateAll((elements) =>
+      elements.flatMap((element) => {
+        const node = element as HTMLElement;
+        const style = getComputedStyle(node);
+        const bounds = node.getBoundingClientRect();
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          bounds.width === 0 ||
+          bounds.height === 0
+        )
+          return [];
+        if (bounds.width >= 43.5 && bounds.height >= 43.5) return [];
+        return [
+          {
+            name:
+              node.getAttribute("aria-label") ??
+              node.textContent?.trim().slice(0, 60) ??
+              node.tagName,
+            width: Math.round(bounds.width * 10) / 10,
+            height: Math.round(bounds.height * 10) / 10,
+          },
+        ];
+      }),
+    );
+  expect(undersized).toEqual([]);
+}
+
 async function openNavigationView(page: Page, name: string): Promise<void> {
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
   const direct = navigation.getByRole("button", { name, exact: true });
@@ -486,7 +519,14 @@ test("uses responsive TaskNotes controls instead of browser pickers", async ({
 test("edits task model settings in the portable type contract", async ({
   page,
 }, testInfo) => {
+  const settingsStartedAt = await page.evaluate(() => performance.now());
   await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  const settingsRenderMs = await page.evaluate(
+    (start) => performance.now() - start,
+    settingsStartedAt,
+  );
+  expect(settingsRenderMs).toBeLessThan(500);
   const disclosureStartedAt = await page.evaluate(() => performance.now());
   await openSettingsSection(page, "Task model");
   const disclosureOpenMs = await page.evaluate(
@@ -494,6 +534,8 @@ test("edits task model settings in the portable type contract", async ({
     disclosureStartedAt,
   );
   expect(disclosureOpenMs).toBeLessThan(500);
+  if (testInfo.project.name === "mobile")
+    await expectTouchTargets(page.locator(".settings-screen"));
   await chooseOption(page, "Default status", "In progress");
   await chooseOption(page, "Default priority", "High");
   await chooseOption(page, "Record links", "Markdown links");
@@ -510,7 +552,11 @@ test("edits task model settings in the portable type contract", async ({
     startedAt,
   );
   await testInfo.attach("task-model-settings-profile.json", {
-    body: JSON.stringify({ disclosureOpenMs, saveLatencyMs }, null, 2),
+    body: JSON.stringify(
+      { settingsRenderMs, disclosureOpenMs, saveLatencyMs },
+      null,
+      2,
+    ),
     contentType: "application/json",
   });
   expect(saveLatencyMs).toBeLessThan(750);
@@ -1602,6 +1648,10 @@ test("creates, edits, executes, and deletes a saved view", async ({
   await expect(page.getByText("Open work", { exact: true })).toBeVisible();
   await page.getByText("Open work", { exact: true }).click();
   await expect(page.getByLabel("Open work board")).toBeVisible();
+  await expect(page.locator(".views-screen.view-detail")).not.toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
   await expect(
     page.getByText("Build the view editor", { exact: true }),
   ).toBeVisible();
@@ -1735,6 +1785,7 @@ views:
       await openViewEditorSection(editor, "Calendar");
       await expect(editor.getByText("Scheduled dates")).toBeVisible();
     }
+    if (testInfo.project.name === "mobile") await expectTouchTargets(editor);
 
     const box = await editor.boundingBox();
     const viewport = page.viewportSize();

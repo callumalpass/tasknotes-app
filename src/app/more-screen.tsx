@@ -33,6 +33,7 @@ import {
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
+import { storageExplanation } from "./storage-trust";
 
 export function MoreScreen({
   navigationViewCount,
@@ -197,13 +198,7 @@ export function MoreScreen({
           type="button"
           onClick={() => setShowLocation((value) => !value)}
         >
-          <span>
-            {sync.mode === "replicated"
-              ? "Tasks are cached here and synchronized through mdbase."
-              : sync.mode === "live"
-                ? "Tasks are read from this collection through mdbase."
-                : "Tasks are Markdown files stored locally."}
-          </span>
+          <span>{storageExplanation(sync.mode)}</span>
           {showLocation ? (
             <ChevronUp aria-hidden="true" size={17} />
           ) : (
@@ -468,6 +463,10 @@ export function MoreScreen({
           <span>Markdown collection</span>
           <small>mdbase v0.3</small>
         </div>
+        <p className="section-copy">
+          Tasks are ordinary Markdown records. Field mappings and TaskNotes
+          settings travel in the collection type contract.
+        </p>
       </SettingsSection>
 
       <SettingsSection label="About">

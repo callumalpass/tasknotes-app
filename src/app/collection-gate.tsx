@@ -67,6 +67,7 @@ export function CollectionGate() {
   if (!choice)
     return (
       <CollectionWelcome
+        canChooseLocalFolder={canChooseLocalFolder}
         onChooseCloud={() => choose("cloud")}
         onChooseLocal={() => {
           if (canChooseLocalFolder) setChoosingLocalLocation(true);
@@ -100,9 +101,11 @@ export function CollectionGate() {
 }
 
 function CollectionWelcome({
+  canChooseLocalFolder,
   onChooseCloud,
   onChooseLocal,
 }: {
+  canChooseLocalFolder: boolean;
   onChooseCloud(): void;
   onChooseLocal(): void;
 }) {
@@ -112,7 +115,10 @@ function CollectionWelcome({
         <img alt="" src={tasknotesMarkUrl} />
         <p className="eyebrow">TaskNotes</p>
         <h1>Where should your tasks live?</h1>
-        <p>You can change this later.</p>
+        <p>
+          You can switch collections later. Choosing a location does not move
+          tasks between them.
+        </p>
       </div>
       <div className="collection-choices">
         <button type="button" onClick={onChooseCloud}>
@@ -123,7 +129,7 @@ function CollectionWelcome({
               <span className="recommendation-label">Recommended</span>
             </span>
             <small>
-              Usually the easiest choice. Connect a collection in a few steps.
+              Connect a shared collection. Hosted sync can keep working offline.
             </small>
           </span>
         </button>
@@ -132,14 +138,16 @@ function CollectionWelcome({
           <span>
             <strong>On this device</strong>
             <small>
-              Choose a folder and keep direct control of the Markdown files.
+              {canChooseLocalFolder
+                ? "Choose a folder and use its Markdown files directly."
+                : "Keep the source Markdown in this browser on this device."}
             </small>
           </span>
         </button>
       </div>
       <p className="welcome-portability">
-        <FileText aria-hidden="true" size={16} /> Tasks remain portable Markdown
-        records.
+        <FileText aria-hidden="true" size={16} /> In either mode, task records
+        use portable Markdown.
       </p>
     </main>
   );
