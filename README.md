@@ -146,33 +146,17 @@ boundaries. GitHub Actions runs it every six hours.
 ## Web deployment
 
 The production web application is configured for
-<https://app.tasknotes.dev/> on Cloudflare Pages. Connect the
-`callumalpass/tasknotes-app` repository with Cloudflare's native Git integration
-so each push to `main` is built and deployed automatically. Create the Pages
-project with:
+<https://app.tasknotes.dev/> on Cloudflare Pages. GitHub Actions runs the full
+verification and browser suites, rebuilds the web-only application for its
+dedicated origin, then uploads `dist` with Wrangler. Create a Direct Upload
+Pages project named `tasknotes-app` with production branch `main`.
 
-- project name: `tasknotes-app`
-- production branch: `main`
-- framework preset: none
-- build command: `pnpm build`
-- build output directory: `dist`
-- root directory: repository root (leave blank)
-- preview branch deployments: disabled
-
-Set these production build variables in Cloudflare:
-
-```text
-NODE_VERSION=22
-PNPM_VERSION=10.7.0
-VITE_BASE_PATH=/
-TASKNOTES_APP_URL=https://app.tasknotes.dev
-TASKNOTES_WEB_ONLY=1
-```
-
-No Cloudflare API token or manual artifact upload is required. GitHub Actions
-continues to run the full verification and browser suites. After the custom
-domain is live, set the `TASKNOTES_PRODUCTION_URL` GitHub repository variable
-to `https://app.tasknotes.dev` so scheduled smoke checks follow production.
+Configure the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub
+repository secrets, then set the `CLOUDFLARE_PAGES_ENABLED` repository variable
+to `1`. After the custom domain is live, set the
+`TASKNOTES_PRODUCTION_URL` repository variable to
+`https://app.tasknotes.dev` so deploy-time and scheduled smoke checks follow
+production.
 
 The legacy <https://callumalpass.github.io/tasknotes-app/> deployment remains a
 rollback target. Its workflow builds explicitly for `/tasknotes-app/`, so its
