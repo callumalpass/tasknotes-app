@@ -301,10 +301,7 @@ export class RelayTaskRepository implements TaskRepository {
         { id, now: new Date().toISOString() },
         async (path) => {
           const template = validResult(await this.connect.read({ path }));
-          return serializeMarkdownDocument(
-            template.frontmatter,
-            template.body,
-          );
+          return serializeMarkdownDocument(template.frontmatter, template.body);
         },
       );
       try {
@@ -821,10 +818,7 @@ export class RelayTaskRepository implements TaskRepository {
       },
       async (path) => {
         const template = validResult(await this.connect.read({ path }));
-        return serializeMarkdownDocument(
-          template.frontmatter,
-          template.body,
-        );
+        return serializeMarkdownDocument(template.frontmatter, template.body);
       },
     );
     if (!result.created) return result;

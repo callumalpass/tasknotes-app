@@ -737,11 +737,7 @@ function relayFixture(
   };
 }
 
-function taskRecord(
-  id: string,
-  title: string,
-  revision: string,
-): TestRecord {
+function taskRecord(id: string, title: string, revision: string): TestRecord {
   const task = new TaskNotesTaskModel().create(
     { title },
     { id, now: "2026-07-22T00:00:00.000Z" },
