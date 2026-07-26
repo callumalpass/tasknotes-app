@@ -544,7 +544,15 @@ export function ViewsScreen({
 
   return (
     <>
-      <section className="screen views-screen view-detail" aria-live="polite">
+      <section
+        className={`screen views-screen view-detail${
+          captureDefaults &&
+          selected?.presentation?.type === "tasknotes.task-list"
+            ? " has-list-capture"
+            : ""
+        }`}
+        aria-live="polite"
+      >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
             <button className="back-action" type="button" onClick={onBack}>
@@ -1248,7 +1256,7 @@ function TaskListView({
 }: ViewProps & { titleProperty: string }) {
   if (!execution.rows.length)
     return (
-      <div className="plain-empty">
+      <div className="plain-empty task-list-view">
         <h2>Nothing here</h2>
         <p>This view has no matching tasks.</p>
       </div>
@@ -1256,7 +1264,7 @@ function TaskListView({
   const groups = groupTaskViewRows(execution);
   if (groups.length)
     return (
-      <div className="task-groups saved-view-groups">
+      <div className="task-groups saved-view-groups task-list-view">
         {groups.map((group) => (
           <section className="task-section" key={group.key}>
             <div className="section-heading">
@@ -1284,7 +1292,7 @@ function TaskListView({
       </div>
     );
   return (
-    <div className="saved-task-list">
+    <div className="saved-task-list task-list-view">
       {execution.rows.map((row) => (
         <ViewTaskRow
           key={row.task.id}
