@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 
 import type { Task } from "../domain/task";
+import type { PendingLocalMutation } from "./mutation-outbox";
 
 export interface IndexedTask extends Task {
   sourceMtime: number;
@@ -17,6 +18,7 @@ export interface IndexMetadata {
 export class TaskIndex extends Dexie {
   tasks!: EntityTable<IndexedTask, "id">;
   metadata!: EntityTable<IndexMetadata, "key">;
+  mutations!: EntityTable<PendingLocalMutation, "taskId">;
 
   constructor(name = "tasknotes-index-v2") {
     super(name);
@@ -30,6 +32,11 @@ export class TaskIndex extends Dexie {
     this.version(3).stores({
       tasks: "&id",
       metadata: "&key",
+    });
+    this.version(4).stores({
+      tasks: "&id",
+      metadata: "&key",
+      mutations: "&taskId,enqueuedAt",
     });
   }
 }

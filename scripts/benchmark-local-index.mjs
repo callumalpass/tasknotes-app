@@ -110,6 +110,16 @@ try {
           const firstListStartedAt = performance.now();
           const firstPage = await coldRepository.list({ limit: 500 });
           const firstListMs = performance.now() - firstListStartedAt;
+          const localMutationMs = [];
+          const mutationTask = firstPage[0];
+          for (let sample = 0; sample < 12 && mutationTask; sample += 1) {
+            const mutationStartedAt = performance.now();
+            await coldRepository.update(mutationTask.id, {
+              title: `Benchmark task mutation ${sample}`,
+            });
+            localMutationMs.push(performance.now() - mutationStartedAt);
+          }
+          const pendingOutboxCount = await coldIndex.mutations.count();
           coldIndex.close();
 
           const warmIndex = new TaskIndex(databaseName);
@@ -135,6 +145,9 @@ try {
             coldFullIndexMs,
             firstListMs,
             firstPageCount: firstPage.length,
+            localMutationP50Ms: percentile(localMutationMs, 0.5),
+            localMutationP95Ms: percentile(localMutationMs, 0.95),
+            pendingOutboxCount,
             warmInitializeMs,
             unchangedRefreshMs: unchanged.elapsedMs,
             unchangedRefreshWallMs: unchangedWallMs,
@@ -165,6 +178,17 @@ try {
             if (end >= 0) total += end - start;
             return total;
           }
+
+          function percentile(values, percentileValue) {
+            if (!values.length) return 0;
+            const sorted = [...values].sort((left, right) => left - right);
+            return sorted[
+              Math.min(
+                sorted.length - 1,
+                Math.ceil(sorted.length * percentileValue) - 1,
+              )
+            ];
+          }
         },
         { count, run },
       );
@@ -185,6 +209,11 @@ try {
       warmInitializeMs: median(rows.map((row) => row.warmInitializeMs)),
       unchangedRefreshMs: median(rows.map((row) => row.unchangedRefreshWallMs)),
       firstListMs: median(rows.map((row) => row.firstListMs)),
+      localMutationP50Ms: median(rows.map((row) => row.localMutationP50Ms)),
+      localMutationP95Ms: median(rows.map((row) => row.localMutationP95Ms)),
+      pendingOutboxCount: Math.max(
+        ...rows.map((row) => row.pendingOutboxCount),
+      ),
       taskListMs: median(rows.map((row) => row.phases.taskListMs)),
       taskReadAndParseMs: median(
         rows.map((row) => row.phases.taskReadAndParseMs),

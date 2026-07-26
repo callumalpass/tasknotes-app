@@ -16,6 +16,14 @@ import {
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import { taskRelationships } from "../domain/task-relationships";
+import {
+  pendingTaskDelete,
+  pendingTaskMove,
+  pendingTaskWrite,
+  recordMutationFailure,
+  type PendingLocalMutation,
+  type PendingTaskMove,
+} from "./mutation-outbox";
 
 import type {
   CreateTaskInput,
@@ -191,9 +199,11 @@ export class IndexedMarkdownRepository implements TaskRepository {
     if (!this.initialization) {
       this.initialization = this.exclusive(async () => {
         await this.collection.initialize();
-        const [cached, storedProjection] = await Promise.all([
+        await this.replayPendingMutationsUnlocked();
+        const [cached, storedProjection, pendingMutations] = await Promise.all([
           this.index.tasks.toArray(),
           this.index.metadata.get("projection"),
+          this.index.mutations.count(),
         ]);
         for (const task of cached) {
           this.cacheTask(task);
@@ -214,6 +224,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
         this.skipNextPrivateBrowserRefresh =
           complete &&
           consistencyVersion === PROJECTION_CONSISTENCY_VERSION &&
+          pendingMutations === 0 &&
           this.collection.identifier() === "browser-default";
         if (!complete)
           this.publishIndexing(
@@ -474,18 +485,21 @@ export class IndexedMarkdownRepository implements TaskRepository {
         { archived },
         new Date().toISOString(),
       );
-      await this.write(next);
       const destination = this.collection.archiveDestination(next, archived);
-      if (!destination) return next;
+      if (!destination) {
+        await this.write(next);
+        return next;
+      }
+      const mutation = pendingTaskMove(next, destination);
+      await this.index.mutations.put(mutation);
       try {
-        const source = await this.collection.rename(next.path, destination);
-        const moved = { ...next, path: destination };
-        const indexed = indexTask(moved, source);
-        await this.index.tasks.put(indexed);
-        this.cacheTask(indexed);
-        this.markPathsChanged(next.path, destination);
-        return moved;
+        return await this.applyMoveMutationUnlocked(mutation);
       } catch (reason) {
+        if (!(reason instanceof LocalMoveFailure)) {
+          await this.recordFailedMutationUnlocked(mutation, reason);
+          throw reason;
+        }
+        await this.settleFailedMoveUnlocked(mutation, reason.source);
         const warning = archiveMoveWarning(reason, archived);
         const retained = { ...next, operationWarnings: [warning] };
         const cached = this.cache.get(id);
@@ -499,10 +513,14 @@ export class IndexedMarkdownRepository implements TaskRepository {
     return this.exclusive(async () => {
       const current = this.cache.get(id);
       if (!current) return;
-      await this.collection.delete(current.path);
-      this.removeCachedTask(id);
-      await this.index.tasks.delete(id);
-      this.markPathsChanged(current.path);
+      const mutation = pendingTaskDelete(current);
+      await this.index.mutations.put(mutation);
+      try {
+        await this.applyDeleteMutationUnlocked(mutation);
+      } catch (reason) {
+        await this.recordFailedMutationUnlocked(mutation, reason);
+        throw reason;
+      }
     });
   }
 
@@ -574,7 +592,19 @@ export class IndexedMarkdownRepository implements TaskRepository {
   }
 
   async syncStatus(): Promise<RepositorySyncStatus> {
-    return { mode: "local", state: "local", pending: 0, issues: 0 };
+    const pending = await this.index.mutations.count();
+    return {
+      mode: "local",
+      state: "local",
+      pending,
+      issues: 0,
+      ...(pending
+        ? {
+            message:
+              "Some local changes are waiting to be written to Markdown. TaskNotes will retry them automatically.",
+          }
+        : {}),
+    };
   }
 
   async syncIssues(): Promise<RepositorySyncIssue[]> {
@@ -588,6 +618,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private async refreshProgressively(): Promise<RefreshResult> {
     const startedAt = performance.now();
     const plan = await this.exclusive(async () => {
+      await this.replayPendingMutationsUnlocked();
       const configurationChanged = await this.collection.refreshConfiguration();
       const documents = await this.collection.list();
       const storedByPath = new Map(
@@ -736,11 +767,165 @@ export class IndexedMarkdownRepository implements TaskRepository {
   }
 
   private async write(task: Task): Promise<void> {
-    const source = await this.collection.write(task);
-    const indexed = indexTask(task, source);
-    await this.index.tasks.put(indexed);
+    const mutation = pendingTaskWrite(task);
+    await this.index.mutations.put(mutation);
+    try {
+      await this.applyWriteMutationUnlocked(mutation);
+    } catch (reason) {
+      await this.recordFailedMutationUnlocked(mutation, reason);
+      throw reason;
+    }
+  }
+
+  private async replayPendingMutationsUnlocked(): Promise<void> {
+    const pending = await this.index.mutations.orderBy("enqueuedAt").toArray();
+    for (const mutation of pending) {
+      try {
+        if (mutation.kind === "write")
+          await this.applyWriteMutationUnlocked(mutation);
+        else if (mutation.kind === "move")
+          await this.applyMoveMutationUnlocked(mutation);
+        else await this.applyDeleteMutationUnlocked(mutation);
+      } catch (reason) {
+        await this.recordFailedMutationUnlocked(mutation, reason);
+      }
+    }
+  }
+
+  private async recordFailedMutationUnlocked(
+    mutation: PendingLocalMutation,
+    reason: unknown,
+  ): Promise<void> {
+    await this.index.transaction("rw", this.index.mutations, async () => {
+      const current = await this.index.mutations.get(mutation.taskId);
+      if (current?.operationId === mutation.operationId)
+        await this.index.mutations.put(recordMutationFailure(mutation, reason));
+    });
+  }
+
+  private async applyWriteMutationUnlocked(
+    mutation: Extract<PendingLocalMutation, { kind: "write" }>,
+  ): Promise<void> {
+    const source = await this.collection.write(mutation.task);
+    const indexed = indexTask(mutation.task, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
     this.cacheTask(indexed);
-    this.markPathsChanged(task.path);
+    this.markPathsChanged(mutation.task.path);
+  }
+
+  private async applyMoveMutationUnlocked(
+    mutation: PendingTaskMove,
+  ): Promise<Task> {
+    const [sourceExists, destinationExists] = await Promise.all([
+      this.collection.exists(mutation.from),
+      this.collection.exists(mutation.to),
+    ]);
+    const moved = { ...mutation.task, path: mutation.to };
+    if (!sourceExists && destinationExists) {
+      const source = await this.collection.write(moved);
+      await this.commitMovedTaskUnlocked(mutation, moved, source);
+      return moved;
+    }
+    if (sourceExists && destinationExists && mutation.sourceWritten) {
+      const source = await this.collection.write(moved);
+      await this.collection.delete(mutation.from);
+      await this.commitMovedTaskUnlocked(mutation, moved, source);
+      return moved;
+    }
+
+    const written = await this.collection.write(mutation.task);
+    const prepared = await this.markMoveSourceWrittenUnlocked(mutation);
+    let source;
+    try {
+      source = await this.collection.rename(mutation.from, mutation.to);
+    } catch (reason) {
+      throw new LocalMoveFailure(reason, written);
+    }
+    await this.commitMovedTaskUnlocked(prepared, moved, source);
+    return moved;
+  }
+
+  private async markMoveSourceWrittenUnlocked(
+    mutation: PendingTaskMove,
+  ): Promise<PendingTaskMove> {
+    const prepared = { ...mutation, sourceWritten: true };
+    await this.index.transaction("rw", this.index.mutations, async () => {
+      const current = await this.index.mutations.get(mutation.taskId);
+      if (current?.operationId === mutation.operationId)
+        await this.index.mutations.put(prepared);
+    });
+    return prepared;
+  }
+
+  private async commitMovedTaskUnlocked(
+    mutation: PendingTaskMove,
+    moved: Task,
+    source: { lastModified: number; size: number },
+  ): Promise<void> {
+    const indexed = indexTask(moved, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.cacheTask(indexed);
+    this.markPathsChanged(mutation.from, mutation.to);
+  }
+
+  private async settleFailedMoveUnlocked(
+    mutation: PendingTaskMove,
+    source: { lastModified: number; size: number },
+  ): Promise<void> {
+    const indexed = indexTask(mutation.task, source);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.put(indexed);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.cacheTask(indexed);
+    this.markPathsChanged(mutation.from);
+  }
+
+  private async applyDeleteMutationUnlocked(
+    mutation: Extract<PendingLocalMutation, { kind: "delete" }>,
+  ): Promise<void> {
+    if (await this.collection.exists(mutation.path))
+      await this.collection.delete(mutation.path);
+    await this.index.transaction(
+      "rw",
+      this.index.tasks,
+      this.index.mutations,
+      async () => {
+        await this.index.tasks.delete(mutation.taskId);
+        await this.completeMutationUnlocked(mutation);
+      },
+    );
+    this.removeCachedTask(mutation.taskId);
+    this.markPathsChanged(mutation.path);
+  }
+
+  private async completeMutationUnlocked(
+    mutation: PendingLocalMutation,
+  ): Promise<void> {
+    const current = await this.index.mutations.get(mutation.taskId);
+    if (current?.operationId === mutation.operationId)
+      await this.index.mutations.delete(mutation.taskId);
   }
 
   private cacheTask(task: IndexedTask): void {
@@ -921,6 +1106,16 @@ function indexName(identifier: string): string {
 
 function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+class LocalMoveFailure extends Error {
+  readonly source: { lastModified: number; size: number };
+
+  constructor(reason: unknown, source: { lastModified: number; size: number }) {
+    super(errorMessage(reason), { cause: reason });
+    this.name = "LocalMoveFailure";
+    this.source = source;
+  }
 }
 
 function yieldToMainThread(): Promise<void> {

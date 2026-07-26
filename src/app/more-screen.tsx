@@ -194,6 +194,13 @@ export function MoreScreen({
         {showLocation && info ? (
           <code className="collection-path">{info.location}</code>
         ) : null}
+        {choice === "local" && sync.pending ? (
+          <p className="refresh-detail" role="status">
+            {sync.pending} local{" "}
+            {sync.pending === 1 ? "change is" : "changes are"} waiting to be
+            written to Markdown. TaskNotes will retry automatically.
+          </p>
+        ) : null}
         <button
           className="text-action"
           disabled={refreshing}

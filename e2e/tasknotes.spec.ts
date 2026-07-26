@@ -291,6 +291,56 @@ test.beforeEach(async ({ page }) => {
   ).toBeVisible();
 });
 
+test("surfaces a quiet warning while a durable local mutation is pending", async ({
+  page,
+}, testInfo) => {
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(page.getByText(/waiting to be written to Markdown/)).toHaveCount(
+    0,
+  );
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("tasknotes-index-v2");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const database = request.result;
+          const transaction = database.transaction("mutations", "readwrite");
+          transaction.objectStore("mutations").put({
+            taskId: "pending-local-e2e",
+            operationId: crypto.randomUUID(),
+            kind: "delete",
+            path: "../unavailable.md",
+            enqueuedAt: Date.now(),
+            attempts: 0,
+          });
+          transaction.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+          transaction.onerror = () => reject(transaction.error);
+        };
+      }),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "More", level: 1 }),
+  ).toBeVisible();
+
+  const warning = page.getByText(/waiting to be written to Markdown/);
+  await expect(warning).toContainText(
+    "1 local change is waiting to be written to Markdown.",
+  );
+  await warning.evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
+  await testInfo.attach("pending-local-mutation.png", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+});
+
 test("suggests capture values from the collection contract", async ({
   page,
 }, testInfo) => {
