@@ -74,3 +74,52 @@ jobs:
         run: pnpm test:production-smoke
         env:
           TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
+
+  deploy-cloudflare:
+    if: vars.CLOUDFLARE_PAGES_ENABLED == '1'
+    needs: deploy
+    environment:
+      name: cloudflare-pages
+      url: https://app.tasknotes.dev/
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Cloudflare Pages application
+        run: pnpm build
+        env:
+          VITE_BASE_PATH: /
+          TASKNOTES_APP_URL: https://app.tasknotes.dev
+          TASKNOTES_WEB_ONLY: "1"
+          TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
+
+      - name: Verify Cloudflare Pages manifest
+        run: node -e 'const manifest = require("./dist/.well-known/mdbase-app.json"); if (manifest.homepage !== "https://app.tasknotes.dev/" || manifest.redirect_uris?.[0] !== "https://app.tasknotes.dev/auth/mdbase/callback" || manifest.redirect_uris?.length !== 1) process.exit(1)'
+
+      - name: Deploy Cloudflare Pages
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=tasknotes-app --branch=main
+          packageManager: pnpm
+          wranglerVersion: "4.114.0"
+
+      - name: Smoke production domain
+        if: vars.TASKNOTES_PRODUCTION_URL != ''
+        run: pnpm test:production-smoke
+        env:
+          TASKNOTES_PRODUCTION_URL: ${{ vars.TASKNOTES_PRODUCTION_URL }}
