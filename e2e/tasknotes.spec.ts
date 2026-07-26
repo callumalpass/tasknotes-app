@@ -747,7 +747,7 @@ test("auto-archives from a contract status event without polling", async ({
 
 test("edits planning fields, recurrence, reminders, and upcoming tasks", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.getByLabel("New task title").fill("Prepare weekly review");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Prepare weekly review", { exact: true }).click();
@@ -766,11 +766,17 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByLabel("Tags").fill("release, planning");
   await page.getByText("Repeat and reminders", { exact: true }).click();
   await chooseOption(page, "Repeat", "Weekly");
-  await page.getByRole("button", { name: "Customize" }).click();
   await page.getByLabel("Repeat interval").fill("2");
   await page.getByRole("button", { name: "Monday" }).click();
-  await chooseOption(page, "Ends", "After occurrences");
+  await chooseOption(page, "Ends", "After a number of times");
   await page.getByRole("spinbutton", { name: "Occurrences" }).fill("6");
+  await expect(page.getByText(/Every 2 weeks/)).toBeVisible();
+  if (testInfo.project.name === "mobile")
+    await expectTouchTargets(page.locator(".recurrence-field"));
+  await testInfo.attach("recurrence-builder.png", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
   await page
     .getByRole("button", { name: "Add 15 minutes before scheduled" })
     .click();
@@ -792,9 +798,13 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
       return {
         absolute: source?.includes("type: absolute") ?? false,
         relative: source?.includes("type: relative") ?? false,
+        recurrence:
+          source?.includes("FREQ=WEEKLY") &&
+          source.includes("INTERVAL=2") &&
+          source.includes("COUNT=6"),
       };
     })
-    .toEqual({ absolute: true, relative: true });
+    .toEqual({ absolute: true, relative: true, recurrence: true });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.reload();
   await page.getByText("Repeat and reminders", { exact: true }).click();
