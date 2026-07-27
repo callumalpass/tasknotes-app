@@ -55,6 +55,10 @@ export function savedCloudConnections(): MdbaseConnectionInfo[] {
   return cloudConnect.connections();
 }
 
+export function cloudControlUrl(): string {
+  return serverUrl;
+}
+
 export function cloudConnection(
   collectionId: string,
 ): MdbaseConnection<JsonObject> | null {

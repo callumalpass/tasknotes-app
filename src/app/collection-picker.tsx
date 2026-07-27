@@ -27,12 +27,14 @@ export type CollectionMigrationState =
       step: "running";
       destinationName: string;
       progress: CollectionTransferProgress;
+      verificationUri?: string;
     }
   | {
       step: "error";
       destinationName?: string;
       message: string;
       canRetry: boolean;
+      mustResume?: boolean;
     }
   | {
       step: "complete";
@@ -58,7 +60,6 @@ export function CollectionPicker({
   onRetryMigration,
   onSelectCloud,
   onSelectLocal,
-  onSelectMigrationDestination,
 }: {
   activeChoice: CollectionChoice;
   activeLocalLocation: LocalCollectionLocation;
@@ -77,7 +78,6 @@ export function CollectionPicker({
   onRetryMigration(): void;
   onSelectCloud(collectionId: string): void;
   onSelectLocal(location: LocalCollectionLocation): void;
-  onSelectMigrationDestination(collectionId: string): void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -108,14 +108,12 @@ export function CollectionPicker({
         {migration ? (
           <MigrationPicker
             closeRef={closeRef}
-            connections={cloudConnections}
             migration={migration}
             onAuthorize={onAuthorizeMigration}
             onBack={onBackFromMigration}
             onClose={onClose}
             onFinish={onFinishMigration}
             onRetry={onRetryMigration}
-            onSelect={onSelectMigrationDestination}
           />
         ) : (
           <>
@@ -217,8 +215,8 @@ export function CollectionPicker({
                   <span>
                     <strong>Move this collection to mdbase</strong>
                     <small>
-                      Copy, verify, then switch. The local collection stays as a
-                      backup.
+                      Adopt one validated snapshot, then make mdbase the
+                      authority.
                     </small>
                   </span>
                 </button>
@@ -233,35 +231,32 @@ export function CollectionPicker({
 
 function MigrationPicker({
   closeRef,
-  connections,
   migration,
   onAuthorize,
   onBack,
   onClose,
   onFinish,
   onRetry,
-  onSelect,
 }: {
   closeRef: React.RefObject<HTMLButtonElement | null>;
-  connections: MdbaseConnectionInfo[];
   migration: CollectionMigrationState;
   onAuthorize(): void;
   onBack(): void;
   onClose(): void;
   onFinish(): void;
   onRetry(): void;
-  onSelect(collectionId: string): void;
 }) {
   const running =
     migration.step === "running" || migration.step === "authorizing";
-  const hosted = connections.filter(isHostedCloudConnection);
+  const locked =
+    running || (migration.step === "error" && migration.mustResume);
   return (
     <>
       <header className="collection-picker-header">
         <button
           aria-label="Back to collections"
           className="icon-action"
-          disabled={running}
+          disabled={locked}
           onClick={onBack}
           type="button"
         >
@@ -274,7 +269,7 @@ function MigrationPicker({
         <button
           aria-label="Close collection picker"
           className="icon-action"
-          disabled={migration.step === "running"}
+          disabled={locked}
           onClick={onClose}
           ref={closeRef}
           type="button"
@@ -286,49 +281,45 @@ function MigrationPicker({
       {migration.step === "destination" ? (
         <div className="collection-picker-content migration-destinations">
           <p className="collection-transfer-copy">
-            Choose an empty hosted collection. TaskNotes preserves record
-            identities, paths, Markdown bodies, and saved views.
+            mdbase will create a hosted authority from this complete local
+            collection. Nothing switches until the final fenced snapshot has
+            uploaded and passed mdbase validation.
           </p>
-          <CollectionGroup label="Hosted collections">
-            {hosted.map((connection) => (
-              <CollectionRow
-                active={false}
-                detail="Use as destination"
-                icon={<Cloud aria-hidden="true" size={20} />}
-                key={connection.collectionId}
-                label={connection.displayName}
-                onClick={() => onSelect(connection.collectionId)}
-              />
-            ))}
-            {!hosted.length ? (
-              <p className="collection-picker-empty">
-                No hosted collection is connected yet.
-              </p>
-            ) : null}
+          <CollectionGroup label="What moves">
+            <p className="collection-picker-empty">
+              Markdown records, mdbase configuration and types, and saved views
+              move together under the same collection identity. The original
+              local files become a read-only archive after adoption.
+            </p>
             <CollectionAction
-              icon={<Plus aria-hidden="true" size={19} />}
-              label="Choose or create a hosted collection"
+              icon={<Cloud aria-hidden="true" size={19} />}
+              label="Continue with mdbase"
               onClick={onAuthorize}
             />
           </CollectionGroup>
         </div>
       ) : migration.step === "authorizing" ? (
         <MigrationStatus
-          detail="Finish choosing a hosted collection in mdbase. You will return here automatically."
-          label="Waiting for mdbase"
+          detail="Approve TaskNotes access to the newly hosted collection. You will return here automatically."
+          label="Hosted authority is ready"
         />
       ) : migration.step === "running" ? (
         <MigrationStatus
           detail={transferProgressLabel(migration.progress)}
           label={`Moving to ${migration.destinationName}`}
           progress={migration.progress}
+          verificationUri={migration.verificationUri}
         />
       ) : migration.step === "error" ? (
         <div className="collection-transfer-result">
           <p className="transfer-result-mark error" aria-hidden="true">
             !
           </p>
-          <h3>Nothing was removed locally.</h3>
+          <h3>
+            {migration.mustResume
+              ? "Authority activation must be resolved."
+              : "Nothing was removed locally."}
+          </h3>
           <p role="alert">{migration.message}</p>
           <div className="collection-transfer-buttons">
             {migration.canRetry ? (
@@ -340,9 +331,11 @@ function MigrationPicker({
                 Retry transfer
               </button>
             ) : null}
-            <button className="text-action" onClick={onBack} type="button">
-              Choose another destination
-            </button>
+            {!migration.mustResume ? (
+              <button className="text-action" onClick={onBack} type="button">
+                Back to collection details
+              </button>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -350,13 +343,14 @@ function MigrationPicker({
           <p className="transfer-result-mark success" aria-hidden="true">
             <Check size={26} />
           </p>
-          <h3>Verified in {migration.destinationName}.</h3>
+          <h3>{migration.destinationName} is hosted.</h3>
           <p>
             {migration.result.records.toLocaleString()}{" "}
             {migration.result.records === 1 ? "record" : "records"} and{" "}
             {migration.result.views.toLocaleString()} saved{" "}
-            {migration.result.views === 1 ? "view" : "views"} copied. The local
-            collection remains available as a backup.
+            {migration.result.views === 1 ? "view" : "views"} adopted as one
+            validated snapshot. The original local collection is a read-only
+            archive; TaskNotes now uses its hosted replica.
           </p>
           <button className="outline-action" onClick={onFinish} type="button">
             Open hosted collection
@@ -443,10 +437,12 @@ function MigrationStatus({
   detail,
   label,
   progress,
+  verificationUri,
 }: {
   detail: string;
   label: string;
   progress?: CollectionTransferProgress;
+  verificationUri?: string;
 }) {
   const value =
     progress && progress.total
@@ -461,6 +457,13 @@ function MigrationStatus({
       <Upload aria-hidden="true" size={28} strokeWidth={1.5} />
       <h3>{label}</h3>
       <p>{detail}</p>
+      {verificationUri ? (
+        <p>
+          <a href={verificationUri} rel="noopener noreferrer" target="_blank">
+            Open mdbase approval
+          </a>
+        </p>
+      ) : null}
       {value === undefined ? null : (
         <progress
           aria-label="Collection transfer progress"
@@ -479,17 +482,17 @@ function transferProgressLabel(progress: CollectionTransferProgress): string {
   switch (progress.phase) {
     case "reading":
       return "Reading the local Markdown collection.";
-    case "checking":
-      return "Checking the hosted destination.";
-    case "copying":
+    case "approving":
+      return "Waiting for collection adoption approval.";
+    case "uploading":
       return progress.total
-        ? `Copying record ${progress.completed.toLocaleString()} of ${progress.total.toLocaleString()}.`
-        : "Preparing the hosted collection.";
-    case "views":
-      return progress.total
-        ? `Copying saved view ${progress.completed.toLocaleString()} of ${progress.total.toLocaleString()}.`
-        : "Checking saved views.";
-    case "verifying":
-      return "Verifying the hosted copy.";
+        ? `Uploading snapshot document ${progress.completed.toLocaleString()} of ${progress.total.toLocaleString()}.`
+        : "Uploading the collection snapshot.";
+    case "fencing":
+      return "Holding local writes and checking for final changes.";
+    case "activating":
+      return "Activating the exact validated snapshot as hosted authority.";
+    case "authorizing":
+      return "Connecting TaskNotes to the hosted collection.";
   }
 }

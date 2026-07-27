@@ -234,8 +234,8 @@ export function MoreScreen({
           {choice === "local" ? (
             <>
               <p className="section-copy">
-                Open another local collection, or copy and verify this
-                collection in hosted mdbase before switching.
+                Open another local collection, or adopt this complete collection
+                into hosted mdbase and move authority there.
               </p>
               <button
                 className="text-action"

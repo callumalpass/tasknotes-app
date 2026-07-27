@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz
+  "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz
 
 importers:
   .:
@@ -56,14 +56,14 @@ importers:
         specifier: 6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)
       "@mdbase/connect":
-        specifier: file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz
-        version: file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz
+        specifier: file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz
+        version: file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz
       "@mdbase/connect-protocol":
-        specifier: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz
-        version: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz
+        specifier: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz
+        version: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz
       "@mdbase/connect-sync":
-        specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz
-        version: file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz
+        specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz
+        version: file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz
       "@tasknotes/model":
         specifier: file:vendor/tasknotes-model-0.3.0-rc.3.tgz
         version: file:vendor/tasknotes-model-0.3.0-rc.3.tgz
@@ -79,6 +79,9 @@ importers:
       obsidian-bases-expression:
         specifier: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
         version: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
+      picomatch:
+        specifier: 4.0.5
+        version: 4.0.5
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -125,6 +128,9 @@ importers:
       "@testing-library/react":
         specifier: 16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      "@types/picomatch":
+        specifier: 4.0.2
+        version: 4.0.2
       "@types/react":
         specifier: 19.2.17
         version: 19.2.17
@@ -151,7 +157,7 @@ importers:
         version: 17.7.0
       jsdom:
         specifier: 29.1.1
-        version: 29.1.1
+        version: 29.1.1(@noble/hashes@2.2.0)
       prettier:
         specifier: 3.9.6
         version: 3.9.6
@@ -169,7 +175,7 @@ importers:
         version: 8.1.5(@types/node@26.1.1)(yaml@2.9.0)
       vitest:
         specifier: 4.1.10
-        version: 4.1.10(@types/node@26.1.1)(jsdom@29.1.1)(vite@8.1.5(@types/node@26.1.1)(yaml@2.9.0))
+        version: 4.1.10(@types/node@26.1.1)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@26.1.1)(yaml@2.9.0))
 
 packages:
   "@adobe/css-tools@4.5.0":
@@ -1222,28 +1228,28 @@ packages:
         integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==,
       }
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz":
     resolution:
       {
-        integrity: sha512-+8MaCMytLGwskyLPdeanPRjSPg9ZM83M8V4TZ87RErWNdr5rEGJwPlqhO1lorLzBpaqYhWz+1Uo8fWmRiinWjg==,
-        tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz,
+        integrity: sha512-J7RWdFJrQsPWFEEsLG167SuV4n+bXRDFlTnlyGXlLAZblDw3Va0XUAnb2t86C9NiOys/yVIJptwtUXfrfbxjKg==,
+        tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz,
       }
     version: 0.1.0-beta.8
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz":
     resolution:
       {
-        integrity: sha512-UBBrxEu29p7cEi7NIZ/3qL5lJKWO6Hj1SLF2qRHXHQ+MOW/JPSHqxrhGMOJOnOUh7hcvqHoosUcAKhTdIQlnGQ==,
-        tarball: file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz,
+        integrity: sha512-dEiX+rSYwLJ60nngsBGCQLmqq1Os7GEul5DFutCKj5oz98uW0hx7UPRA3R14TrcQZogyHZTl/eBSrfGcWuCPaA==,
+        tarball: file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz,
       }
     version: 0.1.0-beta.8
     hasBin: true
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz":
     resolution:
       {
         integrity: sha512-jVgJFlSrHyfHA7Ms7VKG8knMTlxddwLcyPULR8q6YRjRxdXd6nT/7AFX7euoImQ3xQDHnlrfPK02VEWeLWmwQA==,
-        tarball: file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz,
+        tarball: file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz,
       }
     version: 0.1.0-beta.8
 
@@ -1655,6 +1661,12 @@ packages:
     resolution:
       {
         integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==,
+      }
+
+  "@types/picomatch@4.0.2":
+    resolution:
+      {
+        integrity: sha512-qHHxQ+P9PysNEGbALT8f8YOSHW0KJu6l2xU8DYY0fu/EmGxXdVnuTLvFUvBgPJMSqXq29SYHveejeAha+4AYgA==,
       }
 
   "@types/react-dom@19.2.3":
@@ -6510,7 +6522,9 @@ snapshots:
       "@eslint/core": 1.2.1
       levn: 0.4.1
 
-  "@exodus/bytes@1.15.1": {}
+  "@exodus/bytes@1.15.1(@noble/hashes@2.2.0)":
+    optionalDependencies:
+      "@noble/hashes": 2.2.0
 
   "@firebase/ai@2.13.1(@firebase/app-types@0.9.5)(@firebase/app@0.15.1)":
     dependencies:
@@ -7043,18 +7057,18 @@ snapshots:
       "@jridgewell/resolve-uri": 3.1.2
       "@jridgewell/sourcemap-codec": 1.5.5
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz":
     {}
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz
+      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz
       "@noble/hashes": 2.2.0
       yaml: 2.9.0
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz":
+  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz
+      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz
 
   "@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)":
     dependencies:
@@ -7279,6 +7293,8 @@ snapshots:
       undici-types: 8.3.0
 
   "@types/normalize-package-data@2.4.4": {}
+
+  "@types/picomatch@4.0.2": {}
 
   "@types/react-dom@19.2.3(@types/react@19.2.17)":
     dependencies:
@@ -7836,10 +7852,10 @@ snapshots:
 
   dargs@7.0.0: {}
 
-  data-urls@7.0.0:
+  data-urls@7.0.0(@noble/hashes@2.2.0):
     dependencies:
       whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1
+      whatwg-url: 16.0.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - "@noble/hashes"
 
@@ -8296,9 +8312,9 @@ snapshots:
     dependencies:
       lru-cache: 6.0.0
 
-  html-encoding-sniffer@6.0.0:
+  html-encoding-sniffer@6.0.0(@noble/hashes@2.2.0):
     dependencies:
-      "@exodus/bytes": 1.15.1
+      "@exodus/bytes": 1.15.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - "@noble/hashes"
 
@@ -8392,17 +8408,17 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  jsdom@29.1.1:
+  jsdom@29.1.1(@noble/hashes@2.2.0):
     dependencies:
       "@asamuzakjp/css-color": 5.1.11
       "@asamuzakjp/dom-selector": 7.1.1
       "@bramus/specificity": 2.4.2
       "@csstools/css-syntax-patches-for-csstree": 1.1.6(css-tree@3.2.1)
-      "@exodus/bytes": 1.15.1
+      "@exodus/bytes": 1.15.1(@noble/hashes@2.2.0)
       css-tree: 3.2.1
-      data-urls: 7.0.0
+      data-urls: 7.0.0(@noble/hashes@2.2.0)
       decimal.js: 10.6.0
-      html-encoding-sniffer: 6.0.0
+      html-encoding-sniffer: 6.0.0(@noble/hashes@2.2.0)
       is-potential-custom-element-name: 1.0.1
       lru-cache: 11.5.2
       parse5: 8.0.1
@@ -8413,7 +8429,7 @@ snapshots:
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1
+      whatwg-url: 16.0.1(@noble/hashes@2.2.0)
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - "@noble/hashes"
@@ -9875,7 +9891,7 @@ snapshots:
       fsevents: 2.3.3
       yaml: 2.9.0
 
-  vitest@4.1.10(@types/node@26.1.1)(jsdom@29.1.1)(vite@8.1.5(@types/node@26.1.1)(yaml@2.9.0)):
+  vitest@4.1.10(@types/node@26.1.1)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@26.1.1)(yaml@2.9.0)):
     dependencies:
       "@vitest/expect": 4.1.10
       "@vitest/mocker": 4.1.10(vite@8.1.5(@types/node@26.1.1)(yaml@2.9.0))
@@ -9899,7 +9915,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       "@types/node": 26.1.1
-      jsdom: 29.1.1
+      jsdom: 29.1.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - msw
 
@@ -9923,9 +9939,9 @@ snapshots:
 
   whatwg-mimetype@5.0.0: {}
 
-  whatwg-url@16.0.1:
+  whatwg-url@16.0.1(@noble/hashes@2.2.0):
     dependencies:
-      "@exodus/bytes": 1.15.1
+      "@exodus/bytes": 1.15.1(@noble/hashes@2.2.0)
       tr46: 6.0.0
       webidl-conversions: 8.0.1
     transitivePeerDependencies:

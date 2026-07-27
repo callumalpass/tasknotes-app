@@ -13,6 +13,10 @@ const appRoot = resolve(import.meta.dirname, "..");
 const connectRoot = resolve(
   process.env.TASKNOTES_CONNECT_ROOT ?? resolve(appRoot, "../mdbase-connect"),
 );
+const execute = promisify(execFile);
+if (process.env.MDBASE_CONNECT_E2E_BUILD !== "0") {
+  await execute("pnpm", ["build"], { cwd: connectRoot });
+}
 const { startConnectTestEnvironment } = await import(
   `${connectRoot}/scripts/lib/connect-test-environment.mjs`
 );
@@ -25,7 +29,6 @@ const { MemoryAuthority, MemoryReplicaStore, OfflineReplica, SyncError } =
 const appPort = await availablePort();
 const appUrl = `http://127.0.0.1:${appPort}`;
 const provider = await startMemoryProvider();
-const execute = promisify(execFile);
 let control;
 let controlUrl;
 let vite;
@@ -95,26 +98,47 @@ try {
   await collectionPicker
     .getByRole("button", { name: /Move this collection to mdbase/ })
     .click();
-  await page
-    .getByRole("button", { name: "Choose or create a hosted collection" })
-    .click();
-  await expect(page).toHaveURL(new RegExp(`^${escapeRegex(controlUrl)}/login`));
-  await page.getByLabel("Name").fill("TaskNotes E2E");
-  await page.getByLabel("Email").fill("tasknotes-e2e@example.com");
-  await page.getByRole("button", { name: "Continue" }).click();
-  const createHostedCollection = page.getByRole("button", {
-    name: /^(Create hosted collection|Create an mdbase cloud collection)$/,
+  let dropActivationResponse = true;
+  await context.route("**/v1/authority-adoptions/*/complete", async (route) => {
+    if (!dropActivationResponse || route.request().method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    dropActivationResponse = false;
+    await route.abort("failed");
   });
-  await expect(createHostedCollection).toBeVisible();
-  await createHostedCollection.click();
-  await page
-    .getByRole("textbox", { name: "New collection name" })
-    .fill("My collection");
-  await page.getByRole("button", { name: "Create collection" }).click();
+  const approvalPagePromise = context.waitForEvent("page");
+  await page.getByRole("button", { name: "Continue with mdbase" }).click();
+  const approvalPage = await approvalPagePromise;
+  await approvalPage.waitForLoadState();
+  await expect(approvalPage).toHaveURL(
+    new RegExp(`^${escapeRegex(controlUrl)}/login`),
+  );
+  await approvalPage.getByLabel("Name").fill("TaskNotes E2E");
+  await approvalPage.getByLabel("Email").fill("tasknotes-e2e@example.com");
+  await approvalPage.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByRole("radio", {
-      name: /My collection Hosted by mdbase Setup needed/,
+    approvalPage.getByRole("button", { name: "Adopt this collection" }),
+  ).toBeVisible();
+  await approvalPage
+    .getByRole("button", { name: "Adopt this collection" })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Authority activation must be resolved.",
     }),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.getByRole("button", { name: "Back to collection details" }),
+  ).toHaveCount(0);
+  phase("restarting TaskNotes while authority activation is unresolved");
+  await page.reload();
+  await expect(page).toHaveURL(
+    new RegExp(`^${escapeRegex(controlUrl)}/authorize`),
+    { timeout: 15_000 },
+  );
+  await expect(
+    page.getByRole("radio", { name: /TaskNotes Hosted by mdbase/ }),
   ).toBeChecked();
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(
@@ -127,10 +151,10 @@ try {
     .poll(() => new URL(page.url()).searchParams.get("collection"))
     .toMatch(/^[0-9a-f-]{36}$/);
   await expect(
-    page.getByRole("heading", { name: "Verified in My collection." }),
+    page.getByRole("heading", { name: "TaskNotes is hosted." }),
   ).toBeVisible({ timeout: 15_000 });
   await expect(
-    page.getByText(/1 record and 1 saved view copied/),
+    page.getByText(/1 record and 1 saved view adopted/),
   ).toBeVisible();
   const transferredViews = provider.transferredViewSources();
   assert.equal(transferredViews.length, 1);
@@ -375,6 +399,7 @@ async function startMemoryProvider() {
   const collections = new Map();
   const replicas = new Map();
   const tokens = new Map();
+  const authorityImports = new Map();
   const timerReconciliations = [];
   const internalToken = `tasknotes-e2e-${crypto.randomUUID()}-${crypto.randomUUID()}`;
   let online = true;
@@ -405,6 +430,18 @@ async function startMemoryProvider() {
       }
       if (url.pathname.startsWith("/internal/")) {
         await handleInternalRequest(request, response, url);
+        return;
+      }
+      const authorityImport = url.pathname.match(
+        /^\/v1\/authority-imports\/([^/]+)\/(manifest|records|finalize)$/,
+      );
+      if (authorityImport) {
+        await handleAuthorityImportRequest(
+          request,
+          response,
+          authorityImport[1],
+          authorityImport[2],
+        );
         return;
       }
       const match = url.pathname.match(
@@ -588,8 +625,61 @@ async function startMemoryProvider() {
     const compact = requestUrl.pathname.match(
       /^\/internal\/v1\/collections\/([^/]+)\/compact$/,
     );
+    const authorityImport = requestUrl.pathname.match(
+      /^\/internal\/v1\/authority-imports(?:\/([^/]+))?$/,
+    );
 
-    if (
+    if (authorityImport && method === "POST" && !authorityImport[1]) {
+      const input = await requestJson(request);
+      const expiresAt = new Date(
+        Date.now() + Number(input.ttl_seconds) * 1_000,
+      ).toISOString();
+      const existing = authorityImports.get(input.transfer_id);
+      if (!existing) {
+        authorityImports.set(input.transfer_id, {
+          id: input.transfer_id,
+          collectionId: input.collection_id,
+          displayName: input.display_name,
+          token: input.token,
+          authorityEpoch: input.authority_epoch,
+          expiresAt,
+          state: "receiving",
+          manifest: null,
+          pages: new Map(),
+          contracts: [],
+        });
+      } else {
+        existing.token = input.token;
+        existing.expiresAt = expiresAt;
+      }
+      send(
+        response,
+        200,
+        authorityImportView(authorityImports.get(input.transfer_id)),
+      );
+    } else if (authorityImport?.[1] && method === "POST") {
+      const input = await requestJson(request);
+      const imported = authorityImports.get(authorityImport[1]);
+      if (
+        !imported ||
+        !["uploaded", "completed"].includes(imported.state) ||
+        imported.manifest.manifest_digest !== input.manifest_digest ||
+        imported.manifest.source_revision !== input.source_revision
+      )
+        throw new SyncError(
+          "authority_import_not_ready",
+          "Import is not ready.",
+        );
+      imported.state = "completed";
+      send(response, 200, authorityImportView(imported));
+    } else if (authorityImport?.[1] && method === "DELETE") {
+      const imported = authorityImports.get(authorityImport[1]);
+      if (!imported)
+        throw new SyncError("authority_import_not_found", "Import not found.");
+      imported.state = "aborted";
+      collections.delete(imported.collectionId);
+      send(response, 200, authorityImportView(imported));
+    } else if (
       method === "POST" &&
       requestUrl.pathname === "/internal/v1/collections"
     ) {
@@ -672,6 +762,88 @@ async function startMemoryProvider() {
     } else {
       send(response, 404, error("not_found", "Not found."));
     }
+  }
+
+  async function handleAuthorityImportRequest(
+    request,
+    response,
+    importId,
+    operation,
+  ) {
+    const imported = authorityImports.get(importId);
+    const bearer = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!imported || bearer !== imported.token) {
+      send(
+        response,
+        401,
+        error("invalid_authority_import_token", "Invalid token."),
+      );
+      return;
+    }
+    if (operation === "manifest" && request.method === "PUT") {
+      imported.manifest = await requestJson(request);
+      imported.pages.clear();
+      imported.state = "receiving";
+      send(response, 200, authorityImportView(imported));
+      return;
+    }
+    if (operation === "records" && request.method === "PUT") {
+      if (imported.state !== "receiving" || !imported.manifest)
+        throw new SyncError(
+          "authority_import_inactive",
+          "Import is not receiving records.",
+        );
+      const page = await requestJson(request);
+      imported.pages.set(page.page, page.records);
+      send(response, 200, authorityImportView(imported));
+      return;
+    }
+    if (operation === "finalize" && request.method === "POST") {
+      const records = [...imported.pages.entries()]
+        .sort(([left], [right]) => left - right)
+        .flatMap(([, page]) => page);
+      if (records.length !== imported.manifest.record_count)
+        throw new SyncError(
+          "authority_import_incomplete",
+          "Import is incomplete.",
+        );
+      const resources = importedResources(imported.manifest.resources);
+      const authority = new MemoryAuthority({
+        id: imported.collectionId,
+        resources,
+      });
+      authority.seed(
+        records.map((record) => {
+          const parsed = markdownDocument(record.document);
+          return {
+            record_id: record.record_id,
+            path: record.path,
+            frontmatter: parsed.frontmatter,
+            body: parsed.body,
+            types: explicitTypes(parsed.frontmatter),
+          };
+        }),
+      );
+      collections.set(imported.collectionId, {
+        displayName: imported.displayName,
+        authority,
+      });
+      for (const document of resources.documents.filter(
+        ({ kind }) => kind === "view",
+      )) {
+        transferredViews.set(document.path, {
+          path: document.path,
+          format: "obsidian.base",
+          revision: document.revision,
+          document: document.document,
+        });
+      }
+      imported.contracts = resources.contracts;
+      imported.state = "uploaded";
+      send(response, 200, authorityImportView(imported));
+      return;
+    }
+    send(response, 404, error("not_found", "Not found."));
   }
 
   client = {
@@ -950,6 +1122,84 @@ function provisionedResources(resources, provisions) {
     contracts,
     documents,
   };
+}
+
+function authorityImportView(imported) {
+  return {
+    id: imported.id,
+    collection_id: imported.collectionId,
+    authority_epoch: imported.authorityEpoch,
+    state: imported.state,
+    manifest_digest: imported.manifest?.manifest_digest ?? null,
+    source_revision: imported.manifest?.source_revision ?? null,
+    source_head: imported.manifest?.source_head ?? null,
+    contracts: imported.contracts,
+    expires_at: imported.expiresAt,
+  };
+}
+
+function importedResources(resources) {
+  const types = [];
+  const contracts = [];
+  for (const resource of resources.documents ?? []) {
+    if (resource.kind !== "type") continue;
+    const definition = markdownFrontmatter(resource.document);
+    const extensions = Object.fromEntries(
+      Object.entries(definition).filter(
+        ([key, value]) =>
+          key.startsWith("x-") &&
+          value !== null &&
+          typeof value === "object" &&
+          !Array.isArray(value),
+      ),
+    );
+    types.push({
+      name: definition.name,
+      version: definition.version,
+      path: resource.path,
+      schema: definition.schema?.value ?? {},
+      collection: definition.collection,
+      definition,
+      extensions,
+    });
+    for (const [extension, configuration] of Object.entries(extensions)) {
+      if (
+        typeof configuration.contract === "string" &&
+        Number.isSafeInteger(configuration.version)
+      ) {
+        contracts.push({
+          id: configuration.contract,
+          version: configuration.version,
+          type_name: definition.name,
+          extension,
+          configuration,
+        });
+      }
+    }
+  }
+  return {
+    ...resources,
+    types,
+    contracts,
+  };
+}
+
+function markdownDocument(document) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(document);
+  if (!match) return { frontmatter: {}, body: document };
+  return {
+    frontmatter: parse(match[1]) ?? {},
+    body: document.slice(match[0].length),
+  };
+}
+
+function explicitTypes(frontmatter) {
+  return [
+    ...(typeof frontmatter.type === "string" ? [frontmatter.type] : []),
+    ...(Array.isArray(frontmatter.types)
+      ? frontmatter.types.filter((value) => typeof value === "string")
+      : []),
+  ];
 }
 
 function cloudViewList(source, transferred = []) {

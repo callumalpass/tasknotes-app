@@ -25,7 +25,7 @@ import {
 import {
   authorizeCloudCollection,
   cleanCallbackUrl,
-  cloudConnection,
+  cloudControlUrl,
   completeCloudAuthorization,
   isCloudCallback,
   savedCloudConnections,
@@ -35,7 +35,9 @@ import {
 import { MarkdownCollection } from "../storage/collection";
 import {
   transferLocalCollectionToHosted,
+  type CollectionTransferCheckpoint,
   type CollectionTransferProgress,
+  type CollectionTransferResult,
 } from "../storage/collection-transfer";
 import {
   chooseDefaultLocalCollection,
@@ -111,33 +113,33 @@ export function CollectionGate() {
 
   const runTransfer = useCallback(
     async (
-      collectionId: string,
-      displayName: string,
       sourceLocation: LocalCollectionLocation,
+      checkpoint?: CollectionTransferCheckpoint,
     ) => {
       if (transferInFlight.current) return;
-      const destination = cloudConnection(collectionId);
-      if (!destination) {
-        clearPendingTransfer();
-        setMigration({
-          step: "error",
-          message:
-            "TaskNotes no longer has access to that hosted collection. Choose it again.",
-          canRetry: false,
-        });
-        return;
-      }
+      const displayName =
+        sourceLocation.mode === "external" ? sourceLocation.name : "TaskNotes";
+      const sourceName = Capacitor.isNativePlatform()
+        ? sourceLocation.mode === "external"
+          ? `${sourceLocation.name} on this phone`
+          : "TaskNotes on this phone"
+        : "TaskNotes in this browser";
+      let transferProgress: CollectionTransferProgress = {
+        phase: "reading",
+        completed: 0,
+        total: 1,
+      };
+      let verificationUri: string | undefined;
       transferInFlight.current = true;
       setPickerOpen(true);
-      setMigrationTarget({ collectionId, displayName });
       setMigration({
         step: "running",
         destinationName: displayName,
-        progress: { phase: "reading", completed: 0, total: 1 },
+        progress: transferProgress,
       });
       savePendingTransfer({
         sourceLocation,
-        destinationCollectionId: collectionId,
+        ...(checkpoint ? { checkpoint } : {}),
       });
       try {
         const source = new MarkdownCollection(
@@ -145,26 +147,69 @@ export function CollectionGate() {
         );
         const result = await transferLocalCollectionToHosted({
           source,
-          destination,
-          onProgress: (progress: CollectionTransferProgress) =>
+          controlUrl: cloudControlUrl(),
+          displayName,
+          sourceName,
+          ...(checkpoint ? { checkpoint } : {}),
+          onCheckpoint: (nextCheckpoint) =>
+            savePendingTransfer({
+              sourceLocation,
+              checkpoint: nextCheckpoint,
+            }),
+          onCheckpointCleared: clearPendingTransfer,
+          onVerification: async (verification) => {
+            verificationUri = verification.verificationUri;
+            setMigration({
+              step: "running",
+              destinationName: displayName,
+              progress: transferProgress,
+              verificationUri,
+            });
+            if (Capacitor.isNativePlatform())
+              await Browser.open({ url: verification.verificationUri });
+            else
+              window.open(
+                verification.verificationUri,
+                "_blank",
+                "noopener,noreferrer",
+              );
+          },
+          onProgress: (progress: CollectionTransferProgress) => {
+            transferProgress = progress;
             setMigration({
               step: "running",
               destinationName: displayName,
               progress,
-            }),
+              ...(verificationUri ? { verificationUri } : {}),
+            });
+          },
         });
-        selectCloudConnection(collectionId, true);
-        setMigration({
-          step: "complete",
-          destinationName: displayName,
+        setMigrationTarget({
+          collectionId: result.destinationCollectionId,
+          displayName,
+        });
+        savePendingTransfer({
+          sourceLocation,
+          adoptedCollectionId: result.destinationCollectionId,
           result,
+          displayName,
         });
+        setMigration({
+          step: "authorizing",
+        });
+        await authorizeCloudCollection(result.destinationCollectionId);
       } catch (reason) {
+        const pending = readPendingTransfer();
         setMigration({
           step: "error",
           destinationName: displayName,
           message: message(reason),
           canRetry: true,
+          ...(requiresAuthorityResolution(reason) ||
+          Boolean(pending?.checkpoint?.snapshot) ||
+          Boolean(pending?.adoptedCollectionId)
+            ? { mustResume: true }
+            : {}),
         });
       } finally {
         transferInFlight.current = false;
@@ -182,18 +227,31 @@ export function CollectionGate() {
         const connection = await completeCloudAuthorization(url);
         await finishBrowserCallback();
         setAuthorizationError(null);
-        if (pending) {
+        if (pending?.adoptedCollectionId) {
           const info = connection.info();
-          if (!info) throw new Error("The hosted collection was not retained.");
-          savePendingTransfer({
-            ...pending,
-            destinationCollectionId: connection.collectionId,
+          if (!info || connection.collectionId !== pending.adoptedCollectionId)
+            throw new Error(
+              "TaskNotes was connected to a different collection after adoption.",
+            );
+          selectCloudConnection(connection.collectionId, true);
+          setMigrationTarget({
+            collectionId: connection.collectionId,
+            displayName: pending.displayName ?? info.displayName,
           });
-          await runTransfer(
-            connection.collectionId,
-            info.displayName,
-            pending.sourceLocation,
-          );
+          setPickerOpen(true);
+          setMigration({
+            step: "complete",
+            destinationName: pending.displayName ?? info.displayName,
+            result:
+              pending.result ??
+              ({
+                records: 0,
+                views: 0,
+                destinationCollectionId: connection.collectionId,
+              } satisfies CollectionTransferResult),
+          });
+        } else if (pending?.checkpoint) {
+          await runTransfer(pending.sourceLocation, pending.checkpoint);
         } else {
           choose("cloud");
           setPickerOpen(false);
@@ -201,12 +259,16 @@ export function CollectionGate() {
       } catch (reason) {
         await finishBrowserCallback();
         if (pending) {
-          clearPendingTransfer();
           setPickerOpen(true);
           setMigration({
             step: "error",
             message: message(reason),
-            canRetry: false,
+            canRetry: Boolean(
+              pending.checkpoint || pending.adoptedCollectionId,
+            ),
+            ...(pending.adoptedCollectionId || pending.checkpoint?.snapshot
+              ? { mustResume: true }
+              : {}),
           });
         } else {
           setAuthorizationError(message(reason));
@@ -225,18 +287,24 @@ export function CollectionGate() {
       queueMicrotask(() => void complete(callbackUrl));
     } else {
       const pending = readPendingTransfer();
-      if (pending?.destinationCollectionId) {
-        const connection = cloudConnection(pending.destinationCollectionId);
-        const info = connection?.info();
-        if (info)
-          queueMicrotask(
-            () =>
-              void runTransfer(
-                pending.destinationCollectionId!,
-                info.displayName,
-                pending.sourceLocation,
-              ),
+      if (pending?.checkpoint)
+        queueMicrotask(
+          () => void runTransfer(pending.sourceLocation, pending.checkpoint),
+        );
+      else if (pending?.adoptedCollectionId) {
+        queueMicrotask(() => {
+          setPickerOpen(true);
+          setMigration({ step: "authorizing" });
+          void authorizeCloudCollection(pending.adoptedCollectionId).catch(
+            (reason) =>
+              setMigration({
+                step: "error",
+                message: message(reason),
+                canRetry: true,
+                mustResume: true,
+              }),
           );
+        });
       }
     }
     if (!Capacitor.isNativePlatform()) return;
@@ -254,11 +322,12 @@ export function CollectionGate() {
 
   const closePicker = useCallback(() => {
     if (migration?.step === "running") return;
+    if (migration?.step === "error" && migration.mustResume) return;
     setPickerOpen(false);
     setMigration(null);
     setMigrationTarget(null);
     clearPendingTransfer();
-  }, [migration?.step]);
+  }, [migration]);
 
   const selectLocal = useCallback(
     async (location: LocalCollectionLocation) => {
@@ -297,34 +366,21 @@ export function CollectionGate() {
   }
 
   function authorizeMigrationDestination() {
-    savePendingTransfer({ sourceLocation: localLocation });
-    setMigration({ step: "authorizing" });
-    void authorizeCloudCollection().catch((reason) => {
-      clearPendingTransfer();
-      setMigration({
-        step: "error",
-        message: message(reason),
-        canRetry: false,
-      });
-    });
-  }
-
-  function selectMigrationDestination(collectionId: string) {
-    const connection = savedCloudConnections().find(
-      (candidate) => candidate.collectionId === collectionId,
-    );
-    if (!connection) return;
-    void runTransfer(collectionId, connection.displayName, localLocation);
+    void runTransfer(localLocation);
   }
 
   function retryMigration() {
     const pending = readPendingTransfer();
-    if (!pending?.destinationCollectionId || !migrationTarget) return;
-    void runTransfer(
-      pending.destinationCollectionId,
-      migrationTarget.displayName,
-      pending.sourceLocation,
-    );
+    if (!pending) {
+      void runTransfer(localLocation);
+      return;
+    }
+    if (pending.adoptedCollectionId) {
+      setMigration({ step: "authorizing" });
+      void authorizeCloudCollection(pending.adoptedCollectionId);
+      return;
+    }
+    void runTransfer(pending.sourceLocation, pending.checkpoint);
   }
 
   function finishMigration() {
@@ -415,6 +471,7 @@ export function CollectionGate() {
           onAuthorizeCloud={authorizeAnotherCloudCollection}
           onAuthorizeMigration={authorizeMigrationDestination}
           onBackFromMigration={() => {
+            if (migration?.step === "error" && migration.mustResume) return;
             clearPendingTransfer();
             setMigration(null);
             setMigrationTarget(null);
@@ -426,7 +483,6 @@ export function CollectionGate() {
           onRetryMigration={retryMigration}
           onSelectCloud={(collectionId) => void selectCloud(collectionId)}
           onSelectLocal={(location) => void selectLocal(location)}
-          onSelectMigrationDestination={selectMigrationDestination}
         />
       ) : null}
     </>
@@ -665,14 +721,20 @@ function readChoice(): CollectionChoice | null {
 
 interface PendingCollectionTransfer {
   sourceLocation: LocalCollectionLocation;
-  destinationCollectionId?: string;
+  checkpoint?: CollectionTransferCheckpoint;
+  adoptedCollectionId?: string;
+  result?: CollectionTransferResult;
+  displayName?: string;
 }
 
 function readPendingTransfer(): PendingCollectionTransfer | null {
   try {
     const value = JSON.parse(localStorage.getItem(TRANSFER_KEY) ?? "null") as {
       sourceLocation?: LocalCollectionLocation;
-      destinationCollectionId?: unknown;
+      checkpoint?: unknown;
+      adoptedCollectionId?: unknown;
+      result?: unknown;
+      displayName?: unknown;
     } | null;
     if (
       !value?.sourceLocation ||
@@ -680,15 +742,29 @@ function readPendingTransfer(): PendingCollectionTransfer | null {
         value.sourceLocation.mode !== "external")
     )
       return null;
-    if (
-      value.destinationCollectionId !== undefined &&
-      typeof value.destinationCollectionId !== "string"
-    )
-      return null;
+    const checkpoint =
+      value.checkpoint &&
+      typeof value.checkpoint === "object" &&
+      "session" in value.checkpoint
+        ? (value.checkpoint as CollectionTransferCheckpoint)
+        : undefined;
+    const adoptedCollectionId =
+      typeof value.adoptedCollectionId === "string"
+        ? value.adoptedCollectionId
+        : undefined;
+    const result =
+      value.result &&
+      typeof value.result === "object" &&
+      "destinationCollectionId" in value.result
+        ? (value.result as CollectionTransferResult)
+        : undefined;
     return {
       sourceLocation: value.sourceLocation,
-      ...(value.destinationCollectionId
-        ? { destinationCollectionId: value.destinationCollectionId }
+      ...(checkpoint ? { checkpoint } : {}),
+      ...(adoptedCollectionId ? { adoptedCollectionId } : {}),
+      ...(result ? { result } : {}),
+      ...(typeof value.displayName === "string"
+        ? { displayName: value.displayName }
         : {}),
     };
   } catch {
@@ -706,6 +782,15 @@ function clearPendingTransfer(): void {
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function requiresAuthorityResolution(reason: unknown): boolean {
+  return Boolean(
+    reason &&
+    typeof reason === "object" &&
+    "sourceMustRemainFenced" in reason &&
+    (reason as { sourceMustRemainFenced?: unknown }).sourceMustRemainFenced,
+  );
 }
 
 async function disableMdbaseNotifications(): Promise<void> {

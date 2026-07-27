@@ -69,25 +69,25 @@ it("presents browser, folder, and mdbase collections in one picker", () => {
   expect(move).toHaveBeenCalledOnce();
 });
 
-it("offers only hosted collections as transfer destinations", () => {
-  const selectDestination = vi.fn();
+it("explains atomic hosted adoption instead of asking for an empty destination", () => {
+  const authorize = vi.fn();
   renderPicker({
     cloudConnections: connections,
     migration: { step: "destination" },
-    onSelectMigrationDestination: selectDestination,
+    onAuthorizeMigration: authorize,
   });
 
   expect(screen.getByRole("heading", { name: "Move to mdbase" })).toBeVisible();
-  expect(screen.getByRole("button", { name: /Hosted tasks/ })).toBeVisible();
+  expect(screen.getByText(/same collection identity/)).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: /Studio computer/ }),
+    screen.queryByRole("button", { name: /Hosted tasks/ }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: /Hosted tasks/ }));
-  expect(selectDestination).toHaveBeenCalledWith("hosted");
+  fireEvent.click(screen.getByRole("button", { name: /Continue with mdbase/ }));
+  expect(authorize).toHaveBeenCalledOnce();
 });
 
-it("reports verified transfer totals and retained local backup", () => {
+it("reports adopted totals and the archived local source", () => {
   const finish = vi.fn();
   renderPicker({
     migration: {
@@ -103,10 +103,14 @@ it("reports verified transfer totals and retained local backup", () => {
   });
 
   expect(
-    screen.getByRole("heading", { name: "Verified in Hosted tasks." }),
+    screen.getByRole("heading", { name: "Hosted tasks is hosted." }),
   ).toBeVisible();
-  expect(screen.getByText(/12 records and 2 saved views copied/)).toBeVisible();
-  expect(screen.getByText(/local collection remains available/)).toBeVisible();
+  expect(
+    screen.getByText(
+      /12 records and 2 saved views adopted as one validated snapshot/,
+    ),
+  ).toBeVisible();
+  expect(screen.getByText(/read-only archive/)).toBeVisible();
   fireEvent.click(
     screen.getByRole("button", { name: "Open hosted collection" }),
   );
@@ -133,7 +137,6 @@ function renderPicker(
     onRetryMigration: vi.fn(),
     onSelectCloud: vi.fn(),
     onSelectLocal: vi.fn(),
-    onSelectMigrationDestination: vi.fn(),
     ...overrides,
   };
   return render(<CollectionPicker {...properties} />);
