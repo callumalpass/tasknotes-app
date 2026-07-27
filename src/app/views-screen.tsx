@@ -160,6 +160,7 @@ export function ViewsScreen({
   const [manualOrderPending, setManualOrderPending] = useState<string | null>(
     null,
   );
+  const [reorderingView, setReorderingView] = useState<string | null>(null);
   const boardMutationSequence = useRef(new Map<string, number>());
   const completeField = useCallback(
     (request: import("../domain/completion").FieldCompletionRequest) =>
@@ -264,6 +265,10 @@ export function ViewsScreen({
     currentSort,
     configuration.fieldMapping.sortOrder,
   );
+  const reorderMode =
+    Boolean(manualOrder) &&
+    selected?.presentation?.type === "tasknotes.task-list" &&
+    reorderingView === selected.key;
   const presentedExecution = useMemo(
     () =>
       visibleExecution && manualOrder
@@ -341,6 +346,14 @@ export function ViewsScreen({
               ),
             )
           : null;
+  const presentationClass =
+    selected?.presentation?.type === "tasknotes.task-list"
+      ? " is-task-list-view"
+      : selected?.presentation?.type === "tasknotes.calendar"
+        ? " is-full-calendar-view"
+        : selected?.presentation?.type === "tasknotes.mini-calendar"
+          ? " is-mini-calendar-view"
+          : "";
 
   async function reorderTasks(
     rows: readonly TaskViewRow[],
@@ -728,7 +741,7 @@ export function ViewsScreen({
           selected?.presentation?.type === "tasknotes.task-list"
             ? " has-list-capture"
             : ""
-        }`}
+        }${presentationClass}`}
       >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
@@ -757,17 +770,51 @@ export function ViewsScreen({
               </small>
             ) : null}
           </div>
-          {selected?.source.writable && !editing ? (
-            <button
-              aria-label={`Edit ${selected.name}`}
-              className="edit-view-action"
-              type="button"
-              onFocus={preloadViewEditor}
-              onClick={() => setEditing(selected)}
-              onPointerEnter={preloadViewEditor}
-            >
-              <Pencil aria-hidden="true" size={18} />
-            </button>
+          {!editing &&
+          ((manualOrder &&
+            selected?.presentation?.type === "tasknotes.task-list") ||
+            selected?.source.writable ||
+            operational) ? (
+            <div className="view-header-actions">
+              {operational ? (
+                <button
+                  aria-label="Search tasks"
+                  className="view-header-action"
+                  type="button"
+                  onClick={onSearch}
+                >
+                  <Search aria-hidden="true" size={18} />
+                </button>
+              ) : null}
+              {manualOrder &&
+              selected?.presentation?.type === "tasknotes.task-list" ? (
+                <button
+                  aria-label={
+                    reorderMode ? "Finish reordering" : "Reorder tasks"
+                  }
+                  aria-pressed={reorderMode}
+                  className="view-header-action"
+                  type="button"
+                  onClick={() =>
+                    setReorderingView(reorderMode ? null : selected.key)
+                  }
+                >
+                  <GripVertical aria-hidden="true" size={18} />
+                </button>
+              ) : null}
+              {selected?.source.writable ? (
+                <button
+                  aria-label={`Edit ${selected.name}`}
+                  className="edit-view-action"
+                  type="button"
+                  onFocus={preloadViewEditor}
+                  onClick={() => setEditing(selected)}
+                  onPointerEnter={preloadViewEditor}
+                >
+                  <Pencil aria-hidden="true" size={18} />
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </header>
         {!indexing.complete ? (
@@ -914,6 +961,7 @@ export function ViewsScreen({
             execution={presentedExecution}
             manualOrder={manualOrder}
             orderPending={manualOrderPending === selected?.key}
+            reorderMode={reorderMode}
             titleProperty={configuration.fieldMapping.title}
             onReorder={(rows, dragged, targetId, placement) =>
               void reorderTasks(rows, dragged, targetId, placement)
@@ -1653,6 +1701,7 @@ function TaskListView({
   execution,
   manualOrder,
   orderPending,
+  reorderMode,
   titleProperty,
   onReorder,
   onOpen,
@@ -1661,6 +1710,7 @@ function TaskListView({
   collectionComplete: boolean;
   manualOrder: ManualOrderConfiguration | null;
   orderPending: boolean;
+  reorderMode: boolean;
   titleProperty: string;
   onReorder(
     rows: readonly TaskViewRow[],
@@ -1698,6 +1748,7 @@ function TaskListView({
               className="saved-task-list"
               manualOrder={manualOrder}
               orderPending={orderPending}
+              reorderMode={reorderMode}
               properties={execution.view.properties}
               rows={group.rows}
               titleProperty={titleProperty}
@@ -1729,6 +1780,7 @@ function TaskListView({
               className="saved-task-list"
               manualOrder={manualOrder}
               orderPending={orderPending}
+              reorderMode={reorderMode}
               properties={execution.view.properties}
               rows={section.rows}
               titleProperty={titleProperty}
@@ -1745,6 +1797,7 @@ function TaskListView({
       className="saved-task-list task-list-view"
       manualOrder={manualOrder}
       orderPending={orderPending}
+      reorderMode={reorderMode}
       properties={execution.view.properties}
       rows={execution.rows}
       titleProperty={titleProperty}
@@ -1759,6 +1812,7 @@ function ManualTaskRows({
   className,
   manualOrder,
   orderPending,
+  reorderMode,
   properties,
   rows,
   titleProperty,
@@ -1769,6 +1823,7 @@ function ManualTaskRows({
   className: string;
   manualOrder: ManualOrderConfiguration | null;
   orderPending: boolean;
+  reorderMode: boolean;
   properties: TaskViewProperty[];
   rows: TaskViewRow[];
   titleProperty: string;
@@ -1832,7 +1887,7 @@ function ManualTaskRows({
   return (
     <>
       <div
-        className={`${className}${manualOrder ? " manual-order-list" : ""}`}
+        className={`${className}${manualOrder && reorderMode ? " manual-order-list" : ""}`}
         ref={listRef}
       >
         {rows.map((row, index) => (
@@ -1841,7 +1896,7 @@ function ManualTaskRows({
             data-manual-order-task={row.task.id}
             key={row.task.id}
           >
-            {manualOrder ? (
+            {manualOrder && reorderMode ? (
               <button
                 aria-label={`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
                 className="manual-order-handle"

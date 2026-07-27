@@ -301,6 +301,16 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     </RepositoryProvider>,
   );
 
+  expect(
+    screen.queryByRole("button", {
+      name: "Reorder Charlie. Drag, or use up and down arrow keys.",
+    }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Reorder tasks",
+    }),
+  );
   const handle = await screen.findByRole("button", {
     name: "Reorder Charlie. Drag, or use up and down arrow keys.",
   });

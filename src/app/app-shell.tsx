@@ -185,12 +185,20 @@ export function AppShell() {
     workspaceViewKey &&
     navigationViews.some((view) => view.key === workspaceViewKey),
   );
+  const workspaceView = views?.find((view) => view.key === workspaceViewKey);
+  const showGlobalCaptureFab =
+    workspace.page === "search" ||
+    Boolean(
+      workspaceViewKey &&
+      workspaceIsNavigationView &&
+      workspaceView?.presentation?.options.create === false,
+    );
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
       : workspace.page === "views" && !workspace.key
         ? "more"
-        : workspace.page === "views" || workspace.page === "search"
+        : workspace.page === "views"
           ? "views"
           : workspace.page;
   return (
@@ -235,6 +243,7 @@ export function AppShell() {
         ) : workspace.page === "more" ? (
           <MoreScreen
             navigationViewCount={navigationViews.length}
+            onNewTask={() => setCaptureOpen(true)}
             onOpenViews={() => {
               void refreshViews();
               navigate({ page: "views" });
@@ -294,7 +303,7 @@ export function AppShell() {
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation items-${Math.min(navigationViews.length, 2) + 2}`}
+          className={`bottom-navigation items-${Math.min(navigationViews.length, 2) + 3}`}
           aria-label="Primary"
         >
           <Navigation
@@ -306,7 +315,7 @@ export function AppShell() {
           />
         </nav>
       ) : null}
-      {route.page !== "task" ? (
+      {route.page !== "task" && showGlobalCaptureFab ? (
         <button
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
@@ -579,6 +588,15 @@ function Navigation({
         </button>
       ))}
       <button
+        aria-current={active === "search" ? "page" : undefined}
+        className={active === "search" ? "is-active" : undefined}
+        type="button"
+        onClick={() => onNavigate({ page: "search" })}
+      >
+        <Search aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>Search</span>
+      </button>
+      <button
         aria-controls={menuPosition ? menuId : undefined}
         aria-current={
           active === "views" || hiddenNavigationViewActive ? "page" : undefined
@@ -634,10 +652,10 @@ function Navigation({
               <button
                 role="menuitem"
                 type="button"
-                onClick={() => choose({ page: "search" })}
+                onClick={() => choose({ page: "views" })}
               >
-                <Search aria-hidden="true" size={19} strokeWidth={1.7} />
-                <span>Search tasks</span>
+                <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
+                <span>Manage views</span>
               </button>
             </div>,
             document.body,

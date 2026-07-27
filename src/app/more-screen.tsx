@@ -8,6 +8,7 @@ import {
   Info,
   Bell,
   Columns3,
+  Plus,
   SunMoon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -37,9 +38,11 @@ import { storageExplanation } from "./storage-trust";
 
 export function MoreScreen({
   navigationViewCount,
+  onNewTask,
   onOpenViews,
 }: {
   navigationViewCount: number;
+  onNewTask(): void;
   onOpenViews(): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
@@ -158,6 +161,14 @@ export function MoreScreen({
     <section className="screen settings-screen" aria-labelledby="more-title">
       <header className="screen-header compact-header">
         <h1 id="more-title">More</h1>
+        <button
+          aria-label="New task"
+          className="icon-action more-new-task"
+          type="button"
+          onClick={onNewTask}
+        >
+          <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
+        </button>
       </header>
       <SettingsSection label="Collection">
         <div className="setting-row">

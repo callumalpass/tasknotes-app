@@ -296,10 +296,7 @@ async function openNavigationView(page: Page, name: string): Promise<void> {
 
 async function openSearch(page: Page): Promise<void> {
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
-  await navigation.getByRole("button", { name: "Views", exact: true }).click();
-  await page
-    .getByRole("menuitem", { name: "Search tasks", exact: true })
-    .click();
+  await navigation.getByRole("button", { name: "Search", exact: true }).click();
 }
 
 async function chooseOption(
@@ -372,6 +369,11 @@ test("manually reorders starter-view tasks with pointer and keyboard", async ({
   const list = page.locator(".task-list-view");
   const rows = list.locator(".manual-order-row");
   await expect(rows).toHaveCount(3);
+  await expect(list.locator(".manual-order-handle")).toHaveCount(0);
+  await page.getByRole("button", { name: "Reorder tasks" }).click();
+  await expect(
+    page.getByRole("button", { name: "Finish reordering" }),
+  ).toHaveAttribute("aria-pressed", "true");
   if (testInfo.project.name === "mobile") await expectTouchTargets(list);
 
   const firstHandle = page.getByRole("button", {
@@ -438,6 +440,7 @@ test("manually reorders starter-view tasks with pointer and keyboard", async ({
   });
   await editor.getByRole("button", { name: "Close view editor" }).click();
   await page.reload();
+  await expect(page.locator(".manual-order-handle")).toHaveCount(0);
   await expect
     .poll(() =>
       page
@@ -445,6 +448,46 @@ test("manually reorders starter-view tasks with pointer and keyboard", async ({
         .allTextContents(),
     )
     .toEqual(["Manual second", "Manual first", "Manual third"]);
+});
+
+test("keeps long task titles readable in lists and task details", async ({
+  page,
+}, testInfo) => {
+  const title =
+    "Prepare the quarterly planning notes and confirm every follow-up with the project team";
+  await page.getByLabel("New task title").fill(title);
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const rowTitle = page.locator(".task-row-title", { hasText: title });
+  await expect(rowTitle).toBeVisible();
+
+  if (testInfo.project.name === "mobile") {
+    await page.setViewportSize({ width: 320, height: 568 });
+    const rowMetrics = await rowTitle.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        height: element.getBoundingClientRect().height,
+        lineHeight: Number.parseFloat(style.lineHeight),
+        lineClamp: style.webkitLineClamp,
+        whiteSpace: style.whiteSpace,
+      };
+    });
+    expect(rowMetrics.lineClamp).toBe("2");
+    expect(rowMetrics.whiteSpace).toBe("normal");
+    expect(rowMetrics.height).toBeGreaterThan(rowMetrics.lineHeight * 1.5);
+  }
+
+  await rowTitle.click();
+  const titleField = page.getByLabel("Task title", { exact: true });
+  await titleField.fill(
+    `${title}. Include release dependencies, ownership, risks, decisions, and the next review date so the full task remains understandable.`,
+  );
+  await expect
+    .poll(() =>
+      titleField.evaluate(
+        (element) => element.clientHeight >= element.scrollHeight - 1,
+      ),
+    )
+    .toBe(true);
 });
 
 test("surfaces a quiet warning while a durable local mutation is pending", async ({
@@ -653,6 +696,7 @@ test("organizes the Today list into declarative day sections", async ({
 test("captures into the collection from anywhere", async ({
   page,
 }, testInfo) => {
+  await expect(page.locator(".global-capture-fab")).toHaveCount(0);
   const inlineCapture = page.getByLabel("New task title");
   await inlineCapture.focus();
   expect(
@@ -663,6 +707,7 @@ test("captures into the collection from anywhere", async ({
   await inlineCapture.blur();
 
   await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(page.locator(".global-capture-fab")).toHaveCount(0);
   const trigger = page.getByRole("button", { name: "New task", exact: true });
   const triggerBox = await trigger.boundingBox();
   expect(triggerBox).not.toBeNull();
@@ -1773,6 +1818,18 @@ views:
     .click();
   await page.getByText("Dates", { exact: true }).click();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
+  await expect(page.locator(".global-capture-fab")).toHaveCount(0);
+  if (testInfo.project.name === "mobile") {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await expect
+      .poll(() =>
+        page
+          .locator(".fc-daygrid-day")
+          .first()
+          .evaluate((element) => element.getBoundingClientRect().width),
+      )
+      .toBeGreaterThanOrEqual(43.5);
+  }
   await expect(
     page
       .locator(".full-calendar-inspector .task-row-title")
@@ -1900,7 +1957,10 @@ test("orders several navigation views and exposes the rest from the mobile Views
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
-    await expect(navigation.getByRole("button")).toHaveCount(4);
+    await expect(navigation.getByRole("button")).toHaveCount(5);
+    await expect(
+      navigation.getByRole("button", { name: "Search", exact: true }),
+    ).toBeVisible();
     await expect(
       navigation.getByRole("button", { name: "Views", exact: true }),
     ).toBeVisible();
