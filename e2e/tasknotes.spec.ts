@@ -232,7 +232,7 @@ async function openSettingsSection(
     .locator("..")
     .locator("..");
   if ((await section.getAttribute("open")) === null)
-    await section.locator("summary").click();
+    await section.locator(":scope > summary").click();
   return section;
 }
 
@@ -802,7 +802,7 @@ test("edits task model settings in the portable type contract", async ({
   );
   expect(settingsRenderMs).toBeLessThan(500);
   const disclosureStartedAt = await page.evaluate(() => performance.now());
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   const disclosureOpenMs = await page.evaluate(
     (start) => performance.now() - start,
     disclosureStartedAt,
@@ -813,7 +813,9 @@ test("edits task model settings in the portable type contract", async ({
   await chooseOption(page, "Default status", "In progress");
   await chooseOption(page, "Default priority", "High");
   await chooseOption(page, "Record links", "Markdown links");
-  await page.getByLabel("Future occurrence horizon").fill("P30D");
+  await page
+    .getByLabel("Future occurrence horizon amount", { exact: true })
+    .fill("30");
   await page.getByLabel("Stop a running timer when its task completes").check();
 
   const startedAt = await page.evaluate(() => performance.now());
@@ -844,7 +846,7 @@ test("edits task model settings in the portable type contract", async ({
 
   await page.reload();
   await page.getByRole("button", { name: "More", exact: true }).click();
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   await expect(
     page.getByRole("combobox", { name: "Default status" }),
   ).toHaveAttribute("data-value", "in-progress");
@@ -870,7 +872,7 @@ test("auto-archives from a contract status event without polling", async ({
   page,
 }, testInfo) => {
   await page.getByRole("button", { name: "More", exact: true }).click();
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   const doneAutomation = page
     .locator(".status-automation-row")
     .filter({ hasText: "Done" });
@@ -1001,7 +1003,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     await page.getByRole("button", { name: "Next period" }).click();
   }
   await expect(upcomingTask).toBeVisible();
-  await page.getByRole("button", { name: "Calendar", exact: true }).click();
+  await openNavigationView(page, "Calendar");
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await page.getByRole("button", { name: "Upcoming", exact: true }).click();
   await expect(
@@ -1328,7 +1330,7 @@ test("persists dependencies and derives blocking tasks and subtasks", async ({
     .getByRole("option", { name: /Dependency blocker.*tasks\// })
     .click();
   await chooseOption(page, "Relationship", "Start to start");
-  await page.getByLabel("Gap", { exact: true }).fill("P2D");
+  await page.getByLabel("Gap amount", { exact: true }).fill("2");
   await expect
     .poll(async () => {
       const source = (await localTaskDocuments(page)).find((document) =>
@@ -1388,7 +1390,7 @@ test("persists dependencies and derives blocking tasks and subtasks", async ({
   await expect(
     page.getByRole("combobox", { name: "Relationship" }),
   ).toHaveAttribute("data-value", "STARTTOSTART");
-  await expect(page.getByLabel("Gap", { exact: true })).toHaveValue("P2D");
+  await expect(page.getByLabel("Gap amount", { exact: true })).toHaveValue("2");
   await expect(
     page.getByRole("button", { name: "Remove Dependency blocker" }),
   ).toBeVisible();
