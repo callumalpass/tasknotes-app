@@ -5149,6 +5149,10 @@ button:disabled {
   gap: 5px;
 }
 
+.kanban-column-cards {
+  min-height: 64px;
+}
+
 .kanban-column-add {
   display: grid;
   place-items: center;
@@ -5170,14 +5174,16 @@ button:disabled {
 
 .kanban-card {
   position: relative;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: stretch;
   border-bottom: 1px solid var(--line);
-  cursor: grab;
   transition:
     opacity 140ms var(--ease-out),
     transform 140ms var(--ease-out);
+}
+
+.kanban-board.is-move-mode .kanban-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: stretch;
 }
 
 .kanban-card.is-drop-before::before,
@@ -5206,7 +5212,6 @@ button:disabled {
 
 .kanban-card.is-dragging {
   opacity: 0.38;
-  cursor: grabbing;
 }
 
 .kanban-drag-handle {
@@ -5239,12 +5244,39 @@ button:disabled {
   border-bottom: 0;
 }
 
-.kanban-card .task-row-content {
-  cursor: grab;
+.kanban-board.is-move-mode .kanban-card .task-row {
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.kanban-card.is-dragging .task-row-content {
-  cursor: grabbing;
+.kanban-board.is-move-mode
+  .kanban-card
+  :is(.completion-control, .task-actions-trigger) {
+  display: none;
+}
+
+.kanban-card .task-row-content {
+  padding-left: 0;
+  cursor: pointer;
+}
+
+.kanban-empty-drop-zone {
+  display: grid;
+  place-items: center;
+  min-height: 68px;
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+}
+
+.kanban-empty-drop-zone.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .view-note {
