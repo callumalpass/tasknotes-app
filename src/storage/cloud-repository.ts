@@ -579,7 +579,7 @@ export class CloudTaskRepository implements TaskRepository {
         try {
           return this.model.read({
             path: record.path,
-            frontmatter: record.frontmatter ?? {},
+            frontmatter: record.effective_frontmatter,
             body: record.body ?? "",
           });
         } catch {

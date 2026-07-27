@@ -1270,8 +1270,7 @@ function cloudViewExecution(records) {
     result: {
       results: tasks.map((record) => ({
         path: record.path,
-        frontmatter: record.frontmatter,
-        raw_frontmatter: record.frontmatter,
+        effective_frontmatter: record.frontmatter,
         body: record.body,
         types: record.types,
         values: {

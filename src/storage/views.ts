@@ -44,10 +44,7 @@ export interface ProviderViewList {
 export interface ProviderViewExecution {
   results: Array<{
     path: string;
-    frontmatter?: Record<string, unknown>;
-    effective_frontmatter?: Record<string, unknown>;
-    /** Compatibility with pre-0.1.0-beta.3 Connect providers. */
-    raw_frontmatter?: Record<string, unknown>;
+    effective_frontmatter: Record<string, unknown>;
     body?: string;
     types?: string[];
     values?: Record<string, unknown>;
@@ -124,6 +121,7 @@ export function normalizeViewExecution(
 ): TaskViewExecution {
   const normalizedView = inferExecutionPresentationMapping(view, result);
   const rows = result.results.flatMap((record) => {
+    assertEffectiveFrontmatter(record);
     const task = readTask(record);
     return task ? [{ task, values: structuredClone(record.values ?? {}) }] : [];
   });
@@ -131,11 +129,8 @@ export function normalizeViewExecution(
     view: normalizedView,
     rows,
     records: result.results.map((record) => {
-      const frontmatter =
-        record.effective_frontmatter ??
-        record.frontmatter ??
-        record.raw_frontmatter ??
-        {};
+      assertEffectiveFrontmatter(record);
+      const frontmatter = record.effective_frontmatter;
       return {
         record: {
           path: record.path,
@@ -151,6 +146,16 @@ export function normalizeViewExecution(
     hasMore: result.meta.has_more,
     groups: structuredClone(result.meta.groups ?? []),
   };
+}
+
+function assertEffectiveFrontmatter(
+  record: ProviderViewExecution["results"][number],
+): void {
+  const value = record.effective_frontmatter;
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new Error(
+      `Invalid saved-view record "${record.path}": effective_frontmatter must be an object.`,
+    );
 }
 
 function inferExecutionPresentationMapping(
