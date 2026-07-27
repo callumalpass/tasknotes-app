@@ -1109,15 +1109,27 @@ test("writes and safely previews Markdown task notes on demand", async ({
   );
   expect(loadedBefore).toBe(false);
 
-  const startedAt = await page.evaluate(() => performance.now());
+  const previewTimingAttribute = "data-markdown-preview-latency-ms";
+  await page.evaluate((attribute) => {
+    document.body.removeAttribute(attribute);
+    const startedAt = performance.now();
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector(".markdown-preview")) return;
+      document.body.setAttribute(
+        attribute,
+        String(performance.now() - startedAt),
+      );
+      observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }, previewTimingAttribute);
   await previewButton.click();
   const preview = page.locator(".markdown-preview");
   await expect(
     preview.getByRole("heading", { name: "Launch checklist" }),
   ).toBeVisible();
-  const previewLatencyMs = await page.evaluate(
-    (start) => performance.now() - start,
-    startedAt,
+  const previewLatencyMs = Number(
+    await page.locator("body").getAttribute(previewTimingAttribute),
   );
   await expect(preview.getByRole("table")).toBeVisible();
   await expect(preview.getByRole("checkbox")).toHaveCount(2);
@@ -1396,7 +1408,9 @@ test("persists dependencies and derives blocking tasks and subtasks", async ({
   );
 
   await page.reload();
-  await page.getByText("Dependency parent", { exact: true }).click();
+  await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
+    "Dependency parent",
+  );
   await page.getByText("Organize", { exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "Relationship" }),
