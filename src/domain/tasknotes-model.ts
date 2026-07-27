@@ -1208,6 +1208,7 @@ function canonicalPathValues(
   return {
     ...frontmatter,
     id,
+    uuid: id,
     title,
     titleKebab: words.map((word) => word.toLocaleLowerCase()).join("-"),
     titleSnake: words.map((word) => word.toLocaleLowerCase()).join("_"),
