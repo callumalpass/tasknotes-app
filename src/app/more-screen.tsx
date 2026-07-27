@@ -248,19 +248,10 @@ export function MoreScreen({
             <small>{syncLabel(sync)}</small>
           </div>
           {choice === "local" ? (
-            <>
-              <p className="section-copy">
-                mdbase is usually the easiest way to use a collection across
-                devices.
-              </p>
-              <button
-                className="text-action"
-                type="button"
-                onClick={() => choose("cloud")}
-              >
-                Connect mdbase
-              </button>
-            </>
+            <p className="section-copy">
+              Moving this collection to mdbase is not available yet. Your tasks
+              will stay on this device.
+            </p>
           ) : (
             <>
               {sync.message ? (

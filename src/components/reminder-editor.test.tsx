@@ -94,14 +94,8 @@ describe("ReminderEditor", () => {
   });
 
   it("explains when reminder notifications cannot be delivered", () => {
-    const connect = vi.fn();
     render(
-      <ReminderEditor
-        deliveryMode="local"
-        reminders={[]}
-        onChange={vi.fn()}
-        onConnectMdbase={connect}
-      />,
+      <ReminderEditor deliveryMode="local" reminders={[]} onChange={vi.fn()} />,
     );
 
     expect(screen.getByRole("note")).toHaveTextContent(
@@ -110,8 +104,9 @@ describe("ReminderEditor", () => {
     expect(screen.getByRole("note")).toHaveTextContent(
       "tasks stored on this device cannot deliver notifications",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect mdbase" }));
-    expect(connect).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("button", { name: "Connect mdbase" }),
+    ).not.toBeInTheDocument();
   });
 
   it("delivers notifications for every mdbase connection style", () => {
