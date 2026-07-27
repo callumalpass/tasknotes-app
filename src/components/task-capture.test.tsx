@@ -12,6 +12,19 @@ import { TaskCapture } from "./task-capture";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 
+vi.mock("../domain/task-capture", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../domain/task-capture")>();
+  return {
+    ...actual,
+    parseTaskCapture: vi.fn(async (title: string) => ({
+      input: { title },
+      preview: [],
+    })),
+    preloadTaskCapture: vi.fn(),
+  };
+});
+
 it("applies view defaults and keeps a created task recoverable when the view excludes it", async () => {
   const create = vi.fn(async (input: CreateTaskInput) => task(input));
   const open = vi.fn();
