@@ -802,7 +802,9 @@ test("edits task model settings in the portable type contract", async ({
   );
   expect(settingsRenderMs).toBeLessThan(500);
   await expect(
-    page.getByText("Moving this collection to mdbase is not available yet."),
+    page.getByText(
+      "Connecting to mdbase does not move this collection's tasks yet, so switching is unavailable here.",
+    ),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Connect mdbase" }),
