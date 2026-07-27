@@ -52,10 +52,6 @@ function reconcileConnectNotifications(
         const target = requestedReconciliation;
         const current = latestRepository;
         if (!current) return;
-        if ((await current.syncStatus()).mode !== "replicated") {
-          completedReconciliation = target;
-          continue;
-        }
         const tasks = await current.list({ status: "open", limit: 50_000 });
         const connection = activeCloudConnection();
         if (!connection) throw new Error("TaskNotes is not connected.");

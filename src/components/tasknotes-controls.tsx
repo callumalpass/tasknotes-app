@@ -497,55 +497,65 @@ export function TaskNotesDatePicker({
               ))}
             </div>
             <div className="tasknotes-calendar-grid" role="grid">
-              {days.map((day) => {
-                const key = dateValue(day);
-                const inMonth =
-                  day.getMonth() === visibleMonth.getMonth() &&
-                  day.getFullYear() === visibleMonth.getFullYear();
-                return (
-                  <button
-                    aria-label={longDate(day)}
-                    aria-selected={value === key}
-                    className={classes(
-                      !inMonth && "is-outside",
-                      sameDay(day, today) && "is-today",
-                    )}
-                    key={key}
-                    data-date={key}
-                    ref={(element) => {
-                      if (element) dateRefs.current.set(key, element);
-                      else dateRefs.current.delete(key);
-                    }}
-                    role="gridcell"
-                    tabIndex={sameDay(day, focusedDate) ? 0 : -1}
-                    type="button"
-                    onClick={() => choose(day)}
-                    onKeyDown={(event) => {
-                      const movement = {
-                        ArrowLeft: -1,
-                        ArrowRight: 1,
-                        ArrowUp: -7,
-                        ArrowDown: 7,
-                      }[event.key];
-                      if (movement !== undefined) {
-                        event.preventDefault();
-                        moveFocus(addDays(day, movement));
-                      } else if (event.key === "PageUp") {
-                        event.preventDefault();
-                        moveFocus(addMonths(day, -1));
-                      } else if (event.key === "PageDown") {
-                        event.preventDefault();
-                        moveFocus(addMonths(day, 1));
-                      } else if (event.key === "Escape") {
-                        setOpen(false);
-                        triggerRef.current?.focus();
-                      }
-                    }}
-                  >
-                    {day.getDate()}
-                  </button>
-                );
-              })}
+              {Array.from({ length: 6 }, (_, week) => (
+                <div key={week} role="row">
+                  {days.slice(week * 7, week * 7 + 7).map((day) => {
+                    const key = dateValue(day);
+                    const inMonth =
+                      day.getMonth() === visibleMonth.getMonth() &&
+                      day.getFullYear() === visibleMonth.getFullYear();
+                    return (
+                      <button
+                        aria-label={longDate(day)}
+                        aria-selected={value === key}
+                        className={classes(
+                          !inMonth && "is-outside",
+                          sameDay(day, today) && "is-today",
+                        )}
+                        key={key}
+                        data-date={key}
+                        ref={(element) => {
+                          if (element) dateRefs.current.set(key, element);
+                          else dateRefs.current.delete(key);
+                        }}
+                        role="gridcell"
+                        tabIndex={sameDay(day, focusedDate) ? 0 : -1}
+                        type="button"
+                        onClick={() => choose(day)}
+                        onKeyDown={(event) => {
+                          const movement = {
+                            ArrowLeft: -1,
+                            ArrowRight: 1,
+                            ArrowUp: -7,
+                            ArrowDown: 7,
+                          }[event.key];
+                          if (movement !== undefined) {
+                            event.preventDefault();
+                            moveFocus(addDays(day, movement));
+                          } else if (event.key === "Home") {
+                            event.preventDefault();
+                            moveFocus(addDays(day, -day.getDay()));
+                          } else if (event.key === "End") {
+                            event.preventDefault();
+                            moveFocus(addDays(day, 6 - day.getDay()));
+                          } else if (event.key === "PageUp") {
+                            event.preventDefault();
+                            moveFocus(addMonths(day, -1));
+                          } else if (event.key === "PageDown") {
+                            event.preventDefault();
+                            moveFocus(addMonths(day, 1));
+                          } else if (event.key === "Escape") {
+                            setOpen(false);
+                            triggerRef.current?.focus();
+                          }
+                        }}
+                      >
+                        {day.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
             <div className="tasknotes-picker-actions">
               <button

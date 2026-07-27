@@ -15,6 +15,7 @@ test("follows the system theme and persists explicit overrides", async ({
   });
   await page.reload();
   await page.getByRole("button", { name: /On this device/ }).click();
+  await page.getByRole("button", { name: "Use this browser" }).click();
 
   const root = page.locator("html");
   const readCanvas = () =>

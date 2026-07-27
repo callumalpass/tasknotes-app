@@ -3,6 +3,7 @@ import {
   ArchiveRestore,
   ArrowLeft,
   Clock3,
+  MoreHorizontal,
   Play,
   Square,
   Trash2,
@@ -42,6 +43,7 @@ import {
   useTask,
   useTaskRelationships,
 } from "./repository-context";
+import { useCollectionGate } from "./collection-context";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 import type {
@@ -146,7 +148,9 @@ function TaskEditor({
     setTaskArchived,
     configuration,
     repository,
+    sync,
   } = useRepository();
+  const { choose } = useCollectionGate();
   const { relationships: repositoryRelationships } = useTaskRelationships(
     task.id,
   );
@@ -189,6 +193,7 @@ function TaskEditor({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
   const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [timeAction, setTimeAction] = useState(false);
@@ -196,6 +201,9 @@ function TaskEditor({
   const [archiveAction, setArchiveAction] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const toolbarMenuRef = useRef<HTMLDivElement>(null);
+  const toolbarMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useRef<HTMLElement>(null);
   const editVersion = useRef(0);
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
@@ -207,6 +215,91 @@ function TaskEditor({
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!toolbarMenuOpen) return;
+    queueMicrotask(() =>
+      toolbarMenuRef.current
+        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
+        ?.focus(),
+    );
+    const close = (event: PointerEvent) => {
+      if (
+        toolbarMenuRef.current?.contains(event.target as Node) ||
+        toolbarMenuTriggerRef.current?.contains(event.target as Node)
+      )
+        return;
+      setToolbarMenuOpen(false);
+    };
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setToolbarMenuOpen(false);
+        toolbarMenuTriggerRef.current?.focus();
+        return;
+      }
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const items = [
+        ...(toolbarMenuRef.current?.querySelectorAll<HTMLButtonElement>(
+          "[role='menuitem']:not(:disabled)",
+        ) ?? []),
+      ];
+      if (!items.length) return;
+      const current = items.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? items.length - 1
+            : event.key === "ArrowDown"
+              ? (current + 1) % items.length
+              : (current - 1 + items.length) % items.length;
+      event.preventDefault();
+      items[next]?.focus();
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", keyDown);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", keyDown);
+    };
+  }, [toolbarMenuOpen]);
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+    queueMicrotask(() =>
+      deleteDialogRef.current
+        ?.querySelector<HTMLButtonElement>("[data-safe-action]")
+        ?.focus(),
+    );
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConfirmDelete(false);
+        toolbarMenuTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const controls = [
+        ...(deleteDialogRef.current?.querySelectorAll<HTMLButtonElement>(
+          "button:not(:disabled)",
+        ) ?? []),
+      ];
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", keyDown);
+    return () => window.removeEventListener("keydown", keyDown);
+  }, [confirmDelete]);
 
   const persist = useCallback(
     (value: Draft, version: number): Promise<void> => {
@@ -418,6 +511,11 @@ function TaskEditor({
     }
   }
 
+  function closeDelete() {
+    setConfirmDelete(false);
+    queueMicrotask(() => toolbarMenuTriggerRef.current?.focus());
+  }
+
   return (
     <section className="screen task-screen" aria-label="Task details">
       <header className="task-toolbar">
@@ -449,26 +547,55 @@ function TaskEditor({
                 : "Saved"}
         </button>
         <button
-          aria-label={task.archived ? "Restore task" : "Archive task"}
+          aria-controls={toolbarMenuOpen ? "task-toolbar-menu" : undefined}
+          aria-expanded={toolbarMenuOpen}
+          aria-haspopup="menu"
+          aria-label="More task actions"
           className="icon-action"
-          disabled={archiveAction}
+          ref={toolbarMenuTriggerRef}
           type="button"
-          onClick={() => void changeArchiveState()}
+          onClick={() => setToolbarMenuOpen((open) => !open)}
         >
-          {task.archived ? (
-            <ArchiveRestore aria-hidden="true" size={19} strokeWidth={1.6} />
-          ) : (
-            <Archive aria-hidden="true" size={19} strokeWidth={1.6} />
-          )}
+          <MoreHorizontal aria-hidden="true" size={20} strokeWidth={1.7} />
         </button>
-        <button
-          aria-label="Delete task"
-          className="icon-action"
-          type="button"
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Trash2 aria-hidden="true" size={19} strokeWidth={1.6} />
-        </button>
+        {toolbarMenuOpen ? (
+          <div
+            aria-label="Task options"
+            className="task-toolbar-menu"
+            id="task-toolbar-menu"
+            ref={toolbarMenuRef}
+            role="menu"
+          >
+            <button
+              disabled={archiveAction}
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                setToolbarMenuOpen(false);
+                void changeArchiveState();
+              }}
+            >
+              {task.archived ? (
+                <ArchiveRestore aria-hidden="true" size={18} />
+              ) : (
+                <Archive aria-hidden="true" size={18} />
+              )}
+              {task.archived ? "Restore task" : "Archive task"}
+            </button>
+            <button
+              className="danger"
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                setToolbarMenuOpen(false);
+                setConfirmDelete(true);
+              }}
+            >
+              <Trash2 aria-hidden="true" size={18} />
+              Delete task
+            </button>
+          </div>
+        ) : null}
       </header>
 
       {archiveError ? (
@@ -478,24 +605,41 @@ function TaskEditor({
       ) : null}
 
       {confirmDelete ? (
-        <div className="delete-confirmation" role="alert">
-          <p>Delete this task?</p>
-          <div>
-            <button
-              className="text-action danger"
-              type="button"
-              onClick={() => void remove()}
-            >
-              Delete
-            </button>
-            <button
-              className="text-action"
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-            >
-              Keep task
-            </button>
-          </div>
+        <div className="task-delete-layer">
+          <button
+            aria-hidden="true"
+            className="task-delete-scrim"
+            tabIndex={-1}
+            type="button"
+            onClick={closeDelete}
+          />
+          <section
+            aria-labelledby="task-delete-title"
+            aria-modal="true"
+            className="task-delete-dialog"
+            ref={deleteDialogRef}
+            role="alertdialog"
+          >
+            <h2 id="task-delete-title">Delete this task?</h2>
+            <p>This permanently removes “{task.title}” from the collection.</p>
+            <div>
+              <button
+                className="text-action"
+                data-safe-action
+                type="button"
+                onClick={closeDelete}
+              >
+                Keep task
+              </button>
+              <button
+                className="danger-outline-action"
+                type="button"
+                onClick={() => void remove()}
+              >
+                Delete task
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -789,9 +933,11 @@ function TaskEditor({
             />
           ) : null}
           <ReminderEditor
+            deliveryMode={sync.mode === "local" ? "local" : "mdbase"}
             due={draft.due}
             reminders={draft.reminders}
             scheduled={draft.scheduled}
+            onConnectMdbase={() => choose("cloud")}
             onChange={(reminders) => change({ reminders })}
           />
         </TaskFormSection>

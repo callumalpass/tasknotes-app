@@ -83,6 +83,34 @@ describe("saved-view values", () => {
     );
   });
 
+  it("can suppress routine defaults in everyday task rows", () => {
+    expect(
+      viewPropertyDetails(
+        {
+          ...row,
+          values: {
+            ...row.values,
+            'note["priority"]': "normal",
+            'note["archived"]': false,
+          },
+        },
+        [
+          { key: 'note["status"]', label: "Status" },
+          { key: 'note["priority"]', label: "Priority" },
+          { key: 'note["archived"]', label: "Archived" },
+          { key: 'note["due"]', label: "Due", format: "date" },
+        ],
+        { suppressRoutineDefaults: true },
+      ),
+    ).toEqual([
+      {
+        key: 'note["due"]',
+        label: "Due",
+        value: formatPropertyValue("2026-07-24", "date"),
+      },
+    ]);
+  });
+
   it("formats empty and structured values without leaking markup", () => {
     expect(formatPropertyValue([])).toBeNull();
     expect(formatPropertyValue(["one", "two"])).toBe("one, two");

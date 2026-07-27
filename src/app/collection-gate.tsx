@@ -1,10 +1,15 @@
 import { Capacitor } from "@capacitor/core";
 import {
   ArrowLeft,
+  BellOff,
+  BellRing,
+  Check,
   Cloud,
   FileText,
   FolderOpen,
   HardDrive,
+  Search,
+  Smartphone,
 } from "lucide-react";
 import { lazy, Suspense, useCallback, useState } from "react";
 
@@ -31,6 +36,7 @@ export function CollectionGate() {
     () => readLocalCollectionLocation(),
   );
   const [choosingLocalLocation, setChoosingLocalLocation] = useState(false);
+  const [confirmingBrowserLocal, setConfirmingBrowserLocal] = useState(false);
   const choose = useCallback((next: CollectionChoice) => {
     localStorage.setItem(STORAGE_KEY, next);
     setChoice(next);
@@ -64,6 +70,17 @@ export function CollectionGate() {
       />
     );
 
+  if (confirmingBrowserLocal)
+    return (
+      <BrowserLocalConfirmation
+        onBack={() => setConfirmingBrowserLocal(false)}
+        onConfirm={() => {
+          setConfirmingBrowserLocal(false);
+          choose("local");
+        }}
+      />
+    );
+
   if (!choice)
     return (
       <CollectionWelcome
@@ -71,7 +88,7 @@ export function CollectionGate() {
         onChooseCloud={() => choose("cloud")}
         onChooseLocal={() => {
           if (canChooseLocalFolder) setChoosingLocalLocation(true);
-          else choose("local");
+          else setConfirmingBrowserLocal(true);
         }}
       />
     );
@@ -114,41 +131,117 @@ function CollectionWelcome({
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
         <p className="eyebrow">TaskNotes</p>
-        <h1>Where should your tasks live?</h1>
+        <h1>Choose how TaskNotes stores your tasks.</h1>
         <p>
-          You can switch collections later. Choosing a location does not move
-          tasks between them.
+          This affects notification delivery, performance as your collection
+          grows, and where your Markdown files live.
         </p>
       </div>
-      <div className="collection-choices">
-        <button type="button" onClick={onChooseCloud}>
+      <div className="collection-choices collection-choice-comparison">
+        <button
+          className="collection-choice recommended"
+          type="button"
+          onClick={onChooseCloud}
+        >
           <Cloud aria-hidden="true" size={22} strokeWidth={1.5} />
-          <span>
+          <span className="collection-choice-content">
             <span className="collection-choice-title">
               <strong>mdbase</strong>
-              <span className="recommendation-label">Recommended</span>
+              <span className="recommendation-label">Best experience</span>
             </span>
-            <small>
-              Connect a shared collection. Hosted sync can keep working offline.
-            </small>
+            <span className="collection-choice-benefits">
+              <small>
+                <Search aria-hidden="true" size={15} />
+                Faster search and saved views as your collection grows
+              </small>
+              <small>
+                <BellRing aria-hidden="true" size={15} />
+                mdbase delivers reminders while TaskNotes is closed
+              </small>
+              <small>
+                <Check aria-hidden="true" size={15} />
+                Hosted sync or a direct connection to your computer
+              </small>
+            </span>
+            <span className="collection-choice-action">Connect mdbase</span>
           </span>
         </button>
-        <button type="button" onClick={onChooseLocal}>
+        <button
+          className="collection-choice"
+          type="button"
+          onClick={onChooseLocal}
+        >
           <HardDrive aria-hidden="true" size={22} strokeWidth={1.5} />
-          <span>
+          <span className="collection-choice-content">
             <strong>On this device</strong>
-            <small>
-              {canChooseLocalFolder
-                ? "Choose a folder and use its Markdown files directly."
-                : "Keep the source Markdown in this browser on this device."}
-            </small>
+            <span className="collection-choice-benefits">
+              <small>
+                <FileText aria-hidden="true" size={15} />
+                {canChooseLocalFolder
+                  ? "Use a folder and its Markdown files directly"
+                  : "Keep Markdown in this browser on this device"}
+              </small>
+              <small>
+                <BellOff aria-hidden="true" size={15} />
+                Reminder details are saved, but notifications are not delivered
+              </small>
+              <small>
+                <Smartphone aria-hidden="true" size={15} />
+                No account required
+              </small>
+            </span>
+            <span className="collection-choice-action">
+              Use {canChooseLocalFolder ? "this device" : "this browser"}
+            </span>
           </span>
         </button>
       </div>
       <p className="welcome-portability">
-        <FileText aria-hidden="true" size={16} /> In either mode, task records
-        use portable Markdown.
+        <FileText aria-hidden="true" size={16} /> Both options use portable
+        Markdown. Switching later does not move tasks between collections.
       </p>
+    </main>
+  );
+}
+
+function BrowserLocalConfirmation({
+  onBack,
+  onConfirm,
+}: {
+  onBack(): void;
+  onConfirm(): void;
+}) {
+  return (
+    <main className="collection-welcome browser-local-welcome">
+      <div className="welcome-copy">
+        <img alt="" src={tasknotesMarkUrl} />
+        <p className="eyebrow">On this device</p>
+        <h1>Keep tasks in this browser?</h1>
+        <p>
+          This is a private, account-free option for one browser. It is best for
+          smaller collections.
+        </p>
+      </div>
+      <div className="collection-caveat" role="note">
+        <BellOff aria-hidden="true" size={20} />
+        <div>
+          <strong>Notifications are not available</strong>
+          <p>
+            Reminder details remain in Markdown, but this browser cannot deliver
+            task notifications. Clearing its site data can also remove the
+            browser-held collection.
+          </p>
+        </div>
+      </div>
+      <div className="welcome-actions">
+        <button className="outline-action" type="button" onClick={onConfirm}>
+          Use this browser
+        </button>
+        <button className="text-action" type="button" onClick={onBack}>
+          <ArrowLeft aria-hidden="true" size={17} />
+          Back
+        </button>
+      </div>
     </main>
   );
 }

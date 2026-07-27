@@ -76,16 +76,21 @@ export function SearchScreen({
       ) : loading ? (
         <LoadingRows count={4} />
       ) : tasks.length ? (
-        <div className="task-list search-results">
-          {tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              onOpen={onOpen}
-              onToggle={(item) => void toggleTask(item.id)}
-            />
-          ))}
-        </div>
+        <>
+          <p className="search-result-count" role="status">
+            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+          </p>
+          <div className="task-list search-results">
+            {tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onOpen={onOpen}
+                onToggle={(item) => void toggleTask(item.id)}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <EmptyState
           title={indexing.complete ? "No tasks matched." : "Still indexing."}

@@ -60,8 +60,8 @@ describe("DependencyEditor", () => {
       },
     ]);
 
-    fireEvent.change(screen.getByLabelText("Gap"), {
-      target: { value: "P2D" },
+    fireEvent.change(screen.getByLabelText("Gap amount"), {
+      target: { value: "2" },
     });
     expect(onChange).toHaveBeenLastCalledWith([
       {

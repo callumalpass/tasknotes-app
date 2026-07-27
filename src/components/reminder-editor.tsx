@@ -19,11 +19,15 @@ export function ReminderEditor({
   reminders,
   scheduled,
   due,
+  deliveryMode = "mdbase",
+  onConnectMdbase,
   onChange,
 }: {
   reminders: TaskReminder[];
   scheduled?: string;
   due?: string;
+  deliveryMode?: "mdbase" | "local";
+  onConnectMdbase?(): void;
   onChange(reminders: TaskReminder[]): void;
 }) {
   const defaultAnchor = due ? "due" : scheduled ? "scheduled" : undefined;
@@ -42,10 +46,34 @@ export function ReminderEditor({
 
   return (
     <div className="reminder-editor">
+      {deliveryMode === "local" ? (
+        <div className="reminder-delivery-note" role="note">
+          <div>
+            <strong>Notifications are not available here</strong>
+            <p>
+              Reminder details stay in Markdown, but tasks stored on this device
+              cannot deliver notifications.
+            </p>
+          </div>
+          {onConnectMdbase ? (
+            <button
+              className="text-action"
+              type="button"
+              onClick={onConnectMdbase}
+            >
+              Connect mdbase
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="reminder-editor-heading">
         <div>
           <span className="field-label">Reminders</span>
-          <p>Notify at a fixed time or relative to this task.</p>
+          <p>
+            {deliveryMode === "mdbase"
+              ? "Notify at a fixed time or relative to this task."
+              : "Save a fixed or relative reminder in this task."}
+          </p>
         </div>
         <button className="text-action" type="button" onClick={addDefault}>
           <Plus aria-hidden="true" size={16} />

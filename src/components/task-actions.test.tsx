@@ -126,4 +126,25 @@ describe("TaskActions", () => {
     fireEvent.keyDown(menu, { key: "ArrowLeft" });
     expect(screen.getByRole("menuitem", { name: /Priority/ })).toBeVisible();
   });
+
+  it("uses an alert dialog and focuses the safe action before deletion", async () => {
+    renderRow();
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    const confirmation = screen.getByRole("alertdialog", {
+      name: "Actions for Menu parent",
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Keep task" })).toHaveFocus(),
+    );
+    expect(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("menuitem", { name: "Delete permanently" }),
+    ).not.toBeInTheDocument();
+    expect(confirmation).toHaveAttribute("aria-modal", "true");
+    expect(confirmation).toBeVisible();
+  });
 });

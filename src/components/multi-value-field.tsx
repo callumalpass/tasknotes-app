@@ -36,6 +36,7 @@ export function MultiValueField({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -88,8 +89,15 @@ export function MultiValueField({
   function add(value: string) {
     const next = value.trim();
     if (!next) return;
-    if (!values.some((candidate) => candidate === next))
+    if (
+      !values.some(
+        (candidate) =>
+          candidate.toLocaleLowerCase() === next.toLocaleLowerCase(),
+      )
+    ) {
       onChange([...values, next]);
+      setAnnouncement(`${valueLabel(next)} added`);
+    }
     setQuery("");
     setOpen(true);
     inputRef.current?.focus();
@@ -122,7 +130,9 @@ export function MultiValueField({
       return;
     }
     if (event.key === "Backspace" && !query && values.length) {
+      const removed = values.at(-1);
       onChange(values.slice(0, -1));
+      if (removed) setAnnouncement(`${valueLabel(removed)} removed`);
       return;
     }
     if (event.key === "Escape") {
@@ -149,6 +159,7 @@ export function MultiValueField({
               onClick={(event) => {
                 event.stopPropagation();
                 onChange(values.filter((candidate) => candidate !== value));
+                setAnnouncement(`${valueLabel(value)} removed`);
               }}
             >
               <X aria-hidden="true" size={13} strokeWidth={1.8} />
@@ -156,6 +167,11 @@ export function MultiValueField({
           </span>
         ))}
         <input
+          aria-activedescendant={
+            showOptions && !loading && options[activeIndex]
+              ? `${id}-option-${activeIndex}`
+              : undefined
+          }
           aria-autocomplete="list"
           aria-controls={`${id}-options`}
           aria-expanded={showOptions}
@@ -180,7 +196,12 @@ export function MultiValueField({
         />
       </div>
       {showOptions ? (
-        <div className="field-suggestions" id={`${id}-options`} role="listbox">
+        <div
+          aria-label={`${label} suggestions`}
+          className="field-suggestions"
+          id={`${id}-options`}
+          role="listbox"
+        >
           {loading ? (
             <span className="field-suggestion-status">
               Looking in collection…
@@ -190,6 +211,7 @@ export function MultiValueField({
               <button
                 aria-selected={index === activeIndex}
                 className={index === activeIndex ? "is-active" : undefined}
+                id={`${id}-option-${index}`}
                 key={`${option.kind}:${option.value}`}
                 role="option"
                 type="button"
@@ -222,6 +244,9 @@ export function MultiValueField({
           ) : null}
         </div>
       ) : null}
+      <p className="visually-hidden" aria-live="polite">
+        {announcement}
+      </p>
     </div>
   );
 }

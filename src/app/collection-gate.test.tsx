@@ -16,15 +16,18 @@ beforeEach(() => {
   vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
 });
 
-it("gently recommends mdbase and lets native users choose a folder", () => {
+it("explains why mdbase is recommended and lets native users choose a folder", () => {
   render(<CollectionGate />);
 
   const mdbase = screen.getByRole("button", { name: /mdbase/i });
-  expect(mdbase).toHaveTextContent("Recommended");
-  expect(mdbase).toHaveTextContent("Hosted sync can keep working offline");
+  expect(mdbase).toHaveTextContent("Best experience");
+  expect(mdbase).toHaveTextContent("Faster search and saved views");
+  expect(mdbase).toHaveTextContent(
+    "mdbase delivers reminders while TaskNotes is closed",
+  );
   expect(
     screen.getByRole("button", { name: /On this device/i }),
-  ).toHaveTextContent("Choose a folder and use its Markdown files directly");
+  ).toHaveTextContent("Reminder details are saved");
 
   fireEvent.click(screen.getByRole("button", { name: /On this device/i }));
   expect(
@@ -39,17 +42,36 @@ it("gently recommends mdbase and lets native users choose a folder", () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Back" }));
   expect(
-    screen.getByRole("heading", { name: "Where should your tasks live?" }),
+    screen.getByRole("heading", {
+      name: "Choose how TaskNotes stores your tasks.",
+    }),
   ).toBeVisible();
 });
 
-it("describes browser storage without implying a user-visible folder", () => {
+it("warns before using browser storage", () => {
   vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
   render(<CollectionGate />);
 
   const local = screen.getByRole("button", { name: /On this device/i });
   expect(local).toHaveTextContent(
-    "Keep the source Markdown in this browser on this device",
+    "Keep Markdown in this browser on this device",
   );
   expect(local).not.toHaveTextContent("Choose a folder");
+
+  fireEvent.click(local);
+  expect(
+    screen.getByRole("heading", { name: "Keep tasks in this browser?" }),
+  ).toBeVisible();
+  expect(screen.getByRole("note")).toHaveTextContent(
+    "Notifications are not available",
+  );
+  expect(screen.getByRole("note")).toHaveTextContent(
+    "Clearing its site data can also remove",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Use this browser" }));
+  expect(localStorage.getItem("tasknotes:collection-choice:v1")).toBe("local");
+  expect(
+    screen.queryByRole("heading", { name: "Keep tasks in this browser?" }),
+  ).not.toBeInTheDocument();
 });

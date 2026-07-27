@@ -107,11 +107,13 @@ export function TaskActions({
 
   useEffect(() => {
     if (!position || panel === "subtask") return;
-    queueMicrotask(() =>
-      menuRef.current
-        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
-        ?.focus(),
-    );
+    queueMicrotask(() => {
+      const selector =
+        panel === "delete"
+          ? "[data-safe-action]"
+          : "[role='menuitem']:not(:disabled)";
+      menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
+    });
   }, [panel, position]);
 
   function openFromTrigger() {
@@ -212,10 +214,19 @@ export function TaskActions({
         ? createPortal(
             <div
               aria-label={`Actions for ${task.title}`}
+              aria-modal={
+                panel === "subtask" || panel === "delete" ? true : undefined
+              }
               className="task-actions-menu"
               id={menuId}
               ref={menuRef}
-              role="menu"
+              role={
+                panel === "subtask"
+                  ? "dialog"
+                  : panel === "delete"
+                    ? "alertdialog"
+                    : "menu"
+              }
               style={{ left: position.x, top: position.y }}
               onKeyDown={handleMenuKeys}
             >
@@ -438,7 +449,9 @@ export function TaskActions({
                 {panel === "organize" ? (
                   <>
                     <MenuAction
-                      detail={projectLink ? undefined : "Waiting for sync"}
+                      detail={
+                        projectLink ? "Linked to this task" : "Waiting for sync"
+                      }
                       disabled={!projectLink}
                       icon={Plus}
                       label="Create subtask"
@@ -527,20 +540,19 @@ export function TaskActions({
                   <div className="task-actions-confirm">
                     <p>Delete this task permanently?</p>
                     <button
-                      className="danger"
-                      disabled={busy}
-                      role="menuitem"
-                      type="button"
-                      onClick={() => void run(() => deleteTask(task.id))}
-                    >
-                      <Trash2 aria-hidden="true" size={18} /> Delete permanently
-                    </button>
-                    <button
-                      role="menuitem"
+                      data-safe-action
                       type="button"
                       onClick={() => setPanel("actions")}
                     >
                       Keep task
+                    </button>
+                    <button
+                      className="danger"
+                      disabled={busy}
+                      type="button"
+                      onClick={() => void run(() => deleteTask(task.id))}
+                    >
+                      <Trash2 aria-hidden="true" size={18} /> Delete permanently
                     </button>
                   </div>
                 ) : null}
@@ -558,6 +570,23 @@ export function TaskActions({
   );
 
   function handleMenuKeys(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Tab" && (panel === "subtask" || panel === "delete")) {
+      const controls = [
+        ...(menuRef.current?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled), input:not(:disabled)",
+        ) ?? []),
+      ];
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+      return;
+    }
     if (
       event.target instanceof HTMLInputElement ||
       event.target instanceof HTMLTextAreaElement
@@ -571,7 +600,9 @@ export function TaskActions({
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     const items = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
-        "[role='menuitem']:not(:disabled)",
+        panel === "subtask" || panel === "delete"
+          ? "button:not(:disabled)"
+          : "[role='menuitem']:not(:disabled)",
       ) ?? []),
     ];
     if (!items.length) return;
@@ -610,6 +641,7 @@ function MenuAction({
 }) {
   return (
     <button
+      aria-label={label}
       aria-current={current ? "true" : undefined}
       className={danger ? "danger" : undefined}
       disabled={disabled}
