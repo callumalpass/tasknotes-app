@@ -532,15 +532,15 @@ describe("relay task repository", () => {
     expect(fixture.read).toHaveBeenCalledWith({ path: "Templates/Task.md" });
   });
 
-  it("hides hosted-versus-relay selection behind one repository factory", () => {
+  it("hides replicated-versus-live selection behind one repository factory", () => {
     const relay = relayFixture([]).connect;
     expect(createConnectTaskRepository(relay)).toBeInstanceOf(
       RelayTaskRepository,
     );
-    const hosted = {
-      sync: () => ({ collectionId: "hosted", replicaId: "phone" }),
+    const replicated = {
+      sync: () => ({ collectionId: "replicated", replicaId: "phone" }),
     } as unknown as MdbaseConnection<JsonObject>;
-    expect(createConnectTaskRepository(hosted)).toBeInstanceOf(
+    expect(createConnectTaskRepository(replicated)).toBeInstanceOf(
       CloudTaskRepository,
     );
   });

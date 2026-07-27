@@ -107,7 +107,9 @@ export class CloudTaskRepository implements TaskRepository {
   private async initializeUnlocked(): Promise<void> {
     const sync = this.connect.sync();
     if (!sync) {
-      throw new Error("Connect an mdbase cloud collection to continue.");
+      throw new Error(
+        "Connect an mdbase collection with sync access to continue.",
+      );
     }
     this.collectionId = sync.collectionId;
     this.viewStore = new TaskViewCache(sync.collectionId);
