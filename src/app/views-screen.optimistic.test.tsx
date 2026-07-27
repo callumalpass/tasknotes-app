@@ -199,6 +199,131 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   );
 });
 
+it("reorders a manual task list with keyboard-accessible handles", async () => {
+  const view: TaskView = {
+    key: "views/manual.base#manual",
+    documentId: "manual",
+    documentName: "manual",
+    id: "manual",
+    name: "Manual",
+    properties: [],
+    source: {
+      path: "views/manual.base",
+      format: "obsidian.base",
+      revision: "one",
+      writable: true,
+    },
+    presentation: {
+      type: "tasknotes.task-list",
+      mappings: {},
+      options: { create: false },
+    },
+  };
+  const tasks = [
+    listTask("alpha", "Alpha"),
+    listTask("bravo", "Bravo"),
+    listTask("charlie", "Charlie"),
+  ];
+  const execution = (): TaskViewExecution => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: tasks.length,
+    hasMore: false,
+    groups: [],
+  });
+  const update = vi.fn(async (id: string, input: { sortOrder?: string }) => {
+    const task = tasks.find((candidate) => candidate.id === id)!;
+    task.sortOrder = input.sortOrder;
+    task.frontmatter.tasknotes_manual_order = input.sortOrder;
+    tasks.sort((left, right) =>
+      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+    );
+    return task;
+  });
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: tasks.length,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => tasks,
+    cachedViewExecution: async () => null,
+    executeView: async () => execution(),
+    readViewSource: async () => ({
+      path: view.source.path,
+      format: "obsidian.base",
+      revision: "one",
+      document: `views:
+  - type: tasknotesTaskList
+    name: Manual
+    sort:
+      - column: note.tasknotes_manual_order
+        direction: DESC
+    options: { create: false }
+`,
+    }),
+    update,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  render(
+    <RepositoryProvider repository={repository}>
+      <ViewsScreen
+        documents={[
+          {
+            id: view.documentId,
+            name: view.documentName,
+            source: view.source,
+            views: [view],
+          },
+        ]}
+        navigationViewKeys={[view.key]}
+        operational
+        viewKey={view.key}
+        views={[view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+
+  const handle = await screen.findByRole("button", {
+    name: "Reorder Charlie. Drag, or use up and down arrow keys.",
+  });
+  fireEvent.keyDown(handle, { key: "ArrowUp" });
+
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(3));
+  expect(
+    update.mock.calls.every(([, input]) =>
+      /^tn[a-z]{10}$/.test(input.sortOrder ?? ""),
+    ),
+  ).toBe(true);
+  await waitFor(() => {
+    const labels = screen
+      .getAllByRole("button", { name: /Reorder .+ Drag/ })
+      .map((button) => button.getAttribute("aria-label"));
+    expect(labels).toEqual([
+      "Reorder Alpha. Drag, or use up and down arrow keys.",
+      "Reorder Charlie. Drag, or use up and down arrow keys.",
+      "Reorder Bravo. Drag, or use up and down arrow keys.",
+    ]);
+  });
+});
+
 function boardExecution(): TaskViewExecution {
   const view: TaskView = {
     key: "views/work.base#board",
@@ -248,6 +373,32 @@ function boardExecution(): TaskViewExecution {
     totalCount: 1,
     hasMore: false,
     groups: [{ values: { status: "open" }, count: 1, summaries: {} }],
+  };
+}
+
+function listTask(id: string, title: string): Task {
+  return {
+    id,
+    path: `tasks/${id}.md`,
+    title,
+    status: "open",
+    completed: false,
+    archived: false,
+    priority: "normal",
+    body: "",
+    createdAt: "2026-07-23T00:00:00Z",
+    updatedAt: "2026-07-23T00:00:00Z",
+    tags: [],
+    contexts: [],
+    projects: [],
+    blockedBy: [],
+    completeInstances: [],
+    skippedInstances: [],
+    reminders: [],
+    timeEntries: [],
+    customProperties: {},
+    revision: 1,
+    frontmatter: { status: "open" },
   };
 }
 

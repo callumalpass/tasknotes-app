@@ -20,6 +20,7 @@ import {
 import { LoadingRows } from "../components/loading";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { MultiValueField } from "../components/multi-value-field";
+import { RecurrenceField } from "../components/recurrence-field";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateField,
@@ -27,16 +28,10 @@ import {
   TaskNotesSelect,
   TaskNotesSelectField,
 } from "../components/tasknotes-controls";
-import {
-  buildRecurrenceRule,
-  parseRecurrenceRule,
-  type RecurrenceRuleDraft,
-} from "../domain/recurrence-rule";
+import { recurrencePreset } from "../domain/recurrence-rule";
 import {
   activeTimeEntry,
   combineTaskDateTime,
-  recurrencePreset,
-  recurrenceRule,
   taskDatePart,
   taskTimeTotals,
   taskTimePart,
@@ -778,6 +773,7 @@ function TaskEditor({
         >
           <RecurrenceField
             anchor={draft.recurrenceAnchor}
+            scheduled={draft.scheduled}
             value={draft.recurrence}
             onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
             onChange={(recurrence) => change({ recurrence })}
@@ -881,7 +877,9 @@ function repeatSummary(draft: Draft): string {
   const values: string[] = [];
   if (draft.recurrence) {
     const preset = recurrencePreset(draft.recurrence);
-    values.push(preset === "custom" ? "Custom repeat" : humanizeValue(preset));
+    values.push(
+      preset === "advanced" ? "Advanced repeat" : humanizeValue(preset),
+    );
   }
   if (draft.reminders.length)
     values.push(
@@ -1212,199 +1210,6 @@ function ListField({
   );
 }
 
-function RecurrenceField({
-  value,
-  anchor,
-  onChange,
-  onAnchorChange,
-}: {
-  value?: string;
-  anchor?: "scheduled" | "completion";
-  onChange(value?: string): void;
-  onAnchorChange(value: "scheduled" | "completion"): void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const rule = useMemo(() => parseRecurrenceRule(value), [value]);
-  const update = (patch: Partial<RecurrenceRuleDraft>) =>
-    onChange(buildRecurrenceRule({ ...rule, ...patch }));
-  const preset = recurrencePreset(value);
-  return (
-    <div className="repeat-fields">
-      <div className="repeat-heading">
-        <TaskNotesSelectField
-          label="Repeat"
-          options={[
-            { value: "never", label: "Never" },
-            { value: "daily", label: "Daily" },
-            { value: "weekdays", label: "Weekdays" },
-            { value: "weekly", label: "Weekly" },
-            { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly" },
-            ...(preset === "custom"
-              ? [{ value: "custom", label: "Custom" }]
-              : []),
-          ]}
-          value={preset}
-          onChange={(next) =>
-            onChange(
-              next === "never" ? undefined : (recurrenceRule(next) ?? value),
-            )
-          }
-        />
-        {value ? (
-          <button
-            className="text-action"
-            type="button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
-          >
-            {expanded ? "Done" : "Customize"}
-          </button>
-        ) : null}
-      </div>
-
-      {expanded && value ? (
-        rule.unsupported.length ? (
-          <div className="custom-rule-warning">
-            <p>
-              This rule uses {rule.unsupported.join(", ")}. Edit the RRULE
-              directly to preserve it.
-            </p>
-            <label className="form-field custom-rule-field">
-              <span>Recurrence rule</span>
-              <input
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-              />
-            </label>
-          </div>
-        ) : (
-          <div className="recurrence-builder">
-            <div className="recurrence-interval">
-              <span>Every</span>
-              <input
-                aria-label="Repeat interval"
-                inputMode="numeric"
-                min="1"
-                type="number"
-                value={rule.interval}
-                onChange={(event) =>
-                  update({ interval: Number(event.target.value) || 1 })
-                }
-              />
-              <TaskNotesSelect
-                ariaLabel="Repeat frequency"
-                options={[
-                  { value: "DAILY", label: "days" },
-                  { value: "WEEKLY", label: "weeks" },
-                  { value: "MONTHLY", label: "months" },
-                  { value: "YEARLY", label: "years" },
-                ]}
-                value={rule.frequency}
-                onChange={(frequency) =>
-                  update({
-                    frequency: frequency as RecurrenceRuleDraft["frequency"],
-                  })
-                }
-              />
-            </div>
-
-            {rule.frequency === "WEEKLY" ? (
-              <fieldset className="recurrence-weekdays">
-                <legend>On</legend>
-                {[
-                  ["MO", "M"],
-                  ["TU", "T"],
-                  ["WE", "W"],
-                  ["TH", "T"],
-                  ["FR", "F"],
-                  ["SA", "S"],
-                  ["SU", "S"],
-                ].map(([day, label]) => (
-                  <button
-                    aria-label={weekdayName(day)}
-                    aria-pressed={rule.weekdays.includes(day)}
-                    className={
-                      rule.weekdays.includes(day) ? "is-selected" : undefined
-                    }
-                    key={day}
-                    type="button"
-                    onClick={() =>
-                      update({
-                        weekdays: rule.weekdays.includes(day)
-                          ? rule.weekdays.filter((entry) => entry !== day)
-                          : [...rule.weekdays, day],
-                      })
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </fieldset>
-            ) : null}
-
-            <div className="recurrence-end">
-              <TaskNotesSelectField
-                label="Ends"
-                options={[
-                  { value: "never", label: "Never" },
-                  { value: "until", label: "On date" },
-                  { value: "count", label: "After occurrences" },
-                ]}
-                value={rule.end}
-                onChange={(end) =>
-                  update({
-                    end: end as RecurrenceRuleDraft["end"],
-                    until: rule.until ?? new Date().toISOString().slice(0, 10),
-                    count: rule.count ?? 10,
-                  })
-                }
-              />
-              {rule.end === "until" ? (
-                <TaskNotesDateField
-                  label="Last date"
-                  value={rule.until}
-                  onChange={(until) => update({ until })}
-                />
-              ) : rule.end === "count" ? (
-                <label className="form-field">
-                  <span>Occurrences</span>
-                  <input
-                    inputMode="numeric"
-                    min="1"
-                    type="number"
-                    value={rule.count ?? 10}
-                    onChange={(event) =>
-                      update({ count: Number(event.target.value) || 1 })
-                    }
-                  />
-                </label>
-              ) : null}
-            </div>
-          </div>
-        )
-      ) : null}
-
-      {value ? (
-        <Fieldset legend="Repeat from">
-          <Choice
-            selected={(anchor ?? "scheduled") === "scheduled"}
-            onClick={() => onAnchorChange("scheduled")}
-          >
-            Schedule
-          </Choice>
-          <Choice
-            selected={anchor === "completion"}
-            onClick={() => onAnchorChange("completion")}
-          >
-            Completion
-          </Choice>
-        </Fieldset>
-      ) : null}
-    </div>
-  );
-}
-
 function OccurrencePolicyField({
   materialization,
   nextTrigger,
@@ -1499,20 +1304,6 @@ function OccurrencePolicyField({
         />
       </label>
     </section>
-  );
-}
-
-function weekdayName(value: string): string {
-  return (
-    {
-      MO: "Monday",
-      TU: "Tuesday",
-      WE: "Wednesday",
-      TH: "Thursday",
-      FR: "Friday",
-      SA: "Saturday",
-      SU: "Sunday",
-    }[value] ?? value
   );
 }
 

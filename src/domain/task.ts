@@ -55,6 +55,7 @@ export interface Task {
   skippedInstances: string[];
   reminders: TaskReminder[];
   timeEstimate?: number;
+  sortOrder?: string;
   timeEntries: TaskTimeEntry[];
   customProperties: Record<string, unknown>;
   operationWarnings?: string[];
@@ -82,6 +83,7 @@ export interface CreateTaskInput {
   occurrenceFutureHorizon?: string;
   reminders?: TaskReminder[];
   timeEstimate?: number;
+  sortOrder?: string;
   customProperties?: Record<string, unknown>;
   parentNote?: string;
   useTemplate?: boolean;
@@ -109,6 +111,7 @@ export interface UpdateTaskInput {
   occurrenceFutureHorizon?: string | null;
   reminders?: TaskReminder[];
   timeEstimate?: number | null;
+  sortOrder?: string | null;
   timeEntries?: TaskTimeEntry[];
   customProperties?: Record<string, unknown>;
 }

@@ -5,11 +5,30 @@ import { MarkdownCollection } from "./collection";
 import { LocalViewExecutor } from "./local-views";
 import { taskNotesDefaultBaseDocument } from "../domain/default-view-source";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
-import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
 
 import type { Task } from "../domain/task";
 
 describe("local Obsidian Bases views", () => {
+  it("initializes the TaskNotes manual order field as a string rank", async () => {
+    const vault = new MemoryVault();
+    const collection = new MarkdownCollection(vault);
+    await collection.initialize();
+    const type = parseFrontmatter(await vault.readText("_types/task.md"))
+      .frontmatter as {
+      schema: {
+        value: { properties: Record<string, { type?: string }> };
+      };
+    };
+
+    expect(type.schema.value.properties.tasknotes_manual_order.type).toBe(
+      "string",
+    );
+  });
+
   it("discovers stable views and executes filters, formulas, grouping, and calendar metadata", async () => {
     const vault = new MemoryVault();
     const collection = new MarkdownCollection(vault);
@@ -157,6 +176,56 @@ views:
       },
     ]);
     expect(execution.totalCount).toBe(1);
+  });
+
+  it("accepts TaskNotes column-style manual sort declarations", async () => {
+    const vault = new MemoryVault();
+    const collection = new MarkdownCollection(vault);
+    await collection.initialize();
+    const first = await task(
+      collection,
+      "first",
+      "First",
+      "open",
+      undefined,
+      1,
+    );
+    const second = await task(
+      collection,
+      "second",
+      "Second",
+      "open",
+      undefined,
+      1,
+    );
+    first.sortOrder = "tnaaaaaaaaaa";
+    first.frontmatter.tasknotes_manual_order = first.sortOrder;
+    second.sortOrder = "tnzzzzzzzzzz";
+    second.frontmatter.tasknotes_manual_order = second.sortOrder;
+    await collection.write(first);
+    await collection.write(second);
+    await vault.writeText(
+      "views/manual.base",
+      `views:
+  - type: tasknotesTaskList
+    name: Manual
+    sort:
+      - column: note.tasknotes_manual_order
+        direction: DESC
+`,
+    );
+
+    const executor = new LocalViewExecutor(collection, () => [first, second]);
+    const view = (await executor.list())[0].views[0];
+    expect(view.sort).toEqual([
+      {
+        property: "note.tasknotes_manual_order",
+        direction: "desc",
+      },
+    ]);
+    expect(
+      (await executor.execute(view)).rows.map(({ task }) => task.title),
+    ).toEqual(["Second", "First"]);
   });
 });
 

@@ -22,6 +22,7 @@ describe("TaskNotes starter views", () => {
         name: string;
         type: string;
         options?: Record<string, unknown>;
+        sort?: Array<{ property: string; direction: string }>;
       }>;
     };
 
@@ -42,6 +43,11 @@ describe("TaskNotes starter views", () => {
     });
     expect(parsed.views[3].options).toEqual({ create: false });
     expect(parsed.views[4].options).toEqual({ create: false });
+    for (const view of parsed.views)
+      expect(view.sort?.[0]).toEqual({
+        property: "note.tasknotes_manual_order",
+        direction: "DESC",
+      });
   });
 
   it("creates the Base once and returns the provider-owned definitions", async () => {
@@ -86,6 +92,7 @@ describe("TaskNotes starter views", () => {
     const views = frontmatter.views as Array<{
       id: string;
       where: string;
+      order_by?: Array<{ field: string; direction: string }>;
       presentation: { options?: Record<string, unknown> };
     }>;
     const archive = views.find(({ id }) => id === "archive");
@@ -121,6 +128,11 @@ describe("TaskNotes starter views", () => {
     expect(
       views.find(({ id }) => id === "today")?.presentation.options,
     ).toEqual({ sections: "day" });
+    for (const view of views)
+      expect(view.order_by?.[0]).toEqual({
+        field: "tasknotes_manual_order",
+        direction: "desc",
+      });
   });
 
   it("leaves an existing default source untouched", async () => {

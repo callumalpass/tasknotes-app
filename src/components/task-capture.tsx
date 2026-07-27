@@ -23,8 +23,6 @@ import {
 } from "../domain/task-capture";
 import {
   combineTaskDateTime,
-  recurrencePreset,
-  recurrenceRule,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -32,6 +30,7 @@ import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
+import { RecurrenceField } from "./recurrence-field";
 import {
   TaskNotesDateTimeField,
   TaskNotesSelectField,
@@ -582,28 +581,12 @@ function CaptureDetails({
             }
           />
         </label>
-        <TaskNotesSelectField
-          label="Repeat"
-          options={[
-            { value: "never", label: "Never" },
-            { value: "daily", label: "Daily" },
-            { value: "weekdays", label: "Weekdays" },
-            { value: "weekly", label: "Weekly" },
-            { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly" },
-            ...(recurrencePreset(input.recurrence) === "custom"
-              ? [{ value: "custom", label: "Custom rule" }]
-              : []),
-          ]}
-          value={recurrencePreset(input.recurrence)}
-          onChange={(value) =>
-            onChange({
-              recurrence:
-                value === "never"
-                  ? undefined
-                  : (recurrenceRule(value) ?? input.recurrence),
-            })
-          }
+        <RecurrenceField
+          anchor={input.recurrenceAnchor}
+          scheduled={input.scheduled}
+          value={input.recurrence}
+          onAnchorChange={(recurrenceAnchor) => onChange({ recurrenceAnchor })}
+          onChange={(recurrence) => onChange({ recurrence })}
         />
       </div>
       <DependencyEditor

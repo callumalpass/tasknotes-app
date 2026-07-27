@@ -50,7 +50,12 @@ interface BaseView {
   name: string;
   filters?: BaseFilter;
   order?: string[];
-  sort?: Array<{ property: string; direction?: string }>;
+  sort?: Array<{
+    property?: string;
+    column?: string;
+    field?: string;
+    direction?: string;
+  }>;
   groupBy?: string | { property: string; direction?: string };
   limit?: number;
   options?: Record<string, unknown>;
@@ -101,6 +106,7 @@ export class LocalViewExecutor {
             properties: (view.order ?? []).map((key) =>
               propertyDescriptor(key, source.document.properties),
             ),
+            sort: baseSort(view.sort),
             source: viewSource,
             presentation: presentation(view),
           };
@@ -197,7 +203,7 @@ export class LocalViewExecutor {
     });
 
     rows.sort((left, right) => {
-      for (const sort of view.sort ?? []) {
+      for (const sort of baseSort(view.sort)) {
         const compared = compareValues(
           left.computedValues[sort.property],
           right.computedValues[sort.property],
@@ -281,10 +287,26 @@ function presentation(view: BaseView): TaskViewPresentation {
 
 function selectedProperties(view: BaseView): string[] {
   const properties = new Set(view.order ?? []);
-  for (const sort of view.sort ?? []) properties.add(sort.property);
+  for (const sort of baseSort(view.sort)) properties.add(sort.property);
   const group = groupProperty(view.groupBy);
   if (group) properties.add(group);
   return [...properties];
+}
+
+function baseSort(value: BaseView["sort"]): NonNullable<TaskView["sort"]> {
+  return (value ?? []).flatMap((sort) => {
+    const property = sort.property ?? sort.column ?? sort.field;
+    if (!property) return [];
+    return [
+      {
+        property,
+        direction:
+          sort.direction?.toLocaleLowerCase() === "desc"
+            ? ("desc" as const)
+            : ("asc" as const),
+      },
+    ];
+  });
 }
 
 function evaluateProperty(

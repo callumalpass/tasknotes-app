@@ -22,6 +22,7 @@ import {
 } from "../components/tasknotes-controls";
 import { validateComputedProperties } from "../domain/view-computed-properties";
 import { computedPropertyReference } from "../domain/view-document";
+import { isManualOrderProperty } from "../domain/manual-order";
 
 import type { LucideIcon } from "lucide-react";
 import type {
@@ -181,6 +182,22 @@ export function ViewEditorForm({
             rules={draft.sort}
             onChange={(sort) => patch({ sort })}
           />
+          {draft.sort.some(({ property }) =>
+            isManualOrderProperty(
+              property,
+              configuration.fieldMapping.sortOrder,
+            ),
+          ) ? (
+            <p className="view-editor-hint">
+              {draft.sort[0] &&
+              isManualOrderProperty(
+                draft.sort[0].property,
+                configuration.fieldMapping.sortOrder,
+              )
+                ? "Manual order is active. Drag handles will appear on tasks."
+                : "Move Manual order to the first position to enable drag handles."}
+            </p>
+          ) : null}
           <div className="add-view-property">
             <TaskNotesCombobox
               ariaLabel="Property to sort"
@@ -201,7 +218,15 @@ export function ViewEditorForm({
                 patch({
                   sort: [
                     ...draft.sort,
-                    { property: sortPropertyInput.trim(), direction: "asc" },
+                    {
+                      property: sortPropertyInput.trim(),
+                      direction: isManualOrderProperty(
+                        sortPropertyInput.trim(),
+                        configuration.fieldMapping.sortOrder,
+                      )
+                        ? "desc"
+                        : "asc",
+                    },
                   ],
                 });
                 setSortPropertyInput("");
@@ -976,7 +1001,11 @@ function viewFields(
     label: priority.label,
   }));
   const mapped = Object.entries(configuration.fieldMapping).map(
-    ([label, key]) => field(String(key), humanize(label)),
+    ([label, key]) =>
+      field(
+        String(key),
+        label === "sortOrder" ? "Manual order" : humanize(label),
+      ),
   );
   const custom = configuration.userFields.map((item) =>
     field(

@@ -191,6 +191,7 @@ export class TaskNotesTaskModel {
       occurrence_future_horizon: input.occurrenceFutureHorizon,
       reminders: input.reminders,
       timeEstimate: input.timeEstimate,
+      sortOrder: input.sortOrder,
       customProperties: withUserFieldDefaults(
         this.config,
         input.customProperties,
@@ -317,6 +318,8 @@ export class TaskNotesTaskModel {
     if (input.reminders !== undefined) updates.reminders = input.reminders;
     if (input.timeEstimate !== undefined)
       updates.timeEstimate = input.timeEstimate ?? undefined;
+    if (input.sortOrder !== undefined)
+      updates.sortOrder = input.sortOrder ?? undefined;
     if (input.timeEntries !== undefined)
       updates.timeEntries = normalizeTimeEntries(input.timeEntries);
     if (input.customProperties !== undefined)
@@ -775,6 +778,7 @@ export class TaskNotesTaskModel {
       skippedInstances: info.skipped_instances ?? [],
       reminders: info.reminders ?? [],
       timeEstimate: info.timeEstimate,
+      sortOrder: info.sortOrder,
       timeEntries: normalizeTimeEntries(info.timeEntries ?? []),
       customProperties: info.customProperties ?? {},
       revision,

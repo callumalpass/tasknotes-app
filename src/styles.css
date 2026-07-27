@@ -2208,16 +2208,41 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
+.recurrence-field {
+  padding-top: 6px;
+}
+
 .repeat-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: 24px;
-  padding-bottom: 22px;
+  gap: 20px;
+  padding-bottom: 17px;
 }
 
 .repeat-heading > .text-action {
+  min-width: 44px;
   margin-bottom: 1px;
+}
+
+.recurrence-overview {
+  display: grid;
+  gap: 4px;
+  padding: 0 0 20px;
+}
+
+.recurrence-overview strong {
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.recurrence-overview span {
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.69rem;
+  line-height: 1.55;
 }
 
 .occurrence-policy {
@@ -2246,7 +2271,7 @@ button:disabled {
 
 .custom-rule-field {
   display: block;
-  padding-bottom: 22px;
+  padding: 16px 0 0;
 }
 
 .repeat-fields .choice-field {
@@ -2256,14 +2281,86 @@ button:disabled {
 
 .recurrence-builder,
 .custom-rule-warning {
-  padding: 2px 0 22px;
+  padding: 4px 0 22px;
+  border-top: 1px solid var(--line);
 }
 
+.custom-rule-warning > div:first-child {
+  padding-top: 18px;
+}
+
+.custom-rule-warning > div:first-child strong {
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.custom-rule-warning > div:first-child p,
 .custom-rule-warning > p {
   max-width: 52ch;
-  margin: 0 0 18px;
+  margin: 4px 0 0;
   color: var(--ink-soft);
   font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.custom-rule-field textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 11px 12px;
+  color: var(--ink);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  resize: vertical;
+  background: var(--paper-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
+.custom-rule-field textarea[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--danger), var(--line) 38%);
+}
+
+.recurrence-rule-error {
+  color: var(--danger) !important;
+}
+
+.recurrence-rule-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.recurrence-rule-actions button {
+  min-height: 44px;
+  padding: 0 13px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+}
+
+.recurrence-rule-actions button:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.recurrence-start {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  max-width: 38rem;
+  padding: 17px 0 20px;
+}
+
+.recurrence-start > p {
+  max-width: 38ch;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
@@ -2295,8 +2392,6 @@ button:disabled {
 }
 
 .recurrence-weekdays {
-  display: flex;
-  gap: 7px;
   padding: 22px 0 0;
   margin: 0;
   border: 0;
@@ -2306,9 +2401,15 @@ button:disabled {
   padding: 0 0 9px;
 }
 
+.recurrence-weekdays > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 .recurrence-weekdays button {
-  width: 38px;
-  min-height: 38px;
+  width: 44px;
+  min-height: 44px;
   color: var(--ink-soft);
   background: transparent;
   border: 1px solid var(--line-strong);
@@ -2321,11 +2422,69 @@ button:disabled {
   border-color: color-mix(in srgb, var(--accent), var(--paper) 58%);
 }
 
+.recurrence-weekdays small {
+  display: block;
+  margin-top: 9px;
+  color: var(--ink-muted);
+  font-size: 0.79rem;
+}
+
+.recurrence-calendar-pattern {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 16px;
+  padding-top: 22px;
+}
+
 .recurrence-end {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   padding-top: 22px;
+}
+
+.recurrence-count input {
+  width: 100%;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  outline: 0;
+}
+
+.recurrence-anchor {
+  max-width: 26rem;
+  padding-top: 22px;
+}
+
+.recurrence-advanced-action {
+  display: block;
+  min-height: 44px;
+  margin: 12px 0 -8px auto;
+  padding-right: 0;
+  padding-left: 12px;
+}
+
+@media (max-width: 620px) {
+  .recurrence-end {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .recurrence-calendar-pattern {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .recurrence-weekdays > div {
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .recurrence-weekdays button {
+    width: 44px;
+    min-height: 44px;
+  }
 }
 
 .reminder-editor {
@@ -4219,6 +4378,74 @@ button:disabled {
   border-top: 1px solid var(--line-strong);
 }
 
+.manual-order-row {
+  position: relative;
+}
+
+.manual-order-list .manual-order-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: stretch;
+  transition: opacity 140ms var(--ease-out);
+}
+
+.manual-order-row.is-dragging {
+  opacity: 0.42;
+}
+
+.manual-order-row.is-drop-before::before,
+.manual-order-row.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 44px;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.manual-order-row.is-drop-before::before {
+  top: -1px;
+}
+
+.manual-order-row.is-drop-after::after {
+  bottom: -1px;
+}
+
+.manual-order-handle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  touch-action: none;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.manual-order-handle:hover,
+.manual-order-handle:focus-visible {
+  color: var(--accent);
+}
+
+.manual-order-handle:active {
+  cursor: grabbing;
+}
+
+.manual-order-handle:disabled {
+  cursor: wait;
+  opacity: 0.42;
+}
+
+.manual-order-row > .task-row {
+  min-width: 0;
+}
+
 .projects-view {
   display: grid;
   gap: 30px;
@@ -4339,6 +4566,7 @@ button:disabled {
 }
 
 .kanban-card {
+  position: relative;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   align-items: stretch;
@@ -4347,6 +4575,26 @@ button:disabled {
   transition:
     opacity 140ms var(--ease-out),
     transform 140ms var(--ease-out);
+}
+
+.kanban-card.is-drop-before::before,
+.kanban-card.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 44px;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.kanban-card.is-drop-before::before {
+  top: -1px;
+}
+
+.kanban-card.is-drop-after::after {
+  bottom: -1px;
 }
 
 .kanban-card.is-pending {
@@ -4375,6 +4623,11 @@ button:disabled {
 
 .kanban-drag-handle:active {
   cursor: grabbing;
+}
+
+.kanban-drag-handle:disabled {
+  cursor: wait;
+  opacity: 0.42;
 }
 
 .kanban-card .task-row {

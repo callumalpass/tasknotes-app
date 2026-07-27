@@ -15,6 +15,7 @@ export interface TaskView {
   id: string;
   name: string;
   properties: TaskViewProperty[];
+  sort?: TaskViewSort[];
   source: {
     path: string;
     format: string;
@@ -22,6 +23,11 @@ export interface TaskView {
     writable: boolean;
   };
   presentation?: TaskViewPresentation;
+}
+
+export interface TaskViewSort {
+  property: string;
+  direction: "asc" | "desc";
 }
 
 export interface TaskViewDocument {

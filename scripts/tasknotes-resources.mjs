@@ -22,6 +22,8 @@ export function buildAppTaskNotesResources() {
   });
   const type = structuredClone(resources.type);
   const extension = type["x-tasknotes"];
+  const sortOrderField = extension.field_roles.sortOrder;
+  type.schema.value.properties[sortOrderField] = { type: "string" };
   extension.status = {
     ...extension.status,
     skipped_values: ["cancelled"],
