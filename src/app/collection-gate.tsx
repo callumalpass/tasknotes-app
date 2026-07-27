@@ -1,3 +1,5 @@
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import {
   ArrowLeft,
@@ -11,21 +13,51 @@ import {
   Search,
   Smartphone,
 } from "lucide-react";
-import { lazy, Suspense, useCallback, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
+import {
+  authorizeCloudCollection,
+  cleanCallbackUrl,
+  cloudConnection,
+  completeCloudAuthorization,
+  isCloudCallback,
+  savedCloudConnections,
+  selectedCloudCollectionId,
+  selectCloudConnection,
+} from "../cloud/connect";
+import { MarkdownCollection } from "../storage/collection";
+import {
+  transferLocalCollectionToHosted,
+  type CollectionTransferProgress,
+} from "../storage/collection-transfer";
 import {
   chooseDefaultLocalCollection,
   chooseExistingLocalCollection,
   localCollectionKey,
   readLocalCollectionLocation,
+  readRememberedExternalCollection,
+  selectLocalCollectionLocation,
   type LocalCollectionLocation,
 } from "../storage/local-collection-location";
+import { createPlatformVault } from "../storage/vault";
 import { tasknotesMarkUrl } from "./assets";
+import {
+  CollectionPicker,
+  type CollectionMigrationState,
+} from "./collection-picker";
 import type { CollectionChoice } from "./collection-context";
 
 const CloudCollection = lazy(() => import("./cloud-collection"));
 const LocalCollection = lazy(() => import("./local-collection"));
 const STORAGE_KEY = "tasknotes:collection-choice:v1";
+const TRANSFER_KEY = "tasknotes:local-to-hosted-transfer:v1";
 
 export function CollectionGate() {
   const canChooseLocalFolder = Capacitor.isNativePlatform();
@@ -37,6 +69,20 @@ export function CollectionGate() {
   );
   const [choosingLocalLocation, setChoosingLocalLocation] = useState(false);
   const [confirmingBrowserLocal, setConfirmingBrowserLocal] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [migration, setMigration] = useState<CollectionMigrationState | null>(
+    null,
+  );
+  const [migrationTarget, setMigrationTarget] = useState<{
+    collectionId: string;
+    displayName: string;
+  } | null>(null);
+  const [authorizationError, setAuthorizationError] = useState<string | null>(
+    null,
+  );
+  const callbackInFlight = useRef<string | null>(null);
+  const transferInFlight = useRef(false);
+  const localChoiceReturnsToPicker = useRef(false);
   const choose = useCallback((next: CollectionChoice) => {
     localStorage.setItem(STORAGE_KEY, next);
     setChoice(next);
@@ -45,10 +91,11 @@ export function CollectionGate() {
     localStorage.removeItem(STORAGE_KEY);
     setChoice(null);
   }, []);
-  const changeLocalCollection = useCallback(
-    () => setChoosingLocalLocation(true),
-    [],
-  );
+  const changeLocalCollection = useCallback(() => {
+    localChoiceReturnsToPicker.current = true;
+    setPickerOpen(false);
+    setChoosingLocalLocation(true);
+  }, []);
   const finishLocalChoice = useCallback((location: LocalCollectionLocation) => {
     setLocalLocation(location);
     localStorage.setItem(STORAGE_KEY, "local");
@@ -56,10 +103,247 @@ export function CollectionGate() {
     setChoosingLocalLocation(false);
   }, []);
 
+  const finishBrowserCallback = useCallback(async () => {
+    if (Capacitor.isNativePlatform())
+      await Browser.close().catch(() => undefined);
+    else cleanCallbackUrl();
+  }, []);
+
+  const runTransfer = useCallback(
+    async (
+      collectionId: string,
+      displayName: string,
+      sourceLocation: LocalCollectionLocation,
+    ) => {
+      if (transferInFlight.current) return;
+      const destination = cloudConnection(collectionId);
+      if (!destination) {
+        clearPendingTransfer();
+        setMigration({
+          step: "error",
+          message:
+            "TaskNotes no longer has access to that hosted collection. Choose it again.",
+          canRetry: false,
+        });
+        return;
+      }
+      transferInFlight.current = true;
+      setPickerOpen(true);
+      setMigrationTarget({ collectionId, displayName });
+      setMigration({
+        step: "running",
+        destinationName: displayName,
+        progress: { phase: "reading", completed: 0, total: 1 },
+      });
+      savePendingTransfer({
+        sourceLocation,
+        destinationCollectionId: collectionId,
+      });
+      try {
+        const source = new MarkdownCollection(
+          createPlatformVault(sourceLocation),
+        );
+        const result = await transferLocalCollectionToHosted({
+          source,
+          destination,
+          onProgress: (progress: CollectionTransferProgress) =>
+            setMigration({
+              step: "running",
+              destinationName: displayName,
+              progress,
+            }),
+        });
+        selectCloudConnection(collectionId, true);
+        setMigration({
+          step: "complete",
+          destinationName: displayName,
+          result,
+        });
+      } catch (reason) {
+        setMigration({
+          step: "error",
+          destinationName: displayName,
+          message: message(reason),
+          canRetry: true,
+        });
+      } finally {
+        transferInFlight.current = false;
+      }
+    },
+    [],
+  );
+
+  const complete = useCallback(
+    async (url: string) => {
+      if (!isCloudCallback(url) || callbackInFlight.current === url) return;
+      callbackInFlight.current = url;
+      const pending = readPendingTransfer();
+      try {
+        const connection = await completeCloudAuthorization(url);
+        await finishBrowserCallback();
+        setAuthorizationError(null);
+        if (pending) {
+          const info = connection.info();
+          if (!info) throw new Error("The hosted collection was not retained.");
+          savePendingTransfer({
+            ...pending,
+            destinationCollectionId: connection.collectionId,
+          });
+          await runTransfer(
+            connection.collectionId,
+            info.displayName,
+            pending.sourceLocation,
+          );
+        } else {
+          choose("cloud");
+          setPickerOpen(false);
+        }
+      } catch (reason) {
+        await finishBrowserCallback();
+        if (pending) {
+          clearPendingTransfer();
+          setPickerOpen(true);
+          setMigration({
+            step: "error",
+            message: message(reason),
+            canRetry: false,
+          });
+        } else {
+          setAuthorizationError(message(reason));
+          choose("cloud");
+        }
+      } finally {
+        callbackInFlight.current = null;
+      }
+    },
+    [choose, finishBrowserCallback, runTransfer],
+  );
+
+  useEffect(() => {
+    if (isCloudCallback(location.href)) {
+      const callbackUrl = location.href;
+      queueMicrotask(() => void complete(callbackUrl));
+    } else {
+      const pending = readPendingTransfer();
+      if (pending?.destinationCollectionId) {
+        const connection = cloudConnection(pending.destinationCollectionId);
+        const info = connection?.info();
+        if (info)
+          queueMicrotask(
+            () =>
+              void runTransfer(
+                pending.destinationCollectionId!,
+                info.displayName,
+                pending.sourceLocation,
+              ),
+          );
+      }
+    }
+    if (!Capacitor.isNativePlatform()) return;
+    const listeners = [
+      CapacitorApp.addListener("appUrlOpen", ({ url }) => void complete(url)),
+    ];
+    void CapacitorApp.getLaunchUrl().then((value) => {
+      if (value?.url) void complete(value.url);
+    });
+    return () => {
+      for (const listener of listeners)
+        void listener.then((handle) => handle.remove());
+    };
+  }, [complete, runTransfer]);
+
+  const closePicker = useCallback(() => {
+    if (migration?.step === "running") return;
+    setPickerOpen(false);
+    setMigration(null);
+    setMigrationTarget(null);
+    clearPendingTransfer();
+  }, [migration?.step]);
+
+  const selectLocal = useCallback(
+    async (location: LocalCollectionLocation) => {
+      const selected =
+        location.mode === "default"
+          ? await chooseDefaultLocalCollection()
+          : (selectLocalCollectionLocation(location), location);
+      if (choice === "cloud") await disableMdbaseNotifications();
+      finishLocalChoice(selected);
+      setPickerOpen(false);
+    },
+    [choice, finishLocalChoice],
+  );
+
+  const selectCloud = useCallback(
+    async (collectionId: string) => {
+      if (choice === "cloud" && selectedCloudCollectionId() === collectionId) {
+        setPickerOpen(false);
+        return;
+      }
+      if (choice === "cloud") await disableMdbaseNotifications();
+      selectCloudConnection(collectionId, true);
+      choose("cloud");
+      setPickerOpen(false);
+    },
+    [choice, choose],
+  );
+
+  function authorizeAnotherCloudCollection() {
+    clearPendingTransfer();
+    setPickerOpen(false);
+    choose("cloud");
+    void authorizeCloudCollection().catch((reason) =>
+      setAuthorizationError(message(reason)),
+    );
+  }
+
+  function authorizeMigrationDestination() {
+    savePendingTransfer({ sourceLocation: localLocation });
+    setMigration({ step: "authorizing" });
+    void authorizeCloudCollection().catch((reason) => {
+      clearPendingTransfer();
+      setMigration({
+        step: "error",
+        message: message(reason),
+        canRetry: false,
+      });
+    });
+  }
+
+  function selectMigrationDestination(collectionId: string) {
+    const connection = savedCloudConnections().find(
+      (candidate) => candidate.collectionId === collectionId,
+    );
+    if (!connection) return;
+    void runTransfer(collectionId, connection.displayName, localLocation);
+  }
+
+  function retryMigration() {
+    const pending = readPendingTransfer();
+    if (!pending?.destinationCollectionId || !migrationTarget) return;
+    void runTransfer(
+      pending.destinationCollectionId,
+      migrationTarget.displayName,
+      pending.sourceLocation,
+    );
+  }
+
+  function finishMigration() {
+    if (!migrationTarget) return;
+    clearPendingTransfer();
+    selectCloudConnection(migrationTarget.collectionId, true);
+    choose("cloud");
+    setMigration(null);
+    setMigrationTarget(null);
+    setPickerOpen(false);
+  }
+
   if (choosingLocalLocation)
     return (
       <LocalLocationChoice
-        onBack={() => setChoosingLocalLocation(false)}
+        onBack={() => {
+          setChoosingLocalLocation(false);
+          if (localChoiceReturnsToPicker.current) setPickerOpen(true);
+        }}
         onChooseDefault={async () =>
           finishLocalChoice(await chooseDefaultLocalCollection())
         }
@@ -92,28 +376,60 @@ export function CollectionGate() {
         }}
       />
     );
-  if (choice === "cloud")
-    return (
+  const opened =
+    choice === "cloud" ? (
       <Suspense fallback={<OpeningCollection label="Opening mdbase" />}>
         <CloudCollection
+          authorizationError={authorizationError}
           canChooseLocalFolder={canChooseLocalFolder}
           changeLocalCollection={changeLocalCollection}
           choose={choose}
+          openCollectionPicker={() => setPickerOpen(true)}
           reset={reset}
+        />
+      </Suspense>
+    ) : (
+      <Suspense fallback={<OpeningCollection label="Opening your tasks" />}>
+        <LocalCollection
+          canChooseLocalFolder={canChooseLocalFolder}
+          changeLocalCollection={changeLocalCollection}
+          choose={choose}
+          key={localCollectionKey(localLocation)}
+          openCollectionPicker={() => setPickerOpen(true)}
         />
       </Suspense>
     );
 
   return (
-    <Suspense fallback={<OpeningCollection label="Opening your tasks" />}>
-      <LocalCollection
-        canChooseLocalFolder={canChooseLocalFolder}
-        changeLocalCollection={changeLocalCollection}
-        choose={choose}
-        key={localCollectionKey(localLocation)}
-        reset={reset}
-      />
-    </Suspense>
+    <>
+      {opened}
+      {pickerOpen ? (
+        <CollectionPicker
+          activeChoice={choice}
+          activeLocalLocation={localLocation}
+          canChooseLocalFolder={canChooseLocalFolder}
+          cloudConnections={savedCloudConnections()}
+          migration={migration}
+          rememberedExternal={readRememberedExternalCollection()}
+          selectedCloudCollectionId={selectedCloudCollectionId()}
+          onAuthorizeCloud={authorizeAnotherCloudCollection}
+          onAuthorizeMigration={authorizeMigrationDestination}
+          onBackFromMigration={() => {
+            clearPendingTransfer();
+            setMigration(null);
+            setMigrationTarget(null);
+          }}
+          onChooseFolder={changeLocalCollection}
+          onClose={closePicker}
+          onFinishMigration={finishMigration}
+          onMoveToMdbase={() => setMigration({ step: "destination" })}
+          onRetryMigration={retryMigration}
+          onSelectCloud={(collectionId) => void selectCloud(collectionId)}
+          onSelectLocal={(location) => void selectLocal(location)}
+          onSelectMigrationDestination={selectMigrationDestination}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -345,4 +661,55 @@ function OpeningCollection({ label }: { label: string }) {
 function readChoice(): CollectionChoice | null {
   const value = localStorage.getItem(STORAGE_KEY);
   return value === "local" || value === "cloud" ? value : null;
+}
+
+interface PendingCollectionTransfer {
+  sourceLocation: LocalCollectionLocation;
+  destinationCollectionId?: string;
+}
+
+function readPendingTransfer(): PendingCollectionTransfer | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(TRANSFER_KEY) ?? "null") as {
+      sourceLocation?: LocalCollectionLocation;
+      destinationCollectionId?: unknown;
+    } | null;
+    if (
+      !value?.sourceLocation ||
+      (value.sourceLocation.mode !== "default" &&
+        value.sourceLocation.mode !== "external")
+    )
+      return null;
+    if (
+      value.destinationCollectionId !== undefined &&
+      typeof value.destinationCollectionId !== "string"
+    )
+      return null;
+    return {
+      sourceLocation: value.sourceLocation,
+      ...(value.destinationCollectionId
+        ? { destinationCollectionId: value.destinationCollectionId }
+        : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePendingTransfer(value: PendingCollectionTransfer): void {
+  localStorage.setItem(TRANSFER_KEY, JSON.stringify(value));
+}
+
+function clearPendingTransfer(): void {
+  localStorage.removeItem(TRANSFER_KEY);
+}
+
+function message(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
+}
+
+async function disableMdbaseNotifications(): Promise<void> {
+  const { mdbaseNotifications } =
+    await import("../native/mdbase-notifications");
+  await mdbaseNotifications.disableIfEnabled().catch(() => undefined);
 }

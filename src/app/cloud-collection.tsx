@@ -1,103 +1,71 @@
-import { App as CapacitorApp } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
 import { BellRing, MonitorUp } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   activeCloudConnection,
   authorizeCloudCollection,
-  cleanCallbackUrl,
-  completeCloudAuthorization,
-  isCloudCallback,
   onCloudConnectionChange,
   savedCloudConnections,
   selectedCloudCollectionId,
   selectCloudConnection,
 } from "../cloud/connect";
-import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
+  authorizationError,
   canChooseLocalFolder,
   changeLocalCollection,
   choose,
+  openCollectionPicker,
   reset,
 }: {
+  authorizationError: string | null;
   canChooseLocalFolder: boolean;
   changeLocalCollection(): void;
   choose(choice: CollectionChoice): void;
+  openCollectionPicker(): void;
   reset(): void;
 }) {
-  const [callbackError, setCallbackError] = useState<string | null>(null);
-  const [repository, setRepository] = useState(() => {
+  const [opened, setOpened] = useState(() => {
     const connection = activeCloudConnection();
-    return connection ? createConnectTaskRepository(connection) : null;
+    return connection
+      ? {
+          collectionId: connection.collectionId,
+          repository: createConnectTaskRepository(connection),
+        }
+      : null;
   });
-  const changeCollection = useCallback(() => {
-    setCallbackError(null);
-    setRepository(null);
-    void mdbaseNotifications
-      .disableIfEnabled()
-      .catch(() => undefined)
-      .finally(() => undefined);
-  }, []);
-
-  const complete = useCallback(async (url: string) => {
-    if (!isCloudCallback(url)) return;
-    try {
-      const connection = await completeCloudAuthorization(url);
-      setCallbackError(null);
-      setRepository(createConnectTaskRepository(connection));
-    } catch (reason) {
-      setCallbackError(message(reason));
-    } finally {
-      await finishBrowserCallback();
-    }
-  }, []);
 
   useEffect(
     () =>
       onCloudConnectionChange((connection) => {
-        setRepository(
-          connection ? createConnectTaskRepository(connection) : null,
+        setOpened(
+          connection
+            ? {
+                collectionId: connection.collectionId,
+                repository: createConnectTaskRepository(connection),
+              }
+            : null,
         );
       }),
     [],
   );
 
-  useEffect(() => {
-    if (isCloudCallback(location.href)) {
-      const callbackUrl = location.href;
-      queueMicrotask(() => void complete(callbackUrl));
-    }
-    if (!Capacitor.isNativePlatform()) return;
-    const listeners = [
-      CapacitorApp.addListener("appUrlOpen", ({ url }) => void complete(url)),
-    ];
-    void CapacitorApp.getLaunchUrl().then((value) => {
-      if (value?.url) void complete(value.url);
-    });
-    return () => {
-      for (const listener of listeners)
-        void listener.then((handle) => handle.remove());
-    };
-  }, [complete]);
-
-  if (!repository)
-    return <CloudConnection error={callbackError} onBack={reset} />;
+  if (!opened)
+    return <CloudConnection error={authorizationError} onBack={reset} />;
 
   return (
     <OpenedCollection
       canChooseLocalFolder={canChooseLocalFolder}
-      changeConnectedCollection={changeCollection}
+      changeConnectedCollection={openCollectionPicker}
       changeLocalCollection={changeLocalCollection}
       choice="cloud"
       choose={choose}
-      repository={repository}
+      key={opened.collectionId}
+      repository={opened.repository}
     />
   );
 }
@@ -207,12 +175,6 @@ export function CloudConnection({
       </div>
     </main>
   );
-}
-
-async function finishBrowserCallback(): Promise<void> {
-  if (Capacitor.isNativePlatform())
-    await Browser.close().catch(() => undefined);
-  else cleanCallbackUrl();
 }
 
 function message(reason: unknown): string {

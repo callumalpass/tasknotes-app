@@ -803,12 +803,12 @@ test("edits task model settings in the portable type contract", async ({
   expect(settingsRenderMs).toBeLessThan(500);
   await expect(
     page.getByText(
-      "Connecting to mdbase does not move this collection's tasks yet, so switching is unavailable here.",
+      "Open another local collection, or copy and verify this collection in hosted mdbase before switching.",
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Connect mdbase" }),
-  ).toHaveCount(0);
+    page.getByRole("button", { name: "Change collection" }),
+  ).toBeVisible();
   const disclosureStartedAt = await page.evaluate(() => performance.now());
   await openSettingsSection(page, "Advanced");
   const disclosureOpenMs = await page.evaluate(

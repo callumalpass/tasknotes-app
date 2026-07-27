@@ -55,6 +55,18 @@ export function savedCloudConnections(): MdbaseConnectionInfo[] {
   return cloudConnect.connections();
 }
 
+export function cloudConnection(
+  collectionId: string,
+): MdbaseConnection<JsonObject> | null {
+  return cloudConnect.connection(collectionId);
+}
+
+export function isHostedCloudConnection(
+  connection: Pick<MdbaseConnectionInfo, "route">,
+): boolean {
+  return connection.route === "remote";
+}
+
 export function authorizeCloudCollection(
   collectionId?: string,
 ): ReturnType<typeof cloudConnect.authorize> {

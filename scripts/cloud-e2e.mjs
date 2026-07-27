@@ -13,9 +13,8 @@ const appRoot = resolve(import.meta.dirname, "..");
 const connectRoot = resolve(
   process.env.TASKNOTES_CONNECT_ROOT ?? resolve(appRoot, "../mdbase-connect"),
 );
-const { buildApp } = await import(`${connectRoot}/services/server/dist/app.js`);
-const { createDatabase } = await import(
-  `${connectRoot}/services/server/dist/db.js`
+const { startConnectTestEnvironment } = await import(
+  `${connectRoot}/scripts/lib/connect-test-environment.mjs`
 );
 const { hostedResources } = await import(
   `${connectRoot}/services/server/dist/hosted.js`
@@ -24,26 +23,24 @@ const { MemoryAuthority, MemoryReplicaStore, OfflineReplica, SyncError } =
   await import(`${connectRoot}/packages/sync/dist/index.js`);
 
 const appPort = await availablePort();
-const controlPort = await availablePort();
 const appUrl = `http://127.0.0.1:${appPort}`;
-const controlUrl = `http://127.0.0.1:${controlPort}`;
 const provider = await startMemoryProvider();
 const execute = promisify(execFile);
-const database = await createDatabase("memory");
-const { app: control } = await buildApp({
-  db: database,
-  devAuth: true,
-  hostedCollections: true,
-  hostedProvider: provider.client,
-  allowInsecureManifests: true,
-  publicUrl: controlUrl,
-  portalDist: resolve(connectRoot, "apps/portal/dist"),
-});
+let control;
+let controlUrl;
 let vite;
 let browser;
 
 try {
-  await control.listen({ host: "127.0.0.1", port: controlPort });
+  control = await startConnectTestEnvironment({
+    allowLocalApps: true,
+    hostedProvider: {
+      url: provider.dockerUrl,
+      publicUrl: provider.url,
+      internalToken: provider.internalToken,
+    },
+  });
+  controlUrl = control.serverUrl;
   const developmentEnvironment = {
     ...process.env,
     TASKNOTES_APP_URL: appUrl,
@@ -80,10 +77,27 @@ try {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  phase("authorizing TaskNotes and creating a hosted collection");
+  phase("creating a browser-local collection");
   await page.goto(appUrl);
-  await page.getByRole("button", { name: /^mdbase/ }).click();
-  await page.getByRole("button", { name: "Continue to mdbase" }).click();
+  await page.getByRole("button", { name: /On this device/i }).click();
+  await page.getByRole("button", { name: "Use this browser" }).click();
+  await page.getByLabel("New task title").fill("Local foundation");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Local foundation", { exact: true }),
+  ).toBeVisible();
+
+  phase("moving the local collection into newly created hosted storage");
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "Change collection" }).click();
+  const collectionPicker = page.getByRole("dialog", { name: "Collections" });
+  await expect(collectionPicker).toBeVisible();
+  await collectionPicker
+    .getByRole("button", { name: /Move this collection to mdbase/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Choose or create a hosted collection" })
+    .click();
   await expect(page).toHaveURL(new RegExp(`^${escapeRegex(controlUrl)}/login`));
   await page.getByLabel("Name").fill("TaskNotes E2E");
   await page.getByLabel("Email").fill("tasknotes-e2e@example.com");
@@ -104,7 +118,7 @@ try {
   ).toBeChecked();
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(
-    new RegExp(`^${escapeRegex(appUrl)}/?\\?collection=`),
+    new RegExp(`^${escapeRegex(appUrl)}(?:/more)?\\?collection=`),
     {
       timeout: 15_000,
     },
@@ -112,6 +126,16 @@ try {
   await expect
     .poll(() => new URL(page.url()).searchParams.get("collection"))
     .toMatch(/^[0-9a-f-]{36}$/);
+  await expect(
+    page.getByRole("heading", { name: "Verified in My collection." }),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.getByText(/1 record and 1 saved view copied/),
+  ).toBeVisible();
+  const transferredViews = provider.transferredViewSources();
+  assert.equal(transferredViews.length, 1);
+  assert.match(transferredViews[0].document, /name: Today/);
+  await page.getByRole("button", { name: "Open hosted collection" }).click();
   if (
     await page
       .getByRole("heading", { name: "TaskNotes could not open." })
@@ -123,9 +147,21 @@ try {
       `TaskNotes failed to open the hosted collection:\n${await page.locator("main").innerText()}`,
     );
   }
+  await page.getByRole("button", { name: "Cloud board" }).click();
   await expect(page.getByRole("heading", { name: "Cloud board" })).toBeVisible({
     timeout: 15_000,
   });
+  await expect(
+    page.getByText("Local foundation", { exact: true }),
+  ).toBeVisible();
+  const hosted = provider.onlyCollection();
+  const migratedRecord = hosted.authority
+    .serialize()
+    .records.find((record) => record.frontmatter.title === "Local foundation");
+  assert.ok(
+    migratedRecord,
+    "The local record was not copied to hosted storage",
+  );
 
   phase("creating a task locally and synchronizing it to the authority");
   await page.getByLabel("New task title").fill("Cloud foundation");
@@ -163,7 +199,6 @@ try {
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
 
-  const hosted = provider.onlyCollection();
   const cloudRecord = hosted.authority
     .serialize()
     .records.find((record) => record.frontmatter.title === "Cloud foundation");
@@ -183,7 +218,9 @@ try {
   await expect(
     page.getByText("Cloud foundation", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Urgency", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Cloud foundation Urgency" }),
+  ).toBeVisible();
   await expect(page.getByText("8", { exact: true })).toBeVisible();
 
   phase("editing the cloud-owned saved-view source through the public API");
@@ -237,7 +274,10 @@ try {
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
   assert.equal(
-    hosted.authority.serialize().records[0]?.frontmatter.title,
+    hosted.authority
+      .serialize()
+      .records.find((record) => record.record_id === cloudRecord.record_id)
+      ?.frontmatter.title,
     "Cloud foundation offline",
   );
 
@@ -327,8 +367,7 @@ try {
     ]);
   }
   await execute("pnpm", ["manifest"], { cwd: appRoot }).catch(() => undefined);
-  await control.close().catch(() => undefined);
-  await database.end().catch(() => undefined);
+  await control?.close().catch(() => undefined);
   await provider.close();
 }
 
@@ -337,14 +376,19 @@ async function startMemoryProvider() {
   const replicas = new Map();
   const tokens = new Map();
   const timerReconciliations = [];
+  const internalToken = `tasknotes-e2e-${crypto.randomUUID()}-${crypto.randomUUID()}`;
   let online = true;
+  let client;
   const server = createServer(async (request, response) => {
     response.setHeader("access-control-allow-origin", "*");
     response.setHeader(
       "access-control-allow-headers",
       "authorization,content-type",
     );
-    response.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
+    response.setHeader(
+      "access-control-allow-methods",
+      "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    );
     if (request.method === "OPTIONS") {
       response.writeHead(204).end();
       return;
@@ -355,6 +399,14 @@ async function startMemoryProvider() {
     }
     try {
       const url = new URL(request.url ?? "/", "http://provider");
+      if (url.pathname === "/ready") {
+        send(response, 200, { ready: true });
+        return;
+      }
+      if (url.pathname.startsWith("/internal/")) {
+        await handleInternalRequest(request, response, url);
+        return;
+      }
       const match = url.pathname.match(
         /^\/v1\/authorities\/([^/]+)\/sync\/(sessions|snapshot|changes|mutations)$/,
       );
@@ -411,20 +463,38 @@ async function startMemoryProvider() {
             },
           });
         } else if (operation === "list_views") {
-          send(response, 200, { result: cloudViewList(viewSource) });
+          send(response, 200, {
+            result: cloudViewList(viewSource, [...transferredViews.values()]),
+          });
         } else if (operation === "execute_view") {
           send(response, 200, {
             result: cloudViewExecution(authority.serialize().records),
           });
         } else if (operation === "read_view_source") {
-          if (input.path !== viewSource.path)
+          const source =
+            input.path === viewSource.path
+              ? viewSource
+              : transferredViews.get(input.path);
+          if (!source)
             throw new SyncError("view_not_found", "View source not found.");
-          send(response, 200, { result: valid(viewSource) });
+          send(response, 200, { result: valid(source) });
         } else if (operation === "create_view_source") {
-          throw new SyncError(
-            "already_exists",
-            "The test view already exists.",
-          );
+          if (
+            input.path === viewSource.path ||
+            transferredViews.has(input.path)
+          )
+            throw new SyncError(
+              "already_exists",
+              "The test view already exists.",
+            );
+          const source = {
+            path: input.path,
+            format: input.format,
+            revision: `transferred-view-${++viewRevision}`,
+            document: input.document,
+          };
+          transferredViews.set(source.path, source);
+          send(response, 200, { result: valid(source) });
         } else if (operation === "update_view_source") {
           if (input.path !== viewSource.path)
             throw new SyncError("view_not_found", "View source not found.");
@@ -472,7 +542,7 @@ async function startMemoryProvider() {
     }
   });
   await new Promise((resolveListen) =>
-    server.listen(0, "127.0.0.1", resolveListen),
+    server.listen(0, "0.0.0.0", resolveListen),
   );
   const address = server.address();
   if (!address || typeof address === "string")
@@ -480,97 +550,253 @@ async function startMemoryProvider() {
   const url = `http://127.0.0.1:${address.port}`;
   let viewRevision = 1;
   let viewSource = cloudViewSource();
+  const transferredViews = new Map();
 
   function removeReplicaTokens(replicaId) {
     for (const [token, value] of tokens)
       if (value.replicaId === replicaId) tokens.delete(token);
   }
 
-  return {
-    client: {
-      url,
-      ready: async () => undefined,
-      createCollection: async (collectionId, template, displayName) => {
-        collections.set(collectionId, {
-          displayName,
-          authority: new MemoryAuthority({
-            id: collectionId,
-            resources: hostedResources(template),
-          }),
-        });
-      },
-      renameCollection: async (collectionId, displayName) => {
-        collections.get(collectionId).displayName = displayName;
-      },
-      deleteCollection: async (collectionId) => {
-        collections.delete(collectionId);
-      },
-      provisionTypes: async (collectionId, provisions) => {
-        const collection = collections.get(collectionId);
-        if (!collection) throw new Error("Collection not found");
-        const resources = provisionedResources(
-          collection.authority.serialize().resources,
-          provisions,
-        );
-        collection.authority = new MemoryAuthority({
+  async function handleInternalRequest(request, response, requestUrl) {
+    const bearer = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (bearer !== internalToken) {
+      send(response, 401, error("invalid_internal_token", "Invalid token."));
+      return;
+    }
+    const method = request.method ?? "GET";
+    const collection = requestUrl.pathname.match(
+      /^\/internal\/v1\/collections\/([^/]+)$/,
+    );
+    const provision = requestUrl.pathname.match(
+      /^\/internal\/v1\/collections\/([^/]+)\/types\/provision$/,
+    );
+    const collectionReplicas = requestUrl.pathname.match(
+      /^\/internal\/v1\/collections\/([^/]+)\/replicas$/,
+    );
+    const replicaToken = requestUrl.pathname.match(
+      /^\/internal\/v1\/replicas\/([^/]+)\/token$/,
+    );
+    const replicaPolicy = requestUrl.pathname.match(
+      /^\/internal\/v1\/replicas\/([^/]+)\/policy$/,
+    );
+    const replica = requestUrl.pathname.match(
+      /^\/internal\/v1\/replicas\/([^/]+)$/,
+    );
+    const notificationGrant = requestUrl.pathname.match(
+      /^\/internal\/v1\/collections\/([^/]+)\/notification-grants\/([^/]+)$/,
+    );
+    const compact = requestUrl.pathname.match(
+      /^\/internal\/v1\/collections\/([^/]+)\/compact$/,
+    );
+
+    if (
+      method === "POST" &&
+      requestUrl.pathname === "/internal/v1/collections"
+    ) {
+      const input = await requestJson(request);
+      await client.createCollection(
+        input.collection_id,
+        input.template,
+        input.display_name,
+      );
+      sendEmpty(response);
+    } else if (collection && method === "PATCH") {
+      const input = await requestJson(request);
+      await client.renameCollection(collection[1], input.display_name);
+      sendEmpty(response);
+    } else if (collection && method === "DELETE") {
+      await client.deleteCollection(collection[1]);
+      sendEmpty(response);
+    } else if (provision && method === "POST") {
+      const input = await requestJson(request);
+      const contracts = await client.provisionTypes(provision[1], input.types);
+      send(response, 200, { contracts });
+    } else if (collectionReplicas && method === "POST") {
+      const input = await requestJson(request);
+      await client.registerReplica(collectionReplicas[1], {
+        id: input.replica_id,
+        name: input.name,
+        purpose: input.purpose,
+        mode: input.mode,
+        allowedTypes: input.allowed_types,
+        fullCollection: input.full_collection,
+        allowedOperations: input.allowed_operations,
+        allowedOrigin: input.allowed_origin,
+        proofPublicKey: input.proof_public_key,
+        grantId: input.grant_id,
+        token: input.token,
+        tokenTtlSeconds: input.token_ttl_seconds,
+      });
+      sendEmpty(response);
+    } else if (collectionReplicas && method === "GET") {
+      send(response, 200, {
+        replicas: await client.replicaStatuses(collectionReplicas[1]),
+      });
+    } else if (replicaToken && method === "POST") {
+      const input = await requestJson(request);
+      await client.rotateReplicaToken(
+        replicaToken[1],
+        input.token,
+        input.token_ttl_seconds,
+      );
+      sendEmpty(response);
+    } else if (replicaPolicy && method === "PATCH") {
+      const input = await requestJson(request);
+      await client.updateApplicationReplica(replicaPolicy[1], {
+        grantId: input.grant_id,
+        mode: input.mode,
+        allowedTypes: input.allowed_types,
+        fullCollection: input.full_collection,
+        allowedOperations: input.allowed_operations,
+      });
+      sendEmpty(response);
+    } else if (replica && method === "DELETE") {
+      await client.revokeReplica(replica[1]);
+      sendEmpty(response);
+    } else if (notificationGrant && method === "PUT") {
+      await client.upsertNotificationGrant(
+        notificationGrant[1],
+        await requestJson(request),
+      );
+      sendEmpty(response);
+    } else if (notificationGrant && method === "DELETE") {
+      await client.revokeNotificationGrant(
+        notificationGrant[1],
+        notificationGrant[2],
+      );
+      sendEmpty(response);
+    } else if (compact && method === "POST") {
+      const input = await requestJson(request);
+      await client.compactThrough(compact[1], input.through);
+      sendEmpty(response);
+    } else {
+      send(response, 404, error("not_found", "Not found."));
+    }
+  }
+
+  client = {
+    url,
+    ready: async () => undefined,
+    createCollection: async (collectionId, template, displayName) => {
+      collections.set(collectionId, {
+        displayName,
+        authority: new MemoryAuthority({
           id: collectionId,
-          resources,
-        });
-        return resources.contracts;
-      },
-      registerReplica: async (collectionId, replica) => {
-        const collection = collections.get(collectionId);
-        if (!collection) throw new Error("Collection not found");
-        collection.authority.registerReplica({
-          id: replica.id,
-          name: replica.name,
-          mode: replica.mode,
-          allowedTypes: replica.allowedTypes,
-        });
-        replicas.set(replica.id, { collectionId, ...replica });
-        tokens.set(replica.token, {
-          collectionId,
-          replicaId: replica.id,
-          allowedOrigin: replica.allowedOrigin,
-          allowedOperations: replica.allowedOperations,
-        });
-      },
-      rotateReplicaToken: async (replicaId, token) => {
-        const replica = replicas.get(replicaId);
-        if (!replica) throw new Error("Replica not found");
-        removeReplicaTokens(replicaId);
-        tokens.set(token, {
-          collectionId: replica.collectionId,
-          replicaId,
-          allowedOrigin: replica.allowedOrigin,
-          allowedOperations: replica.allowedOperations,
-        });
-      },
-      updateApplicationReplica: async (replicaId, policy) => {
-        const replica = replicas.get(replicaId);
+          resources: hostedResources(template),
+        }),
+      });
+    },
+    renameCollection: async (collectionId, displayName) => {
+      collections.get(collectionId).displayName = displayName;
+    },
+    deleteCollection: async (collectionId) => {
+      collections.delete(collectionId);
+    },
+    provisionTypes: async (collectionId, provisions) => {
+      const collection = collections.get(collectionId);
+      if (!collection) throw new Error("Collection not found");
+      const resources = provisionedResources(
+        collection.authority.serialize().resources,
+        provisions,
+      );
+      collection.authority = new MemoryAuthority({
+        id: collectionId,
+        resources,
+      });
+      return resources.contracts;
+    },
+    registerReplica: async (collectionId, replica) => {
+      const collection = collections.get(collectionId);
+      if (!collection) throw new Error("Collection not found");
+      collection.authority.registerReplica({
+        id: replica.id,
+        name: replica.name,
+        mode: replica.mode,
+        allowedTypes: replica.allowedTypes,
+      });
+      replicas.set(replica.id, { collectionId, ...replica });
+      tokens.set(replica.token, {
+        collectionId,
+        replicaId: replica.id,
+        allowedOrigin: replica.allowedOrigin,
+        allowedOperations: replica.allowedOperations,
+      });
+    },
+    rotateReplicaToken: async (replicaId, token) => {
+      const replica = replicas.get(replicaId);
+      if (!replica) throw new Error("Replica not found");
+      removeReplicaTokens(replicaId);
+      tokens.set(token, {
+        collectionId: replica.collectionId,
+        replicaId,
+        allowedOrigin: replica.allowedOrigin,
+        allowedOperations: replica.allowedOperations,
+      });
+    },
+    updateApplicationReplica: async (replicaId, policy) => {
+      const replica = replicas.get(replicaId);
+      Object.assign(replica, {
+        grantId: policy.grantId,
+        mode: policy.mode,
+        allowedTypes: policy.allowedTypes,
+        fullCollection: policy.fullCollection,
+        allowedOperations: policy.allowedOperations,
+      });
+      collections
+        .get(replica.collectionId)
+        .authority.updateReplicaScope(replicaId, policy.allowedTypes);
+      for (const enrollment of tokens.values()) {
+        if (enrollment.replicaId === replicaId) {
+          enrollment.allowedOperations = policy.allowedOperations;
+        }
+      }
+    },
+    revokeReplica: async (replicaId) => {
+      const replica = replicas.get(replicaId);
+      if (replica) {
         collections
           .get(replica.collectionId)
-          .authority.updateReplicaScope(replicaId, policy.allowedTypes);
-      },
-      revokeReplica: async (replicaId) => {
-        const replica = replicas.get(replicaId);
-        if (replica)
-          collections
-            .get(replica.collectionId)
-            .authority.revokeReplica(replicaId);
-        removeReplicaTokens(replicaId);
-      },
-      compactThrough: async (collectionId, sequence) => {
-        collections.get(collectionId).authority.compactThrough(sequence);
-      },
-      upsertNotificationGrant: async () => undefined,
-      revokeNotificationGrant: async () => undefined,
+          .authority.revokeReplica(replicaId);
+        replica.revoked = true;
+      }
+      removeReplicaTokens(replicaId);
     },
+    replicaStatuses: async (collectionId) => {
+      const collection = collections.get(collectionId);
+      const head = collection?.authority.serialize().head ?? 0;
+      return [...replicas.values()]
+        .filter(
+          (replica) =>
+            replica.collectionId === collectionId && !replica.revoked,
+        )
+        .map((replica) => ({
+          id: replica.id,
+          head,
+          acknowledged_sequence: head,
+          last_seen_at: new Date().toISOString(),
+          token_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        }));
+    },
+    compactThrough: async (collectionId, sequence) => {
+      collections.get(collectionId).authority.compactThrough(sequence);
+    },
+    upsertNotificationGrant: async () => undefined,
+    revokeNotificationGrant: async () => undefined,
+  };
+
+  return {
+    client,
+    url,
+    dockerUrl: `http://host.docker.internal:${address.port}`,
+    internalToken,
     setOnline(value) {
       online = value;
     },
     viewSource() {
       return structuredClone(viewSource);
+    },
+    transferredViewSources() {
+      return structuredClone([...transferredViews.values()]);
     },
     timerReconciliations() {
       return structuredClone(timerReconciliations);
@@ -726,7 +952,7 @@ function provisionedResources(resources, provisions) {
   };
 }
 
-function cloudViewList(source) {
+function cloudViewList(source, transferred = []) {
   const name =
     source.document.match(/\n\s+name:\s+([^\n]+)/)?.[1]?.trim() ??
     "Cloud board";
@@ -760,8 +986,19 @@ function cloudViewList(source) {
             },
           ],
         },
+        ...transferred.map((candidate) => ({
+          id: candidate.path,
+          name: candidate.path,
+          source: {
+            path: candidate.path,
+            format: candidate.format,
+            revision: candidate.revision,
+            writable: true,
+          },
+          views: [],
+        })),
       ],
-      meta: { total_count: 1 },
+      meta: { total_count: 1 + transferred.length },
     },
     diagnostics: [],
   };
@@ -811,6 +1048,10 @@ function cloudViewExecution(records) {
 function send(response, status, value) {
   response.writeHead(status, { "content-type": "application/json" });
   response.end(JSON.stringify(value));
+}
+
+function sendEmpty(response) {
+  response.writeHead(204).end();
 }
 
 function error(code, message) {

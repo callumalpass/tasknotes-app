@@ -1,6 +1,7 @@
 import {
   localCollectionKey,
   readLocalCollectionLocation,
+  readRememberedExternalCollection,
 } from "./local-collection-location";
 
 describe("local collection location", () => {
@@ -34,5 +35,24 @@ describe("local collection location", () => {
   it("falls back safely when the preference is malformed", () => {
     const storage = { getItem: () => "{not json" };
     expect(readLocalCollectionLocation(storage)).toEqual({ mode: "default" });
+  });
+
+  it("keeps the active external folder available to the collection picker", () => {
+    const storage = {
+      getItem: (key: string) =>
+        key === "tasknotes:local-collection-location:v1"
+          ? JSON.stringify({
+              mode: "external",
+              id: "folder-123",
+              name: "Work vault",
+            })
+          : null,
+    };
+
+    expect(readRememberedExternalCollection(storage)).toEqual({
+      mode: "external",
+      id: "folder-123",
+      name: "Work vault",
+    });
   });
 });

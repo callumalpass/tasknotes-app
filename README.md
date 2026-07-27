@@ -11,6 +11,8 @@ installed during migration.
 ## Current scope
 
 - First-run choice between device-local records and mdbase cloud
+- One collection picker for browser storage, local folders, and remembered mdbase collections
+- Verified, resumable transfer from a local collection into empty hosted mdbase storage
 - Ordered view navigation with Today, Upcoming, saved lists, boards, and calendars
 - Grouped view sources and grouped list results
 - Capture, editing, completion, and client-side search
@@ -134,10 +136,12 @@ TaskNotes conformance profile, a real mdbase v0.3 collection oracle, and the
 production build. Playwright exercises the same UI at desktop and phone
 viewports.
 
-`pnpm test:e2e:cloud` starts disposable control and hosted-provider boundaries,
-then drives authorization, inline hosted-collection creation, offline work,
-resumed synchronization, a two-device conflict, resolution, and cached reload.
-No external account or persistent cloud data is used.
+`pnpm test:e2e:cloud` starts the packaged mdbase Connect control plane in
+Docker, alongside a disposable fake hosted-provider boundary, then drives the
+real portal and TaskNotes UI through authorization, inline hosted-collection
+creation, local-to-hosted transfer, offline work, resumed synchronization, a
+two-device conflict, resolution, and cached reload. No external account, local
+Connect profile, or persistent cloud data is used.
 
 The production smoke check verifies the deployed web shell, OAuth callback,
 application manifest, and the public mdbase connect health and readiness
