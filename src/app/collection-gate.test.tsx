@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
@@ -9,6 +9,7 @@ vi.mock("@capacitor/core", () => ({
 
 import { Capacitor } from "@capacitor/core";
 
+import * as cloudConnect from "../cloud/connect";
 import { CollectionGate } from "./collection-gate";
 
 beforeEach(() => {
@@ -74,4 +75,41 @@ it("warns before using browser storage", () => {
   expect(
     screen.queryByRole("heading", { name: "Keep tasks in this browser?" }),
   ).not.toBeInTheDocument();
+});
+
+it("keeps an adopted collection recoverable when authorization retry fails", async () => {
+  localStorage.setItem("tasknotes:collection-choice:v1", "local");
+  localStorage.setItem(
+    "tasknotes:local-to-hosted-transfer:v1",
+    JSON.stringify({
+      sourceLocation: { mode: "default" },
+      adoptedCollectionId: "hosted-after-adoption",
+      displayName: "Hosted tasks",
+    }),
+  );
+  const authorize = vi
+    .spyOn(cloudConnect, "authorizeCloudCollection")
+    .mockRejectedValueOnce(new Error("Initial authorization failed."))
+    .mockRejectedValueOnce(new Error("Retry authorization failed."));
+
+  render(<CollectionGate />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Initial authorization failed.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Retry transfer" }));
+
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Retry authorization failed.",
+    ),
+  );
+  expect(authorize).toHaveBeenNthCalledWith(1, "hosted-after-adoption");
+  expect(authorize).toHaveBeenNthCalledWith(2, "hosted-after-adoption");
+  expect(
+    localStorage.getItem("tasknotes:local-to-hosted-transfer:v1"),
+  ).not.toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Close collection picker" }),
+  ).toBeDisabled();
 });
