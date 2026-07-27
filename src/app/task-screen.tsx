@@ -13,6 +13,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -202,10 +203,24 @@ function TaskEditor({
   const toolbarMenuRef = useRef<HTMLDivElement>(null);
   const toolbarMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const deleteDialogRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const editVersion = useRef(0);
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
   const savesInFlight = useRef(new Map<number, Promise<void>>());
+  const resizeTitle = useCallback(() => {
+    const field = titleRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  }, []);
+
+  useLayoutEffect(resizeTitle, [draft.title, resizeTitle]);
+
+  useEffect(() => {
+    window.addEventListener("resize", resizeTitle);
+    return () => window.removeEventListener("resize", resizeTitle);
+  }, [resizeTitle]);
 
   useEffect(() => {
     mounted.current = true;
@@ -710,6 +725,7 @@ function TaskEditor({
         <textarea
           className="title-field"
           id="task-title"
+          ref={titleRef}
           rows={2}
           value={draft.title}
           onChange={(event) => change({ title: event.target.value })}
