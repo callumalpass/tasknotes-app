@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:cloud": "pnpm --dir ../mdbase-connect build && node scripts/cloud-e2e.mjs",
+    "test:e2e:cloud": "node scripts/cloud-e2e.mjs",
     "test:production-smoke": "node scripts/production-smoke.mjs",
     "test:android-smoke": "node scripts/android-smoke.mjs",
     "test:android-folder-smoke": "node scripts/android-smoke.mjs --folder",
@@ -46,14 +46,15 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.8-7cc5f84dd657.tgz",
-    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz",
-    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.8-7cc5f84dd657.tgz",
+    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.8-c3a44aa7063a.tgz",
+    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz",
+    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.8-c3a44aa7063a.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.3.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
     "lucide-react": "1.25.0",
     "obsidian-bases-expression": "file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz",
+    "picomatch": "4.0.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",
@@ -71,6 +72,7 @@
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
+    "@types/picomatch": "4.0.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
@@ -89,7 +91,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-7cc5f84dd657.tgz"
+      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-c3a44aa7063a.tgz"
     }
   }
 }

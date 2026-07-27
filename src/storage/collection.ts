@@ -5,6 +5,12 @@ import {
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
+import picomatch from "picomatch";
+import type {
+  PortableAuthorityRecord,
+  PortableAuthorityResource,
+} from "@mdbase/connect-sync/adoption";
+import type { AuthorityImportSnapshot } from "@mdbase/connect-protocol";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { viewSourceRevision } from "./local-views";
@@ -32,9 +38,27 @@ import type {
 } from "../domain/view";
 import type { Vault, VaultEntry } from "./vault";
 
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const AUTHORITY_STATE_PATH = ".mdbase/tasknotes-authority.json";
+const AUTHORITY_SNAPSHOT_PATH = ".mdbase/tasknotes-authority-snapshot.json";
+
 export interface ManagedTypeUpgradeRequest {
   typePath: string;
   message: string;
+}
+
+export interface LocalAuthoritySnapshot {
+  collectionId: string;
+  specVersion: string;
+  resources: PortableAuthorityResource[];
+  records: PortableAuthorityRecord[];
+}
+
+export interface LocalAuthorityFence {
+  adoptionId: string;
+  markHosted(): Promise<void>;
+  release(): Promise<void>;
 }
 
 export class MarkdownCollection {
@@ -53,6 +77,7 @@ export class MarkdownCollection {
       record: CollectionRecord | null;
     }
   >();
+  private authorityState: StoredAuthorityState | null = null;
 
   constructor(
     private readonly vault: Vault,
@@ -63,8 +88,12 @@ export class MarkdownCollection {
     } = {},
   ) {}
 
-  async initialize(): Promise<void> {
+  async initialize(
+    options: { authorityAdoptionId?: string } = {},
+  ): Promise<void> {
     await this.vault.initialize();
+    await this.hydrateAuthorityState();
+    this.assertAuthorityWritable(options.authorityAdoptionId);
     const defaults = defaultTaskCollectionConfiguration();
     const resources = buildTaskNotesMdbaseResources({
       profiles: ["core-lite", "recurrence", "materialized-occurrences"],
@@ -248,6 +277,166 @@ export class MarkdownCollection {
     });
   }
 
+  async authoritySnapshot(): Promise<LocalAuthoritySnapshot> {
+    const configDocument = await this.vault.readText("mdbase.yaml");
+    const config = parseDocument(configDocument);
+    if (config.errors.length) throw new Error(config.errors[0].message);
+    const value = config.toJS() as {
+      spec_version?: unknown;
+      "x-mdbase-connect"?: { collection_id?: unknown };
+    } | null;
+    const collectionId = value?.["x-mdbase-connect"]?.collection_id;
+    if (typeof collectionId !== "string" || !UUID.test(collectionId))
+      throw new Error(
+        "The local collection has no portable mdbase collection identity.",
+      );
+    const specVersion =
+      typeof value?.spec_version === "string" ? value.spec_version : "0.3.0";
+    const typeFiles = await this.listTypeFiles(this.typesFolder);
+    const viewPatterns = configuredViewPatterns(value);
+    const viewMatchers = viewPatterns.map((pattern) =>
+      picomatch(pattern, { dot: true }),
+    );
+    const viewFiles = (await this.vault.listCollectionFiles([".base"]))
+      .filter(({ path }) => viewMatchers.some((matches) => matches(path)))
+      .sort((left, right) => left.path.localeCompare(right.path));
+    const resources: PortableAuthorityResource[] = [
+      {
+        path: "mdbase.yaml",
+        kind: "configuration",
+        document: configDocument,
+      },
+      ...(await Promise.all(
+        typeFiles.map(async ({ path }) => ({
+          path,
+          kind: "type" as const,
+          document: await this.vault.readText(path),
+        })),
+      )),
+      ...(await Promise.all(
+        viewFiles.map(async ({ path }) => ({
+          path,
+          kind: "view" as const,
+          document: await this.vault.readText(path),
+        })),
+      )),
+    ];
+    const recordFiles = (await this.vault.listCollectionFiles([".md"])).filter(
+      ({ path }) => !this.isCollectionResource(path),
+    );
+    const records = await Promise.all(
+      recordFiles.map(async ({ path }): Promise<PortableAuthorityRecord> => {
+        const document = await this.vault.readText(path);
+        return {
+          path,
+          document,
+        };
+      }),
+    );
+    return {
+      collectionId,
+      specVersion,
+      resources,
+      records,
+    };
+  }
+
+  async ensureCollectionIdentity(): Promise<string> {
+    const source = await this.vault.readText("mdbase.yaml");
+    const document = parseDocument(source);
+    if (document.errors.length) throw new Error(document.errors[0].message);
+    const existing = document.getIn(["x-mdbase-connect", "collection_id"]);
+    if (typeof existing === "string" && UUID.test(existing)) return existing;
+    this.assertAuthorityWritable();
+    const collectionId = crypto.randomUUID();
+    document.setIn(["x-mdbase-connect", "collection_id"], collectionId);
+    await this.vault.writeText("mdbase.yaml", String(document));
+    return collectionId;
+  }
+
+  async acquireAuthorityAdoptionFence(
+    adoptionId: string,
+  ): Promise<LocalAuthorityFence> {
+    if (!UUID.test(adoptionId))
+      throw new Error("The collection adoption identity is invalid.");
+    const current =
+      this.authorityState ?? readAuthorityState(this.identifier());
+    if (current?.state === "hosted")
+      throw new Error(
+        "This local collection has already moved to hosted mdbase authority.",
+      );
+    if (current?.adoptionId && current.adoptionId !== adoptionId)
+      throw new Error(
+        "Another collection adoption is already holding the local write fence.",
+      );
+    await this.persistAuthorityState({
+      state: "fenced",
+      adoptionId,
+    });
+    let active = true;
+    return {
+      adoptionId,
+      markHosted: async () => {
+        if (!active) return;
+        await this.persistAuthorityState({
+          state: "hosted",
+          adoptionId,
+        });
+        await this.clearAuthorityAdoptionSnapshot();
+        active = false;
+      },
+      release: async () => {
+        if (!active) return;
+        const latest =
+          this.authorityState ?? readAuthorityState(this.identifier());
+        if (latest?.state === "fenced" && latest.adoptionId === adoptionId)
+          await this.clearAuthorityState();
+        active = false;
+      },
+    };
+  }
+
+  async persistAuthorityAdoptionSnapshot(
+    adoptionId: string,
+    snapshot: AuthorityImportSnapshot,
+  ): Promise<void> {
+    if (
+      this.authorityState?.state !== "fenced" ||
+      this.authorityState.adoptionId !== adoptionId
+    )
+      throw new Error(
+        "The local authority must be fenced before its final snapshot is persisted.",
+      );
+    await this.vault.writeText(
+      AUTHORITY_SNAPSHOT_PATH,
+      JSON.stringify({ version: 1, adoptionId, snapshot }),
+    );
+  }
+
+  async readAuthorityAdoptionSnapshot(
+    adoptionId: string,
+  ): Promise<AuthorityImportSnapshot> {
+    let value: unknown;
+    try {
+      value = JSON.parse(await this.vault.readText(AUTHORITY_SNAPSHOT_PATH));
+    } catch {
+      throw new Error(
+        "The exact fenced authority snapshot is missing or corrupt. Keep this source read-only.",
+      );
+    }
+    if (
+      !value ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      (value as { version?: unknown }).version !== 1 ||
+      (value as { adoptionId?: unknown }).adoptionId !== adoptionId
+    )
+      throw new Error(
+        "The fenced authority snapshot belongs to another adoption. Keep this source read-only.",
+      );
+    return (value as { snapshot: AuthorityImportSnapshot }).snapshot;
+  }
+
   async findCollectionRecords(
     query: string,
     limit: number,
@@ -305,6 +494,7 @@ export class MarkdownCollection {
   async createViewSource(
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
+    this.assertAuthorityWritable();
     if (input.format && input.format !== "obsidian.base")
       throw new Error(`Unsupported saved-view format: ${input.format}`);
     validateBaseDocument(input.document);
@@ -319,6 +509,7 @@ export class MarkdownCollection {
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
+    this.assertAuthorityWritable();
     const current = await this.readViewSource(input.path);
     if (input.ifRevision && input.ifRevision !== current.revision)
       throw new Error(
@@ -330,6 +521,7 @@ export class MarkdownCollection {
   }
 
   async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    this.assertAuthorityWritable();
     const current = await this.readViewSource(path);
     if (ifRevision && ifRevision !== current.revision)
       throw new Error(
@@ -480,6 +672,7 @@ export class MarkdownCollection {
   async updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration> {
+    this.assertAuthorityWritable();
     const source = parseFrontmatter(
       await this.vault.readText(this.taskTypePath),
     );
@@ -496,6 +689,7 @@ export class MarkdownCollection {
   }
 
   async write(task: Task): Promise<VaultEntry> {
+    this.assertAuthorityWritable();
     const source = await this.vault.writeText(
       task.path,
       serializeMarkdownDocument(task.frontmatter, task.body),
@@ -505,6 +699,7 @@ export class MarkdownCollection {
   }
 
   async rename(from: string, to: string): Promise<VaultEntry> {
+    this.assertAuthorityWritable();
     const source = await this.vault.rename(from, to);
     const cached = this.collectionRecordCache.get(from);
     this.collectionRecordCache.delete(from);
@@ -526,6 +721,7 @@ export class MarkdownCollection {
   }
 
   async delete(path: string): Promise<void> {
+    this.assertAuthorityWritable();
     await this.vault.delete(path);
     this.collectionRecordCache.delete(path);
   }
@@ -565,6 +761,77 @@ export class MarkdownCollection {
 
   kind(): Vault["kind"] {
     return this.vault.kind;
+  }
+
+  private assertAuthorityWritable(authorityAdoptionId?: string): void {
+    const state = this.authorityState ?? readAuthorityState(this.identifier());
+    if (!state) return;
+    if (state.state === "fenced" && state.adoptionId === authorityAdoptionId)
+      return;
+    throw new Error(
+      state.state === "hosted"
+        ? "This local collection is an archived source. Hosted mdbase is now authoritative."
+        : "This local collection is temporarily read-only while hosted authority activates.",
+    );
+  }
+
+  private async hydrateAuthorityState(): Promise<void> {
+    let persisted: StoredAuthorityState | null = null;
+    if (await this.vault.exists(AUTHORITY_STATE_PATH)) {
+      try {
+        const value = JSON.parse(
+          await this.vault.readText(AUTHORITY_STATE_PATH),
+        ) as Partial<StoredAuthorityState>;
+        if (
+          (value.state === "fenced" || value.state === "hosted") &&
+          typeof value.adoptionId === "string" &&
+          UUID.test(value.adoptionId)
+        )
+          persisted = value as StoredAuthorityState;
+        else throw new Error("invalid marker");
+      } catch {
+        throw new Error(
+          "The local authority marker is corrupt. Keep this collection read-only until it is repaired.",
+        );
+      }
+    }
+    const local = readAuthorityState(this.identifier());
+    if (
+      persisted &&
+      local &&
+      (persisted.state !== local.state ||
+        persisted.adoptionId !== local.adoptionId)
+    )
+      throw new Error(
+        "Local authority checkpoints disagree. Keep this collection read-only until the adoption is resolved.",
+      );
+    this.authorityState = persisted ?? local;
+    if (this.authorityState)
+      writeAuthorityState(this.identifier(), this.authorityState);
+  }
+
+  private async persistAuthorityState(
+    state: StoredAuthorityState,
+  ): Promise<void> {
+    await this.vault.writeText(
+      AUTHORITY_STATE_PATH,
+      `${JSON.stringify({ version: 1, ...state }, null, 2)}\n`,
+    );
+    writeAuthorityState(this.identifier(), state);
+    this.authorityState = state;
+  }
+
+  private async clearAuthorityState(): Promise<void> {
+    if (await this.vault.exists(AUTHORITY_STATE_PATH))
+      await this.vault.delete(AUTHORITY_STATE_PATH);
+    clearAuthorityState(this.identifier());
+    this.authorityState = null;
+    await this.clearAuthorityAdoptionSnapshot();
+  }
+
+  private async clearAuthorityAdoptionSnapshot(): Promise<void> {
+    if (await this.vault.exists(AUTHORITY_SNAPSHOT_PATH))
+      await this.vault.delete(AUTHORITY_SNAPSHOT_PATH);
   }
 
   private cachedCollectionRecord(
@@ -781,4 +1048,60 @@ function normalizeResourceFolder(value: string): string {
   )
     throw new Error("The mdbase types folder is unsafe.");
   return normalized;
+}
+
+function configuredViewPatterns(configuration: unknown): string[] {
+  if (
+    !configuration ||
+    typeof configuration !== "object" ||
+    Array.isArray(configuration)
+  )
+    return [];
+  const obsidian = (configuration as Record<string, unknown>)["x-obsidian"];
+  if (!obsidian || typeof obsidian !== "object" || Array.isArray(obsidian))
+    return [];
+  const bases = (obsidian as Record<string, unknown>).bases;
+  if (!bases || typeof bases !== "object" || Array.isArray(bases)) return [];
+  const include = (bases as Record<string, unknown>).include;
+  return Array.isArray(include)
+    ? include.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+interface StoredAuthorityState {
+  state: "fenced" | "hosted";
+  adoptionId: string;
+}
+
+function authorityStateKey(identifier: string): string {
+  return `tasknotes:local-authority:${identifier}`;
+}
+
+function readAuthorityState(identifier: string): StoredAuthorityState | null {
+  try {
+    const value = JSON.parse(
+      globalThis.localStorage?.getItem(authorityStateKey(identifier)) ?? "null",
+    ) as Partial<StoredAuthorityState> | null;
+    return value &&
+      (value.state === "fenced" || value.state === "hosted") &&
+      typeof value.adoptionId === "string"
+      ? (value as StoredAuthorityState)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAuthorityState(
+  identifier: string,
+  state: StoredAuthorityState,
+): void {
+  globalThis.localStorage?.setItem(
+    authorityStateKey(identifier),
+    JSON.stringify(state),
+  );
+}
+
+function clearAuthorityState(identifier: string): void {
+  globalThis.localStorage?.removeItem(authorityStateKey(identifier));
 }

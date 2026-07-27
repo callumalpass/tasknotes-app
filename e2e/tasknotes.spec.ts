@@ -803,7 +803,7 @@ test("edits task model settings in the portable type contract", async ({
   expect(settingsRenderMs).toBeLessThan(500);
   await expect(
     page.getByText(
-      "Open another local collection, or copy and verify this collection in hosted mdbase before switching.",
+      "Open another local collection, or adopt this complete collection into hosted mdbase and move authority there.",
     ),
   ).toBeVisible();
   await expect(
