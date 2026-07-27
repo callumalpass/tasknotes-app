@@ -109,6 +109,8 @@ describe("relay task repository", () => {
 
     const created = await repository.create({ title: "New relay task" });
     expect(created.title).toBe("New relay task");
+    expect(created.path).toMatch(/^tasks\/\d{14}\.md$/);
+    expect(created.frontmatter.id).toBe(created.id);
     await repository.delete(created.id);
     expect(await repository.get(created.id)).toBeNull();
     expect(fixture.remove).toHaveBeenCalledWith(
@@ -121,7 +123,7 @@ describe("relay task repository", () => {
     });
   });
 
-  it("reloads the canonical description and lets the provider own create paths", async () => {
+  it("reloads the canonical description and sends its create path to the provider", async () => {
     const collectionId = crypto.randomUUID();
     const fixture = relayFixture([], false, false, collectionId);
     const repository = new RelayTaskRepository(fixture.connect);
@@ -139,10 +141,72 @@ describe("relay task repository", () => {
     const created = await repository.create({ title: "Provider path" });
 
     expect(created.frontmatter.type).toBe("todo");
+    expect(created.path).toBe(`canonical/${created.id}.md`);
     expect(fixture.create).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: "todo" }),
+      expect.objectContaining({
+        path: `canonical/${created.id}.md`,
+        type: "todo",
+      }),
     );
-    expect(fixture.create.mock.calls.at(-1)?.[0]).not.toHaveProperty("path");
+  });
+
+  it("falls back to portable TaskNotes filename settings", async () => {
+    const collectionId = crypto.randomUUID();
+    const fixture = relayFixture([], false, false, collectionId);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const next = description(false, false, collectionId);
+    const configuration = structuredClone(next.contracts[0]!.configuration);
+    configuration.title = {
+      storage: "frontmatter",
+      filename_format: "custom",
+      custom_filename_template: "{{titleKebab}}",
+    };
+    next.types[0] = {
+      ...next.types[0]!,
+      collection: {},
+      extensions: { "x-tasknotes": configuration },
+    };
+    next.contracts[0] = {
+      ...next.contracts[0]!,
+      configuration,
+    };
+    fixture.describe.mockResolvedValueOnce(next);
+
+    await repository.refresh();
+    const created = await repository.create({
+      title: "Review mobile release",
+    });
+
+    expect(created.path).toBe("tasks/review-mobile-release.md");
+    expect(fixture.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "tasks/review-mobile-release.md" }),
+    );
+  });
+
+  it("allocates unique live paths when canonical filenames collide", async () => {
+    const collectionId = crypto.randomUUID();
+    const fixture = relayFixture([], false, false, collectionId);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const next = description(false, false, collectionId);
+    next.types[0] = {
+      ...next.types[0]!,
+      collection: { path: { pattern: "tasks/shared.md" } },
+    };
+    fixture.describe.mockResolvedValueOnce(next);
+    await repository.refresh();
+
+    const [first, second] = await Promise.all([
+      repository.create({ title: "First" }),
+      repository.create({ title: "Second" }),
+    ]);
+
+    expect([first.path, second.path]).toEqual([
+      "tasks/shared.md",
+      "tasks/shared-2.md",
+    ]);
+    expect(first.id).not.toBe(second.id);
   });
 
   it("prefetches one revision read and reuses it for a later delete", async () => {
@@ -520,6 +584,7 @@ function relayFixture(
       body?: string;
     }) => {
       const path = input.path ?? `tasks/${crypto.randomUUID()}.md`;
+      if (records.has(path)) throw new Error(`Path already exists: ${path}`);
       const record: TestRecord = {
         path,
         frontmatter: structuredClone(input.frontmatter),

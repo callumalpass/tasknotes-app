@@ -65,6 +65,7 @@ export function resolveTaskTypeDefinition(
     (typeof definition.name === "string" ? definition.name : undefined);
   if (!typeName)
     throw new Error("The TaskNotes task type does not have a name.");
+  const taskRecordsFolder = recordsFolder(collection);
   return {
     typeName,
     model: new TaskNotesTaskModel(
@@ -75,8 +76,10 @@ export function resolveTaskTypeDefinition(
       }),
       {
         typeName,
-        recordsFolder: recordsFolder(collection),
-        pathPattern: pathPattern(collection),
+        recordsFolder: taskRecordsFolder,
+        pathPattern:
+          pathPattern(collection) ??
+          taskNotesPathPattern(configuration, taskRecordsFolder),
       },
     ),
   };
@@ -112,4 +115,29 @@ function recordsFolder(collection: JsonObject | undefined): string {
     .replace(/\/+$/g, "")
     .trim();
   return prefix || "tasks";
+}
+
+function taskNotesPathPattern(
+  configuration: JsonObject | undefined,
+  folder: string,
+): string {
+  const rawTitle = configuration?.title;
+  const title =
+    rawTitle && typeof rawTitle === "object" && !Array.isArray(rawTitle)
+      ? (rawTitle as Record<string, unknown>)
+      : {};
+  const format = title.storage === "filename" ? "title" : title.filename_format;
+  const template =
+    format === "title"
+      ? "{{title}}"
+      : format === "timestamp"
+        ? "{{timestamp}}"
+        : format === "uuid"
+          ? "{{uuid}}"
+          : format === "custom" &&
+              typeof title.custom_filename_template === "string" &&
+              title.custom_filename_template.trim()
+            ? title.custom_filename_template.trim()
+            : "{{zettel}}";
+  return `${folder.replace(/^\/+|\/+$/g, "") || "tasks"}/${template}`;
 }

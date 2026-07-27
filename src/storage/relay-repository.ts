@@ -97,6 +97,7 @@ export class RelayTaskRepository implements TaskRepository {
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
+  private readonly reservedTaskPaths = new Set<string>();
   private readonly revisionReads = new Map<
     string,
     Promise<Required<CachedRelayTask>>
@@ -306,7 +307,7 @@ export class RelayTaskRepository implements TaskRepository {
   create(input: CreateTaskInput): Promise<Task> {
     const id = crypto.randomUUID();
     return this.serializeWrite(id, async () => {
-      const task = await this.model.createWithTemplate(
+      const created = await this.model.createWithTemplate(
         input,
         { id, now: new Date().toISOString() },
         async (path) => {
@@ -314,9 +315,11 @@ export class RelayTaskRepository implements TaskRepository {
           return serializeMarkdownDocument(template.frontmatter, template.body);
         },
       );
+      const task = this.reserveAvailableTaskPath(created);
       try {
         const result = validResult(
           await this.connect.create({
+            path: task.path,
             type: this.taskTypeName,
             frontmatter: asJson(task.frontmatter),
             body: task.body,
@@ -326,6 +329,8 @@ export class RelayTaskRepository implements TaskRepository {
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
+      } finally {
+        this.reservedTaskPaths.delete(task.path);
       }
     });
   }
@@ -847,13 +852,15 @@ export class RelayTaskRepository implements TaskRepository {
       },
     );
     if (!result.created) return result;
+    const created = this.reserveAvailableTaskPath(result.task);
     try {
       const saved = this.storeResult(
         validResult(
           await this.connect.create({
+            path: created.path,
             type: this.taskTypeName,
-            frontmatter: asJson(result.task.frontmatter),
-            body: result.task.body,
+            frontmatter: asJson(created.frontmatter),
+            body: created.body,
           }),
         ),
       );
@@ -866,7 +873,7 @@ export class RelayTaskRepository implements TaskRepository {
     } catch (reason) {
       try {
         const existing = validResult(
-          await this.connect.read({ path: result.task.path }),
+          await this.connect.read({ path: created.path }),
         );
         const task = this.storeResult(existing);
         if (
@@ -882,7 +889,35 @@ export class RelayTaskRepository implements TaskRepository {
       }
       this.noteOperationFailure(reason);
       throw reason;
+    } finally {
+      this.reservedTaskPaths.delete(created.path);
     }
+  }
+
+  private reserveAvailableTaskPath(task: Task): Task {
+    const occupied = new Set([
+      ...this.reservedTaskPaths,
+      ...[...this.cache.values()].map(({ task: cached }) => cached.path),
+    ]);
+    let path = task.path;
+    if (occupied.has(path)) {
+      const extension = /\.md$/i.test(path) ? ".md" : "";
+      const stem = extension ? path.slice(0, -extension.length) : path;
+      let allocated = "";
+      for (let index = 2; index < 10_000; index += 1) {
+        const candidate = `${stem}-${index}${extension}`;
+        if (occupied.has(candidate)) continue;
+        allocated = candidate;
+        break;
+      }
+      if (!allocated)
+        throw new Error(
+          "task_path_collision: Could not allocate a unique task path.",
+        );
+      path = allocated;
+    }
+    this.reservedTaskPaths.add(path);
+    return path === task.path ? task : { ...task, path };
   }
 
   private async transitionMaterializedUnlocked(

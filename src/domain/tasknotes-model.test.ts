@@ -139,6 +139,13 @@ describe("TaskNotes task model app boundary", () => {
       ).path,
     ).toBe("tasks/20260726123456.md");
 
+    const uuid = new TaskNotesTaskModel(model.configuration(), {
+      pathPattern: "tasks/{{uuid}}",
+    });
+    expect(
+      uuid.create({ title: "UUID filename" }, { id: "stable-id" }).path,
+    ).toBe("tasks/stable-id.md");
+
     const unsafe = new TaskNotesTaskModel(
       {
         ...model.configuration(),
