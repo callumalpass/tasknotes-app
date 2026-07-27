@@ -3355,6 +3355,311 @@ button:disabled {
   font-size: 1.45rem;
 }
 
+.collection-picker-scrim {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px
+    max(20px, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--ink), transparent 72%);
+}
+
+.collection-picker {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: min(820px, calc(100dvh - 40px));
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 24px 70px var(--color-shadow);
+}
+
+.collection-picker-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  min-height: 78px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.collection-picker-header > div:first-child {
+  grid-column: 1 / 3;
+}
+
+.collection-picker-header > .icon-action:first-child + div {
+  grid-column: auto;
+}
+
+.collection-picker-header > .icon-action:last-child {
+  grid-column: 3;
+}
+
+.collection-picker-header .eyebrow {
+  margin: 0 0 2px;
+}
+
+.collection-picker-header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.collection-picker-header .icon-action {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.collection-picker-header .icon-action:disabled {
+  opacity: 0.35;
+}
+
+.collection-picker-content {
+  padding: 10px 20px 24px;
+  overflow-y: auto;
+}
+
+.collection-picker-group {
+  margin-top: 18px;
+}
+
+.collection-picker-group > h3 {
+  margin: 0 0 6px;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.collection-picker-group > div {
+  border-top: 1px solid var(--line-strong);
+}
+
+.collection-picker-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 4px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.collection-picker-row.current {
+  background: color-mix(in srgb, var(--accent-soft), transparent 44%);
+}
+
+.collection-picker-row > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.collection-picker-row strong {
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-picker-row small,
+.collection-row-open,
+.collection-picker-empty,
+.collection-transfer-action small {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.collection-picker-row-icon {
+  display: grid;
+  color: var(--ink-soft);
+  place-items: center start;
+}
+
+.collection-picker-row.current .collection-picker-row-icon,
+.collection-row-check {
+  color: var(--accent);
+}
+
+.collection-row-open {
+  padding-left: 12px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.collection-picker-action {
+  grid-template-columns: 36px minmax(0, 1fr);
+  min-height: 54px;
+  color: var(--accent);
+}
+
+.collection-picker-action .collection-picker-row-icon {
+  color: currentColor;
+}
+
+.collection-picker-empty {
+  margin: 0;
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.collection-picker-transfer {
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  background: var(--paper-soft);
+  border-top: 1px solid var(--line);
+}
+
+.collection-transfer-action {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.collection-transfer-action > svg {
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.collection-transfer-action > span {
+  display: grid;
+  gap: 2px;
+}
+
+.collection-transfer-action strong {
+  color: var(--accent);
+}
+
+.collection-transfer-copy {
+  max-width: 58ch;
+  margin: 8px 0 24px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.collection-transfer-status,
+.collection-transfer-result {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 330px;
+  padding: 44px 32px;
+}
+
+.collection-transfer-status > svg {
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.collection-transfer-status h3,
+.collection-transfer-result h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.collection-transfer-status p,
+.collection-transfer-result > p:not(.transfer-result-mark) {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.collection-transfer-status progress {
+  width: 100%;
+  height: 5px;
+  margin: 28px 0 12px;
+  accent-color: var(--accent);
+}
+
+.collection-transfer-status small {
+  color: var(--ink-muted);
+}
+
+.transfer-result-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin: 0 0 20px;
+  place-items: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.transfer-result-mark.success {
+  color: var(--success);
+}
+
+.transfer-result-mark.error {
+  color: var(--danger);
+}
+
+.collection-transfer-result > .outline-action {
+  margin-top: 28px;
+}
+
+.collection-transfer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 28px;
+}
+
+.collection-transfer-buttons .outline-action {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .collection-picker-scrim {
+    align-items: end;
+    padding: 44px 0 0;
+  }
+
+  .collection-picker {
+    width: 100%;
+    max-height: calc(100dvh - 44px);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -18px 50px var(--color-shadow);
+  }
+
+  .collection-picker-content {
+    padding-right: var(--page-inset);
+    padding-left: var(--page-inset);
+  }
+}
+
 .collection-welcome {
   display: flex;
   flex-direction: column;

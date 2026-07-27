@@ -52,13 +52,7 @@ export function MoreScreen({
     syncIssues,
     resolveSyncIssue,
   } = useRepository();
-  const {
-    canChooseLocalFolder,
-    choice,
-    choose,
-    changeConnectedCollection,
-    changeLocalCollection,
-  } = useCollectionGate();
+  const { choice, changeConnectedCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
   const [changeNotifications, setChangeNotifications] =
     useState<MdbaseNotificationStatus>({
@@ -230,16 +224,6 @@ export function MoreScreen({
             {lastRefresh.elapsedMs.toLocaleString()} ms.
           </p>
         ) : null}
-        {choice === "local" && canChooseLocalFolder ? (
-          <button
-            className="text-action"
-            type="button"
-            onClick={changeLocalCollection}
-          >
-            Choose another folder
-          </button>
-        ) : null}
-
         <div className="settings-subsection">
           <h3>Connection</h3>
           <div className="setting-row">
@@ -248,10 +232,19 @@ export function MoreScreen({
             <small>{syncLabel(sync)}</small>
           </div>
           {choice === "local" ? (
-            <p className="section-copy">
-              Connecting to mdbase does not move this collection&apos;s tasks
-              yet, so switching is unavailable here.
-            </p>
+            <>
+              <p className="section-copy">
+                Open another local collection, or copy and verify this
+                collection in hosted mdbase before switching.
+              </p>
+              <button
+                className="text-action"
+                type="button"
+                onClick={changeConnectedCollection}
+              >
+                Change collection
+              </button>
+            </>
           ) : (
             <>
               {sync.message ? (
@@ -266,13 +259,6 @@ export function MoreScreen({
                 </p>
               ) : null}
               <div className="cloud-actions">
-                <button
-                  className="text-action"
-                  type="button"
-                  onClick={() => choose("local")}
-                >
-                  Use tasks on this device
-                </button>
                 <button
                   className="text-action"
                   type="button"

@@ -127,11 +127,11 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await page.getByRole("button", { name: "Change collection" }).click();
   await expect(
-    page.getByRole("heading", { name: "Open your TaskNotes collection." }),
+    page.getByRole("heading", { name: "Collections" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Open TaskNotes E2E" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: /TaskNotes E2E/ }),
+  ).toHaveAttribute("aria-current", "true");
   await expect(
     page.getByRole("button", { name: "Connect another collection" }),
   ).toBeVisible();
