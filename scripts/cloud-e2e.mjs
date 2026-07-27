@@ -112,9 +112,20 @@ try {
   await expect
     .poll(() => new URL(page.url()).searchParams.get("collection"))
     .toMatch(/^[0-9a-f-]{36}$/);
-  await expect(
-    page.getByRole("heading", { name: "Cloud board" }),
-  ).toBeVisible();
+  if (
+    await page
+      .getByRole("heading", { name: "TaskNotes could not open." })
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await page.getByText("Technical details", { exact: true }).click();
+    throw new Error(
+      `TaskNotes failed to open the hosted collection:\n${await page.locator("main").innerText()}`,
+    );
+  }
+  await expect(page.getByRole("heading", { name: "Cloud board" })).toBeVisible({
+    timeout: 15_000,
+  });
 
   phase("creating a task locally and synchronizing it to the authority");
   await page.getByLabel("New task title").fill("Cloud foundation");

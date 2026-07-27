@@ -19,7 +19,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     { id: "relay-task", now: "2026-07-22T00:00:00.000Z" },
   );
   await page.route(
-    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
       const operation = new URL(route.request().url()).pathname
         .split("/")
@@ -173,7 +173,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
   let deleteRequests = 0;
 
   await page.route(
-    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
       const operation = new URL(route.request().url()).pathname
         .split("/")
@@ -278,7 +278,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   let warm = false;
 
   await page.route(
-    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
       const operation = new URL(route.request().url()).pathname
         .split("/")
@@ -524,7 +524,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
   let updateInput: { patch?: JsonObject; body?: string } | undefined;
 
   await page.route(
-    "https://connect.mdbase.dev/v1/collections/**/operations/**",
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
       const operation = new URL(route.request().url()).pathname
         .split("/")
