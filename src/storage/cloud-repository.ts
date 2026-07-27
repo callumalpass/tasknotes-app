@@ -105,23 +105,23 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    const hosted = this.connect.hostedSync();
-    if (!hosted) {
+    const sync = this.connect.sync();
+    if (!sync) {
       throw new Error("Connect an mdbase cloud collection to continue.");
     }
-    this.collectionId = hosted.collectionId;
-    this.viewStore = new TaskViewCache(hosted.collectionId);
+    this.collectionId = sync.collectionId;
+    this.viewStore = new TaskViewCache(sync.collectionId);
     this.viewCache = await this.viewStore.readViewDocuments().catch(() => []);
     const store = new IndexedDbReplicaStore<CloudFrontmatter>(
-      `tasknotes:${hosted.collectionId}:${hosted.replicaId}`,
+      `tasknotes:${sync.collectionId}:${sync.replicaId}`,
       {
-        replicaId: hosted.replicaId,
+        replicaId: sync.replicaId,
         records: {},
         pending: [],
         conflicts: {},
       },
     );
-    this.replica = new OfflineReplica(hosted.transport, store);
+    this.replica = new OfflineReplica(sync.transport, store);
     const cachedResources = await this.replica.collectionResources();
     try {
       if (cachedResources) await this.replica.pull();

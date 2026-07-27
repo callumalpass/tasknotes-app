@@ -474,7 +474,7 @@ describe("relay task repository", () => {
       RelayTaskRepository,
     );
     const hosted = {
-      hostedSync: () => ({ collectionId: "hosted", replicaId: "phone" }),
+      sync: () => ({ collectionId: "hosted", replicaId: "phone" }),
     } as unknown as MdbaseConnection<JsonObject>;
     expect(createConnectTaskRepository(hosted)).toBeInstanceOf(
       CloudTaskRepository,
@@ -703,7 +703,7 @@ function relayFixture(
     },
   );
   const connect = {
-    hostedSync: () => null,
+    sync: () => null,
     connection: () => ({ route: "relay" }),
     describe: describeCollection,
     query,

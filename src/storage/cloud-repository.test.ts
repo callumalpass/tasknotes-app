@@ -4,7 +4,7 @@ import type {
   SyncCollectionResources,
 } from "@mdbase/connect-protocol";
 import {
-  MemoryHostedAuthority,
+  MemoryAuthority,
   SyncError,
   type SyncTransport,
 } from "@mdbase/connect-sync";
@@ -113,14 +113,14 @@ function connect(
   operations: object = {},
 ): MdbaseConnection<JsonObject> {
   return {
-    hostedSync: () => ({ collectionId, replicaId, transport }),
+    sync: () => ({ collectionId, replicaId, transport }),
     ...operations,
   } as unknown as MdbaseConnection<JsonObject>;
 }
 
 describe("cloud task repository", () => {
   it("restores cached view definitions and revision-matched results before refresh", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const firstReplica = crypto.randomUUID();
@@ -204,7 +204,7 @@ describe("cloud task repository", () => {
   });
 
   it("writes saved-view sources without serial catalogue reloads", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const replicaId = crypto.randomUUID();
@@ -276,7 +276,7 @@ describe("cloud task repository", () => {
   });
 
   it("keeps local mutations immediate, synchronizes devices, and survives an outage", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const phoneId = crypto.randomUUID();
@@ -343,7 +343,7 @@ describe("cloud task repository", () => {
   });
 
   it("uses TaskNotes recurring-instance completion semantics", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const replicaId = crypto.randomUUID();
@@ -374,7 +374,7 @@ describe("cloud task repository", () => {
   });
 
   it("keeps time tracking immediate offline and synchronizes it later", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const phoneId = crypto.randomUUID();
@@ -435,7 +435,7 @@ describe("cloud task repository", () => {
   });
 
   it("serializes same-task cloud mutations without dropping local state", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const replicaId = crypto.randomUUID();
@@ -472,7 +472,7 @@ describe("cloud task repository", () => {
   });
 
   it("queues archive state and file movement together while offline", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resourcesWithArchive(),
     });
     const phoneId = crypto.randomUUID();
@@ -535,7 +535,7 @@ describe("cloud task repository", () => {
   });
 
   it("synchronizes materialized occurrence identity and parent state across devices", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const phoneId = crypto.randomUUID();
@@ -588,7 +588,7 @@ describe("cloud task repository", () => {
   });
 
   it("publishes a finite rolling window in the same cloud refresh", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const phoneId = crypto.randomUUID();
@@ -631,7 +631,7 @@ describe("cloud task repository", () => {
   });
 
   it("uses the contract's type name and records folder", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resourcesWithType("todo", "records/tasks"),
     });
     const replicaId = crypto.randomUUID();
@@ -659,7 +659,7 @@ describe("cloud task repository", () => {
   });
 
   it("reloads canonical resources after the authority changes them", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const replicaId = crypto.randomUUID();
@@ -689,7 +689,7 @@ describe("cloud task repository", () => {
   });
 
   it("creates from a raw template resource while offline", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resourcesWithTemplate(),
     });
     const replicaId = crypto.randomUUID();
@@ -732,7 +732,7 @@ describe("cloud task repository", () => {
   });
 
   it("surfaces conflicts and can keep the local edit", async () => {
-    const authority = new MemoryHostedAuthority<JsonObject>({
+    const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
     });
     const phoneId = crypto.randomUUID();

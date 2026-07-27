@@ -20,7 +20,7 @@ const { createDatabase } = await import(
 const { hostedResources } = await import(
   `${connectRoot}/services/server/dist/hosted.js`
 );
-const { MemoryHostedAuthority, MemoryReplicaStore, OfflineReplica, SyncError } =
+const { MemoryAuthority, MemoryReplicaStore, OfflineReplica, SyncError } =
   await import(`${connectRoot}/packages/sync/dist/index.js`);
 
 const appPort = await availablePort();
@@ -345,10 +345,10 @@ async function startMemoryProvider() {
     try {
       const url = new URL(request.url ?? "/", "http://provider");
       const match = url.pathname.match(
-        /^\/v1\/hosted\/collections\/([^/]+)\/sync\/(sessions|snapshot|changes|mutations)$/,
+        /^\/v1\/authorities\/([^/]+)\/sync\/(sessions|snapshot|changes|mutations)$/,
       );
       const operationMatch = url.pathname.match(
-        /^\/v1\/hosted\/collections\/([^/]+)\/operations\/(list_views|execute_view|read_view_source|create_view_source|update_view_source|delete_view_source|reconcile_timers)$/,
+        /^\/v1\/authorities\/([^/]+)\/operations\/(list_views|execute_view|read_view_source|create_view_source|update_view_source|delete_view_source|reconcile_timers)$/,
       );
       if (!match && !operationMatch) {
         send(response, 404, error("not_found", "Not found."));
@@ -482,7 +482,7 @@ async function startMemoryProvider() {
       createCollection: async (collectionId, template, displayName) => {
         collections.set(collectionId, {
           displayName,
-          authority: new MemoryHostedAuthority({
+          authority: new MemoryAuthority({
             id: collectionId,
             resources: hostedResources(template),
           }),
@@ -501,7 +501,7 @@ async function startMemoryProvider() {
           collection.authority.serialize().resources,
           provisions,
         );
-        collection.authority = new MemoryHostedAuthority({
+        collection.authority = new MemoryAuthority({
           id: collectionId,
           resources,
         });
