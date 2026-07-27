@@ -189,13 +189,13 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   );
 
   expect(await screen.findByText("Move on the board")).toBeVisible();
-  expect(screen.getByText("Updating")).toBeVisible();
+  expect(screen.getByText("Updating view")).toHaveClass("visually-hidden");
 
   await act(async () => pending.resolve(fresh));
 
   expect(await screen.findByText("Fresh board result")).toBeVisible();
   await waitFor(() =>
-    expect(screen.queryByText("Updating")).not.toBeInTheDocument(),
+    expect(screen.queryByText("Updating view")).not.toBeInTheDocument(),
   );
 });
 

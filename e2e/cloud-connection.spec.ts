@@ -426,7 +426,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   await expect(
     page.getByText("Visible from cached home", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Updating", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Updating view", { exact: true })).toHaveCount(0);
   expect(
     await page.evaluate((scope) => {
       const stored = JSON.parse(
@@ -442,13 +442,15 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   await expect(
     page.getByText("Visible from cached home", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Updating", { exact: true })).toBeVisible();
+  await expect(page.getByText("Updating view", { exact: true })).toHaveClass(
+    /visually-hidden/,
+  );
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),
   ).toHaveCount(0);
 
   warmRefresh.resolve();
-  await expect(page.getByText("Updating", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Updating view", { exact: true })).toHaveCount(0);
 });
 
 test("edits a contract-defined task without collapsing custom status or fields", async ({
