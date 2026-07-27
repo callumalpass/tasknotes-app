@@ -332,7 +332,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
           results: [
             {
               path: task.path,
-              frontmatter: task.frontmatter,
+              effective_frontmatter: task.frontmatter,
               body: task.body,
               types: ["task"],
               values: { priority: task.priority },
@@ -824,7 +824,11 @@ function defaultViewExecution(
   }>,
 ) {
   return {
-    results: records.map((record) => ({ ...record, values: {} })),
+    results: records.map(({ frontmatter, ...record }) => ({
+      ...record,
+      effective_frontmatter: frontmatter,
+      values: {},
+    })),
     meta: {
       total_count: records.length,
       has_more: false,
