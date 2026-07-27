@@ -157,9 +157,25 @@ describe("cloud task repository", () => {
       ),
       executeView: vi.fn(async () =>
         envelope({
-          results: [],
+          results: [
+            {
+              path: "tasks/from-view.md",
+              effective_frontmatter: {
+                type: "task",
+                id: "from-view",
+                title: "Visible from saved view",
+                status: "open",
+                priority: "normal",
+                dateCreated: "2026-07-27T00:00:00.000Z",
+                dateModified: "2026-07-27T00:00:00.000Z",
+              },
+              body: "",
+              types: ["task"],
+              values: { status: "open" },
+            },
+          ],
           meta: {
-            total_count: 0,
+            total_count: 1,
             has_more: false,
             view: { path: "Views/work.md", id: "open" },
             groups: [],
@@ -178,6 +194,8 @@ describe("cloud task repository", () => {
     await first.initialize();
     const [document] = await first.listViews();
     const execution = await first.executeView(document.views[0]);
+    expect(execution.rows).toHaveLength(1);
+    expect(execution.rows[0].task.title).toBe("Visible from saved view");
 
     const reopened = new CloudTaskRepository(
       connect(

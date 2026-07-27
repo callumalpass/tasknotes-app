@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeViewDocuments, normalizeViewExecution } from "./views";
 
 import type { TaskView } from "../domain/view";
+import type { ProviderViewExecution } from "./views";
 
 describe("provider view documents", () => {
   it("preserves source grouping and named-view order", () => {
@@ -184,5 +185,71 @@ describe("provider view documents", () => {
       label: "Canonical title",
       frontmatter: { title: "Canonical title" },
     });
+  });
+
+  it("keeps body-only saved-view records with empty effective frontmatter", () => {
+    const view: TaskView = {
+      key: "views/work.base#all",
+      documentId: "work",
+      documentName: "Work",
+      id: "all",
+      name: "All documents",
+      properties: [],
+      source: {
+        path: "views/work.base",
+        format: "obsidian.base",
+        revision: "one",
+        writable: true,
+      },
+    };
+
+    const execution = normalizeViewExecution(
+      view,
+      {
+        results: [
+          {
+            path: "notes/body-only.md",
+            effective_frontmatter: {},
+            body: "# Body only",
+            types: [],
+          },
+        ],
+        meta: { total_count: 1, has_more: false },
+      },
+      () => null,
+    );
+
+    expect(execution.records?.[0].record).toEqual({
+      path: "notes/body-only.md",
+      label: "body-only",
+      frontmatter: {},
+      body: "# Body only",
+      types: [],
+    });
+  });
+
+  it("rejects saved-view records that omit effective frontmatter", () => {
+    const view: TaskView = {
+      key: "views/work.base#all",
+      documentId: "work",
+      documentName: "Work",
+      id: "all",
+      name: "All documents",
+      properties: [],
+      source: {
+        path: "views/work.base",
+        format: "obsidian.base",
+        revision: "one",
+        writable: true,
+      },
+    };
+    const malformed = {
+      results: [{ path: "notes/malformed.md", body: "# Missing projection" }],
+      meta: { total_count: 1, has_more: false },
+    } as unknown as ProviderViewExecution;
+
+    expect(() => normalizeViewExecution(view, malformed, () => null)).toThrow(
+      'Invalid saved-view record "notes/malformed.md": effective_frontmatter must be an object.',
+    );
   });
 });
