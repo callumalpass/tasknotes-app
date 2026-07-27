@@ -118,7 +118,6 @@ export function ViewsScreen({
     indexing,
     version,
   } = useRepository();
-  const { tasks: identityTasks } = useTasks({ status: "all", limit: 50_000 });
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
   const [executionError, setExecutionError] = useState<{
     key: string;
@@ -175,6 +174,13 @@ export function ViewsScreen({
   }, [hasWritableViews]);
 
   const selected = views?.find((view) => view.key === viewKey);
+  const needsIdentityTasks =
+    selected?.presentation?.type === "tasknotes.calendar" ||
+    selected?.presentation?.type === "tasknotes.mini-calendar";
+  const { tasks: identityTasks } = useTasks({
+    status: "all",
+    limit: needsIdentityTasks ? 50_000 : 0,
+  });
   const selectedKey = selected?.key;
   const selectedKeyRef = useRef(selectedKey);
   useEffect(() => {
@@ -688,8 +694,18 @@ export function ViewsScreen({
             <div className="plain-empty">
               <h2>No saved views yet</h2>
               <p>
-                Views from this collection will appear here when you add one.
+                Create a focused list, board, or calendar for this collection.
               </p>
+              <button
+                className="outline-action"
+                type="button"
+                onFocus={preloadViewEditor}
+                onClick={() => setEditing("new")}
+                onPointerEnter={preloadViewEditor}
+              >
+                <Plus aria-hidden="true" size={17} />
+                Create your first view
+              </button>
             </div>
           )}
         </section>
@@ -735,8 +751,6 @@ export function ViewsScreen({
               <small aria-live="polite" role="status">
                 Last available result
               </small>
-            ) : operational ? (
-              <small>In navigation</small>
             ) : null}
           </div>
           {selected?.source.writable && !editing ? (
@@ -748,7 +762,7 @@ export function ViewsScreen({
               onClick={() => setEditing(selected)}
               onPointerEnter={preloadViewEditor}
             >
-              <Pencil aria-hidden="true" size={16} /> Edit view
+              <Pencil aria-hidden="true" size={18} />
             </button>
           ) : null}
         </header>
@@ -1437,6 +1451,11 @@ function MiniCalendarView({
   const [month, setMonth] = useState(
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
   );
+  const [focusedDate, setFocusedDate] = useState(
+    selected || storageDate(initial),
+  );
+  const dateRefs = useRef(new Map<string, HTMLButtonElement>());
+  const focusRequested = useRef(false);
   const days = useMemo(() => calendarGrid(month), [month]);
   const events = useMemo(
     () =>
@@ -1448,15 +1467,40 @@ function MiniCalendarView({
     month: "long",
     year: "numeric",
   }).format(month);
+  useEffect(() => {
+    if (!focusRequested.current) return;
+    dateRefs.current.get(focusedDate)?.focus();
+    focusRequested.current = false;
+  }, [focusedDate, month]);
+
+  function moveFocus(day: Date) {
+    focusRequested.current = true;
+    if (
+      day.getMonth() !== month.getMonth() ||
+      day.getFullYear() !== month.getFullYear()
+    )
+      setMonth(new Date(day.getFullYear(), day.getMonth(), 1));
+    setFocusedDate(storageDate(day));
+  }
+
+  function chooseDate(day: Date) {
+    const date = storageDate(day);
+    setFocusedDate(date);
+    onSelect(date);
+  }
+
+  function changeMonth(amount: number) {
+    const next = new Date(month.getFullYear(), month.getMonth() + amount, 1);
+    setMonth(next);
+    setFocusedDate(storageDate(next));
+  }
   return (
     <div className="mini-calendar-view">
       <div className="mini-calendar-toolbar">
         <button
           aria-label="Previous month"
           type="button"
-          onClick={() =>
-            setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-          }
+          onClick={() => changeMonth(-1)}
         >
           <ChevronLeft aria-hidden="true" size={20} />
         </button>
@@ -1464,9 +1508,7 @@ function MiniCalendarView({
         <button
           aria-label="Next month"
           type="button"
-          onClick={() =>
-            setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-          }
+          onClick={() => changeMonth(1)}
         >
           <ChevronRight aria-hidden="true" size={20} />
         </button>
@@ -1477,38 +1519,78 @@ function MiniCalendarView({
         ))}
       </div>
       <div className="mini-calendar-grid" role="grid" aria-label={monthLabel}>
-        {days.map((day) => {
-          const date = storageDate(day);
-          const entries = events.get(date) ?? [];
-          const count = entries.length;
-          return (
-            <button
-              aria-label={`${day.toLocaleDateString()}, ${count} ${count === 1 ? "task" : "tasks"}`}
-              aria-selected={selected === date}
-              className={day.getMonth() === month.getMonth() ? "" : "outside"}
-              key={date}
-              role="gridcell"
-              type="button"
-              onClick={() => onSelect(date)}
-            >
-              <span className="mini-calendar-date-number">{day.getDate()}</span>
-              {count ? (
-                <span className="mini-calendar-cell-tasks" aria-hidden="true">
-                  {entries.slice(0, 3).map((entry) => (
+        {Array.from({ length: 6 }, (_, week) => (
+          <div key={week} role="row">
+            {days.slice(week * 7, week * 7 + 7).map((day) => {
+              const date = storageDate(day);
+              const entries = events.get(date) ?? [];
+              const count = entries.length;
+              return (
+                <button
+                  aria-label={`${day.toLocaleDateString()}, ${count} ${count === 1 ? "task" : "tasks"}`}
+                  aria-selected={selected === date}
+                  className={
+                    day.getMonth() === month.getMonth() ? "" : "outside"
+                  }
+                  key={date}
+                  ref={(element) => {
+                    if (element) dateRefs.current.set(date, element);
+                    else dateRefs.current.delete(date);
+                  }}
+                  role="gridcell"
+                  tabIndex={focusedDate === date ? 0 : -1}
+                  type="button"
+                  onClick={() => chooseDate(day)}
+                  onKeyDown={(event) => {
+                    const movement = {
+                      ArrowLeft: -1,
+                      ArrowRight: 1,
+                      ArrowUp: -7,
+                      ArrowDown: 7,
+                    }[event.key];
+                    if (movement !== undefined) {
+                      event.preventDefault();
+                      moveFocus(addCalendarDays(day, movement));
+                    } else if (event.key === "Home") {
+                      event.preventDefault();
+                      moveFocus(addCalendarDays(day, -day.getDay()));
+                    } else if (event.key === "End") {
+                      event.preventDefault();
+                      moveFocus(addCalendarDays(day, 6 - day.getDay()));
+                    } else if (event.key === "PageUp") {
+                      event.preventDefault();
+                      moveFocus(addCalendarMonths(day, -1));
+                    } else if (event.key === "PageDown") {
+                      event.preventDefault();
+                      moveFocus(addCalendarMonths(day, 1));
+                    }
+                  }}
+                >
+                  <span className="mini-calendar-date-number">
+                    {day.getDate()}
+                  </span>
+                  {count ? (
                     <span
-                      key={entry.occurrence?.key ?? entry.task.id}
-                      className={entry.task.completed ? "is-complete" : ""}
+                      className="mini-calendar-cell-tasks"
+                      aria-hidden="true"
                     >
-                      {entry.task.title}
+                      {entries.slice(0, 3).map((entry) => (
+                        <span
+                          key={entry.occurrence?.key ?? entry.task.id}
+                          className={entry.task.completed ? "is-complete" : ""}
+                        >
+                          {entry.task.title}
+                        </span>
+                      ))}
+                      {count > 3 ? <small>+{count - 3} more</small> : null}
                     </span>
-                  ))}
-                  {count > 3 ? <small>+{count - 3} more</small> : null}
-                </span>
-              ) : null}
-              {count ? <i aria-hidden="true">{count}</i> : null}
-            </button>
-          );
-        })}
+                  ) : null}
+                  {count ? <i aria-hidden="true">{count}</i> : null}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
       <section className="mini-calendar-agenda">
         <h2>{agendaLabel(selected)}</h2>
@@ -1530,6 +1612,26 @@ function MiniCalendarView({
       </section>
     </div>
   );
+}
+
+function addCalendarDays(date: Date, amount: number): Date {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + amount,
+    12,
+  );
+}
+
+function addCalendarMonths(date: Date, amount: number): Date {
+  const target = new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
+  const lastDay = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0,
+  ).getDate();
+  target.setDate(Math.min(date.getDate(), lastDay));
+  return target;
 }
 
 function calendarDateDefaults(
@@ -1979,6 +2081,7 @@ function ViewTaskRow({
     identityProperty: titleProperty,
     omittedProperties,
     occurrence,
+    suppressRoutineDefaults: true,
   });
   return (
     <TaskRow

@@ -1,6 +1,7 @@
 import { App as CapacitorApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
+import { BellRing, MonitorUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -132,9 +133,29 @@ export function CloudConnection({
         <p className="eyebrow">mdbase</p>
         <h1>Open your TaskNotes collection.</h1>
         <p>
-          Choose a collection from mdbase cloud or from a computer running
-          mdbase connect.
+          mdbase keeps large collections fast and delivers task reminders.
+          Choose hosted sync or connect directly to a computer.
         </p>
+      </div>
+      <div className="connection-comparison" aria-label="Connection options">
+        <div>
+          <BellRing aria-hidden="true" size={19} />
+          <span>
+            <strong>Hosted mdbase</strong>
+            <small>
+              Syncs offline and keeps working when your computer is unavailable.
+            </small>
+          </span>
+        </div>
+        <div>
+          <MonitorUp aria-hidden="true" size={19} />
+          <span>
+            <strong>Connect to a computer</strong>
+            <small>
+              Works while the computer is reachable and delivers task reminders.
+            </small>
+          </span>
+        </div>
       </div>
       {error || startError ? (
         <p className="inline-error" role="alert">

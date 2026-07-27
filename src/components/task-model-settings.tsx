@@ -2,6 +2,7 @@ import { Save, Settings2 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useRepository } from "../app/repository-context";
+import { DurationField } from "./duration-field";
 import { TaskNotesSelectField } from "./tasknotes-controls";
 
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -180,28 +181,16 @@ export function TaskModelSettingsEditor() {
               })
             }
           />
-          <label className="form-field">
-            <span>Past occurrence horizon</span>
-            <input
-              aria-label="Past occurrence horizon"
-              placeholder="P0D"
-              value={draft.pastHorizon}
-              onChange={(event) => change({ pastHorizon: event.target.value })}
-            />
-            <small>ISO 8601 duration</small>
-          </label>
-          <label className="form-field">
-            <span>Future occurrence horizon</span>
-            <input
-              aria-label="Future occurrence horizon"
-              placeholder="P14D"
-              value={draft.futureHorizon}
-              onChange={(event) =>
-                change({ futureHorizon: event.target.value })
-              }
-            />
-            <small>ISO 8601 duration</small>
-          </label>
+          <DurationField
+            label="Past occurrence horizon"
+            value={draft.pastHorizon}
+            onChange={(pastHorizon) => change({ pastHorizon })}
+          />
+          <DurationField
+            label="Future occurrence horizon"
+            value={draft.futureHorizon}
+            onChange={(futureHorizon) => change({ futureHorizon })}
+          />
           <TaskNotesSelectField
             label="Record links"
             options={[

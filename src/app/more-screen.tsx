@@ -74,10 +74,10 @@ export function MoreScreen({
     detail: string;
   }>({ state: "idle", detail: "" });
   const benchmarkTools = import.meta.env.VITE_BENCHMARK_TOOLS === "1";
-  const hostedReminders = choice === "cloud" && sync.mode === "replicated";
+  const mdbaseReminders = choice === "cloud";
 
   useEffect(() => {
-    if (!hostedReminders) return;
+    if (!mdbaseReminders) return;
     let active = true;
     void mdbaseNotifications
       .status()
@@ -95,7 +95,7 @@ export function MoreScreen({
     return () => {
       active = false;
     };
-  }, [hostedReminders]);
+  }, [mdbaseReminders]);
 
   async function toggleChangeNotifications() {
     setChangeNotificationsBusy(true);
@@ -165,7 +165,7 @@ export function MoreScreen({
       <header className="screen-header compact-header">
         <h1 id="more-title">More</h1>
       </header>
-      <SettingsSection label="Storage">
+      <SettingsSection label="Collection">
         <div className="setting-row">
           {info?.kind === "connect" ? (
             <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
@@ -239,123 +239,122 @@ export function MoreScreen({
             Choose another folder
           </button>
         ) : null}
-      </SettingsSection>
 
-      <SettingsSection label="Views">
-        <button
-          className="setting-row setting-link"
-          type="button"
-          onClick={onOpenViews}
-        >
-          <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Saved views</span>
-          <small>
-            {navigationViewCount
-              ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
-              : "Lists, boards, and calendars"}
-          </small>
-          <ChevronRight aria-hidden="true" size={17} />
-        </button>
-      </SettingsSection>
-
-      <SettingsSection collapsible label="Task model">
-        <TaskModelSettingsEditor />
-      </SettingsSection>
-
-      <SettingsSection label="Appearance">
-        <div className="setting-row">
-          <SunMoon aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Color theme</span>
-          <ThemeSelect />
+        <div className="settings-subsection">
+          <h3>Connection</h3>
+          <div className="setting-row">
+            <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
+            <span>mdbase</span>
+            <small>{syncLabel(sync)}</small>
+          </div>
+          {choice === "local" ? (
+            <>
+              <p className="section-copy">
+                mdbase is usually the easiest way to use a collection across
+                devices.
+              </p>
+              <button
+                className="text-action"
+                type="button"
+                onClick={() => choose("cloud")}
+              >
+                Connect mdbase
+              </button>
+            </>
+          ) : (
+            <>
+              {sync.message ? (
+                <p className="section-copy" role="status">
+                  {sync.message}
+                </p>
+              ) : null}
+              {sync.pending ? (
+                <p className="refresh-detail">
+                  {sync.pending} {sync.pending === 1 ? "change" : "changes"}{" "}
+                  waiting to upload.
+                </p>
+              ) : null}
+              <div className="cloud-actions">
+                <button
+                  className="text-action"
+                  type="button"
+                  onClick={() => choose("local")}
+                >
+                  Use tasks on this device
+                </button>
+                <button
+                  className="text-action"
+                  type="button"
+                  onClick={changeConnectedCollection}
+                >
+                  Change collection
+                </button>
+              </div>
+            </>
+          )}
         </div>
-      </SettingsSection>
 
-      {benchmarkTools ? (
-        <SettingsSection label="Benchmark">
+        <div className="settings-subsection">
+          <h3>Notifications</h3>
+          <div className="setting-row">
+            <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
+            <span>Task reminders</span>
+            <small>
+              {mdbaseReminders
+                ? changeNotificationLabel(changeNotifications)
+                : "mdbase collections only"}
+            </small>
+          </div>
           <p className="section-copy">
-            Debug build only. Creates disposable local Markdown records.
+            {mdbaseReminders
+              ? "mdbase keeps connected reminders running when this app is closed. Notification text never includes task content."
+              : "Task reminder delivery requires an mdbase collection."}
           </p>
-          <div className="benchmark-actions">
+          {mdbaseReminders &&
+          (changeNotifications.state === "off" ||
+            changeNotifications.state === "enabled" ||
+            (changeNotifications.state === "denied" &&
+              changeNotifications.optedIn)) ? (
             <button
               className="text-action"
-              disabled={
-                benchmark.state === "writing" || benchmark.state === "removing"
-              }
+              disabled={changeNotificationsBusy}
               type="button"
-              onClick={() => void generateBenchmark()}
+              onClick={() => void toggleChangeNotifications()}
             >
-              Generate 10,000 records
+              {changeNotificationsBusy
+                ? "Updating"
+                : changeNotifications.optedIn
+                  ? "Turn off reminders"
+                  : "Turn on reminders"}
             </button>
+          ) : null}
+          {mdbaseReminders &&
+          changeNotifications.state === "reauthorization_required" ? (
             <button
-              className="text-action danger"
-              disabled={
-                benchmark.state === "writing" || benchmark.state === "removing"
-              }
+              className="text-action"
               type="button"
-              onClick={() => void removeBenchmark()}
+              onClick={() =>
+                void activeCloudConnection()
+                  ?.authorize({
+                    operations: [...CLOUD_OPERATIONS],
+                    returnTo: authorizationReturnTo(),
+                  })
+                  .catch((reason: unknown) =>
+                    setChangeNotificationsError(
+                      reason instanceof Error ? reason.message : String(reason),
+                    ),
+                  )
+              }
             >
-              Remove benchmark
+              Review notification access
             </button>
-          </div>
-          {benchmark.detail ? (
-            <p className="refresh-detail" role="status">
-              {benchmark.detail}
+          ) : null}
+          {choice === "cloud" && changeNotificationsError ? (
+            <p className="inline-error notification-error" role="alert">
+              {changeNotificationsError}
             </p>
           ) : null}
-        </SettingsSection>
-      ) : null}
-
-      <SettingsSection label="mdbase">
-        <div className="setting-row">
-          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>mdbase</span>
-          <small>{syncLabel(sync)}</small>
         </div>
-        {choice === "local" ? (
-          <>
-            <p className="section-copy">
-              mdbase is usually the easiest way to use a collection across
-              devices.
-            </p>
-            <button
-              className="text-action"
-              type="button"
-              onClick={() => choose("cloud")}
-            >
-              Connect mdbase
-            </button>
-          </>
-        ) : (
-          <>
-            {sync.message ? (
-              <p className="section-copy" role="status">
-                {sync.message}
-              </p>
-            ) : null}
-            {sync.pending ? (
-              <p className="refresh-detail">
-                {sync.pending} {sync.pending === 1 ? "change" : "changes"}{" "}
-                waiting to upload.
-              </p>
-            ) : null}
-            <div className="cloud-actions">
-              <button
-                className="text-action"
-                type="button"
-                onClick={() => choose("local")}
-              >
-                Use tasks on this device
-              </button>
-              <button
-                className="text-action"
-                type="button"
-                onClick={changeConnectedCollection}
-              >
-                Change collection
-              </button>
-            </div>
-          </>
-        )}
       </SettingsSection>
 
       {syncIssues.length ? (
@@ -394,84 +393,84 @@ export function MoreScreen({
         </SettingsSection>
       ) : null}
 
-      <SettingsSection label="Notifications">
-        <div className="setting-row">
-          <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Task reminders</span>
+      <SettingsSection label="Preferences">
+        <button
+          className="setting-row setting-link"
+          type="button"
+          onClick={onOpenViews}
+        >
+          <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Saved views</span>
           <small>
-            {hostedReminders
-              ? changeNotificationLabel(changeNotifications)
-              : "Hosted collections only"}
+            {navigationViewCount
+              ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
+              : "Lists, boards, and calendars"}
           </small>
+          <ChevronRight aria-hidden="true" size={17} />
+        </button>
+        <div className="setting-row">
+          <SunMoon aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Color theme</span>
+          <ThemeSelect />
         </div>
-        <p className="section-copy">
-          {hostedReminders
-            ? "mdbase keeps connected reminders running when this app is closed. Notification text never includes task content."
-            : "Task reminder delivery requires an mdbase hosted collection."}
-        </p>
-        {hostedReminders &&
-        (changeNotifications.state === "off" ||
-          changeNotifications.state === "enabled" ||
-          (changeNotifications.state === "denied" &&
-            changeNotifications.optedIn)) ? (
-          <button
-            className="text-action"
-            disabled={changeNotificationsBusy}
-            type="button"
-            onClick={() => void toggleChangeNotifications()}
-          >
-            {changeNotificationsBusy
-              ? "Updating"
-              : changeNotifications.optedIn
-                ? "Turn off reminders"
-                : "Turn on reminders"}
-          </button>
-        ) : null}
-        {hostedReminders &&
-        changeNotifications.state === "reauthorization_required" ? (
-          <button
-            className="text-action"
-            type="button"
-            onClick={() =>
-              void activeCloudConnection()
-                ?.authorize({
-                  operations: [...CLOUD_OPERATIONS],
-                  returnTo: authorizationReturnTo(),
-                })
-                .catch((reason: unknown) =>
-                  setChangeNotificationsError(
-                    reason instanceof Error ? reason.message : String(reason),
-                  ),
-                )
-            }
-          >
-            Review notification access
-          </button>
-        ) : null}
-        {choice === "cloud" && changeNotificationsError ? (
-          <p className="inline-error notification-error" role="alert">
-            {changeNotificationsError}
-          </p>
-        ) : null}
       </SettingsSection>
 
-      <SettingsSection label="Portability">
-        <div className="setting-row">
-          <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Markdown collection</span>
-          <small>mdbase v0.3</small>
+      <SettingsSection collapsible label="Advanced">
+        <TaskModelSettingsEditor />
+        <div className="settings-subsection">
+          <h3>Portability</h3>
+          <div className="setting-row">
+            <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
+            <span>Markdown collection</span>
+            <small>mdbase v0.3</small>
+          </div>
+          <p className="section-copy">
+            Tasks are ordinary Markdown records. Field mappings and TaskNotes
+            settings travel in the collection type contract.
+          </p>
         </div>
-        <p className="section-copy">
-          Tasks are ordinary Markdown records. Field mappings and TaskNotes
-          settings travel in the collection type contract.
-        </p>
       </SettingsSection>
+
+      {benchmarkTools ? (
+        <SettingsSection collapsible label="Developer benchmark">
+          <p className="section-copy">
+            Debug build only. Creates disposable local Markdown records.
+          </p>
+          <div className="benchmark-actions">
+            <button
+              className="text-action"
+              disabled={
+                benchmark.state === "writing" || benchmark.state === "removing"
+              }
+              type="button"
+              onClick={() => void generateBenchmark()}
+            >
+              Generate 10,000 records
+            </button>
+            <button
+              className="text-action danger"
+              disabled={
+                benchmark.state === "writing" || benchmark.state === "removing"
+              }
+              type="button"
+              onClick={() => void removeBenchmark()}
+            >
+              Remove benchmark
+            </button>
+          </div>
+          {benchmark.detail ? (
+            <p className="refresh-detail" role="status">
+              {benchmark.detail}
+            </p>
+          ) : null}
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection label="About">
         <div className="setting-row">
           <Info aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>TaskNotes</span>
-          <small>Web-native preview</small>
+          <small>Version 0.1.0</small>
         </div>
       </SettingsSection>
     </section>

@@ -88,15 +88,20 @@ try {
   await page.getByLabel("Name").fill("TaskNotes E2E");
   await page.getByLabel("Email").fill("tasknotes-e2e@example.com");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(
-    page.getByRole("button", { name: "Create an mdbase cloud collection" }),
-  ).toBeVisible();
+  const createHostedCollection = page.getByRole("button", {
+    name: /^(Create hosted collection|Create an mdbase cloud collection)$/,
+  });
+  await expect(createHostedCollection).toBeVisible();
+  await createHostedCollection.click();
   await page
-    .getByRole("button", { name: "Create an mdbase cloud collection" })
-    .click();
+    .getByRole("textbox", { name: "New collection name" })
+    .fill("My collection");
+  await page.getByRole("button", { name: "Create collection" }).click();
   await expect(
-    page.getByRole("combobox", { name: "Collection and location" }),
-  ).toContainText("My collection · mdbase cloud · setup required");
+    page.getByRole("radio", {
+      name: /My collection Hosted by mdbase Setup needed/,
+    }),
+  ).toBeChecked();
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(
     new RegExp(`^${escapeRegex(appUrl)}/?\\?collection=`),
@@ -119,6 +124,7 @@ try {
   ).toBeVisible();
   await page.getByText("Cloud foundation", { exact: true }).click();
   await page.getByText("Repeat and reminders", { exact: true }).click();
+  await page.getByRole("button", { name: "Add reminder" }).click();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowValue = [
@@ -173,6 +179,13 @@ try {
   await page.getByRole("button", { name: "Edit Cloud board" }).click();
   const viewEditor = page.getByRole("dialog", { name: "Edit view" });
   await expect(viewEditor).toBeVisible();
+  const arrangeSection = viewEditor
+    .getByRole("heading", { name: "Arrange", exact: true })
+    .locator("..")
+    .locator("..")
+    .locator("..");
+  if ((await arrangeSection.getAttribute("open")) === null)
+    await arrangeSection.locator(":scope > summary").click();
   await viewEditor.getByLabel("Property to display").fill("due");
   await viewEditor
     .locator('.add-view-property:has([aria-label="Property to display"])')
@@ -302,6 +315,7 @@ try {
       new Promise((resolveTimeout) => setTimeout(resolveTimeout, 2_000)),
     ]);
   }
+  await execute("pnpm", ["manifest"], { cwd: appRoot }).catch(() => undefined);
   await control.close().catch(() => undefined);
   await database.end().catch(() => undefined);
   await provider.close();

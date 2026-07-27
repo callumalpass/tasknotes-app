@@ -2,6 +2,7 @@ import { Link2 } from "lucide-react";
 import { useId } from "react";
 
 import { linkTarget } from "../domain/completion";
+import { DurationField } from "./duration-field";
 import { MultiValueField } from "./multi-value-field";
 import { TaskNotesSelectField } from "./tasknotes-controls";
 
@@ -97,27 +98,12 @@ export function DependencyEditor({
                     })
                   }
                 />
-                <label
-                  className="form-field"
-                  htmlFor={`dependency-gap-input-${index}`}
-                >
-                  <span>Gap</span>
-                  <input
-                    aria-label="Gap"
-                    aria-describedby={`dependency-gap-${index}`}
-                    id={`dependency-gap-input-${index}`}
-                    placeholder="Optional, for example P1D"
-                    value={dependency.gap ?? ""}
-                    onChange={(event) =>
-                      change(index, {
-                        gap: event.target.value || undefined,
-                      })
-                    }
-                  />
-                  <small id={`dependency-gap-${index}`}>
-                    ISO 8601 duration
-                  </small>
-                </label>
+                <DurationField
+                  label="Gap"
+                  optional
+                  value={dependency.gap ?? ""}
+                  onChange={(gap) => change(index, { gap: gap || undefined })}
+                />
               </div>
             </div>
           ))}

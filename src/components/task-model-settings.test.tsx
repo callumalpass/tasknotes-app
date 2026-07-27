@@ -43,9 +43,12 @@ describe("TaskModelSettingsEditor", () => {
     fireEvent.click(
       screen.getByLabelText("Stop a running timer when its task completes"),
     );
-    fireEvent.change(screen.getByLabelText("Future occurrence horizon"), {
-      target: { value: "P30D" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Future occurrence horizon amount"),
+      {
+        target: { value: "30" },
+      },
+    );
     fireEvent.click(screen.getByLabelText("Done"));
     fireEvent.change(
       screen.getByLabelText("Done auto-archive delay in minutes"),

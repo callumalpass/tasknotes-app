@@ -43,6 +43,9 @@ it("lists every remembered collection and connects another without pinning the o
   expect(
     screen.getByRole("button", { name: "Reconnect Home tasks" }),
   ).toBeVisible();
+  expect(
+    screen.getByText("Connect to a computer").parentElement,
+  ).toHaveTextContent("delivers task reminders");
 
   fireEvent.click(
     screen.getByRole("button", { name: "Connect another collection" }),

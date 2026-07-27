@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   reconcileTimers: vi.fn(async (input: unknown) => input),
@@ -15,7 +15,11 @@ import { desiredTaskTimers, reconcileTaskNotifications } from "./notifications";
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 
-describe("hosted task reminders", () => {
+describe("mdbase task reminders", () => {
+  beforeEach(() => {
+    mocks.reconcileTimers.mockClear();
+  });
+
   it("projects future absolute and relative reminders into content-free authority timers", async () => {
     const task = {
       id: "task-a",
@@ -67,7 +71,7 @@ describe("hosted task reminders", () => {
     expect(JSON.stringify(timers)).not.toContain("future");
   });
 
-  it("keeps connected reminders only at the hosted authority", async () => {
+  it("keeps connected reminders at the mdbase authority", async () => {
     const repository = {
       syncStatus: vi.fn(async () => ({
         mode: "replicated",
@@ -115,7 +119,7 @@ describe("hosted task reminders", () => {
     expect(repository.list).not.toHaveBeenCalled();
   });
 
-  it("does no reminder work for a live connector collection", async () => {
+  it("reconciles reminders for a live connector collection", async () => {
     const repository = {
       syncStatus: vi.fn(async () => ({
         mode: "live",
@@ -128,6 +132,14 @@ describe("hosted task reminders", () => {
 
     await reconcileTaskNotifications(repository, "connect");
 
-    expect(repository.list).not.toHaveBeenCalled();
+    expect(repository.list).toHaveBeenCalledWith({
+      status: "open",
+      limit: 50_000,
+    });
+    expect(mocks.reconcileTimers).toHaveBeenCalledWith({
+      namespace: "task-reminders",
+      criterion_id: "task.reminder",
+      timers: [],
+    });
   });
 });

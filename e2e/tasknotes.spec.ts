@@ -232,7 +232,7 @@ async function openSettingsSection(
     .locator("..")
     .locator("..");
   if ((await section.getAttribute("open")) === null)
-    await section.locator("summary").click();
+    await section.locator(":scope > summary").click();
   return section;
 }
 
@@ -351,6 +351,10 @@ test.beforeEach(async ({ page }) => {
   });
   await page.reload();
   await page.getByRole("button", { name: /On this device/ }).click();
+  await expect(page.getByRole("note")).toContainText(
+    "Notifications are not available",
+  );
+  await page.getByRole("button", { name: "Use this browser" }).click();
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();
@@ -649,6 +653,15 @@ test("organizes the Today list into declarative day sections", async ({
 test("captures into the collection from anywhere", async ({
   page,
 }, testInfo) => {
+  const inlineCapture = page.getByLabel("New task title");
+  await inlineCapture.focus();
+  expect(
+    await inlineCapture.evaluate(
+      (element) => getComputedStyle(element).outlineStyle,
+    ),
+  ).toBe("none");
+  await inlineCapture.blur();
+
   await page.getByRole("button", { name: "More", exact: true }).click();
   const trigger = page.getByRole("button", { name: "New task", exact: true });
   const triggerBox = await trigger.boundingBox();
@@ -665,6 +678,11 @@ test("captures into the collection from anywhere", async ({
     openedAt,
   );
   await expect(dialog.getByLabel("New task title")).toBeFocused();
+  expect(
+    await dialog
+      .getByLabel("New task title")
+      .evaluate((element) => getComputedStyle(element).outlineStyle),
+  ).toBe("none");
   await expect(dialog).toHaveAttribute("aria-modal", "true");
   const duplicateIds = await page.evaluate(() => {
     const ids = [...document.querySelectorAll<HTMLElement>("[id]")].map(
@@ -784,7 +802,7 @@ test("edits task model settings in the portable type contract", async ({
   );
   expect(settingsRenderMs).toBeLessThan(500);
   const disclosureStartedAt = await page.evaluate(() => performance.now());
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   const disclosureOpenMs = await page.evaluate(
     (start) => performance.now() - start,
     disclosureStartedAt,
@@ -795,7 +813,9 @@ test("edits task model settings in the portable type contract", async ({
   await chooseOption(page, "Default status", "In progress");
   await chooseOption(page, "Default priority", "High");
   await chooseOption(page, "Record links", "Markdown links");
-  await page.getByLabel("Future occurrence horizon").fill("P30D");
+  await page
+    .getByLabel("Future occurrence horizon amount", { exact: true })
+    .fill("30");
   await page.getByLabel("Stop a running timer when its task completes").check();
 
   const startedAt = await page.evaluate(() => performance.now());
@@ -826,7 +846,7 @@ test("edits task model settings in the portable type contract", async ({
 
   await page.reload();
   await page.getByRole("button", { name: "More", exact: true }).click();
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   await expect(
     page.getByRole("combobox", { name: "Default status" }),
   ).toHaveAttribute("data-value", "in-progress");
@@ -852,7 +872,7 @@ test("auto-archives from a contract status event without polling", async ({
   page,
 }, testInfo) => {
   await page.getByRole("button", { name: "More", exact: true }).click();
-  await openSettingsSection(page, "Task model");
+  await openSettingsSection(page, "Advanced");
   const doneAutomation = page
     .locator(".status-automation-row")
     .filter({ hasText: "Done" });
@@ -983,7 +1003,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
     await page.getByRole("button", { name: "Next period" }).click();
   }
   await expect(upcomingTask).toBeVisible();
-  await page.getByRole("button", { name: "Calendar", exact: true }).click();
+  await openNavigationView(page, "Calendar");
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await page.getByRole("button", { name: "Upcoming", exact: true }).click();
   await expect(
@@ -1130,7 +1150,19 @@ test("archives and restores a Markdown task without deleting it", async ({
   await page.getByLabel("New task title").fill("Keep archived history");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByText("Keep archived history", { exact: true }).click();
-  await page.getByLabel("Archive task").click();
+  const taskOptions = page.getByRole("button", { name: "More task actions" });
+  await taskOptions.click();
+  await expect(
+    page.getByRole("menuitem", { name: "Archive task" }),
+  ).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(
+    page.getByRole("menuitem", { name: "Delete task" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(taskOptions).toBeFocused();
+  await taskOptions.click();
+  await page.getByRole("menuitem", { name: "Archive task" }).click();
   await expect(
     page.getByText("Keep archived history", { exact: true }),
   ).toHaveCount(0);
@@ -1138,7 +1170,8 @@ test("archives and restores a Markdown task without deleting it", async ({
   await openNavigationView(page, "Archive");
   await expect(page.getByRole("heading", { name: "Archive" })).toBeVisible();
   await page.getByText("Keep archived history", { exact: true }).click();
-  await page.getByLabel("Restore task").click();
+  await page.getByRole("button", { name: "More task actions" }).click();
+  await page.getByRole("menuitem", { name: "Restore task" }).click();
   await expect(page.getByText("Nothing here")).toBeVisible();
   const restoredDocuments = await localTaskDocuments(page);
   expect(restoredDocuments).toHaveLength(1);
@@ -1149,6 +1182,32 @@ test("archives and restores a Markdown task without deleting it", async ({
   await expect(
     page.getByText("Keep archived history", { exact: true }),
   ).toBeVisible();
+});
+
+test("keeps destructive task actions quiet and safely confirmed", async ({
+  page,
+}) => {
+  await page.getByLabel("New task title").fill("Delete with confirmation");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Delete with confirmation", { exact: true }).click();
+
+  const taskOptions = page.getByRole("button", { name: "More task actions" });
+  await taskOptions.click();
+  await page.getByRole("menuitem", { name: "Delete task" }).click();
+  const confirmation = page.getByRole("alertdialog", {
+    name: "Delete this task?",
+  });
+  await expect(confirmation).toBeVisible();
+  await expect(
+    confirmation.getByRole("button", { name: "Keep task" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(taskOptions).toBeFocused();
+
+  await taskOptions.click();
+  await page.getByRole("menuitem", { name: "Delete task" }).click();
+  await confirmation.getByRole("button", { name: "Delete task" }).click();
+  await expect(page.getByText("Delete with confirmation")).toHaveCount(0);
 });
 
 test("interprets natural-language capture and preserves timed task fields", async ({
@@ -1271,7 +1330,7 @@ test("persists dependencies and derives blocking tasks and subtasks", async ({
     .getByRole("option", { name: /Dependency blocker.*tasks\// })
     .click();
   await chooseOption(page, "Relationship", "Start to start");
-  await page.getByLabel("Gap", { exact: true }).fill("P2D");
+  await page.getByLabel("Gap amount", { exact: true }).fill("2");
   await expect
     .poll(async () => {
       const source = (await localTaskDocuments(page)).find((document) =>
@@ -1331,7 +1390,7 @@ test("persists dependencies and derives blocking tasks and subtasks", async ({
   await expect(
     page.getByRole("combobox", { name: "Relationship" }),
   ).toHaveAttribute("data-value", "STARTTOSTART");
-  await expect(page.getByLabel("Gap", { exact: true })).toHaveValue("P2D");
+  await expect(page.getByLabel("Gap amount", { exact: true })).toHaveValue("2");
   await expect(
     page.getByRole("button", { name: "Remove Dependency blocker" }),
   ).toBeVisible();
@@ -1816,6 +1875,7 @@ test("orders several navigation views and exposes the rest from the mobile Views
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
+    await expect(navigation.getByRole("button")).toHaveCount(4);
     await expect(
       navigation.getByRole("button", { name: "Views", exact: true }),
     ).toBeVisible();
@@ -2079,6 +2139,49 @@ views:
     await editor.getByRole("button", { name: "Close view editor" }).click();
     await expect(editor).toHaveCount(0);
   }
+});
+
+test("moves through mini calendar dates with standard grid keys", async ({
+  page,
+}) => {
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes", {
+      create: true,
+    });
+    const views = await tasknotes.getDirectoryHandle("views", {
+      create: true,
+    });
+    const file = await views.getFileHandle("keyboard-mini.base", {
+      create: true,
+    });
+    const writable = await file.createWritable();
+    await writable.write(`views:
+  - type: tasknotesMiniCalendar
+    name: Keyboard mini
+    options: { showScheduled: true }
+`);
+    await writable.close();
+  });
+
+  await openViewsCatalog(page);
+  await page
+    .getByRole("button", { name: "Keyboard mini", exact: true })
+    .click();
+  const grid = page.getByRole("grid");
+  const start = grid.locator('[role="gridcell"][tabindex="0"]');
+  await expect(start).toHaveCount(1);
+  const startLabel = await start.getAttribute("aria-label");
+  await start.focus();
+  await start.press("ArrowRight");
+  const next = page.locator('[role="gridcell"]:focus');
+  await expect(next).toBeVisible();
+  expect(await next.getAttribute("aria-label")).not.toBe(startLabel);
+
+  const monthBefore = await grid.getAttribute("aria-label");
+  await next.press("PageDown");
+  await expect(grid).not.toHaveAttribute("aria-label", monthBefore ?? "");
+  await expect(page.locator('[role="gridcell"]:focus')).toBeVisible();
 });
 
 test("edits formulas and makes them available to view controls", async ({

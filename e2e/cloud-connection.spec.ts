@@ -118,6 +118,13 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(operations).toContain("query");
 
   await page.getByRole("button", { name: "More" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Notifications" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/mdbase keeps connected reminders running/),
+  ).toBeVisible();
+  await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await page.getByRole("button", { name: "Change collection" }).click();
   await expect(
     page.getByRole("heading", { name: "Open your TaskNotes collection." }),
@@ -249,7 +256,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
     .click();
   await expect.poll(() => readRequests).toBe(1);
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: "Delete permanently" }).click();
   expect(deleteRequests).toBe(0);
 
   readGate.resolve();
