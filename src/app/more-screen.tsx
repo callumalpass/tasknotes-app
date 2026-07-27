@@ -249,8 +249,8 @@ export function MoreScreen({
           </div>
           {choice === "local" ? (
             <p className="section-copy">
-              Moving this collection to mdbase is not available yet. Your tasks
-              will stay on this device.
+              Connecting to mdbase does not move this collection&apos;s tasks
+              yet, so switching is unavailable here.
             </p>
           ) : (
             <>
