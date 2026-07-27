@@ -171,7 +171,6 @@ export function TaskCapture({
             preview: taskCapturePreview(input, configuration),
           });
           setParsedText(value);
-          setError(null);
         })
         .catch(() => {
           if (!active) return;
@@ -206,6 +205,7 @@ export function TaskCapture({
     textRef.current = value;
     setText(value);
     setCursor(nextCursor);
+    setError(null);
     if (value.trim()) {
       setParsing(true);
       return;

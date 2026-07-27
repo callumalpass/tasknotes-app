@@ -51,9 +51,10 @@ import {
 import { createPlatformVault } from "../storage/vault";
 import { tasknotesMarkUrl } from "./assets";
 import {
-  CollectionPicker,
+  isCollectionMigrationLocked,
   type CollectionMigrationState,
-} from "./collection-picker";
+} from "./collection-migration-state";
+import { CollectionPicker } from "./collection-picker";
 import type { CollectionChoice } from "./collection-context";
 
 const CloudCollection = lazy(() => import("./cloud-collection"));
@@ -321,8 +322,7 @@ export function CollectionGate() {
   }, [complete, runTransfer]);
 
   const closePicker = useCallback(() => {
-    if (migration?.step === "running") return;
-    if (migration?.step === "error" && migration.mustResume) return;
+    if (isCollectionMigrationLocked(migration)) return;
     setPickerOpen(false);
     setMigration(null);
     setMigrationTarget(null);
@@ -377,7 +377,15 @@ export function CollectionGate() {
     }
     if (pending.adoptedCollectionId) {
       setMigration({ step: "authorizing" });
-      void authorizeCloudCollection(pending.adoptedCollectionId);
+      void authorizeCloudCollection(pending.adoptedCollectionId).catch(
+        (reason) =>
+          setMigration({
+            step: "error",
+            message: message(reason),
+            canRetry: true,
+            mustResume: true,
+          }),
+      );
       return;
     }
     void runTransfer(pending.sourceLocation, pending.checkpoint);
@@ -471,7 +479,7 @@ export function CollectionGate() {
           onAuthorizeCloud={authorizeAnotherCloudCollection}
           onAuthorizeMigration={authorizeMigrationDestination}
           onBackFromMigration={() => {
-            if (migration?.step === "error" && migration.mustResume) return;
+            if (isCollectionMigrationLocked(migration)) return;
             clearPendingTransfer();
             setMigration(null);
             setMigrationTarget(null);
