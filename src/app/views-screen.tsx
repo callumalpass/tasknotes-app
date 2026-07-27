@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -157,9 +158,10 @@ export function ViewsScreen({
   const [manualRanks, setManualRanks] = useState<
     Map<string, { viewKey: string; sortOrder: string }>
   >(() => new Map());
-  const [manualOrderPending, setManualOrderPending] = useState<string | null>(
-    null,
-  );
+  const [manualOrderPending, setManualOrderPending] = useState<{
+    viewKey: string;
+    taskId: string;
+  } | null>(null);
   const [reorderingView, setReorderingView] = useState<string | null>(null);
   const boardMutationSequence = useRef(new Map<string, number>());
   const completeField = useCallback(
@@ -265,10 +267,23 @@ export function ViewsScreen({
     currentSort,
     configuration.fieldMapping.sortOrder,
   );
+  const selectedIsTaskList =
+    selected?.presentation?.type === "tasknotes.task-list";
+  const selectedIsKanban = selected?.presentation?.type === "tasknotes.kanban";
+  const kanbanColumnProperty = selectedIsKanban
+    ? (selected.presentation?.mappings.column ?? "status")
+    : null;
+  const kanbanMovable =
+    selectedIsKanban &&
+    (Boolean(manualOrder) ||
+      (kanbanColumnProperty !== null &&
+        kanbanPropertyRole(kanbanColumnProperty, configuration.fieldMapping) !==
+          null));
   const reorderMode =
     Boolean(manualOrder) &&
-    selected?.presentation?.type === "tasknotes.task-list" &&
+    selectedIsTaskList &&
     reorderingView === selected.key;
+  const kanbanMoveMode = kanbanMovable && reorderingView === selected?.key;
   const presentedExecution = useMemo(
     () =>
       visibleExecution && manualOrder
@@ -376,7 +391,10 @@ export function ViewsScreen({
     if (!plan.writes.length && !Object.keys(additionalInput).length) return;
 
     setViewActionError(null);
-    setManualOrderPending(selected.key);
+    setManualOrderPending({
+      viewKey: selected.key,
+      taskId: dragged.task.id,
+    });
     setManualRanks((current) => {
       const next = new Map(current);
       for (const write of plan.writes)
@@ -406,7 +424,7 @@ export function ViewsScreen({
       if (selectedKeyRef.current === selected.key) {
         setViewActionError({
           viewKey: selected.key,
-          message: `Could not reorder “${dragged.task.title}”. ${message(reason)}`,
+          message: `Could not ${Object.keys(additionalInput).length ? "move" : "reorder"} “${dragged.task.title}”. ${message(reason)}`,
         });
         void repository
           .executeView(selected)
@@ -421,7 +439,9 @@ export function ViewsScreen({
         for (const write of plan.writes) next.delete(write.taskId);
         return next;
       });
-      setManualOrderPending((key) => (key === selected.key ? null : key));
+      setManualOrderPending((pending) =>
+        pending?.viewKey === selected.key ? null : pending,
+      );
     }
   }
 
@@ -771,8 +791,8 @@ export function ViewsScreen({
             ) : null}
           </div>
           {!editing &&
-          ((manualOrder &&
-            selected?.presentation?.type === "tasknotes.task-list") ||
+          ((manualOrder && selectedIsTaskList) ||
+            kanbanMovable ||
             selected?.source.writable ||
             operational) ? (
             <div className="view-header-actions">
@@ -786,20 +806,46 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
-              {manualOrder &&
-              selected?.presentation?.type === "tasknotes.task-list" ? (
+              {(manualOrder && selectedIsTaskList) || kanbanMovable ? (
                 <button
                   aria-label={
-                    reorderMode ? "Finish reordering" : "Reorder tasks"
+                    selectedIsTaskList
+                      ? reorderMode
+                        ? "Finish reordering"
+                        : "Reorder tasks"
+                      : manualOrder
+                        ? kanbanMoveMode
+                          ? "Finish arranging cards"
+                          : "Arrange cards"
+                        : kanbanMoveMode
+                          ? "Finish moving cards"
+                          : "Move cards between columns"
                   }
-                  aria-pressed={reorderMode}
+                  aria-pressed={
+                    selectedIsTaskList ? reorderMode : kanbanMoveMode
+                  }
                   className="view-header-action"
+                  title={
+                    selectedIsTaskList
+                      ? undefined
+                      : manualOrder
+                        ? "Reorder cards or move them between columns"
+                        : "Move cards between columns"
+                  }
                   type="button"
                   onClick={() =>
-                    setReorderingView(reorderMode ? null : selected.key)
+                    setReorderingView(
+                      (selectedIsTaskList ? reorderMode : kanbanMoveMode)
+                        ? null
+                        : selected.key,
+                    )
                   }
                 >
-                  <GripVertical aria-hidden="true" size={18} />
+                  {selectedIsTaskList || manualOrder ? (
+                    <GripVertical aria-hidden="true" size={18} />
+                  ) : (
+                    <ArrowLeftRight aria-hidden="true" size={18} />
+                  )}
                 </button>
               ) : null}
               {selected?.source.writable ? (
@@ -886,7 +932,13 @@ export function ViewsScreen({
             fieldMapping={configuration.fieldMapping}
             execution={presentedExecution}
             manualOrder={manualOrder}
-            orderPending={manualOrderPending === selected?.key}
+            moveMode={kanbanMoveMode}
+            orderPending={manualOrderPending?.viewKey === selected?.key}
+            orderPendingTaskId={
+              manualOrderPending && manualOrderPending.viewKey === selected?.key
+                ? manualOrderPending.taskId
+                : null
+            }
             moves={
               new Map(
                 [...boardMoves].filter(
@@ -960,7 +1012,7 @@ export function ViewsScreen({
             collectionComplete={indexing.complete}
             execution={presentedExecution}
             manualOrder={manualOrder}
-            orderPending={manualOrderPending === selected?.key}
+            orderPending={manualOrderPending?.viewKey === selected?.key}
             reorderMode={reorderMode}
             titleProperty={configuration.fieldMapping.title}
             onReorder={(rows, dragged, targetId, placement) =>
@@ -1035,7 +1087,9 @@ function KanbanView({
   execution,
   fieldMapping,
   manualOrder,
+  moveMode,
   orderPending,
+  orderPendingTaskId,
   moves,
   priorityColumns,
   statusColumns,
@@ -1047,7 +1101,9 @@ function KanbanView({
 }: ViewProps & {
   fieldMapping: KanbanFieldMapping;
   manualOrder: ManualOrderConfiguration | null;
+  moveMode: boolean;
   orderPending: boolean;
+  orderPendingTaskId: string | null;
   moves: Map<string, { viewKey: string; property: string; value: unknown }>;
   priorityColumns: Array<{ value: string; label: string }>;
   statusColumns: Array<{ value: string; label: string }>;
@@ -1113,7 +1169,7 @@ function KanbanView({
   }
   const orderedColumns = [...columns.values()];
   const writable = propertyName !== null;
-  const movable = writable || Boolean(manualOrder);
+  const movable = moveMode && (writable || Boolean(manualOrder));
   const [dragging, setDragging] = useState<{
     row: TaskViewRow;
     sourceKey: string;
@@ -1151,7 +1207,7 @@ function KanbanView({
     const active = { row, sourceKey };
     draggingRef.current = active;
     setDragging(active);
-    setOverKey(sourceKey);
+    setOverKey(null);
   }
 
   function clearDrag() {
@@ -1166,6 +1222,20 @@ function KanbanView({
     setOverKey(null);
     setOverDrop(null);
     overDropRef.current = null;
+  }
+
+  function updateDropFeedback(next: typeof overDropRef.current) {
+    const current = overDropRef.current;
+    if (
+      current?.columnKey !== next?.columnKey ||
+      current?.targetId !== next?.targetId ||
+      current?.placement !== next?.placement
+    ) {
+      overDropRef.current = next;
+      setOverDrop(next);
+    }
+    const nextKey = next?.columnKey ?? null;
+    setOverKey((currentKey) => (currentKey === nextKey ? currentKey : nextKey));
   }
 
   function finishMove(
@@ -1212,16 +1282,24 @@ function KanbanView({
   ): typeof overDropRef.current {
     const board = boardRef.current;
     const bounds = board?.getBoundingClientRect();
-    const x = bounds
-      ? Math.max(bounds.left + 1, Math.min(clientX, bounds.right - 1))
-      : clientX;
-    const y = bounds
-      ? Math.max(bounds.top + 1, Math.min(clientY, bounds.bottom - 1))
-      : clientY;
-    const element = document.elementFromPoint(x, y);
+    if (
+      bounds &&
+      bounds.width > 0 &&
+      bounds.height > 0 &&
+      (clientX < bounds.left ||
+        clientX > bounds.right ||
+        clientY < Math.max(0, bounds.top) ||
+        clientY > Math.min(window.innerHeight, bounds.bottom))
+    )
+      return null;
+    const element = document.elementFromPoint(clientX, clientY);
     const column = element?.closest<HTMLElement>("[data-kanban-column-key]");
     const columnKey = column?.dataset.kanbanColumnKey;
     if (!columnKey) return null;
+    const active = draggingRef.current;
+    if (!active || (!manualOrder && columnKey === active.sourceKey))
+      return null;
+    if (!manualOrder) return { columnKey, placement: "after" };
     const card = element?.closest<HTMLElement>("[data-kanban-card-id]");
     const targetId = card?.dataset.kanbanCardId;
     if (targetId === draggingRef.current?.row.task.id) return null;
@@ -1231,7 +1309,7 @@ function KanbanView({
       columnKey,
       targetId,
       placement:
-        y < cardBounds.top + cardBounds.height / 2 ? "before" : "after",
+        clientY < cardBounds.top + cardBounds.height / 2 ? "before" : "after",
     };
   }
 
@@ -1241,27 +1319,29 @@ function KanbanView({
     const pointer = pointerPosition.current;
     if (!board || !pointer || !pointerDrag.current) return;
     const bounds = board.getBoundingClientRect();
-    const edge = 52;
-    let distance = 0;
-    if (pointer.x < bounds.left + edge)
-      distance = -Math.max(
-        4,
-        Math.ceil(((bounds.left + edge - pointer.x) / edge) * 18),
-      );
-    else if (pointer.x > bounds.right - edge)
-      distance = Math.max(
-        4,
-        Math.ceil(((pointer.x - (bounds.right - edge)) / edge) * 18),
-      );
-    if (!distance) return;
+    const horizontalDistance = edgeScrollDistance(
+      pointer.x,
+      bounds.left,
+      bounds.right,
+      52,
+      18,
+    );
+    const verticalDistance = edgeScrollDistance(
+      pointer.y,
+      0,
+      window.innerHeight,
+      72,
+      16,
+    );
+    if (!horizontalDistance && !verticalDistance) return;
 
-    const previous = board.scrollLeft;
-    board.scrollLeft += distance;
+    const previousLeft = board.scrollLeft;
+    const previousTop = window.scrollY;
+    if (horizontalDistance) board.scrollLeft += horizontalDistance;
+    if (verticalDistance) window.scrollBy(0, verticalDistance);
     const drop = dropAt(pointer.x, pointer.y);
-    overDropRef.current = drop;
-    setOverDrop(drop);
-    setOverKey(drop?.columnKey ?? null);
-    if (board.scrollLeft !== previous)
+    updateDropFeedback(drop);
+    if (board.scrollLeft !== previousLeft || window.scrollY !== previousTop)
       autoScrollFrame.current = requestAnimationFrame(continueAutoScroll);
   }
 
@@ -1278,8 +1358,16 @@ function KanbanView({
           between columns.
         </p>
       ) : null}
+      {moveMode ? (
+        <p className="view-note kanban-move-note">
+          {manualOrder
+            ? "Drag handles reorder cards or move them between columns."
+            : "This view keeps its current sort. Drag handles only move cards between columns."}
+        </p>
+      ) : null}
       <div
-        className={`kanban-board${dragging ? " is-dragging" : ""}`}
+        aria-busy={orderPending || moves.size > 0}
+        className={`kanban-board${moveMode ? " is-move-mode" : ""}${dragging ? " is-dragging" : ""}`}
         aria-label={`${execution.view.name} board`}
         ref={boardRef}
       >
@@ -1292,21 +1380,6 @@ function KanbanView({
               className={`kanban-column${overKey === key ? " is-drop-target" : ""}`}
               data-kanban-column-key={key}
               key={key}
-              onDragOver={(event) => {
-                if (!draggingRef.current || !movable) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                setOverKey(key);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                const active = draggingRef.current;
-                if (active)
-                  finishMove(active.row, active.sourceKey, {
-                    columnKey: key,
-                    placement: "after",
-                  });
-              }}
             >
               <header>
                 <h2>{label}</h2>
@@ -1326,44 +1399,41 @@ function KanbanView({
                   ) : null}
                 </div>
               </header>
-              <div>
+              <div className="kanban-column-cards">
                 {column.rows.map((row) => {
-                  const pending = moves.has(row.task.id);
+                  const pending =
+                    moves.has(row.task.id) ||
+                    orderPendingTaskId === row.task.id;
                   return (
                     <div
                       aria-busy={pending}
-                      className={`kanban-card${pending || orderPending ? " is-pending" : ""}${dragging?.row.task.id === row.task.id ? " is-dragging" : ""}${overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
+                      className={`kanban-card${pending ? " is-pending" : ""}${dragging?.row.task.id === row.task.id ? " is-dragging" : ""}${manualOrder && overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
                       data-kanban-card-id={row.task.id}
-                      draggable={movable && !orderPending}
                       key={row.task.id}
-                      onDragEnd={clearDrag}
-                      onDragStart={(event) => {
-                        if (
-                          event.target instanceof Element &&
-                          event.target.closest(
-                            ".completion-control, .kanban-drag-handle, .task-actions-trigger",
-                          )
-                        ) {
-                          event.preventDefault();
-                          return;
-                        }
-                        event.dataTransfer.effectAllowed = "move";
-                        event.dataTransfer.setData("text/plain", row.task.id);
-                        beginMove(row, key);
-                      }}
                     >
                       {movable ? (
                         <button
                           aria-label={
                             manualOrder
-                              ? `Move ${row.task.title}. Drag, or use arrow keys.`
-                              : `Move ${row.task.title}. Drag, or use left and right arrow keys.`
+                              ? `Arrange ${row.task.title}. Drag, use up and down to reorder, or use left and right to move between columns.`
+                              : `Move ${row.task.title} between columns. Drag, or use left and right arrow keys.`
                           }
                           className="kanban-drag-handle"
                           disabled={orderPending}
                           type="button"
                           onContextMenu={(event) => event.preventDefault()}
                           onKeyDown={(event) => {
+                            if (
+                              event.key === "Escape" &&
+                              draggingRef.current?.row.task.id === row.task.id
+                            ) {
+                              event.preventDefault();
+                              clearDrag();
+                              setAnnouncement(
+                                `Cancelled moving ${row.task.title}.`,
+                              );
+                              return;
+                            }
                             const direction =
                               event.key === "ArrowLeft"
                                 ? -1
@@ -1375,6 +1445,18 @@ function KanbanView({
                                 orderedColumns[columnIndex + direction];
                               if (!destination || !writable) return;
                               event.preventDefault();
+                              const rowIndex = column.rows.findIndex(
+                                ({ task }) => task.id === row.task.id,
+                              );
+                              const target =
+                                manualOrder && destination.rows.length
+                                  ? destination.rows[
+                                      Math.min(
+                                        Math.max(rowIndex, 0),
+                                        destination.rows.length - 1,
+                                      )
+                                    ]
+                                  : undefined;
                               onMove(
                                 row,
                                 property,
@@ -1382,7 +1464,8 @@ function KanbanView({
                                 manualOrder
                                   ? {
                                       rows: destination.rows,
-                                      placement: "after",
+                                      targetId: target?.task.id,
+                                      placement: target ? "before" : "after",
                                     }
                                   : undefined,
                               );
@@ -1440,9 +1523,7 @@ function KanbanView({
                               y: event.clientY,
                             };
                             const drop = dropAt(event.clientX, event.clientY);
-                            overDropRef.current = drop;
-                            setOverDrop(drop);
-                            setOverKey(drop?.columnKey ?? null);
+                            updateDropFeedback(drop);
                             startAutoScroll();
                           }}
                           onPointerCancel={clearDrag}
@@ -1459,7 +1540,11 @@ function KanbanView({
                             );
                           }}
                         >
-                          <GripVertical aria-hidden="true" size={16} />
+                          {manualOrder ? (
+                            <GripVertical aria-hidden="true" size={16} />
+                          ) : (
+                            <ArrowLeftRight aria-hidden="true" size={16} />
+                          )}
                         </button>
                       ) : null}
                       <ViewTaskRow
@@ -1473,6 +1558,16 @@ function KanbanView({
                     </div>
                   );
                 })}
+                {dragging &&
+                column.rows.length === 0 &&
+                (manualOrder || key !== dragging.sourceKey) ? (
+                  <div
+                    aria-hidden="true"
+                    className={`kanban-empty-drop-zone${overKey === key ? " is-active" : ""}`}
+                  >
+                    Drop here
+                  </div>
+                ) : null}
               </div>
             </section>
           );
@@ -1483,6 +1578,24 @@ function KanbanView({
       </p>
     </>
   );
+}
+
+function edgeScrollDistance(
+  position: number,
+  start: number,
+  end: number,
+  edge: number,
+  maximum: number,
+): number {
+  if (position < start + edge) {
+    const intensity = Math.min(1, (start + edge - position) / edge);
+    return -Math.max(4, Math.ceil(intensity * maximum));
+  }
+  if (position > end - edge) {
+    const intensity = Math.min(1, (position - (end - edge)) / edge);
+    return Math.max(4, Math.ceil(intensity * maximum));
+  }
+  return 0;
 }
 
 function MiniCalendarView({

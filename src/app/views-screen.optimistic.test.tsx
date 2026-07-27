@@ -84,15 +84,19 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   const inProgress = screen.getByRole("region", {
     name: "In progress column",
   });
+  expect(document.querySelector(".kanban-drag-handle")).toBeNull();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Move cards between columns" }),
+  );
   const handle = screen.getByRole("button", {
-    name: "Move Move on the board. Drag, or use left and right arrow keys.",
+    name: "Move Move on the board between columns. Drag, or use left and right arrow keys.",
   });
   const board = screen.getByLabelText("Work board");
   Object.defineProperty(handle, "setPointerCapture", {
     configurable: true,
     value: vi.fn(),
   });
-  Object.defineProperty(board, "scrollBy", {
+  Object.defineProperty(window, "scrollBy", {
     configurable: true,
     value: vi.fn(),
   });
@@ -115,7 +119,13 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     pointerType: "touch",
   });
 
-  expect(within(inProgress).getByText("Move on the board")).toBeVisible();
+  const movedTitle = await within(inProgress).findByText("Move on the board");
+  expect(movedTitle).toBeVisible();
+  expect(movedTitle.closest(".kanban-card")).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  expect(board).toHaveAttribute("aria-busy", "true");
   expect(update).toHaveBeenCalledWith("task-1", { status: "in-progress" });
 
   await act(async () => pending.reject(new Error("Network lost")));
@@ -123,7 +133,105 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   await waitFor(() =>
     expect(within(open).getByText("Move on the board")).toBeVisible(),
   );
+  expect(board).toHaveAttribute("aria-busy", "false");
   expect(screen.getByRole("alert")).toHaveTextContent("Could not move");
+});
+
+it("scopes manual board busy feedback to the card being moved", async () => {
+  const pending = deferred<Task>();
+  const update = vi.fn(() => pending.promise);
+  const execution = boardExecution();
+  const stationary = listTask("task-2", "Stay in place");
+  execution.rows.push({ task: stationary, values: { status: "open" } });
+  execution.totalCount = 2;
+  execution.groups[0].count = 2;
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: 2,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => execution.rows.map(({ task }) => task),
+    cachedViewExecution: async () => null,
+    executeView: async () => execution,
+    readViewSource: async () => ({
+      path: execution.view.source.path,
+      format: "obsidian.base",
+      revision: "one",
+      document: `views:
+  - type: tasknotesKanban
+    name: Board
+    groupBy: { property: status, direction: ASC }
+    sort:
+      - column: note.tasknotes_manual_order
+        direction: DESC
+`,
+    }),
+    update,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration,
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  render(
+    <RepositoryProvider repository={repository}>
+      <ViewsScreen
+        documents={[
+          {
+            id: execution.view.documentId,
+            name: execution.view.documentName,
+            source: execution.view.source,
+            views: [execution.view],
+          },
+        ]}
+        navigationViewKeys={[execution.view.key]}
+        operational
+        viewKey={execution.view.key}
+        views={[execution.view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+
+  fireEvent.click(await screen.findByRole("button", { name: "Arrange cards" }));
+  fireEvent.keyDown(
+    screen.getByRole("button", {
+      name: /Arrange Move on the board\./,
+    }),
+    { key: "ArrowRight" },
+  );
+
+  const inProgress = screen.getByRole("region", {
+    name: "In progress column",
+  });
+  const movedCard = within(inProgress)
+    .getByText("Move on the board")
+    .closest(".kanban-card");
+  const stationaryCard = screen
+    .getByText("Stay in place")
+    .closest(".kanban-card");
+  expect(movedCard).toHaveAttribute("aria-busy", "true");
+  expect(movedCard).toHaveClass("is-pending");
+  expect(stationaryCard).toHaveAttribute("aria-busy", "false");
+  expect(stationaryCard).not.toHaveClass("is-pending");
+
+  await act(async () => pending.reject(new Error("Write failed")));
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not move"),
+  );
 });
 
 it("shows a cached view while its authoritative result refreshes", async () => {
