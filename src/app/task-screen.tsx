@@ -43,7 +43,6 @@ import {
   useTask,
   useTaskRelationships,
 } from "./repository-context";
-import { useCollectionGate } from "./collection-context";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 import type {
@@ -150,7 +149,6 @@ function TaskEditor({
     repository,
     sync,
   } = useRepository();
-  const { choose } = useCollectionGate();
   const { relationships: repositoryRelationships } = useTaskRelationships(
     task.id,
   );
@@ -937,7 +935,6 @@ function TaskEditor({
             due={draft.due}
             reminders={draft.reminders}
             scheduled={draft.scheduled}
-            onConnectMdbase={() => choose("cloud")}
             onChange={(reminders) => change({ reminders })}
           />
         </TaskFormSection>

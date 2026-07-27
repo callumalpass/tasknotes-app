@@ -20,14 +20,12 @@ export function ReminderEditor({
   scheduled,
   due,
   deliveryMode = "mdbase",
-  onConnectMdbase,
   onChange,
 }: {
   reminders: TaskReminder[];
   scheduled?: string;
   due?: string;
   deliveryMode?: "mdbase" | "local";
-  onConnectMdbase?(): void;
   onChange(reminders: TaskReminder[]): void;
 }) {
   const defaultAnchor = due ? "due" : scheduled ? "scheduled" : undefined;
@@ -55,15 +53,6 @@ export function ReminderEditor({
               cannot deliver notifications.
             </p>
           </div>
-          {onConnectMdbase ? (
-            <button
-              className="text-action"
-              type="button"
-              onClick={onConnectMdbase}
-            >
-              Connect mdbase
-            </button>
-          ) : null}
         </div>
       ) : null}
       <div className="reminder-editor-heading">

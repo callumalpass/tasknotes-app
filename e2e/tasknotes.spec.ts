@@ -801,6 +801,12 @@ test("edits task model settings in the portable type contract", async ({
     settingsStartedAt,
   );
   expect(settingsRenderMs).toBeLessThan(500);
+  await expect(
+    page.getByText("Moving this collection to mdbase is not available yet."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Connect mdbase" }),
+  ).toHaveCount(0);
   const disclosureStartedAt = await page.evaluate(() => performance.now());
   await openSettingsSection(page, "Advanced");
   const disclosureOpenMs = await page.evaluate(
@@ -937,6 +943,9 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByLabel("Contexts").fill("computer");
   await page.getByLabel("Tags").fill("release, planning");
   await page.getByText("Repeat and reminders", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Connect mdbase" }),
+  ).toHaveCount(0);
   await chooseOption(page, "Repeat", "Weekly");
   await page.getByLabel("Repeat interval").fill("2");
   await page.getByRole("button", { name: "Monday" }).click();
