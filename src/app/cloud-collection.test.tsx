@@ -25,7 +25,7 @@ vi.mock("../cloud/connect", () => ({
       displayName: "Work tasks",
       operations: [],
       scope: { contracts: [], access: "full_collection" },
-      route: "hosted",
+      route: "remote",
       directAccess: "disabled",
     },
   ]),

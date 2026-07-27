@@ -9,7 +9,7 @@ import type { TaskRepository } from "./repository";
 export function createConnectTaskRepository(
   connect: MdbaseConnection<JsonObject>,
 ): TaskRepository {
-  return connect.hostedSync()
+  return connect.sync()
     ? new CloudTaskRepository(connect)
     : new RelayTaskRepository(connect);
 }
