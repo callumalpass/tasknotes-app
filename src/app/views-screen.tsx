@@ -744,9 +744,13 @@ export function ViewsScreen({
                 {localIndexingLabel(indexing)}
               </small>
             ) : visibleExecution && currentExecutionRefreshing ? (
-              <small aria-live="polite" role="status">
-                Updating
-              </small>
+              <span
+                aria-live="polite"
+                className="visually-hidden"
+                role="status"
+              >
+                Updating view
+              </span>
             ) : visibleExecution?.stale ? (
               <small aria-live="polite" role="status">
                 Last available result
