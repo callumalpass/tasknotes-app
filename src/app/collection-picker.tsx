@@ -13,34 +13,13 @@ import { useEffect, useRef } from "react";
 
 import { isHostedCloudConnection } from "../cloud/connect";
 
-import type {
-  CollectionTransferProgress,
-  CollectionTransferResult,
-} from "../storage/collection-transfer";
+import type { CollectionTransferProgress } from "../storage/collection-transfer";
 import type { LocalCollectionLocation } from "../storage/local-collection-location";
 import type { CollectionChoice } from "./collection-context";
-
-export type CollectionMigrationState =
-  | { step: "destination" }
-  | { step: "authorizing" }
-  | {
-      step: "running";
-      destinationName: string;
-      progress: CollectionTransferProgress;
-      verificationUri?: string;
-    }
-  | {
-      step: "error";
-      destinationName?: string;
-      message: string;
-      canRetry: boolean;
-      mustResume?: boolean;
-    }
-  | {
-      step: "complete";
-      destinationName: string;
-      result: CollectionTransferResult;
-    };
+import {
+  isCollectionMigrationLocked,
+  type CollectionMigrationState,
+} from "./collection-migration-state";
 
 export function CollectionPicker({
   activeChoice,
@@ -80,13 +59,14 @@ export function CollectionPicker({
   onSelectLocal(location: LocalCollectionLocation): void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const migrationLocked = isCollectionMigrationLocked(migration);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || migration?.step === "running") return;
+      if (event.key !== "Escape" || migrationLocked) return;
       event.preventDefault();
       onClose();
     };
@@ -95,7 +75,7 @@ export function CollectionPicker({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [migration?.step, onClose]);
+  }, [migrationLocked, onClose]);
 
   return (
     <div className="collection-picker-scrim">
@@ -246,10 +226,7 @@ function MigrationPicker({
   onFinish(): void;
   onRetry(): void;
 }) {
-  const running =
-    migration.step === "running" || migration.step === "authorizing";
-  const locked =
-    running || (migration.step === "error" && migration.mustResume);
+  const locked = isCollectionMigrationLocked(migration);
   return (
     <>
       <header className="collection-picker-header">

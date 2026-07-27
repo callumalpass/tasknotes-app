@@ -117,6 +117,40 @@ it("reports adopted totals and the archived local source", () => {
   expect(finish).toHaveBeenCalledOnce();
 });
 
+it.each([
+  ["hosted authorization", { step: "authorizing" } as const],
+  [
+    "snapshot transfer",
+    {
+      step: "running",
+      destinationName: "Hosted tasks",
+      progress: { phase: "uploading", completed: 1, total: 2 },
+    } as const,
+  ],
+  [
+    "mandatory recovery",
+    {
+      step: "error",
+      message: "Authorization was interrupted.",
+      canRetry: true,
+      mustResume: true,
+    } as const,
+  ],
+])("cannot be dismissed during %s", (_label, migration) => {
+  const close = vi.fn();
+  renderPicker({ migration, onClose: close });
+
+  expect(
+    screen.getByRole("button", { name: "Close collection picker" }),
+  ).toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "Back to collections" }),
+  ).toBeDisabled();
+
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(close).not.toHaveBeenCalled();
+});
+
 function renderPicker(
   overrides: Partial<React.ComponentProps<typeof CollectionPicker>> = {},
 ) {
