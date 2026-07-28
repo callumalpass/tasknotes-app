@@ -64,6 +64,7 @@ export interface LocalAuthorityFence {
 export class MarkdownCollection {
   private taskModel = new TaskNotesTaskModel();
   private typesFolder = "_types";
+  private contractsFolder = "_contracts";
   private taskTypePath = "_types/task.md";
   private typeFingerprint = "";
   private typeDirectoryFingerprint = "";
@@ -117,8 +118,9 @@ export class MarkdownCollection {
       },
     });
     const generatedType = structuredClone(resources.type);
-    const extension = generatedType["x-tasknotes"] as Record<string, unknown>;
-    const fieldRoles = extension.field_roles as Record<string, unknown>;
+    const implementation = taskNotesImplementation(generatedType);
+    const extension = implementation.binding as Record<string, unknown>;
+    const fieldRoles = implementation.fields as Record<string, unknown>;
     const sortOrderField = fieldRoles.sortOrder;
     const schema = (generatedType.schema as Record<string, unknown>)
       .value as Record<string, unknown>;
@@ -131,6 +133,7 @@ export class MarkdownCollection {
       default_skipped: "cancelled",
     };
     extension.occurrences = {
+      ...(extension.occurrences as Record<string, unknown>),
       default_materialization: defaults.occurrences.defaultMaterialization,
       default_next_trigger: defaults.occurrences.defaultNextTrigger,
       past_horizon: defaults.occurrences.pastHorizon,
@@ -141,8 +144,26 @@ export class MarkdownCollection {
       resources.paths.config,
       resources.configDocument,
     );
+    await Promise.all([
+      this.vault.ensureText(
+        resources.paths.contract,
+        resources.contractDocument,
+      ),
+      this.vault.ensureText(
+        resources.paths.taskSchema,
+        resources.taskSchemaDocument,
+      ),
+      this.vault.ensureText(
+        resources.paths.bindingSchema,
+        resources.bindingSchemaDocument,
+      ),
+    ]);
     await this.ensureViewConfiguration(resources.paths.config);
-    this.typesFolder = await this.readTypesFolder(resources.paths.config);
+    const definitionFolders = await this.readDefinitionFolders(
+      resources.paths.config,
+    );
+    this.typesFolder = definitionFolders.types;
+    this.contractsFolder = definitionFolders.contracts;
     const existingTypes = await this.listTypeFiles(this.typesFolder);
     if (!existingTypes.length)
       await this.vault.ensureText(
@@ -153,7 +174,9 @@ export class MarkdownCollection {
   }
 
   async refreshConfiguration(): Promise<boolean> {
-    const nextTypesFolder = await this.readTypesFolder("mdbase.yaml");
+    const definitionFolders = await this.readDefinitionFolders("mdbase.yaml");
+    const nextTypesFolder = definitionFolders.types;
+    this.contractsFolder = definitionFolders.contracts;
     const typeFiles = await this.listTypeFiles(nextTypesFolder);
     const directoryFingerprint = typeFiles
       .map(
@@ -170,14 +193,7 @@ export class MarkdownCollection {
         typeFiles.map(async (entry) => {
           const source = await this.vault.readText(entry.path);
           const parsed = parseFrontmatter(source);
-          const extension = parsed.frontmatter["x-tasknotes"];
-          const contract =
-            extension &&
-            typeof extension === "object" &&
-            !Array.isArray(extension)
-              ? (extension as Record<string, unknown>).contract
-              : undefined;
-          return contract === "tasknotes.task"
+          return hasTaskNotesImplementation(parsed.frontmatter)
             ? [{ entry, source, parsed }]
             : [];
         }),
@@ -185,7 +201,7 @@ export class MarkdownCollection {
     ).flat();
     if (!matches.length)
       throw new Error(
-        `No type providing x-tasknotes.contract: tasknotes.task was found in ${nextTypesFolder}/.`,
+        `No type implementing tasknotes.task 0.2.0 was found in ${nextTypesFolder}/.`,
       );
     if (matches.length > 1)
       throw new Error(
@@ -293,6 +309,10 @@ export class MarkdownCollection {
     const specVersion =
       typeof value?.spec_version === "string" ? value.spec_version : "0.3.0";
     const typeFiles = await this.listTypeFiles(this.typesFolder);
+    const contractFiles = await this.listTypeFiles(this.contractsFolder);
+    const schemaFiles = (await this.vault.listCollectionFiles([".json"]))
+      .filter(({ path }) => !this.isPrivateResource(path))
+      .sort((left, right) => left.path.localeCompare(right.path));
     const viewPatterns = configuredViewPatterns(value);
     const viewMatchers = viewPatterns.map((pattern) =>
       picomatch(pattern, { dot: true }),
@@ -310,6 +330,20 @@ export class MarkdownCollection {
         typeFiles.map(async ({ path }) => ({
           path,
           kind: "type" as const,
+          document: await this.vault.readText(path),
+        })),
+      )),
+      ...(await Promise.all(
+        contractFiles.map(async ({ path }) => ({
+          path,
+          kind: "contract" as const,
+          document: await this.vault.readText(path),
+        })),
+      )),
+      ...(await Promise.all(
+        schemaFiles.map(async ({ path }) => ({
+          path,
+          kind: "schema" as const,
           document: await this.vault.readText(path),
         })),
       )),
@@ -908,17 +942,34 @@ export class MarkdownCollection {
     await this.vault.writeText(configPath, String(document));
   }
 
-  private async readTypesFolder(configPath: string): Promise<string> {
+  private async readDefinitionFolders(
+    configPath: string,
+  ): Promise<{ types: string; contracts: string }> {
     const source = await this.vault.readText(configPath);
     const document = parseDocument(source);
     if (document.errors.length) throw new Error(document.errors[0].message);
     const value = document.toJS() as {
-      settings?: { types_folder?: unknown; typesFolder?: unknown };
+      settings?: {
+        types_folder?: unknown;
+        typesFolder?: unknown;
+        contracts_folder?: unknown;
+        contractsFolder?: unknown;
+      };
     } | null;
-    const configured =
+    const configuredTypes =
       value?.settings?.types_folder ?? value?.settings?.typesFolder;
-    if (typeof configured !== "string" || !configured.trim()) return "_types";
-    return normalizeResourceFolder(configured);
+    const configuredContracts =
+      value?.settings?.contracts_folder ?? value?.settings?.contractsFolder;
+    return {
+      types:
+        typeof configuredTypes === "string" && configuredTypes.trim()
+          ? normalizeResourceFolder(configuredTypes)
+          : "_types",
+      contracts:
+        typeof configuredContracts === "string" && configuredContracts.trim()
+          ? normalizeResourceFolder(configuredContracts)
+          : "_contracts",
+    };
   }
 
   private listTypeFiles(folder: string): Promise<VaultEntry[]> {
@@ -931,9 +982,19 @@ export class MarkdownCollection {
   private isCollectionResource(path: string): boolean {
     const normalized = path.replaceAll("\\", "/").toLocaleLowerCase();
     const typeRoot = `${this.typesFolder.toLocaleLowerCase()}/`;
+    const contractRoot = `${this.contractsFolder.toLocaleLowerCase()}/`;
     return (
       normalized.startsWith(typeRoot) ||
       normalized.includes(`/${typeRoot}`) ||
+      normalized.startsWith(contractRoot) ||
+      normalized.includes(`/${contractRoot}`) ||
+      this.isPrivateResource(normalized)
+    );
+  }
+
+  private isPrivateResource(path: string): boolean {
+    const normalized = path.replaceAll("\\", "/").toLocaleLowerCase();
+    return (
       normalized.startsWith(".mdbase/") ||
       normalized.startsWith("node_modules/")
     );
@@ -1027,6 +1088,36 @@ function explicitRecordTypes(frontmatter: Record<string, unknown>): string[] {
       values.map((value) => value.trim().toLocaleLowerCase()).filter(Boolean),
     ),
   ];
+}
+
+function taskNotesImplementation(
+  type: Record<string, unknown>,
+): Record<string, unknown> {
+  const implementation = Array.isArray(type.implements)
+    ? type.implements.find(
+        (candidate) =>
+          candidate &&
+          typeof candidate === "object" &&
+          !Array.isArray(candidate) &&
+          (candidate as Record<string, unknown>).contract ===
+            "tasknotes.task" &&
+          (candidate as Record<string, unknown>).version === "0.2.0",
+      )
+    : undefined;
+  if (!implementation)
+    throw new Error(
+      "The generated type does not implement tasknotes.task 0.2.0.",
+    );
+  return implementation as Record<string, unknown>;
+}
+
+function hasTaskNotesImplementation(type: Record<string, unknown>): boolean {
+  try {
+    taskNotesImplementation(type);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isMissingPath(reason: unknown): boolean {

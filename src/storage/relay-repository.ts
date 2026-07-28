@@ -67,6 +67,8 @@ import type {
 interface CachedRelayTask {
   task: Task;
   revision?: string;
+  model: TaskNotesTaskModel;
+  typeName: string;
 }
 
 interface ReadableRelayRecord {
@@ -74,6 +76,7 @@ interface ReadableRelayRecord {
   frontmatter?: JsonObject;
   effective_frontmatter?: JsonObject;
   body?: string;
+  types?: string[];
 }
 
 const PAGE_SIZE = 1_000;
@@ -86,6 +89,9 @@ const PAGE_SIZE = 1_000;
 export class RelayTaskRepository implements TaskRepository {
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
+  private taskProviders = new Map<string, TaskNotesTaskModel>([
+    ["task", this.model],
+  ]);
   private displayName = "mdbase collection";
   private readonly cache = new Map<string, CachedRelayTask>();
   private viewCache: TaskViewDocument[] = [];
@@ -380,7 +386,7 @@ export class RelayTaskRepository implements TaskRepository {
     }
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
-      const next = this.model.toggle(current.task, {
+      const next = current.model.toggle(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
       });
@@ -407,7 +413,7 @@ export class RelayTaskRepository implements TaskRepository {
     }
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
-      const next = this.model.skip(current.task, {
+      const next = current.model.skip(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
       });
@@ -425,8 +431,8 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   startTimeTracking(id: string, description?: string): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.startTimeTracking(task, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.startTimeTracking(task, {
         now: new Date().toISOString(),
         description,
       }),
@@ -434,22 +440,22 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   stopTimeTracking(id: string): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.stopTimeTracking(task, { now: new Date().toISOString() }),
+    return this.persistModelMutation(id, (task, model) =>
+      model.stopTimeTracking(task, { now: new Date().toISOString() }),
     );
   }
 
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.replaceTimeEntries(task, entries, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.replaceTimeEntries(task, entries, {
         now: new Date().toISOString(),
       }),
     );
   }
 
   removeTimeEntry(id: string, index: number): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.removeTimeEntry(task, index, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.removeTimeEntry(task, index, {
         now: new Date().toISOString(),
       }),
     );
@@ -458,13 +464,13 @@ export class RelayTaskRepository implements TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
-      const next = this.model.update(
+      const next = current.model.update(
         current.task,
         { archived },
         { now: new Date().toISOString() },
       );
       const updated = await this.persistUpdate(current, next);
-      const destination = this.model.archiveDestination(updated, archived);
+      const destination = current.model.archiveDestination(updated, archived);
       if (!destination) return updated;
       const saved = this.cache.get(id);
       const operationInput = {
@@ -485,7 +491,12 @@ export class RelayTaskRepository implements TaskRepository {
           ...updated,
           operationWarnings: [archiveMoveWarning(reason, archived)],
         };
-        this.cache.set(id, { task: retained, revision: saved?.revision });
+        if (saved)
+          this.cache.set(id, {
+            ...saved,
+            task: retained,
+            revision: saved.revision,
+          });
         this.emit();
         return retained;
       }
@@ -606,8 +617,10 @@ export class RelayTaskRepository implements TaskRepository {
           render: false,
         }),
       ) as ProviderViewExecution;
-      const execution = normalizeViewExecution(view, result, (record) =>
-        this.readRecord(record),
+      const execution = normalizeViewExecution(
+        view,
+        result,
+        (record) => this.readRecord(record)?.task ?? null,
       );
       this.viewExecutionCache.set(viewExecutionKey(view), execution);
       await this.viewStore?.writeExecution(execution).catch(() => undefined);
@@ -719,7 +732,7 @@ export class RelayTaskRepository implements TaskRepository {
     let hasMore = true;
     while (hasMore) {
       const response = await this.connect.query({
-        types: [this.taskTypeName],
+        types: [...this.taskProviders.keys()],
         include_body: true,
         frontmatter_mode: "effective",
         limit: PAGE_SIZE,
@@ -730,13 +743,13 @@ export class RelayTaskRepository implements TaskRepository {
       if (!snapshot && typeof page.meta?.snapshot === "string")
         snapshot = page.meta.snapshot;
       for (const record of page.results) {
-        const task = this.readRecord(record);
-        if (!task) continue;
-        const cached = this.cache.get(task.id);
-        next.set(task.id, {
-          task,
+        const decoded = this.readRecord(record);
+        if (!decoded) continue;
+        const cached = this.cache.get(decoded.task.id);
+        next.set(decoded.task.id, {
+          ...decoded,
           revision:
-            cached && signature(cached.task) === signature(task)
+            cached && signature(cached.task) === signature(decoded.task)
               ? cached.revision
               : undefined,
         });
@@ -770,11 +783,11 @@ export class RelayTaskRepository implements TaskRepository {
       const result = validResult(
         await this.connect.read({ path: cached.task.path }),
       );
-      const task = this.readRecord(result);
-      if (!task) throw new Error("The task is no longer readable.");
-      const current = { task, revision: result.revision };
-      if (task.id !== id) this.cache.delete(id);
-      this.cache.set(task.id, current);
+      const decoded = this.readRecord(result);
+      if (!decoded) throw new Error("The task is no longer readable.");
+      const current = { ...decoded, revision: result.revision };
+      if (decoded.task.id !== id) this.cache.delete(id);
+      this.cache.set(decoded.task.id, current);
       return current;
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -790,6 +803,9 @@ export class RelayTaskRepository implements TaskRepository {
       throw new Error("The connected mdbase collection changed unexpectedly.");
     this.model = resolved.model;
     this.taskTypeName = resolved.typeName;
+    this.taskProviders = new Map(
+      resolved.providers.map((provider) => [provider.typeName, provider.model]),
+    );
     this.displayName = description.display_name;
   }
 
@@ -820,7 +836,7 @@ export class RelayTaskRepository implements TaskRepository {
     input: UpdateTaskInput,
   ): Promise<Task> {
     const current = await this.requireCurrent(id);
-    const next = this.model.update(current.task, input, {
+    const next = current.model.update(current.task, input, {
       now: new Date().toISOString(),
     });
     return this.withRollingWarnings(await this.persistUpdate(current, next));
@@ -828,33 +844,57 @@ export class RelayTaskRepository implements TaskRepository {
 
   private persistModelMutation(
     id: string,
-    mutate: (task: Task) => Task,
+    mutate: (task: Task, model: TaskNotesTaskModel) => Task,
   ): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
-      return this.persistUpdate(current, mutate(current.task));
+      return this.persistUpdate(current, mutate(current.task, current.model));
     });
   }
 
   private storeResult(result: RecordDocument<JsonObject>): Task {
-    const task = this.readRecord(result);
-    if (!task) throw new Error("The saved task could not be read.");
-    this.cache.set(task.id, { task, revision: result.revision });
+    const decoded = this.readRecord(result);
+    if (!decoded) throw new Error("The saved task could not be read.");
+    this.cache.set(decoded.task.id, { ...decoded, revision: result.revision });
     this.setConnected();
     this.emit();
-    return task;
+    return decoded.task;
   }
 
-  private readRecord(record: ReadableRelayRecord): Task | null {
+  private readRecord(
+    record: ReadableRelayRecord,
+  ): Omit<CachedRelayTask, "revision"> | null {
+    const provider = this.providerForTypes(record.types ?? []);
+    if (!provider) return null;
     try {
-      return this.model.read({
-        path: record.path,
-        frontmatter: relayFrontmatter(record),
-        body: record.body ?? "",
-      });
+      return {
+        task: provider.model.read({
+          path: record.path,
+          frontmatter: relayFrontmatter(record),
+          body: record.body ?? "",
+        }),
+        ...provider,
+      };
     } catch {
       return null;
     }
+  }
+
+  private providerForTypes(
+    types: string[],
+  ): { model: TaskNotesTaskModel; typeName: string } | null {
+    const matches = types
+      .map((typeName) => {
+        const model = this.taskProviders.get(typeName);
+        return model ? { model, typeName } : null;
+      })
+      .filter(
+        (
+          provider,
+        ): provider is { model: TaskNotesTaskModel; typeName: string } =>
+          provider !== null,
+      );
+    return matches.length === 1 ? matches[0] : null;
   }
 
   private async materializeOccurrenceUnlocked(
@@ -871,7 +911,7 @@ export class RelayTaskRepository implements TaskRepository {
       occurrenceDate,
     );
     if (resolved) return { task: resolved, created: false, warnings: [] };
-    const result = await this.model.materializeOccurrence(
+    const result = await parent.model.materializeOccurrence(
       parent.task,
       occurrenceDate,
       occurrences,
@@ -888,7 +928,7 @@ export class RelayTaskRepository implements TaskRepository {
     const created = this.reserveAvailableTaskPath(result.task);
     const operationInput = {
       path: created.path,
-      type: this.taskTypeName,
+      type: parent.typeName,
       frontmatter: asJson(created.frontmatter),
       body: created.body,
     };
@@ -902,7 +942,7 @@ export class RelayTaskRepository implements TaskRepository {
         ? { ...saved, operationWarnings: result.warnings }
         : saved;
       const cached = this.cache.get(saved.id);
-      this.cache.set(saved.id, { task, revision: cached?.revision });
+      if (cached) this.cache.set(saved.id, { ...cached, task });
       return { ...result, task };
     } catch (reason) {
       try {
@@ -963,7 +1003,11 @@ export class RelayTaskRepository implements TaskRepository {
       this.requireCurrent(occurrenceId),
       this.requireCurrent(parentId),
     ]);
-    const transition = this.model.transitionMaterializedOccurrence(
+    if (occurrence.typeName !== parent.typeName)
+      throw new Error(
+        "A materialized occurrence and its parent must use the same TaskNotes implementation type.",
+      );
+    const transition = parent.model.transitionMaterializedOccurrence(
       occurrence.task,
       parent.task,
       action,
@@ -996,7 +1040,7 @@ export class RelayTaskRepository implements TaskRepository {
     if (!warnings.length) return savedOccurrence;
     const task = { ...savedOccurrence, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    this.cache.set(task.id, { task, revision: cached?.revision });
+    if (cached) this.cache.set(task.id, { ...cached, task });
     this.emit();
     return task;
   }
@@ -1008,7 +1052,7 @@ export class RelayTaskRepository implements TaskRepository {
     if (!warnings.length) return task;
     const retained = { ...task, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    this.cache.set(task.id, { task: retained, revision: cached?.revision });
+    if (cached) this.cache.set(task.id, { ...cached, task: retained });
     this.emit();
     return retained;
   }

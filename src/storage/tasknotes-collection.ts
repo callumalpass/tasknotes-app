@@ -14,29 +14,42 @@ export interface TaskCollectionResources {
 export interface ResolvedTaskCollection {
   model: TaskNotesTaskModel;
   typeName: string;
+  providers: ResolvedTaskProvider[];
+}
+
+export interface ResolvedTaskProvider {
+  model: TaskNotesTaskModel;
+  typeName: string;
 }
 
 export function resolveTaskCollection(
   resources: TaskCollectionResources,
 ): ResolvedTaskCollection {
   const contract = resources.contracts.find(
-    (candidate) => candidate.id === "tasknotes.task",
+    (candidate) =>
+      candidate.id === "tasknotes.task" && candidate.version === "0.2.0",
   );
   if (!contract)
-    throw new Error("This collection does not provide TaskNotes tasks.");
-  const type = resources.types.find(
-    (candidate) => candidate.name === contract.type_name,
-  );
-  if (!type)
-    throw new Error("The TaskNotes task type is missing from this collection.");
-
-  return resolveTaskTypeDefinition(type.definition ?? {}, {
-    typeName: contract.type_name,
-    schema: type.schema,
-    fields: type.definition?.fields as JsonObject | undefined,
-    collection: type.collection,
-    configuration: contract.configuration,
+    throw new Error("This collection does not provide tasknotes.task 0.2.0.");
+  const providers = contract.implementations.map((implementation) => {
+    const type = resources.types.find(
+      (candidate) => candidate.name === implementation.type_name,
+    );
+    if (!type)
+      throw new Error(
+        `The TaskNotes implementation type "${implementation.type_name}" is missing.`,
+      );
+    return resolveTaskTypeDefinition(type.definition ?? {}, {
+      typeName: implementation.type_name,
+      schema: type.schema,
+      fields: implementation.fields,
+      collection: type.collection,
+      configuration: implementation.binding,
+    });
   });
+  if (!providers.length)
+    throw new Error("The TaskNotes contract has no implementing types.");
+  return { ...providers[0], providers };
 }
 
 export function resolveTaskTypeDefinition(
@@ -48,11 +61,21 @@ export function resolveTaskTypeDefinition(
     collection?: JsonObject;
     configuration?: JsonObject;
   } = {},
-): ResolvedTaskCollection {
+): ResolvedTaskProvider {
   const configuration =
-    overrides.configuration ??
-    (definition["x-tasknotes"] as JsonObject | undefined);
-  if (configuration?.contract !== "tasknotes.task")
+    overrides.configuration ?? taskNotesImplementation(definition)?.binding;
+  const fields =
+    overrides.fields ?? taskNotesImplementation(definition)?.fields;
+  const implementation = {
+    contract: "tasknotes.task",
+    version: "0.2.0",
+    fields: fields ?? {},
+    binding: configuration ?? {},
+  };
+  if (
+    overrides.configuration === undefined &&
+    !taskNotesImplementation(definition)
+  )
     throw new Error("This type does not provide the TaskNotes task contract.");
   const schema =
     overrides.schema ??
@@ -70,9 +93,10 @@ export function resolveTaskTypeDefinition(
     typeName,
     model: new TaskNotesTaskModel(
       resolveTaskCollectionConfiguration({
+        ...definition,
         schema: { value: schema },
-        fields: overrides.fields ?? definition.fields,
-        "x-tasknotes": configuration,
+        collection,
+        implements: [implementation],
       }),
       {
         typeName,
@@ -83,6 +107,29 @@ export function resolveTaskTypeDefinition(
       },
     ),
   };
+}
+
+function taskNotesImplementation(
+  definition: Record<string, unknown>,
+): { fields?: JsonObject; binding?: JsonObject } | undefined {
+  const implementations = Array.isArray(definition.implements)
+    ? definition.implements
+    : [];
+  return implementations.find(
+    (
+      candidate,
+    ): candidate is {
+      contract: string;
+      version: string;
+      fields?: JsonObject;
+      binding?: JsonObject;
+    } =>
+      candidate !== null &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (candidate as Record<string, unknown>).contract === "tasknotes.task" &&
+      (candidate as Record<string, unknown>).version === "0.2.0",
+  );
 }
 
 function pathPattern(collection: JsonObject | undefined): string | undefined {

@@ -148,6 +148,13 @@ During approval, the generic Connect portal provisions that app-owned type into
 the selected hosted collection, so Connect itself contains no TaskNotes
 knowledge.
 
+The manifest deliberately requests `full_collection` access as well as naming
+the contract. The contract tells TaskNotes which types it can understand and
+how their fields map to the portable task model; it is not an authorization
+shortcut. TaskNotes also edits Markdown bodies, stores saved views, and keeps a
+complete durable offline replica. Contract-scoped access excludes bodies and
+fields outside the contract, so it is too narrow for those product features.
+
 After token exchange, the mdbase client supplies a credential-owning sync
 transport to `OfflineReplica`. First open downloads collection resources and a
 snapshot. Later opens load the persistent IndexedDB replica immediately and

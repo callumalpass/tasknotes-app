@@ -15,8 +15,62 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { CloudTaskRepository } from "./cloud-repository";
 import { createConnectTaskRepository } from "./connect-repository";
 import { RelayTaskRepository } from "./relay-repository";
+import { resolveTaskCollection } from "./tasknotes-collection";
 
 describe("relay task repository", () => {
+  it("unions multiple providers and preserves each provider's field mapping on update", async () => {
+    const collection = multipleProviderDescription();
+    const workId = "11111111-1111-4111-8111-111111111111";
+    const workProvider = resolveTaskCollection(collection).providers.find(
+      ({ typeName }) => typeName === "work_task",
+    )!;
+    const workTask = workProvider.model.create(
+      { title: "Mapped work task" },
+      { id: workId, now: "2026-07-22T00:00:00.000Z" },
+    );
+    const fixture = relayFixture(
+      [
+        taskRecord("personal-one", "Personal task", "r1"),
+        {
+          path: workTask.path,
+          frontmatter: structuredClone(workTask.frontmatter) as JsonObject,
+          body: workTask.body,
+          types: ["work_task"],
+          revision: "r2",
+        },
+      ],
+      false,
+      false,
+      collection.collection_id as ReturnType<typeof crypto.randomUUID>,
+    );
+    fixture.describe.mockResolvedValue(collection);
+    const repository = new RelayTaskRepository(fixture.connect);
+
+    await repository.initialize();
+    expect((await repository.list()).map(({ title }) => title).sort()).toEqual([
+      "Mapped work task",
+      "Personal task",
+    ]);
+
+    const updated = await repository.update(workId, {
+      title: "Mapped work task updated",
+    });
+    expect(updated.title).toBe("Mapped work task updated");
+    expect(fixture.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        patch: expect.objectContaining({ summary: "Mapped work task updated" }),
+      }),
+    );
+    expect(fixture.update.mock.calls.at(-1)?.[0].patch).not.toHaveProperty(
+      "title",
+    );
+
+    await repository.create({ title: "Created deterministically" });
+    expect(fixture.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "task" }),
+    );
+  });
+
   it("loads canonical effective-frontmatter query rows", async () => {
     const fixture = relayFixture([
       taskRecord("canonical", "Visible canonical task", "r1"),
@@ -240,7 +294,12 @@ describe("relay task repository", () => {
       name: "todo",
       collection: { path: { pattern: "canonical/{id}.md" } },
     };
-    next.contracts[0] = { ...next.contracts[0], type_name: "todo" };
+    next.contracts[0] = {
+      ...next.contracts[0],
+      implementations: next.contracts[0].implementations.map(
+        (implementation) => ({ ...implementation, type_name: "todo" }),
+      ),
+    };
     fixture.describe.mockResolvedValueOnce(next);
 
     await repository.refresh();
@@ -262,7 +321,9 @@ describe("relay task repository", () => {
     const repository = new RelayTaskRepository(fixture.connect);
     await repository.initialize();
     const next = description(false, false, collectionId);
-    const configuration = structuredClone(next.contracts[0]!.configuration);
+    const configuration = structuredClone(
+      next.contracts[0]!.implementations[0].binding!,
+    );
     configuration.title = {
       storage: "frontmatter",
       filename_format: "custom",
@@ -271,11 +332,27 @@ describe("relay task repository", () => {
     next.types[0] = {
       ...next.types[0]!,
       collection: {},
-      extensions: { "x-tasknotes": configuration },
+      definition: {
+        ...next.types[0]!.definition,
+        implements: [
+          {
+            contract: "tasknotes.task",
+            version: "0.2.0",
+            fields: next.contracts[0]!.implementations[0].fields,
+            binding: configuration,
+          },
+        ],
+      },
+      extensions: {},
     };
     next.contracts[0] = {
       ...next.contracts[0]!,
-      configuration,
+      implementations: [
+        {
+          ...next.contracts[0]!.implementations[0],
+          binding: configuration,
+        },
+      ],
     };
     fixture.describe.mockResolvedValueOnce(next);
 
@@ -969,9 +1046,18 @@ function description(
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
     collection?: JsonObject;
-    "x-tasknotes": JsonObject;
+    implements: Array<{
+      contract: string;
+      version: string;
+      fields: Record<string, string>;
+      binding: JsonObject;
+    }>;
   };
-  const configuration = structuredClone(type["x-tasknotes"]);
+  const implementation = type.implements.find(
+    (candidate) =>
+      candidate.contract === "tasknotes.task" && candidate.version === "0.2.0",
+  )!;
+  const configuration = structuredClone(implementation.binding);
   if (templating)
     configuration.templating = {
       enabled: true,
@@ -1011,19 +1097,73 @@ function description(
         version: 1,
         schema: type.schema.value,
         collection: type.collection,
-        extensions: { "x-tasknotes": configuration },
+        definition: generated.type,
+        extensions: {},
       },
     ],
     contracts: [
       {
         id: "tasknotes.task",
-        version: 1,
-        type_name: "task",
-        extension: "x-tasknotes",
-        configuration,
+        version: "0.2.0",
+        digest: `sha256:${"0".repeat(64)}`,
+        schema: generated.taskSchema,
+        binding_schema: generated.bindingSchema,
+        implementations: [
+          {
+            type_name: "task",
+            type_version: 1,
+            digest: `sha256:${"1".repeat(64)}`,
+            fields: implementation.fields,
+            binding: configuration,
+          },
+        ],
       },
     ],
   };
+}
+
+function multipleProviderDescription(): CollectionDescription {
+  const result = description(false, false, crypto.randomUUID());
+  const taskType = result.types[0]!;
+  const taskImplementation = result.contracts[0]!.implementations[0]!;
+  const schema = structuredClone(taskType.schema) as Record<string, unknown>;
+  const properties = schema.properties as Record<string, unknown>;
+  properties.summary = properties.title;
+  delete properties.title;
+  if (Array.isArray(schema.required)) {
+    schema.required = schema.required.map((field) =>
+      field === "title" ? "summary" : field,
+    );
+  }
+  const definition = structuredClone(taskType.definition ?? {}) as Record<
+    string,
+    unknown
+  >;
+  definition.name = "work_task";
+  definition.schema = {
+    dialect: "json-schema-2020-12",
+    value: schema,
+  };
+  result.types.push({
+    ...taskType,
+    name: "work_task",
+    schema: schema as JsonObject,
+    collection: {
+      ...(taskType.collection ?? {}),
+      path: { pattern: "work-tasks/{id}.md" },
+    },
+    definition,
+  });
+  result.contracts[0]!.implementations.push({
+    ...taskImplementation,
+    type_name: "work_task",
+    digest: `sha256:${"2".repeat(64)}`,
+    fields: {
+      ...taskImplementation.fields,
+      title: "summary",
+    },
+  });
+  return result;
 }
 
 function valid<Result>(result: Result): MdbaseOperationEnvelope<Result> {

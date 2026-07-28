@@ -88,7 +88,22 @@ function token(collectionId: string, collectionName: string) {
     collectionName,
     operations: ["describe", "read", "query"],
     scope: {
-      contracts: [{ id: "tasknotes.task", version: 1 }],
+      contracts: [
+        {
+          id: "tasknotes.task",
+          version: "0.2.0",
+          digest: `sha256:${"0".repeat(64)}`,
+          schema: {},
+          implementations: [
+            {
+              type_name: "task",
+              type_version: 1,
+              digest: `sha256:${"1".repeat(64)}`,
+              fields: { title: "title" },
+            },
+          ],
+        },
+      ],
       access: "full_collection",
     },
     expiresAt: Date.now() + 60_000,

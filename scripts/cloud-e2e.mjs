@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { Collection, installTypePack } from "@callumalpass/mdbase";
 import { chromium, expect } from "@playwright/test";
 import { parse } from "yaml";
 
@@ -605,7 +608,7 @@ async function startMemoryProvider() {
       /^\/internal\/v1\/collections\/([^/]+)$/,
     );
     const provision = requestUrl.pathname.match(
-      /^\/internal\/v1\/collections\/([^/]+)\/types\/provision$/,
+      /^\/internal\/v1\/collections\/([^/]+)\/type-packs\/provision$/,
     );
     const collectionReplicas = requestUrl.pathname.match(
       /^\/internal\/v1\/collections\/([^/]+)\/replicas$/,
@@ -699,7 +702,10 @@ async function startMemoryProvider() {
       sendEmpty(response);
     } else if (provision && method === "POST") {
       const input = await requestJson(request);
-      const contracts = await client.provisionTypes(provision[1], input.types);
+      const contracts = await client.provisionTypePacks(
+        provision[1],
+        input.type_packs,
+      );
       send(response, 200, { contracts });
     } else if (collectionReplicas && method === "POST") {
       const input = await requestJson(request);
@@ -807,7 +813,7 @@ async function startMemoryProvider() {
           "authority_import_incomplete",
           "Import is incomplete.",
         );
-      const resources = importedResources(imported.manifest.resources);
+      const resources = await importedResources(imported.manifest.resources);
       const authority = new MemoryAuthority({
         id: imported.collectionId,
         resources,
@@ -864,17 +870,25 @@ async function startMemoryProvider() {
     deleteCollection: async (collectionId) => {
       collections.delete(collectionId);
     },
-    provisionTypes: async (collectionId, provisions) => {
+    provisionTypePacks: async (collectionId, provisions) => {
       const collection = collections.get(collectionId);
       if (!collection) throw new Error("Collection not found");
-      const resources = provisionedResources(
+      const resources = await provisionedResources(
         collection.authority.serialize().resources,
         provisions,
       );
-      collection.authority = new MemoryAuthority({
-        id: collectionId,
-        resources,
-      });
+      const previous = collection.authority;
+      collection.authority = MemoryAuthority.restore(
+        {
+          ...previous.serialize(),
+          resources,
+        },
+        {
+          id: collectionId,
+          resources,
+        },
+        previous,
+      );
       return resources.contracts;
     },
     registerReplica: async (collectionId, replica) => {
@@ -1068,60 +1082,124 @@ function markdownFrontmatter(document) {
   return parse(match[1]);
 }
 
-function provisionedResources(resources, provisions) {
-  const types = [...(resources?.types ?? [])];
-  const contracts = [...(resources?.contracts ?? [])];
-  const documents = [...(resources?.documents ?? [])];
-  for (const provision of provisions) {
-    const definition = markdownFrontmatter(provision.document);
-    const extensions = Object.fromEntries(
-      Object.entries(definition).filter(
-        ([key, value]) =>
-          key.startsWith("x-") &&
-          value !== null &&
-          typeof value === "object" &&
-          !Array.isArray(value),
-      ),
+async function provisionedResources(resources, provisions) {
+  const root = await mkdtemp(join(tmpdir(), "tasknotes-type-packs-"));
+  try {
+    await writeFile(
+      join(root, "mdbase.yaml"),
+      "spec_version: 0.3.0\nsettings:\n  validation: error\n",
     );
-    const typeName = definition.name ?? provision.name;
-    types.push({
-      name: typeName,
-      version: definition.version ?? 1,
-      schema: definition.schema?.value ?? {},
-      collection: definition.collection,
-      definition,
-      extensions,
-    });
-    documents.push({
-      path: provision.path,
-      kind: "type",
-      revision: crypto.randomUUID(),
-      document: provision.document,
-    });
-    for (const provided of provision.provides) {
-      const match = Object.entries(extensions).find(
-        ([, value]) => value.contract === provided.id,
-      );
-      if (!match)
-        throw new Error(
-          `Provisioned type ${typeName} does not define ${provided.id}.`,
-        );
-      contracts.push({
-        id: provided.id,
-        version: provided.version,
-        type_name: typeName,
-        extension: match[0],
-        configuration: match[1],
-      });
+    const documents = new Map(
+      (resources?.documents ?? [])
+        .filter(({ kind }) => ["contract", "schema", "type"].includes(kind))
+        .map((document) => [document.path, document]),
+    );
+    for (const document of documents.values()) {
+      const target = join(root, document.path);
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, document.document);
     }
+    for (const provision of provisions) {
+      const installed = await installTypePack(
+        root,
+        provision.manifest,
+        provision.resources,
+      );
+      if (!installed.valid) {
+        throw new Error(
+          installed.diagnostics
+            .map((diagnostic) => diagnostic.message)
+            .join("; "),
+        );
+      }
+      const sources = new Map(
+        provision.resources.map((resource) => [
+          resource.source,
+          resource.document,
+        ]),
+      );
+      for (const resource of provision.manifest.resources) {
+        documents.set(resource.target, {
+          path: resource.target,
+          kind: resource.kind,
+          revision: resource.digest,
+          document: sources.get(resource.source),
+        });
+      }
+    }
+
+    const opened = await Collection.open(root);
+    if (!opened.collection || opened.error) {
+      throw new Error(
+        opened.error?.message ?? "Provisioned collection did not open.",
+      );
+    }
+    try {
+      const types = [...documents.values()]
+        .filter(({ kind }) => kind === "type")
+        .map(({ document }) => {
+          const definition = markdownFrontmatter(document);
+          return {
+            name: definition.name,
+            version: definition.version ?? 1,
+            schema: definition.schema?.value ?? {},
+            collection: definition.collection,
+            definition,
+            extensions: Object.fromEntries(
+              Object.entries(definition).filter(
+                ([key, value]) =>
+                  key.startsWith("x-") &&
+                  value !== null &&
+                  typeof value === "object" &&
+                  !Array.isArray(value),
+              ),
+            ),
+          };
+        })
+        .sort((left, right) => left.name.localeCompare(right.name));
+      const contracts = opened.collection
+        .listDataContracts()
+        .map((contract) => ({
+          id: contract.id,
+          version: contract.version,
+          digest: contract.digest,
+          schema: contract.schema.value,
+          ...(contract.binding_schema
+            ? { binding_schema: contract.binding_schema.value }
+            : {}),
+          implementations: opened.collection
+            .getDataContractImplementations(contract.id, contract.version)
+            .map((implementation) => ({
+              type_name: implementation.type,
+              type_version: implementation.type_version,
+              ...(implementation.source_path
+                ? { type_path: implementation.source_path }
+                : {}),
+              digest: implementation.implementation_digest,
+              fields: implementation.fields,
+              ...(implementation.binding
+                ? { binding: implementation.binding }
+                : {}),
+            })),
+        }));
+      return {
+        revision: crypto.randomUUID(),
+        spec_version: resources?.spec_version ?? "0.3.0",
+        types,
+        contracts,
+        documents: [
+          ...(resources?.documents ?? []).filter(
+            ({ kind }) => !["contract", "schema", "type"].includes(kind),
+          ),
+          ...documents.values(),
+        ],
+      };
+    } finally {
+      await opened.collection.close();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
-  return {
-    revision: crypto.randomUUID(),
-    spec_version: resources?.spec_version ?? "0.3.0",
-    types,
-    contracts,
-    documents,
-  };
 }
 
 function authorityImportView(imported) {
@@ -1139,49 +1217,7 @@ function authorityImportView(imported) {
 }
 
 function importedResources(resources) {
-  const types = [];
-  const contracts = [];
-  for (const resource of resources.documents ?? []) {
-    if (resource.kind !== "type") continue;
-    const definition = markdownFrontmatter(resource.document);
-    const extensions = Object.fromEntries(
-      Object.entries(definition).filter(
-        ([key, value]) =>
-          key.startsWith("x-") &&
-          value !== null &&
-          typeof value === "object" &&
-          !Array.isArray(value),
-      ),
-    );
-    types.push({
-      name: definition.name,
-      version: definition.version,
-      path: resource.path,
-      schema: definition.schema?.value ?? {},
-      collection: definition.collection,
-      definition,
-      extensions,
-    });
-    for (const [extension, configuration] of Object.entries(extensions)) {
-      if (
-        typeof configuration.contract === "string" &&
-        Number.isSafeInteger(configuration.version)
-      ) {
-        contracts.push({
-          id: configuration.contract,
-          version: configuration.version,
-          type_name: definition.name,
-          extension,
-          configuration,
-        });
-      }
-    }
-  }
-  return {
-    ...resources,
-    types,
-    contracts,
-  };
+  return provisionedResources(resources, []);
 }
 
 function markdownDocument(document) {

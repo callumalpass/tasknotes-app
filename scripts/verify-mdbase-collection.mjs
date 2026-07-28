@@ -10,7 +10,14 @@ const root = await mkdtemp(path.join(tmpdir(), "tasknotes-app-mdbase-"));
 try {
   const resources = buildAppTaskNotesResources();
   await write(root, resources.paths.config, resources.configDocument);
+  await write(root, resources.paths.contract, resources.contractDocument);
   await write(root, resources.paths.type, resources.typeDocument);
+  await write(root, resources.paths.taskSchema, resources.taskSchemaDocument);
+  await write(
+    root,
+    resources.paths.bindingSchema,
+    resources.bindingSchemaDocument,
+  );
 
   const opened = await Collection.open(root);
   assert.equal(opened.error, undefined, opened.error?.message);

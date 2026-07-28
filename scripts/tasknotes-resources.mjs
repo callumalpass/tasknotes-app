@@ -21,8 +21,16 @@ export function buildAppTaskNotesResources() {
     modelConfig,
   });
   const type = structuredClone(resources.type);
-  const extension = type["x-tasknotes"];
-  const sortOrderField = extension.field_roles.sortOrder;
+  const implementation = type.implements.find(
+    (candidate) =>
+      candidate.contract === "tasknotes.task" && candidate.version === "0.2.0",
+  );
+  if (!implementation)
+    throw new Error(
+      "The generated type does not implement tasknotes.task 0.2.0.",
+    );
+  const extension = implementation.binding;
+  const sortOrderField = implementation.fields.sortOrder;
   type.schema.value.properties[sortOrderField] = { type: "string" };
   extension.status = {
     ...extension.status,
@@ -30,6 +38,7 @@ export function buildAppTaskNotesResources() {
     default_skipped: "cancelled",
   };
   extension.occurrences = {
+    ...extension.occurrences,
     default_materialization: modelConfig.occurrences.defaultMaterialization,
     default_next_trigger: modelConfig.occurrences.defaultNextTrigger,
     past_horizon: modelConfig.occurrences.pastHorizon,

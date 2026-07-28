@@ -46,9 +46,9 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.8-ee557be875fc.tgz",
-    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-ee557be875fc.tgz",
-    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.8-ee557be875fc.tgz",
+    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.9.tgz",
+    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.9.tgz",
+    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.9.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.3.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
@@ -63,7 +63,7 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.1.tgz",
+    "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.2.tgz",
     "@capacitor/android": "8.4.2",
     "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",
@@ -91,7 +91,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.8-ee557be875fc.tgz"
+      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.9.tgz"
     }
   }
 }

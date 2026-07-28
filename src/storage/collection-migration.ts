@@ -10,8 +10,9 @@ export function upgradeManagedTaskType(
   const schema = record(source.schema);
   const value = record(schema.value);
   const properties = record(value.properties);
-  const extension = record(source["x-tasknotes"]);
-  const roles = record(extension.field_roles);
+  const implementation = taskNotesImplementation(source);
+  const extension = record(implementation.binding);
+  const roles = record(implementation.fields);
   const completedField = stringValue(roles.completedDate) ?? "completedDate";
   const statusField = stringValue(roles.status) ?? "status";
   const recurrenceField = stringValue(roles.recurrence) ?? "recurrence";
@@ -19,7 +20,8 @@ export function upgradeManagedTaskType(
   const managed =
     source.description === "A TaskNotes-compatible task." &&
     record(properties.mobileRevision).type === "integer" &&
-    extension.contract === "tasknotes.task";
+    implementation.contract === "tasknotes.task" &&
+    implementation.version === "0.2.0";
   if (!managed) {
     return { changed: false, frontmatter: source, completedField };
   }
@@ -81,7 +83,8 @@ function upgradeOccurrenceContract(
   source: Record<string, unknown>,
   statusField: string,
 ): { changed: boolean; frontmatter: Record<string, unknown> } {
-  const extension = record(source["x-tasknotes"]);
+  const implementation = taskNotesImplementation(source);
+  const extension = record(implementation.binding);
   const status = record(extension.status);
   const values = stringList(status.values);
   const usesAppDefaults =
@@ -123,23 +126,64 @@ function upgradeOccurrenceContract(
         properties: { ...properties, [statusField]: nextStatusProperty },
       },
     },
-    "x-tasknotes": {
-      ...extension,
-      profiles: nextProfiles,
-      status: nextStatus,
-      occurrences: {
-        default_materialization: "manual",
-        default_next_trigger: "completion",
-        past_horizon: "P0D",
-        future_horizon: "P14D",
-        ...record(extension.occurrences),
+    implements: replaceTaskNotesImplementation(source.implements, {
+      ...implementation,
+      fields: record(implementation.fields),
+      binding: {
+        ...extension,
+        profiles: nextProfiles,
+        status: nextStatus,
+        occurrences: {
+          default_materialization: "manual",
+          default_next_trigger: "completion",
+          past_horizon: "P0D",
+          future_horizon: "P14D",
+          ...record(extension.occurrences),
+          identity_roles: ["recurrenceParent", "occurrenceDate"],
+        },
       },
-    },
+    }),
   };
   return {
     changed: JSON.stringify(frontmatter) !== JSON.stringify(source),
     frontmatter,
   };
+}
+
+function taskNotesImplementation(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const implementations = Array.isArray(value.implements)
+    ? value.implements
+    : [];
+  return (
+    implementations
+      .map(record)
+      .find(
+        (implementation) =>
+          implementation.contract === "tasknotes.task" &&
+          implementation.version === "0.2.0",
+      ) ?? {}
+  );
+}
+
+function replaceTaskNotesImplementation(
+  value: unknown,
+  replacement: Record<string, unknown>,
+): Record<string, unknown>[] {
+  const implementations = Array.isArray(value) ? value.map(record) : [];
+  let replaced = false;
+  const next = implementations.map((implementation) => {
+    if (
+      implementation.contract !== "tasknotes.task" ||
+      implementation.version !== "0.2.0"
+    )
+      return implementation;
+    replaced = true;
+    return replacement;
+  });
+  if (!replaced) next.push(replacement);
+  return next;
 }
 
 export function upgradeManagedTaskDocument(

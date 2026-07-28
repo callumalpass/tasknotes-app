@@ -3,14 +3,11 @@ import { describe, expect, it } from "vitest";
 import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
-const resources = {
-  paths: { type: ".mdbase/types/task.md" },
-  typeDocument: "---\nkind: mdbase.type\n---\n",
-};
+const resources = buildAppTaskNotesResources();
 
 describe("TaskNotes mdbase manifest", () => {
-  it("declares content-free runtime criteria without requiring Firebase", () => {
-    const manifest = buildTaskNotesManifest({
+  it("declares content-free runtime criteria without requiring Firebase", async () => {
+    const manifest = await buildTaskNotesManifest({
       appUrl: "https://tasks.example",
       webOnly: true,
       resources,
@@ -30,10 +27,16 @@ describe("TaskNotes mdbase manifest", () => {
     ]);
     expect(manifest.notifications.native_delivery).toBeUndefined();
     expect(JSON.stringify(manifest.notifications)).not.toContain("path");
+    expect(manifest.requirements.contracts).toEqual([
+      { id: "tasknotes.task", version: "0.2.0" },
+    ]);
+    expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
+      4,
+    );
   });
 
-  it("adds only the public Firebase project ID when configured", () => {
-    const manifest = buildTaskNotesManifest({
+  it("adds only the public Firebase project ID when configured", async () => {
+    const manifest = await buildTaskNotesManifest({
       appUrl: "https://tasks.example",
       webOnly: false,
       firebaseProjectId: "tasknotes-production",
@@ -50,7 +53,12 @@ describe("TaskNotes mdbase manifest", () => {
 
   it("provisions TaskNotes-compatible string ranks for manual order", () => {
     const generated = buildAppTaskNotesResources();
-    const field = generated.type["x-tasknotes"].field_roles.sortOrder;
+    const implementation = generated.type.implements.find(
+      (candidate) =>
+        candidate.contract === "tasknotes.task" &&
+        candidate.version === "0.2.0",
+    );
+    const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
       type: "string",
     });
