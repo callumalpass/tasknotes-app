@@ -6,8 +6,10 @@ export interface CollectionGateContextValue {
   canChooseLocalFolder: boolean;
   choice: CollectionChoice;
   choose(choice: CollectionChoice): void;
+  authorizeAnotherCloudCollection(): void;
   changeConnectedCollection(): void;
   changeLocalCollection(): void;
+  reauthorizeCurrentCloudCollection(): void;
 }
 
 export const CollectionGateContext =

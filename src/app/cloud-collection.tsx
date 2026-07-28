@@ -15,18 +15,22 @@ import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
+  authorizeAnotherCloudCollection,
   authorizationError,
   canChooseLocalFolder,
   changeLocalCollection,
   choose,
   openCollectionPicker,
+  reauthorizeCurrentCloudCollection,
   reset,
 }: {
+  authorizeAnotherCloudCollection(): void;
   authorizationError: string | null;
   canChooseLocalFolder: boolean;
   changeLocalCollection(): void;
   choose(choice: CollectionChoice): void;
   openCollectionPicker(): void;
+  reauthorizeCurrentCloudCollection(): void;
   reset(): void;
 }) {
   const [opened, setOpened] = useState(() => {
@@ -59,12 +63,14 @@ export default function CloudCollection({
 
   return (
     <OpenedCollection
+      authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
       canChooseLocalFolder={canChooseLocalFolder}
       changeConnectedCollection={openCollectionPicker}
       changeLocalCollection={changeLocalCollection}
       choice="cloud"
       choose={choose}
       key={opened.collectionId}
+      reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
       repository={opened.repository}
     />
   );
