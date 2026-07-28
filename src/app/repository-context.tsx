@@ -21,6 +21,7 @@ import {
   reconcileTaskNotifications,
   removeTaskNotifications,
   syncTaskNotifications,
+  taskUpdateAffectsNotifications,
   type ReminderAuthority,
 } from "../native/notifications";
 
@@ -60,6 +61,9 @@ interface RepositoryContextValue {
   configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
+  updateTasks(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+  ): Promise<Task[]>;
   toggleTask(id: string, occurrenceDate?: string): Promise<Task>;
   skipTask(id: string, occurrenceDate: string): Promise<Task>;
   materializeOccurrence(
@@ -290,13 +294,40 @@ export function RepositoryProvider({
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
-      await autoArchiveRef.current?.observe(task);
+      if (taskUpdateAffectsAutoArchive(input))
+        await autoArchiveRef.current?.observe(task);
       publishMutation();
-      if (reminderAuthority === "connect")
+      if (
+        reminderAuthority === "connect" &&
+        taskUpdateAffectsNotifications(input)
+      )
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
+    },
+    [publishMutation, reminderAuthority, repository],
+  );
+  const updateTasks = useCallback(
+    async (updates: readonly { id: string; input: UpdateTaskInput }[]) => {
+      if (!updates.length) return [];
+      const tasks = repository.updateMany
+        ? await repository.updateMany(updates)
+        : await sequentialTaskUpdates(repository, updates);
+      for (let index = 0; index < tasks.length; index += 1)
+        if (taskUpdateAffectsAutoArchive(updates[index]!.input))
+          await autoArchiveRef.current?.observe(tasks[index]!);
+      publishMutation();
+      if (
+        reminderAuthority === "connect" &&
+        updates.some(({ input }) => taskUpdateAffectsNotifications(input))
+      )
+        void syncTaskNotifications(
+          repository,
+          tasks.at(-1)!,
+          reminderAuthority,
+        ).catch(() => undefined);
+      return tasks;
     },
     [publishMutation, reminderAuthority, repository],
   );
@@ -439,6 +470,7 @@ export function RepositoryProvider({
       configuration,
       createTask,
       updateTask,
+      updateTasks,
       toggleTask,
       skipTask,
       materializeOccurrence,
@@ -465,6 +497,7 @@ export function RepositoryProvider({
       configuration,
       createTask,
       updateTask,
+      updateTasks,
       toggleTask,
       skipTask,
       materializeOccurrence,
@@ -637,6 +670,22 @@ export function useCollectionSummary(): {
 
 function asError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
+}
+
+async function sequentialTaskUpdates(
+  repository: TaskRepository,
+  updates: readonly { id: string; input: UpdateTaskInput }[],
+): Promise<Task[]> {
+  const tasks: Task[] = [];
+  for (const { id, input } of updates)
+    tasks.push(await repository.update(id, input));
+  return tasks;
+}
+
+function taskUpdateAffectsAutoArchive(input: UpdateTaskInput): boolean {
+  return ["archived", "completed", "status"].some((property) =>
+    Object.hasOwn(input, property),
+  );
 }
 
 function emptyTaskRelationships(): TaskRelationships {

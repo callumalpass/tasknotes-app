@@ -1,10 +1,11 @@
-import type {
-  CollectionDescription,
-  JsonObject,
-  MdbaseConnection,
-  MdbaseOperationEnvelope,
-  QueryRecord,
-  QueryResult,
+import {
+  MdbaseConnectError,
+  type CollectionDescription,
+  type JsonObject,
+  type MdbaseConnection,
+  type MdbaseOperationEnvelope,
+  type QueryRecord,
+  type QueryResult,
 } from "@mdbase/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
@@ -121,6 +122,111 @@ describe("relay task repository", () => {
       state: "synced",
       pending: 0,
     });
+  });
+
+  it("serializes writes to different tasks across the live connection", async () => {
+    const fixture = relayFixture([
+      taskRecord("first", "First task", "r1"),
+      taskRecord("second", "Second task", "r2"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const releaseFirst = deferred<void>();
+    const persist = fixture.update.getMockImplementation()!;
+    fixture.update.mockImplementationOnce(async (input) => {
+      await releaseFirst.promise;
+      return persist(input);
+    });
+
+    const first = repository.update("first", { title: "First moved" });
+    await vi.waitFor(() => expect(fixture.update).toHaveBeenCalledTimes(1));
+    const second = repository.update("second", { title: "Second moved" });
+    await Promise.resolve();
+
+    expect(fixture.update).toHaveBeenCalledTimes(1);
+    releaseFirst.resolve();
+    await expect(Promise.all([first, second])).resolves.toMatchObject([
+      { title: "First moved" },
+      { title: "Second moved" },
+    ]);
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("publishes one repository change for a 200-task manual-order rewrite", async () => {
+    const records = Array.from({ length: 200 }, (_, index) =>
+      taskRecord(`task-${index}`, `Manual task ${index}`, `r${index + 1}`),
+    );
+    const fixture = relayFixture(records);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const listener = vi.fn();
+    repository.subscribe(listener);
+
+    const tasks = await repository.updateMany(
+      records.map((record, index) => ({
+        id: String(record.frontmatter.id),
+        input: {
+          sortOrder: `tn${String(index).padStart(10, "a")}`,
+        },
+      })),
+    );
+
+    expect(tasks).toHaveLength(200);
+    expect(fixture.update).toHaveBeenCalledTimes(200);
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("retries an unknown live write with the exact same provider input", async () => {
+    const fixture = relayFixture([
+      taskRecord("existing", "Original title", "r1"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const persist = fixture.update.getMockImplementation()!;
+    fixture.update
+      .mockRejectedValueOnce(unknownOutcome())
+      .mockImplementationOnce(persist);
+
+    await expect(
+      repository.update("existing", { title: "Recovered title" }),
+    ).resolves.toMatchObject({ title: "Recovered title" });
+
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+    expect(fixture.update.mock.calls[1]![0]).toBe(
+      fixture.update.mock.calls[0]![0],
+    );
+  });
+
+  it("recovers a pending live write before sending a later task change", async () => {
+    const fixture = relayFixture([
+      taskRecord("first", "First task", "r1"),
+      taskRecord("second", "Second task", "r2"),
+    ]);
+    const repository = new RelayTaskRepository(fixture.connect);
+    await repository.initialize();
+    const persist = fixture.update.getMockImplementation()!;
+    fixture.update
+      .mockRejectedValueOnce(unknownOutcome())
+      .mockRejectedValueOnce(unknownOutcome())
+      .mockImplementation(persist);
+
+    await expect(
+      repository.update("first", { title: "First recovered" }),
+    ).rejects.toMatchObject({ code: "direct_outcome_unknown" });
+    await expect(
+      repository.update("second", { title: "Second moved" }),
+    ).resolves.toMatchObject({ title: "Second moved" });
+
+    expect(fixture.update).toHaveBeenCalledTimes(4);
+    expect(fixture.update.mock.calls[1]![0]).toBe(
+      fixture.update.mock.calls[0]![0],
+    );
+    expect(fixture.update.mock.calls[2]![0]).toBe(
+      fixture.update.mock.calls[0]![0],
+    );
+    expect(fixture.update.mock.calls[3]![0]).not.toBe(
+      fixture.update.mock.calls[0]![0],
+    );
   });
 
   it("reloads the canonical description and sends its create path to the provider", async () => {
@@ -845,6 +951,13 @@ function deferred<T>() {
     reject = nextReject;
   });
   return { promise, resolve, reject };
+}
+
+function unknownOutcome(): MdbaseConnectError {
+  return new MdbaseConnectError(
+    "direct_outcome_unknown",
+    "The direct write may have completed.",
+  );
 }
 
 function description(

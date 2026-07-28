@@ -6,9 +6,15 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import {
+  MdbaseConnectError,
+  type JsonObject,
+  type MdbaseConnection,
+} from "@mdbase/connect";
 import { expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
 
@@ -176,9 +182,9 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   expect(screen.getByRole("alert")).toHaveTextContent("Could not move");
 });
 
-it("queues rapid manual board moves and scopes busy feedback to affected cards", async () => {
-  const pending = deferred<Task>();
-  const update = vi.fn(() => pending.promise);
+it("recovers an uncertain manual board write before sending the queued move", async () => {
+  const pending = deferred<void>();
+  const connection = {} as MdbaseConnection<JsonObject>;
   const execution = boardExecution();
   const queued = listTask("task-2", "Move next");
   const stationary = listTask("task-3", "Stay in place");
@@ -188,6 +194,41 @@ it("queues rapid manual board moves and scopes busy feedback to affected cards",
   );
   execution.totalCount = 3;
   execution.groups[0].count = 3;
+  let attempt = 0;
+  const providerUpdate = vi.fn(
+    async (id: string, input: { sortOrder?: string; status?: string }) => {
+      attempt += 1;
+      if (attempt === 1) throw unknownOutcome();
+      if (attempt === 2) await pending.promise;
+      const row = execution.rows.find(({ task }) => task.id === id)!;
+      if (input.sortOrder !== undefined) {
+        row.task.sortOrder = input.sortOrder;
+        row.task.frontmatter.tasknotes_manual_order = input.sortOrder;
+      }
+      if (input.status !== undefined) {
+        row.task.status = input.status;
+        row.task.frontmatter.status = input.status;
+        row.values.status = input.status;
+      }
+      return row.task;
+    },
+  );
+  const update = vi.fn(
+    (id: string, input: { sortOrder?: string; status?: string }) =>
+      runMdbaseMutation(connection, () => providerUpdate(id, input)),
+  );
+  const updateMany = vi.fn(
+    async (
+      updates: readonly {
+        id: string;
+        input: { sortOrder?: string; status?: string };
+      }[],
+    ) => {
+      const tasks: Task[] = [];
+      for (const { id, input } of updates) tasks.push(await update(id, input));
+      return tasks;
+    },
+  );
   const repository = {
     initialize: async () => undefined,
     refresh: async () => ({
@@ -213,6 +254,7 @@ it("queues rapid manual board moves and scopes busy feedback to affected cards",
 `,
     }),
     update,
+    updateMany,
     taskConfiguration: async () => defaultTaskCollectionConfiguration,
     syncStatus: async () => ({
       mode: "live",
@@ -283,12 +325,22 @@ it("queues rapid manual board moves and scopes busy feedback to affected cards",
   expect(queuedCard).toHaveClass("is-pending");
   expect(stationaryCard).toHaveAttribute("aria-busy", "false");
   expect(stationaryCard).not.toHaveClass("is-pending");
-  await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
-
-  await act(async () => pending.reject(new Error("Write failed")));
-  await waitFor(() =>
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not move"),
+  await waitFor(() => expect(providerUpdate).toHaveBeenCalledTimes(2));
+  expect(providerUpdate.mock.calls[1]).toEqual(providerUpdate.mock.calls[0]);
+  expect(providerUpdate.mock.calls[1]![1]).toBe(
+    providerUpdate.mock.calls[0]![1],
   );
+
+  await act(async () => pending.resolve());
+  await waitFor(() =>
+    expect(screen.getByLabelText("Work board")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    ),
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(providerUpdate.mock.calls.at(-1)?.[0]).toBe("task-2");
+  expect(updateMany).toHaveBeenCalledTimes(2);
 });
 
 it("serializes rapid consecutive board moves without rejecting the second move", async () => {
@@ -690,6 +742,13 @@ function deferred<T>() {
     reject = nextReject;
   });
   return { promise, resolve, reject };
+}
+
+function unknownOutcome(): MdbaseConnectError {
+  return new MdbaseConnectError(
+    "direct_outcome_unknown",
+    "The direct write may have completed.",
+  );
 }
 
 function mockPointerCapture(element: HTMLElement) {
