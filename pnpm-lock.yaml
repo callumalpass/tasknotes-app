@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz
+  "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz
 
 importers:
   .:
@@ -56,17 +56,17 @@ importers:
         specifier: 6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)
       "@mdbase/connect":
-        specifier: file:vendor/mdbase-connect-0.1.0-beta.11.tgz
-        version: file:vendor/mdbase-connect-0.1.0-beta.11.tgz
+        specifier: file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz
+        version: file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz
       "@mdbase/connect-protocol":
-        specifier: file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz
-        version: file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz
+        specifier: file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz
+        version: file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz
       "@mdbase/connect-sync":
-        specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.11.tgz
-        version: file:vendor/mdbase-connect-sync-0.1.0-beta.11.tgz
+        specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz
+        version: file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz
       "@tasknotes/model":
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.4.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.4.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.5.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.5.tgz
       dexie:
         specifier: 4.4.4
         version: 4.4.4
@@ -1228,30 +1228,30 @@ packages:
         integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==,
       }
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz":
+  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz":
     resolution:
       {
-        integrity: sha512-6p/yjpBZ5t5Wby1KcdWle98k1IXBXH9biUk7G3cn8bvLr/MTJ8Y7iHqX6OpU6N7dy1AovD7Gu+dyGP1PsZn/7A==,
-        tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz,
+        integrity: sha512-YE0c+6qsNKiEy6H9Y6hO4HnjFujtYS5oYvZxK8TUKOyxgvb8/yEAhzJJhEhGfb+udu+mCpLz9LxLQ39BRT9imw==,
+        tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz,
       }
-    version: 0.1.0-beta.11
+    version: 0.1.0-beta.12
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.11.tgz":
+  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz":
     resolution:
       {
-        integrity: sha512-JK6GTkUCv+oncuBrWxBZn9La7teRqV2Z5R8Istl4smUItD9o6mQEuBBOKvbayccV4ZvrL8PPdwKKa5aiIkxPVg==,
-        tarball: file:vendor/mdbase-connect-sync-0.1.0-beta.11.tgz,
+        integrity: sha512-Y2ml0OIsoLNLwtQvaPPH/0fJKsp3FdtM7etT44P7JCM1ZxIiwvVR0c0nWv7VWBM1IFMYkjIf28f1Kbs4gGMS8w==,
+        tarball: file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz,
       }
-    version: 0.1.0-beta.11
+    version: 0.1.0-beta.12
     hasBin: true
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.11.tgz":
+  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz":
     resolution:
       {
-        integrity: sha512-eirQrei8kbe6FUpasq4eJGne2nTkk977CUl8R1a/Wi+l0KxHouH8Wx8YD4xVINs3moy0HVin632YBrTPOAX/HA==,
-        tarball: file:vendor/mdbase-connect-0.1.0-beta.11.tgz,
+        integrity: sha512-MCbJA+hI5wvS6lBC/iWgrguK6qOq2ela8QGEe8oQggHoJvakH7nsJsUDvTDnvy5HfgbvgjoWUrWGgQRO+PyVVA==,
+        tarball: file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz,
       }
-    version: 0.1.0-beta.11
+    version: 0.1.0-beta.12
 
   "@napi-rs/wasm-runtime@1.1.6":
     resolution:
@@ -1489,13 +1489,13 @@ packages:
         integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==,
       }
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.4.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.5.tgz":
     resolution:
       {
-        integrity: sha512-LWGp1KtnO+71/vw/n23H4mOk9HAa3k3zmbCKA3pjn6ne51eLCG5ejgzvripjd2kUFaV/wYQs2WV6IkyJiv+kZA==,
-        tarball: file:vendor/tasknotes-model-0.3.0-rc.4.tgz,
+        integrity: sha512-vXPiZNtzdl8EJztKrvE/oMaYOAfqjl857wfVony2LJxO44wFx39LpNuMiwip/IHfeQduBzY2XlqVPmNA36Cgwg==,
+        tarball: file:vendor/tasknotes-model-0.3.0-rc.5.tgz,
       }
-    version: 0.3.0-rc.4
+    version: 0.3.0-rc.5
 
   "@testing-library/dom@10.4.1":
     resolution:
@@ -7057,18 +7057,18 @@ snapshots:
       "@jridgewell/resolve-uri": 3.1.2
       "@jridgewell/sourcemap-codec": 1.5.5
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz":
+  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz":
     {}
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.11.tgz":
+  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz
+      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz
       "@noble/hashes": 2.2.0
       yaml: 2.9.0
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.11.tgz":
+  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.11.tgz
+      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz
 
   "@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)":
     dependencies:
@@ -7163,9 +7163,8 @@ snapshots:
 
   "@standard-schema/spec@1.1.0": {}
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.4.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.5.tgz":
     dependencies:
-      "@callumalpass/mdbase-runtime": 0.1.0-rc.1
       rrule: 2.8.1
       yaml: 2.9.0
       zod: 3.25.76

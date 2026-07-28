@@ -85,8 +85,8 @@
       {
         "id": "task.reminder",
         "event": {
-          "id": "timer.fired",
-          "version": 1
+          "id": "mdbase.runtime.timer.fired",
+          "version": "1.0.0"
         },
         "presentation": {
           "title": "Task reminder",
