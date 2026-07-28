@@ -5174,16 +5174,11 @@ button:disabled {
 
 .kanban-card {
   position: relative;
+  min-width: 0;
   border-bottom: 1px solid var(--line);
   transition:
     opacity 140ms var(--ease-out),
-    transform 140ms var(--ease-out);
-}
-
-.kanban-board.is-move-mode .kanban-card {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: stretch;
+    background-color 140ms var(--ease-out);
 }
 
 .kanban-card.is-drop-before::before,
@@ -5191,7 +5186,7 @@ button:disabled {
   position: absolute;
   z-index: 2;
   right: 0;
-  left: 44px;
+  left: 0;
   height: 2px;
   content: "";
   background: var(--accent);
@@ -5207,35 +5202,46 @@ button:disabled {
 }
 
 .kanban-card.is-pending {
-  opacity: 0.62;
+  opacity: 0.68;
 }
 
 .kanban-card.is-dragging {
-  opacity: 0.38;
+  background: color-mix(in srgb, var(--accent-soft), transparent 52%);
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -2px;
 }
 
-.kanban-drag-handle {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  min-height: 44px;
-  padding: 0;
-  color: var(--ink-muted);
-  touch-action: none;
-  background: transparent;
-  border: 0;
-  cursor: grab;
+.kanban-card.is-dragging .task-row {
+  opacity: 0.2;
+}
+
+.kanban-card.is-movable:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.kanban-drag-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.25;
+  background: var(--paper-raised);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 14px 34px var(--color-shadow);
+  pointer-events: none;
   user-select: none;
-  -webkit-user-drag: none;
-}
-
-.kanban-drag-handle:active {
-  cursor: grabbing;
-}
-
-.kanban-drag-handle:disabled {
-  cursor: wait;
-  opacity: 0.42;
+  will-change: transform;
+  animation: kanban-preview-pickup 140ms var(--ease-out);
 }
 
 .kanban-card .task-row {
@@ -5244,19 +5250,32 @@ button:disabled {
   border-bottom: 0;
 }
 
-.kanban-board.is-move-mode .kanban-card .task-row {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.kanban-board.is-move-mode
-  .kanban-card
-  :is(.completion-control, .task-actions-trigger) {
-  display: none;
-}
-
 .kanban-card .task-row-content {
   padding-left: 0;
   cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card.is-movable,
+  .kanban-card.is-movable .task-row-content {
+    cursor: grab;
+  }
+
+  .kanban-card.is-dragging,
+  .kanban-card.is-dragging .task-row-content {
+    cursor: grabbing;
+  }
+}
+
+@keyframes kanban-preview-pickup {
+  from {
+    opacity: 0.58;
+  }
+
+  to {
+    opacity: 0.96;
+  }
 }
 
 .kanban-empty-drop-zone {

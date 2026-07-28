@@ -10,14 +10,14 @@ const templatedType = buildTaskNotesMdbaseResources({
   },
 }).typeDocument;
 
-async function dragKanbanHandle(
+async function dragKanbanCard(
   page: Page,
-  handle: Locator,
+  card: Locator,
   destination: Locator,
   touch: boolean,
 ) {
-  await handle.scrollIntoViewIfNeeded();
-  const sourceBox = await handle.boundingBox();
+  await card.scrollIntoViewIfNeeded();
+  const sourceBox = await card.boundingBox();
   const destinationBox = await destination.boundingBox();
   if (!sourceBox || !destinationBox)
     throw new Error("Kanban drag elements are not laid out");
@@ -55,6 +55,7 @@ async function dragKanbanHandle(
       type: "touchStart",
       touchPoints: [{ ...start, id: 1 }],
     });
+    await page.waitForTimeout(260);
     for (let step = 1; step <= 8; step += 1) {
       await session.send("Input.dispatchTouchEvent", {
         type: "touchMove",
@@ -117,10 +118,10 @@ async function dragKanbanHandle(
   }
 }
 
-async function startKanbanTouchDrag(page: Page, handle: Locator) {
-  await handle.scrollIntoViewIfNeeded();
-  const box = await handle.boundingBox();
-  if (!box) throw new Error("Kanban drag handle is not laid out");
+async function startKanbanTouchDrag(page: Page, card: Locator) {
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  if (!box) throw new Error("Kanban card is not laid out");
   const start = {
     x: box.x + box.width / 2,
     y: box.y + box.height / 2,
@@ -130,6 +131,7 @@ async function startKanbanTouchDrag(page: Page, handle: Locator) {
     type: "touchStart",
     touchPoints: [{ ...start, id: 1 }],
   });
+  await page.waitForTimeout(260);
   return {
     start,
     move: (x: number, y: number) =>
@@ -547,6 +549,12 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
   const board = page.getByLabel("Manual drag board board");
   await expect(board).toBeVisible();
   await expect(board.locator(".kanban-drag-handle")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Arrange cards" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole("button", { name: "Move cards between columns" }),
+  ).toHaveCount(0);
   await page.getByLabel("Open column").scrollIntoViewIfNeeded();
   await page.evaluate(() => {
     localStorage.setItem("mdbase:theme", "light");
@@ -572,37 +580,41 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     expect(metrics.titleWidth / metrics.cardWidth).toBeGreaterThan(0.6);
   }
 
-  await page.getByRole("button", { name: "Arrange cards" }).click();
-  await expect(
-    page.getByText("Drag handles reorder cards or move them between columns.", {
-      exact: true,
-    }),
-  ).toBeVisible();
   const cards = board.locator(".kanban-card");
+  await expect(cards.first()).toHaveClass(/is-movable/);
   await expect(cards.first()).not.toHaveAttribute("draggable", "true");
-  await expect(cards.first().locator(".completion-control")).toBeHidden();
-  await expect(cards.first().locator(".task-actions-trigger")).toBeHidden();
+  await expect(cards.first().locator(".completion-control")).toBeVisible();
+  await expect(cards.first().locator(".task-actions-trigger")).toBeVisible();
   await page.getByLabel("Open column").scrollIntoViewIfNeeded();
-  await testInfo.attach("kanban-manual-move-mode-light.png", {
+  await testInfo.attach("kanban-manual-always-draggable-light.png", {
     body: await page.screenshot(),
     contentType: "image/png",
   });
 
-  const firstHandle = board.locator(".kanban-drag-handle").first();
-  const firstBox = await firstHandle.boundingBox();
+  const firstCard = cards.first();
+  const firstBox = await firstCard.boundingBox();
   const emptyColumn = page.getByLabel("In progress column");
-  if (!firstBox) throw new Error("Kanban handle is not laid out");
+  if (!firstBox) throw new Error("Kanban card is not laid out");
   if (testInfo.project.name === "mobile") {
-    const cancelled = await startKanbanTouchDrag(page, firstHandle);
+    const cancelled = await startKanbanTouchDrag(page, firstCard);
     await expect(board.locator(".kanban-card.is-dragging")).toHaveCount(1);
+    await expect(page.locator("[data-kanban-drag-preview]")).toContainText(
+      titles[0],
+    );
     await cancelled.cancel();
   } else {
     await page.mouse.move(
       firstBox.x + firstBox.width / 2,
       firstBox.y + firstBox.height / 2,
     );
-    await firstHandle.focus();
     await page.mouse.down();
+    await page.mouse.move(
+      firstBox.x + firstBox.width / 2 + 12,
+      firstBox.y + firstBox.height / 2,
+    );
+    await expect(page.locator("[data-kanban-drag-preview]")).toContainText(
+      titles[0],
+    );
     await page.keyboard.press("Escape");
     await page.mouse.up();
     await expect(
@@ -613,7 +625,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
   const beforeScroll = await page.evaluate(() => window.scrollY);
   const viewport = page.viewportSize();
   if (testInfo.project.name === "mobile") {
-    const touch = await startKanbanTouchDrag(page, firstHandle);
+    const touch = await startKanbanTouchDrag(page, firstCard);
     await expect(
       emptyColumn.getByText("Drop here", { exact: true }),
     ).toHaveCount(1);
@@ -621,6 +633,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     await expect
       .poll(() => page.evaluate(() => window.scrollY))
       .toBeGreaterThan(beforeScroll);
+    await expect(page.locator("[data-kanban-drag-preview]")).toBeVisible();
     await touch.finish();
   } else {
     await page.mouse.move(
@@ -628,6 +641,10 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
       firstBox.y + firstBox.height / 2,
     );
     await page.mouse.down();
+    await page.mouse.move(
+      firstBox.x + firstBox.width / 2 + 12,
+      firstBox.y + firstBox.height / 2,
+    );
     await expect(
       emptyColumn.getByText("Drop here", { exact: true }),
     ).toHaveCount(1);
@@ -639,10 +656,10 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     await expect
       .poll(() => page.evaluate(() => window.scrollY))
       .toBeGreaterThan(beforeScroll);
+    await expect(page.locator("[data-kanban-drag-preview]")).toBeVisible();
     await page.mouse.up();
   }
 
-  await page.getByRole("button", { name: "Finish arranging cards" }).click();
   await page
     .locator(".view-header")
     .getByRole("button", { name: "Views", exact: true })
@@ -658,22 +675,13 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
   const initialOrder = await sortedOpen
     .locator(".task-row-title")
     .allTextContents();
-  await page
-    .getByRole("button", { name: "Move cards between columns" })
-    .click();
-  await expect(
-    page.getByText(
-      "This view keeps its current sort. Drag handles only move cards between columns.",
-      { exact: true },
-    ),
-  ).toBeVisible();
   await page.evaluate(() => {
     localStorage.setItem("mdbase:theme", "dark");
     document.documentElement.dataset.theme = "dark";
   });
 
-  const sortedHandles = sortedBoard.locator(".kanban-drag-handle");
-  const sourceBox = await sortedHandles.first().boundingBox();
+  const sortedCards = sortedOpen.locator(".kanban-card");
+  const sourceBox = await sortedCards.first().boundingBox();
   const targetBox = await sortedOpen
     .locator(".kanban-card")
     .nth(2)
@@ -682,7 +690,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     throw new Error("Sorted kanban cards are not laid out");
   let finishSortedDrag: () => Promise<void>;
   if (testInfo.project.name === "mobile") {
-    const touch = await startKanbanTouchDrag(page, sortedHandles.first());
+    const touch = await startKanbanTouchDrag(page, sortedCards.first());
     await touch.move(
       targetBox.x + targetBox.width / 2,
       targetBox.y + targetBox.height * 0.75,
@@ -707,6 +715,9 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
   await expect(
     sortedBoard.locator(".kanban-column.is-drop-target"),
   ).toHaveCount(0);
+  await expect(page.locator("[data-kanban-drag-preview]")).toContainText(
+    initialOrder[0],
+  );
   await testInfo.attach("kanban-sorted-same-column-drag-dark.png", {
     body: await page.screenshot(),
     contentType: "image/png",
@@ -716,7 +727,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     .poll(() => sortedOpen.locator(".task-row-title").allTextContents())
     .toEqual(initialOrder);
 
-  await sortedHandles.first().press("ArrowRight");
+  await sortedCards.first().press("ArrowRight");
   await expect(
     page
       .getByLabel("In progress column")
@@ -2024,17 +2035,16 @@ views:
     inProgressColumn.getByText("Column capture", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".kanban-drag-handle")).toHaveCount(0);
-  await page.getByRole("button", { name: "Arrange cards" }).click();
-  await expect(
-    page.getByRole("button", { name: "Finish arranging cards" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  const movePlan = page.getByRole("button", {
-    name: "Arrange Plan saved views. Drag, use up and down to reorder, or use left and right to move between columns.",
+  await expect(page.getByRole("button", { name: "Arrange cards" })).toHaveCount(
+    0,
+  );
+  const movePlan = page.getByRole("group", {
+    name: "Plan saved views. Drag to move. Use arrow keys to arrange.",
   });
   await expect(
     page.locator(".kanban-card").filter({ hasText: "Plan saved views" }),
   ).not.toHaveAttribute("draggable", "true");
-  await dragKanbanHandle(
+  await dragKanbanCard(
     page,
     movePlan,
     inProgressColumn,
@@ -2048,31 +2058,33 @@ views:
       .locator(".kanban-card")
       .filter({ hasText: "Plan saved views" }),
   ).toHaveAttribute("aria-busy", "false");
-  const reorderedPlan = page.getByRole("button", {
-    name: "Arrange Plan saved views. Drag, use up and down to reorder, or use left and right to move between columns.",
+  const reorderedPlan = page.getByRole("group", {
+    name: "Plan saved views. Drag to move. Use arrow keys to arrange.",
   });
-  await expect(reorderedPlan).toBeEnabled();
   await reorderedPlan.press("ArrowUp");
   await expect
     .poll(() => inProgressColumn.locator(".task-row-title").allTextContents())
     .toEqual(["Plan saved views", "Column capture"]);
-  const moveShip = page.getByRole("button", {
-    name: "Arrange Ship saved views. Drag, use up and down to reorder, or use left and right to move between columns.",
+  const moveShip = page.getByRole("group", {
+    name: "Ship saved views. Drag to move. Use arrow keys to arrange.",
   });
   await moveShip.press("ArrowLeft");
   await expect
     .poll(() => inProgressColumn.locator(".task-row-title").allTextContents())
     .toEqual(["Ship saved views", "Plan saved views", "Column capture"]);
-  const returnShip = page.getByRole("button", {
-    name: "Arrange Ship saved views. Drag, use up and down to reorder, or use left and right to move between columns.",
+  const returnShip = page.getByRole("group", {
+    name: "Ship saved views. Drag to move. Use arrow keys to arrange.",
   });
-  await expect(returnShip).toBeEnabled();
   await returnShip.press("ArrowRight");
   await expect(
     page
       .getByLabel("Done column")
       .getByText("Ship saved views", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByLabel("Work board board")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
   await expect(
     page.getByRole("button", {
       name: testInfo.project.name === "mobile" ? "Views" : "Work board",
