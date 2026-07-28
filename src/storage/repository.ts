@@ -82,6 +82,9 @@ export interface TaskRepository {
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
+  updateMany?(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+  ): Promise<Task[]>;
   toggle(id: string, occurrenceDate?: string): Promise<Task>;
   skip(id: string, occurrenceDate: string): Promise<Task>;
   materializeOccurrence(

@@ -22,6 +22,7 @@ import {
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import { taskRelationships } from "../domain/task-relationships";
+import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { compareTasks, matchesArchiveFilter } from "./repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -615,35 +616,38 @@ export class CloudTaskRepository implements TaskRepository {
   async createViewSource(
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    const created = validResult(
-      await this.connect.createViewSource({ ...input }),
-    );
-    this.invalidateViewsAfterMutation();
-    return created;
+    return runMdbaseMutation(this.connect, async () => {
+      const created = validResult(
+        await this.connect.createViewSource({ ...input }),
+      );
+      this.invalidateViewsAfterMutation();
+      return created;
+    });
   }
 
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    const updated = validResult(
-      await this.connect.updateViewSource({
-        path: input.path,
-        document: input.document,
-        if_revision: input.ifRevision,
-      }),
-    );
-    this.invalidateViewsAfterMutation();
-    return updated;
+    const operationInput = {
+      path: input.path,
+      document: input.document,
+      if_revision: input.ifRevision,
+    };
+    return runMdbaseMutation(this.connect, async () => {
+      const updated = validResult(
+        await this.connect.updateViewSource(operationInput),
+      );
+      this.invalidateViewsAfterMutation();
+      return updated;
+    });
   }
 
   async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
-    validResult(
-      await this.connect.deleteViewSource({
-        path,
-        if_revision: ifRevision,
-      }),
-    );
-    this.invalidateViewsAfterMutation();
+    const operationInput = { path, if_revision: ifRevision };
+    await runMdbaseMutation(this.connect, async () => {
+      validResult(await this.connect.deleteViewSource(operationInput));
+      this.invalidateViewsAfterMutation();
+    });
   }
 
   private invalidateViewsAfterMutation(): void {

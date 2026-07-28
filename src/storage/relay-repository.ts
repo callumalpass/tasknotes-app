@@ -18,6 +18,7 @@ import {
 } from "../domain/task-occurrence";
 import { taskRelationships } from "../domain/task-relationships";
 import { compareTasks, matchesArchiveFilter } from "./repository";
+import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
@@ -103,6 +104,8 @@ export class RelayTaskRepository implements TaskRepository {
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
+  private emitBatchDepth = 0;
+  private emitPending = false;
   private readonly reservedTaskPaths = new Set<string>();
   private readonly revisionReads = new Map<
     string,
@@ -322,16 +325,19 @@ export class RelayTaskRepository implements TaskRepository {
         },
       );
       const task = this.reserveAvailableTaskPath(created);
+      const operationInput = {
+        path: task.path,
+        type: this.taskTypeName,
+        frontmatter: asJson(task.frontmatter),
+        body: task.body,
+      };
       try {
-        const result = validResult(
-          await this.connect.create({
-            path: task.path,
-            type: this.taskTypeName,
-            frontmatter: asJson(task.frontmatter),
-            body: task.body,
-          }),
+        const saved = await runMdbaseMutation(this.connect, async () =>
+          this.storeResult(
+            validResult(await this.connect.create(operationInput)),
+          ),
         );
-        return this.withRollingWarnings(this.storeResult(result));
+        return this.withRollingWarnings(saved);
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
@@ -342,13 +348,23 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   update(id: string, input: UpdateTaskInput): Promise<Task> {
-    return this.serializeWrite(id, async () => {
-      const current = await this.requireCurrent(id);
-      const next = current.model.update(current.task, input, {
-        now: new Date().toISOString(),
-      });
-      return this.withRollingWarnings(await this.persistUpdate(current, next));
-    });
+    return this.serializeWrite(id, () => this.updateUnlocked(id, input));
+  }
+
+  updateMany(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+  ): Promise<Task[]> {
+    if (!updates.length) return Promise.resolve([]);
+    return this.serializeWrites(
+      updates.map(({ id }) => id),
+      () =>
+        this.withBatchedEmits(async () => {
+          const tasks: Task[] = [];
+          for (const { id, input } of updates)
+            tasks.push(await this.updateUnlocked(id, input));
+          return tasks;
+        }),
+    );
   }
 
   toggle(id: string, occurrenceDate?: string): Promise<Task> {
@@ -457,16 +473,18 @@ export class RelayTaskRepository implements TaskRepository {
       const destination = current.model.archiveDestination(updated, archived);
       if (!destination) return updated;
       const saved = this.cache.get(id);
+      const operationInput = {
+        from: updated.path,
+        to: destination,
+        if_revision: saved?.revision,
+        update_refs: true,
+      };
       try {
-        const result = validResult(
-          await this.connect.rename({
-            from: updated.path,
-            to: destination,
-            if_revision: saved?.revision,
-            update_refs: true,
-          }),
+        return await runMdbaseMutation(this.connect, async () =>
+          this.storeResult(
+            validResult(await this.connect.rename(operationInput)),
+          ),
         );
-        return this.storeResult(result);
       } catch (reason) {
         this.noteOperationFailure(reason);
         const retained = {
@@ -490,17 +508,18 @@ export class RelayTaskRepository implements TaskRepository {
       const existing = this.cache.get(id);
       if (!existing) return;
       const current = await this.requireCurrent(id);
+      const operationInput = {
+        path: current.task.path,
+        if_revision: current.revision,
+        check_backlinks: true,
+      };
       try {
-        validResult(
-          await this.connect.delete({
-            path: current.task.path,
-            if_revision: current.revision,
-            check_backlinks: true,
-          }),
-        );
-        this.cache.delete(id);
-        this.setConnected();
-        this.emit();
+        await runMdbaseMutation(this.connect, async () => {
+          validResult(await this.connect.delete(operationInput));
+          this.cache.delete(id);
+          this.setConnected();
+          this.emit();
+        });
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
@@ -627,13 +646,13 @@ export class RelayTaskRepository implements TaskRepository {
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
     try {
-      const created = validResult(
-        await this.connect.createViewSource({
-          ...input,
-        }),
-      );
-      this.invalidateViewsAfterMutation();
-      return created;
+      return await runMdbaseMutation(this.connect, async () => {
+        const created = validResult(
+          await this.connect.createViewSource({ ...input }),
+        );
+        this.invalidateViewsAfterMutation();
+        return created;
+      });
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -643,16 +662,19 @@ export class RelayTaskRepository implements TaskRepository {
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
+    const operationInput = {
+      path: input.path,
+      document: input.document,
+      if_revision: input.ifRevision,
+    };
     try {
-      const updated = validResult(
-        await this.connect.updateViewSource({
-          path: input.path,
-          document: input.document,
-          if_revision: input.ifRevision,
-        }),
-      );
-      this.invalidateViewsAfterMutation();
-      return updated;
+      return await runMdbaseMutation(this.connect, async () => {
+        const updated = validResult(
+          await this.connect.updateViewSource(operationInput),
+        );
+        this.invalidateViewsAfterMutation();
+        return updated;
+      });
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -660,14 +682,12 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    const operationInput = { path, if_revision: ifRevision };
     try {
-      validResult(
-        await this.connect.deleteViewSource({
-          path,
-          if_revision: ifRevision,
-        }),
-      );
-      this.invalidateViewsAfterMutation();
+      await runMdbaseMutation(this.connect, async () => {
+        validResult(await this.connect.deleteViewSource(operationInput));
+        this.invalidateViewsAfterMutation();
+      });
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -793,20 +813,33 @@ export class RelayTaskRepository implements TaskRepository {
     current: Required<CachedRelayTask>,
     next: Task,
   ): Promise<Task> {
+    const operationInput = {
+      path: current.task.path,
+      patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
+      body: next.body,
+      if_revision: current.revision,
+    };
     try {
-      const result = validResult(
-        await this.connect.update({
-          path: current.task.path,
-          patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
-          body: next.body,
-          if_revision: current.revision,
-        }),
+      return await runMdbaseMutation(this.connect, async () =>
+        this.storeResult(
+          validResult(await this.connect.update(operationInput)),
+        ),
       );
-      return this.storeResult(result);
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
     }
+  }
+
+  private async updateUnlocked(
+    id: string,
+    input: UpdateTaskInput,
+  ): Promise<Task> {
+    const current = await this.requireCurrent(id);
+    const next = current.model.update(current.task, input, {
+      now: new Date().toISOString(),
+    });
+    return this.withRollingWarnings(await this.persistUpdate(current, next));
   }
 
   private persistModelMutation(
@@ -893,15 +926,16 @@ export class RelayTaskRepository implements TaskRepository {
     );
     if (!result.created) return result;
     const created = this.reserveAvailableTaskPath(result.task);
+    const operationInput = {
+      path: created.path,
+      type: parent.typeName,
+      frontmatter: asJson(created.frontmatter),
+      body: created.body,
+    };
     try {
-      const saved = this.storeResult(
-        validResult(
-          await this.connect.create({
-            path: created.path,
-            type: parent.typeName,
-            frontmatter: asJson(created.frontmatter),
-            body: created.body,
-          }),
+      const saved = await runMdbaseMutation(this.connect, async () =>
+        this.storeResult(
+          validResult(await this.connect.create(operationInput)),
         ),
       );
       const task = result.warnings.length
@@ -1123,7 +1157,26 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private emit(): void {
+    if (this.emitBatchDepth) {
+      this.emitPending = true;
+      return;
+    }
     for (const listener of this.listeners) listener();
+  }
+
+  private async withBatchedEmits<Result>(
+    operation: () => Promise<Result>,
+  ): Promise<Result> {
+    this.emitBatchDepth += 1;
+    try {
+      return await operation();
+    } finally {
+      this.emitBatchDepth -= 1;
+      if (!this.emitBatchDepth && this.emitPending) {
+        this.emitPending = false;
+        this.emit();
+      }
+    }
   }
 }
 
