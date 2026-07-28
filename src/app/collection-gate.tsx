@@ -23,15 +23,11 @@ import {
 } from "react";
 
 import {
-  authorizeCloudCollection,
-  cleanCallbackUrl,
+  cloudSession,
   cloudControlUrl,
-  completeCloudAuthorization,
   isCloudCallback,
-  savedCloudConnections,
-  selectedCloudCollectionId,
-  selectCloudConnection,
 } from "../cloud/connect";
+import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { MarkdownCollection } from "../storage/collection";
 import {
   transferLocalCollectionToHosted,
@@ -83,9 +79,10 @@ export function CollectionGate() {
   const [authorizationError, setAuthorizationError] = useState<string | null>(
     null,
   );
-  const callbackInFlight = useRef<string | null>(null);
+  const handledCallbackUrls = useRef(new Set<string>());
   const transferInFlight = useRef(false);
   const localChoiceReturnsToPicker = useRef(false);
+  const cloud = useCloudSessionSnapshot();
   const choose = useCallback((next: CollectionChoice) => {
     localStorage.setItem(STORAGE_KEY, next);
     setChoice(next);
@@ -109,7 +106,6 @@ export function CollectionGate() {
   const finishBrowserCallback = useCallback(async () => {
     if (Capacitor.isNativePlatform())
       await Browser.close().catch(() => undefined);
-    else cleanCallbackUrl();
   }, []);
 
   const runTransfer = useCallback(
@@ -198,7 +194,9 @@ export function CollectionGate() {
         setMigration({
           step: "authorizing",
         });
-        await authorizeCloudCollection(result.destinationCollectionId);
+        await cloudSession.authorize({
+          collectionId: result.destinationCollectionId,
+        });
       } catch (reason) {
         const pending = readPendingTransfer();
         setMigration({
@@ -221,12 +219,18 @@ export function CollectionGate() {
 
   const complete = useCallback(
     async (url: string) => {
-      if (!isCloudCallback(url) || callbackInFlight.current === url) return;
-      callbackInFlight.current = url;
+      if (!isCloudCallback(url) || handledCallbackUrls.current.has(url)) return;
+      handledCallbackUrls.current.add(url);
       const pending = readPendingTransfer();
-      try {
-        const connection = await completeCloudAuthorization(url);
+      let callbackBrowserClosed = false;
+      const closeCallbackBrowser = async () => {
+        if (callbackBrowserClosed) return;
+        callbackBrowserClosed = true;
         await finishBrowserCallback();
+      };
+      try {
+        const connection = await cloudSession.handleAuthorizationCallback(url);
+        await closeCallbackBrowser();
         setAuthorizationError(null);
         if (pending?.adoptedCollectionId) {
           const info = connection.info();
@@ -234,7 +238,6 @@ export function CollectionGate() {
             throw new Error(
               "TaskNotes was connected to a different collection after adoption.",
             );
-          selectCloudConnection(connection.collectionId, true);
           setMigrationTarget({
             collectionId: connection.collectionId,
             displayName: pending.displayName ?? info.displayName,
@@ -258,7 +261,7 @@ export function CollectionGate() {
           setPickerOpen(false);
         }
       } catch (reason) {
-        await finishBrowserCallback();
+        await closeCallbackBrowser();
         if (pending) {
           setPickerOpen(true);
           setMigration({
@@ -275,39 +278,49 @@ export function CollectionGate() {
           setAuthorizationError(message(reason));
           choose("cloud");
         }
-      } finally {
-        callbackInFlight.current = null;
       }
     },
     [choose, finishBrowserCallback, runTransfer],
   );
 
   useEffect(() => {
-    if (isCloudCallback(location.href)) {
-      const callbackUrl = location.href;
-      queueMicrotask(() => void complete(callbackUrl));
-    } else {
+    const resume = () => {
       const pending = readPendingTransfer();
       if (pending?.checkpoint)
         queueMicrotask(
           () => void runTransfer(pending.sourceLocation, pending.checkpoint),
         );
       else if (pending?.adoptedCollectionId) {
+        const adoptedCollectionId = pending.adoptedCollectionId;
         queueMicrotask(() => {
           setPickerOpen(true);
           setMigration({ step: "authorizing" });
-          void authorizeCloudCollection(pending.adoptedCollectionId).catch(
-            (reason) =>
+          void cloudSession
+            .authorize({ collectionId: adoptedCollectionId })
+            .catch((reason) =>
               setMigration({
                 step: "error",
                 message: message(reason),
                 canRetry: true,
                 mustResume: true,
               }),
-          );
+            );
         });
       }
-    }
+    };
+    const initialize = async () => {
+      const callbackUrl = isCloudCallback(location.href) ? location.href : null;
+      if (callbackUrl) await complete(callbackUrl);
+      await cloudSession.start();
+      if (!callbackUrl) resume();
+    };
+    queueMicrotask(
+      () =>
+        void initialize().catch((reason) => {
+          setAuthorizationError(message(reason));
+          choose("cloud");
+        }),
+    );
     if (!Capacitor.isNativePlatform()) return;
     const listeners = [
       CapacitorApp.addListener("appUrlOpen", ({ url }) => void complete(url)),
@@ -319,7 +332,7 @@ export function CollectionGate() {
       for (const listener of listeners)
         void listener.then((handle) => handle.remove());
     };
-  }, [complete, runTransfer]);
+  }, [choose, complete, runTransfer]);
 
   const closePicker = useCallback(() => {
     if (isCollectionMigrationLocked(migration)) return;
@@ -344,12 +357,12 @@ export function CollectionGate() {
 
   const selectCloud = useCallback(
     async (collectionId: string) => {
-      if (choice === "cloud" && selectedCloudCollectionId() === collectionId) {
+      if (choice === "cloud" && currentCloudCollectionId() === collectionId) {
         setPickerOpen(false);
         return;
       }
       if (choice === "cloud") await disableMdbaseNotifications();
-      selectCloudConnection(collectionId, true);
+      cloudSession.select(collectionId, { history: "replace" });
       choose("cloud");
       setPickerOpen(false);
     },
@@ -361,9 +374,9 @@ export function CollectionGate() {
     setPickerOpen(false);
     choose("cloud");
     setAuthorizationError(null);
-    void authorizeCloudCollection().catch((reason) =>
-      setAuthorizationError(message(reason)),
-    );
+    void cloudSession
+      .authorize("choose")
+      .catch((reason) => setAuthorizationError(message(reason)));
   }
 
   function reauthorizeCurrentCloudCollection() {
@@ -371,9 +384,9 @@ export function CollectionGate() {
     setPickerOpen(false);
     choose("cloud");
     setAuthorizationError(null);
-    void authorizeCloudCollection(
-      selectedCloudCollectionId() ?? undefined,
-    ).catch((reason) => setAuthorizationError(message(reason)));
+    void cloudSession
+      .authorize("selected")
+      .catch((reason) => setAuthorizationError(message(reason)));
   }
 
   function authorizeMigrationDestination() {
@@ -388,15 +401,16 @@ export function CollectionGate() {
     }
     if (pending.adoptedCollectionId) {
       setMigration({ step: "authorizing" });
-      void authorizeCloudCollection(pending.adoptedCollectionId).catch(
-        (reason) =>
+      void cloudSession
+        .authorize({ collectionId: pending.adoptedCollectionId })
+        .catch((reason) =>
           setMigration({
             step: "error",
             message: message(reason),
             canRetry: true,
             mustResume: true,
           }),
-      );
+        );
       return;
     }
     void runTransfer(pending.sourceLocation, pending.checkpoint);
@@ -405,7 +419,7 @@ export function CollectionGate() {
   function finishMigration() {
     if (!migrationTarget) return;
     clearPendingTransfer();
-    selectCloudConnection(migrationTarget.collectionId, true);
+    cloudSession.select(migrationTarget.collectionId, { history: "replace" });
     choose("cloud");
     setMigration(null);
     setMigrationTarget(null);
@@ -487,10 +501,14 @@ export function CollectionGate() {
           activeChoice={choice}
           activeLocalLocation={localLocation}
           canChooseLocalFolder={canChooseLocalFolder}
-          cloudConnections={savedCloudConnections()}
+          cloudConnections={cloud.connections}
           migration={migration}
           rememberedExternal={readRememberedExternalCollection()}
-          selectedCloudCollectionId={selectedCloudCollectionId()}
+          selectedCloudCollectionId={
+            cloud.status === "ready" || cloud.status === "unavailable"
+              ? cloud.collectionId
+              : null
+          }
           onAuthorizeCloud={authorizeAnotherCloudCollection}
           onAuthorizeMigration={authorizeMigrationDestination}
           onBackFromMigration={() => {
@@ -805,6 +823,13 @@ function clearPendingTransfer(): void {
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function currentCloudCollectionId(): string | null {
+  const snapshot = cloudSession.getSnapshot();
+  return snapshot.status === "ready" || snapshot.status === "unavailable"
+    ? snapshot.collectionId
+    : null;
 }
 
 function requiresAuthorityResolution(reason: unknown): boolean {

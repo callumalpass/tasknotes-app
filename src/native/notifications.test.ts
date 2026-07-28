@@ -9,7 +9,12 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock("../cloud/connect", () => ({
-  activeCloudConnection: () => mocks.connection,
+  cloudSession: {
+    getSnapshot: () => ({
+      status: "ready",
+      connection: mocks.connection,
+    }),
+  },
 }));
 
 import {

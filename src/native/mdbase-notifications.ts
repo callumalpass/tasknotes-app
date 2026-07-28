@@ -8,7 +8,7 @@ import {
   type MdbaseNativeNotificationData,
 } from "@mdbase/connect";
 
-import { activeCloudConnection } from "../cloud/connect";
+import { cloudSession } from "../cloud/connect";
 import {
   androidPushMessaging,
   type NativeMessaging,
@@ -296,14 +296,14 @@ async function firebaseMessaging() {
 
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
-    connection: () => activeCloudConnection()?.info() ?? null,
+    connection: () => currentConnection()?.info() ?? null,
     registerNativeNotifications: (options) => {
-      const connection = activeCloudConnection();
+      const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
       return connection.registerNativeNotifications(options);
     },
     unregisterNativeNotifications: async () => {
-      await activeCloudConnection()?.unregisterNativeNotifications();
+      await currentConnection()?.unregisterNativeNotifications();
     },
   },
   messaging:
@@ -317,3 +317,8 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
       ? Capacitor.isPluginAvailable("PushNotifications")
       : Capacitor.isPluginAvailable("FirebaseMessaging"),
 });
+
+function currentConnection() {
+  const snapshot = cloudSession.getSnapshot();
+  return snapshot.status === "ready" ? snapshot.connection : null;
+}

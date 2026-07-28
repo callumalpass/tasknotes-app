@@ -173,6 +173,7 @@ export function AppShell() {
         choose={choose}
         error={error}
         reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
+        retry={() => void refresh()}
       />
     );
   }
@@ -348,6 +349,7 @@ export function StorageErrorScreen({
   choose,
   error,
   reauthorizeCurrentCloudCollection,
+  retry,
 }: {
   authorizeAnotherCloudCollection(): void;
   canChooseLocalFolder: boolean;
@@ -357,6 +359,7 @@ export function StorageErrorScreen({
   choose(choice: "local" | "cloud"): void;
   error: Error | null;
   reauthorizeCurrentCloudCollection(): void;
+  retry(): void;
 }) {
   const authorizationExpired =
     choice === "cloud" && isAuthorizationError(error);
@@ -393,11 +396,7 @@ export function StorageErrorScreen({
           </>
         ) : (
           <>
-            <button
-              className="outline-action"
-              type="button"
-              onClick={() => location.reload()}
-            >
+            <button className="outline-action" type="button" onClick={retry}>
               Try again
             </button>
             {choice === "cloud" ? (

@@ -1,9 +1,8 @@
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import {
-  MdbaseBrowserLocation,
+  MdbaseBrowserSelection,
   MdbaseConnect,
-  type MdbaseConnection,
   type MdbaseConnectionInfo,
 } from "@mdbase/connect";
 
@@ -47,22 +46,18 @@ export const cloudConnect = new MdbaseConnect<JsonObject>({
     : undefined,
 });
 
-const cloudLocation = new MdbaseBrowserLocation(cloudConnect, {
+const cloudSelection = new MdbaseBrowserSelection({
   fallbackPath: joinBase(""),
 });
 
-export function savedCloudConnections(): MdbaseConnectionInfo[] {
-  return cloudConnect.connections();
-}
+export const cloudSession = cloudConnect.createSession({
+  selection: cloudSelection,
+  operations: [...CLOUD_OPERATIONS],
+  autoSelect: "never",
+});
 
 export function cloudControlUrl(): string {
   return serverUrl;
-}
-
-export function cloudConnection(
-  collectionId: string,
-): MdbaseConnection<JsonObject> | null {
-  return cloudConnect.connection(collectionId);
 }
 
 export function isHostedCloudConnection(
@@ -71,53 +66,16 @@ export function isHostedCloudConnection(
   return connection.route === "remote";
 }
 
-export function authorizeCloudCollection(
-  collectionId?: string,
-): ReturnType<typeof cloudConnect.authorize> {
-  return cloudConnect.authorize({
-    operations: [...CLOUD_OPERATIONS],
-    ...(collectionId ? { collectionId } : {}),
-    returnTo: authorizationReturnTo(),
-  });
-}
-
-export function activeCloudConnection(): MdbaseConnection<JsonObject> | null {
-  return cloudLocation.activeConnection();
-}
-
-export function selectCloudConnection(
-  collectionId: string,
-  replace = false,
-): void {
-  cloudLocation.selectConnection(collectionId, { replace });
-}
-
-export function authorizationReturnTo(): string {
-  return cloudLocation.authorizationReturnTo();
-}
-
-export function completeCloudAuthorization(
-  callbackUrl: string,
-): Promise<MdbaseConnection<JsonObject>> {
-  return cloudLocation.completeAuthorization(callbackUrl);
-}
-
 export function isCloudCallback(value: string): boolean {
-  return cloudLocation.isAuthorizationCallback(value);
-}
-
-export function cleanCallbackUrl(): void {
-  cloudLocation.clearAuthorizationCallback();
-}
-
-export function selectedCloudCollectionId(): string | null {
-  return cloudLocation.selectedCollectionId();
-}
-
-export function onCloudConnectionChange(
-  listener: (connection: MdbaseConnection<JsonObject> | null) => void,
-): () => void {
-  return cloudLocation.onChange(({ connection }) => listener(connection));
+  try {
+    const url = new URL(value);
+    return (
+      url.searchParams.has("state") &&
+      (url.searchParams.has("code") || url.searchParams.has("error"))
+    );
+  } catch {
+    return false;
+  }
 }
 
 function joinBase(path: string): string {

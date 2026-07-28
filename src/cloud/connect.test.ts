@@ -1,18 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import bundledManifest from "../generated/mdbase-app.json";
-import {
-  authorizeCloudCollection,
-  cloudConnect,
-  savedCloudConnections,
-} from "./connect";
+import { CLOUD_OPERATIONS, cloudConnect, cloudSession } from "./connect";
 
-const STORAGE_PREFIX =
-  "mdbase-connect:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
-
-describe("TaskNotes mdbase connection", () => {
+describe("TaskNotes mdbase session", () => {
   afterEach(() => {
-    localStorage.clear();
+    history.replaceState(null, "", "/");
     vi.restoreAllMocks();
   });
 
@@ -40,75 +33,34 @@ describe("TaskNotes mdbase connection", () => {
     });
   });
 
-  it("retains independently authorized collections", () => {
-    const collectionIds = ["collection-home", "collection-work"];
-    localStorage.setItem(
-      `${STORAGE_PREFIX}:connections`,
-      JSON.stringify(collectionIds),
-    );
-    localStorage.setItem(
-      `${STORAGE_PREFIX}:token:${collectionIds[0]}`,
-      JSON.stringify(token(collectionIds[0], "Home tasks")),
-    );
-    localStorage.setItem(
-      `${STORAGE_PREFIX}:token:${collectionIds[1]}`,
-      JSON.stringify(token(collectionIds[1], "Work tasks")),
-    );
-
-    expect(
-      savedCloudConnections().map(({ collectionId, displayName }) => ({
-        collectionId,
-        displayName,
-      })),
-    ).toEqual([
-      { collectionId: "collection-home", displayName: "Home tasks" },
-      { collectionId: "collection-work", displayName: "Work tasks" },
-    ]);
-  });
-
-  it("does not pin the current collection when authorizing another one", () => {
+  it("authorizes another collection with an explicit choose intent", async () => {
     const authorize = vi
       .spyOn(cloudConnect, "authorize")
-      .mockResolvedValue({} as never);
+      .mockResolvedValue({ kind: "redirecting" });
 
-    void authorizeCloudCollection();
+    await cloudSession.authorize("choose");
 
-    expect(authorize).toHaveBeenCalledWith(
-      expect.not.objectContaining({ collectionId: expect.anything() }),
-    );
+    expect(authorize).toHaveBeenCalledWith({
+      operations: [...CLOUD_OPERATIONS],
+      target: { kind: "choose" },
+      returnTo: "/",
+    });
+  });
+
+  it("authorizes an exact newly adopted collection", async () => {
+    const authorize = vi
+      .spyOn(cloudConnect, "authorize")
+      .mockResolvedValue({ kind: "redirecting" });
+
+    await cloudSession.authorize({ collectionId: "hosted-after-adoption" });
+
+    expect(authorize).toHaveBeenCalledWith({
+      operations: [...CLOUD_OPERATIONS],
+      target: {
+        kind: "collection",
+        collectionId: "hosted-after-adoption",
+      },
+      returnTo: "/",
+    });
   });
 });
-
-function token(collectionId: string, collectionName: string) {
-  return {
-    accessToken: `access-${collectionId}`,
-    refreshToken: `refresh-${collectionId}`,
-    clientId: "tasknotes",
-    collectionId,
-    collectionName,
-    operations: ["describe", "read", "query"],
-    scope: {
-      contracts: [
-        {
-          id: "tasknotes.task",
-          contract_type: "record",
-          version: "0.3.0-rc.1",
-          digest: `sha256:${"0".repeat(64)}`,
-          schema: {},
-          implementations: [
-            {
-              type_name: "task",
-              type_version: 1,
-              digest: `sha256:${"1".repeat(64)}`,
-              fields: { title: "title" },
-            },
-          ],
-        },
-      ],
-      access: "full_collection",
-    },
-    expiresAt: Date.now() + 60_000,
-    refreshExpiresAt: Date.now() + 120_000,
-    savedAt: Date.now(),
-  };
-}
