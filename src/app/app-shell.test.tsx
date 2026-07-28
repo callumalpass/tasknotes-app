@@ -16,6 +16,7 @@ it("lets a cloud user escape an unavailable remembered collection", () => {
       choose={vi.fn()}
       error={new Error("The connector is offline.")}
       reauthorizeCurrentCloudCollection={vi.fn()}
+      retry={vi.fn()}
     />,
   );
 
@@ -48,6 +49,7 @@ it("separates reauthorizing the current collection from choosing another", () =>
         code: "authorization_expired",
       })}
       reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
+      retry={vi.fn()}
     />,
   );
 

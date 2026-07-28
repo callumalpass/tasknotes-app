@@ -46,9 +46,9 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.12-111ca0a68636.tgz",
-    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz",
-    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.12-111ca0a68636.tgz",
+    "@mdbase/connect": "file:vendor/mdbase-connect-0.1.0-beta.13-5f3f8a9c016a.tgz",
+    "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.13-5f3f8a9c016a.tgz",
+    "@mdbase/connect-sync": "file:vendor/mdbase-connect-sync-0.1.0-beta.13-5f3f8a9c016a.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.5.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
@@ -91,7 +91,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.12-111ca0a68636.tgz"
+      "@mdbase/connect-protocol": "file:vendor/mdbase-connect-protocol-0.1.0-beta.13-5f3f8a9c016a.tgz"
     }
   }
 }

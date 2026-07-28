@@ -1,17 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 
-const connect = vi.hoisted(() => ({
-  authorize: vi.fn(() => new Promise<never>(() => undefined)),
-}));
-
-vi.mock("../cloud/connect", () => ({
-  activeCloudConnection: vi.fn(() => null),
-  authorizeCloudCollection: connect.authorize,
-  cleanCallbackUrl: vi.fn(),
-  completeCloudAuthorization: vi.fn(),
-  isCloudCallback: vi.fn(() => false),
-  onCloudConnectionChange: vi.fn(() => vi.fn()),
-  savedCloudConnections: vi.fn(() => [
+const connect = vi.hoisted(() => {
+  const connections = [
     {
       collectionId: "collection-offline",
       displayName: "Home tasks",
@@ -28,21 +18,86 @@ vi.mock("../cloud/connect", () => ({
       route: "remote",
       directAccess: "disabled",
     },
-  ]),
-  selectedCloudCollectionId: vi.fn(() => "collection-offline"),
-  selectCloudConnection: vi.fn(),
+  ];
+  const listeners = new Set<() => void>();
+  const state = {
+    snapshot: {
+      status: "unavailable",
+      collectionId: "collection-stale",
+      reason: "not_authorized",
+      connections,
+    } as Record<string, unknown>,
+  };
+  const select = vi.fn((collectionId: string) => {
+    history.replaceState(null, "", `/?collection=${collectionId}`);
+    state.snapshot = {
+      status: "ready",
+      collectionId,
+      connection: { collectionId },
+      info: connections.find(
+        (connection) => connection.collectionId === collectionId,
+      ),
+      access: {
+        authorized: true,
+        sufficient: true,
+        collectionId,
+        grantedOperations: [],
+        missingOperations: [],
+      },
+      connections,
+    };
+    for (const listener of listeners) listener();
+  });
+  return {
+    authorize: vi.fn(() => Promise.resolve({ kind: "redirecting" })),
+    getSnapshot: () => state.snapshot,
+    reset: () => {
+      state.snapshot = {
+        status: "unavailable",
+        collectionId: "collection-stale",
+        reason: "not_authorized",
+        connections,
+      };
+    },
+    select,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+});
+
+vi.mock("../cloud/connect", () => ({
+  cloudSession: connect,
 }));
 
 import { CloudConnection } from "./cloud-collection";
 
-it("lists every remembered collection and connects another without pinning the offline one", () => {
+beforeEach(() => {
+  history.replaceState(null, "", "/?collection=collection-stale");
+  connect.reset();
+  connect.authorize.mockClear();
+  connect.select.mockClear();
+});
+
+it("switches from a stale bookmark to a remembered collection without reloading", () => {
+  render(<CloudConnection error={null} onBack={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Open Work tasks" }));
+
+  expect(connect.select).toHaveBeenCalledWith("collection-online", {
+    history: "replace",
+  });
+  expect(new URL(location.href).searchParams.get("collection")).toBe(
+    "collection-online",
+  );
+});
+
+it("lists remembered collections and authorizes another with choose intent", () => {
   render(<CloudConnection error={null} onBack={vi.fn()} />);
 
   expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Open Work tasks" })).toBeVisible();
-  expect(
-    screen.getByRole("button", { name: "Reconnect Home tasks" }),
-  ).toBeVisible();
   expect(
     screen.getByText("Connect to a computer").parentElement,
   ).toHaveTextContent("delivers task reminders");
@@ -51,5 +106,5 @@ it("lists every remembered collection and connects another without pinning the o
     screen.getByRole("button", { name: "Connect another collection" }),
   );
 
-  expect(connect.authorize).toHaveBeenCalledWith(undefined);
+  expect(connect.authorize).toHaveBeenCalledWith("choose");
 });

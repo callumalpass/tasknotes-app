@@ -70,10 +70,15 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     ({ tokenKey, connectionsKey, collectionId, contract }) => {
       localStorage.clear();
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
+      history.replaceState(null, "", `?collection=${collectionId}`);
+      localStorage.setItem(
+        connectionsKey,
+        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
+      );
       localStorage.setItem(
         tokenKey,
         JSON.stringify({
+          version: 1,
           accessToken: "mdb_local",
           refreshToken: "ref_local",
           clientId: "01911111-1111-7111-8111-111111111111",
@@ -375,7 +380,11 @@ test("restores a custom home view and its cached rows before relay refresh", asy
         request.onerror = () => reject(request.error);
       });
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
+      history.replaceState(null, "", `?collection=${collectionId}`);
+      localStorage.setItem(
+        connectionsKey,
+        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
+      );
       localStorage.setItem(
         "tasknotes:navigation-views:v2",
         JSON.stringify({
@@ -385,6 +394,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
       localStorage.setItem(
         tokenKey,
         JSON.stringify({
+          version: 1,
           accessToken: "mdb_cached_home",
           refreshToken: "ref_cached_home",
           clientId: "01911111-1111-7111-8111-111111111111",
@@ -763,10 +773,15 @@ async function installRelayAuthorization(
     }) => {
       localStorage.clear();
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
+      history.replaceState(null, "", `?collection=${collectionId}`);
+      localStorage.setItem(
+        connectionsKey,
+        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
+      );
       localStorage.setItem(
         tokenKey,
         JSON.stringify({
+          version: 1,
           accessToken: "mdb_configured",
           refreshToken: "ref_configured",
           clientId: "01911111-1111-7111-8111-111111111111",

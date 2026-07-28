@@ -3,7 +3,7 @@ import { reminderFireTime } from "../domain/reminder";
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 import type { MdbaseDesiredTimer } from "@mdbase/connect";
-import { activeCloudConnection } from "../cloud/connect";
+import { cloudSession } from "../cloud/connect";
 import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 
 const TIMER_NAMESPACE = "task-reminders";
@@ -67,7 +67,9 @@ function reconcileConnectNotifications(
         const current = latestRepository;
         if (!current) return;
         const tasks = await current.list({ status: "open", limit: 50_000 });
-        const connection = activeCloudConnection();
+        const snapshot = cloudSession.getSnapshot();
+        const connection =
+          snapshot.status === "ready" ? snapshot.connection : null;
         if (!connection) throw new Error("TaskNotes is not connected.");
         const operationInput = {
           namespace: TIMER_NAMESPACE,

@@ -1,14 +1,8 @@
 import { BellRing, MonitorUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
-import {
-  activeCloudConnection,
-  authorizeCloudCollection,
-  onCloudConnectionChange,
-  savedCloudConnections,
-  selectedCloudCollectionId,
-  selectCloudConnection,
-} from "../cloud/connect";
+import { cloudSession } from "../cloud/connect";
+import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionChoice } from "./collection-context";
@@ -33,29 +27,17 @@ export default function CloudCollection({
   reauthorizeCurrentCloudCollection(): void;
   reset(): void;
 }) {
-  const [opened, setOpened] = useState(() => {
-    const connection = activeCloudConnection();
-    return connection
-      ? {
-          collectionId: connection.collectionId,
-          repository: createConnectTaskRepository(connection),
-        }
-      : null;
-  });
-
-  useEffect(
+  const session = useCloudSessionSnapshot();
+  const connection = session.status === "ready" ? session.connection : null;
+  const opened = useMemo(
     () =>
-      onCloudConnectionChange((connection) => {
-        setOpened(
-          connection
-            ? {
-                collectionId: connection.collectionId,
-                repository: createConnectTaskRepository(connection),
-              }
-            : null,
-        );
-      }),
-    [],
+      connection
+        ? {
+            collectionId: connection.collectionId,
+            repository: createConnectTaskRepository(connection),
+          }
+        : null,
+    [connection],
   );
 
   if (!opened)
@@ -85,19 +67,35 @@ export function CloudConnection({
 }) {
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
-  const connections = savedCloudConnections();
-  const selectedCollectionId = selectedCloudCollectionId();
+  const session = useCloudSessionSnapshot();
+  const connections = session.connections;
+  const selectedCollectionId =
+    session.status === "ready" || session.status === "unavailable"
+      ? session.collectionId
+      : null;
   const selectedConnection = connections.find(
     (connection) => connection.collectionId === selectedCollectionId,
   );
 
-  function connect(kind: "another" | "reconnect", collectionId?: string) {
+  async function connect(kind: "another" | "reconnect") {
     setOpening(kind);
     setStartError(null);
-    void authorizeCloudCollection(collectionId).catch((reason) => {
-      setOpening(null);
+    try {
+      await cloudSession.authorize(kind === "another" ? "choose" : "selected");
+    } catch (reason) {
       setStartError(message(reason));
-    });
+    } finally {
+      setOpening(null);
+    }
+  }
+
+  function open(collectionId: string) {
+    setStartError(null);
+    try {
+      cloudSession.select(collectionId, { history: "replace" });
+    } catch (reason) {
+      setStartError(message(reason));
+    }
   }
 
   return (
@@ -143,21 +141,18 @@ export function CloudConnection({
             className="outline-action"
             disabled={opening !== null}
             type="button"
-            onClick={() => {
-              selectCloudConnection(connection.collectionId, true);
-              location.reload();
-            }}
+            onClick={() => open(connection.collectionId)}
           >
             Open {connection.displayName}
           </button>
         ))}
         <button
           className="outline-action"
-          disabled={opening !== null && !error}
+          disabled={opening !== null}
           type="button"
-          onClick={() => connect("another")}
+          onClick={() => void connect("another")}
         >
-          {opening === "another" && !error
+          {opening === "another"
             ? "Opening mdbase…"
             : connections.length
               ? "Connect another collection"
@@ -166,11 +161,11 @@ export function CloudConnection({
         {selectedCollectionId ? (
           <button
             className="text-action"
-            disabled={opening !== null && !error}
+            disabled={opening !== null}
             type="button"
-            onClick={() => connect("reconnect", selectedCollectionId)}
+            onClick={() => void connect("reconnect")}
           >
-            {opening === "reconnect" && !error
+            {opening === "reconnect"
               ? "Opening mdbase…"
               : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
           </button>
