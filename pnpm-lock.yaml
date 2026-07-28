@@ -102,8 +102,8 @@ importers:
         version: 2.9.0
     devDependencies:
       "@callumalpass/mdbase":
-        specifier: file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz
-        version: file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz
+        specifier: file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz
+        version: file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz
       "@capacitor/android":
         specifier: 8.4.2
         version: 8.4.2(@capacitor/core@8.4.2)
@@ -368,19 +368,13 @@ packages:
         integrity: sha512-HrSjnBjk71LpKDlUnbxdN9DD24Hr5O92kCxRVHA0sEa35z6tEUjBS7YQVYBMS9npbllLtPW7tGSAWwfUKBs1Hw==,
       }
 
-  "@callumalpass/mdbase-runtime@0.1.0-rc.1":
+  "@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz":
     resolution:
       {
-        integrity: sha512-I+sLSUZWvq2F57ehWsfgFM5ZIbDiCkf7ROyE7EzAV/M1lkFqihFjkkH0FSr/2RzleiT84UEadZuQD1D8NdJKFA==,
+        integrity: sha512-jsN4p87I6XS5WxxyeW0moKV836sA+HiFK2JOUZ/Mcjt/qN6Q4ttBP4elu/HxXKFr4JXgwPRcpvRjxn9aZ8kHfQ==,
+        tarball: file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz,
       }
-
-  "@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz":
-    resolution:
-      {
-        integrity: sha512-T21YnMTP1UBdVW9WfHUwHtJSdCqiPDqipQ8vhLS5VciXRXGYJbSLle939kt8BAaHo+sPq9+DYhP14sVlfIcE7w==,
-        tarball: file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz,
-      }
-    version: 0.3.0-rc.3
+    version: 0.3.0-rc.4
     hasBin: true
 
   "@capacitor-firebase/messaging@8.3.0":
@@ -6312,18 +6306,10 @@ snapshots:
 
   "@bufbuild/re2@0.6.0": {}
 
-  "@callumalpass/mdbase-runtime@0.1.0-rc.1":
-    dependencies:
-      ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
-      semver: 7.8.5
-      yaml: 2.9.0
-
-  "@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz":
+  "@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz":
     dependencies:
       "@bufbuild/cel": 0.6.0(@bufbuild/protobuf@2.13.0)
       "@bufbuild/protobuf": 2.13.0
-      "@callumalpass/mdbase-runtime": 0.1.0-rc.1
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       gray-matter: 4.0.3

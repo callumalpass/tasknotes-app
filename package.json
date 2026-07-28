@@ -63,7 +63,7 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.3.tgz",
+    "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz",
     "@capacitor/android": "8.4.2",
     "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",
