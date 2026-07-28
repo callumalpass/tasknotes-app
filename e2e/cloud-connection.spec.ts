@@ -668,6 +668,7 @@ function collectionDescription() {
     ],
     contracts: [
       {
+        contract_type: "record" as const,
         id: "tasknotes.task",
         version: "0.3.0-rc.1",
         digest: `sha256:${"0".repeat(64)}`,
