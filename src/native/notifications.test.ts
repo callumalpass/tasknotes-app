@@ -1,19 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  reconcileTimers: vi.fn(async (input: unknown) => input),
-}));
+const mocks = vi.hoisted(() => {
+  const reconcileTimers = vi.fn(async (input: unknown) => input);
+  return {
+    connection: { reconcileTimers },
+    reconcileTimers,
+  };
+});
 
 vi.mock("../cloud/connect", () => ({
-  activeCloudConnection: () => ({
-    reconcileTimers: mocks.reconcileTimers,
-  }),
+  activeCloudConnection: () => mocks.connection,
 }));
 
-import { desiredTaskTimers, reconcileTaskNotifications } from "./notifications";
+import {
+  desiredTaskTimers,
+  reconcileTaskNotifications,
+  taskUpdateAffectsNotifications,
+} from "./notifications";
+import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
+import type { JsonObject, MdbaseConnection } from "@mdbase/connect";
 
 describe("mdbase task reminders", () => {
   beforeEach(() => {
@@ -142,4 +150,42 @@ describe("mdbase task reminders", () => {
       timers: [],
     });
   });
+
+  it("waits for an active task write before reconciling reminders", async () => {
+    const repository = {
+      list: vi.fn(async () => []),
+    } as unknown as TaskRepository;
+    const connection =
+      mocks.connection as unknown as MdbaseConnection<JsonObject>;
+    const activeWrite = deferred<void>();
+    const write = runMdbaseMutation(connection, () => activeWrite.promise);
+
+    const reconciliation = reconcileTaskNotifications(repository, "connect");
+    await Promise.resolve();
+    expect(mocks.reconcileTimers).not.toHaveBeenCalled();
+
+    activeWrite.resolve();
+    await write;
+    await reconciliation;
+    expect(mocks.reconcileTimers).toHaveBeenCalledOnce();
+  });
+
+  it("does not reconcile reminders for manual-order-only updates", () => {
+    expect(taskUpdateAffectsNotifications({ sortOrder: "tnaaaaaaaaaa" })).toBe(
+      false,
+    );
+    expect(taskUpdateAffectsNotifications({ status: "done" })).toBe(true);
+    expect(taskUpdateAffectsNotifications({ due: null })).toBe(true);
+    expect(taskUpdateAffectsNotifications({ reminders: [] })).toBe(true);
+  });
 });
+
+function deferred<Result>() {
+  let resolve!: (value: Result | PromiseLike<Result>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<Result>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}

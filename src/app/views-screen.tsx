@@ -120,6 +120,7 @@ export function ViewsScreen({
     createTask,
     toggleTask,
     updateTask,
+    updateTasks,
     configuration,
     indexing,
     version,
@@ -428,14 +429,21 @@ export function ViewsScreen({
 
     const operation = manualOrderMutationQueue.current.then(async () => {
       try {
-        for (const write of plan.writes) {
-          if (write.taskId === dragged.task.id) continue;
-          await updateTask(write.taskId, { sortOrder: write.sortOrder });
-        }
-        await updateTask(dragged.task.id, {
-          ...additionalInput,
-          ...(draggedWrite ? { sortOrder: draggedWrite.sortOrder } : {}),
-        });
+        await updateTasks([
+          ...plan.writes
+            .filter(({ taskId }) => taskId !== dragged.task.id)
+            .map(({ taskId, sortOrder }) => ({
+              id: taskId,
+              input: { sortOrder },
+            })),
+          {
+            id: dragged.task.id,
+            input: {
+              ...additionalInput,
+              ...(draggedWrite ? { sortOrder: draggedWrite.sortOrder } : {}),
+            },
+          },
+        ]);
         const refreshed = await repository.executeView(view);
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);

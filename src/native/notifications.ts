@@ -1,9 +1,10 @@
 import { reminderFireTime } from "../domain/reminder";
 
-import type { Task } from "../domain/task";
+import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
 import type { MdbaseDesiredTimer } from "@mdbase/connect";
 import { activeCloudConnection } from "../cloud/connect";
+import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 
 const TIMER_NAMESPACE = "task-reminders";
 const TIMER_CRITERION = "task.reminder";
@@ -14,6 +15,19 @@ let connectReconciliation: Promise<void> | null = null;
 let requestedReconciliation = 0;
 let completedReconciliation = 0;
 let latestRepository: TaskRepository | null = null;
+
+export function taskUpdateAffectsNotifications(
+  input: UpdateTaskInput,
+): boolean {
+  return [
+    "archived",
+    "completed",
+    "due",
+    "reminders",
+    "scheduled",
+    "status",
+  ].some((property) => Object.hasOwn(input, property));
+}
 
 export async function reconcileTaskNotifications(
   repository: TaskRepository,
@@ -55,11 +69,14 @@ function reconcileConnectNotifications(
         const tasks = await current.list({ status: "open", limit: 50_000 });
         const connection = activeCloudConnection();
         if (!connection) throw new Error("TaskNotes is not connected.");
-        await connection.reconcileTimers({
+        const operationInput = {
           namespace: TIMER_NAMESPACE,
           criterion_id: TIMER_CRITERION,
           timers: await desiredTaskTimers(tasks),
-        });
+        };
+        await runMdbaseMutation(connection, () =>
+          connection.reconcileTimers(operationInput),
+        );
         completedReconciliation = target;
       }
     })().finally(() => {
