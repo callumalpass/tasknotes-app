@@ -35,8 +35,9 @@ const checks = [
       requireNotificationManifest &&
       (manifest.notifications?.criteria?.length !== 1 ||
         manifest.notifications.criteria[0]?.id !== "task.reminder" ||
-        manifest.notifications.criteria[0]?.event?.id !== "timer.fired" ||
-        manifest.notifications.criteria[0]?.event?.version !== 1)
+        manifest.notifications.criteria[0]?.event?.id !==
+          "mdbase.runtime.timer.fired" ||
+        manifest.notifications.criteria[0]?.event?.version !== "1.0.0")
     )
       throw new Error(
         "The deployed mdbase application manifest is not reminder-only.",

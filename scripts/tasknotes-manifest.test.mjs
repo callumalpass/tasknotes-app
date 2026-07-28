@@ -17,7 +17,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.notifications.criteria).toEqual([
       {
         id: "task.reminder",
-        event: { id: "timer.fired", version: 1 },
+        event: { id: "mdbase.runtime.timer.fired", version: "1.0.0" },
         presentation: {
           title: "Task reminder",
           body: "Open TaskNotes to view your task.",

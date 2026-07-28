@@ -17,6 +17,11 @@ asks for system permission only after the user selects **Turn on reminders**.
 A received reminder refreshes current authorized state; it never embeds task
 content in the notification.
 
+The public application manifest subscribes only to the canonical Runtime 0.2
+event contract `mdbase.runtime.timer.fired@1.0.0`. Its event data is validated
+with JSON Schema before notification policy is evaluated; contract
+compatibility does not grant notification access.
+
 Android uses Capacitor's official `@capacitor/push-notifications` plugin, the
 same native FCM path exercised by Pickle. iOS uses
 `@capacitor-firebase/messaging` because Connect requires an FCM token and the
