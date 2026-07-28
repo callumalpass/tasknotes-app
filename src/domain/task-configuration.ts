@@ -123,7 +123,7 @@ function taskNotesImplementation(
       .find(
         (implementation) =>
           implementation.contract === "tasknotes.task" &&
-          implementation.version === "0.2.0",
+          implementation.version === "0.3.0-rc.1",
       ) ?? {}
   );
 }

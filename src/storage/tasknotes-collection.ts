@@ -27,10 +27,12 @@ export function resolveTaskCollection(
 ): ResolvedTaskCollection {
   const contract = resources.contracts.find(
     (candidate) =>
-      candidate.id === "tasknotes.task" && candidate.version === "0.2.0",
+      candidate.id === "tasknotes.task" && candidate.version === "0.3.0-rc.1",
   );
   if (!contract)
-    throw new Error("This collection does not provide tasknotes.task 0.2.0.");
+    throw new Error(
+      "This collection does not provide tasknotes.task 0.3.0-rc.1.",
+    );
   const providers = contract.implementations.map((implementation) => {
     const type = resources.types.find(
       (candidate) => candidate.name === implementation.type_name,
@@ -68,7 +70,7 @@ export function resolveTaskTypeDefinition(
     overrides.fields ?? taskNotesImplementation(definition)?.fields;
   const implementation = {
     contract: "tasknotes.task",
-    version: "0.2.0",
+    version: "0.3.0-rc.1",
     fields: fields ?? {},
     binding: configuration ?? {},
   };
@@ -128,7 +130,7 @@ function taskNotesImplementation(
       typeof candidate === "object" &&
       !Array.isArray(candidate) &&
       (candidate as Record<string, unknown>).contract === "tasknotes.task" &&
-      (candidate as Record<string, unknown>).version === "0.2.0",
+      (candidate as Record<string, unknown>).version === "0.3.0-rc.1",
   );
 }
 

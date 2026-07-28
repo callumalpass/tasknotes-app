@@ -201,7 +201,7 @@ export class MarkdownCollection {
     ).flat();
     if (!matches.length)
       throw new Error(
-        `No type implementing tasknotes.task 0.2.0 was found in ${nextTypesFolder}/.`,
+        `No type implementing tasknotes.task 0.3.0-rc.1 was found in ${nextTypesFolder}/.`,
       );
     if (matches.length > 1)
       throw new Error(
@@ -1101,12 +1101,12 @@ function taskNotesImplementation(
           !Array.isArray(candidate) &&
           (candidate as Record<string, unknown>).contract ===
             "tasknotes.task" &&
-          (candidate as Record<string, unknown>).version === "0.2.0",
+          (candidate as Record<string, unknown>).version === "0.3.0-rc.1",
       )
     : undefined;
   if (!implementation)
     throw new Error(
-      "The generated type does not implement tasknotes.task 0.2.0.",
+      "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
     );
   return implementation as Record<string, unknown>;
 }

@@ -28,7 +28,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.notifications.native_delivery).toBeUndefined();
     expect(JSON.stringify(manifest.notifications)).not.toContain("path");
     expect(manifest.requirements.contracts).toEqual([
-      { id: "tasknotes.task", version: "0.2.0" },
+      { id: "tasknotes.task", version: "0.3.0-rc.1" },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
@@ -56,7 +56,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.2.0",
+        candidate.version === "0.3.0-rc.1",
     );
     const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
