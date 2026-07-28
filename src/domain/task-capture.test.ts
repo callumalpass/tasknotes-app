@@ -23,23 +23,30 @@ const configuration = resolveTaskCollectionConfiguration({
       },
     },
   },
-  "x-tasknotes": {
-    status: {
-      default: "todo",
-      definitions: [
-        { value: "todo", label: "To do", order: 0 },
-        { value: "doing", label: "In progress", order: 1 },
-        { value: "done", label: "Done", order: 2, is_completed: true },
-      ],
+  implements: [
+    {
+      contract: "tasknotes.task",
+      version: "0.2.0",
+      fields: { title: "title", status: "status", priority: "priority" },
+      binding: {
+        status: {
+          default: "todo",
+          definitions: [
+            { value: "todo", label: "To do", order: 0 },
+            { value: "doing", label: "In progress", order: 1 },
+            { value: "done", label: "Done", order: 2, is_completed: true },
+          ],
+        },
+        priority: {
+          default: "normal",
+          definitions: [
+            { value: "normal", label: "Normal", weight: 0 },
+            { value: "high", label: "High", weight: 1 },
+          ],
+        },
+      },
     },
-    priority: {
-      default: "normal",
-      definitions: [
-        { value: "normal", label: "Normal", weight: 0 },
-        { value: "high", label: "High", weight: 1 },
-      ],
-    },
-  },
+  ],
 });
 
 describe("task capture", () => {

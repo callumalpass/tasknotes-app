@@ -69,6 +69,8 @@ type CloudFrontmatter = JsonObject;
 interface CachedCloudTask {
   task: Task;
   recordId: string;
+  model: TaskNotesTaskModel;
+  typeName: string;
 }
 
 export class CloudTaskRepository implements TaskRepository {
@@ -76,6 +78,9 @@ export class CloudTaskRepository implements TaskRepository {
   private model = new TaskNotesTaskModel();
   private resources: SyncCollectionResources | null = null;
   private taskTypeName = "task";
+  private taskProviders = new Map<string, TaskNotesTaskModel>([
+    ["task", this.model],
+  ]);
   private readonly cache = new Map<string, CachedCloudTask>();
   private completionRecords: CollectionRecord[] = [];
   private viewCache: TaskViewDocument[] = [];
@@ -306,7 +311,12 @@ export class CloudTaskRepository implements TaskRepository {
       body: task.body,
       types: [this.taskTypeName],
     });
-    this.cache.set(task.id, { task, recordId: record.record_id });
+    this.cache.set(task.id, {
+      task,
+      recordId: record.record_id,
+      model: this.model,
+      typeName: this.taskTypeName,
+    });
     const retained = await this.withRollingWarnings(task);
     await this.afterLocalMutation();
     return retained;
@@ -315,7 +325,7 @@ export class CloudTaskRepository implements TaskRepository {
   update(id: string, input: UpdateTaskInput): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
-      const next = this.model.update(current.task, input, {
+      const next = current.model.update(current.task, input, {
         now: new Date().toISOString(),
       });
       await this.requireReplica().queueUpdate({
@@ -349,7 +359,7 @@ export class CloudTaskRepository implements TaskRepository {
     }
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
-      const next = this.model.toggle(current.task, {
+      const next = current.model.toggle(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
       });
@@ -383,7 +393,7 @@ export class CloudTaskRepository implements TaskRepository {
     }
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
-      const next = this.model.skip(current.task, {
+      const next = current.model.skip(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
       });
@@ -408,8 +418,8 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   async startTimeTracking(id: string, description?: string): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.startTimeTracking(task, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.startTimeTracking(task, {
         now: new Date().toISOString(),
         description,
       }),
@@ -417,8 +427,8 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   async stopTimeTracking(id: string): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.stopTimeTracking(task, { now: new Date().toISOString() }),
+    return this.persistModelMutation(id, (task, model) =>
+      model.stopTimeTracking(task, { now: new Date().toISOString() }),
     );
   }
 
@@ -426,16 +436,16 @@ export class CloudTaskRepository implements TaskRepository {
     id: string,
     entries: TaskTimeEntry[],
   ): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.replaceTimeEntries(task, entries, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.replaceTimeEntries(task, entries, {
         now: new Date().toISOString(),
       }),
     );
   }
 
   async removeTimeEntry(id: string, index: number): Promise<Task> {
-    return this.persistModelMutation(id, (task) =>
-      this.model.removeTimeEntry(task, index, {
+    return this.persistModelMutation(id, (task, model) =>
+      model.removeTimeEntry(task, index, {
         now: new Date().toISOString(),
       }),
     );
@@ -444,7 +454,7 @@ export class CloudTaskRepository implements TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
-      const next = this.model.update(
+      const next = current.model.update(
         current.task,
         { archived },
         { now: new Date().toISOString() },
@@ -455,7 +465,7 @@ export class CloudTaskRepository implements TaskRepository {
         body: next.body,
       });
       let stored = next;
-      const destination = this.model.archiveDestination(next, archived);
+      const destination = current.model.archiveDestination(next, archived);
       if (destination) {
         try {
           await this.requireReplica().queueRename({
@@ -576,8 +586,10 @@ export class CloudTaskRepository implements TaskRepository {
         }),
       ) as ProviderViewExecution;
       const execution = normalizeViewExecution(view, result, (record) => {
+        const provider = this.providerForTypes(record.types ?? []);
+        if (!provider) return null;
         try {
-          return this.model.read({
+          return provider.model.read({
             path: record.path,
             frontmatter: record.effective_frontmatter,
             body: record.body ?? "",
@@ -680,6 +692,9 @@ export class CloudTaskRepository implements TaskRepository {
     this.resources = structuredClone(resources);
     this.taskTypeName = resolved.typeName;
     this.model = resolved.model;
+    this.taskProviders = new Map(
+      resolved.providers.map((provider) => [provider.typeName, provider.model]),
+    );
   }
 
   private async reloadResources(): Promise<void> {
@@ -709,24 +724,51 @@ export class CloudTaskRepository implements TaskRepository {
     const records = await this.requireReplica().records();
     this.completionRecords = records.map(cloudCollectionRecord);
     for (const record of records) {
-      if (!record.types.includes(this.taskTypeName)) continue;
-      const task = this.readRecord(record);
-      if (task) next.set(task.id, { task, recordId: record.record_id });
+      const decoded = this.readRecord(record);
+      if (decoded)
+        next.set(decoded.task.id, {
+          ...decoded,
+          recordId: record.record_id,
+        });
     }
     this.cache.clear();
     for (const [id, value] of next) this.cache.set(id, value);
   }
 
-  private readRecord(record: SyncRecord<CloudFrontmatter>): Task | null {
+  private readRecord(
+    record: SyncRecord<CloudFrontmatter>,
+  ): Omit<CachedCloudTask, "recordId"> | null {
+    const provider = this.providerForTypes(record.types);
+    if (!provider) return null;
     try {
-      return this.model.read({
-        path: record.path,
-        frontmatter: record.frontmatter,
-        body: record.body,
-      });
+      return {
+        task: provider.model.read({
+          path: record.path,
+          frontmatter: record.frontmatter,
+          body: record.body,
+        }),
+        ...provider,
+      };
     } catch {
       return null;
     }
+  }
+
+  private providerForTypes(
+    types: string[],
+  ): { model: TaskNotesTaskModel; typeName: string } | null {
+    const matches = types
+      .map((typeName) => {
+        const model = this.taskProviders.get(typeName);
+        return model ? { model, typeName } : null;
+      })
+      .filter(
+        (
+          provider,
+        ): provider is { model: TaskNotesTaskModel; typeName: string } =>
+          provider !== null,
+      );
+    return matches.length === 1 ? matches[0] : null;
   }
 
   private async afterLocalMutation(): Promise<void> {
@@ -737,11 +779,11 @@ export class CloudTaskRepository implements TaskRepository {
 
   private persistModelMutation(
     id: string,
-    mutate: (task: Task) => Task,
+    mutate: (task: Task, model: TaskNotesTaskModel) => Task,
   ): Promise<Task> {
     return this.serializeWrite(id, async () => {
       const current = this.requireTask(id);
-      const next = mutate(current.task);
+      const next = mutate(current.task, current.model);
       await this.requireReplica().queueUpdate({
         recordId: current.recordId,
         patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
@@ -768,7 +810,7 @@ export class CloudTaskRepository implements TaskRepository {
       occurrenceDate,
     );
     if (resolved) return { task: resolved, created: false, warnings: [] };
-    const result = await this.model.materializeOccurrence(
+    const result = await parent.model.materializeOccurrence(
       parent.task,
       occurrenceDate,
       occurrences,
@@ -785,12 +827,17 @@ export class CloudTaskRepository implements TaskRepository {
       path: created.path,
       frontmatter: asJson(created.frontmatter),
       body: created.body,
-      types: [this.taskTypeName],
+      types: [parent.typeName],
     });
     const task = result.warnings.length
       ? { ...created, operationWarnings: result.warnings }
       : created;
-    this.cache.set(task.id, { task, recordId: record.record_id });
+    this.cache.set(task.id, {
+      task,
+      recordId: record.record_id,
+      model: parent.model,
+      typeName: parent.typeName,
+    });
     if (notify) await this.afterLocalMutation();
     return { ...result, task };
   }
@@ -817,7 +864,11 @@ export class CloudTaskRepository implements TaskRepository {
   ): Promise<Task> {
     const occurrence = this.requireTask(occurrenceId);
     const parent = this.requireTask(parentId);
-    const transition = this.model.transitionMaterializedOccurrence(
+    if (occurrence.typeName !== parent.typeName)
+      throw new Error(
+        "A materialized occurrence and its parent must use the same TaskNotes implementation type.",
+      );
+    const transition = parent.model.transitionMaterializedOccurrence(
       occurrence.task,
       parent.task,
       action,

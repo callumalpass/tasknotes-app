@@ -24,7 +24,7 @@ const targets = [
   resolve(import.meta.dirname, "..", "src", "generated", "mdbase-app.json"),
 ];
 
-const manifest = buildTaskNotesManifest({
+const manifest = await buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,

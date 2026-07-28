@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
 import { CloudTaskRepository } from "./cloud-repository";
+import { resolveTaskCollection } from "./tasknotes-collection";
 
 function resources(): SyncCollectionResources {
   const generated = buildTaskNotesMdbaseResources({
@@ -21,9 +22,17 @@ function resources(): SyncCollectionResources {
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
     collection?: JsonObject;
-    "x-tasknotes": JsonObject;
+    implements: Array<{
+      contract: string;
+      version: string;
+      fields: Record<string, string>;
+      binding: JsonObject;
+    }>;
   };
-  const contract = type["x-tasknotes"] as JsonObject;
+  const implementation = type.implements.find(
+    (candidate) =>
+      candidate.contract === "tasknotes.task" && candidate.version === "0.2.0",
+  )!;
   return {
     revision: crypto.randomUUID(),
     spec_version: "0.3.0",
@@ -33,16 +42,26 @@ function resources(): SyncCollectionResources {
         version: 1,
         schema: type.schema.value,
         collection: type.collection,
-        extensions: { "x-tasknotes": contract },
+        definition: generated.type,
+        extensions: {},
       },
     ],
     contracts: [
       {
         id: "tasknotes.task",
-        version: 1,
-        type_name: "task",
-        extension: "x-tasknotes",
-        configuration: contract,
+        version: "0.2.0",
+        digest: `sha256:${"0".repeat(64)}`,
+        schema: generated.taskSchema,
+        binding_schema: generated.bindingSchema,
+        implementations: [
+          {
+            type_name: "task",
+            type_version: 1,
+            digest: `sha256:${"1".repeat(64)}`,
+            fields: implementation.fields,
+            binding: implementation.binding,
+          },
+        ],
       },
     ],
   };
@@ -58,16 +77,62 @@ function resourcesWithType(
     name: typeName,
     collection: { path: { folder } },
   };
-  value.contracts[0] = { ...value.contracts[0], type_name: typeName };
+  value.contracts[0] = {
+    ...value.contracts[0],
+    implementations: value.contracts[0].implementations.map(
+      (implementation) => ({ ...implementation, type_name: typeName }),
+    ),
+  };
+  return value;
+}
+
+function multipleProviderResources(): SyncCollectionResources {
+  const value = resources();
+  const taskType = value.types[0]!;
+  const taskImplementation = value.contracts[0]!.implementations[0]!;
+  const schema = structuredClone(taskType.schema) as Record<string, unknown>;
+  const properties = schema.properties as Record<string, unknown>;
+  properties.summary = properties.title;
+  delete properties.title;
+  if (Array.isArray(schema.required)) {
+    schema.required = schema.required.map((field) =>
+      field === "title" ? "summary" : field,
+    );
+  }
+  const definition = structuredClone(taskType.definition ?? {}) as Record<
+    string,
+    unknown
+  >;
+  definition.name = "work_task";
+  definition.schema = {
+    dialect: "json-schema-2020-12",
+    value: schema,
+  };
+  value.types.push({
+    ...taskType,
+    name: "work_task",
+    schema: schema as JsonObject,
+    collection: { path: { pattern: "work-tasks/{id}.md" } },
+    definition,
+  });
+  value.contracts[0]!.implementations.push({
+    ...taskImplementation,
+    type_name: "work_task",
+    digest: `sha256:${"2".repeat(64)}`,
+    fields: {
+      ...taskImplementation.fields,
+      title: "summary",
+    },
+  });
   return value;
 }
 
 function resourcesWithTemplate(): SyncCollectionResources {
   const value = resources();
-  value.contracts[0] = {
-    ...value.contracts[0],
-    configuration: {
-      ...value.contracts[0].configuration,
+  value.contracts[0].implementations[0] = {
+    ...value.contracts[0].implementations[0],
+    binding: {
+      ...value.contracts[0].implementations[0].binding,
       templating: {
         enabled: true,
         template_path: "Templates/Task.md",
@@ -93,10 +158,10 @@ Cloud body for {{title}} on {{date}}`,
 
 function resourcesWithArchive(): SyncCollectionResources {
   const value = resources();
-  value.contracts[0] = {
-    ...value.contracts[0],
-    configuration: {
-      ...value.contracts[0].configuration,
+  value.contracts[0].implementations[0] = {
+    ...value.contracts[0].implementations[0],
+    binding: {
+      ...value.contracts[0].implementations[0].binding,
       archive: {
         move_on_archive: true,
         folder: "TaskNotes/Archive",
@@ -119,6 +184,85 @@ function connect(
 }
 
 describe("cloud task repository", () => {
+  it("unions multiple replicated providers and writes through the record's mapping", async () => {
+    const collectionResources = multipleProviderResources();
+    const providers = resolveTaskCollection(collectionResources);
+    const taskProvider = providers.providers.find(
+      ({ typeName }) => typeName === "task",
+    )!;
+    const workProvider = providers.providers.find(
+      ({ typeName }) => typeName === "work_task",
+    )!;
+    const personalId = "11111111-1111-4111-8111-111111111111";
+    const workId = "22222222-2222-4222-8222-222222222222";
+    const personal = taskProvider.model.create(
+      { title: "Personal replicated task" },
+      { id: personalId, now: "2026-07-22T00:00:00.000Z" },
+    );
+    const work = workProvider.model.create(
+      { title: "Mapped replicated task" },
+      { id: workId, now: "2026-07-22T00:00:00.000Z" },
+    );
+    const authority = new MemoryAuthority<JsonObject>({
+      resources: collectionResources,
+    });
+    authority.seed([
+      {
+        record_id: personalId,
+        path: personal.path,
+        frontmatter: personal.frontmatter as JsonObject,
+        body: personal.body,
+        types: ["task"],
+      },
+      {
+        record_id: workId,
+        path: work.path,
+        frontmatter: work.frontmatter as JsonObject,
+        body: work.body,
+        types: ["work_task"],
+      },
+    ]);
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task", "work_task"],
+    });
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+
+    await repository.initialize();
+    expect((await repository.list()).map(({ title }) => title).sort()).toEqual([
+      "Mapped replicated task",
+      "Personal replicated task",
+    ]);
+    await repository.update(workId, {
+      title: "Mapped replicated task updated",
+    });
+    await repository.refresh();
+    const rawWork = authority
+      .serialize()
+      .records.find(({ record_id }) => record_id === workId)!;
+    expect(rawWork.frontmatter.summary).toBe("Mapped replicated task updated");
+    expect(rawWork.frontmatter).not.toHaveProperty("title");
+
+    const created = await repository.create({
+      title: "Created on the deterministic provider",
+    });
+    await repository.refresh();
+    expect(
+      authority
+        .serialize()
+        .records.find(({ record_id }) => record_id === created.id)?.types,
+    ).toEqual(["task"]);
+  });
+
   it("restores cached view definitions and revision-matched results before refresh", async () => {
     const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),

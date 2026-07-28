@@ -67,7 +67,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
 
   await page.goto("./");
   await page.evaluate(
-    ({ tokenKey, connectionsKey, collectionId }) => {
+    ({ tokenKey, connectionsKey, collectionId, contract }) => {
       localStorage.clear();
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
       localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
@@ -92,7 +92,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
             "execute_view",
           ],
           scope: {
-            contracts: [{ id: "tasknotes.task", version: 1 }],
+            contracts: [contract],
             access: "full_collection",
           },
           expiresAt: Date.now() + 60_000,
@@ -105,6 +105,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
       tokenKey: TASKNOTES_TOKEN_KEY,
       connectionsKey: TASKNOTES_CONNECTIONS_KEY,
       collectionId: TASKNOTES_COLLECTION_ID,
+      contract: tasknotesGrantContract(),
     },
   );
 
@@ -364,7 +365,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
 
   await page.goto("./");
   await page.evaluate(
-    async ({ collectionId, tokenKey, connectionsKey }) => {
+    async ({ collectionId, tokenKey, connectionsKey, contract }) => {
       localStorage.clear();
       await new Promise<void>((resolve, reject) => {
         const request = indexedDB.deleteDatabase(
@@ -397,7 +398,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
             "read_view_source",
           ],
           scope: {
-            contracts: [{ id: "tasknotes.task", version: 1 }],
+            contracts: [contract],
             access: "full_collection",
           },
           expiresAt: Date.now() + 60_000,
@@ -410,6 +411,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
       collectionId,
       tokenKey: `${TASKNOTES_STORAGE_PREFIX}:token:${collectionId}`,
       connectionsKey: TASKNOTES_CONNECTIONS_KEY,
+      contract: tasknotesGrantContract(),
     },
   );
 
@@ -626,8 +628,17 @@ function collectionDescription() {
   const type = generated.type as unknown as {
     schema: { value: JsonObject };
     collection?: JsonObject;
-    "x-tasknotes": JsonObject;
+    implements: Array<{
+      contract: string;
+      version: string;
+      fields: Record<string, string>;
+      binding: JsonObject;
+    }>;
   };
+  const implementation = type.implements.find(
+    (candidate) =>
+      candidate.contract === "tasknotes.task" && candidate.version === "0.2.0",
+  )!;
   return {
     protocol_version: 1,
     collection_id: "01922222-2222-7222-8222-222222222222",
@@ -650,16 +661,26 @@ function collectionDescription() {
         version: 1,
         schema: type.schema.value,
         collection: type.collection,
-        extensions: { "x-tasknotes": type["x-tasknotes"] },
+        definition: generated.type,
+        extensions: {},
       },
     ],
     contracts: [
       {
         id: "tasknotes.task",
-        version: 1,
-        type_name: "task",
-        extension: "x-tasknotes",
-        configuration: type["x-tasknotes"],
+        version: "0.2.0",
+        digest: `sha256:${"0".repeat(64)}`,
+        schema: generated.taskSchema,
+        binding_schema: generated.bindingSchema,
+        implementations: [
+          {
+            type_name: "task",
+            type_version: 1,
+            digest: `sha256:${"1".repeat(64)}`,
+            fields: implementation.fields,
+            binding: structuredClone(implementation.binding),
+          },
+        ],
       },
     ],
   };
@@ -690,7 +711,8 @@ function configuredCollectionDescription() {
     },
     required: [...((type.schema.required as string[]) ?? []), "owner"],
   };
-  const tasknotes = type.extensions["x-tasknotes"] as JsonObject;
+  const tasknotes = description.contracts[0].implementations[0]
+    .binding as JsonObject;
   tasknotes.status = {
     values: ["todo", "doing", "done"],
     completed_values: ["done"],
@@ -709,8 +731,12 @@ function configuredCollectionDescription() {
       { value: "now", label: "Right now", weight: 2 },
     ],
   };
-  description.contracts[0].configuration = tasknotes;
+  description.contracts[0].implementations[0].binding = tasknotes;
   return description;
+}
+
+function tasknotesGrantContract() {
+  return collectionDescription().contracts[0];
 }
 
 async function installRelayAuthorization(
@@ -726,7 +752,13 @@ async function installRelayAuthorization(
 ) {
   await page.goto("./");
   await page.evaluate(
-    ({ authorizedOperations, tokenKey, connectionsKey, collectionId }) => {
+    ({
+      authorizedOperations,
+      tokenKey,
+      connectionsKey,
+      collectionId,
+      contract,
+    }) => {
       localStorage.clear();
       localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
       localStorage.setItem(connectionsKey, JSON.stringify([collectionId]));
@@ -740,7 +772,7 @@ async function installRelayAuthorization(
           collectionName: "TaskNotes E2E",
           operations: authorizedOperations,
           scope: {
-            contracts: [{ id: "tasknotes.task", version: 1 }],
+            contracts: [contract],
             access: "full_collection",
           },
           expiresAt: Date.now() + 60_000,
@@ -754,6 +786,7 @@ async function installRelayAuthorization(
       tokenKey: TASKNOTES_TOKEN_KEY,
       connectionsKey: TASKNOTES_CONNECTIONS_KEY,
       collectionId: TASKNOTES_COLLECTION_ID,
+      contract: tasknotesGrantContract(),
     },
   );
 }

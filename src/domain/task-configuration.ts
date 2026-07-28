@@ -67,11 +67,12 @@ export function resolveTaskCollectionConfiguration(
   value: Record<string, unknown>,
 ): TaskCollectionConfiguration {
   const base = resolveTaskNotesModelConfigFromMdbaseType(value);
-  const extension = record(value["x-tasknotes"]);
+  const implementation = taskNotesImplementation(value);
+  const extension = record(implementation.binding);
   const schema = record(record(value.schema).value);
   const properties = record(schema.properties);
   const required = new Set(stringList(schema.required));
-  const nativeFields = record(value.fields);
+  const collectionLinks = record(record(value.collection).links);
   const statuses = resolveStatuses(base.statuses, record(extension.status));
   const priorities = resolvePriorities(
     base.priorities,
@@ -82,8 +83,11 @@ export function resolveTaskCollectionConfiguration(
     base.fieldMapping,
     required,
   );
-  const explicitKeys = new Set(base.userFields.map((field) => field.key));
-  const explicitFields = base.userFields.map((field) =>
+  const configuredFields = base.userFields.filter(
+    (field) => field.id !== field.key,
+  );
+  const explicitKeys = new Set(configuredFields.map((field) => field.key));
+  const explicitFields = configuredFields.map((field) =>
     enrichUserField(field, record(properties[field.key]), required),
   );
 
@@ -103,7 +107,24 @@ export function resolveTaskCollectionConfiguration(
     }),
     extension,
     properties,
-    nativeFields,
+    collectionLinks,
+  );
+}
+
+function taskNotesImplementation(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const implementations = Array.isArray(value.implements)
+    ? value.implements
+    : [];
+  return (
+    implementations
+      .map(record)
+      .find(
+        (implementation) =>
+          implementation.contract === "tasknotes.task" &&
+          implementation.version === "0.2.0",
+      ) ?? {}
   );
 }
 
@@ -111,7 +132,7 @@ function withCollectionDefaults(
   model: TaskNotesModelConfig,
   extension: Record<string, unknown> = {},
   properties: Record<string, unknown> = {},
-  nativeFields: Record<string, unknown> = {},
+  collectionLinks: Record<string, unknown> = {},
 ): TaskCollectionConfiguration {
   const templating = record(extension.templating);
   const archive = record(extension.archive);
@@ -140,7 +161,11 @@ function withCollectionDefaults(
         false,
       folder: string(archive.folder) ?? "TaskNotes/Archive",
     },
-    fieldCompletions: completionConfiguration(model, properties, nativeFields),
+    fieldCompletions: completionConfiguration(
+      model,
+      properties,
+      collectionLinks,
+    ),
     linkWriteFormat:
       links.write_format === "markdown" ||
       links.writeFormat === "markdown" ||
@@ -154,7 +179,7 @@ function withCollectionDefaults(
 function completionConfiguration(
   model: TaskNotesModelConfig,
   properties: Record<string, unknown>,
-  nativeFields: Record<string, unknown>,
+  collectionLinks: Record<string, unknown>,
 ): Record<string, TaskFieldCompletionConfiguration> {
   const result: Record<string, TaskFieldCompletionConfiguration> = {
     [model.fieldMapping.projects]: { kind: "records" },
@@ -168,24 +193,13 @@ function completionConfiguration(
     if (values.length) result[key] = { kind: "values", values };
   }
 
-  for (const [key, raw] of Object.entries(nativeFields)) {
-    const field = record(raw);
-    const items = record(field.items);
-    const link =
-      field.type === "link" ? field : items.type === "link" ? items : {};
-    const target = string(link.target);
-    if (Object.keys(link).length) {
-      result[key] = {
-        kind: "records",
-        ...(target ? { targetTypes: [target] } : {}),
-      };
-      continue;
-    }
-    const values = [
-      ...stringList(field.values),
-      ...stringList(items.values),
-    ].map((value) => ({ value }));
-    if (values.length) result[key] = { kind: "values", values };
+  for (const [key, raw] of Object.entries(collectionLinks)) {
+    const link = record(raw);
+    const target = string(link.target_type);
+    result[key] = {
+      kind: "records",
+      ...(target && target !== "any" ? { targetTypes: [target] } : {}),
+    };
   }
   return result;
 }

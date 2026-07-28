@@ -1,9 +1,12 @@
-export function buildTaskNotesManifest({
+import { buildTaskNotesMdbaseTypePack } from "@tasknotes/model/mdbase";
+
+export async function buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,
   resources,
 }) {
+  const typePack = await buildTaskNotesMdbaseTypePack(resources);
   return {
     manifest_version: 1,
     id: "dev.tasknotes.app",
@@ -15,18 +18,11 @@ export function buildTaskNotesManifest({
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
     requirements: {
-      contracts: [{ id: "tasknotes.task", version: 1 }],
+      contracts: [{ id: "tasknotes.task", version: "0.2.0" }],
       access: "full_collection",
     },
     provisions: {
-      types: [
-        {
-          name: "task",
-          path: resources.paths.type,
-          document: resources.typeDocument,
-          provides: [{ id: "tasknotes.task", version: 1 }],
-        },
-      ],
+      type_packs: [typePack],
     },
     notifications: {
       criteria: [

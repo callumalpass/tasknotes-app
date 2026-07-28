@@ -608,9 +608,16 @@ describe("IndexedMarkdownRepository", () => {
       description: "Keep this custom field.",
     });
     expect(updated.frontmatter["x-host"]).toEqual({ keep: true });
+    const updatedImplementation = (
+      updated.frontmatter.implements as Array<Record<string, unknown>>
+    ).find(
+      (candidate) =>
+        candidate.contract === "tasknotes.task" &&
+        candidate.version === "0.2.0",
+    )!;
     expect(
       (
-        updated.frontmatter["x-tasknotes"] as {
+        updatedImplementation.binding as {
           status: { definitions: unknown[] };
         }
       ).status.definitions.find(
@@ -1057,10 +1064,14 @@ describe("IndexedMarkdownRepository", () => {
     const movingIndex = new TaskIndex(`tasknotes-test-${crypto.randomUUID()}`);
     const resources = buildTaskNotesMdbaseResources();
     const type = parseFrontmatter(resources.typeDocument);
-    const extension = type.frontmatter["x-tasknotes"] as Record<
-      string,
-      unknown
-    >;
+    const implementation = (
+      type.frontmatter.implements as Array<Record<string, unknown>>
+    ).find(
+      (candidate) =>
+        candidate.contract === "tasknotes.task" &&
+        candidate.version === "0.2.0",
+    )!;
+    const extension = implementation.binding as Record<string, unknown>;
     extension.archive = { move_on_archive: true, folder: "archive" };
     await movingVault.writeText(
       resources.paths.type,
