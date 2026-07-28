@@ -20,6 +20,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   const pending = deferred<Task>();
   const update = vi.fn(() => pending.promise);
   const execution = boardExecution();
+  const openTask = vi.fn();
   const repository = {
     initialize: async () => undefined,
     refresh: async () => ({
@@ -68,7 +69,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
         viewKey={execution.view.key}
         views={[execution.view]}
         onBack={() => undefined}
-        onOpenTask={() => undefined}
+        onOpenTask={openTask}
         onOpenView={() => undefined}
         onSearch={() => undefined}
         onMoveNavigationView={() => undefined}
@@ -85,17 +86,46 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     name: "In progress column",
   });
   expect(document.querySelector(".kanban-drag-handle")).toBeNull();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Move cards between columns" }),
-  );
-  const handle = screen.getByRole("button", {
-    name: "Move Move on the board between columns. Drag, or use left and right arrow keys.",
+  expect(
+    screen.queryByRole("button", { name: "Move cards between columns" }),
+  ).not.toBeInTheDocument();
+  const card = screen.getByRole("group", {
+    name: "Move on the board. Drag to move between columns. Use left and right arrow keys.",
   });
+  const title = within(card).getByRole("button", {
+    name: "Move on the board",
+  });
+  fireEvent.click(title);
+  expect(openTask).toHaveBeenCalledWith(execution.rows[0].task, undefined);
+  openTask.mockClear();
+
+  const completion = within(card).getByRole("button", {
+    name: "Complete Move on the board",
+  });
+  fireEvent.pointerDown(completion, {
+    button: 0,
+    isPrimary: true,
+    pointerId: 6,
+    pointerType: "mouse",
+  });
+  fireEvent.pointerMove(completion, {
+    clientX: 500,
+    clientY: 500,
+    isPrimary: true,
+    pointerId: 6,
+    pointerType: "mouse",
+  });
+  fireEvent.pointerUp(completion, {
+    clientX: 500,
+    clientY: 500,
+    isPrimary: true,
+    pointerId: 6,
+    pointerType: "mouse",
+  });
+  expect(update).not.toHaveBeenCalled();
+
   const board = screen.getByLabelText("Work board");
-  Object.defineProperty(handle, "setPointerCapture", {
-    configurable: true,
-    value: vi.fn(),
-  });
+  mockPointerCapture(card);
   Object.defineProperty(window, "scrollBy", {
     configurable: true,
     value: vi.fn(),
@@ -105,19 +135,28 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     value: vi.fn(() => inProgress),
   });
 
-  fireEvent.pointerDown(handle, { pointerId: 7, pointerType: "touch" });
-  fireEvent.pointerMove(handle, {
+  fireEvent.pointerDown(card, {
+    button: 0,
+    isPrimary: true,
+    pointerId: 7,
+    pointerType: "mouse",
+  });
+  fireEvent.pointerMove(card, {
     clientX: 500,
     clientY: 500,
+    isPrimary: true,
     pointerId: 7,
-    pointerType: "touch",
+    pointerType: "mouse",
   });
-  fireEvent.pointerUp(handle, {
+  fireEvent.pointerUp(card, {
     clientX: 500,
     clientY: 500,
+    isPrimary: true,
     pointerId: 7,
-    pointerType: "touch",
+    pointerType: "mouse",
   });
+  fireEvent.click(title);
+  expect(openTask).not.toHaveBeenCalled();
 
   const movedTitle = await within(inProgress).findByText("Move on the board");
   expect(movedTitle).toBeVisible();
@@ -137,14 +176,18 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   expect(screen.getByRole("alert")).toHaveTextContent("Could not move");
 });
 
-it("scopes manual board busy feedback to the card being moved", async () => {
+it("queues rapid manual board moves and scopes busy feedback to affected cards", async () => {
   const pending = deferred<Task>();
   const update = vi.fn(() => pending.promise);
   const execution = boardExecution();
-  const stationary = listTask("task-2", "Stay in place");
-  execution.rows.push({ task: stationary, values: { status: "open" } });
-  execution.totalCount = 2;
-  execution.groups[0].count = 2;
+  const queued = listTask("task-2", "Move next");
+  const stationary = listTask("task-3", "Stay in place");
+  execution.rows.push(
+    { task: queued, values: { status: "open" } },
+    { task: stationary, values: { status: "open" } },
+  );
+  execution.totalCount = 3;
+  execution.groups[0].count = 3;
   const repository = {
     initialize: async () => undefined,
     refresh: async () => ({
@@ -206,10 +249,18 @@ it("scopes manual board busy feedback to the card being moved", async () => {
     </RepositoryProvider>,
   );
 
-  fireEvent.click(await screen.findByRole("button", { name: "Arrange cards" }));
+  expect(
+    screen.queryByRole("button", { name: "Arrange cards" }),
+  ).not.toBeInTheDocument();
   fireEvent.keyDown(
-    screen.getByRole("button", {
-      name: /Arrange Move on the board\./,
+    await screen.findByRole("group", {
+      name: /Move on the board\. Drag to move\. Use arrow keys to arrange\./,
+    }),
+    { key: "ArrowRight" },
+  );
+  fireEvent.keyDown(
+    screen.getByRole("group", {
+      name: /Move next\. Drag to move\. Use arrow keys to arrange\./,
     }),
     { key: "ArrowRight" },
   );
@@ -220,17 +271,128 @@ it("scopes manual board busy feedback to the card being moved", async () => {
   const movedCard = within(inProgress)
     .getByText("Move on the board")
     .closest(".kanban-card");
+  const queuedCard = within(inProgress)
+    .getByText("Move next")
+    .closest(".kanban-card");
   const stationaryCard = screen
     .getByText("Stay in place")
     .closest(".kanban-card");
   expect(movedCard).toHaveAttribute("aria-busy", "true");
   expect(movedCard).toHaveClass("is-pending");
+  expect(queuedCard).toHaveAttribute("aria-busy", "true");
+  expect(queuedCard).toHaveClass("is-pending");
   expect(stationaryCard).toHaveAttribute("aria-busy", "false");
   expect(stationaryCard).not.toHaveClass("is-pending");
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
 
   await act(async () => pending.reject(new Error("Write failed")));
   await waitFor(() =>
     expect(screen.getByRole("alert")).toHaveTextContent("Could not move"),
+  );
+});
+
+it("serializes rapid consecutive board moves without rejecting the second move", async () => {
+  const first = deferred<Task>();
+  const second = deferred<Task>();
+  const update = vi
+    .fn()
+    .mockImplementationOnce(() => first.promise)
+    .mockImplementationOnce(() => second.promise);
+  const execution = boardExecution();
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: 1,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => [execution.rows[0].task],
+    cachedViewExecution: async () => null,
+    executeView: async () => execution,
+    readViewSource: async () => ({
+      path: execution.view.source.path,
+      format: "obsidian.base",
+      revision: "one",
+      document: `views:
+  - type: tasknotesKanban
+    name: Board
+    groupBy: { property: status, direction: ASC }
+`,
+    }),
+    update,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  render(
+    <RepositoryProvider repository={repository}>
+      <ViewsScreen
+        documents={[
+          {
+            id: execution.view.documentId,
+            name: execution.view.documentName,
+            source: execution.view.source,
+            views: [execution.view],
+          },
+        ]}
+        navigationViewKeys={[execution.view.key]}
+        operational
+        viewKey={execution.view.key}
+        views={[execution.view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+
+  fireEvent.keyDown(
+    await screen.findByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    }),
+    { key: "ArrowRight" },
+  );
+  const inProgress = screen.getByRole("region", {
+    name: "In progress column",
+  });
+  fireEvent.keyDown(
+    await within(inProgress).findByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    }),
+    { key: "ArrowRight" },
+  );
+
+  expect(
+    within(screen.getByRole("region", { name: "Done column" })).getByText(
+      "Move on the board",
+    ),
+  ).toBeVisible();
+  expect(update).toHaveBeenCalledTimes(1);
+  expect(update).toHaveBeenNthCalledWith(1, "task-1", {
+    status: "in-progress",
+  });
+
+  await act(async () => first.resolve(execution.rows[0].task));
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+  expect(update).toHaveBeenNthCalledWith(2, "task-1", { status: "done" });
+
+  await act(async () => second.resolve(execution.rows[0].task));
+  await waitFor(() =>
+    expect(screen.getByLabelText("Work board")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    ),
   );
 });
 
@@ -528,4 +690,21 @@ function deferred<T>() {
     reject = nextReject;
   });
   return { promise, resolve, reject };
+}
+
+function mockPointerCapture(element: HTMLElement) {
+  Object.defineProperties(element, {
+    hasPointerCapture: {
+      configurable: true,
+      value: vi.fn(() => true),
+    },
+    releasePointerCapture: {
+      configurable: true,
+      value: vi.fn(),
+    },
+    setPointerCapture: {
+      configurable: true,
+      value: vi.fn(),
+    },
+  });
 }
