@@ -91,7 +91,8 @@ function token(collectionId: string, collectionName: string) {
       contracts: [
         {
           id: "tasknotes.task",
-          version: "0.2.0",
+          contract_type: "record",
+          version: "0.3.0-rc.1",
           digest: `sha256:${"0".repeat(64)}`,
           schema: {},
           implementations: [

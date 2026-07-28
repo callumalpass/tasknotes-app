@@ -613,7 +613,7 @@ describe("IndexedMarkdownRepository", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.2.0",
+        candidate.version === "0.3.0-rc.1",
     )!;
     expect(
       (
@@ -1069,7 +1069,7 @@ describe("IndexedMarkdownRepository", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.2.0",
+        candidate.version === "0.3.0-rc.1",
     )!;
     const extension = implementation.binding as Record<string, unknown>;
     extension.archive = { move_on_archive: true, folder: "archive" };

@@ -23,11 +23,12 @@ export function buildAppTaskNotesResources() {
   const type = structuredClone(resources.type);
   const implementation = type.implements.find(
     (candidate) =>
-      candidate.contract === "tasknotes.task" && candidate.version === "0.2.0",
+      candidate.contract === "tasknotes.task" &&
+      candidate.version === "0.3.0-rc.1",
   );
   if (!implementation)
     throw new Error(
-      "The generated type does not implement tasknotes.task 0.2.0.",
+      "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
     );
   const extension = implementation.binding;
   const sortOrderField = implementation.fields.sortOrder;

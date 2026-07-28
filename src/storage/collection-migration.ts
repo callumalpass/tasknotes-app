@@ -21,7 +21,7 @@ export function upgradeManagedTaskType(
     source.description === "A TaskNotes-compatible task." &&
     record(properties.mobileRevision).type === "integer" &&
     implementation.contract === "tasknotes.task" &&
-    implementation.version === "0.2.0";
+    implementation.version === "0.3.0-rc.1";
   if (!managed) {
     return { changed: false, frontmatter: source, completedField };
   }
@@ -162,7 +162,7 @@ function taskNotesImplementation(
       .find(
         (implementation) =>
           implementation.contract === "tasknotes.task" &&
-          implementation.version === "0.2.0",
+          implementation.version === "0.3.0-rc.1",
       ) ?? {}
   );
 }
@@ -176,7 +176,7 @@ function replaceTaskNotesImplementation(
   const next = implementations.map((implementation) => {
     if (
       implementation.contract !== "tasknotes.task" ||
-      implementation.version !== "0.2.0"
+      implementation.version !== "0.3.0-rc.1"
     )
       return implementation;
     replaced = true;

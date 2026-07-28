@@ -26,7 +26,7 @@ const configuration = resolveTaskCollectionConfiguration({
   implements: [
     {
       contract: "tasknotes.task",
-      version: "0.2.0",
+      version: "0.3.0-rc.1",
       fields: { title: "title", status: "status", priority: "priority" },
       binding: {
         status: {

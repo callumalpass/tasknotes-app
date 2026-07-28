@@ -32,7 +32,7 @@ function taskType(input: Record<string, unknown>): Record<string, unknown> {
     implements: [
       {
         contract: "tasknotes.task",
-        version: "0.2.0",
+        version: "0.3.0-rc.1",
         fields,
         binding,
       },
