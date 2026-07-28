@@ -360,9 +360,20 @@ export function CollectionGate() {
     clearPendingTransfer();
     setPickerOpen(false);
     choose("cloud");
+    setAuthorizationError(null);
     void authorizeCloudCollection().catch((reason) =>
       setAuthorizationError(message(reason)),
     );
+  }
+
+  function reauthorizeCurrentCloudCollection() {
+    clearPendingTransfer();
+    setPickerOpen(false);
+    choose("cloud");
+    setAuthorizationError(null);
+    void authorizeCloudCollection(
+      selectedCloudCollectionId() ?? undefined,
+    ).catch((reason) => setAuthorizationError(message(reason)));
   }
 
   function authorizeMigrationDestination() {
@@ -444,22 +455,26 @@ export function CollectionGate() {
     choice === "cloud" ? (
       <Suspense fallback={<OpeningCollection label="Opening mdbase" />}>
         <CloudCollection
+          authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
           authorizationError={authorizationError}
           canChooseLocalFolder={canChooseLocalFolder}
           changeLocalCollection={changeLocalCollection}
           choose={choose}
           openCollectionPicker={() => setPickerOpen(true)}
+          reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
           reset={reset}
         />
       </Suspense>
     ) : (
       <Suspense fallback={<OpeningCollection label="Opening your tasks" />}>
         <LocalCollection
+          authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
           canChooseLocalFolder={canChooseLocalFolder}
           changeLocalCollection={changeLocalCollection}
           choose={choose}
           key={localCollectionKey(localLocation)}
           openCollectionPicker={() => setPickerOpen(true)}
+          reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
         />
       </Suspense>
     );

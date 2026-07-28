@@ -37,11 +37,13 @@ type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 export function AppShell() {
   const { status, error, refresh } = useRepository();
   const {
+    authorizeAnotherCloudCollection,
     canChooseLocalFolder,
     choice,
     changeConnectedCollection,
     changeLocalCollection,
     choose,
+    reauthorizeCurrentCloudCollection,
   } = useCollectionGate();
   const {
     documents,
@@ -163,12 +165,14 @@ export function AppShell() {
   if (status === "error") {
     return (
       <StorageErrorScreen
+        authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
         canChooseLocalFolder={canChooseLocalFolder}
         changeConnectedCollection={changeConnectedCollection}
         changeLocalCollection={changeLocalCollection}
         choice={choice}
         choose={choose}
         error={error}
+        reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
       />
     );
   }
@@ -336,19 +340,23 @@ export function AppShell() {
 }
 
 export function StorageErrorScreen({
+  authorizeAnotherCloudCollection,
   canChooseLocalFolder,
   changeConnectedCollection,
   changeLocalCollection,
   choice,
   choose,
   error,
+  reauthorizeCurrentCloudCollection,
 }: {
+  authorizeAnotherCloudCollection(): void;
   canChooseLocalFolder: boolean;
   changeConnectedCollection(): void;
   changeLocalCollection(): void;
   choice: "local" | "cloud";
   choose(choice: "local" | "cloud"): void;
   error: Error | null;
+  reauthorizeCurrentCloudCollection(): void;
 }) {
   const authorizationExpired =
     choice === "cloud" && isAuthorizationError(error);
@@ -367,13 +375,22 @@ export function StorageErrorScreen({
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
-          <button
-            className="outline-action"
-            type="button"
-            onClick={changeConnectedCollection}
-          >
-            Reconnect to mdbase
-          </button>
+          <>
+            <button
+              className="outline-action"
+              type="button"
+              onClick={reauthorizeCurrentCloudCollection}
+            >
+              Reconnect this collection
+            </button>
+            <button
+              className="text-action"
+              type="button"
+              onClick={authorizeAnotherCloudCollection}
+            >
+              Choose another mdbase collection
+            </button>
+          </>
         ) : (
           <>
             <button
@@ -387,7 +404,7 @@ export function StorageErrorScreen({
               <button
                 className="text-action"
                 type="button"
-                onClick={changeConnectedCollection}
+                onClick={authorizeAnotherCloudCollection}
               >
                 Choose another mdbase collection
               </button>
