@@ -1,6 +1,6 @@
 import type { JsonObject } from "@mdbase/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Route } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 
@@ -21,6 +21,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
+      const request = operationRequest(route);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -58,10 +59,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
                     ]),
                   )
                 : { valid: true, diagnostics: [], result: {} };
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ result }),
-      });
+      await fulfillOperation(route, request.request_id, result);
     },
   );
 
@@ -181,6 +179,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
+      const request = operationRequest(route);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -202,7 +201,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
         result = valid(defaultViewExecution(records));
       } else if (operation === "create") {
         createRequests += 1;
-        const input = route.request().postDataJSON() as {
+        const input = request.input as {
           path: string;
           frontmatter: JsonObject;
           body: string;
@@ -228,10 +227,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
           broken_links: [],
         });
       } else result = valid({});
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ result }),
-      });
+      await fulfillOperation(route, request.request_id, result);
     },
   );
 
@@ -286,6 +282,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
+      const request = operationRequest(route);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -361,10 +358,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
       } else {
         result = valid({});
       }
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ result }),
-      });
+      await fulfillOperation(route, request.request_id, result);
     },
   );
 
@@ -540,6 +534,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
+      const request = operationRequest(route);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -556,7 +551,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
         result = defaultViewExecution([record]);
       } else if (operation === "read") result = record;
       else if (operation === "update") {
-        updateInput = route.request().postDataJSON() as {
+        updateInput = request.input as {
           patch?: JsonObject;
           body?: string;
         };
@@ -573,15 +568,13 @@ test("edits a contract-defined task without collapsing custom status or fields",
         };
         result = record;
       } else result = {};
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({
-          result:
-            operation === "describe"
-              ? result
-              : { valid: true, diagnostics: [], result },
-        }),
-      });
+      await fulfillOperation(
+        route,
+        request.request_id,
+        operation === "describe"
+          ? result
+          : { valid: true, diagnostics: [], result },
+      );
     },
   );
   await installRelayAuthorization(page);
@@ -832,6 +825,42 @@ function priority(value: string, label: string, weight: number) {
 
 function valid<T>(result: T) {
   return { valid: true as const, diagnostics: [], result };
+}
+
+function operationRequest(route: Route): {
+  protocol_version: 1;
+  request_id: string;
+  input: JsonObject;
+} {
+  const request = route.request().postDataJSON() as {
+    protocol_version?: unknown;
+    request_id?: unknown;
+    input?: unknown;
+  };
+  expect(request.protocol_version).toBe(1);
+  expect(request.request_id).toEqual(expect.any(String));
+  expect(request.input).toEqual(expect.any(Object));
+  return request as {
+    protocol_version: 1;
+    request_id: string;
+    input: JsonObject;
+  };
+}
+
+function fulfillOperation(
+  route: Route,
+  requestId: string,
+  result: unknown,
+): Promise<void> {
+  return route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      protocol_version: 1,
+      request_id: requestId,
+      ok: true,
+      result,
+    }),
+  });
 }
 
 function defaultViewDocuments() {
