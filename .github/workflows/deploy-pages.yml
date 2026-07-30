@@ -42,8 +42,8 @@ jobs:
       - name: Verify application
         run: pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm test:conformance
 
-      - name: Build GitHub Pages application
-        run: pnpm build
+      - name: Build GitHub Pages test application
+        run: pnpm build:e2e
         env:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
@@ -56,6 +56,14 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/tasknotes-app/
           PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173
           VITE_BASE_PATH: /tasknotes-app/
+
+      - name: Build GitHub Pages production application
+        run: pnpm build
+        env:
+          VITE_BASE_PATH: /tasknotes-app/
+          TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
+          TASKNOTES_WEB_ONLY: "1"
+          TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
