@@ -42,7 +42,7 @@ public class FolderAccessPlugin extends Plugin {
     private static final String SELECTION_ID = "selectionId";
     private static final String SELECTION_NAME = "selectionName";
     private static final Set<String> EXCLUDED_DIRECTORIES = new HashSet<>(
-        Arrays.asList(".git", ".mdbase", "node_modules")
+        Arrays.asList("node_modules")
     );
 
     private final ConcurrentHashMap<String, DocumentFile> pathCache = new ConcurrentHashMap<>();
@@ -187,10 +187,13 @@ public class FolderAccessPlugin extends Plugin {
                     if (name == null || name.trim().isEmpty()) {
                         continue;
                     }
+                    if (isExcludedCollectionComponent(name)) {
+                        continue;
+                    }
                     String childPath = current.path.isEmpty() ? name : current.path + "/" + name;
                     pathCache.put(childPath, child);
                     if (child.isDirectory()) {
-                        if (recursive && !EXCLUDED_DIRECTORIES.contains(name)) {
+                        if (recursive) {
                             pending.addLast(new DirectoryNode(childPath, child));
                         }
                         continue;
@@ -205,6 +208,10 @@ public class FolderAccessPlugin extends Plugin {
             response.put("files", files);
             return response;
         });
+    }
+
+    private static boolean isExcludedCollectionComponent(String name) {
+        return name.startsWith(".") || EXCLUDED_DIRECTORIES.contains(name);
     }
 
     @PluginMethod

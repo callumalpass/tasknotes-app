@@ -1,4 +1,9 @@
-import { safePath, type Vault, type VaultEntry } from "./vault-contract";
+import {
+  isExcludedCollectionComponent,
+  safePath,
+  type Vault,
+  type VaultEntry,
+} from "./vault-contract";
 
 const ROOT = "TaskNotes";
 
@@ -66,10 +71,10 @@ export class OpfsVault implements Vault {
     while (pending.length) {
       const current = pending.shift()!;
       for await (const [name, handle] of current.directory.entries()) {
+        if (isExcludedCollectionComponent(name)) continue;
         const nextPath = current.path ? `${current.path}/${name}` : name;
         if (handle.kind === "directory") {
-          if (!EXCLUDED_DIRECTORIES.has(name))
-            pending.push({ directory: handle, path: nextPath });
+          pending.push({ directory: handle, path: nextPath });
           continue;
         }
         if (
@@ -190,8 +195,6 @@ export class OpfsVault implements Vault {
     return parent.getFileHandle(name, { create });
   }
 }
-
-const EXCLUDED_DIRECTORIES = new Set([".git", ".mdbase", "node_modules"]);
 
 function ignoreMissing(error: unknown): void {
   if (!(error instanceof DOMException) || error.name !== "NotFoundError")

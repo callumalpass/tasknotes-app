@@ -1142,14 +1142,29 @@ function isNotInitialized(reason: unknown): boolean {
 }
 
 function cloudFirstOpenError(reason: unknown): Error {
-  return new Error(
-    `The cloud collection needs a connection the first time it opens. ${cloudErrorMessage(reason)}`,
+  const detail = cloudErrorMessage(reason);
+  if (isConnectionFailure(reason))
+    return new Error(
+      `The cloud collection needs a connection the first time it opens. ${detail}`,
+    );
+  return new Error(`The cloud collection could not be opened. ${detail}`);
+}
+
+function isConnectionFailure(reason: unknown): boolean {
+  if (
+    reason instanceof TypeError &&
+    /(failed to fetch|load failed|network\s*error)/i.test(reason.message)
+  )
+    return true;
+  return (
+    reason instanceof SyncError &&
+    ["offline", "connector_offline", "provider_offline"].includes(reason.code)
   );
 }
 
 function cloudErrorMessage(reason: unknown): string {
   if (reason instanceof Error && reason.message) return reason.message;
-  return "Changes will sync when a connection is available.";
+  return "The collection returned an unknown error.";
 }
 
 function validResult<Result>(

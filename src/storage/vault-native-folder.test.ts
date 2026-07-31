@@ -74,3 +74,20 @@ it("passes only relative paths and the collection id to native storage", async (
     recursive: true,
   });
 });
+
+it("filters every path containing an excluded component", async () => {
+  folderAccess.listFiles.mockResolvedValue({
+    files: [
+      { path: "visible.md", lastModified: 1, size: 1 },
+      { path: ".hidden.md", lastModified: 1, size: 1 },
+      { path: ".clump/commands/hidden.md", lastModified: 1, size: 1 },
+      { path: "notes/.private/hidden.md", lastModified: 1, size: 1 },
+      { path: "node_modules/package/readme.md", lastModified: 1, size: 1 },
+    ],
+  });
+  const vault = new NativeFolderVault(selection);
+
+  await expect(vault.listCollectionFiles([".md"])).resolves.toEqual([
+    { path: "visible.md", lastModified: 1, size: 1 },
+  ]);
+});

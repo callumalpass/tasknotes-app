@@ -1,5 +1,10 @@
 import { FolderAccess } from "../native/folder-access";
-import { safePath, type Vault, type VaultEntry } from "./vault-contract";
+import {
+  isExcludedCollectionPath,
+  safePath,
+  type Vault,
+  type VaultEntry,
+} from "./vault-contract";
 
 import type { LocalCollectionLocation } from "./local-collection-location";
 
@@ -111,8 +116,8 @@ export class NativeFolderVault implements Vault {
       extensions,
       recursive,
     });
-    return result.files.sort((left, right) =>
-      left.path.localeCompare(right.path),
-    );
+    return result.files
+      .filter(({ path }) => !isExcludedCollectionPath(path))
+      .sort((left, right) => left.path.localeCompare(right.path));
   }
 }

@@ -35,6 +35,7 @@ try {
       title: "Conformance task",
       status: "open",
       priority: "normal",
+      tasknotes_manual_order: "tnnnnnnnnnnn",
       tags: ["task"],
       mobileRevision: 1,
     },
@@ -47,6 +48,10 @@ try {
   const read = await operations.read({ path: taskPath });
   assert.equal(read.valid, true, JSON.stringify(read.diagnostics));
   assert.equal(read.result?.frontmatter?.title, "Conformance task");
+  assert.equal(
+    read.result?.frontmatter?.tasknotes_manual_order,
+    "tnnnnnnnnnnn",
+  );
   assert.equal(read.result?.body?.trimEnd(), "Portable Markdown body.");
   assert.match(
     String(read.result?.frontmatter?.dateCreated),

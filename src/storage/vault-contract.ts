@@ -32,3 +32,14 @@ export function safePath(value: string): string {
   }
   return normalized;
 }
+
+export function isExcludedCollectionComponent(value: string): boolean {
+  return value.startsWith(".") || value === "node_modules";
+}
+
+export function isExcludedCollectionPath(value: string): boolean {
+  return value
+    .replaceAll("\\", "/")
+    .split("/")
+    .some(isExcludedCollectionComponent);
+}

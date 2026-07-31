@@ -31,8 +31,6 @@ export function buildAppTaskNotesResources() {
       "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
     );
   const extension = implementation.binding;
-  const sortOrderField = implementation.fields.sortOrder;
-  type.schema.value.properties[sortOrderField] = { type: "string" };
   extension.status = {
     ...extension.status,
     skipped_values: ["cancelled"],
