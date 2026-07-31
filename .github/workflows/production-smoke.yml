@@ -2,11 +2,6 @@ name: Production smoke
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/production-smoke.yml"
-      - "scripts/production-smoke.mjs"
-      - "package.json"
-      - "pnpm-lock.yaml"
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
@@ -15,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: tasknotes-production-smoke
+  group: tasknotes-smoke-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -37,11 +32,41 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build pull request application
+        if: github.event_name == 'pull_request'
+        run: pnpm build
+        env:
+          VITE_BASE_PATH: /tasknotes-app/
+          TASKNOTES_APP_URL: http://127.0.0.1:4173/tasknotes-app
+          TASKNOTES_WEB_ONLY: "1"
+
+      - name: Check pull request artifact
+        if: github.event_name == 'pull_request'
+        run: |
+          pnpm preview --host 127.0.0.1 --port 4173 --strictPort &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/tasknotes-app/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "The pull request preview did not become ready." >&2
+            exit 1
+          fi
+
+          pnpm test:production-smoke
+        env:
+          VITE_BASE_PATH: /tasknotes-app/
+          TASKNOTES_PRODUCTION_URL: http://127.0.0.1:4173/tasknotes-app
+
       - name: Check production boundaries
+        if: github.event_name != 'pull_request'
         run: pnpm test:production-smoke
         env:
           TASKNOTES_PRODUCTION_URL: ${{ vars.TASKNOTES_PRODUCTION_URL || 'https://callumalpass.github.io/tasknotes-app' }}
-          # Pull requests inspect the currently deployed base revision. The
-          # Pages workflow performs the strict notification-manifest check
-          # after it deploys main.
-          TASKNOTES_REQUIRE_NOTIFICATION_MANIFEST: ${{ github.event_name == 'pull_request' && '0' || '1' }}
