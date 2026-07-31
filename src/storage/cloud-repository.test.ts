@@ -186,6 +186,43 @@ function connect(
 }
 
 describe("cloud task repository", () => {
+  it("reports a first-open collection failure without mislabeling it as a connection problem", async () => {
+    const failure = new SyncError(
+      "collection_open_failed",
+      "collection failed to open: failed to read collection record 'broken.md': Failed to parse YAML frontmatter",
+    );
+    const transport: SyncTransport<JsonObject> = {
+      openSession: vi.fn().mockRejectedValue(failure),
+      snapshot: vi.fn(),
+      changes: vi.fn(),
+      mutate: vi.fn(),
+    };
+    const repository = new CloudTaskRepository(
+      connect(crypto.randomUUID(), crypto.randomUUID(), transport),
+    );
+
+    await expect(repository.initialize()).rejects.toThrow(
+      "The cloud collection could not be opened. collection failed to open: failed to read collection record 'broken.md': Failed to parse YAML frontmatter",
+    );
+  });
+
+  it("still explains that an offline first open needs a connection", async () => {
+    const failure = new SyncError("offline", "Network unavailable.");
+    const transport: SyncTransport<JsonObject> = {
+      openSession: vi.fn().mockRejectedValue(failure),
+      snapshot: vi.fn(),
+      changes: vi.fn(),
+      mutate: vi.fn(),
+    };
+    const repository = new CloudTaskRepository(
+      connect(crypto.randomUUID(), crypto.randomUUID(), transport),
+    );
+
+    await expect(repository.initialize()).rejects.toThrow(
+      "The cloud collection needs a connection the first time it opens. Network unavailable.",
+    );
+  });
+
   it("unions multiple replicated providers and writes through the record's mapping", async () => {
     const collectionResources = multipleProviderResources();
     const providers = resolveTaskCollection(collectionResources);

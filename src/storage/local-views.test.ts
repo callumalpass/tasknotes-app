@@ -27,6 +27,10 @@ describe("local Obsidian Bases views", () => {
     expect(type.schema.value.properties.tasknotes_manual_order.type).toBe(
       "string",
     );
+    const contractSchema = JSON.parse(
+      await vault.readText("_schemas/tasknotes/tasknotes-task.schema.json"),
+    ) as { properties: Record<string, { type?: string }> };
+    expect(contractSchema.properties.sortOrder.type).toBe("string");
   });
 
   it("discovers stable views and executes filters, formulas, grouping, and calendar metadata", async () => {

@@ -62,6 +62,14 @@ describe("TaskNotes mdbase manifest", () => {
     expect(generated.type.schema.value.properties[field]).toEqual({
       type: "string",
     });
+    expect(generated.taskSchema.properties.sortOrder).toEqual({
+      type: "string",
+    });
+    expect(
+      JSON.parse(generated.taskSchemaDocument).properties.sortOrder,
+    ).toEqual({
+      type: "string",
+    });
     expect(generated.typeDocument).toContain(
       "tasknotes_manual_order:\n        type: string",
     );

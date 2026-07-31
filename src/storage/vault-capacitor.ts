@@ -5,7 +5,12 @@ import {
   type FileInfo,
 } from "@capacitor/filesystem";
 
-import { safePath, type Vault, type VaultEntry } from "./vault-contract";
+import {
+  isExcludedCollectionComponent,
+  safePath,
+  type Vault,
+  type VaultEntry,
+} from "./vault-contract";
 
 const ROOT = "TaskNotes";
 
@@ -52,9 +57,10 @@ export class CapacitorVault implements Vault {
         directory: Directory.Documents,
       });
       for (const file of result.files) {
+        if (isExcludedCollectionComponent(file.name)) continue;
         const nextPath = directory ? `${directory}/${file.name}` : file.name;
         if (file.type === "directory") {
-          if (!EXCLUDED_DIRECTORIES.has(file.name)) pending.push(nextPath);
+          pending.push(nextPath);
           continue;
         }
         if (
@@ -150,8 +156,6 @@ export class CapacitorVault implements Vault {
     });
   }
 }
-
-const EXCLUDED_DIRECTORIES = new Set([".git", ".mdbase", "node_modules"]);
 
 function toEntry(path: string, info: FileInfo): VaultEntry {
   return {

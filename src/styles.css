@@ -747,12 +747,17 @@ button:disabled {
 .task-actions-subtask input {
   width: 100%;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0;
   color: var(--ink);
   font: inherit;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+}
+
+.task-actions-subtask input:focus-visible {
+  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
 }
 
 .task-actions-subtask button.primary {
@@ -1503,10 +1508,11 @@ button:disabled {
 .duration-field-controls > input,
 .duration-field-controls .tasknotes-control-trigger {
   min-height: var(--control-min-size);
-  padding: 0 10px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
 }
 
 .duration-field-current {
@@ -1822,6 +1828,7 @@ button:disabled {
 }
 
 .tasknotes-control-trigger:focus-visible {
+  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
   outline: 1px solid color-mix(in srgb, var(--accent), transparent 35%);
   outline-offset: 2px;
 }
@@ -2141,10 +2148,11 @@ button:disabled {
 
 .view-editor-body .tasknotes-control-trigger {
   min-height: 44px;
-  padding: 9px 10px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
+  padding: 9px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
 }
 
 .view-editor-control-field {
@@ -4340,26 +4348,38 @@ button:disabled {
   font-weight: 700;
 }
 
-.view-editor-body input[type="text"],
-.view-editor-body textarea {
+.view-editor-body input:not([type]),
+.view-editor-body input[type="text"] {
   width: 100%;
   min-height: 44px;
-  padding: 9px 10px;
+  padding: 9px 0;
   color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+}
+
+.view-editor-body input:not([type]):focus-visible,
+.view-editor-body input[type="text"]:focus-visible {
+  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
+}
+
+.view-editor-body textarea {
+  width: 100%;
+  min-height: 116px;
+  padding: 9px 10px;
+  resize: vertical;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
   background: var(--paper);
   border: 1px solid var(--line-strong);
   border-radius: 5px;
 }
 
-.view-editor-body textarea {
-  min-height: 116px;
-  resize: vertical;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.55;
-}
-
-.view-name-field input[type="text"] {
+.view-name-field input {
   min-height: 50px;
   padding: 0;
   font-size: 1.35rem;
@@ -4737,10 +4757,11 @@ button:disabled {
 
 .view-create-defaults-fields .multi-value-control {
   min-height: 44px;
-  padding: 5px 8px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
+  padding: 5px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
 }
 
 .view-create-defaults-fields .multi-value-control input {

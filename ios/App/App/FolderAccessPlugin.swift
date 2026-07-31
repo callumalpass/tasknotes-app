@@ -23,7 +23,7 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
     private static let bookmarkKey = "tasknotes.folderAccess.bookmark"
     private static let selectionIdKey = "tasknotes.folderAccess.selectionId"
     private static let selectionNameKey = "tasknotes.folderAccess.selectionName"
-    private static let excludedDirectories = Set([".git", ".mdbase", "node_modules"])
+    private static let excludedDirectories = Set(["node_modules"])
     private var pickerCall: CAPPluginCall?
 
     @objc public func pickFolder(_ call: CAPPluginCall) {
@@ -189,6 +189,9 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
                 )
                 for child in children {
                     let name = child.lastPathComponent
+                    if Self.isExcludedCollectionComponent(name) {
+                        continue
+                    }
                     let childPath = current.path.isEmpty
                         ? name
                         : "\(current.path)/\(name)"
@@ -196,7 +199,7 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
                         forKeys: Set(keys)
                     )
                     if values.isDirectory == true {
-                        if recursive && !Self.excludedDirectories.contains(name) {
+                        if recursive {
                             pending.append((childPath, child))
                         }
                         continue
@@ -217,6 +220,10 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
             }
             return ["files": files]
         }
+    }
+
+    private static func isExcludedCollectionComponent(_ name: String) -> Bool {
+        name.hasPrefix(".") || excludedDirectories.contains(name)
     }
 
     @objc public func readText(_ call: CAPPluginCall) {

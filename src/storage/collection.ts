@@ -120,13 +120,6 @@ export class MarkdownCollection {
     const generatedType = structuredClone(resources.type);
     const implementation = taskNotesImplementation(generatedType);
     const extension = implementation.binding as Record<string, unknown>;
-    const fieldRoles = implementation.fields as Record<string, unknown>;
-    const sortOrderField = fieldRoles.sortOrder;
-    const schema = (generatedType.schema as Record<string, unknown>)
-      .value as Record<string, unknown>;
-    const properties = schema.properties as Record<string, unknown>;
-    if (typeof sortOrderField === "string")
-      properties[sortOrderField] = { type: "string" };
     extension.status = {
       ...(extension.status as Record<string, unknown>),
       skipped_values: ["cancelled"],
