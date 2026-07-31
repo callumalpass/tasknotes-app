@@ -611,7 +611,25 @@ export function ViewsScreen({
 
   async function refreshAfterCreate(task: Task) {
     if (!selected) return;
-    const refreshed = await repository.executeView(selected);
+    const sync = await repository.syncStatus();
+    const replicated = sync.mode === "replicated";
+    if (replicated) {
+      await repository.refresh();
+      const settled = await repository.syncStatus();
+      if (
+        settled.state !== "synced" ||
+        settled.pending > 0 ||
+        settled.issues > 0
+      )
+        return {
+          message: "Task created. This view will check for it after syncing.",
+        };
+    }
+    let refreshed = await repository.executeView(selected);
+    if (replicated && !refreshed.rows.some((row) => row.task.id === task.id))
+      // A pre-sync refresh may still have occupied the repository's in-flight
+      // execution slot. Once it settles, one fresh execution is authoritative.
+      refreshed = await repository.executeView(selected);
     if (selectedKeyRef.current === selected.key) {
       setExecution(refreshed);
       setExecutionError(null);
