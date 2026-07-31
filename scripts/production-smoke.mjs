@@ -19,8 +19,28 @@ const checks = [
   },
   async () => {
     const html = await text(`${appOrigin}/`);
-    if (!html.includes('<div id="root"></div>') || !html.includes("TaskNotes"))
+    if (
+      !html.includes('<div id="root"></div>') ||
+      !html.includes("TaskNotes") ||
+      !html.includes("manifest.webmanifest")
+    )
       throw new Error("The deployed TaskNotes shell is incomplete.");
+  },
+  async () => {
+    const manifest = await json(`${appOrigin}/manifest.webmanifest`);
+    if (
+      manifest.name !== "TaskNotes" ||
+      manifest.display !== "standalone" ||
+      manifest.start_url !== "./" ||
+      !manifest.icons?.some((icon) => icon.sizes === "512x512")
+    )
+      throw new Error("The deployed PWA manifest is invalid.");
+    const worker = await text(`${appOrigin}/service-worker.js`);
+    if (
+      !worker.includes("tasknotes:mdbase-notification") ||
+      !worker.includes("notificationclick")
+    )
+      throw new Error("The deployed notification service worker is invalid.");
   },
   async () => {
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);

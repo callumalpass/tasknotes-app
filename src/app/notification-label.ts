@@ -19,7 +19,7 @@ export function changeNotificationLabel(
     case "reauthorization_required":
       return "Approval required";
     case "unavailable":
-      return "Available in the mobile app";
+      return "Not available in this browser";
     case "error":
       return "Setup needs attention";
   }

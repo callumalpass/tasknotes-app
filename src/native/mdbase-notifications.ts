@@ -4,6 +4,7 @@ import {
   MdbaseConnectError,
   parseMdbaseNativeNotificationData,
   type MdbaseConnectionInfo,
+  type MdbaseNotificationRegistration,
   type MdbaseNativeNotificationRegistration,
   type MdbaseNativeNotificationData,
 } from "@mdbase/connect";
@@ -14,6 +15,7 @@ import {
   type NativeMessaging,
   type NativeNotification,
 } from "./android-push-messaging";
+import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
@@ -42,6 +44,12 @@ export interface MdbaseNotificationWake {
 
 interface NotificationConnect {
   connection(): MdbaseConnectionInfo | null;
+  registerNotifications(options: {
+    serviceWorker: ServiceWorkerRegistration;
+  }): Promise<MdbaseNotificationRegistration>;
+  unregisterNotifications(
+    serviceWorker?: ServiceWorkerRegistration,
+  ): Promise<void>;
   registerNativeNotifications(options: {
     token: string;
   }): Promise<MdbaseNativeNotificationRegistration>;
@@ -51,6 +59,7 @@ interface NotificationConnect {
 export interface MdbaseNotificationManagerOptions {
   connect: NotificationConnect;
   messaging: NativeMessaging;
+  webPush: WebPushMessaging;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   isNative(): boolean;
   isConfigured(): boolean;
@@ -61,8 +70,8 @@ export class MdbaseNotificationManager {
 
   async status(): Promise<MdbaseNotificationStatus> {
     const optedIn = this.enabled();
-    if (!this.options.isNative())
-      return { state: "unavailable", optedIn: false };
+    const runtime = this.runtime();
+    if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn };
     if (
@@ -71,9 +80,12 @@ export class MdbaseNotificationManager {
       )
     )
       return { state: "reauthorization_required", optedIn: false };
-    if (!this.options.isConfigured())
+    if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn };
-    const permission = await this.options.messaging.checkPermissions();
+    const permission =
+      runtime === "native"
+        ? await this.options.messaging.checkPermissions()
+        : await this.options.webPush.checkPermissions();
     if (permission.receive === "denied") return { state: "denied", optedIn };
     return {
       state: optedIn && permission.receive === "granted" ? "enabled" : "off",
@@ -82,8 +94,8 @@ export class MdbaseNotificationManager {
   }
 
   async enable(): Promise<MdbaseNotificationStatus> {
-    if (!this.options.isNative())
-      return { state: "unavailable", optedIn: false };
+    const runtime = this.runtime();
+    if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn: false };
     if (
@@ -92,18 +104,20 @@ export class MdbaseNotificationManager {
       )
     )
       return { state: "reauthorization_required", optedIn: false };
-    if (!this.options.isConfigured())
+    if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn: false };
-    const current = await this.options.messaging.checkPermissions();
+    const provider =
+      runtime === "native" ? this.options.messaging : this.options.webPush;
+    const current = await provider.checkPermissions();
     const permission =
       current.receive === "prompt" ||
       current.receive === "prompt-with-rationale"
-        ? await this.options.messaging.requestPermissions()
+        ? await provider.requestPermissions()
         : current;
     if (permission.receive !== "granted")
       return { state: "denied", optedIn: false };
     try {
-      await this.registerCurrentToken();
+      await this.registerCurrentInstallation(runtime);
     } catch (error) {
       if (
         error instanceof MdbaseConnectError &&
@@ -124,34 +138,40 @@ export class MdbaseNotificationManager {
   }
 
   async disable(): Promise<MdbaseNotificationStatus> {
-    if (!this.options.isNative())
-      return { state: "unavailable", optedIn: false };
-    await this.options.connect.unregisterNativeNotifications();
-    await this.options.messaging.deleteToken();
+    const runtime = this.runtime();
+    if (!runtime) return { state: "unavailable", optedIn: false };
+    if (runtime === "native") {
+      await this.options.connect.unregisterNativeNotifications();
+      await this.options.messaging.deleteToken();
+    } else {
+      const serviceWorker = await this.options.webPush.serviceWorker();
+      await this.options.connect.unregisterNotifications(serviceWorker);
+    }
     this.options.storage.removeItem(ENABLED_KEY);
     return this.status();
   }
 
   async disableIfEnabled(): Promise<void> {
-    if (!this.options.isNative() || !this.enabled()) return;
+    if (!this.runtime() || !this.enabled()) return;
     await this.disable();
   }
 
   async refreshRegistration(): Promise<void> {
-    if (
-      !this.options.isNative() ||
-      !this.enabled() ||
-      !this.options.connect.connection() ||
-      !this.options.isConfigured()
-    )
+    const runtime = this.runtime();
+    if (!runtime || !this.enabled() || !this.options.connect.connection())
       return;
-    const permission = await this.options.messaging.checkPermissions();
+    if (runtime === "native" && !this.options.isConfigured()) return;
+    const permission =
+      runtime === "native"
+        ? await this.options.messaging.checkPermissions()
+        : await this.options.webPush.checkPermissions();
     if (permission.receive !== "granted") return;
-    await this.registerCurrentToken();
+    await this.registerCurrentInstallation(runtime);
   }
 
   listen(onWake: (event: MdbaseNotificationWake) => void): () => void {
-    if (!this.options.isNative()) return () => undefined;
+    const runtime = this.runtime();
+    if (!runtime) return () => undefined;
     let disposed = false;
     const handles: PluginListenerHandle[] = [];
     const keep = async (promise: Promise<PluginListenerHandle>) => {
@@ -159,32 +179,41 @@ export class MdbaseNotificationManager {
       if (disposed) await handle.remove();
       else handles.push(handle);
     };
-    void keep(
-      this.options.messaging.addListener("tokenReceived", ({ token }) => {
-        if (!this.enabled() || !token) return;
-        void this.options.connect
-          .registerNativeNotifications({ token })
-          .catch(() => undefined);
-      }),
-    );
-    void keep(
-      this.options.messaging.addListener(
-        "notificationReceived",
-        ({ notification }) => {
-          const data = mdbaseNotificationData(notification);
-          if (data) onWake({ notification: data, opened: false });
-        },
-      ),
-    );
-    void keep(
-      this.options.messaging.addListener(
-        "notificationActionPerformed",
-        ({ notification }) => {
-          const data = mdbaseNotificationData(notification);
-          if (data) onWake({ notification: data, opened: true });
-        },
-      ),
-    );
+    if (runtime === "native") {
+      void keep(
+        this.options.messaging.addListener("tokenReceived", ({ token }) => {
+          if (!this.enabled() || !token) return;
+          void this.options.connect
+            .registerNativeNotifications({ token })
+            .catch(() => undefined);
+        }),
+      );
+      void keep(
+        this.options.messaging.addListener(
+          "notificationReceived",
+          ({ notification }) => {
+            const data = mdbaseNotificationData(notification);
+            if (data) onWake({ notification: data, opened: false });
+          },
+        ),
+      );
+      void keep(
+        this.options.messaging.addListener(
+          "notificationActionPerformed",
+          ({ notification }) => {
+            const data = mdbaseNotificationData(notification);
+            if (data) onWake({ notification: data, opened: true });
+          },
+        ),
+      );
+    } else {
+      void keep(
+        this.options.webPush.addListener(({ data }) => {
+          const wake = mdbaseWebPushWake(data);
+          if (wake) onWake(wake);
+        }),
+      );
+    }
     void this.refreshRegistration().catch(() => undefined);
     return () => {
       disposed = true;
@@ -197,7 +226,19 @@ export class MdbaseNotificationManager {
     return this.options.storage.getItem(ENABLED_KEY) === "1";
   }
 
-  private async registerCurrentToken(): Promise<void> {
+  private runtime(): "native" | "web" | null {
+    if (this.options.isNative()) return "native";
+    return this.options.webPush.isSupported() ? "web" : null;
+  }
+
+  private async registerCurrentInstallation(
+    runtime: "native" | "web",
+  ): Promise<void> {
+    if (runtime === "web") {
+      const serviceWorker = await this.options.webPush.serviceWorker();
+      await this.options.connect.registerNotifications({ serviceWorker });
+      return;
+    }
     await this.options.messaging
       .createChannel({
         id: CHANNEL_ID,
@@ -221,6 +262,20 @@ export function mdbaseNotificationData(
   } catch {
     return null;
   }
+}
+
+export function mdbaseWebPushWake(
+  value: unknown,
+): MdbaseNotificationWake | null {
+  if (!value || typeof value !== "object") return null;
+  const message = value as Record<string, unknown>;
+  if (
+    message.type !== "tasknotes:mdbase-notification" ||
+    typeof message.opened !== "boolean"
+  )
+    return null;
+  const notification = mdbaseNotificationData({ data: message.notification });
+  return notification ? { notification, opened: message.opened } : null;
 }
 
 class LazyFirebaseMessaging implements NativeMessaging {
@@ -297,6 +352,14 @@ async function firebaseMessaging() {
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
     connection: () => currentConnection()?.info() ?? null,
+    registerNotifications: (options) => {
+      const connection = currentConnection();
+      if (!connection) throw new Error("TaskNotes is not connected.");
+      return connection.registerNotifications(options);
+    },
+    unregisterNotifications: async (serviceWorker) => {
+      await currentConnection()?.unregisterNotifications(serviceWorker);
+    },
     registerNativeNotifications: (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
@@ -310,6 +373,7 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
     Capacitor.getPlatform() === "android"
       ? androidPushMessaging
       : new LazyFirebaseMessaging(),
+  webPush: webPushMessaging,
   storage: localStorage,
   isNative: () => Capacitor.isNativePlatform(),
   isConfigured: () =>

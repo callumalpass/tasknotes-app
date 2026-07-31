@@ -118,8 +118,9 @@ pnpm exec cap open ios
 
 Run the second command on macOS with Xcode installed.
 
-Native connected reminders require a Firebase project and Apple Push
-Notifications configuration. See [Notifications](docs/notifications.md).
+The installed web app uses standards-based Web Push without Firebase. Native
+connected reminders require a Firebase project and Apple Push Notifications
+configuration. See [Notifications](docs/notifications.md).
 
 ## Verification
 
