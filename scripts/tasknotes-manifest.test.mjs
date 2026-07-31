@@ -74,4 +74,31 @@ describe("TaskNotes mdbase manifest", () => {
       "tasknotes_manual_order:\n        type: string",
     );
   });
+
+  it("accepts date-only and timed due and scheduled values", () => {
+    const generated = buildAppTaskNotesResources();
+    const implementation = generated.type.implements.find(
+      (candidate) =>
+        candidate.contract === "tasknotes.task" &&
+        candidate.version === "0.3.0-rc.1",
+    );
+    const taskDateSchema = {
+      anyOf: [
+        { type: "string", format: "date" },
+        { type: "string", format: "date-time" },
+      ],
+    };
+
+    expect(
+      generated.type.schema.value.properties[implementation.fields.due],
+    ).toEqual(taskDateSchema);
+    expect(
+      generated.type.schema.value.properties[implementation.fields.scheduled],
+    ).toEqual(taskDateSchema);
+    expect(generated.taskSchema.properties.due).toEqual(taskDateSchema);
+    expect(generated.taskSchema.properties.scheduled).toEqual(taskDateSchema);
+    expect(
+      JSON.parse(generated.taskSchemaDocument).properties.scheduled,
+    ).toEqual(taskDateSchema);
+  });
 });
