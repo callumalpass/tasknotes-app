@@ -21,6 +21,7 @@ export function buildAppTaskNotesResources() {
     modelConfig,
   });
   const type = structuredClone(resources.type);
+  const taskSchema = structuredClone(resources.taskSchema);
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
@@ -30,6 +31,17 @@ export function buildAppTaskNotesResources() {
     throw new Error(
       "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
     );
+  const taskDateSchema = {
+    anyOf: [
+      { type: "string", format: "date" },
+      { type: "string", format: "date-time" },
+    ],
+  };
+  type.schema.value.properties[implementation.fields.due] = taskDateSchema;
+  type.schema.value.properties[implementation.fields.scheduled] =
+    taskDateSchema;
+  taskSchema.properties.due = taskDateSchema;
+  taskSchema.properties.scheduled = taskDateSchema;
   const extension = implementation.binding;
   extension.status = {
     ...extension.status,
@@ -50,6 +62,8 @@ Task records live under \`${resources.paths.records}/\`.
   return {
     ...resources,
     type,
+    taskSchema,
+    taskSchemaDocument: `${JSON.stringify(taskSchema, null, 2)}\n`,
     typeDocument: serializeMarkdownDocument(type, body),
   };
 }
