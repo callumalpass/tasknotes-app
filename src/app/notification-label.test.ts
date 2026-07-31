@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { changeNotificationLabel } from "./notification-label";
 
 describe("More notification status", () => {
-  it("does not describe an unfinished native check as a web-only feature", () => {
+  it("distinguishes checking, errors, and unsupported browsers", () => {
     expect(changeNotificationLabel({ state: "checking", optedIn: false })).toBe(
       "Checking",
     );
@@ -12,6 +12,6 @@ describe("More notification status", () => {
     );
     expect(
       changeNotificationLabel({ state: "unavailable", optedIn: false }),
-    ).toBe("Available in the mobile app");
+    ).toBe("Not available in this browser");
   });
 });
