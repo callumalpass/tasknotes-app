@@ -223,6 +223,58 @@ describe("cloud task repository", () => {
     );
   });
 
+  it("opens an existing replica without waiting for the network", async () => {
+    const authority = new MemoryAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+      allowedTypes: ["task"],
+    });
+    const first = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+    await first.initialize();
+    const created = await first.create({ title: "Available from cache" });
+    await first.refresh();
+
+    const stalledTransport: SyncTransport<JsonObject> = {
+      openSession: vi.fn(async () => {
+        throw new Error("Cached startup unexpectedly opened a session.");
+      }),
+      snapshot: vi.fn(async () => {
+        throw new Error("Cached startup unexpectedly read a snapshot.");
+      }),
+      changes: vi.fn(async () => {
+        throw new Error("Cached startup unexpectedly pulled changes.");
+      }),
+      mutate: vi.fn(async () => {
+        throw new Error("Cached startup unexpectedly sent a mutation.");
+      }),
+    };
+    const reopened = new CloudTaskRepository(
+      connect(authority.collectionId, replicaId, stalledTransport),
+    );
+
+    await reopened.initialize();
+
+    expect((await reopened.get(created.id))?.title).toBe(
+      "Available from cache",
+    );
+    expect(stalledTransport.openSession).not.toHaveBeenCalled();
+    expect(stalledTransport.changes).not.toHaveBeenCalled();
+    expect(await reopened.syncStatus()).toMatchObject({
+      state: "syncing",
+    });
+  });
+
   it("unions multiple replicated providers and writes through the record's mapping", async () => {
     const collectionResources = multipleProviderResources();
     const providers = resolveTaskCollection(collectionResources);

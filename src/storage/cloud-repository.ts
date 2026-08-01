@@ -131,9 +131,16 @@ export class CloudTaskRepository implements TaskRepository {
     );
     this.replica = new OfflineReplica(sync.transport, store);
     const cachedResources = await this.replica.collectionResources();
+    if (cachedResources) {
+      this.configureModel(cachedResources);
+      await this.reloadCache();
+      await this.maintainRollingOccurrencesUnlocked();
+      await this.updateStatusCounts();
+      this.emit();
+      return;
+    }
     try {
-      if (cachedResources) await this.replica.pull();
-      else await this.replica.initialize();
+      await this.replica.initialize();
       this.status = {
         mode: "replicated",
         state: "synced",
@@ -142,26 +149,9 @@ export class CloudTaskRepository implements TaskRepository {
         lastSyncedAt: new Date().toISOString(),
       };
     } catch (reason) {
-      if (!cachedResources || isNotInitialized(reason)) {
-        try {
-          await this.replica.initialize();
-          this.status = {
-            mode: "replicated",
-            state: "synced",
-            pending: 0,
-            issues: 0,
-            lastSyncedAt: new Date().toISOString(),
-          };
-        } catch (initialReason) {
-          if (!cachedResources) throw cloudFirstOpenError(initialReason);
-          this.setOffline(initialReason);
-        }
-      } else {
-        this.setOffline(reason);
-      }
+      throw cloudFirstOpenError(reason);
     }
-    const resources =
-      (await this.requireReplica().collectionResources()) ?? cachedResources;
+    const resources = await this.requireReplica().collectionResources();
     if (!resources)
       throw new Error(
         "The cloud collection has no cached TaskNotes definition.",
@@ -1135,10 +1125,6 @@ function signature(task: Task): string {
 
 function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
-}
-
-function isNotInitialized(reason: unknown): boolean {
-  return reason instanceof SyncError && reason.code === "not_initialized";
 }
 
 function cloudFirstOpenError(reason: unknown): Error {
