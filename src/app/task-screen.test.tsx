@@ -34,11 +34,7 @@ describe("TaskScreen persistence failures", () => {
   function renderTask(onBack = vi.fn()) {
     render(
       <RepositoryProvider repository={repository}>
-        <TaskScreen
-          id={task.id}
-          onBack={onBack}
-          onMaterialized={vi.fn()}
-        />
+        <TaskScreen id={task.id} onBack={onBack} onMaterialized={vi.fn()} />
       </RepositoryProvider>,
     );
     return onBack;
@@ -75,9 +71,7 @@ describe("TaskScreen persistence failures", () => {
     );
     const archive = vi.spyOn(repository, "setArchived");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "More task actions" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "More task actions" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Archive task" }));
 
     await waitFor(() =>
