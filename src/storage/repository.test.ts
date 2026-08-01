@@ -673,6 +673,36 @@ describe("IndexedMarkdownRepository", () => {
     expect(await repository.get(created.id)).toBeNull();
   });
 
+  it("retains the last-good projection when a changed file cannot be read", async () => {
+    const created = await repository.create({ title: "Last known good" });
+    const source = parseFrontmatter(await vault.readText(created.path));
+    await vault.writeText(
+      created.path,
+      serializeMarkdownDocument(
+        { ...source.frontmatter, title: "Changed outside" },
+        source.body,
+      ),
+    );
+    const readText = vi.spyOn(vault, "readText").mockImplementation((path) => {
+      if (path === created.path)
+        return Promise.reject(new Error("Storage temporarily unavailable"));
+      return MemoryVault.prototype.readText.call(vault, path);
+    });
+
+    await expect(repository.refresh()).rejects.toThrow(
+      "Storage temporarily unavailable",
+    );
+    expect(await repository.get(created.id)).toMatchObject({
+      title: "Last known good",
+    });
+
+    readText.mockRestore();
+    await expect(repository.refresh()).resolves.toMatchObject({ changed: 1 });
+    expect(await repository.get(created.id)).toMatchObject({
+      title: "Changed outside",
+    });
+  });
+
   it("reloads the canonical local type and applies its path and fields", async () => {
     const source = parseFrontmatter(await vault.readText("_types/task.md"));
     const schema = source.frontmatter.schema as {

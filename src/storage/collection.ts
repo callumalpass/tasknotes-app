@@ -558,8 +558,9 @@ export class MarkdownCollection {
   }
 
   async read(document: VaultEntry): Promise<Task | null> {
+    const source = await this.vault.readText(document.path);
     try {
-      const parsed = parseFrontmatter(await this.vault.readText(document.path));
+      const parsed = parseFrontmatter(source);
       const task = this.taskModel.read({
         path: document.path,
         frontmatter: parsed.frontmatter,
@@ -586,8 +587,9 @@ export class MarkdownCollection {
   private async readCollectionRecord(
     document: VaultEntry,
   ): Promise<CollectionRecord | null> {
+    const source = await this.vault.readText(document.path);
     try {
-      const parsed = parseFrontmatter(await this.vault.readText(document.path));
+      const parsed = parseFrontmatter(source);
       const types = explicitRecordTypes(parsed.frontmatter);
       try {
         this.taskModel.read({
