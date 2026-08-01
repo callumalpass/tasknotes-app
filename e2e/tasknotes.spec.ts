@@ -1497,6 +1497,45 @@ test("saves in the background while navigating away", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("reopens local tasks from the offline application shell", async ({
+  context,
+  page,
+}) => {
+  const entry = await page.locator('script[type="module"]').getAttribute("src");
+  test.skip(
+    !entry?.includes("/assets/"),
+    "The development server does not install the production offline shell.",
+  );
+
+  await page.getByLabel("New task title").fill("Available offline");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByText("Available offline", { exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Boolean(navigator.serviceWorker.controller)),
+    )
+    .toBe(true);
+  expect(
+    await page.evaluate(
+      async (source) =>
+        Boolean(await caches.match(new URL(source!, location.href))),
+      entry,
+    ),
+  ).toBe(true);
+
+  await context.setOffline(true);
+  try {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByText("Available offline", { exact: true }),
+    ).toBeVisible();
+  } finally {
+    await context.setOffline(false);
+  }
+});
+
 test("archives and restores a Markdown task without deleting it", async ({
   page,
 }) => {

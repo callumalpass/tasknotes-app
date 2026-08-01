@@ -1,5 +1,7 @@
 import type { PluginListenerHandle } from "@capacitor/core";
 
+import { registerTaskNotesServiceWorker } from "../service-worker-registration";
+
 export interface WebPushMessaging {
   isSupported(): boolean;
   checkPermissions(): Promise<{ receive: string }>;
@@ -31,14 +33,7 @@ export class BrowserWebPushMessaging implements WebPushMessaging {
   }
 
   serviceWorker(): Promise<ServiceWorkerRegistration> {
-    const base = import.meta.env.BASE_URL;
-    const script = import.meta.env.DEV
-      ? `${base}src/service-worker.ts`
-      : `${base}service-worker.js`;
-    return navigator.serviceWorker.register(script, {
-      scope: base,
-      type: "module",
-    });
+    return registerTaskNotesServiceWorker();
   }
 
   async addListener(
