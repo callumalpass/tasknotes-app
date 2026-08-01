@@ -191,6 +191,7 @@ function TaskEditor({
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
@@ -362,12 +363,13 @@ function TaskEditor({
             }
           }
         } catch (reason) {
+          const error =
+            reason instanceof Error ? reason : new Error(String(reason));
           if (mounted.current && editVersion.current === version) {
-            setSaveError(
-              reason instanceof Error ? reason.message : String(reason),
-            );
+            setSaveError(error.message);
             setSaveState("error");
           }
+          throw error;
         } finally {
           savesInFlight.current.delete(version);
         }
@@ -381,14 +383,19 @@ function TaskEditor({
   useEffect(() => {
     if (!dirty) return;
     const version = editVersion.current;
-    const timeout = window.setTimeout(() => void persist(draft, version), 520);
+    const timeout = window.setTimeout(
+      () => void persist(draft, version).catch(() => undefined),
+      520,
+    );
     return () => window.clearTimeout(timeout);
   }, [dirty, draft, persist]);
 
   useEffect(() => {
     const flush = () => {
       if (!dirtyRef.current || !draftRef.current.title.trim()) return;
-      void persist(draftRef.current, editVersion.current);
+      void persist(draftRef.current, editVersion.current).catch(
+        () => undefined,
+      );
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
@@ -419,13 +426,22 @@ function TaskEditor({
     change({ customProperties });
   }
 
-  function leave() {
+  async function leave() {
+    if (leaving) return;
     if (!draft.title.trim()) {
       setSaveState("error");
       return;
     }
-    if (dirtyRef.current) void persist(draftRef.current, editVersion.current);
-    onBack();
+    setLeaving(true);
+    try {
+      if (dirtyRef.current)
+        await persist(draftRef.current, editVersion.current);
+      onBack();
+    } catch {
+      // persist owns the visible save error; keep the editor open for retry.
+    } finally {
+      if (mounted.current) setLeaving(false);
+    }
   }
 
   async function remove() {
@@ -535,8 +551,9 @@ function TaskEditor({
         <button
           aria-label="Back"
           className="icon-action"
+          disabled={leaving}
           type="button"
-          onClick={leave}
+          onClick={() => void leave()}
         >
           <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
         </button>
@@ -544,7 +561,9 @@ function TaskEditor({
           className={`save-state is-${saveState}`}
           disabled={saveState !== "error" || !draft.title.trim()}
           type="button"
-          onClick={() => void persist(draft, editVersion.current)}
+          onClick={() =>
+            void persist(draft, editVersion.current).catch(() => undefined)
+          }
           aria-label={
             saveState === "error"
               ? `Save failed. ${saveError ?? "Tap to retry."}`
