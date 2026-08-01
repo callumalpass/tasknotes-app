@@ -6,7 +6,7 @@ import {
   type MdbaseOperationEnvelope,
   type QueryRecord,
   type QueryResult,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 

@@ -1,4 +1,4 @@
-import type { MdbaseConnectionInfo } from "@mdbase/connect";
+import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
 import {
   ArrowLeft,
   Check,

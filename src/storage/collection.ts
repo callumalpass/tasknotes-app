@@ -9,8 +9,8 @@ import picomatch from "picomatch";
 import type {
   PortableAuthorityRecord,
   PortableAuthorityResource,
-} from "@mdbase/connect-sync/adoption";
-import type { AuthorityImportSnapshot } from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-sync/adoption";
+import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { viewSourceRevision } from "./local-views";

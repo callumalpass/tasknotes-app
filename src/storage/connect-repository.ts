@@ -1,4 +1,4 @@
-import type { JsonObject, MdbaseConnection } from "@mdbase/connect";
+import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
 
 import { CloudTaskRepository } from "./cloud-repository";
 import { RelayTaskRepository } from "./relay-repository";

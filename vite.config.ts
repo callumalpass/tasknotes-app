@@ -20,7 +20,7 @@ export default defineConfig({
             ? "service-worker.js"
             : "assets/[name]-[hash].js",
         manualChunks: (id) =>
-          id.includes("/node_modules/@mdbase/connect")
+          id.includes("/node_modules/@mdbase-dev/connect")
             ? "mdbase-connect"
             : undefined,
       },

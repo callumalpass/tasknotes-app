@@ -1,13 +1,13 @@
-import type { MdbaseConnection } from "@mdbase/connect";
+import type { MdbaseConnection } from "@mdbase-dev/connect";
 import type {
   JsonObject,
   SyncCollectionResources,
-} from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-protocol";
 import {
   MemoryAuthority,
   SyncError,
   type SyncTransport,
-} from "@mdbase/connect-sync";
+} from "@mdbase-dev/connect-sync";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 

@@ -6,8 +6,8 @@ import {
   type AuthorityAdoptionSession,
   type AuthorityAdoptionVerification,
   type PreparedAuthorityAdoption,
-} from "@mdbase/connect-sync/adoption";
-import type { AuthorityImportSnapshot } from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-sync/adoption";
+import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
 
 import type { MarkdownCollection } from "./collection";
 

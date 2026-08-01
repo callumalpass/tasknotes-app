@@ -10,7 +10,7 @@ import {
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 import { expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";

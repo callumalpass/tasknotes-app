@@ -2,7 +2,7 @@ import type {
   CollectionContractDescriptor,
   CollectionTypeDescriptor,
   JsonObject,
-} from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-protocol";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
 

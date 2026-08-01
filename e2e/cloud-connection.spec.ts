@@ -1,4 +1,4 @@
-import type { JsonObject } from "@mdbase/connect";
+import type { JsonObject } from "@mdbase-dev/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { expect, test, type Route } from "@playwright/test";
 

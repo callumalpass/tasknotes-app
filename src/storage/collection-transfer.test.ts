@@ -6,8 +6,8 @@ import {
   type AuthorityAdoptionSession,
   type AuthorityAdoptionView,
   type PreparedAuthorityAdoption,
-} from "@mdbase/connect-sync/adoption";
-import type { AuthorityImportSnapshot } from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-sync/adoption";
+import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { MemoryVault } from "../test/memory-vault";

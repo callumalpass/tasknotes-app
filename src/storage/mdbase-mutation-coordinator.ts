@@ -2,7 +2,7 @@ import {
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 
 type MutationOperation<Result> = () => Promise<Result>;
 

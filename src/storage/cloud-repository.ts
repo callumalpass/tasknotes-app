@@ -1,18 +1,18 @@
 import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
-import type { MdbaseConnection } from "@mdbase/connect";
+import type { MdbaseConnection } from "@mdbase-dev/connect";
 import type {
   JsonObject,
   MdbaseOperationEnvelope,
   SyncCollectionResources,
   SyncMutationReceipt,
   SyncRecord,
-} from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-protocol";
 import {
   IndexedDbReplicaStore,
   OfflineReplica,
   SyncError,
-} from "@mdbase/connect-sync";
+} from "@mdbase-dev/connect-sync";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import {

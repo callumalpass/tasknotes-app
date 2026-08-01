@@ -4,9 +4,12 @@ import {
   MdbaseBrowserSelection,
   MdbaseConnect,
   type MdbaseConnectionInfo,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 
-import type { JsonObject, MdbaseAppManifest } from "@mdbase/connect-protocol";
+import type {
+  JsonObject,
+  MdbaseAppManifest,
+} from "@mdbase-dev/connect-protocol";
 import bundledManifest from "../generated/mdbase-app.json";
 
 export const CLOUD_OPERATIONS = [
