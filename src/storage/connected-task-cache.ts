@@ -1,5 +1,5 @@
 import { taskRelationships } from "../domain/task-relationships";
-import { compareTasks, matchesArchiveFilter } from "./repository";
+import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
 
 import type { Task, TaskListQuery, TaskStats } from "../domain/task";
 import type { TaskView } from "../domain/view";

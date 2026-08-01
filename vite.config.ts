@@ -19,6 +19,10 @@ export default defineConfig({
           chunk.name === "service-worker"
             ? "service-worker.js"
             : "assets/[name]-[hash].js",
+        manualChunks: (id) =>
+          id.includes("/node_modules/@mdbase/connect")
+            ? "mdbase-connect"
+            : undefined,
       },
     },
   },
