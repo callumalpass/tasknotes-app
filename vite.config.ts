@@ -19,6 +19,10 @@ export default defineConfig({
           chunk.name === "service-worker"
             ? "service-worker.js"
             : "assets/[name]-[hash].js",
+        manualChunks: (id) =>
+          id.includes("/node_modules/@mdbase/connect")
+            ? "mdbase-connect"
+            : undefined,
       },
     },
   },
@@ -30,6 +34,16 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: "v8",
+      reporter: ["text-summary", "html"],
+      thresholds: {
+        statements: 68,
+        branches: 60,
+        functions: 66,
+        lines: 71,
+      },
+    },
     environment: "jsdom",
     exclude: ["e2e/**", "node_modules/**"],
     globals: true,

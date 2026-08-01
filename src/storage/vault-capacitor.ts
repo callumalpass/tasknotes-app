@@ -11,6 +11,7 @@ import {
   type Vault,
   type VaultEntry,
 } from "./vault-contract";
+import { isMissingFileError } from "./vault-errors";
 
 const ROOT = "TaskNotes";
 
@@ -134,8 +135,9 @@ export class CapacitorVault implements Vault {
         directory: Directory.Documents,
       });
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      if (isMissingFileError(error)) return false;
+      throw error;
     }
   }
 
@@ -166,7 +168,5 @@ function toEntry(path: string, info: FileInfo): VaultEntry {
 }
 
 function ignoreMissing(error: unknown): void {
-  const message = String(error).toLowerCase();
-  if (!message.includes("not exist") && !message.includes("not found"))
-    throw error;
+  if (!isMissingFileError(error)) throw error;
 }

@@ -16,8 +16,15 @@ import {
   occurrenceRecordId,
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
-import { taskRelationships } from "../domain/task-relationships";
-import { compareTasks, matchesArchiveFilter } from "./repository";
+import {
+  connectedTaskRelationships,
+  connectedTaskSignature as signature,
+  connectedTaskStats,
+  connectedViewExecutionKey as viewExecutionKey,
+  listConnectedTasks,
+  readOnlyTaskModelSettingsAccess,
+  readOnlyTaskModelSettingsError,
+} from "./connected-task-cache";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
@@ -188,35 +195,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {
-    const tokens = (query.search ?? "")
-      .trim()
-      .toLocaleLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-    return [...this.cache.values()]
-      .map(({ task }) => task)
-      .filter((task) => {
-        if (!matchesArchiveFilter(task, query)) return false;
-        if (query.status === "completed" && !task.completed) return false;
-        if (
-          query.status !== "completed" &&
-          query.status !== "all" &&
-          task.completed
-        )
-          return false;
-        const searchable = [
-          task.title,
-          task.body,
-          ...task.tags,
-          ...task.contexts,
-          ...task.projects,
-        ]
-          .join("\n")
-          .toLocaleLowerCase();
-        return tokens.every((token) => searchable.includes(token));
-      })
-      .sort(compareTasks)
-      .slice(0, query.limit ?? 500);
+    return listConnectedTasks(this.cache.values(), query);
   }
 
   async get(id: string): Promise<Task | null> {
@@ -227,12 +206,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async relationships(id: string) {
-    const current = this.cache.get(id)?.task;
-    if (!current) throw new Error("Task not found.");
-    return taskRelationships(
-      current,
-      [...this.cache.values()].map(({ task }) => task),
-    );
+    return connectedTaskRelationships(this.cache.values(), id);
   }
 
   async completeField(
@@ -528,20 +502,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async stats(): Promise<TaskStats> {
-    let archived = 0;
-    let completed = 0;
-    let open = 0;
-    for (const { task } of this.cache.values()) {
-      if (task.archived) archived += 1;
-      else if (task.completed) completed += 1;
-      else open += 1;
-    }
-    return {
-      total: open + completed,
-      open,
-      completed,
-      archived,
-    };
+    return connectedTaskStats(this.cache.values());
   }
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
@@ -549,18 +510,11 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   async taskModelSettingsAccess() {
-    return {
-      writable: false,
-      source: `${this.taskTypeName} type contract`,
-      reason:
-        "Connected collection type settings are managed by the collection owner.",
-    };
+    return readOnlyTaskModelSettingsAccess(this.taskTypeName);
   }
 
   async updateTaskModelSettings(): Promise<TaskCollectionConfiguration> {
-    throw new Error(
-      "Connected collection type settings are managed by the collection owner.",
-    );
+    throw readOnlyTaskModelSettingsError();
   }
 
   async listViews(): Promise<TaskViewDocument[]> {
@@ -1180,10 +1134,6 @@ export class RelayTaskRepository implements TaskRepository {
   }
 }
 
-function viewExecutionKey(view: TaskView): string {
-  return `${view.key}:${view.source.revision}`;
-}
-
 function validResult<Result>(
   envelope: MdbaseOperationEnvelope<Result>,
 ): Result {
@@ -1214,10 +1164,6 @@ function asJson(value: Record<string, unknown>): JsonObject {
 
 function relayFrontmatter(record: ReadableRelayRecord): JsonObject {
   return record.effective_frontmatter ?? record.frontmatter ?? {};
-}
-
-function signature(task: Task): string {
-  return JSON.stringify([task.path, task.frontmatter, task.body]);
 }
 
 function errorMessage(reason: unknown): string {

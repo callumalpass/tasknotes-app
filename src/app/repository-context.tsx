@@ -654,13 +654,13 @@ export function useCollectionSummary(): {
   useEffect(() => {
     if (status !== "ready") return;
     let active = true;
-    Promise.all([repository.collectionInfo(), repository.stats()]).then(
-      ([nextInfo, nextStats]) => {
+    void Promise.all([repository.collectionInfo(), repository.stats()])
+      .then(([nextInfo, nextStats]) => {
         if (!active) return;
         setInfo(nextInfo);
         setStats(nextStats);
-      },
-    );
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };

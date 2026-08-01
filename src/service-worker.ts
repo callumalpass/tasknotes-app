@@ -1,18 +1,38 @@
 /// <reference lib="webworker" />
 
 import {
-  parseMdbasePushPayload,
-  showMdbasePushNotification,
-  type MdbaseNativeNotificationData,
-  type MdbasePushPayload,
-} from "@mdbase/connect";
+  nativeNotificationData,
+  parseNotificationPayload,
+  showNotificationPayload,
+} from "./native/notification-payload";
+
+import type { MdbaseNativeNotificationData } from "@mdbase/connect";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const MESSAGE_TYPE = "tasknotes:mdbase-notification";
+const CACHE_PREFIX = "tasknotes-app-shell-";
+const CACHE_NAME = `${CACHE_PREFIX}v1`;
 
-worker.addEventListener("install", () => worker.skipWaiting());
+worker.addEventListener("install", (event) => {
+  event.waitUntil(installAppShell().then(() => worker.skipWaiting()));
+});
 worker.addEventListener("activate", (event) => {
-  event.waitUntil(worker.clients.claim());
+  event.waitUntil(
+    Promise.all([deleteOldCaches(), worker.clients.claim()]).then(
+      () => undefined,
+    ),
+  );
+});
+
+worker.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (url.origin !== worker.location.origin) return;
+  event.respondWith(
+    event.request.mode === "navigate"
+      ? navigationResponse(event.request)
+      : cachedResponse(event.request),
+  );
 });
 
 worker.addEventListener("push", (event) => {
@@ -24,15 +44,75 @@ worker.addEventListener("notificationclick", (event) => {
   event.waitUntil(openTaskNotes(notificationData(event.notification.data)));
 });
 
-async function handlePush(event: PushEvent): Promise<void> {
-  let payload: MdbasePushPayload;
+async function installAppShell(): Promise<void> {
+  const response = await fetch(
+    new URL("offline-assets.json", worker.registration.scope),
+  );
+  if (!response.ok)
+    throw new Error(`Offline asset manifest returned HTTP ${response.status}.`);
+  const assets = (await response.json()) as unknown;
+  if (
+    !Array.isArray(assets) ||
+    !assets.every((asset) => typeof asset === "string")
+  )
+    throw new Error("Offline asset manifest is invalid.");
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(assets);
+}
+
+async function navigationResponse(request: Request): Promise<Response> {
   try {
-    payload = parseMdbasePushPayload(event.data?.json());
+    const response = await fetch(request);
+    if (cacheable(response)) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(
+        new URL("./", worker.registration.scope),
+        response.clone(),
+      );
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(new URL("./", worker.registration.scope));
+    return cached ?? Response.error();
+  }
+}
+
+async function cachedResponse(request: Request): Promise<Response> {
+  const cached = await caches.match(request, { ignoreVary: true });
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (cacheable(response)) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
+function cacheable(response: Response): boolean {
+  return (
+    response.ok &&
+    !response.headers.get("cache-control")?.toLowerCase().includes("no-store")
+  );
+}
+
+async function deleteOldCaches(): Promise<void> {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME)
+      .map((name) => caches.delete(name)),
+  );
+}
+
+async function handlePush(event: PushEvent): Promise<void> {
+  let payload;
+  try {
+    payload = parseNotificationPayload(event.data?.json());
   } catch {
     return;
   }
-  await showMdbasePushNotification(worker.registration, payload);
-  await messageClients(nativeData(payload), false);
+  await showNotificationPayload(worker.registration, payload);
+  await messageClients(nativeNotificationData(payload), false);
 }
 
 async function openTaskNotes(
@@ -74,16 +154,6 @@ function postWake(
     notification,
     opened,
   });
-}
-
-function nativeData(payload: MdbasePushPayload): MdbaseNativeNotificationData {
-  return {
-    type: payload.type,
-    version: payload.version,
-    signal_id: payload.signal_id,
-    criterion_id: payload.criterion_id,
-    cursor: payload.cursor,
-  };
 }
 
 function notificationData(value: unknown): MdbaseNativeNotificationData | null {

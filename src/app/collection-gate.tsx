@@ -1,6 +1,3 @@
-import { App as CapacitorApp } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
 import {
   ArrowLeft,
   BellOff,
@@ -28,23 +25,23 @@ import {
   isCloudCallback,
 } from "../cloud/connect";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
-import { MarkdownCollection } from "../storage/collection";
+import { appPlatform } from "../native/app-platform";
 import {
-  transferLocalCollectionToHosted,
   type CollectionTransferCheckpoint,
   type CollectionTransferProgress,
   type CollectionTransferResult,
 } from "../storage/collection-transfer";
+import { transferPlatformLocalCollectionToHosted } from "../storage/local-collection-transfer";
 import {
   chooseDefaultLocalCollection,
   chooseExistingLocalCollection,
+  canChooseLocalCollectionFolder,
   localCollectionKey,
   readLocalCollectionLocation,
   readRememberedExternalCollection,
   selectLocalCollectionLocation,
   type LocalCollectionLocation,
 } from "../storage/local-collection-location";
-import { createPlatformVault } from "../storage/vault";
 import { tasknotesMarkUrl } from "./assets";
 import {
   isCollectionMigrationLocked,
@@ -59,7 +56,7 @@ const STORAGE_KEY = "tasknotes:collection-choice:v1";
 const TRANSFER_KEY = "tasknotes:local-to-hosted-transfer:v1";
 
 export function CollectionGate() {
-  const canChooseLocalFolder = Capacitor.isNativePlatform();
+  const canChooseLocalFolder = canChooseLocalCollectionFolder();
   const [choice, setChoice] = useState<CollectionChoice | null>(() =>
     readChoice(),
   );
@@ -104,8 +101,7 @@ export function CollectionGate() {
   }, []);
 
   const finishBrowserCallback = useCallback(async () => {
-    if (Capacitor.isNativePlatform())
-      await Browser.close().catch(() => undefined);
+    await appPlatform.closeAuthorizationBrowser();
   }, []);
 
   const runTransfer = useCallback(
@@ -116,11 +112,6 @@ export function CollectionGate() {
       if (transferInFlight.current) return;
       const displayName =
         sourceLocation.mode === "external" ? sourceLocation.name : "TaskNotes";
-      const sourceName = Capacitor.isNativePlatform()
-        ? sourceLocation.mode === "external"
-          ? `${sourceLocation.name} on this phone`
-          : "TaskNotes on this phone"
-        : "TaskNotes in this browser";
       let transferProgress: CollectionTransferProgress = {
         phase: "reading",
         completed: 0,
@@ -139,14 +130,10 @@ export function CollectionGate() {
         ...(checkpoint ? { checkpoint } : {}),
       });
       try {
-        const source = new MarkdownCollection(
-          createPlatformVault(sourceLocation),
-        );
-        const result = await transferLocalCollectionToHosted({
-          source,
+        const result = await transferPlatformLocalCollectionToHosted({
+          sourceLocation,
           controlUrl: cloudControlUrl(),
           displayName,
-          sourceName,
           ...(checkpoint ? { checkpoint } : {}),
           onCheckpoint: (nextCheckpoint) =>
             savePendingTransfer({
@@ -162,14 +149,7 @@ export function CollectionGate() {
               progress: transferProgress,
               verificationUri,
             });
-            if (Capacitor.isNativePlatform())
-              await Browser.open({ url: verification.verificationUri });
-            else
-              window.open(
-                verification.verificationUri,
-                "_blank",
-                "noopener,noreferrer",
-              );
+            await appPlatform.openExternalUrl(verification.verificationUri);
           },
           onProgress: (progress: CollectionTransferProgress) => {
             transferProgress = progress;
@@ -321,16 +301,14 @@ export function CollectionGate() {
           choose("cloud");
         }),
     );
-    if (!Capacitor.isNativePlatform()) return;
-    const listeners = [
-      CapacitorApp.addListener("appUrlOpen", ({ url }) => void complete(url)),
-    ];
-    void CapacitorApp.getLaunchUrl().then((value) => {
-      if (value?.url) void complete(value.url);
+    const listener = appPlatform.addUrlOpenListener(
+      (url) => void complete(url),
+    );
+    void appPlatform.launchUrl().then((url) => {
+      if (url) void complete(url);
     });
     return () => {
-      for (const listener of listeners)
-        void listener.then((handle) => handle.remove());
+      void listener.then((handle) => handle?.remove());
     };
   }, [choose, complete, runTransfer]);
 
