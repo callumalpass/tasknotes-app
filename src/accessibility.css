@@ -1,0 +1,17 @@
+/* Keep secondary text at WCAG AA contrast on the light surfaces. */
+:root:not([data-theme="dark"]) {
+  --color-text-muted: oklch(52% 0.014 255);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-text-muted: oklch(67% 0.012 255);
+  }
+}
+
+/* Opacity composites this small keyboard hint below AA contrast. */
+@media (min-width: 840px) {
+  .navigation-rail > .global-capture-navigation kbd {
+    opacity: 1;
+  }
+}
