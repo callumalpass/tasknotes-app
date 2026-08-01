@@ -94,7 +94,7 @@ try {
   ).toBeVisible();
 
   phase("moving the local collection into newly created hosted storage");
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: "Change collection" }).click();
   const collectionPicker = page.getByRole("dialog", { name: "Collections" });
   await expect(collectionPicker).toBeVisible();
@@ -120,12 +120,11 @@ try {
   await approvalPage.getByLabel("Name").fill("TaskNotes E2E");
   await approvalPage.getByLabel("Email").fill("tasknotes-e2e@example.com");
   await approvalPage.getByRole("button", { name: "Continue" }).click();
-  await expect(
-    approvalPage.getByRole("button", { name: "Adopt this collection" }),
-  ).toBeVisible();
-  await approvalPage
-    .getByRole("button", { name: "Adopt this collection" })
-    .click();
+  const approveTransfer = approvalPage.getByRole("button", {
+    name: /Adopt this collection|Move this collection/,
+  });
+  await expect(approveTransfer).toBeVisible();
+  await approveTransfer.click();
   await expect(
     page.getByRole("heading", {
       name: "Authority activation must be resolved.",
@@ -222,7 +221,7 @@ try {
     false,
   );
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
 
@@ -270,6 +269,11 @@ try {
     .getByRole("button", { name: "Save view", exact: true })
     .click();
   await expect(page.getByLabel("Cloud board board")).toBeVisible();
+  await expect
+    .poll(
+      () => markdownFrontmatter(provider.viewSource().document).views[0].select,
+    )
+    .toEqual(["status", "urgency", "due"]);
   const savedView = markdownFrontmatter(provider.viewSource().document)
     .views[0];
   assert.deepEqual(savedView.select, ["status", "urgency", "due"]);
@@ -294,7 +298,7 @@ try {
     timeout: 5_000,
   });
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await expect(page.getByText(/1 change waiting to upload/)).toBeVisible();
   await expect(page.getByText("Offline · changes saved here")).toBeVisible();
   provider.setOnline(true);
@@ -343,7 +347,7 @@ try {
   await laptop.sync();
   provider.setOnline(true);
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(
     page.getByRole("heading", { name: "Sync issues" }),
@@ -369,7 +373,7 @@ try {
   await expect(page.getByText("Phone version", { exact: true })).toBeVisible();
 
   phase("reopening cached saved views while the provider is offline");
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   provider.setOnline(false);
   await page.reload();
   await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
@@ -476,7 +480,10 @@ async function startMemoryProvider() {
       if (!authority)
         throw new SyncError("collection_not_found", "Collection not found.");
       if (operationMatch) {
-        const input = await requestJson(request);
+        const operationRequest = await requestJson(request);
+        assert.equal(operationRequest.protocol_version, 1);
+        assert.match(operationRequest.request_id, /^[0-9a-f-]{36}$/);
+        const input = operationRequest.input;
         const operation = operationMatch[2];
         if (!enrollment.allowedOperations?.includes(operation)) {
           throw new SyncError(
@@ -487,29 +494,31 @@ async function startMemoryProvider() {
         if (operation === "reconcile_timers") {
           timerReconciliations.push(structuredClone(input));
           const now = new Date().toISOString();
-          send(response, 200, {
-            result: {
-              namespace: input.namespace,
-              timers: input.timers.map((timer) => ({
-                ...timer,
-                criterion_id: input.criterion_id,
-                generation: 1,
-                status: "scheduled",
-                created_at: now,
-                updated_at: now,
-                fired_at: null,
-              })),
-              cancelled_ids: [],
-            },
+          sendOperation(response, operationRequest, {
+            namespace: input.namespace,
+            timers: input.timers.map((timer) => ({
+              ...timer,
+              criterion_id: input.criterion_id,
+              generation: 1,
+              status: "scheduled",
+              created_at: now,
+              updated_at: now,
+              fired_at: null,
+            })),
+            cancelled_ids: [],
           });
         } else if (operation === "list_views") {
-          send(response, 200, {
-            result: cloudViewList(viewSource, [...transferredViews.values()]),
-          });
+          sendOperation(
+            response,
+            operationRequest,
+            cloudViewList(viewSource, [...transferredViews.values()]),
+          );
         } else if (operation === "execute_view") {
-          send(response, 200, {
-            result: cloudViewExecution(authority.serialize().records),
-          });
+          sendOperation(
+            response,
+            operationRequest,
+            cloudViewExecution(authority.serialize().records),
+          );
         } else if (operation === "read_view_source") {
           const source =
             input.path === viewSource.path
@@ -517,7 +526,7 @@ async function startMemoryProvider() {
               : transferredViews.get(input.path);
           if (!source)
             throw new SyncError("view_not_found", "View source not found.");
-          send(response, 200, { result: valid(source) });
+          sendOperation(response, operationRequest, valid(source));
         } else if (operation === "create_view_source") {
           if (
             input.path === viewSource.path ||
@@ -534,7 +543,7 @@ async function startMemoryProvider() {
             document: input.document,
           };
           transferredViews.set(source.path, source);
-          send(response, 200, { result: valid(source) });
+          sendOperation(response, operationRequest, valid(source));
         } else if (operation === "update_view_source") {
           if (input.path !== viewSource.path)
             throw new SyncError("view_not_found", "View source not found.");
@@ -545,15 +554,17 @@ async function startMemoryProvider() {
             revision: `cloud-view-${++viewRevision}`,
             document: input.document,
           };
-          send(response, 200, { result: valid(viewSource) });
+          sendOperation(response, operationRequest, valid(viewSource));
         } else {
           if (input.path !== viewSource.path)
             throw new SyncError("view_not_found", "View source not found.");
           if (input.if_revision !== viewSource.revision)
             throw new SyncError("revision_conflict", "Revision conflict.");
-          send(response, 200, {
-            result: valid({ path: viewSource.path, deleted: true }),
-          });
+          sendOperation(
+            response,
+            operationRequest,
+            valid({ path: viewSource.path, deleted: true }),
+          );
         }
         return;
       }
@@ -573,6 +584,10 @@ async function startMemoryProvider() {
       else value = await transport.mutate(await requestJson(request));
       send(response, 200, value);
     } catch (reason) {
+      console.error(
+        `Memory provider request failed: ${request.method} ${request.url}`,
+        reason,
+      );
       const code = reason instanceof SyncError ? reason.code : "provider_error";
       send(
         response,
@@ -1159,11 +1174,16 @@ async function provisionedResources(resources, provisions) {
         .sort((left, right) => left.name.localeCompare(right.name));
       const contracts = opened.collection
         .listDataContracts()
+        .filter(
+          (contract) =>
+            contract.contract_type === "record" && contract.record_schema,
+        )
         .map((contract) => ({
+          contract_type: "record",
           id: contract.id,
           version: contract.version,
           digest: contract.digest,
-          schema: contract.schema.value,
+          schema: contract.record_schema.value,
           ...(contract.binding_schema
             ? { binding_schema: contract.binding_schema.value }
             : {}),
@@ -1333,6 +1353,15 @@ function cloudViewExecution(records) {
 function send(response, status, value) {
   response.writeHead(status, { "content-type": "application/json" });
   response.end(JSON.stringify(value));
+}
+
+function sendOperation(response, request, result) {
+  send(response, 200, {
+    protocol_version: 1,
+    request_id: request.request_id,
+    ok: true,
+    result,
+  });
 }
 
 function sendEmpty(response) {
