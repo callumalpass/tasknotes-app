@@ -17,6 +17,19 @@ export type LocalCollectionLocation =
       name: string;
     };
 
+export function canChooseLocalCollectionFolder(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+export function localCollectionSourceName(
+  location: LocalCollectionLocation,
+): string {
+  if (!Capacitor.isNativePlatform()) return "TaskNotes in this browser";
+  return location.mode === "external"
+    ? `${location.name} on this phone`
+    : "TaskNotes on this phone";
+}
+
 export function readLocalCollectionLocation(
   storage: Pick<Storage, "getItem"> = localStorage,
 ): LocalCollectionLocation {
