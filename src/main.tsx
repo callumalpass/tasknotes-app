@@ -6,7 +6,10 @@ import { createRoot } from "react-dom/client";
 
 import { CollectionGate } from "./app/collection-gate";
 import { AppErrorBoundary } from "./components/app-error-boundary";
-import { registerTaskNotesServiceWorker } from "./service-worker-registration";
+import {
+  clearTaskNotesServiceWorkerForDevelopment,
+  registerTaskNotesServiceWorker,
+} from "./service-worker-registration";
 import "./styles.css";
 import "./accessibility.css";
 
@@ -22,3 +25,11 @@ if (import.meta.env.PROD)
   void registerTaskNotesServiceWorker().catch((error: unknown) =>
     console.warn("TaskNotes offline support could not start.", error),
   );
+else
+  void clearTaskNotesServiceWorkerForDevelopment()
+    .then((removed) => {
+      if (removed && navigator.serviceWorker.controller) location.reload();
+    })
+    .catch((error: unknown) =>
+      console.warn("TaskNotes development worker cleanup failed.", error),
+    );

@@ -1501,9 +1501,14 @@ test("reopens local tasks from the offline application shell", async ({
   context,
   page,
 }) => {
-  const entry = await page.locator('script[type="module"]').getAttribute("src");
+  const moduleSources = await page
+    .locator('script[type="module"][src]')
+    .evaluateAll((scripts) =>
+      scripts.flatMap((script) => script.getAttribute("src") ?? []),
+    );
+  const entry = moduleSources.find((source) => source.includes("/assets/"));
   test.skip(
-    !entry?.includes("/assets/"),
+    !entry,
     "The development server does not install the production offline shell.",
   );
 
