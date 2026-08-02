@@ -956,7 +956,7 @@ test("organizes the Today list into declarative day sections", async ({
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   const headings = page.locator(".day-task-sections .section-heading h2");
-  await expect(headings).toHaveText(["Overdue", "Today", "Anytime"]);
+  await expect(headings).toHaveText(["Overdue", "Today", "Anytime", "Later"]);
   await expect(
     page
       .locator(".task-section.is-overdue")
@@ -976,7 +976,7 @@ test("organizes the Today list into declarative day sections", async ({
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   const startedAt = await page.evaluate(() => performance.now());
   await page.getByRole("button", { name: "Today", exact: true }).click();
-  await expect(headings).toHaveCount(3);
+  await expect(headings).toHaveCount(4);
   const sectionRenderMs = await page.evaluate(
     (start) => performance.now() - start,
     startedAt,
@@ -2714,6 +2714,10 @@ views:
 });
 
 test("offers task actions without opening the editor", async ({ page }) => {
+  await page.getByRole("button", { name: "Turn off manual order" }).click();
+  await expect(
+    page.getByRole("button", { name: "Turn on manual order" }),
+  ).toBeVisible();
   await page.getByLabel("New task title").fill("Act from the task row");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
@@ -2749,6 +2753,10 @@ test("uses the plugin-inspired task action hierarchy", async ({
   context,
 }, testInfo) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "Turn off manual order" }).click();
+  await expect(
+    page.getByRole("button", { name: "Turn on manual order" }),
+  ).toBeVisible();
   await page.getByLabel("New task title").fill("Context action parent");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
