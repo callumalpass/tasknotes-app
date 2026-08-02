@@ -43,9 +43,7 @@ test("collection onboarding has no serious accessibility violations", async ({
 }) => {
   await resetApplication(page);
   await expect(
-    page.getByRole("heading", {
-      name: "Choose where your task collection lives.",
-    }),
+    page.getByRole("heading", { name: "Sync with mdbase." }),
   ).toBeVisible();
   await expectNoSeriousViolations(page);
 });
@@ -54,8 +52,10 @@ test("views and settings have no serious accessibility violations", async ({
   page,
 }) => {
   await resetApplication(page);
-  await page.getByRole("button", { name: /Keep on this device/i }).click();
-  await page.getByRole("button", { name: "Use this browser" }).click();
+  await page.evaluate(() =>
+    localStorage.setItem("tasknotes:collection-choice:v1", "local"),
+  );
+  await page.reload();
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();
@@ -74,8 +74,10 @@ test("task list and editor have no serious accessibility violations", async ({
   page,
 }) => {
   await resetApplication(page);
-  await page.getByRole("button", { name: /Keep on this device/i }).click();
-  await page.getByRole("button", { name: "Use this browser" }).click();
+  await page.evaluate(() =>
+    localStorage.setItem("tasknotes:collection-choice:v1", "local"),
+  );
+  await page.reload();
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();

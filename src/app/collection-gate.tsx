@@ -57,13 +57,12 @@ const TRANSFER_KEY = "tasknotes:local-to-hosted-transfer:v1";
 export function CollectionGate() {
   const canChooseLocalFolder = canChooseLocalCollectionFolder();
   const [choice, setChoice] = useState<CollectionChoice | null>(() =>
-    readChoice(),
+    readChoice(canChooseLocalFolder),
   );
   const [localLocation, setLocalLocation] = useState<LocalCollectionLocation>(
     () => readLocalCollectionLocation(),
   );
   const [choosingLocalLocation, setChoosingLocalLocation] = useState(false);
-  const [confirmingBrowserLocal, setConfirmingBrowserLocal] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [migration, setMigration] = useState<CollectionMigrationState | null>(
     null,
@@ -420,26 +419,11 @@ export function CollectionGate() {
       />
     );
 
-  if (confirmingBrowserLocal)
-    return (
-      <BrowserLocalConfirmation
-        onBack={() => setConfirmingBrowserLocal(false)}
-        onConfirm={() => {
-          setConfirmingBrowserLocal(false);
-          choose("local");
-        }}
-      />
-    );
-
   if (!choice)
     return (
       <CollectionWelcome
-        canChooseLocalFolder={canChooseLocalFolder}
         onChooseCloud={() => choose("cloud")}
-        onChooseLocal={() => {
-          if (canChooseLocalFolder) setChoosingLocalLocation(true);
-          else setConfirmingBrowserLocal(true);
-        }}
+        onChooseLocal={() => setChoosingLocalLocation(true)}
       />
     );
   const opened =
@@ -508,11 +492,9 @@ export function CollectionGate() {
 }
 
 function CollectionWelcome({
-  canChooseLocalFolder,
   onChooseCloud,
   onChooseLocal,
 }: {
-  canChooseLocalFolder: boolean;
   onChooseCloud(): void;
   onChooseLocal(): void;
 }) {
@@ -566,9 +548,7 @@ function CollectionWelcome({
             <span className="collection-choice-benefits">
               <small>
                 <FileText aria-hidden="true" size={15} />
-                {canChooseLocalFolder
-                  ? "Markdown files here are the source of truth"
-                  : "Browser-held Markdown is the source of truth"}
+                Markdown files here are the source of truth
               </small>
               <small>
                 <Smartphone aria-hidden="true" size={15} />
@@ -579,9 +559,7 @@ function CollectionWelcome({
                 Reminder details are saved; notifications are not delivered
               </small>
             </span>
-            <span className="collection-choice-action">
-              Use {canChooseLocalFolder ? "this device" : "this browser"}
-            </span>
+            <span className="collection-choice-action">Use this device</span>
           </span>
         </button>
       </div>
@@ -591,48 +569,6 @@ function CollectionWelcome({
         setup, but requires that computer to be reachable. Changing collections
         later does not move tasks between them.
       </p>
-    </main>
-  );
-}
-
-function BrowserLocalConfirmation({
-  onBack,
-  onConfirm,
-}: {
-  onBack(): void;
-  onConfirm(): void;
-}) {
-  return (
-    <main className="collection-welcome browser-local-welcome">
-      <div className="welcome-copy">
-        <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">On this device</p>
-        <h1>Keep tasks in this browser?</h1>
-        <p>
-          This is a private, account-free option for one browser. It is best for
-          smaller collections.
-        </p>
-      </div>
-      <div className="collection-caveat" role="note">
-        <BellOff aria-hidden="true" size={20} />
-        <div>
-          <strong>Notifications are not available</strong>
-          <p>
-            Reminder details remain in Markdown, but this browser cannot deliver
-            task notifications. Clearing its site data can also remove the
-            browser-held collection.
-          </p>
-        </div>
-      </div>
-      <div className="welcome-actions">
-        <button className="outline-action" type="button" onClick={onConfirm}>
-          Use this browser
-        </button>
-        <button className="text-action" type="button" onClick={onBack}>
-          <ArrowLeft aria-hidden="true" size={17} />
-          Back
-        </button>
-      </div>
     </main>
   );
 }
@@ -734,9 +670,16 @@ function OpeningCollection({ label }: { label: string }) {
   );
 }
 
-function readChoice(): CollectionChoice | null {
+function readChoice(canUseLocalCollection: boolean): CollectionChoice | null {
   const value = localStorage.getItem(STORAGE_KEY);
-  return value === "local" || value === "cloud" ? value : null;
+  if (value === "local" && (canUseLocalCollection || browserLocalE2e()))
+    return value;
+  if (!canUseLocalCollection) return "cloud";
+  return value === "cloud" ? value : null;
+}
+
+function browserLocalE2e(): boolean {
+  return import.meta.env.MODE === "e2e";
 }
 
 interface PendingCollectionTransfer {

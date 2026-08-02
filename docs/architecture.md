@@ -18,13 +18,13 @@ resources.
                  │
       ┌──────────┴──────────────┐
       ▼                         ▼
- local Markdown adapter   cloud/relay adapters
+native Markdown adapter   cloud/relay adapters
       │                         │
  MarkdownCollection        OfflineReplica / hosted API
       │                         │
     Vault                IndexedDB + hosted provider
       │
- OPFS / native Documents
+native Documents / selected folder
 ```
 
 Dependencies point inward. Domain modules are pure TaskNotes rules.
@@ -152,10 +152,14 @@ instants.
 
 ## Platform storage
 
-`OpfsVault` stores browser collections under OPFS. `CapacitorVault` stores the
-default native collection in the platform Documents directory. Android records
-are visible under `Documents/TaskNotes`. iOS enables file sharing and opening
-documents in place so the default collection can be inspected through Files.
+Web browsers open mdbase collections only. The hosted provider is authoritative
+and IndexedDB holds the durable offline replica; browser storage is never the
+authority for a web collection.
+
+`CapacitorVault` stores the default native collection in the platform Documents
+directory. Android records are visible under `Documents/TaskNotes`. iOS enables
+file sharing and opening documents in place so the default collection can be
+inspected through Files.
 
 `NativeFolderVault` opens an existing folder selected through the platform file
 picker. Android persists a Storage Access Framework tree grant. iOS persists a
@@ -215,6 +219,8 @@ chunks, keeping the first-run location screen small.
   saves at desktop and phone sizes. Pull requests run the desktop browser
   integration suite, and axe checks onboarding, task editing, views, and
   settings at both configured viewport projects.
+- The general browser UI harness may use an OPFS-backed local fixture only in
+  E2E mode. Production and development web builds cannot open that adapter.
 - The cloud browser vertical slice crosses the portal, OAuth server, SDK,
   provider HTTP boundary, offline replica, and conflict UI.
 - The Android smoke test crosses the real WebView-to-Filesystem bridge and

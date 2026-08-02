@@ -10,8 +10,9 @@ installed during migration.
 
 ## Current scope
 
-- First-run choice between device-local records and mdbase cloud
-- One collection picker for browser storage, local folders, and remembered mdbase collections
+- First-run mobile choice between device-local records and mdbase cloud
+- Cloud-only browser access through mdbase
+- One collection picker for local mobile folders and remembered mdbase collections
 - Verified, resumable transfer from a local collection into empty hosted mdbase storage
 - Ordered view navigation with Today, Upcoming, saved lists, boards, and calendars
 - Grouped view sources and grouped list results
@@ -20,7 +21,6 @@ installed during migration.
 - Authority-backed, content-free reminders for connected mdbase collections
 - Offline cloud replica with background synchronization and explicit conflict resolution
 - Background saves that continue while the user navigates
-- Browser storage through OPFS
 - Android and iOS packaging through Capacitor
 - Existing-folder selection through the Android and iOS system file pickers
 - A disposable IndexedDB projection for startup, sorting, and client-side search
@@ -33,13 +33,14 @@ signing it still requires macOS and Xcode.
 
 | Runtime | Durable collection                                         | Derived index                    |
 | ------- | ---------------------------------------------------------- | -------------------------------- |
-| Browser | OPFS `TaskNotes/`                                          | IndexedDB                        |
+| Browser | Hosted mdbase collection                                   | Durable IndexedDB replica        |
 | Android | `Documents/TaskNotes/` or a user-selected folder           | IndexedDB in the WebView profile |
 | iOS     | App Documents `TaskNotes/` or a user-selected Files folder | IndexedDB in the WebView profile |
 
-mdbase cloud uses a provider-hosted mdbase collection as authority and keeps a
-persistent IndexedDB replica on each device. Creates and edits are applied to
-that replica first, so ordinary work does not wait for a network request.
+The browser app requires an mdbase connection. A provider-hosted mdbase
+collection is authoritative, while a persistent IndexedDB replica keeps work
+available offline. Creates and edits are applied to that replica first, so
+ordinary work does not wait for a network request.
 
 For local collections, Markdown is the source of truth and the index can be
 deleted and rebuilt. Startup reconciliation compares path, modification time,

@@ -41,7 +41,12 @@ export default function CloudCollection({
   );
 
   if (!opened)
-    return <CloudConnection error={authorizationError} onBack={reset} />;
+    return (
+      <CloudConnection
+        error={authorizationError}
+        onBack={canChooseLocalFolder ? reset : undefined}
+      />
+    );
 
   return (
     <OpenedCollection
@@ -63,7 +68,7 @@ export function CloudConnection({
   onBack,
 }: {
   error: string | null;
-  onBack(): void;
+  onBack?: () => void;
 }) {
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
@@ -171,9 +176,11 @@ export function CloudConnection({
               : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
           </button>
         ) : null}
-        <button className="text-action" type="button" onClick={onBack}>
-          Choose another location
-        </button>
+        {onBack ? (
+          <button className="text-action" type="button" onClick={onBack}>
+            Choose another location
+          </button>
+        ) : null}
       </div>
     </main>
   );

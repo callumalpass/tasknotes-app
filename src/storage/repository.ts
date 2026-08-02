@@ -7,7 +7,7 @@ import {
   type IndexedTask,
 } from "./index";
 import { batches, MarkdownCollection } from "./collection";
-import { createPlatformVault } from "./vault";
+import { createLocalVault } from "./vault";
 import { LocalViewExecutor } from "./local-views";
 import { completeRecords, completeTaskValues } from "./completions";
 import { archiveMoveWarning } from "../domain/task-archive";
@@ -111,7 +111,7 @@ export class IndexedMarkdownRepository implements TaskRepository {
   ) {
     this.collection =
       options.collection ??
-      new MarkdownCollection(createPlatformVault(), {
+      new MarkdownCollection(createLocalVault(), {
         approveManagedTypeUpgrade: ({ message }) =>
           typeof globalThis.confirm === "function"
             ? globalThis.confirm(message)

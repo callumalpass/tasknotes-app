@@ -96,10 +96,11 @@ danger roles rather than fixed palette values.
 Every collection choice names two things in plain language: what keeps working
 without a connection, and which copy is the source of truth. Hosted mdbase keeps
 a durable device copy for offline work and syncs it to the hosted source of
-truth. Device-only mode treats its local Markdown as the source of truth and
-does not imply that a missing connection is a problem. A direct computer
-connection is explicitly connection-dependent. Portability is a top-level
-setting, not an advanced implementation detail.
+truth. On Android and iOS, device-only mode treats its local Markdown as the
+source of truth and does not imply that a missing connection is a problem. Web
+browsers require mdbase and never offer browser storage as a collection
+authority. A direct computer connection is explicitly connection-dependent.
+Portability is a top-level setting, not an advanced implementation detail.
 
 ## Typography
 

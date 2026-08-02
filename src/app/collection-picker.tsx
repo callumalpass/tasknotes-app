@@ -173,44 +173,38 @@ export function CollectionPicker({
             </header>
 
             <div className="collection-picker-content">
-              <CollectionGroup label="On this device">
-                <CollectionRow
-                  active={
-                    activeChoice === "local" &&
-                    activeLocalLocation.mode === "default"
-                  }
-                  detail={
-                    canChooseLocalFolder
-                      ? "Private TaskNotes folder"
-                      : "Markdown kept in this browser"
-                  }
-                  icon={<HardDrive aria-hidden="true" size={20} />}
-                  label={
-                    canChooseLocalFolder ? "TaskNotes folder" : "This browser"
-                  }
-                  onClick={() => onSelectLocal({ mode: "default" })}
-                />
-                {rememberedExternal ? (
+              {canChooseLocalFolder ? (
+                <CollectionGroup label="On this device">
                   <CollectionRow
                     active={
                       activeChoice === "local" &&
-                      activeLocalLocation.mode === "external" &&
-                      activeLocalLocation.id === rememberedExternal.id
+                      activeLocalLocation.mode === "default"
                     }
-                    detail="Folder in Files"
-                    icon={<FolderOpen aria-hidden="true" size={20} />}
-                    label={rememberedExternal.name}
-                    onClick={() => onSelectLocal(rememberedExternal)}
+                    detail="Private TaskNotes folder"
+                    icon={<HardDrive aria-hidden="true" size={20} />}
+                    label="TaskNotes folder"
+                    onClick={() => onSelectLocal({ mode: "default" })}
                   />
-                ) : null}
-                {canChooseLocalFolder ? (
+                  {rememberedExternal ? (
+                    <CollectionRow
+                      active={
+                        activeChoice === "local" &&
+                        activeLocalLocation.mode === "external" &&
+                        activeLocalLocation.id === rememberedExternal.id
+                      }
+                      detail="Folder in Files"
+                      icon={<FolderOpen aria-hidden="true" size={20} />}
+                      label={rememberedExternal.name}
+                      onClick={() => onSelectLocal(rememberedExternal)}
+                    />
+                  ) : null}
                   <CollectionAction
                     icon={<Plus aria-hidden="true" size={19} />}
                     label="Choose another folder"
                     onClick={onChooseFolder}
                   />
-                ) : null}
-              </CollectionGroup>
+                </CollectionGroup>
+              ) : null}
 
               <CollectionGroup label="mdbase">
                 {cloudConnections.map((connection) => (

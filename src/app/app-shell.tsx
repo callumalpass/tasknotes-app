@@ -476,16 +476,18 @@ export function StorageErrorScreen({
             ) : null}
           </>
         )}
-        <button
-          className="text-action"
-          type="button"
-          onClick={() => {
-            if (choice === "cloud") changeConnectedCollection();
-            choose(choice === "local" ? "cloud" : "local");
-          }}
-        >
-          {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
-        </button>
+        {choice === "local" || canChooseLocalFolder ? (
+          <button
+            className="text-action"
+            type="button"
+            onClick={() => {
+              if (choice === "cloud") changeConnectedCollection();
+              choose(choice === "local" ? "cloud" : "local");
+            }}
+          >
+            {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
+          </button>
+        ) : null}
       </div>
       <details className="technical-details">
         <summary>Technical details</summary>
