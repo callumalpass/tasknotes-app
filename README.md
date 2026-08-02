@@ -17,6 +17,7 @@ installed during migration.
 - Ordered view navigation with Today, Upcoming, saved lists, boards, and calendars
 - Grouped view sources and grouped list results
 - Capture, editing, completion, and client-side search
+- First-class image attachments with optional inline Notes embeds
 - Projects, contexts, tags, recurrence, absolute reminders, and priorities
 - Authority-backed, content-free reminders for connected mdbase collections
 - Offline cloud replica with background synchronization and explicit conflict resolution
@@ -48,6 +49,14 @@ and size, then reparses only changed files. Cloud collections use a durable
 offline replica because it may temporarily hold writes that have not reached
 the hosted authority. Mutations are serialized at the repository boundary,
 while UI saves can continue after navigation.
+
+An attachment has three deliberately separate sources of truth. A task's
+frontmatter `attachments` link list owns membership; an optional image embed in
+the Markdown body owns presentation; and the filesystem or mdbase file
+descriptor owns binary metadata such as size, digest, media type, and revision.
+Attaching therefore never rewrites Notes, detaching never deletes bytes, and a
+physical delete is refused while any other task or inline embed still refers to
+the file.
 
 Android retains access to selected folders through a persisted Storage Access
 Framework grant. iOS retains a security-scoped bookmark and coordinates access

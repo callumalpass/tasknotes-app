@@ -478,6 +478,7 @@ function task(input: CreateTaskInput): Task {
     tags: input.tags ?? [],
     contexts: input.contexts ?? [],
     projects: input.projects ?? [],
+    attachments: input.attachments ?? [],
     blockedBy: input.blockedBy ?? [],
     completeInstances: [],
     skippedInstances: [],

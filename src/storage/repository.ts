@@ -9,6 +9,8 @@ import {
 import { batches, MarkdownCollection } from "./collection";
 import { createLocalVault } from "./vault";
 import { LocalViewExecutor } from "./local-views";
+import { VaultCollectionFileStore } from "./vault-files";
+import { isBinaryVault } from "./vault-contract";
 import { completeRecords, completeTaskValues } from "./completions";
 import { archiveMoveWarning } from "../domain/task-archive";
 import {
@@ -63,6 +65,7 @@ import type {
   RepositorySyncStatus,
   TaskRepository,
 } from "../application/ports/task-repository";
+import type { CollectionFileStore } from "../application/ports/collection-file-store";
 
 export type {
   CollectionInfo,
@@ -74,9 +77,10 @@ export type {
 } from "../application/ports/task-repository";
 
 const PROJECTION_CONSISTENCY_VERSION = 1;
-const TASK_PROJECTION_SHAPE_VERSION = 1;
+const TASK_PROJECTION_SHAPE_VERSION = 2;
 
 export class IndexedMarkdownRepository implements TaskRepository {
+  readonly files?: CollectionFileStore;
   private readonly collection: MarkdownCollection;
   private readonly index: TaskIndex;
   private readonly cache = new Map<string, IndexedTask>();
@@ -119,6 +123,8 @@ export class IndexedMarkdownRepository implements TaskRepository {
       });
     this.index =
       options.index ?? new TaskIndex(indexName(this.collection.identifier()));
+    if (isBinaryVault(this.collection.vault))
+      this.files = new VaultCollectionFileStore(this.collection.vault);
     this.views = new LocalViewExecutor(
       this.collection,
       () => [...this.cache.values()],

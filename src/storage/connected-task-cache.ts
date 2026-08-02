@@ -32,6 +32,7 @@ export function listConnectedTasks(
         ...task.tags,
         ...task.contexts,
         ...task.projects,
+        ...task.attachments,
       ]
         .join("\n")
         .toLocaleLowerCase();

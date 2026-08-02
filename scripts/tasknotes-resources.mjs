@@ -1,6 +1,7 @@
 import { cloneDefaultModelConfig } from "@tasknotes/model/defaults";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 
 export function buildAppTaskNotesResources() {
   const modelConfig = cloneDefaultModelConfig();
@@ -25,11 +26,11 @@ export function buildAppTaskNotesResources() {
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.1",
+      candidate.version === TASKNOTES_SPEC_VERSION,
   );
   if (!implementation)
     throw new Error(
-      "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
+      `The generated type does not implement tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
     );
   const taskDateSchema = {
     anyOf: [

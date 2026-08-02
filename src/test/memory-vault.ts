@@ -5,7 +5,7 @@ import {
 } from "../storage/vault-contract";
 
 interface StoredFile {
-  contents: string;
+  contents: Uint8Array;
   lastModified: number;
 }
 
@@ -49,7 +49,7 @@ export class MemoryVault implements Vault {
       .map(([name, file]) => ({
         path: name,
         lastModified: file.lastModified,
-        size: new TextEncoder().encode(file.contents).byteLength,
+        size: file.contents.byteLength,
       }))
       .sort((left, right) => left.path.localeCompare(right.path));
   }
@@ -57,17 +57,37 @@ export class MemoryVault implements Vault {
   async readText(path: string): Promise<string> {
     const file = this.files.get(safePath(path));
     if (!file) throw new DOMException("File not found", "NotFoundError");
-    return file.contents;
+    return new TextDecoder().decode(file.contents);
   }
 
   async writeText(path: string, contents: string): Promise<VaultEntry> {
     const safe = safePath(path);
-    const file = { contents, lastModified: this.clock++ };
+    const file = {
+      contents: new TextEncoder().encode(contents),
+      lastModified: this.clock++,
+    };
     this.files.set(safe, file);
     return {
       path: safe,
       lastModified: file.lastModified,
-      size: new TextEncoder().encode(contents).byteLength,
+      size: file.contents.byteLength,
+    };
+  }
+
+  async readBinary(path: string): Promise<Uint8Array> {
+    const file = this.files.get(safePath(path));
+    if (!file) throw new DOMException("File not found", "NotFoundError");
+    return file.contents.slice();
+  }
+
+  async writeBinary(path: string, contents: Uint8Array): Promise<VaultEntry> {
+    const safe = safePath(path);
+    const file = { contents: contents.slice(), lastModified: this.clock++ };
+    this.files.set(safe, file);
+    return {
+      path: safe,
+      lastModified: file.lastModified,
+      size: file.contents.byteLength,
     };
   }
 
@@ -88,7 +108,7 @@ export class MemoryVault implements Vault {
     return {
       path: destination,
       lastModified: moved.lastModified,
-      size: new TextEncoder().encode(moved.contents).byteLength,
+      size: moved.contents.byteLength,
     };
   }
 

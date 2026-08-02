@@ -17,6 +17,10 @@ const connectRoot = resolve(
   process.env.TASKNOTES_CONNECT_ROOT ?? resolve(appRoot, "../mdbase-connect"),
 );
 const execute = promisify(execFile);
+const cloudAttachmentBytes = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9WlS8AAAAASUVORK5CYII=",
+  "base64",
+);
 if (process.env.MDBASE_CONNECT_E2E_BUILD !== "0") {
   await execute("pnpm", ["build"], { cwd: connectRoot });
 }
@@ -52,6 +56,7 @@ try {
     TASKNOTES_APP_URL: appUrl,
     TASKNOTES_WEB_ONLY: "1",
     VITE_MDBASE_CONNECT_URL: controlUrl,
+    VITE_MDBASE_REQUIRE_RELAY_ENCRYPTION: "1",
   };
   await execute("pnpm", ["manifest:dev"], {
     cwd: appRoot,
@@ -62,6 +67,8 @@ try {
     [
       "exec",
       "vite",
+      "--mode",
+      "e2e",
       "--host",
       "127.0.0.1",
       "--port",
@@ -96,7 +103,7 @@ try {
   ).toBeVisible();
 
   phase("moving the local collection into newly created hosted storage");
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Change collection" }).click();
   const collectionPicker = page.getByRole("dialog", { name: "Collections" });
   await expect(collectionPicker).toBeVisible();
@@ -126,37 +133,64 @@ try {
     name: /Adopt this collection|Move this collection/,
   });
   await expect(approveTransfer).toBeVisible();
+  const approvalResponsePromise = approvalPage.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith("/approve"),
+  );
   await approveTransfer.click();
+  const approvalResponse = await approvalResponsePromise;
+  assert.equal(
+    approvalResponse.status(),
+    200,
+    `Collection adoption approval failed: ${await approvalResponse.text()}`,
+  );
   await expect(
     page.getByRole("heading", {
-      name: "Authority activation must be resolved.",
+      name: "The move needs your attention.",
     }),
-  ).toBeVisible({ timeout: 15_000 });
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("alert")).toContainText(
+    "Your local collection is unchanged",
+  );
   await expect(
-    page.getByRole("button", { name: "Back to collection details" }),
-  ).toHaveCount(0);
-  phase("restarting TaskNotes while authority activation is unresolved");
+    page.getByRole("button", { name: "Retry transfer" }),
+  ).toBeVisible();
+  phase("restarting TaskNotes while the interrupted transfer is recoverable");
   await page.reload();
+  const retryTransfer = page.getByRole("button", { name: "Retry transfer" });
+  await expect
+    .poll(
+      async () => {
+        if (page.url().startsWith(`${controlUrl}/authorize`))
+          return "authorize";
+        if (await retryTransfer.isVisible().catch(() => false)) return "retry";
+        return "waiting";
+      },
+      { timeout: 30_000 },
+    )
+    .not.toBe("waiting");
+  if (await retryTransfer.isVisible().catch(() => false)) {
+    await retryTransfer.click();
+  }
   await expect(page).toHaveURL(
     new RegExp(`^${escapeRegex(controlUrl)}/authorize`),
-    { timeout: 15_000 },
+    { timeout: 30_000 },
   );
   await expect(
     page.getByRole("radio", { name: /TaskNotes Hosted by mdbase/ }),
   ).toBeChecked();
   await page.getByRole("button", { name: "Allow TaskNotes" }).click();
   await expect(page).toHaveURL(
-    new RegExp(`^${escapeRegex(appUrl)}(?:/more)?\\?collection=`),
-    {
-      timeout: 15_000,
-    },
+    new RegExp(`^${escapeRegex(appUrl)}(?:/[^?]*)?\\?collection=`),
+    { timeout: 30_000 },
   );
   await expect
     .poll(() => new URL(page.url()).searchParams.get("collection"))
     .toMatch(/^[0-9a-f-]{36}$/);
   await expect(
     page.getByRole("heading", { name: "TaskNotes is hosted." }),
-  ).toBeVisible({ timeout: 15_000 });
+  ).toBeVisible({ timeout: 30_000 });
   await expect(
     page.getByText(/1 record and 1 saved view adopted/),
   ).toBeVisible();
@@ -222,8 +256,29 @@ try {
     JSON.stringify(desiredTimer).includes("Cloud foundation"),
     false,
   );
+  phase("attaching and decoding image bytes through mdbase cloud");
+  await page.getByLabel("Attach image").setInputFiles({
+    name: "cloud-receipt.png",
+    mimeType: "image/png",
+    buffer: cloudAttachmentBytes,
+  });
+  await expect(
+    page.getByText("cloud-receipt.png", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("img.attachment-thumbnail")).toHaveAttribute(
+    "src",
+    /^blob:/,
+  );
+  await expect
+    .poll(() => provider.collectionFiles().length, { timeout: 10_000 })
+    .toBe(1);
+  const hostedFile = provider
+    .collectionFiles()
+    .find((file) => file.descriptor.path.endsWith("cloud-receipt.png"));
+  assert.ok(hostedFile, "The cloud attachment did not reach hosted storage");
+  assert.deepEqual(hostedFile.bytes, cloudAttachmentBytes);
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
 
@@ -234,9 +289,12 @@ try {
     cloudRecord,
     "Task created in the browser did not reach the hosted authority",
   );
+  assert.deepEqual(cloudRecord.frontmatter.attachments, [
+    `[[${hostedFile.descriptor.path}]]`,
+  ]);
 
   phase("rendering a provider-owned saved view through mdbase cloud");
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await openManageViews(page);
   const cloudView = page
     .getByLabel("Cloud views")
     .getByRole("button", { name: "Cloud board", exact: true });
@@ -284,7 +342,7 @@ try {
     "tasknotes.kanban",
     "Editing displayed properties changed the view layout",
   );
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
 
   phase("saving immediately while the provider is offline, then resuming sync");
   await page.getByRole("button", { name: "Cloud board" }).click();
@@ -300,7 +358,7 @@ try {
     timeout: 5_000,
   });
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByText(/1 change waiting to upload/)).toBeVisible();
   await expect(page.getByText("Offline · changes saved here")).toBeVisible();
   provider.setOnline(true);
@@ -349,7 +407,7 @@ try {
   await laptop.sync();
   provider.setOnline(true);
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(
     page.getByRole("heading", { name: "Sync issues" }),
@@ -370,16 +428,16 @@ try {
 
   phase("reopening the cached collection after a page reload");
   await page.reload();
-  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await page.getByRole("button", { name: "Cloud board" }).click();
   await expect(page.getByText("Phone version", { exact: true })).toBeVisible();
 
   phase("reopening cached saved views while the provider is offline");
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   provider.setOnline(false);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await openManageViews(page);
   const cachedCloudView = page
     .getByLabel("Cloud views")
     .getByRole("button", { name: "Cloud board", exact: true });
@@ -406,6 +464,9 @@ try {
 
 async function startMemoryProvider() {
   const collections = new Map();
+  const accounts = new Map();
+  const files = new Map();
+  const fileTransfers = new Map();
   const replicas = new Map();
   const tokens = new Map();
   const authorityImports = new Map();
@@ -437,6 +498,21 @@ async function startMemoryProvider() {
         send(response, 200, { ready: true });
         return;
       }
+      const objectUpload = url.pathname.match(/^\/objects\/([^/]+)$/);
+      if (objectUpload && request.method === "PUT") {
+        const transfer = fileTransfers.get(objectUpload[1]);
+        if (!transfer || transfer.direction !== "upload") {
+          send(
+            response,
+            404,
+            error("file_transfer_not_found", "Transfer not found."),
+          );
+          return;
+        }
+        transfer.bytes = await requestBytes(request);
+        sendEmpty(response);
+        return;
+      }
       if (url.pathname.startsWith("/internal/")) {
         await handleInternalRequest(request, response, url);
         return;
@@ -459,11 +535,14 @@ async function startMemoryProvider() {
       const operationMatch = url.pathname.match(
         /^\/v1\/authorities\/([^/]+)\/operations\/(list_views|execute_view|read_view_source|create_view_source|update_view_source|delete_view_source|reconcile_timers)$/,
       );
-      if (!match && !operationMatch) {
+      const fileMatch = url.pathname.match(
+        /^\/v1\/authorities\/([^/]+)\/files(?:\/(.*))?$/,
+      );
+      if (!match && !operationMatch && !fileMatch) {
         send(response, 404, error("not_found", "Not found."));
         return;
       }
-      const collectionId = (match ?? operationMatch)[1];
+      const collectionId = (match ?? operationMatch ?? fileMatch)[1];
       const bearer = request.headers.authorization?.replace(/^Bearer\s+/i, "");
       const enrollment = bearer ? tokens.get(bearer) : undefined;
       if (!enrollment || enrollment.collectionId !== collectionId) {
@@ -481,6 +560,16 @@ async function startMemoryProvider() {
       const authority = collections.get(collectionId)?.authority;
       if (!authority)
         throw new SyncError("collection_not_found", "Collection not found.");
+      if (fileMatch) {
+        await handleCollectionFileRequest(
+          request,
+          response,
+          url,
+          collectionId,
+          fileMatch[2] ?? "",
+        );
+        return;
+      }
       if (operationMatch) {
         const operationRequest = await requestJson(request);
         assert.equal(operationRequest.protocol_version, 1);
@@ -614,6 +703,208 @@ async function startMemoryProvider() {
       if (value.replicaId === replicaId) tokens.delete(token);
   }
 
+  function accountUsage(account) {
+    return {
+      account_id: account.accountId,
+      entitlement_revision: account.entitlementRevision,
+      collection_count: account.collectionIds.size,
+      live_content_bytes: 0,
+      live_file_bytes: 0,
+      ...account.limits,
+    };
+  }
+
+  async function handleCollectionFileRequest(
+    request,
+    response,
+    requestUrl,
+    collectionId,
+    path,
+  ) {
+    const method = request.method ?? "GET";
+    if (!path && method === "GET") {
+      const folder = requestUrl.searchParams.get("folder");
+      const visible = [...files.values()]
+        .filter(
+          (file) =>
+            file.collectionId === collectionId &&
+            (!folder || file.descriptor.path.startsWith(`${folder}/`)),
+        )
+        .map((file) => file.descriptor);
+      send(response, 200, {
+        protocol_version: 1,
+        type: "files_page",
+        files: visible,
+      });
+      return;
+    }
+    if (path === "uploads" && method === "POST") {
+      const input = await requestJson(request);
+      fileTransfers.set(input.transfer_id, {
+        collectionId,
+        direction: "upload",
+        input,
+        bytes: null,
+      });
+      send(
+        response,
+        200,
+        fileTransfer(input.transfer_id, "upload", input.size),
+      );
+      return;
+    }
+    const uploadParts = path.match(/^uploads\/([^/]+)\/parts$/);
+    if (uploadParts && method === "POST") {
+      const input = await requestJson(request);
+      const transfer = fileTransfers.get(uploadParts[1]);
+      if (!transfer || transfer.collectionId !== collectionId)
+        throw new SyncError("file_transfer_not_found", "Transfer not found.");
+      send(response, 200, {
+        protocol_version: 1,
+        type: "file_part",
+        transfer_id: input.transfer_id,
+        part_index: input.part_number - 1,
+        offset: 0,
+        content_length: input.content_length,
+        method: "PUT",
+        url: `${url}/objects/${encodeURIComponent(input.transfer_id)}`,
+        headers: { "content-type": "application/octet-stream" },
+        expires_at: futureInstant(),
+      });
+      return;
+    }
+    const uploadCommit = path.match(/^uploads\/([^/]+)\/commit$/);
+    if (uploadCommit && method === "POST") {
+      const input = await requestJson(request);
+      const transfer = fileTransfers.get(uploadCommit[1]);
+      if (
+        !transfer ||
+        transfer.collectionId !== collectionId ||
+        transfer.direction !== "upload" ||
+        !transfer.bytes
+      )
+        throw new SyncError("file_upload_incomplete", "Upload is incomplete.");
+      assert.equal(transfer.bytes.byteLength, transfer.input.size);
+      const existing = [...files.values()].find(
+        (file) =>
+          file.collectionId === collectionId &&
+          file.descriptor.path === transfer.input.path,
+      );
+      const descriptor = {
+        file_id: existing?.descriptor.file_id ?? crypto.randomUUID(),
+        path: transfer.input.path,
+        revision: crypto.randomUUID(),
+        content_digest: transfer.input.content_digest,
+        size: transfer.bytes.byteLength,
+        ...(transfer.input.media_type
+          ? { media_type: transfer.input.media_type }
+          : {}),
+        media_class: transfer.input.media_type?.startsWith("image/")
+          ? "image"
+          : "other",
+        modified_at: new Date().toISOString(),
+      };
+      files.set(descriptor.file_id, {
+        collectionId,
+        descriptor,
+        bytes: transfer.bytes,
+      });
+      fileTransfers.delete(uploadCommit[1]);
+      send(response, 200, {
+        protocol_version: 1,
+        type: "file_upload_committed",
+        transfer_id: input.transfer_id,
+        file: descriptor,
+      });
+      return;
+    }
+    if (path === "downloads" && method === "POST") {
+      const input = await requestJson(request);
+      const file = files.get(input.file_id);
+      if (!file || file.collectionId !== collectionId)
+        throw new SyncError("file_not_found", "File not found.");
+      fileTransfers.set(input.transfer_id, {
+        collectionId,
+        direction: "download",
+        file,
+      });
+      send(
+        response,
+        200,
+        fileTransfer(
+          input.transfer_id,
+          "download",
+          file.bytes.byteLength,
+          "object_ranges",
+        ),
+      );
+      return;
+    }
+    const downloadPart = path.match(/^downloads\/([^/]+)\/parts\/(\d+)$/);
+    if (downloadPart && method === "GET") {
+      const transfer = fileTransfers.get(downloadPart[1]);
+      if (
+        !transfer ||
+        transfer.collectionId !== collectionId ||
+        transfer.direction !== "download" ||
+        Number(downloadPart[2]) !== 0
+      )
+        throw new SyncError("file_transfer_not_found", "Transfer not found.");
+      response.writeHead(200, {
+        "content-length": String(transfer.file.bytes.byteLength),
+        "content-type":
+          transfer.file.descriptor.media_type ?? "application/octet-stream",
+      });
+      response.end(Buffer.from(transfer.file.bytes));
+      return;
+    }
+    const move = path.match(/^([^/]+)\/move$/);
+    if (move && method === "POST") {
+      const input = await requestJson(request);
+      const file = files.get(decodeURIComponent(move[1]));
+      if (!file || file.collectionId !== collectionId)
+        throw new SyncError("file_not_found", "File not found.");
+      file.descriptor = {
+        ...file.descriptor,
+        path: input.path,
+        revision: crypto.randomUUID(),
+        modified_at: new Date().toISOString(),
+      };
+      send(response, 200, {
+        protocol_version: 1,
+        type: "file_moved",
+        mutation_id: input.mutation_id,
+        file: file.descriptor,
+      });
+      return;
+    }
+    const deletion = path.match(/^([^/]+)\/delete$/);
+    if (deletion && method === "POST") {
+      const input = await requestJson(request);
+      const fileId = decodeURIComponent(deletion[1]);
+      const file = files.get(fileId);
+      if (!file || file.collectionId !== collectionId)
+        throw new SyncError("file_not_found", "File not found.");
+      files.delete(fileId);
+      send(response, 200, {
+        protocol_version: 1,
+        type: "file_deleted",
+        mutation_id: input.mutation_id,
+        file_id: fileId,
+        previous_path: file.descriptor.path,
+        revision: file.descriptor.revision,
+      });
+      return;
+    }
+    const transfer = path.match(/^transfers\/([^/]+)$/);
+    if (transfer && method === "DELETE") {
+      fileTransfers.delete(decodeURIComponent(transfer[1]));
+      sendEmpty(response);
+      return;
+    }
+    send(response, 404, error("not_found", "Not found."));
+  }
+
   async function handleInternalRequest(request, response, requestUrl) {
     const bearer = request.headers.authorization?.replace(/^Bearer\s+/i, "");
     if (bearer !== internalToken) {
@@ -623,6 +914,12 @@ async function startMemoryProvider() {
     const method = request.method ?? "GET";
     const collection = requestUrl.pathname.match(
       /^\/internal\/v1\/collections\/([^/]+)$/,
+    );
+    const accountCollection = requestUrl.pathname.match(
+      /^\/internal\/v1\/accounts\/([^/]+)\/collections\/([^/]+)$/,
+    );
+    const account = requestUrl.pathname.match(
+      /^\/internal\/v1\/accounts\/([^/]+)$/,
     );
     const provision = requestUrl.pathname.match(
       /^\/internal\/v1\/collections\/([^/]+)\/type-packs\/provision$/,
@@ -649,7 +946,37 @@ async function startMemoryProvider() {
       /^\/internal\/v1\/authority-imports(?:\/([^/]+))?$/,
     );
 
-    if (authorityImport && method === "POST" && !authorityImport[1]) {
+    if (accountCollection && method === "PUT") {
+      const hostedAccount = accounts.get(accountCollection[1]);
+      if (!hostedAccount)
+        throw new SyncError("account_not_found", "Account not found.");
+      hostedAccount.collectionIds.add(accountCollection[2]);
+      sendEmpty(response);
+    } else if (account && method === "PUT") {
+      const input = await requestJson(request);
+      const existing = accounts.get(account[1]);
+      const hostedAccount = {
+        accountId: account[1],
+        entitlementRevision: input.entitlement_revision,
+        limits: {
+          hosted_storage_bytes: input.hosted_storage_bytes,
+          retained_file_bytes: input.retained_file_bytes,
+          max_document_bytes: input.max_document_bytes,
+          max_single_file_bytes: input.max_single_file_bytes,
+          max_replicas_per_collection: input.max_replicas_per_collection,
+          max_hosted_collections: input.max_hosted_collections,
+          max_files_per_collection: input.max_files_per_collection,
+        },
+        collectionIds: existing?.collectionIds ?? new Set(),
+      };
+      accounts.set(account[1], hostedAccount);
+      send(response, 200, { account: accountUsage(hostedAccount) });
+    } else if (account && method === "GET") {
+      const hostedAccount = accounts.get(account[1]);
+      if (!hostedAccount)
+        throw new SyncError("account_not_found", "Account not found.");
+      send(response, 200, { account: accountUsage(hostedAccount) });
+    } else if (authorityImport && method === "POST" && !authorityImport[1]) {
       const input = await requestJson(request);
       const expiresAt = new Date(
         Date.now() + Number(input.ttl_seconds) * 1_000,
@@ -659,6 +986,7 @@ async function startMemoryProvider() {
         authorityImports.set(input.transfer_id, {
           id: input.transfer_id,
           collectionId: input.collection_id,
+          accountId: input.account_id,
           displayName: input.display_name,
           token: input.token,
           authorityEpoch: input.authority_epoch,
@@ -671,6 +999,7 @@ async function startMemoryProvider() {
       } else {
         existing.token = input.token;
         existing.expiresAt = expiresAt;
+        existing.accountId = input.account_id;
       }
       send(
         response,
@@ -1004,12 +1333,23 @@ async function startMemoryProvider() {
     timerReconciliations() {
       return structuredClone(timerReconciliations);
     },
+    collectionFiles() {
+      return [...files.values()].map((file) => ({
+        descriptor: structuredClone(file.descriptor),
+        bytes: Buffer.from(file.bytes),
+      }));
+    },
     onlyCollection() {
       assert.equal(collections.size, 1, "Expected one hosted collection");
       return collections.values().next().value;
     },
     close: () => new Promise((resolveClose) => server.close(resolveClose)),
   };
+}
+
+async function openManageViews(page) {
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Manage views" }).click();
 }
 
 async function chooseDate(page, label, value) {
@@ -1059,9 +1399,34 @@ async function waitFor(url, output) {
 }
 
 async function requestJson(request) {
+  return JSON.parse((await requestBytes(request)).toString("utf8"));
+}
+
+async function requestBytes(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return Buffer.concat(chunks);
+}
+
+function fileTransfer(transferId, direction, size, strategy = "object_put") {
+  return {
+    protocol_version: 1,
+    type: "file_transfer",
+    transfer_id: transferId,
+    direction,
+    protection: "transport_tls",
+    strategy:
+      strategy === "object_ranges"
+        ? { kind: "object_ranges", part_size: Math.max(1, size) }
+        : { kind: "object_put" },
+    total_size: size,
+    expires_at: futureInstant(),
+    received: [],
+  };
+}
+
+function futureInstant() {
+  return new Date(Date.now() + 10 * 60 * 1_000).toISOString();
 }
 
 function cloudViewSource() {

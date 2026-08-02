@@ -10,7 +10,12 @@ import type { TaskView } from "../domain/view";
 
 it("applies shared search, state, archive, and limit projection rules", () => {
   const cached = [
-    { task: fixtureTask("open", "Open release", { tags: ["laptop"] }) },
+    {
+      task: fixtureTask("open", "Open release", {
+        tags: ["laptop"],
+        attachments: ["[[Attachments/receipt.jpg]]"],
+      }),
+    },
     {
       task: fixtureTask("done", "Completed release", {
         completed: true,
@@ -24,6 +29,9 @@ it("applies shared search, state, archive, and limit projection rules", () => {
     listConnectedTasks(cached, { search: "release laptop" }).map(
       ({ id }) => id,
     ),
+  ).toEqual(["open"]);
+  expect(
+    listConnectedTasks(cached, { search: "receipt" }).map(({ id }) => id),
   ).toEqual(["open"]);
   expect(
     listConnectedTasks(cached, { status: "completed" }).map(({ id }) => id),
@@ -85,5 +93,6 @@ function fixtureTask(
     revision: 1,
     frontmatter: { id, title },
     ...overrides,
+    attachments: overrides.attachments ?? [],
   };
 }

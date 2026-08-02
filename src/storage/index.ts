@@ -57,6 +57,7 @@ export function indexTask(
       ...task.tags,
       ...task.contexts,
       ...task.projects,
+      ...task.attachments,
     ]
       .join("\n")
       .toLocaleLowerCase(),
@@ -76,6 +77,7 @@ export function indexedTaskNeedsNormalization(task: IndexedTask): boolean {
     !Array.isArray(task.tags) ||
     !Array.isArray(task.contexts) ||
     !Array.isArray(task.projects) ||
+    !Array.isArray(task.attachments) ||
     !Array.isArray(task.blockedBy) ||
     !Array.isArray(task.completeInstances) ||
     !Array.isArray(task.skippedInstances) ||
@@ -94,6 +96,7 @@ export function normalizeIndexedTask(task: IndexedTask): IndexedTask {
     tags: stringArray(task.tags),
     contexts: stringArray(task.contexts),
     projects: stringArray(task.projects),
+    attachments: stringArray(task.attachments),
     blockedBy: Array.isArray(task.blockedBy) ? task.blockedBy : [],
     completeInstances: stringArray(task.completeInstances),
     skippedInstances: stringArray(task.skippedInstances),

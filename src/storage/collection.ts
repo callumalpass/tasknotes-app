@@ -3,6 +3,7 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
 import picomatch from "picomatch";
@@ -10,7 +11,11 @@ import type {
   PortableAuthorityRecord,
   PortableAuthorityResource,
 } from "@mdbase-dev/connect-sync/adoption";
-import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
+import { portableRecordId } from "@mdbase-dev/connect-sync/adoption";
+import type {
+  AuthorityImportSnapshot,
+  CollectionFileDescriptor,
+} from "@mdbase-dev/connect-protocol";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { viewSourceRevision } from "./local-views";
@@ -37,6 +42,8 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../domain/view";
 import type { Vault, VaultEntry } from "./vault";
+import { isBinaryVault } from "./vault-contract";
+import { VaultCollectionFileStore } from "./vault-files";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -53,6 +60,7 @@ export interface LocalAuthoritySnapshot {
   specVersion: string;
   resources: PortableAuthorityResource[];
   records: PortableAuthorityRecord[];
+  files: CollectionFileDescriptor[];
 }
 
 export interface LocalAuthorityFence {
@@ -81,7 +89,7 @@ export class MarkdownCollection {
   private authorityState: StoredAuthorityState | null = null;
 
   constructor(
-    private readonly vault: Vault,
+    readonly vault: Vault,
     private readonly options: {
       approveManagedTypeUpgrade?: (
         request: ManagedTypeUpgradeRequest,
@@ -194,7 +202,7 @@ export class MarkdownCollection {
     ).flat();
     if (!matches.length)
       throw new Error(
-        `No type implementing tasknotes.task 0.3.0-rc.1 was found in ${nextTypesFolder}/.`,
+        `No type implementing tasknotes.task ${TASKNOTES_SPEC_VERSION} was found in ${nextTypesFolder}/.`,
       );
     if (matches.length > 1)
       throw new Error(
@@ -360,11 +368,24 @@ export class MarkdownCollection {
         };
       }),
     );
+    const files = isBinaryVault(this.vault)
+      ? (await new VaultCollectionFileStore(this.vault).list()).map((file) => ({
+          file_id: portableRecordId(collectionId, `file:${file.path}`),
+          path: file.path,
+          revision: file.revision,
+          content_digest: file.contentDigest,
+          size: file.size,
+          ...(file.mediaType ? { media_type: file.mediaType } : {}),
+          media_class: file.mediaClass,
+          modified_at: file.modifiedAt,
+        }))
+      : [];
     return {
       collectionId,
       specVersion,
       resources,
       records,
+      files,
     };
   }
 
@@ -1096,12 +1117,13 @@ function taskNotesImplementation(
           !Array.isArray(candidate) &&
           (candidate as Record<string, unknown>).contract ===
             "tasknotes.task" &&
-          (candidate as Record<string, unknown>).version === "0.3.0-rc.1",
+          (candidate as Record<string, unknown>).version ===
+            TASKNOTES_SPEC_VERSION,
       )
     : undefined;
   if (!implementation)
     throw new Error(
-      "The generated type does not implement tasknotes.task 0.3.0-rc.1.",
+      `The generated type does not implement tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
     );
   return implementation as Record<string, unknown>;
 }

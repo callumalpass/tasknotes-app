@@ -78,6 +78,38 @@ in React state.
    are never exposed to application state or UI code.
 10. A conflict blocks only its record. Other queued records continue syncing,
     and the user can keep either the device or hosted version.
+11. `attachments` in task frontmatter is authoritative for task membership.
+    Optional body embeds are presentation, while file descriptors are
+    authoritative for binary metadata; none is inferred from another.
+12. Detaching a file is non-destructive. Physical deletion checks every task's
+    attachment list and body embeds, and its journal removes bytes before
+    unlinking the final membership so interruption cannot leave a silent
+    dangling reference.
+
+## Attachments and local-first files
+
+Task attachments use canonical collection-relative wiki links such as
+`[[Attachments/receipt.jpg]]`. The task model validates and normalizes those
+links without putting file metadata into YAML. Occurrence tasks inherit the
+same references and never duplicate the underlying bytes.
+
+Native Android and iOS collections store image bytes beside Markdown through
+the same granted folder boundary. Listing derives portable descriptors with a
+SHA-256 content digest and reuses them while path, modification time, and size
+are unchanged. Browser-local attachment storage is intentionally absent:
+browser collections use mdbase.
+
+For mdbase collections, bytes are committed to the durable IndexedDB replica
+and outbox before network work begins. Upload, move, and delete operations keep
+stable transfer or mutation identities across restart, so retry is idempotent.
+Reads prefer the device replica; reconciliation uploads pending work and fills
+missing local bytes from the hosted authority. A pending-local state is shown
+to the user but is never written into task frontmatter.
+
+Collection adoption captures task records and file descriptors in one
+authority snapshot, then transfers the corresponding bytes. A final snapshot
+closes the edit window before cutover, using stable portable file identities so
+retries cannot create duplicate attachments.
 
 ## Collection lifecycle
 

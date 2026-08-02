@@ -5,6 +5,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.util.Base64;
 
 import androidx.activity.result.ActivityResult;
 import androidx.documentfile.provider.DocumentFile;
@@ -254,6 +255,59 @@ public class FolderAccessPlugin extends Plugin {
                     throw new IOException("Could not open " + path + " for writing.");
                 }
                 output.write(data.getBytes(StandardCharsets.UTF_8));
+            }
+            JSObject response = new JSObject();
+            response.put("entry", entry(path, file));
+            return response;
+        });
+    }
+
+    @PluginMethod
+    public void readBinary(PluginCall call) {
+        run(call, () -> {
+            String id = requiredString(call, "selectionId");
+            String path = safePath(requiredString(call, "path"), false);
+            DocumentFile file = requireFile(id, path);
+            try (
+                InputStream raw = getContext().getContentResolver().openInputStream(file.getUri());
+                BufferedInputStream input = raw == null ? null : new BufferedInputStream(raw)
+            ) {
+                if (input == null) {
+                    throw new IOException("Could not open " + path + ".");
+                }
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                copy(input, output);
+                JSObject response = new JSObject();
+                response.put("data", Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP));
+                return response;
+            }
+        });
+    }
+
+    @PluginMethod
+    public void writeBinary(PluginCall call) {
+        run(call, () -> {
+            String id = requiredString(call, "selectionId");
+            String path = safePath(requiredString(call, "path"), false);
+            String data = call.getString("data");
+            if (data == null) {
+                throw new IllegalArgumentException("data is required.");
+            }
+            byte[] bytes;
+            try {
+                bytes = Base64.decode(data, Base64.DEFAULT);
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("data must be valid base64.", error);
+            }
+            DocumentFile file = fileForWrite(id, path);
+            try (
+                OutputStream raw = getContext().getContentResolver().openOutputStream(file.getUri(), "wt");
+                BufferedOutputStream output = raw == null ? null : new BufferedOutputStream(raw)
+            ) {
+                if (output == null) {
+                    throw new IOException("Could not open " + path + " for writing.");
+                }
+                output.write(bytes);
             }
             JSObject response = new JSObject();
             response.put("entry", entry(path, file));
@@ -543,6 +597,12 @@ public class FolderAccessPlugin extends Plugin {
             // unknown extension is created as text/plain.
             return "application/octet-stream";
         }
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".avif")) return "image/avif";
+        if (lower.endsWith(".heic") || lower.endsWith(".heif")) return "image/heic";
         return "text/plain";
     }
 

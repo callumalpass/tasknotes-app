@@ -231,7 +231,20 @@ async function localTaskDocuments(page: Page): Promise<string[]> {
     const documents: string[] = [];
     for await (const [, handle] of tasks.entries()) {
       if (handle.kind !== "file") continue;
-      documents.push(await (await handle.getFile()).text());
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          documents.push(await (await handle.getFile()).text());
+          break;
+        } catch (error) {
+          if (
+            !(error instanceof DOMException) ||
+            error.name !== "NotReadableError" ||
+            attempt >= 4
+          )
+            throw error;
+          await new Promise((resolve) => setTimeout(resolve, 40));
+        }
+      }
     }
     return documents;
   });

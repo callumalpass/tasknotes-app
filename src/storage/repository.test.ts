@@ -325,14 +325,14 @@ describe("IndexedMarkdownRepository", () => {
     expect(await index.metadata.get("projection")).toMatchObject({
       complete: false,
       needsReindex: true,
-      taskShapeVersion: 1,
+      taskShapeVersion: 2,
     });
 
     expect(await reopened.refresh()).toMatchObject({ changed: 1 });
     expect(await index.metadata.get("projection")).toMatchObject({
       complete: true,
       needsReindex: false,
-      taskShapeVersion: 1,
+      taskShapeVersion: 2,
     });
   });
 
@@ -613,7 +613,7 @@ describe("IndexedMarkdownRepository", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     )!;
     expect(
       (
@@ -1099,7 +1099,7 @@ describe("IndexedMarkdownRepository", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     )!;
     const extension = implementation.binding as Record<string, unknown>;
     extension.archive = { move_on_archive: true, folder: "archive" };

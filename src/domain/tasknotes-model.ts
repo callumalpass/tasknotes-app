@@ -181,6 +181,7 @@ export class TaskNotesTaskModel {
       tags: input.tags,
       contexts: input.contexts,
       projects: input.projects,
+      attachments: input.attachments,
       blockedBy: normalizeDependencies(input.blockedBy),
       recurrence: input.recurrence,
       recurrence_anchor: input.recurrenceAnchor,
@@ -297,6 +298,8 @@ export class TaskNotesTaskModel {
     if (input.tags !== undefined) updates.tags = input.tags;
     if (input.contexts !== undefined) updates.contexts = input.contexts;
     if (input.projects !== undefined) updates.projects = input.projects;
+    if (input.attachments !== undefined)
+      updates.attachments = input.attachments;
     if (input.blockedBy !== undefined)
       updates.blockedBy = normalizeDependencies(input.blockedBy);
     if (input.recurrence !== undefined)
@@ -757,6 +760,7 @@ export class TaskNotesTaskModel {
       tags: info.tags ?? [],
       contexts: info.contexts ?? [],
       projects: info.projects ?? [],
+      attachments: info.attachments ?? [],
       blockedBy: storedDependencies ?? info.blockedBy ?? [],
       recurrence: info.recurrence,
       recurrenceAnchor: info.recurrence_anchor,
@@ -1120,6 +1124,7 @@ function taskAsCreateInput(task: Task): CreateTaskInput {
     tags: task.tags,
     contexts: task.contexts,
     projects: task.projects,
+    attachments: task.attachments,
     blockedBy: task.blockedBy,
     reminders: task.reminders,
     timeEstimate: task.timeEstimate,

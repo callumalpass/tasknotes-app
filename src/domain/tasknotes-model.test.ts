@@ -301,6 +301,28 @@ describe("TaskNotes task model app boundary", () => {
     ).toEqual(updated.blockedBy);
   });
 
+  it("round-trips authoritative attachment links without changing the body", () => {
+    const created = model.create(
+      {
+        title: "Documented task",
+        body: "The body is presentation, not membership.",
+        attachments: ["[[Attachments/diagram.png]]"],
+      },
+      { id: "documented", now: "2026-07-22T00:00:00.000Z" },
+    );
+
+    expect(created.attachments).toEqual(["[[Attachments/diagram.png]]"]);
+    expect(created.frontmatter.attachments).toEqual([
+      "[[Attachments/diagram.png]]",
+    ]);
+    expect(created.body).toBe("The body is presentation, not membership.");
+
+    const detached = model.update(created, { attachments: [] });
+    expect(detached.attachments).toEqual([]);
+    expect(detached.frontmatter).not.toHaveProperty("attachments");
+    expect(detached.body).toBe(created.body);
+  });
+
   it("completes and skips individual recurring occurrences", () => {
     const created = model.create(
       {

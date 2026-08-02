@@ -145,6 +145,7 @@ function row(id: string, patch: Partial<Task> = {}): TaskViewRow {
       revision: 1,
       frontmatter: {},
       ...patch,
+      attachments: patch.attachments ?? [],
     },
   };
 }

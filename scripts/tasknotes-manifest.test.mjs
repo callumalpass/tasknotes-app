@@ -28,7 +28,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.notifications.native_delivery).toBeUndefined();
     expect(JSON.stringify(manifest.notifications)).not.toContain("path");
     expect(manifest.requirements.contracts).toEqual([
-      { id: "tasknotes.task", version: "0.3.0-rc.1" },
+      { id: "tasknotes.task", version: "0.3.0-rc.3" },
     ]);
     expect(manifest.requirements.files).toEqual({
       actions: ["list", "read", "add", "replace", "move", "delete"],
@@ -60,7 +60,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     );
     const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
@@ -84,7 +84,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     );
     const taskDateSchema = {
       anyOf: [

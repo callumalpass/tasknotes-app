@@ -44,7 +44,11 @@ export const cloudConnect = new MdbaseConnect<JsonObject>({
   serverUrl,
   manifest,
   redirectUri,
-  relayEncryption: import.meta.env.MODE === "e2e" ? "disabled" : "required",
+  relayEncryption:
+    import.meta.env.MODE === "e2e" &&
+    import.meta.env.VITE_MDBASE_REQUIRE_RELAY_ENCRYPTION !== "1"
+      ? "disabled"
+      : "required",
   navigate: Capacitor.isNativePlatform()
     ? async (url) => Browser.open({ url })
     : undefined,

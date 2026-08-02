@@ -30,6 +30,7 @@ import {
 } from "./connected-task-cache";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
+import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
@@ -98,7 +99,7 @@ const PAGE_SIZE = 1_000;
  * authority to be reachable and use revisions whenever one has been observed.
  */
 export class RelayTaskRepository implements TaskRepository {
-  readonly files: MdbaseCollectionFileStore;
+  readonly files: LocalFirstMdbaseFileStore;
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
   private taskProviders = new Map<string, TaskNotesTaskModel>([
@@ -141,7 +142,10 @@ export class RelayTaskRepository implements TaskRepository {
   };
 
   constructor(private readonly connect: MdbaseConnection<JsonObject>) {
-    this.files = new MdbaseCollectionFileStore(connect);
+    this.files = new LocalFirstMdbaseFileStore(
+      new MdbaseCollectionFileStore(connect),
+      connect.collectionId,
+    );
   }
 
   initialize(): Promise<void> {
@@ -150,6 +154,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
+    await this.files.sync().catch(() => undefined);
     const description = validResult(await this.connect.describe());
     this.configureDescription(description);
     this.collectionId = description.collection_id;

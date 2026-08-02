@@ -2,13 +2,13 @@ import { FolderAccess } from "../native/folder-access";
 import {
   isExcludedCollectionPath,
   safePath,
-  type Vault,
+  type BinaryVault,
   type VaultEntry,
 } from "./vault-contract";
 
 import type { LocalCollectionLocation } from "./local-collection-location";
 
-export class NativeFolderVault implements Vault {
+export class NativeFolderVault implements BinaryVault {
   readonly kind = "native" as const;
   private readonly selection: Extract<
     LocalCollectionLocation,
@@ -70,6 +70,23 @@ export class NativeFolderVault implements Vault {
     return result.entry;
   }
 
+  async readBinary(path: string): Promise<Uint8Array> {
+    const result = await FolderAccess.readBinary({
+      selectionId: this.selection.id,
+      path: safePath(path),
+    });
+    return bytesFromBase64(result.data);
+  }
+
+  async writeBinary(path: string, contents: Uint8Array): Promise<VaultEntry> {
+    const result = await FolderAccess.writeBinary({
+      selectionId: this.selection.id,
+      path: safePath(path),
+      data: base64FromBytes(contents),
+    });
+    return result.entry;
+  }
+
   async rename(from: string, to: string): Promise<VaultEntry> {
     const result = await FolderAccess.rename({
       selectionId: this.selection.id,
@@ -120,4 +137,16 @@ export class NativeFolderVault implements Vault {
       .filter(({ path }) => !isExcludedCollectionPath(path))
       .sort((left, right) => left.path.localeCompare(right.path));
   }
+}
+
+function base64FromBytes(bytes: Uint8Array): string {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  return btoa(binary);
+}
+
+function bytesFromBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }

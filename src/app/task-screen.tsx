@@ -15,8 +15,11 @@ import {
   useRef,
   useState,
 } from "react";
+import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
 import { LoadingRows } from "../components/loading";
+import { TaskAttachments } from "../components/task-attachments";
+import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { RecurrenceField } from "../components/recurrence-field";
@@ -151,6 +154,24 @@ function TaskEditor({
   const completeField = useCallback(
     (request: FieldCompletionRequest) => repository.completeField(request),
     [repository],
+  );
+  const attachmentService = useMemo(
+    () => new AttachmentService(repository),
+    [repository],
+  );
+  const resolveTaskImage = useCallback(
+    async (reference: string): Promise<Blob | null> => {
+      if (!repository.files) return null;
+      const path = attachmentPathFromReference(reference, task.path);
+      if (!path) return null;
+      const separator = path.lastIndexOf("/");
+      const folder = separator < 0 ? undefined : path.slice(0, separator);
+      const file = (await repository.files.list({ folder })).find(
+        (candidate) => candidate.path === path,
+      );
+      return file ? repository.files.download(file) : null;
+    },
+    [repository, task.path],
   );
   const completeDependencyField = useCallback(
     async (request: FieldCompletionRequest) => {
@@ -419,6 +440,21 @@ function TaskEditor({
     if (isEmptyFieldValue(value)) delete customProperties[key];
     else customProperties[key] = value;
     change({ customProperties });
+  }
+
+  async function flushBeforeAttachmentMutation(): Promise<void> {
+    if (dirtyRef.current) await persist(draftRef.current, editVersion.current);
+  }
+
+  function acceptAttachmentBody(body: string): void {
+    if (body === draftRef.current.body) return;
+    editVersion.current += 1;
+    const next = { ...draftRef.current, body };
+    draftRef.current = next;
+    dirtyRef.current = false;
+    setDraft(next);
+    setDirty(false);
+    setSaveState("saved");
   }
 
   async function leave() {
@@ -811,10 +847,23 @@ function TaskEditor({
             <Suspense
               fallback={<p className="markdown-preview-empty">Rendering…</p>}
             >
-              <MarkdownPreview source={draft.body} />
+              <MarkdownPreview
+                resolveImage={resolveTaskImage}
+                source={draft.body}
+              />
             </Suspense>
           )}
         </section>
+
+        {repository.files ? (
+          <TaskAttachments
+            beforeMutation={flushBeforeAttachmentMutation}
+            onBodyUpdated={acceptAttachmentBody}
+            service={attachmentService}
+            store={repository.files}
+            task={task}
+          />
+        ) : null}
 
         <TaskFormSection summary={organizeSummary(draft)} title="Organize">
           <Fieldset legend="Priority">

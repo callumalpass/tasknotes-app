@@ -1,5 +1,6 @@
 import type { JsonObject } from "@mdbase-dev/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { expect, test, type Route } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
@@ -642,7 +643,7 @@ function collectionDescription() {
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.1",
+      candidate.version === TASKNOTES_SPEC_VERSION,
   )!;
   return {
     protocol_version: 1,
@@ -674,7 +675,7 @@ function collectionDescription() {
       {
         contract_type: "record" as const,
         id: "tasknotes.task",
-        version: "0.3.0-rc.1",
+        version: TASKNOTES_SPEC_VERSION,
         digest: `sha256:${"0".repeat(64)}`,
         schema: generated.taskSchema,
         binding_schema: generated.bindingSchema,

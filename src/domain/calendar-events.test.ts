@@ -135,6 +135,7 @@ function baseTask(): Task {
     tags: ["task"],
     contexts: [],
     projects: [],
+    attachments: [],
     blockedBy: [],
     completeInstances: [],
     skippedInstances: [],

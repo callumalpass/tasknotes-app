@@ -343,7 +343,7 @@ describe("relay task repository", () => {
         implements: [
           {
             contract: "tasknotes.task",
-            version: "0.3.0-rc.1",
+            version: "0.3.0-rc.3",
             fields: next.contracts[0]!.implementations[0].fields,
             binding: configuration,
           },
@@ -1063,7 +1063,7 @@ function description(
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.1",
+      candidate.version === "0.3.0-rc.3",
   )!;
   const configuration = structuredClone(implementation.binding);
   if (templating)
@@ -1113,7 +1113,7 @@ function description(
       {
         id: "tasknotes.task",
         contract_type: "record",
-        version: "0.3.0-rc.1",
+        version: "0.3.0-rc.3",
         digest: `sha256:${"0".repeat(64)}`,
         schema: generated.taskSchema,
         binding_schema: generated.bindingSchema,

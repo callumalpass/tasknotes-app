@@ -65,8 +65,8 @@ importers:
         specifier: 0.1.0-beta.23
         version: 0.1.0-beta.23
       "@tasknotes/model":
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.6.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.6.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.9.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.9.tgz
       dexie:
         specifier: 4.4.4
         version: 4.4.4
@@ -168,8 +168,8 @@ importers:
         specifier: 3.9.6
         version: 3.9.6
       tasknotes-spec:
-        specifier: file:vendor/tasknotes-spec-0.3.0-rc.1.tgz
-        version: file:vendor/tasknotes-spec-0.3.0-rc.1.tgz
+        specifier: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz
+        version: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -1498,13 +1498,13 @@ packages:
         integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==,
       }
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.6.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.9.tgz":
     resolution:
       {
-        integrity: sha512-hTK5Bw35LkUdcJeyH08j4e1oNUDb86c/fJi3vGPw9hbeyX7J83fu9ZtIb1mZnmR7MkuzPLg6G69KgZ543ETwdw==,
-        tarball: file:vendor/tasknotes-model-0.3.0-rc.6.tgz,
+        integrity: sha512-wC0zwIhOnaxEJ3VuVnIoZqiKkQtY1YZqzGYDK8KONZf/aqegpy2cglyago0dlkkYttcm2yoHHHx7oca90HwxtA==,
+        tarball: file:vendor/tasknotes-model-0.3.0-rc.9.tgz,
       }
-    version: 0.3.0-rc.6
+    version: 0.3.0-rc.9
 
   "@testing-library/dom@10.4.1":
     resolution:
@@ -5464,13 +5464,13 @@ packages:
         integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==,
       }
 
-  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.1.tgz:
+  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.3.tgz:
     resolution:
       {
-        integrity: sha512-tf+Uh/MCQQLI+F3aIok22buKXnIxesJ9vncCnoolfly6aKIQVB9bk87/437xRPJk90/PH6YF/Dqg77H4phIHbg==,
-        tarball: file:vendor/tasknotes-spec-0.3.0-rc.1.tgz,
+        integrity: sha512-ByNmFuSo8hokLt0Rg7PMzfhsUtoICYIGE9UkS3qUWlHBYYvNGh1+WMgOs/9SdTkzKVqnphN+VkqOcMWduMiExA==,
+        tarball: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz,
       }
-    version: 0.3.0-rc.1
+    version: 0.3.0-rc.3
 
   teex@1.0.1:
     resolution:
@@ -7253,7 +7253,7 @@ snapshots:
 
   "@standard-schema/spec@1.1.0": {}
 
-  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.6.tgz":
+  "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.9.tgz":
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0
@@ -9811,7 +9811,7 @@ snapshots:
       date-fns: 4.4.0
       rrule: 2.8.1
 
-  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.1.tgz: {}
+  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.3.tgz: {}
 
   teex@1.0.1:
     dependencies:

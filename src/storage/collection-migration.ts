@@ -1,3 +1,5 @@
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+
 export interface ManagedTypeUpgrade {
   changed: boolean;
   frontmatter: Record<string, unknown>;
@@ -21,7 +23,7 @@ export function upgradeManagedTaskType(
     source.description === "A TaskNotes-compatible task." &&
     record(properties.mobileRevision).type === "integer" &&
     implementation.contract === "tasknotes.task" &&
-    implementation.version === "0.3.0-rc.1";
+    implementation.version === TASKNOTES_SPEC_VERSION;
   if (!managed) {
     return { changed: false, frontmatter: source, completedField };
   }
@@ -162,7 +164,7 @@ function taskNotesImplementation(
       .find(
         (implementation) =>
           implementation.contract === "tasknotes.task" &&
-          implementation.version === "0.3.0-rc.1",
+          implementation.version === TASKNOTES_SPEC_VERSION,
       ) ?? {}
   );
 }
@@ -176,7 +178,7 @@ function replaceTaskNotesImplementation(
   const next = implementations.map((implementation) => {
     if (
       implementation.contract !== "tasknotes.task" ||
-      implementation.version !== "0.3.0-rc.1"
+      implementation.version !== TASKNOTES_SPEC_VERSION
     )
       return implementation;
     replaced = true;

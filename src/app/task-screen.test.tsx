@@ -12,7 +12,7 @@ import { TaskScreen } from "./task-screen";
 
 import type { Task } from "../domain/task";
 
-describe("TaskScreen persistence failures", () => {
+describe("TaskScreen", () => {
   let repository: IndexedMarkdownRepository;
   let index: TaskIndex;
   let task: Task;
@@ -82,5 +82,41 @@ describe("TaskScreen persistence failures", () => {
       expect(screen.getByRole("button", { name: /Save failed/ })).toBeVisible(),
     );
     expect(archive).not.toHaveBeenCalled();
+  });
+
+  it("attaches an image as task membership, then inserts it in Notes explicitly", async () => {
+    renderTask();
+    const file = new File([Uint8Array.of(137, 80, 78, 71)], "receipt.png", {
+      type: "image/png",
+    });
+
+    fireEvent.change(await screen.findByLabelText("Attach image"), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByText("receipt.png")).toBeVisible();
+    const attached = await repository.get(task.id);
+    expect(attached?.attachments).toHaveLength(1);
+    expect(attached?.frontmatter.attachments).toEqual(attached?.attachments);
+    expect(attached?.body).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Insert" }));
+    await waitFor(async () =>
+      expect((await repository.get(task.id))?.body).toMatch(
+        /^!\[\[Attachments\//,
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Notes") as HTMLTextAreaElement).value,
+      ).toMatch(/^!\[\[Attachments\//),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete receipt.png file" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus(),
+    );
   });
 });
