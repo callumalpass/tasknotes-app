@@ -7,14 +7,25 @@ test("follows the system theme and persists explicit overrides", async ({
   await page.goto("./");
   await page.evaluate(async () => {
     localStorage.clear();
-    indexedDB.deleteDatabase("tasknotes-index-v2");
+    await Promise.all(
+      ["tasknotes-index-v2", "tasknotes-commands-v2"].map(
+        (name) =>
+          new Promise<void>((resolve, reject) => {
+            const request = indexedDB.deleteDatabase(name);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+            request.onblocked = () =>
+              reject(new Error(`Database reset was blocked: ${name}`));
+          }),
+      ),
+    );
     const root = await navigator.storage.getDirectory();
     await root
       .removeEntry("TaskNotes", { recursive: true })
       .catch(() => undefined);
   });
   await page.reload();
-  await page.getByRole("button", { name: /On this device/ }).click();
+  await page.getByRole("button", { name: /Keep on this device/i }).click();
   await page.getByRole("button", { name: "Use this browser" }).click();
 
   const root = page.locator("html");

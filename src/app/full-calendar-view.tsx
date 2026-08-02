@@ -276,7 +276,7 @@ export function FullCalendarView({
                 ))}
               </div>
             ) : (
-              <p>No tasks on this day.</p>
+              <p>No tasks on this day. Use Add task to schedule one.</p>
             )}
           </aside>
         ) : null}

@@ -69,7 +69,7 @@ import type {
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
-} from "./repository";
+} from "../application/ports/task-repository";
 
 interface CachedRelayTask {
   task: Task;

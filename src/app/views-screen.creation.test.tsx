@@ -13,7 +13,8 @@ import { ViewsScreen } from "./views-screen";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 
 it("creates from a saved view with inferred defaults and refreshes the real result", async () => {
   const view = savedView();
@@ -65,7 +66,10 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -92,7 +96,9 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
 
   const input = await screen.findByLabelText("New task title");
   const viewSurface = input.closest(".view-detail");
-  const emptyResult = screen.getByText("Nothing here").closest("div");
+  const emptyResult = screen
+    .getByText("No tasks match this view")
+    .closest("div");
   expect(viewSurface).toHaveClass("has-list-capture");
   expect(emptyResult).toHaveClass("plain-empty", "task-list-view");
   expect(
@@ -305,7 +311,10 @@ it("marks an empty saved view as incomplete while local tasks are indexing", asy
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -334,7 +343,9 @@ it("marks an empty saved view as incomplete while local tasks are indexing", asy
   expect(
     screen.getByText("Matching tasks will appear as they are found."),
   ).toBeVisible();
-  expect(screen.queryByText("Nothing here")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("No tasks match this view"),
+  ).not.toBeInTheDocument();
 });
 
 function savedView(): TaskView {
@@ -402,7 +413,10 @@ function savedViewRepository(
 
 function renderSavedView(repository: TaskRepository, view: TaskView) {
   return render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {

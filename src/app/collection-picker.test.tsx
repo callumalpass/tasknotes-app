@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { CollectionPicker } from "./collection-picker";
 
@@ -78,7 +78,7 @@ it("explains atomic hosted adoption instead of asking for an empty destination",
   });
 
   expect(screen.getByRole("heading", { name: "Move to mdbase" })).toBeVisible();
-  expect(screen.getByText(/same collection identity/)).toBeVisible();
+  expect(screen.getByText(/Markdown tasks, collection settings/)).toBeVisible();
   expect(
     screen.queryByRole("button", { name: /Hosted tasks/ }),
   ).not.toBeInTheDocument();
@@ -107,7 +107,7 @@ it("reports adopted totals and the archived local source", () => {
   ).toBeVisible();
   expect(
     screen.getByText(
-      /12 records and 2 saved views adopted as one validated snapshot/,
+      /12 records and 2 saved views adopted as one checked copy/,
     ),
   ).toBeVisible();
   expect(screen.getByText(/read-only archive/)).toBeVisible();
@@ -149,6 +149,32 @@ it.each([
 
   fireEvent.keyDown(window, { key: "Escape" });
   expect(close).not.toHaveBeenCalled();
+});
+
+it("contains focus and restores it when the picker closes", async () => {
+  const trigger = document.createElement("button");
+  trigger.textContent = "Open collections";
+  document.body.append(trigger);
+  trigger.focus();
+
+  const rendered = renderPicker();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Close collection picker" }),
+    ).toHaveFocus(),
+  );
+
+  const buttons = screen.getByRole("dialog").querySelectorAll("button");
+  const last = buttons.item(buttons.length - 1);
+  last.focus();
+  fireEvent.keyDown(window, { key: "Tab" });
+  expect(
+    screen.getByRole("button", { name: "Close collection picker" }),
+  ).toHaveFocus();
+
+  rendered.unmount();
+  await waitFor(() => expect(trigger).toHaveFocus());
+  trigger.remove();
 });
 
 function renderPicker(

@@ -1,6 +1,6 @@
-import type { Task } from "./task";
-import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { TaskRepository } from "../storage/repository";
+import type { Task } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskRepository } from "./ports/task-repository";
 
 const MINUTE_MS = 60_000;
 const MAX_TIMEOUT_MS = 2_147_000_000;

@@ -7,7 +7,18 @@ async function resetApplication(page: Page): Promise<void> {
   await page.goto("./");
   await page.evaluate(async () => {
     localStorage.clear();
-    indexedDB.deleteDatabase("tasknotes-index-v2");
+    await Promise.all(
+      ["tasknotes-index-v2", "tasknotes-commands-v2"].map(
+        (name) =>
+          new Promise<void>((resolve, reject) => {
+            const request = indexedDB.deleteDatabase(name);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+            request.onblocked = () =>
+              reject(new Error(`Database reset was blocked: ${name}`));
+          }),
+      ),
+    );
     const root = await navigator.storage.getDirectory();
     await root
       .removeEntry("TaskNotes", { recursive: true })
@@ -33,9 +44,29 @@ test("collection onboarding has no serious accessibility violations", async ({
   await resetApplication(page);
   await expect(
     page.getByRole("heading", {
-      name: "Choose how TaskNotes stores your tasks.",
+      name: "Choose where your task collection lives.",
     }),
   ).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test("views and settings have no serious accessibility violations", async ({
+  page,
+}) => {
+  await resetApplication(page);
+  await page.getByRole("button", { name: /Keep on this device/i }).click();
+  await page.getByRole("button", { name: "Use this browser" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Today", level: 1 }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Manage views" }).click();
+  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expectNoSeriousViolations(page);
+
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 
@@ -43,7 +74,7 @@ test("task list and editor have no serious accessibility violations", async ({
   page,
 }) => {
   await resetApplication(page);
-  await page.getByRole("button", { name: /On this device/ }).click();
+  await page.getByRole("button", { name: /Keep on this device/i }).click();
   await page.getByRole("button", { name: "Use this browser" }).click();
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),

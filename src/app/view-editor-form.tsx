@@ -31,7 +31,7 @@ import type {
   ViewRenderer,
 } from "../domain/view-document";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 interface ViewEditorFormProps {
   autoFocusName: boolean;

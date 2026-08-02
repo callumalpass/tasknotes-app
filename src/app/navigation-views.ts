@@ -1,4 +1,4 @@
-import type { CollectionInfo } from "../storage/repository";
+import type { CollectionInfo } from "../application/ports/task-repository";
 
 const STORAGE_KEY = "tasknotes:navigation-views:v2";
 const LEGACY_STORAGE_KEY = "tasknotes:primary-views:v1";

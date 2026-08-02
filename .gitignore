@@ -1,4 +1,5 @@
 node_modules/
+/.impeccable/
 /.ops/
 dist/
 coverage/

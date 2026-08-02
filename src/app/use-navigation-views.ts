@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  defaultNavigationViewKeys,
-  ensureTaskNotesDefaultViewSource,
-} from "../domain/default-view-source";
+import { defaultNavigationViewKeys } from "../domain/default-view-source";
+import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 import { flattenViewDocuments } from "../domain/view";
 import { useRepository } from "./repository-context";
 import {
@@ -14,7 +12,7 @@ import {
 } from "./navigation-views";
 
 import type { TaskView, TaskViewDocument } from "../domain/view";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 interface ViewCatalog {
   documents: TaskViewDocument[] | null;

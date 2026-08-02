@@ -1,11 +1,15 @@
+import { shiftTaskDate } from "./task-date-actions";
 import { taskDatePart, todayString } from "./task";
 
+import type { Task, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
 
 export type TaskListSectionMode = "day";
 
+export type TaskListSectionKey = "overdue" | "today" | "anytime" | "later";
+
 export interface TaskListSection {
-  key: "overdue" | "today" | "anytime" | "later";
+  key: TaskListSectionKey;
   label: string;
   rows: TaskViewRow[];
 }
@@ -18,6 +22,7 @@ export function sectionTaskViewRows(
   rows: readonly TaskViewRow[],
   mode: unknown,
   today = todayString(),
+  options: { includeEmpty?: boolean } = {},
 ): TaskListSection[] {
   if (mode !== "day") return [];
   const sections: TaskListSection[] = [
@@ -38,5 +43,39 @@ export function sectionTaskViewRows(
           : "later";
     byKey.get(key)?.rows.push(row);
   }
-  return sections.filter((section) => section.rows.length);
+  return options.includeEmpty
+    ? sections
+    : sections.filter((section) => section.rows.length);
+}
+
+/**
+ * Return the task mutation that makes the built-in day classifier place a
+ * task in the requested section. This belongs to the reusable section type,
+ * not to any particular saved view such as Today.
+ */
+export function taskListSectionMoveInput(
+  task: Task,
+  mode: unknown,
+  destination: string,
+  today = todayString(),
+): UpdateTaskInput | null {
+  if (mode !== "day" || !isSectionKey(destination)) return null;
+  if (destination === "anytime") return { scheduled: null, due: null };
+
+  const targetDate =
+    destination === "today"
+      ? today
+      : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
+  const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
+  const current = task[field];
+  return { [field]: replaceDatePart(current, targetDate) };
+}
+
+function replaceDatePart(current: string | undefined, targetDate: string) {
+  const match = current?.match(/^\d{4}-\d{2}-\d{2}(.*)$/);
+  return `${targetDate}${match?.[1] ?? ""}`;
+}
+
+function isSectionKey(value: string): value is TaskListSectionKey {
+  return ["overdue", "today", "anytime", "later"].includes(value);
 }

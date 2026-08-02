@@ -16,6 +16,11 @@ import { CloudTaskRepository } from "./cloud-repository";
 import { createConnectTaskRepository } from "./connect-repository";
 import { RelayTaskRepository } from "./relay-repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
+import { taskRepositoryContract } from "../test/task-repository-contract";
+
+taskRepositoryContract("live relay", async () => ({
+  repository: new RelayTaskRepository(relayFixture([]).connect),
+}));
 
 describe("relay task repository", () => {
   it("unions multiple providers and preserves each provider's field mapping on update", async () => {

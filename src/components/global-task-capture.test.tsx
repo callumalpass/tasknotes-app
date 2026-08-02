@@ -9,6 +9,7 @@ import { MarkdownCollection } from "../storage/collection";
 import { TaskIndex } from "../storage/index";
 import { IndexedMarkdownRepository } from "../storage/repository";
 import { MemoryVault } from "../test/memory-vault";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { GlobalTaskCapture } from "./global-task-capture";
 
 describe("GlobalTaskCapture", () => {
@@ -33,7 +34,10 @@ describe("GlobalTaskCapture", () => {
   it("focuses, creates through the repository, and closes", async () => {
     const onOpenTask = vi.fn();
     render(
-      <RepositoryProvider repository={repository}>
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
         <Harness onOpenTask={onOpenTask} />
       </RepositoryProvider>,
     );
@@ -55,7 +59,10 @@ describe("GlobalTaskCapture", () => {
 
   it("closes on Escape and restores the invoking control", async () => {
     render(
-      <RepositoryProvider repository={repository}>
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
         <Harness onOpenTask={vi.fn()} />
       </RepositoryProvider>,
     );

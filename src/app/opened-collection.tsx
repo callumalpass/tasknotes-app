@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+
+import { IndexedDbMutationJournal } from "../storage/application-journal";
 
 import { AppShell } from "./app-shell";
 import {
@@ -7,7 +9,7 @@ import {
 } from "./collection-context";
 import { RepositoryProvider } from "./repository-context";
 
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 export function OpenedCollection({
   authorizeAnotherCloudCollection,
@@ -28,6 +30,13 @@ export function OpenedCollection({
   reauthorizeCurrentCloudCollection(): void;
   repository: TaskRepository;
 }) {
+  const mutationJournal = useMemo(() => new IndexedDbMutationJournal(), []);
+  useEffect(
+    () => () => {
+      mutationJournal.close();
+    },
+    [mutationJournal],
+  );
   const value = useMemo(
     () => ({
       authorizeAnotherCloudCollection,
@@ -51,6 +60,7 @@ export function OpenedCollection({
   return (
     <CollectionGateContext.Provider value={value}>
       <RepositoryProvider
+        mutationJournal={mutationJournal}
         reminderAuthority={choice === "cloud" ? "connect" : "none"}
         repository={repository}
       >

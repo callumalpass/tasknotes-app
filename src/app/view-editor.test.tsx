@@ -18,7 +18,8 @@ import type {
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
 } from "../domain/view";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 
 describe("ViewEditor", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -331,7 +332,10 @@ function renderEditor({
   onChanged?: () => Promise<void>;
 }) {
   return render(
-    <RepositoryProvider repository={supplied}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={supplied}
+    >
       <ViewEditor view={view} onClose={onClose} onChanged={onChanged} />
     </RepositoryProvider>,
   );

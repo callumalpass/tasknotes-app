@@ -1,7 +1,7 @@
 import { reminderFireTime } from "../domain/reminder";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 import type { MdbaseDesiredTimer } from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
 import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";

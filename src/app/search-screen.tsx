@@ -32,6 +32,7 @@ export function SearchScreen({
         <button
           aria-label="Back"
           className="icon-action"
+          title="Back"
           type="button"
           onClick={onBack}
         >
@@ -59,6 +60,7 @@ export function SearchScreen({
         {query ? (
           <button
             aria-label="Clear search"
+            title="Clear search"
             type="button"
             onClick={() => setQuery("")}
           >
@@ -112,6 +114,9 @@ function BrowseFields({
   tasks: Task[];
   onChoose(value: string): void;
 }) {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
   const groups = useMemo(
     () => [
       { label: "Projects", prefix: "+", values: collect(tasks, "projects") },
@@ -138,12 +143,36 @@ function BrowseFields({
         <section key={group.label}>
           <h2>{group.label}</h2>
           <div>
-            {group.values.map((value) => (
-              <button key={value} type="button" onClick={() => onChoose(value)}>
-                <span aria-hidden="true">{group.prefix}</span>
-                {cleanField(value)}
+            {group.values
+              .slice(0, expandedGroups.has(group.label) ? undefined : 8)
+              .map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onChoose(value)}
+                >
+                  <span aria-hidden="true">{group.prefix}</span>
+                  {cleanField(value)}
+                </button>
+              ))}
+            {group.values.length > 8 ? (
+              <button
+                className="browse-fields-more"
+                type="button"
+                onClick={() =>
+                  setExpandedGroups((current) => {
+                    const next = new Set(current);
+                    if (next.has(group.label)) next.delete(group.label);
+                    else next.add(group.label);
+                    return next;
+                  })
+                }
+              >
+                {expandedGroups.has(group.label)
+                  ? "Show fewer"
+                  : `Show all ${group.values.length}`}
               </button>
-            ))}
+            ) : null}
           </div>
         </section>
       ))}
@@ -152,9 +181,15 @@ function BrowseFields({
 }
 
 function collect(tasks: Task[], field: "tags" | "contexts" | "projects") {
-  return [
-    ...new Set(tasks.flatMap((task) => task[field]).filter(Boolean)),
-  ].sort((left, right) => left.localeCompare(right));
+  const counts = new Map<string, number>();
+  for (const value of tasks.flatMap((task) => task[field]).filter(Boolean))
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts]
+    .sort(
+      ([left, leftCount], [right, rightCount]) =>
+        rightCount - leftCount || left.localeCompare(right),
+    )
+    .map(([value]) => value);
 }
 
 function cleanField(value: string): string {

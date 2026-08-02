@@ -32,9 +32,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install browser
+        if: github.event_name == 'pull_request'
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Build pull request application
         if: github.event_name == 'pull_request'
-        run: pnpm build
+        run: pnpm build:e2e
         env:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_APP_URL: http://127.0.0.1:4173/tasknotes-app
@@ -64,6 +68,14 @@ jobs:
         env:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_PRODUCTION_URL: http://127.0.0.1:4173/tasknotes-app
+
+      - name: Run desktop browser integration
+        if: github.event_name == 'pull_request'
+        run: pnpm test:e2e --project=desktop
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/tasknotes-app/
+          PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173
+          VITE_BASE_PATH: /tasknotes-app/
 
       - name: Check production boundaries
         if: github.event_name != 'pull_request'

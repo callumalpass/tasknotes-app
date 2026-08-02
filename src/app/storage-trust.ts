@@ -1,4 +1,4 @@
-import type { RepositorySyncStatus } from "../storage/repository";
+import type { RepositorySyncStatus } from "../application/ports/task-repository";
 
 export function storageExplanation(mode: RepositorySyncStatus["mode"]): string {
   if (mode === "replicated")

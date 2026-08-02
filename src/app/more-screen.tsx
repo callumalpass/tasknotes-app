@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
+import { OperationErrorNotice } from "../components/operation-error-notice";
 import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
@@ -160,6 +161,7 @@ export function MoreScreen({
         <button
           aria-label="New task"
           className="icon-action more-new-task"
+          title="New task"
           type="button"
           onClick={onNewTask}
         >
@@ -241,8 +243,8 @@ export function MoreScreen({
           {choice === "local" ? (
             <>
               <p className="section-copy">
-                Open another local collection, or adopt this complete collection
-                into hosted mdbase and move authority there.
+                This device works independently with no sync required. You can
+                open another local collection or move this one to hosted mdbase.
               </p>
               <button
                 className="text-action"
@@ -331,9 +333,12 @@ export function MoreScreen({
             </button>
           ) : null}
           {choice === "cloud" && changeNotificationsError ? (
-            <p className="inline-error notification-error" role="alert">
-              {changeNotificationsError}
-            </p>
+            <OperationErrorNotice
+              action="Notification settings"
+              className="notification-error"
+              message={changeNotificationsError}
+              recovery="Check the connection and try again."
+            />
           ) : null}
         </div>
       </SettingsSection>
@@ -396,20 +401,20 @@ export function MoreScreen({
         </div>
       </SettingsSection>
 
+      <SettingsSection label="Portability">
+        <div className="setting-row">
+          <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Portable Markdown</span>
+          <small>mdbase v0.3</small>
+        </div>
+        <p className="section-copy">
+          Tasks are ordinary Markdown records. Field mappings and TaskNotes
+          settings travel with the collection.
+        </p>
+      </SettingsSection>
+
       <SettingsSection collapsible label="Advanced">
         <TaskModelSettingsEditor />
-        <div className="settings-subsection">
-          <h3>Portability</h3>
-          <div className="setting-row">
-            <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
-            <span>Markdown collection</span>
-            <small>mdbase v0.3</small>
-          </div>
-          <p className="section-copy">
-            Tasks are ordinary Markdown records. Field mappings and TaskNotes
-            settings travel in the collection type contract.
-          </p>
-        </div>
       </SettingsSection>
 
       {benchmarkTools ? (
@@ -446,6 +451,28 @@ export function MoreScreen({
           ) : null}
         </SettingsSection>
       ) : null}
+
+      <SettingsSection label="Help">
+        <details className="help-topic">
+          <summary>Where are my tasks saved?</summary>
+          <p>{storageExplanation(sync.mode)}</p>
+        </details>
+        <details className="help-topic">
+          <summary>What does local-first mean?</summary>
+          <p>
+            You can read and change tasks without waiting for a network. Hosted
+            mdbase syncs the device copy when a connection returns; a direct
+            computer connection needs that computer to be reachable.
+          </p>
+        </details>
+        <details className="help-topic">
+          <summary>Can I move collections later?</summary>
+          <p>
+            Yes. Use Collection above to move device-only Markdown to hosted
+            mdbase. Simply opening another collection does not move its tasks.
+          </p>
+        </details>
+      </SettingsSection>
 
       <SettingsSection label="About">
         <div className="setting-row">
@@ -490,7 +517,7 @@ function ThemeSelect() {
 }
 
 function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
-  if (sync.mode === "local") return "Not connected";
+  if (sync.mode === "local") return "Device-only · no sync needed";
   if (sync.state === "syncing")
     return sync.mode === "live" ? "Refreshing" : "Syncing";
   if (sync.state === "offline")

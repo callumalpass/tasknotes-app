@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from "vitest";
 import { todayString } from "../domain/task";
 import { CloudTaskRepository } from "./cloud-repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
+import { taskRepositoryContract } from "../test/task-repository-contract";
 
 function resources(): SyncCollectionResources {
   const generated = buildTaskNotesMdbaseResources({
@@ -184,6 +185,26 @@ function connect(
     ...operations,
   } as unknown as MdbaseConnection<JsonObject>;
 }
+
+taskRepositoryContract("durable cloud replica", async () => {
+  const authority = new MemoryAuthority<JsonObject>({ resources: resources() });
+  const replicaId = crypto.randomUUID();
+  authority.registerReplica({
+    id: replicaId,
+    name: "Contract replica",
+    mode: "read_write",
+    allowedTypes: ["task"],
+  });
+  return {
+    repository: new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    ),
+  };
+});
 
 describe("cloud task repository", () => {
   it("reports a first-open collection failure without mislabeling it as a connection problem", async () => {

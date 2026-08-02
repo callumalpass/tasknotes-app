@@ -70,7 +70,7 @@ import type {
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
-} from "./repository";
+} from "../application/ports/task-repository";
 
 type CloudFrontmatter = JsonObject;
 
@@ -303,6 +303,15 @@ export class CloudTaskRepository implements TaskRepository {
       await this.afterLocalMutation();
       return retained;
     });
+  }
+
+  async updateMany(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+  ): Promise<Task[]> {
+    const tasks: Task[] = [];
+    for (const { id, input } of updates)
+      tasks.push(await this.update(id, input));
+    return tasks;
   }
 
   toggle(id: string, occurrenceDate?: string): Promise<Task> {

@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
+import { OperationErrorNotice } from "../components/operation-error-notice";
 import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { nativeBackAction } from "../native/navigation";
 import { tasknotesMarkUrl } from "./assets";
@@ -35,7 +36,18 @@ type Route =
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
-  const { status, error, refresh } = useRepository();
+  const {
+    status,
+    error,
+    refresh,
+    pendingDeletion,
+    deletionError,
+    recoveryError,
+    pendingRecoveryCount,
+    undoTaskDeletion,
+    retryTaskDeletion,
+    retryTaskRecovery,
+  } = useRepository();
   const {
     authorizeAnotherCloudCollection,
     canChooseLocalFolder,
@@ -190,14 +202,11 @@ export function AppShell() {
     workspaceViewKey &&
     navigationViews.some((view) => view.key === workspaceViewKey),
   );
-  const workspaceView = views?.find((view) => view.key === workspaceViewKey);
   const showGlobalCaptureFab =
-    workspace.page === "search" ||
-    Boolean(
-      workspaceViewKey &&
-      workspaceIsNavigationView &&
-      workspaceView?.presentation?.options.create === false,
-    );
+    !viewsLoading &&
+    (workspace.page === "search" ||
+      workspace.page === "home" ||
+      Boolean(workspace.page === "views" && workspaceViewKey));
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
@@ -329,6 +338,7 @@ export function AppShell() {
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
+          <span>Add task</span>
         </button>
       ) : null}
       <GlobalTaskCapture
@@ -336,6 +346,53 @@ export function AppShell() {
         onClose={closeCapture}
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
       />
+      {pendingDeletion ? (
+        <div
+          className={`undo-toast${deletionError ? " deletion-error-toast" : ""}`}
+          role={deletionError ? "alert" : "status"}
+        >
+          <span>
+            {deletionError ? "Deletion waiting" : "Deleted"} “
+            {pendingDeletion.title}”
+          </span>
+          {deletionError ? (
+            <button
+              type="button"
+              onClick={() => void retryTaskDeletion().catch(() => undefined)}
+            >
+              Retry
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void undoTaskDeletion().catch(() => undefined)}
+          >
+            Undo
+          </button>
+        </div>
+      ) : deletionError ? (
+        <div className="undo-toast deletion-error-toast">
+          <OperationErrorNotice
+            action="The deletion"
+            message={deletionError}
+            recovery="The task is still in the collection. Try again."
+          />
+        </div>
+      ) : null}
+      {recoveryError ? (
+        <div className="undo-toast deletion-error-toast" role="alert">
+          <span>
+            {pendingRecoveryCount} saved task change
+            {pendingRecoveryCount === 1 ? " is" : "s are"} waiting
+          </span>
+          <button
+            type="button"
+            onClick={() => void retryTaskRecovery().catch(() => undefined)}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

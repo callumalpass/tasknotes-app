@@ -3,7 +3,6 @@ import { stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { TaskViewDocument } from "./view";
-import type { TaskRepository } from "../storage/repository";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
@@ -260,35 +259,6 @@ export function defaultNavigationViewKeys(
     const view = source.views.find((candidate) => candidate.name === name);
     return view ? [view.key] : [];
   });
-}
-
-export async function ensureTaskNotesDefaultViewSource(
-  repository: TaskRepository,
-  documents: TaskViewDocument[],
-  configuration: TaskCollectionConfiguration,
-): Promise<TaskViewDocument[]> {
-  const existing = documents.find(isTaskNotesDefaultViewDocument);
-  if (existing) return documents;
-
-  try {
-    await repository.createViewSource({
-      format: "obsidian.base",
-      name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
-      document: taskNotesDefaultBaseDocument(configuration),
-    });
-  } catch (baseError) {
-    const concurrent = await repository.listViews();
-    if (concurrent.some(isTaskNotesDefaultViewDocument)) return concurrent;
-    if (concurrent.length) return concurrent;
-    const sync = await repository.syncStatus();
-    if (sync.mode !== "replicated") throw baseError;
-    await repository.createViewSource({
-      format: "mdbase.view",
-      name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
-      document: taskNotesDefaultCanonicalDocument(configuration),
-    });
-  }
-  return repository.listViews();
 }
 
 function calendarCanonicalView(

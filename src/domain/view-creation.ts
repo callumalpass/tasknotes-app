@@ -1,7 +1,7 @@
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { parse } from "yaml";
 
-import { kanbanPropertyName, kanbanPropertyRole } from "./kanban";
+import { viewPropertyName, viewPropertyRole } from "./view-mutation";
 import { todayString } from "./task";
 import { readViewDraft } from "./view-document";
 
@@ -127,8 +127,8 @@ function propertyCreateDefault(
   value: unknown,
   configuration: TaskCollectionConfiguration,
 ): TaskCreationDefaults | null {
-  const field = kanbanPropertyName(property, configuration.fieldMapping);
-  const role = kanbanPropertyRole(property, configuration.fieldMapping);
+  const field = viewPropertyName(property, configuration.fieldMapping);
+  const role = viewPropertyRole(property, configuration.fieldMapping);
   if (!field || !role) return null;
   if (role === "title")
     return typeof value === "string" && value.trim()

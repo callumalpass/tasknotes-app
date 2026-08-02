@@ -27,6 +27,7 @@ import { recordCompletion } from "../domain/completion";
 import { activeTimeEntry, todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
+import { OperationErrorNotice } from "./operation-error-notice";
 
 import type { Task } from "../domain/task";
 
@@ -37,6 +38,7 @@ interface MenuPosition {
 
 type MenuPanel =
   | "actions"
+  | "more"
   | "status"
   | "priority"
   | "dates"
@@ -91,7 +93,7 @@ export function TaskActions({
       if (event.key !== "Escape") return;
       if (panel !== "actions") {
         event.preventDefault();
-        setPanel("actions");
+        setPanel(parentPanel(panel));
       } else {
         closeMenu();
         triggerRef.current?.focus();
@@ -201,6 +203,7 @@ export function TaskActions({
         aria-label={`Task actions for ${task.title}`}
         className="task-actions-trigger"
         ref={triggerRef}
+        title={`Actions for ${task.title}`}
         type="button"
         onClick={openFromTrigger}
         onContextMenu={(event) => {
@@ -241,7 +244,7 @@ export function TaskActions({
                   <button
                     aria-label="Back to task actions"
                     type="button"
-                    onClick={() => setPanel("actions")}
+                    onClick={() => setPanel(parentPanel(panel))}
                   >
                     <ChevronLeft aria-hidden="true" size={18} />
                   </button>
@@ -265,6 +268,23 @@ export function TaskActions({
                       }}
                     />
                     <MenuAction
+                      detail={dateSummary(task)}
+                      icon={CalendarClock}
+                      label="Schedule"
+                      next
+                      onClick={() => setPanel("dates")}
+                    />
+                    <MenuAction
+                      icon={MoreHorizontal}
+                      label="More"
+                      next
+                      onClick={() => setPanel("more")}
+                    />
+                  </>
+                ) : null}
+                {panel === "more" ? (
+                  <>
+                    <MenuAction
                       detail={status}
                       icon={Circle}
                       label="Status"
@@ -277,13 +297,6 @@ export function TaskActions({
                       label="Priority"
                       next
                       onClick={() => setPanel("priority")}
-                    />
-                    <MenuAction
-                      detail={dateSummary(task)}
-                      icon={CalendarClock}
-                      label="Dates"
-                      next
-                      onClick={() => setPanel("dates")}
                     />
                     <MenuAction
                       icon={FolderTree}
@@ -538,11 +551,11 @@ export function TaskActions({
                 ) : null}
                 {panel === "delete" ? (
                   <div className="task-actions-confirm">
-                    <p>Delete this task permanently?</p>
+                    <p>Delete this task? You’ll have 8 seconds to undo.</p>
                     <button
                       data-safe-action
                       type="button"
-                      onClick={() => setPanel("actions")}
+                      onClick={() => setPanel("more")}
                     >
                       Keep task
                     </button>
@@ -552,15 +565,18 @@ export function TaskActions({
                       type="button"
                       onClick={() => void run(() => deleteTask(task.id))}
                     >
-                      <Trash2 aria-hidden="true" size={18} /> Delete permanently
+                      <Trash2 aria-hidden="true" size={18} /> Delete task
                     </button>
                   </div>
                 ) : null}
               </div>
               {error ? (
-                <p className="task-actions-error" role="alert">
-                  {error}
-                </p>
+                <OperationErrorNotice
+                  action="The task action"
+                  className="task-actions-error"
+                  message={error}
+                  recovery="The menu is still open so you can retry."
+                />
               ) : null}
             </div>,
             document.body,
@@ -594,7 +610,7 @@ export function TaskActions({
       return;
     if (event.key === "ArrowLeft" && panel !== "actions") {
       event.preventDefault();
-      setPanel("actions");
+      setPanel(parentPanel(panel));
       return;
     }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
@@ -668,14 +684,21 @@ function MenuSeparator() {
 }
 
 function panelTitle(panel: MenuPanel): string {
+  if (panel === "more") return "More actions";
   if (panel === "status") return "Status";
   if (panel === "priority") return "Priority";
-  if (panel === "dates") return "Dates";
+  if (panel === "dates") return "Schedule";
   if (panel === "organize") return "Organize";
   if (panel === "subtask") return "New subtask";
   if (panel === "copy") return "Copy";
   if (panel === "delete") return "Delete task";
   return "Task actions";
+}
+
+function parentPanel(panel: Exclude<MenuPanel, "actions">): MenuPanel {
+  if (panel === "more" || panel === "dates") return "actions";
+  if (panel === "subtask") return "organize";
+  return "more";
 }
 
 function dateSummary(task: Task): string {

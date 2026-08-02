@@ -379,14 +379,25 @@ test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(async () => {
     localStorage.clear();
-    indexedDB.deleteDatabase("tasknotes-index-v2");
+    await Promise.all(
+      ["tasknotes-index-v2", "tasknotes-commands-v2"].map(
+        (name) =>
+          new Promise<void>((resolve, reject) => {
+            const request = indexedDB.deleteDatabase(name);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+            request.onblocked = () =>
+              reject(new Error(`Database reset was blocked: ${name}`));
+          }),
+      ),
+    );
     const root = await navigator.storage.getDirectory();
     await root
       .removeEntry("TaskNotes", { recursive: true })
       .catch(() => undefined);
   });
   await page.reload();
-  await page.getByRole("button", { name: /On this device/ }).click();
+  await page.getByRole("button", { name: /Keep on this device/i }).click();
   await expect(page.getByRole("note")).toContainText(
     "Notifications are not available",
   );
@@ -981,7 +992,7 @@ test("organizes the Today list into declarative day sections", async ({
 test("captures into the collection from anywhere", async ({
   page,
 }, testInfo) => {
-  await expect(page.locator(".global-capture-fab")).toHaveCount(0);
+  await expect(page.locator(".global-capture-fab")).toHaveCount(1);
   const inlineCapture = page.getByLabel("New task title");
   await inlineCapture.focus();
   expect(
@@ -1133,7 +1144,7 @@ test("edits task model settings in the portable type contract", async ({
   expect(settingsRenderMs).toBeLessThan(500);
   await expect(
     page.getByText(
-      "Open another local collection, or adopt this complete collection into hosted mdbase and move authority there.",
+      "This device works independently with no sync required. You can open another local collection or move this one to hosted mdbase.",
     ),
   ).toBeVisible();
   await expect(
@@ -1160,7 +1171,7 @@ test("edits task model settings in the portable type contract", async ({
   await page
     .getByRole("button", { name: "Save task settings", exact: true })
     .click();
-  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+  await expect(page.getByText("Saved with the collection.")).toBeVisible();
   const saveLatencyMs = await page.evaluate(
     (start) => performance.now() - start,
     startedAt,
@@ -1219,7 +1230,7 @@ test("auto-archives from a contract status event without polling", async ({
   await page
     .getByRole("button", { name: "Save task settings", exact: true })
     .click();
-  await expect(page.getByText("Saved to the type contract.")).toBeVisible();
+  await expect(page.getByText("Saved with the collection.")).toBeVisible();
 
   const typeSource = await localTaskTypeDocument(page);
   expect(typeSource).toContain("auto_archive: true");
@@ -1276,7 +1287,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await page.getByLabel("Tags").fill("release, planning");
   await page.getByText("Repeat and reminders", { exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Connect mdbase" }),
+    page.getByRole("button", { name: "Sync with mdbase" }),
   ).toHaveCount(0);
   await chooseOption(page, "Repeat", "Weekly");
   await page.getByLabel("Repeat interval").fill("2");
@@ -1569,7 +1580,7 @@ test("archives and restores a Markdown task without deleting it", async ({
   await page.getByText("Keep archived history", { exact: true }).click();
   await page.getByRole("button", { name: "More task actions" }).click();
   await page.getByRole("menuitem", { name: "Restore task" }).click();
-  await expect(page.getByText("Nothing here")).toBeVisible();
+  await expect(page.getByText("No tasks match this view")).toBeVisible();
   const restoredDocuments = await localTaskDocuments(page);
   expect(restoredDocuments).toHaveLength(1);
   expect(restoredDocuments[0]).not.toMatch(/^\s*-\s+archived\s*$/m);
@@ -1604,7 +1615,17 @@ test("keeps destructive task actions quiet and safely confirmed", async ({
   await taskOptions.click();
   await page.getByRole("menuitem", { name: "Delete task" }).click();
   await confirmation.getByRole("button", { name: "Delete task" }).click();
-  await expect(page.getByText("Delete with confirmation")).toHaveCount(0);
+  await expect(
+    page.locator(".task-row-title").getByText("Delete with confirmation", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  const deletionNotice = page.locator(".undo-toast");
+  await expect(deletionNotice).toContainText("Delete with confirmation");
+  await deletionNotice.getByRole("button", { name: "Undo" }).click();
+  await expect(
+    page.getByText("Delete with confirmation", { exact: true }),
+  ).toBeVisible();
 });
 
 test("interprets natural-language capture and preserves timed task fields", async ({
@@ -1968,6 +1989,10 @@ Created on {{date}} from the collection template.`);
 
   await page.getByLabel("New task title").fill("Template-backed task");
   await page.getByRole("button", { name: "Details" }).click();
+  await page
+    .locator(".capture-details-section > summary")
+    .filter({ hasText: "Repeat" })
+    .click();
   await expect(
     page.getByText(/Use template · Templates\/Task.md/),
   ).toBeVisible();
@@ -2173,7 +2198,7 @@ views:
     .click();
   await page.getByText("Dates", { exact: true }).click();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
-  await expect(page.locator(".global-capture-fab")).toHaveCount(0);
+  await expect(page.locator(".global-capture-fab")).toHaveCount(1);
   if (testInfo.project.name === "mobile") {
     await page.setViewportSize({ width: 320, height: 568 });
     await expect
@@ -2700,12 +2725,14 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Start timer" }).click();
   await expect(page.getByText("Timer running", { exact: true })).toBeVisible();
 
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   await expect(
     page.getByRole("menuitem", { name: "Stop timer" }),
   ).toBeVisible();
@@ -2715,6 +2742,7 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Archive" }).click();
   await expect(
     page.getByText("Act from the task row", { exact: true }),
@@ -2745,6 +2773,7 @@ test("uses the plugin-inspired task action hierarchy", async ({
   });
   expect(menuOpenMs).toBeLessThan(500);
 
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: /Status/ }).click();
   await page.getByRole("menuitem", { name: "In progress" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
@@ -2753,16 +2782,18 @@ test("uses the plugin-inspired task action hierarchy", async ({
     name: "Task actions for Context action parent",
   });
   await trigger.click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: /Priority/ }).click();
   await page.getByRole("menuitem", { name: "High" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   await trigger.click();
-  await page.getByRole("menuitem", { name: /Dates/ }).click();
+  await page.getByRole("menuitem", { name: /Schedule/ }).click();
   await page.getByRole("menuitem", { name: "Due today" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   await trigger.click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   const organizeStartedAt = await page.evaluate(() => performance.now());
   await page.getByRole("menuitem", { name: "Organize" }).click();
   const relationshipsAction = page.getByRole("menuitem", {
@@ -2799,6 +2830,7 @@ test("uses the plugin-inspired task action hierarchy", async ({
   ).toBeVisible();
 
   await trigger.click();
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Copy" }).click();
   await page.getByRole("menuitem", { name: /Copy task link/ }).click();
   await expect

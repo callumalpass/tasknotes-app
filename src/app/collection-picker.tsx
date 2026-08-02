@@ -10,6 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { OperationErrorNotice } from "../components/operation-error-notice";
 
 import { isHostedCloudConnection } from "../cloud/connect";
 
@@ -59,31 +61,88 @@ export function CollectionPicker({
   onSelectLocal(location: LocalCollectionLocation): void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const migrationLocked = isCollectionMigrationLocked(migration);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+    const appRoot = document.getElementById("root");
+    const previousRootHidden = appRoot?.getAttribute("aria-hidden");
+    const previousRootInert = appRoot?.inert ?? false;
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || migrationLocked) return;
-      event.preventDefault();
-      onClose();
+    if (appRoot) {
+      appRoot.inert = true;
+      appRoot.setAttribute("aria-hidden", "true");
+    }
+    queueMicrotask(() => closeRef.current?.focus());
+    const containFocus = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (migrationLocked) return;
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const controls = [
+        ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ) ?? []),
+      ];
+      if (!controls.length) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (
+        event.shiftKey &&
+        (document.activeElement === first ||
+          !dialogRef.current?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        last?.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last ||
+          !dialogRef.current?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        first?.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", containFocus);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
+      if (appRoot) {
+        appRoot.inert = previousRootInert;
+        if (previousRootHidden == null) appRoot.removeAttribute("aria-hidden");
+        else appRoot.setAttribute("aria-hidden", previousRootHidden);
+      }
+      window.removeEventListener("keydown", containFocus);
+      queueMicrotask(() => returnFocusRef.current?.focus());
     };
   }, [migrationLocked, onClose]);
 
-  return (
-    <div className="collection-picker-scrim">
+  return createPortal(
+    <div
+      className="collection-picker-scrim"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget && !migrationLocked) onClose();
+      }}
+    >
       <section
         aria-labelledby="collection-picker-title"
         aria-modal="true"
         className="collection-picker"
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
       >
         {migration ? (
           <MigrationPicker
@@ -99,7 +158,6 @@ export function CollectionPicker({
           <>
             <header className="collection-picker-header">
               <div>
-                <p className="eyebrow">TaskNotes</p>
                 <h2 id="collection-picker-title">Collections</h2>
               </div>
               <button
@@ -107,6 +165,7 @@ export function CollectionPicker({
                 className="icon-action"
                 onClick={onClose}
                 ref={closeRef}
+                title="Close collections"
                 type="button"
               >
                 <X aria-hidden="true" size={20} />
@@ -195,8 +254,8 @@ export function CollectionPicker({
                   <span>
                     <strong>Move this collection to mdbase</strong>
                     <small>
-                      Adopt one validated snapshot, then make mdbase the
-                      authority.
+                      Upload a checked copy, then use hosted mdbase as the
+                      source of truth.
                     </small>
                   </span>
                 </button>
@@ -205,7 +264,8 @@ export function CollectionPicker({
           </>
         )}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -235,12 +295,12 @@ function MigrationPicker({
           className="icon-action"
           disabled={locked}
           onClick={onBack}
+          title="Back to collections"
           type="button"
         >
           <ArrowLeft aria-hidden="true" size={20} />
         </button>
         <div>
-          <p className="eyebrow">Collection transfer</p>
           <h2 id="collection-picker-title">Move to mdbase</h2>
         </div>
         <button
@@ -249,6 +309,7 @@ function MigrationPicker({
           disabled={locked}
           onClick={onClose}
           ref={closeRef}
+          title="Close collections"
           type="button"
         >
           <X aria-hidden="true" size={20} />
@@ -258,15 +319,14 @@ function MigrationPicker({
       {migration.step === "destination" ? (
         <div className="collection-picker-content migration-destinations">
           <p className="collection-transfer-copy">
-            mdbase will create a hosted authority from this complete local
-            collection. Nothing switches until the final fenced snapshot has
-            uploaded and passed mdbase validation.
+            mdbase will upload and check a complete copy of this collection.
+            TaskNotes keeps using the local files until that copy is ready.
           </p>
           <CollectionGroup label="What moves">
             <p className="collection-picker-empty">
-              Markdown records, mdbase configuration and types, and saved views
-              move together under the same collection identity. The original
-              local files become a read-only archive after adoption.
+              Markdown tasks, collection settings, and saved views move
+              together. After the switch, the original local files remain as a
+              read-only archive.
             </p>
             <CollectionAction
               icon={<Cloud aria-hidden="true" size={19} />}
@@ -278,7 +338,7 @@ function MigrationPicker({
       ) : migration.step === "authorizing" ? (
         <MigrationStatus
           detail="Approve TaskNotes access to the newly hosted collection. You will return here automatically."
-          label="Hosted authority is ready"
+          label="Hosted collection is ready"
         />
       ) : migration.step === "running" ? (
         <MigrationStatus
@@ -294,10 +354,18 @@ function MigrationPicker({
           </p>
           <h3>
             {migration.mustResume
-              ? "Authority activation must be resolved."
+              ? "The move needs your attention."
               : "Nothing was removed locally."}
           </h3>
-          <p role="alert">{migration.message}</p>
+          <OperationErrorNotice
+            action="The collection move"
+            message={migration.message}
+            recovery={
+              migration.canRetry
+                ? "Your local collection is unchanged. Retry when ready."
+                : "Your local collection is unchanged."
+            }
+          />
           <div className="collection-transfer-buttons">
             {migration.canRetry ? (
               <button
@@ -326,8 +394,8 @@ function MigrationPicker({
             {migration.result.records === 1 ? "record" : "records"} and{" "}
             {migration.result.views.toLocaleString()} saved{" "}
             {migration.result.views === 1 ? "view" : "views"} adopted as one
-            validated snapshot. The original local collection is a read-only
-            archive; TaskNotes now uses its hosted replica.
+            checked copy. The original local collection is a read-only archive;
+            hosted mdbase is now the source of truth.
           </p>
           <button className="outline-action" onClick={onFinish} type="button">
             Open hosted collection
@@ -460,15 +528,15 @@ function transferProgressLabel(progress: CollectionTransferProgress): string {
     case "reading":
       return "Reading the local Markdown collection.";
     case "approving":
-      return "Waiting for collection adoption approval.";
+      return "Waiting for your approval.";
     case "uploading":
       return progress.total
-        ? `Uploading snapshot document ${progress.completed.toLocaleString()} of ${progress.total.toLocaleString()}.`
-        : "Uploading the collection snapshot.";
+        ? `Uploading file ${progress.completed.toLocaleString()} of ${progress.total.toLocaleString()}.`
+        : "Uploading the collection copy.";
     case "fencing":
-      return "Holding local writes and checking for final changes.";
+      return "Pausing edits briefly and checking for final changes.";
     case "activating":
-      return "Activating the exact validated snapshot as hosted authority.";
+      return "Making the checked hosted copy the source of truth.";
     case "authorizing":
       return "Connecting TaskNotes to the hosted collection.";
   }
