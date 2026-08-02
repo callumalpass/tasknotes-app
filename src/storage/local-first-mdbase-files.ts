@@ -100,14 +100,18 @@ export class LocalFirstMdbaseFileStore implements CollectionFileStore {
         }
         for (const file of remoteFiles) {
           const cached = await this.replica.files.get(file.path);
-          if (cached?.tombstone) continue;
+          if (cached?.tombstone || cached?.file.pending) continue;
+          const bytes =
+            cached?.file.contentDigest === file.contentDigest
+              ? cached.bytes
+              : undefined;
           await this.replica.files.put({
             path: file.path,
             file: {
               ...file,
-              availability: cached?.bytes ? "local-and-remote" : "remote",
+              availability: bytes ? "local-and-remote" : "remote",
             },
-            ...(cached?.bytes ? { bytes: cached.bytes } : {}),
+            ...(bytes ? { bytes } : {}),
             tombstone: false,
           });
         }
@@ -208,7 +212,11 @@ export class LocalFirstMdbaseFileStore implements CollectionFileStore {
   ): Promise<Blob> {
     throwIfAborted(options.signal);
     const cached = await this.replica.files.get(file.path);
-    if (cached?.bytes && !cached.tombstone) {
+    if (
+      cached?.bytes &&
+      !cached.tombstone &&
+      cached.file.contentDigest === file.contentDigest
+    ) {
       options.onProgress?.({
         phase: "downloading",
         transferredBytes: cached.bytes.byteLength,
@@ -219,6 +227,10 @@ export class LocalFirstMdbaseFileStore implements CollectionFileStore {
       });
     }
     const blob = await this.remote.download(file, options);
+    if (blob.size !== file.size || (await sha256(blob)) !== file.contentDigest)
+      throw new Error(
+        `Downloaded attachment failed integrity checks at ${file.path}.`,
+      );
     const bytes = await blob.arrayBuffer();
     await this.replica.files.put({
       path: file.path,

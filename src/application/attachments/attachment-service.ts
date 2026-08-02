@@ -1,4 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 import {
   attachmentPathFromReference,
   canonicalAttachmentReference,
@@ -16,8 +18,9 @@ interface AttachmentJournalEntry {
   collectionId: string;
   taskId: string;
   reference: string;
-  inline: boolean;
   operation: "link" | "unlink";
+  expectedDigest?: `sha256:${string}`;
+  expectedSize?: number;
   fileSaved?: boolean;
   fileDeleted?: boolean;
   enqueuedAt: number;
@@ -74,7 +77,11 @@ export class AttachmentService {
       }
       if (entry.operation === "link" && !entry.fileSaved) {
         const file = await this.findFile(task, entry.reference);
-        if (!file) {
+        if (!file || !matchesExpectedFile(file, entry)) {
+          if (file)
+            await this.requireStore()
+              .delete(file)
+              .catch(() => undefined);
           await journal.entries.delete(entry.id);
           continue;
         }
@@ -86,7 +93,10 @@ export class AttachmentService {
         entry.fileDeleted = true;
         await journal.entries.put(entry);
       }
-      await this.applyJournalEntry(task, entry);
+      await this.applyJournalEntry(
+        (await this.repository.get(entry.taskId)) ?? task,
+        entry,
+      );
       await journal.entries.delete(entry.id);
     }
   }
@@ -95,17 +105,14 @@ export class AttachmentService {
     taskId: string,
     source: File | Blob,
   ): Promise<AttachImageResult> {
-    return this.attach(taskId, source, false);
+    return this.attach(taskId, source);
   }
 
-  async insertImageInline(
+  /** Verifies an existing membership can safely be presented in Notes. */
+  async assertInlineInsertable(
     taskId: string,
-    source: File | Blob,
-  ): Promise<AttachImageResult> {
-    return this.attach(taskId, source, true);
-  }
-
-  async insertExistingInline(taskId: string, reference: string): Promise<Task> {
+    reference: string,
+  ): Promise<void> {
     const task = await this.requireTask(taskId);
     if (!hasReference(task, reference))
       throw new Error(
@@ -113,20 +120,6 @@ export class AttachmentService {
       );
     if (!(await this.findFile(task, reference)))
       throw new Error("The attachment file is missing and cannot be inserted.");
-    const entry: AttachmentJournalEntry = {
-      id: crypto.randomUUID(),
-      collectionId: await this.collectionId(),
-      taskId,
-      reference,
-      inline: true,
-      operation: "link",
-      fileSaved: true,
-      enqueuedAt: Date.now(),
-    };
-    await journal.entries.put(entry);
-    const updated = await this.applyJournalEntry(task, entry);
-    await journal.entries.delete(entry.id);
-    return updated;
   }
 
   async resolve(task: Task): Promise<ResolvedTaskAttachment[]> {
@@ -156,6 +149,10 @@ export class AttachmentService {
    */
   async deletePhysical(taskId: string, reference: string): Promise<Task> {
     const store = this.requireStore();
+    if (!(await this.physicalDeletionAvailable()))
+      throw new Error(
+        "Synced collections keep detached files. Permanent deletion needs an authoritative reference check that this mdbase version does not provide yet.",
+      );
     const task = await this.requireTask(taskId);
     const path = attachmentPathFromReference(reference, task.path);
     if (!path)
@@ -194,7 +191,6 @@ export class AttachmentService {
       collectionId: await this.collectionId(),
       taskId,
       reference,
-      inline: false,
       operation: "unlink",
       fileDeleted: false,
       enqueuedAt: Date.now(),
@@ -208,10 +204,13 @@ export class AttachmentService {
     return updated;
   }
 
+  async physicalDeletionAvailable(): Promise<boolean> {
+    return (await this.repository.collectionInfo()).kind === "local";
+  }
+
   private async attach(
     taskId: string,
     source: File | Blob,
-    inline: boolean,
   ): Promise<AttachImageResult> {
     const store = this.requireStore();
     const task = await this.requireTask(taskId);
@@ -220,13 +219,16 @@ export class AttachmentService {
     const path = attachmentPath(name);
     assertImage(source.type, path);
     const reference = canonicalAttachmentReference(path);
+    const expectedSize = source.size;
+    const expectedDigest = await sha256(source);
     const entry: AttachmentJournalEntry = {
       id: crypto.randomUUID(),
       collectionId: await this.collectionId(),
       taskId,
       reference,
-      inline,
       operation: "link",
+      expectedDigest,
+      expectedSize,
       fileSaved: false,
       enqueuedAt: Date.now(),
     };
@@ -245,15 +247,26 @@ export class AttachmentService {
         },
         () => undefined,
       );
-      if (!recovered) {
+      if (!recovered || !matchesExpectedFile(recovered, entry)) {
+        if (recovered) await store.delete(recovered).catch(() => undefined);
         if (listingSucceeded) await journal.entries.delete(entry.id);
         throw reason;
       }
       file = recovered;
     }
+    if (!matchesExpectedFile(file, entry)) {
+      await store.delete(file).catch(() => undefined);
+      await journal.entries.delete(entry.id);
+      throw new Error(
+        "The attachment write did not preserve every byte. The partial file was not attached.",
+      );
+    }
     entry.fileSaved = true;
     await journal.entries.put(entry);
-    const updated = await this.applyJournalEntry(task, entry);
+    const updated = await this.applyJournalEntry(
+      (await this.repository.get(taskId)) ?? task,
+      entry,
+    );
     await journal.entries.delete(entry.id);
     return { task: updated, file, reference };
   }
@@ -270,14 +283,8 @@ export class AttachmentService {
     const attachments = hasReference(task, entry.reference)
       ? task.attachments
       : [...task.attachments, entry.reference];
-    const embed = `!${entry.reference}`;
-    const body =
-      entry.inline && !task.body.includes(embed)
-        ? `${task.body.trimEnd()}${task.body.trim() ? "\n\n" : ""}${embed}\n`
-        : task.body;
-    if (sameList(task.attachments, attachments) && body === task.body)
-      return task;
-    return this.repository.update(task.id, { attachments, body });
+    if (sameList(task.attachments, attachments)) return task;
+    return this.repository.update(task.id, { attachments });
   }
 
   private async deleteJournalFile(
@@ -372,16 +379,71 @@ function attachmentReferences(
     )
   )
     kinds.push("membership");
-  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (
-    new RegExp(`!\\[\\[${escaped}(?:\\|[^\\]]*)?\\]\\]`, "i").test(task.body) ||
-    new RegExp(
-      `!\\[[^\\]]*\\]\\((?:\\/)?${escaped}(?:\\s+[^)]*)?\\)`,
-      "i",
-    ).test(task.body)
-  )
-    kinds.push("inline");
+  if (inlineAttachmentPaths(task).has(path)) kinds.push("inline");
   return kinds;
+}
+
+interface MarkdownNode {
+  type?: string;
+  url?: string;
+  identifier?: string;
+  children?: MarkdownNode[];
+}
+
+const markdownParser = unified().use(remarkParse);
+
+function inlineAttachmentPaths(task: Task): Set<string> {
+  const tree = markdownParser.parse(task.body) as MarkdownNode;
+  const destinations: string[] = [];
+  const definitions = new Map<string, string>();
+  const references: string[] = [];
+  const visit = (node: MarkdownNode): void => {
+    if (node.type === "image" && node.url) destinations.push(node.url);
+    if (node.type === "definition" && node.identifier && node.url)
+      definitions.set(node.identifier.toLowerCase(), node.url);
+    if (node.type === "imageReference" && node.identifier)
+      references.push(node.identifier.toLowerCase());
+    node.children?.forEach(visit);
+  };
+  visit(tree);
+  for (const identifier of references) {
+    const destination = definitions.get(identifier);
+    if (destination) destinations.push(destination);
+  }
+  for (const match of task.body.matchAll(/!\[\[([^\]\n]+)\]\]/g))
+    destinations.push(`[[${match[1]}]]`);
+
+  const paths = new Set<string>();
+  for (const destination of destinations) {
+    const reference = destination.startsWith("[[")
+      ? destination
+      : `[image](${destination})`;
+    const resolved = attachmentPathFromReference(reference, task.path);
+    if (resolved) paths.add(resolved);
+  }
+  return paths;
+}
+
+async function sha256(blob: Blob): Promise<`sha256:${string}`> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    await blob.arrayBuffer(),
+  );
+  return `sha256:${[...new Uint8Array(digest)]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function matchesExpectedFile(
+  file: CollectionFile,
+  entry: AttachmentJournalEntry,
+): boolean {
+  return (
+    entry.expectedSize !== undefined &&
+    entry.expectedDigest !== undefined &&
+    file.size === entry.expectedSize &&
+    file.contentDigest === entry.expectedDigest
+  );
 }
 
 function parentFolder(path: string): string {

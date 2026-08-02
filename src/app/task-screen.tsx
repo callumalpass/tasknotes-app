@@ -446,15 +446,18 @@ function TaskEditor({
     if (dirtyRef.current) await persist(draftRef.current, editVersion.current);
   }
 
-  function acceptAttachmentBody(body: string): void {
-    if (body === draftRef.current.body) return;
+  async function insertAttachmentInline(reference: string): Promise<void> {
+    const embed = `!${reference}`;
+    if (draftRef.current.body.includes(embed)) return;
     editVersion.current += 1;
+    const version = editVersion.current;
+    const body = `${draftRef.current.body.trimEnd()}${draftRef.current.body.trim() ? "\n\n" : ""}${embed}\n`;
     const next = { ...draftRef.current, body };
     draftRef.current = next;
-    dirtyRef.current = false;
+    dirtyRef.current = true;
     setDraft(next);
-    setDirty(false);
-    setSaveState("saved");
+    setDirty(true);
+    await persist(next, version);
   }
 
   async function leave() {
@@ -858,7 +861,7 @@ function TaskEditor({
         {repository.files ? (
           <TaskAttachments
             beforeMutation={flushBeforeAttachmentMutation}
-            onBodyUpdated={acceptAttachmentBody}
+            onInsertInline={insertAttachmentInline}
             service={attachmentService}
             store={repository.files}
             task={task}

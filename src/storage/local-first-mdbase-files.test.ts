@@ -77,6 +77,30 @@ describe("LocalFirstMdbaseFileStore", () => {
     expect(await store.list()).toEqual([]);
   });
 
+  it("discards cached bytes when another client replaces the remote file", async () => {
+    const remote = new MemoryRemote();
+    const store = new LocalFirstMdbaseFileStore(remote, crypto.randomUUID());
+    const original = await store.upload(
+      "Attachments/replaced.png",
+      Uint8Array.of(1, 2, 3),
+      { mediaType: "image/png" },
+    );
+    await store.download(original);
+
+    const replacement = await remote.upload(
+      original.path,
+      Uint8Array.of(9, 8, 7, 6),
+      { mediaType: "image/png" },
+    );
+    const [listed] = await store.list();
+
+    expect(listed?.contentDigest).toBe(replacement.contentDigest);
+    expect(listed?.availability).toBe("remote");
+    expect(
+      new Uint8Array(await (await store.download(listed!)).arrayBuffer()),
+    ).toEqual(Uint8Array.of(9, 8, 7, 6));
+  });
+
   it("preserves operation order when an offline move is followed by delete", async () => {
     const remote = new MemoryRemote();
     const store = new LocalFirstMdbaseFileStore(remote, crypto.randomUUID());
@@ -134,7 +158,7 @@ class MemoryRemote implements CollectionFileStore {
       fileId: existing?.fileId ?? crypto.randomUUID(),
       path,
       revision: crypto.randomUUID(),
-      contentDigest: `sha256:${"0".repeat(64)}`,
+      contentDigest: await digest(blob),
       size: blob.size,
       mediaType: options.mediaType,
       mediaClass: options.mediaType?.startsWith("image/") ? "image" : "other",
@@ -189,4 +213,11 @@ function owned(source: ArrayBuffer | ArrayBufferView): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
   return copy.buffer;
+}
+
+async function digest(blob: Blob): Promise<`sha256:${string}`> {
+  const value = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return `sha256:${[...new Uint8Array(value)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")}`;
 }

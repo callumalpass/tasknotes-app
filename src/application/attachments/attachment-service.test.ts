@@ -47,22 +47,22 @@ describe("AttachmentService", () => {
     ).toHaveLength(1);
   });
 
-  it("treats inline insertion as explicit presentation in addition to membership", async () => {
+  it("keeps Notes presentation outside binary and membership persistence", async () => {
     const { repository } = await fixture();
     const task = await repository.create({
       title: "Visual task",
       body: "Context",
     });
-    const result = await new AttachmentService(repository).insertImageInline(
+    const result = await new AttachmentService(repository).attachImage(
       task.id,
       new File([Uint8Array.of(9)], "diagram.webp", { type: "image/webp" }),
     );
 
     expect(result.task.attachments).toEqual([result.reference]);
-    expect(result.task.body).toBe(`Context\n\n!${result.reference}\n`);
+    expect(result.task.body).toBe("Context");
   });
 
-  it("inserts an existing image idempotently and rejects missing membership or bytes", async () => {
+  it("validates existing inline insertion without mutating Notes", async () => {
     const { repository } = await fixture();
     const task = await repository.create({ title: "Existing image" });
     const service = new AttachmentService(repository);
@@ -71,25 +71,19 @@ describe("AttachmentService", () => {
       new File([Uint8Array.of(4)], "existing.gif", { type: "image/gif" }),
     );
 
-    const inserted = await service.insertExistingInline(
-      task.id,
-      attached.reference,
-    );
-    const repeated = await service.insertExistingInline(
-      task.id,
-      attached.reference,
-    );
-    expect(repeated.body).toBe(inserted.body);
-    expect(repeated.body.match(/!\[\[/g)).toHaveLength(1);
+    await expect(
+      service.assertInlineInsertable(task.id, attached.reference),
+    ).resolves.toBeUndefined();
+    expect((await repository.get(task.id))?.body).toBe("");
 
     await service.detach(task.id, attached.reference);
     await expect(
-      service.insertExistingInline(task.id, attached.reference),
+      service.assertInlineInsertable(task.id, attached.reference),
     ).rejects.toThrow("Attach this image");
     await repository.update(task.id, { attachments: [attached.reference] });
     await repository.files!.delete(attached.file);
     await expect(
-      service.insertExistingInline(task.id, attached.reference),
+      service.assertInlineInsertable(task.id, attached.reference),
     ).rejects.toThrow("file is missing");
   });
 
@@ -179,6 +173,28 @@ describe("AttachmentService", () => {
     await expect(
       service.deletePhysical(first.id, attached.reference),
     ).rejects.toThrow("inline embed");
+    const encodedPath = attached.file.path.replace(
+      "shared.jpg",
+      "shared%2Ejpg",
+    );
+    await repository.update(first.id, {
+      body: `![Receipt](../${encodedPath} "Expense receipt")`,
+    });
+    await expect(
+      service.deletePhysical(first.id, attached.reference),
+    ).rejects.toThrow("inline embed");
+    await repository.update(first.id, {
+      body: `![[${attached.file.path}|Receipt alias]]`,
+    });
+    await expect(
+      service.deletePhysical(first.id, attached.reference),
+    ).rejects.toThrow("inline embed");
+    await repository.update(first.id, {
+      body: `![Receipt][expense]\n\n[expense]: ../${encodedPath} "Expense receipt"`,
+    });
+    await expect(
+      service.deletePhysical(first.id, attached.reference),
+    ).rejects.toThrow("inline embed");
     await repository.update(first.id, { body: "" });
 
     const updated = await service.deletePhysical(first.id, attached.reference);
@@ -232,6 +248,64 @@ describe("AttachmentService", () => {
 
     expect((await repository.get(task.id))?.attachments).toEqual([
       result.reference,
+    ]);
+    expect(
+      await repository.files!.list({ folder: "Attachments" }),
+    ).toHaveLength(1);
+  });
+
+  it("rejects and cleans a truncated ambiguous native write", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({
+      title: "Interrupted partial upload",
+    });
+    const service = new AttachmentService(repository);
+    const upload = repository.files!.upload.bind(repository.files);
+    vi.spyOn(repository.files!, "upload").mockImplementationOnce(
+      async (path, _source, options) => {
+        await upload(
+          path,
+          new Blob([Uint8Array.of(1)], { type: "image/png" }),
+          options,
+        );
+        throw new Error("Bridge response was lost after a partial write");
+      },
+    );
+
+    await expect(
+      service.attachImage(
+        task.id,
+        new File([Uint8Array.of(1, 2, 3)], "partial.png", {
+          type: "image/png",
+        }),
+      ),
+    ).rejects.toThrow("partial write");
+    expect((await repository.get(task.id))?.attachments).toEqual([]);
+    expect(await repository.files!.list({ folder: "Attachments" })).toEqual([]);
+    await expect(service.recover()).resolves.toBeUndefined();
+  });
+
+  it("does not offer non-atomic physical deletion for mdbase collections", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({ title: "Synced attachment" });
+    const service = new AttachmentService(repository);
+    const attached = await service.attachImage(
+      task.id,
+      new File([Uint8Array.of(7)], "hosted.png", { type: "image/png" }),
+    );
+    vi.spyOn(repository, "collectionInfo").mockResolvedValue({
+      kind: "connect",
+      id: "hosted",
+      name: "mdbase cloud",
+      location: "Offline copy on this device",
+      runtime: "browser",
+    });
+
+    await expect(
+      service.deletePhysical(task.id, attached.reference),
+    ).rejects.toThrow("authoritative reference check");
+    expect((await repository.get(task.id))?.attachments).toEqual([
+      attached.reference,
     ]);
     expect(
       await repository.files!.list({ folder: "Attachments" }),

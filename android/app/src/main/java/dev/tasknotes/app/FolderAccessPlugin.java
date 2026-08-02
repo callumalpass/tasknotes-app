@@ -299,15 +299,39 @@ public class FolderAccessPlugin extends Plugin {
             } catch (IllegalArgumentException error) {
                 throw new IllegalArgumentException("data must be valid base64.", error);
             }
-            DocumentFile file = fileForWrite(id, path);
-            try (
-                OutputStream raw = getContext().getContentResolver().openOutputStream(file.getUri(), "wt");
-                BufferedOutputStream output = raw == null ? null : new BufferedOutputStream(raw)
-            ) {
-                if (output == null) {
-                    throw new IOException("Could not open " + path + " for writing.");
+            String temporaryPath = path + ".tasknotes-write-" + UUID.randomUUID() + ".tmp";
+            DocumentFile temporary = fileForWrite(id, temporaryPath);
+            DocumentFile file;
+            try {
+                try (
+                    OutputStream raw = getContext().getContentResolver().openOutputStream(temporary.getUri(), "wt");
+                    BufferedOutputStream output = raw == null ? null : new BufferedOutputStream(raw)
+                ) {
+                    if (output == null) {
+                        throw new IOException("Could not open " + path + " for writing.");
+                    }
+                    output.write(bytes);
                 }
-                output.write(bytes);
+                if (temporary.length() != bytes.length) {
+                    throw new IOException("The provider wrote only part of " + path + ".");
+                }
+                DocumentFile existing = resolve(id, path);
+                if (existing != null && existing.exists() && !existing.delete()) {
+                    throw new IOException("Could not replace " + path + ".");
+                }
+                pathCache.remove(path);
+                if (!temporary.renameTo(fileName(path))) {
+                    throw new IOException("Could not commit " + path + ".");
+                }
+                pathCache.remove(temporaryPath);
+                file = resolve(id, path);
+                if (file == null || file.length() != bytes.length) {
+                    throw new IOException("Committed binary could not be verified: " + path + ".");
+                }
+            } catch (Exception error) {
+                temporary.delete();
+                pathCache.remove(temporaryPath);
+                throw error;
             }
             JSObject response = new JSObject();
             response.put("entry", entry(path, file));

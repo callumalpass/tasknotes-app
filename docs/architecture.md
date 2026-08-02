@@ -96,8 +96,12 @@ same references and never duplicate the underlying bytes.
 Native Android and iOS collections store image bytes beside Markdown through
 the same granted folder boundary. Listing derives portable descriptors with a
 SHA-256 content digest and reuses them while path, modification time, and size
-are unchanged. Browser-local attachment storage is intentionally absent:
-browser collections use mdbase.
+are unchanged. Native attachment changes are journaled before binary work:
+attach writes bytes first and startup recovery completes frontmatter membership,
+while delete keeps membership until the bytes are gone. An interruption can
+therefore leave a recoverable extra file or reference, never an attachment that
+quietly claims missing bytes. Browser-local attachment storage is intentionally
+absent: browser collections use mdbase.
 
 For mdbase collections, bytes are committed to the durable IndexedDB replica
 and outbox before network work begins. Upload, move, and delete operations keep
@@ -105,6 +109,12 @@ stable transfer or mutation identities across restart, so retry is idempotent.
 Reads prefer the device replica; reconciliation uploads pending work and fills
 missing local bytes from the hosted authority. A pending-local state is shown
 to the user but is never written into task frontmatter.
+
+TaskNotes does not initiate physical attachment deletion for mdbase collections
+in beta.23. A local replica cannot prove that another offline device has not
+created a reference, and the backend does not yet expose an atomic
+reference-check-and-delete operation. Detach is available and leaves safe orphan
+bytes; permanent cleanup must wait for that authoritative transaction.
 
 Collection adoption captures task records and file descriptors in one
 authority snapshot, then transfers the corresponding bytes. A final snapshot

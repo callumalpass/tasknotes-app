@@ -56,7 +56,14 @@ the Markdown body owns presentation; and the filesystem or mdbase file
 descriptor owns binary metadata such as size, digest, media type, and revision.
 Attaching therefore never rewrites Notes, detaching never deletes bytes, and a
 physical delete is refused while any other task or inline embed still refers to
-the file.
+the file. Native collections can then delete the unreferenced bytes. Synced
+mdbase collections deliberately retain detached files until the backend can
+perform the same reference check atomically against its authoritative records.
+
+```yaml
+attachments:
+  - "[[Attachments/receipt.jpg]]"
+```
 
 Android retains access to selected folders through a persisted Storage Access
 Framework grant. iOS retains a security-scoped bookmark and coordinates access
