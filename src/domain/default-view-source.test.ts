@@ -5,13 +5,13 @@ import { describe, expect, it, vi } from "vitest";
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import {
   defaultNavigationViewKeys,
-  ensureTaskNotesDefaultViewSource,
   taskNotesDefaultBaseDocument,
   taskNotesDefaultCanonicalDocument,
 } from "./default-view-source";
+import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 
 import type { TaskViewDocument } from "./view";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 describe("TaskNotes starter views", () => {
   it("writes every starter screen as an ordinary editable view", () => {

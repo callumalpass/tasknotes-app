@@ -8,14 +8,19 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
-import { IndexedMarkdownRepository } from "../storage/repository";
+import { TaskCommandService } from "../application/task-commands";
+import {
+  QueryInvalidationStore,
+  type QueryScope,
+} from "../application/query-invalidation";
 import {
   createRepositoryAutoArchiveActivity,
   type AutoArchiveActivity,
-} from "../domain/auto-archive-activity";
+} from "../application/auto-archive-activity";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   reconcileTaskNotifications,
@@ -44,7 +49,9 @@ import type {
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
-} from "../storage/repository";
+} from "../application/ports/task-repository";
+import type { MutationJournal } from "../application/mutation-journal";
+import type { OperationalError } from "../application/operational-error";
 
 type StorageStatus = "opening" | "ready" | "error";
 
@@ -57,8 +64,12 @@ interface RepositoryContextValue {
   lastRefresh: RefreshResult | null;
   sync: RepositorySyncStatus;
   syncIssues: RepositorySyncIssue[];
-  version: number;
+  invalidation: QueryInvalidationStore;
   configuration: TaskCollectionConfiguration;
+  pendingDeletion: { id: string; title: string } | null;
+  deletionError: OperationalError | null;
+  recoveryError: OperationalError | null;
+  pendingRecoveryCount: number;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   updateTasks(
@@ -76,6 +87,9 @@ interface RepositoryContextValue {
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setTaskArchived(id: string, archived: boolean): Promise<Task>;
   deleteTask(id: string): Promise<void>;
+  undoTaskDeletion(): Promise<void>;
+  retryTaskDeletion(): Promise<void>;
+  retryTaskRecovery(): Promise<void>;
   updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration>;
@@ -89,13 +103,16 @@ export function RepositoryProvider({
   children,
   repository: supplied,
   reminderAuthority = "none",
+  mutationJournal: suppliedMutationJournal,
 }: {
   children: ReactNode;
-  repository?: TaskRepository;
+  repository: TaskRepository;
   reminderAuthority?: ReminderAuthority;
+  mutationJournal: MutationJournal;
 }) {
-  const [repository] = useState<TaskRepository>(
-    () => supplied ?? new IndexedMarkdownRepository(),
+  const [repository] = useState<TaskRepository>(() => supplied);
+  const [mutationJournal] = useState<MutationJournal>(
+    () => suppliedMutationJournal,
   );
   const [status, setStatus] = useState<StorageStatus>("opening");
   const [error, setError] = useState<Error | null>(null);
@@ -114,19 +131,28 @@ export function RepositoryProvider({
     issues: 0,
   });
   const [syncIssues, setSyncIssues] = useState<RepositorySyncIssue[]>([]);
-  const [version, setVersion] = useState(0);
+  const [invalidation] = useState(() => new QueryInvalidationStore());
+  const [pendingDeletion, setPendingDeletion] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deletionError, setDeletionError] = useState<OperationalError | null>(
+    null,
+  );
+  const [recoveryError, setRecoveryError] = useState<OperationalError | null>(
+    null,
+  );
+  const [pendingRecoveryCount, setPendingRecoveryCount] = useState(0);
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
   const configurationRef = useRef(configuration);
   const autoArchiveRef = useRef<AutoArchiveActivity | null>(null);
+  const taskCommandsRef = useRef<TaskCommandService | null>(null);
+  const taskCommandsReadyRef =
+    useRef<Promise<TaskCommandService | null> | null>(null);
 
-  const bump = useCallback(() => setVersion((value) => value + 1), []);
-  const publishMutation = useCallback(() => {
-    // Repositories with subscriptions publish their own successful mutations.
-    // Local repositories still need the provider to invalidate consumers.
-    if (!repository.subscribe) bump();
-  }, [bump, repository]);
+  const bump = useCallback(() => invalidation.invalidateAll(), [invalidation]);
   const loadSync = useCallback(async () => {
     const [nextStatus, nextIssues] = await Promise.all([
       repository.syncStatus(),
@@ -147,7 +173,6 @@ export function RepositoryProvider({
         await autoArchiveRef.current?.reconcile();
         setLastRefresh(result);
         setError(null);
-        if (result.changed || result.removed) publishMutation();
         void loadSync().catch(() => undefined);
         if (reminderAuthority === "connect")
           void reconcileTaskNotifications(repository, reminderAuthority).catch(
@@ -166,10 +191,15 @@ export function RepositoryProvider({
       });
     refreshInFlight.current = run;
     return run;
-  }, [loadSync, publishMutation, reminderAuthority, repository]);
+  }, [loadSync, reminderAuthority, repository]);
 
   useEffect(() => {
     let active = true;
+    let unsubscribeCommands: (() => void) | undefined;
+    let resolveTaskCommands: (service: TaskCommandService | null) => void;
+    taskCommandsReadyRef.current = new Promise((resolve) => {
+      resolveTaskCommands = resolve;
+    });
     repository
       .initialize()
       .then(async () => {
@@ -180,7 +210,6 @@ export function RepositoryProvider({
           repository,
           configuration: () => configurationRef.current,
           onArchived: (task) => {
-            publishMutation();
             void syncTaskNotifications(
               repository,
               task,
@@ -195,6 +224,63 @@ export function RepositoryProvider({
         autoArchiveRef.current = autoArchive;
         await autoArchive.start();
         if (!active) return;
+        const taskCommands = new TaskCommandService({
+          repository,
+          journal: mutationJournal,
+          onDeleted: async (id) => {
+            await autoArchive.forget(id);
+            invalidation.invalidateTasks([id]);
+            if (reminderAuthority === "connect")
+              void removeTaskNotifications(
+                repository,
+                id,
+                reminderAuthority,
+              ).catch(() => undefined);
+          },
+          onTasksUpdated: async (tasks, updates) => {
+            invalidation.invalidateTasks(updates.map(({ id }) => id));
+            for (let index = 0; index < tasks.length; index += 1) {
+              const input = updates[index]!.input;
+              const task = tasks[index]!;
+              if (taskUpdateAffectsAutoArchive(input))
+                await autoArchive.observe(task);
+              if (
+                reminderAuthority === "connect" &&
+                taskUpdateAffectsNotifications(input)
+              )
+                void syncTaskNotifications(
+                  repository,
+                  task,
+                  reminderAuthority,
+                ).catch(() => undefined);
+            }
+          },
+        });
+        taskCommandsRef.current = taskCommands;
+        const publishCommandSnapshot = () => {
+          const snapshot = taskCommands.snapshot();
+          setPendingDeletion(
+            snapshot.pendingDeletion
+              ? {
+                  id: snapshot.pendingDeletion.taskId,
+                  title: snapshot.pendingDeletion.title,
+                }
+              : null,
+          );
+          setDeletionError(snapshot.deletionError);
+          setRecoveryError(snapshot.recoveryError);
+          setPendingRecoveryCount(snapshot.pendingRecoveryCount);
+        };
+        unsubscribeCommands = taskCommands.subscribe(publishCommandSnapshot);
+        await taskCommands.initialize();
+        publishCommandSnapshot();
+        if (!active) {
+          unsubscribeCommands();
+          taskCommands.dispose();
+          resolveTaskCommands!(null);
+          return;
+        }
+        resolveTaskCommands!(taskCommands);
         setConfiguration(nextConfiguration);
         setIndexing(
           repository.indexingProgress?.() ?? {
@@ -212,16 +298,30 @@ export function RepositoryProvider({
         void refresh().catch(() => undefined);
       })
       .catch((reason: unknown) => {
+        resolveTaskCommands!(null);
         if (!active) return;
         setError(asError(reason));
         setStatus("error");
       });
     return () => {
       active = false;
+      unsubscribeCommands?.();
+      taskCommandsRef.current?.dispose();
+      taskCommandsRef.current = null;
+      taskCommandsReadyRef.current = null;
+      resolveTaskCommands!(null);
       autoArchiveRef.current?.dispose();
       autoArchiveRef.current = null;
     };
-  }, [loadSync, publishMutation, refresh, reminderAuthority, repository]);
+  }, [
+    bump,
+    invalidation,
+    loadSync,
+    mutationJournal,
+    refresh,
+    reminderAuthority,
+    repository,
+  ]);
 
   useEffect(() => {
     if (!repository.subscribe) return;
@@ -282,21 +382,19 @@ export function RepositoryProvider({
     async (input: CreateTaskInput) => {
       const task = await repository.create(input);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       if (reminderAuthority === "connect")
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
       if (taskUpdateAffectsAutoArchive(input))
         await autoArchiveRef.current?.observe(task);
-      publishMutation();
       if (
         reminderAuthority === "connect" &&
         taskUpdateAffectsNotifications(input)
@@ -306,56 +404,39 @@ export function RepositoryProvider({
         );
       return task;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
   const updateTasks = useCallback(
     async (updates: readonly { id: string; input: UpdateTaskInput }[]) => {
-      if (!updates.length) return [];
-      const tasks = repository.updateMany
-        ? await repository.updateMany(updates)
-        : await sequentialTaskUpdates(repository, updates);
-      for (let index = 0; index < tasks.length; index += 1)
-        if (taskUpdateAffectsAutoArchive(updates[index]!.input))
-          await autoArchiveRef.current?.observe(tasks[index]!);
-      publishMutation();
-      if (
-        reminderAuthority === "connect" &&
-        updates.some(({ input }) => taskUpdateAffectsNotifications(input))
-      )
-        void syncTaskNotifications(
-          repository,
-          tasks.at(-1)!,
-          reminderAuthority,
-        ).catch(() => undefined);
-      return tasks;
+      const commands = await taskCommandsReadyRef.current;
+      if (!commands) throw new Error("Task commands are not ready.");
+      return commands.updateTasks(updates);
     },
-    [publishMutation, reminderAuthority, repository],
+    [],
   );
   const toggleTask = useCallback(
     async (id: string, occurrenceDate?: string) => {
       const task = await repository.toggle(id, occurrenceDate);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       if (reminderAuthority === "connect")
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
   const skipTask = useCallback(
     async (id: string, occurrenceDate: string) => {
       const task = await repository.skip(id, occurrenceDate);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       if (reminderAuthority === "connect")
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
   const materializeOccurrence = useCallback(
     async (parentId: string, occurrenceDate: string) => {
@@ -364,7 +445,6 @@ export function RepositoryProvider({
         occurrenceDate,
       );
       await autoArchiveRef.current?.observe(result.task);
-      publishMutation();
       if (reminderAuthority === "connect")
         void syncTaskNotifications(
           repository,
@@ -373,76 +453,74 @@ export function RepositoryProvider({
         ).catch(() => undefined);
       return result;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
       const task = await repository.startTimeTracking(id, description);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       return task;
     },
-    [publishMutation, repository],
+    [repository],
   );
   const stopTimeTracking = useCallback(
     async (id: string) => {
       const task = await repository.stopTimeTracking(id);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       return task;
     },
-    [publishMutation, repository],
+    [repository],
   );
   const replaceTimeEntries = useCallback(
     async (id: string, entries: TaskTimeEntry[]) => {
       const task = await repository.replaceTimeEntries(id, entries);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       return task;
     },
-    [publishMutation, repository],
+    [repository],
   );
   const removeTimeEntry = useCallback(
     async (id: string, index: number) => {
       const task = await repository.removeTimeEntry(id, index);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       return task;
     },
-    [publishMutation, repository],
+    [repository],
   );
   const setTaskArchived = useCallback(
     async (id: string, archived: boolean) => {
       const task = await repository.setArchived(id, archived);
       await autoArchiveRef.current?.observe(task);
-      publishMutation();
       if (reminderAuthority === "connect")
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
     },
-    [publishMutation, reminderAuthority, repository],
+    [reminderAuthority, repository],
   );
-  const deleteTask = useCallback(
-    async (id: string) => {
-      await repository.delete(id);
-      await autoArchiveRef.current?.forget(id);
-      publishMutation();
-      if (reminderAuthority === "connect")
-        void removeTaskNotifications(repository, id, reminderAuthority).catch(
-          () => undefined,
-        );
-    },
-    [publishMutation, reminderAuthority, repository],
-  );
+  const deleteTask = useCallback(async (id: string) => {
+    const commands = await taskCommandsReadyRef.current;
+    if (!commands) throw new Error("Task commands are not ready.");
+    await commands.requestDeletion(id);
+  }, []);
+  const undoTaskDeletion = useCallback(async () => {
+    await taskCommandsRef.current?.undoDeletion();
+  }, []);
+  const retryTaskDeletion = useCallback(async () => {
+    await taskCommandsRef.current?.retryDeletion();
+  }, []);
+  const retryTaskRecovery = useCallback(async () => {
+    const commands = await taskCommandsReadyRef.current;
+    if (!commands) throw new Error("Task commands are not ready.");
+    await commands.retryRecovery();
+  }, []);
   const resolveSyncIssue = useCallback(
     async (id: string, resolution: "local" | "remote") => {
       await repository.resolveSyncIssue(id, resolution);
-      publishMutation();
       await loadSync();
     },
-    [loadSync, publishMutation, repository],
+    [loadSync, repository],
   );
   const updateTaskModelSettings = useCallback(
     async (patch: TaskModelSettingsPatch) => {
@@ -450,10 +528,9 @@ export function RepositoryProvider({
       configurationRef.current = next;
       setConfiguration(next);
       await autoArchiveRef.current?.reconcile();
-      publishMutation();
       return next;
     },
-    [publishMutation, repository],
+    [repository],
   );
 
   const value = useMemo<RepositoryContextValue>(
@@ -466,8 +543,12 @@ export function RepositoryProvider({
       lastRefresh,
       sync,
       syncIssues,
-      version,
+      invalidation,
       configuration,
+      pendingDeletion,
+      deletionError,
+      recoveryError,
+      pendingRecoveryCount,
       createTask,
       updateTask,
       updateTasks,
@@ -480,6 +561,9 @@ export function RepositoryProvider({
       removeTimeEntry,
       setTaskArchived,
       deleteTask,
+      undoTaskDeletion,
+      retryTaskDeletion,
+      retryTaskRecovery,
       updateTaskModelSettings,
       refresh,
       resolveSyncIssue,
@@ -493,8 +577,12 @@ export function RepositoryProvider({
       lastRefresh,
       sync,
       syncIssues,
-      version,
+      invalidation,
       configuration,
+      pendingDeletion,
+      deletionError,
+      recoveryError,
+      pendingRecoveryCount,
       createTask,
       updateTask,
       updateTasks,
@@ -507,6 +595,9 @@ export function RepositoryProvider({
       removeTimeEntry,
       setTaskArchived,
       deleteTask,
+      undoTaskDeletion,
+      retryTaskDeletion,
+      retryTaskRecovery,
       updateTaskModelSettings,
       refresh,
       resolveSyncIssue,
@@ -531,7 +622,7 @@ export function useTasks(query: TaskListQuery): {
   loading: boolean;
   error: Error | null;
 } {
-  const { repository, status, version } = useRepository();
+  const { pendingDeletion, repository, status } = useRepository();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [resolved, setResolved] = useState("");
@@ -540,6 +631,7 @@ export function useTasks(query: TaskListQuery): {
   const limit = query.limit;
   const archived = query.archived;
   const key = `${statusFilter ?? "open"}:${archived ?? "exclude"}:${search ?? ""}:${limit ?? 500}`;
+  const revision = useRepositoryRevision(`tasks:${key}`);
 
   useEffect(() => {
     if (status !== "ready") return;
@@ -548,7 +640,11 @@ export function useTasks(query: TaskListQuery): {
       .list({ status: statusFilter, archived, search, limit })
       .then((result) => {
         if (!active) return;
-        setTasks(result);
+        setTasks(
+          pendingDeletion
+            ? result.filter((task) => task.id !== pendingDeletion.id)
+            : result,
+        );
         setError(null);
         setResolved(key);
       })
@@ -560,7 +656,17 @@ export function useTasks(query: TaskListQuery): {
     return () => {
       active = false;
     };
-  }, [archived, key, limit, repository, search, status, statusFilter, version]);
+  }, [
+    archived,
+    key,
+    limit,
+    pendingDeletion,
+    repository,
+    search,
+    status,
+    statusFilter,
+    revision,
+  ]);
 
   return { tasks, loading: status === "opening" || resolved !== key, error };
 }
@@ -570,7 +676,8 @@ export function useTask(id: string | null): {
   loading: boolean;
   error: Error | null;
 } {
-  const { repository, status, version } = useRepository();
+  const { pendingDeletion, repository, status } = useRepository();
+  const revision = useRepositoryRevision(`task:${id ?? "none"}`);
   const [task, setTask] = useState<Task | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [resolved, setResolved] = useState<string | null>(null);
@@ -582,7 +689,7 @@ export function useTask(id: string | null): {
       .get(id)
       .then((result) => {
         if (!active) return;
-        setTask(result);
+        setTask(pendingDeletion?.id === id ? null : result);
         setError(null);
         setResolved(id);
       })
@@ -594,7 +701,7 @@ export function useTask(id: string | null): {
     return () => {
       active = false;
     };
-  }, [id, repository, status, version]);
+  }, [id, pendingDeletion, repository, revision, status]);
 
   return {
     task,
@@ -608,7 +715,8 @@ export function useTaskRelationships(id: string): {
   loading: boolean;
   error: Error | null;
 } {
-  const { repository, status, version } = useRepository();
+  const { repository, status } = useRepository();
+  const revision = useRepositoryRevision(`relationships:${id}`);
   const [relationships, setRelationships] = useState<TaskRelationships>(
     emptyTaskRelationships,
   );
@@ -634,7 +742,7 @@ export function useTaskRelationships(id: string): {
     return () => {
       active = false;
     };
-  }, [id, repository, status, version]);
+  }, [id, repository, revision, status]);
 
   return {
     relationships,
@@ -648,7 +756,8 @@ export function useCollectionSummary(): {
   stats: TaskStats | null;
   loading: boolean;
 } {
-  const { repository, status, version } = useRepository();
+  const { repository, status } = useRepository();
+  const revision = useRepositoryRevision("collection-summary");
   const [info, setInfo] = useState<CollectionInfo | null>(null);
   const [stats, setStats] = useState<TaskStats | null>(null);
   useEffect(() => {
@@ -664,22 +773,21 @@ export function useCollectionSummary(): {
     return () => {
       active = false;
     };
-  }, [repository, status, version]);
+  }, [repository, revision, status]);
   return { info, stats, loading: status !== "ready" || !info || !stats };
+}
+
+export function useRepositoryRevision(scope: QueryScope): number {
+  const { invalidation } = useRepository();
+  return useSyncExternalStore(
+    (listener) => invalidation.subscribe(scope, listener),
+    () => invalidation.revision(scope),
+    () => invalidation.revision(scope),
+  );
 }
 
 function asError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
-}
-
-async function sequentialTaskUpdates(
-  repository: TaskRepository,
-  updates: readonly { id: string; input: UpdateTaskInput }[],
-): Promise<Task[]> {
-  const tasks: Task[] = [];
-  for (const { id, input } of updates)
-    tasks.push(await repository.update(id, input));
-  return tasks;
 }
 
 function taskUpdateAffectsAutoArchive(input: UpdateTaskInput): boolean {

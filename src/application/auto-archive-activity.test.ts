@@ -6,10 +6,10 @@ import {
   type AutoArchiveSchedule,
   type AutoArchiveScheduleStore,
 } from "./auto-archive-activity";
-import { defaultTaskCollectionConfiguration } from "./task-configuration";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
-import type { Task } from "./task";
-import type { TaskRepository } from "../storage/repository";
+import type { Task } from "../domain/task";
+import type { TaskRepository } from "./ports/task-repository";
 
 class MemoryScheduleStore implements AutoArchiveScheduleStore {
   schedules: AutoArchiveSchedule[] = [];

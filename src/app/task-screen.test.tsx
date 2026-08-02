@@ -6,6 +6,7 @@ import { MarkdownCollection } from "../storage/collection";
 import { TaskIndex } from "../storage/index";
 import { IndexedMarkdownRepository } from "../storage/repository";
 import { MemoryVault } from "../test/memory-vault";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { TaskScreen } from "./task-screen";
 
@@ -33,7 +34,10 @@ describe("TaskScreen persistence failures", () => {
 
   function renderTask(onBack = vi.fn()) {
     render(
-      <RepositoryProvider repository={repository}>
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
         <TaskScreen id={task.id} onBack={onBack} onMaterialized={vi.fn()} />
       </RepositoryProvider>,
     );

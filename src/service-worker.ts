@@ -6,7 +6,7 @@ import {
   showNotificationPayload,
 } from "./native/notification-payload";
 
-import type { MdbaseNativeNotificationData } from "@mdbase/connect";
+import type { MdbaseNativeNotificationData } from "@mdbase-dev/connect";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const MESSAGE_TYPE = "tasknotes:mdbase-notification";

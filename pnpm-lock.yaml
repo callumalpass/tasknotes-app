@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz
+  "@mdbase-dev/connect-protocol": 0.1.0-beta.21
 
 importers:
   .:
@@ -55,15 +55,15 @@ importers:
       "@fullcalendar/timegrid":
         specifier: 6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)
-      "@mdbase/connect":
-        specifier: file:vendor/mdbase-connect-0.1.0-beta.20-775eb75c38bc.tgz
-        version: file:vendor/mdbase-connect-0.1.0-beta.20-775eb75c38bc.tgz
-      "@mdbase/connect-protocol":
-        specifier: file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz
-        version: file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz
-      "@mdbase/connect-sync":
-        specifier: file:vendor/mdbase-connect-sync-0.1.0-beta.20-775eb75c38bc.tgz
-        version: file:vendor/mdbase-connect-sync-0.1.0-beta.20-775eb75c38bc.tgz
+      "@mdbase-dev/connect":
+        specifier: 0.1.0-beta.21
+        version: 0.1.0-beta.21
+      "@mdbase-dev/connect-protocol":
+        specifier: 0.1.0-beta.21
+        version: 0.1.0-beta.21
+      "@mdbase-dev/connect-sync":
+        specifier: 0.1.0-beta.21
+        version: 0.1.0-beta.21
       "@tasknotes/model":
         specifier: file:vendor/tasknotes-model-0.3.0-rc.6.tgz
         version: file:vendor/tasknotes-model-0.3.0-rc.6.tgz
@@ -77,8 +77,8 @@ importers:
         specifier: 1.25.0
         version: 1.25.0(react@19.2.8)
       obsidian-bases-expression:
-        specifier: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
-        version: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz
+        specifier: 0.3.0-rc.1
+        version: 0.3.0-rc.1
       picomatch:
         specifier: 4.0.5
         version: 4.0.5
@@ -1243,30 +1243,24 @@ packages:
         integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==,
       }
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz":
+  "@mdbase-dev/connect-protocol@0.1.0-beta.21":
     resolution:
       {
-        integrity: sha512-HezAnvzGpIBjzioQBZHnAqQsFVbdWFLkDP1QFjr64NOzi2l/d8cgk3EpbE2S/MuRjD1bkeyiN1sHAZj3tTikGA==,
-        tarball: file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz,
+        integrity: sha512-/0uKgpGO4Ht9dq0qDX/vLtOhuoW6p/b7K7QUwY/WZTap//RisvTm7cRWvzdgq0O3U1Daqb4oOp+fVCLm0RDtDA==,
       }
-    version: 0.1.0-beta.20
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.20-775eb75c38bc.tgz":
+  "@mdbase-dev/connect-sync@0.1.0-beta.21":
     resolution:
       {
-        integrity: sha512-SYehPwn9AlbNSEUUBb4YLF+uphQcot5e8omrJglEV+i3/KDWp7ZySLaVHF3S4ppvdDexyk+9ZoXF/xoGzqTlGw==,
-        tarball: file:vendor/mdbase-connect-sync-0.1.0-beta.20-775eb75c38bc.tgz,
+        integrity: sha512-H4/xjSRa1bPuK6fHajeL6fNYRvOdASAx4yyxSGMyWMSSXVJrZf4cvKOX68zjtnaoVw5WZhNxpF2fOXuEcKVH8A==,
       }
-    version: 0.1.0-beta.20
     hasBin: true
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.20-775eb75c38bc.tgz":
+  "@mdbase-dev/connect@0.1.0-beta.21":
     resolution:
       {
-        integrity: sha512-AhssU2XGS0OyVoPvY2u15I/7uzch1GGf5E5hNU3G+ekS+lEw4cVqBio/OhN476TgyRPmOHy0I0W+d4ORZI3COA==,
-        tarball: file:vendor/mdbase-connect-0.1.0-beta.20-775eb75c38bc.tgz,
+        integrity: sha512-WQpUlruvmO6nUFeeNnkZJ1paAYmXuH4hRxSE05Izw8PufujGSm3tJVorLn/B89zlXhbIjWh9h+IsJPcH2JyyAA==,
       }
-    version: 0.1.0-beta.20
 
   "@napi-rs/wasm-runtime@1.1.6":
     resolution:
@@ -4555,13 +4549,11 @@ packages:
         integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==,
       }
 
-  obsidian-bases-expression@file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz:
+  obsidian-bases-expression@0.3.0-rc.1:
     resolution:
       {
-        integrity: sha512-2ffGYN9YydgdR+b7HabCjM5d6Syfng6EsrpwzzLGyrZEMzvo+MtpcMVJEUuQvm+E0ZMFNa1VUQ8hRBpMqEpuNQ==,
-        tarball: file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz,
+        integrity: sha512-NPuZ4RYaW4C94yUgbR3QVM1EwUUxQiWKPk1vYqDxBt8voXe1zDo0Qc/67nKRD005/R4J/0qxn9XqWhYq6XbaeQ==,
       }
-    version: 0.3.0-rc.1
 
   obug@2.1.4:
     resolution:
@@ -7156,18 +7148,17 @@ snapshots:
       "@jridgewell/resolve-uri": 3.1.2
       "@jridgewell/sourcemap-codec": 1.5.5
 
-  "@mdbase/connect-protocol@file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz":
-    {}
+  "@mdbase-dev/connect-protocol@0.1.0-beta.21": {}
 
-  "@mdbase/connect-sync@file:vendor/mdbase-connect-sync-0.1.0-beta.20-775eb75c38bc.tgz":
+  "@mdbase-dev/connect-sync@0.1.0-beta.21":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz
+      "@mdbase-dev/connect-protocol": 0.1.0-beta.21
       "@noble/hashes": 2.2.0
       yaml: 2.9.0
 
-  "@mdbase/connect@file:vendor/mdbase-connect-0.1.0-beta.20-775eb75c38bc.tgz":
+  "@mdbase-dev/connect@0.1.0-beta.21":
     dependencies:
-      "@mdbase/connect-protocol": file:vendor/mdbase-connect-protocol-0.1.0-beta.20-775eb75c38bc.tgz
+      "@mdbase-dev/connect-protocol": 0.1.0-beta.21
 
   "@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)":
     dependencies:
@@ -9211,7 +9202,7 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  obsidian-bases-expression@file:vendor/obsidian-bases-expression-0.3.0-rc.1.tgz:
+  obsidian-bases-expression@0.3.0-rc.1:
     dependencies:
       moment: 2.30.1
 

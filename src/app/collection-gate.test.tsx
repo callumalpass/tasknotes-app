@@ -57,11 +57,9 @@ it("explains why mdbase is recommended and lets native users choose a folder", (
   render(<CollectionGate />);
 
   const mdbase = screen.getByRole("button", { name: /mdbase/i });
-  expect(mdbase).toHaveTextContent("Best experience");
-  expect(mdbase).toHaveTextContent("Faster search and saved views");
-  expect(mdbase).toHaveTextContent(
-    "mdbase delivers reminders while TaskNotes is closed",
-  );
+  expect(mdbase).toHaveTextContent("Sync + reminders");
+  expect(mdbase).toHaveTextContent("durable offline copy");
+  expect(mdbase).toHaveTextContent("Reminders run while TaskNotes is closed");
   expect(
     screen.getByRole("button", { name: /On this device/i }),
   ).toHaveTextContent("Reminder details are saved");
@@ -80,7 +78,7 @@ it("explains why mdbase is recommended and lets native users choose a folder", (
   fireEvent.click(screen.getByRole("button", { name: "Back" }));
   expect(
     screen.getByRole("heading", {
-      name: "Choose how TaskNotes stores your tasks.",
+      name: "Choose where your task collection lives.",
     }),
   ).toBeVisible();
 });
@@ -91,7 +89,7 @@ it("warns before using browser storage", () => {
 
   const local = screen.getByRole("button", { name: /On this device/i });
   expect(local).toHaveTextContent(
-    "Keep Markdown in this browser on this device",
+    "Browser-held Markdown is the source of truth",
   );
   expect(local).not.toHaveTextContent("Choose a folder");
 
@@ -131,14 +129,13 @@ it("keeps an adopted collection recoverable when authorization retry fails", asy
   render(<CollectionGate />);
 
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Initial authorization failed.",
+    "The collection move needs access to the collection.",
   );
+  expect(screen.getByText("Initial authorization failed.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Retry transfer" }));
 
   await waitFor(() =>
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Retry authorization failed.",
-    ),
+    expect(screen.getByText("Retry authorization failed.")).toBeInTheDocument(),
   );
   expect(authorize).toHaveBeenNthCalledWith(1, {
     collectionId: "hosted-after-adoption",

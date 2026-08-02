@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useRepository } from "../app/repository-context";
 import { DurationField } from "./duration-field";
+import { OperationErrorNotice } from "./operation-error-notice";
 import { TaskNotesSelectField } from "./tasknotes-controls";
 
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -53,7 +54,7 @@ export function TaskModelSettingsEditor() {
         if (!active) return;
         setAccess({
           writable: false,
-          source: "Task type contract",
+          source: "Collection settings",
           reason: reason instanceof Error ? reason.message : String(reason),
         });
       });
@@ -123,11 +124,15 @@ export function TaskModelSettingsEditor() {
       <div className="setting-row task-model-setting-row">
         <Settings2 aria-hidden="true" size={20} strokeWidth={1.6} />
         <span>Task behavior</span>
-        <small>{access?.source ?? "Checking type contract"}</small>
+        <small>
+          {access
+            ? taskSettingsSource(access.source)
+            : "Checking collection settings"}
+        </small>
       </div>
       <p className="section-copy">
-        These settings travel with the collection in its TaskNotes type
-        contract.
+        These settings are saved with the collection and travel with its
+        Markdown tasks.
       </p>
       {access && !access.writable ? (
         <p className="settings-read-only" role="status">
@@ -325,9 +330,11 @@ export function TaskModelSettingsEditor() {
         </section>
       </fieldset>
       {error ? (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
+        <OperationErrorNotice
+          action="Task settings"
+          message={error}
+          recovery="Your unsaved choices are still here. Review them and retry."
+        />
       ) : null}
       {writable ? (
         <div className="task-model-save">
@@ -340,12 +347,16 @@ export function TaskModelSettingsEditor() {
             {saveState === "saving" ? "Saving" : "Save task settings"}
           </button>
           {saveState === "saved" ? (
-            <span role="status">Saved to the type contract.</span>
+            <span role="status">Saved with the collection.</span>
           ) : null}
         </div>
       ) : null}
     </form>
   );
+}
+
+function taskSettingsSource(source: string): string {
+  return /contract/i.test(source) ? "Collection settings" : source;
 }
 
 function changedStatusAutomation(

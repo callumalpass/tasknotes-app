@@ -1,18 +1,18 @@
 import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
-import type { MdbaseConnection } from "@mdbase/connect";
+import type { MdbaseConnection } from "@mdbase-dev/connect";
 import type {
   JsonObject,
   MdbaseOperationEnvelope,
   SyncCollectionResources,
   SyncMutationReceipt,
   SyncRecord,
-} from "@mdbase/connect-protocol";
+} from "@mdbase-dev/connect-protocol";
 import {
   IndexedDbReplicaStore,
   OfflineReplica,
   SyncError,
-} from "@mdbase/connect-sync";
+} from "@mdbase-dev/connect-sync";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import {
@@ -70,7 +70,7 @@ import type {
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
-} from "./repository";
+} from "../application/ports/task-repository";
 
 type CloudFrontmatter = JsonObject;
 
@@ -303,6 +303,15 @@ export class CloudTaskRepository implements TaskRepository {
       await this.afterLocalMutation();
       return retained;
     });
+  }
+
+  async updateMany(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+  ): Promise<Task[]> {
+    const tasks: Task[] = [];
+    for (const { id, input } of updates)
+      tasks.push(await this.update(id, input));
+    return tasks;
   }
 
   toggle(id: string, occurrenceDate?: string): Promise<Task> {

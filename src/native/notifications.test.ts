@@ -26,7 +26,7 @@ import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../storage/repository";
-import type { JsonObject, MdbaseConnection } from "@mdbase/connect";
+import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
 
 describe("mdbase task reminders", () => {
   beforeEach(() => {

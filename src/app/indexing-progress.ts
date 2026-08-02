@@ -1,4 +1,4 @@
-import type { RepositoryIndexingProgress } from "../storage/repository";
+import type { RepositoryIndexingProgress } from "../application/ports/task-repository";
 
 export function localIndexingLabel(
   progress: RepositoryIndexingProgress,

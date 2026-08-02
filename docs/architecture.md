@@ -10,22 +10,52 @@ resources.
 ## Data flow
 
 ```text
-                         TaskRepository
-                               │
-                 ┌─────────────┴─────────────┐
-                 ▼                           ▼
-      IndexedMarkdownRepository       CloudTaskRepository
-                 │                           │
-       MarkdownCollection              OfflineReplica
-                 │                    ┌──────┴──────┐
-               Vault                  ▼             ▼
-      OPFS / native Documents      IndexedDB   hosted provider
+ React screens and feature components
+                 │
+        application services ───── durable command journal
+                 │                         │
+        TaskRepository port         operational IndexedDB
+                 │
+      ┌──────────┴──────────────┐
+      ▼                         ▼
+ local Markdown adapter   cloud/relay adapters
+      │                         │
+ MarkdownCollection        OfflineReplica / hosted API
+      │                         │
+    Vault                IndexedDB + hosted provider
+      │
+ OPFS / native Documents
 ```
 
-The UI depends only on `TaskRepository`. Platform checks stay inside the
-`Vault` factory, while cloud synchronization stays inside
-`CloudTaskRepository`. Screens use the same list, mutation, completion, status,
-and issue vocabulary for every collection location.
+Dependencies point inward. Domain modules are pure TaskNotes rules.
+Application modules own commands, read-model invalidation, recovery, and the
+`TaskRepository` port. Storage, cloud, native, and IndexedDB modules are
+adapters. Only collection composition modules construct adapters; React
+providers require explicit ports and services.
+
+Screens use the same list, mutation, completion, status, and issue vocabulary
+for every collection location. Platform checks stay inside the `Vault`
+factory, while synchronization stays inside cloud adapters. Feature renderers
+live in focused modules under `app/views` and editor draft/layout concerns are
+kept outside the task screen coordinator.
+
+## Commands and recovery
+
+An accepted multi-record update or delayed deletion is written to the durable
+application command journal before it is exposed to React. The journal is
+operational metadata, not a task authority: local Markdown and the hosted
+collection retain the authority described above.
+
+Task update commands are absolute, idempotent patches. Startup replays them in
+accepted order and retains the first failed command for an explicit retry.
+Deletion intent survives reload throughout its undo window; an expired intent
+is committed idempotently. React observes typed command snapshots containing
+stable operational error codes and never owns persistence timers.
+
+Repository mutations publish through the required subscription contract.
+Query-scoped external-store revisions invalidate task details, relationships,
+lists, views, and summaries without placing a provider-wide mutation counter
+in React state.
 
 ## Invariants
 
@@ -171,13 +201,20 @@ chunks, keeping the first-run location screen small.
 
 ## Testing boundaries
 
+- A shared `TaskRepository` behavioural contract runs against local Markdown,
+  durable cloud replica, and live relay adapters. It covers idempotent open and
+  delete, batch ordering, query visibility, capabilities, and subscriptions.
+- Application and domain layers have independent coverage floors in addition
+  to the whole-program coverage gate.
 - Unit tests use an in-memory vault and fake IndexedDB to exercise repository
   reconciliation and mutation ordering.
 - TaskNotes conformance runs against the shared model package.
 - The generated collection is opened and mutated by the real mdbase v0.3
   TypeScript engine.
 - Playwright covers browser CRUD, search, reload persistence, and background
-  saves at desktop and phone sizes.
+  saves at desktop and phone sizes. Pull requests run the desktop browser
+  integration suite, and axe checks onboarding, task editing, views, and
+  settings at both configured viewport projects.
 - The cloud browser vertical slice crosses the portal, OAuth server, SDK,
   provider HTTP boundary, offline replica, and conflict UI.
 - The Android smoke test crosses the real WebView-to-Filesystem bridge and

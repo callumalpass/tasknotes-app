@@ -106,11 +106,14 @@ it("restores the submitted text when a remote create fails", async () => {
   fireEvent.change(input, { target: { value: "Keep this draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-  const error = await screen.findByText(
+  const detail = await screen.findByText(
     "Could not add “Keep this draft”. The relay is unavailable.",
   );
   await act(() => new Promise((resolve) => window.setTimeout(resolve, 120)));
-  expect(error).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "The task could not finish while the collection was unavailable.",
+  );
+  expect(detail).toBeInTheDocument();
   expect(input).toHaveValue("Keep this draft");
 });
 

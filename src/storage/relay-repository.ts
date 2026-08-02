@@ -6,7 +6,7 @@ import {
   type MdbaseConnection,
   type MdbaseOperationEnvelope,
   type RecordDocument,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
@@ -69,7 +69,7 @@ import type {
   RepositorySyncIssue,
   RepositorySyncStatus,
   TaskRepository,
-} from "./repository";
+} from "../application/ports/task-repository";
 
 interface CachedRelayTask {
   task: Task;

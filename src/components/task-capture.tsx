@@ -30,6 +30,7 @@ import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
+import { OperationErrorNotice } from "./operation-error-notice";
 import { RecurrenceField } from "./recurrence-field";
 import {
   TaskNotesDateTimeField,
@@ -44,6 +45,7 @@ import type {
 } from "../domain/completion";
 
 const emptyDefaults: Partial<CreateTaskInput> = {};
+type CaptureDetailSection = "timing" | "organize" | "repeat" | "notes";
 
 export function TaskCapture({
   configuration,
@@ -68,6 +70,9 @@ export function TaskCapture({
   const [parsedText, setParsedText] = useState("");
   const [result, setResult] = useState<TaskCaptureResult | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [detailSections, setDetailSections] = useState<
+    Record<CaptureDetailSection, boolean>
+  >({ timing: true, organize: false, repeat: false, notes: false });
   const [cursor, setCursor] = useState(0);
   const [suggestionResult, setSuggestionResult] = useState<{
     key: string;
@@ -455,15 +460,21 @@ export function TaskCapture({
         <CaptureDetails
           configuration={configuration}
           completeField={completeField}
+          openSections={detailSections}
           input={result.input}
           onChange={change}
+          onToggleSection={(section, open) =>
+            setDetailSections((current) => ({ ...current, [section]: open }))
+          }
         />
       ) : null}
 
       {error ? (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
+        <OperationErrorNotice
+          action="The task"
+          message={error}
+          recovery="Your draft is still here. Check it and try again."
+        />
       ) : null}
       {pendingTitle ? (
         <p className="capture-pending" role="status">
@@ -501,86 +512,121 @@ function CaptureDetails({
   configuration,
   completeField,
   input,
+  openSections,
   onChange,
+  onToggleSection,
 }: {
   configuration: TaskCollectionConfiguration;
   completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   input: CreateTaskInput;
+  openSections: Record<CaptureDetailSection, boolean>;
   onChange(patch: Partial<CreateTaskInput>): void;
+  onToggleSection(section: CaptureDetailSection, open: boolean): void;
 }) {
   return (
     <div className="capture-details">
-      <div className="capture-details-grid">
-        <CaptureDateTime
-          label="Scheduled"
-          value={input.scheduled}
-          onChange={(scheduled) => onChange({ scheduled })}
-        />
-        <CaptureDateTime
-          label="Due"
-          value={input.due}
-          onChange={(due) => onChange({ due })}
-        />
-        <TaskNotesSelectField
-          label="Status"
-          options={configuration.statuses}
-          value={input.status ?? configuration.defaults.status}
-          onChange={(status) => onChange({ status })}
-        />
-        <TaskNotesSelectField
-          label="Priority"
-          options={configuration.priorities}
-          value={input.priority ?? configuration.defaults.priority}
-          onChange={(priority) => onChange({ priority })}
-        />
-        <CaptureList
-          field={configuration.fieldMapping.projects}
-          label="Projects"
-          value={input.projects}
-          completion={
-            configuration.fieldCompletions[
-              configuration.fieldMapping.projects
-            ] ?? { kind: "records" }
-          }
-          completeField={completeField}
-          onChange={(projects) => onChange({ projects })}
-        />
-        <CaptureList
-          field={configuration.fieldMapping.contexts}
-          label="Contexts"
-          value={input.contexts}
-          completion={
-            configuration.fieldCompletions[
-              configuration.fieldMapping.contexts
-            ] ?? { kind: "values" }
-          }
-          completeField={completeField}
-          onChange={(contexts) => onChange({ contexts })}
-        />
-        <CaptureList
-          field="tags"
-          label="Tags"
-          value={input.tags}
-          completion={configuration.fieldCompletions.tags ?? { kind: "values" }}
-          completeField={completeField}
-          onChange={(tags) => onChange({ tags })}
-        />
-        <label className="form-field">
-          <span>Estimate (minutes)</span>
-          <input
-            inputMode="numeric"
-            min="0"
-            type="number"
-            value={input.timeEstimate ?? ""}
-            onChange={(event) =>
-              onChange({
-                timeEstimate: event.target.value
-                  ? Number(event.target.value)
-                  : undefined,
-              })
-            }
+      <CaptureDetailGroup
+        description="Dates and estimate"
+        label="Timing"
+        open={openSections.timing}
+        onToggle={(open) => onToggleSection("timing", open)}
+      >
+        <div className="capture-details-grid">
+          <CaptureDateTime
+            label="Scheduled"
+            value={input.scheduled}
+            onChange={(scheduled) => onChange({ scheduled })}
           />
-        </label>
+          <CaptureDateTime
+            label="Due"
+            value={input.due}
+            onChange={(due) => onChange({ due })}
+          />
+          <label className="form-field">
+            <span>Estimate (minutes)</span>
+            <input
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={input.timeEstimate ?? ""}
+              onChange={(event) =>
+                onChange({
+                  timeEstimate: event.target.value
+                    ? Number(event.target.value)
+                    : undefined,
+                })
+              }
+            />
+          </label>
+        </div>
+      </CaptureDetailGroup>
+      <CaptureDetailGroup
+        description="Status, priority, and relationships"
+        label="Organize"
+        open={openSections.organize}
+        onToggle={(open) => onToggleSection("organize", open)}
+      >
+        <div className="capture-details-grid">
+          <TaskNotesSelectField
+            label="Status"
+            options={configuration.statuses}
+            value={input.status ?? configuration.defaults.status}
+            onChange={(status) => onChange({ status })}
+          />
+          <TaskNotesSelectField
+            label="Priority"
+            options={configuration.priorities}
+            value={input.priority ?? configuration.defaults.priority}
+            onChange={(priority) => onChange({ priority })}
+          />
+          <CaptureList
+            field={configuration.fieldMapping.projects}
+            label="Projects"
+            value={input.projects}
+            completion={
+              configuration.fieldCompletions[
+                configuration.fieldMapping.projects
+              ] ?? { kind: "records" }
+            }
+            completeField={completeField}
+            onChange={(projects) => onChange({ projects })}
+          />
+          <CaptureList
+            field={configuration.fieldMapping.contexts}
+            label="Contexts"
+            value={input.contexts}
+            completion={
+              configuration.fieldCompletions[
+                configuration.fieldMapping.contexts
+              ] ?? { kind: "values" }
+            }
+            completeField={completeField}
+            onChange={(contexts) => onChange({ contexts })}
+          />
+          <CaptureList
+            field="tags"
+            label="Tags"
+            value={input.tags}
+            completion={
+              configuration.fieldCompletions.tags ?? { kind: "values" }
+            }
+            completeField={completeField}
+            onChange={(tags) => onChange({ tags })}
+          />
+        </div>
+        <DependencyEditor
+          completeField={completeField ?? (async () => [])}
+          dependencies={input.blockedBy ?? []}
+          field={configuration.fieldMapping.blockedBy}
+          onChange={(blockedBy) => onChange({ blockedBy })}
+        />
+      </CaptureDetailGroup>
+      <CaptureDetailGroup
+        description="Recurrence and template"
+        label="Repeat"
+        open={openSections.repeat}
+        onToggle={(open) => onToggleSection("repeat", open)}
+      >
         <RecurrenceField
           anchor={input.recurrenceAnchor}
           scheduled={input.scheduled}
@@ -588,39 +634,70 @@ function CaptureDetails({
           onAnchorChange={(recurrenceAnchor) => onChange({ recurrenceAnchor })}
           onChange={(recurrence) => onChange({ recurrence })}
         />
-      </div>
-      <DependencyEditor
-        completeField={completeField ?? (async () => [])}
-        dependencies={input.blockedBy ?? []}
-        field={configuration.fieldMapping.blockedBy}
-        onChange={(blockedBy) => onChange({ blockedBy })}
-      />
-      <label className="notes-field capture-notes">
-        <span>Notes</span>
-        <textarea
-          rows={3}
-          value={input.body ?? ""}
-          onChange={(event) => onChange({ body: event.target.value })}
-        />
-      </label>
-      {configuration.templating.enabled ? (
-        <label className="capture-template-choice">
-          <input
-            checked={input.useTemplate !== false}
-            type="checkbox"
-            onChange={(event) =>
-              onChange({ useTemplate: event.target.checked })
-            }
+        {configuration.templating.enabled ? (
+          <label className="capture-template-choice">
+            <input
+              checked={input.useTemplate !== false}
+              type="checkbox"
+              onChange={(event) =>
+                onChange({ useTemplate: event.target.checked })
+              }
+            />
+            <span>
+              Use template
+              {configuration.templating.templatePath
+                ? ` · ${configuration.templating.templatePath}`
+                : ""}
+            </span>
+          </label>
+        ) : null}
+      </CaptureDetailGroup>
+      <CaptureDetailGroup
+        description="Extra context for the task"
+        label="Notes"
+        open={openSections.notes}
+        onToggle={(open) => onToggleSection("notes", open)}
+      >
+        <label className="notes-field capture-notes">
+          <span className="visually-hidden">Notes</span>
+          <textarea
+            aria-label="Notes"
+            placeholder="Add notes"
+            rows={3}
+            value={input.body ?? ""}
+            onChange={(event) => onChange({ body: event.target.value })}
           />
-          <span>
-            Use template
-            {configuration.templating.templatePath
-              ? ` · ${configuration.templating.templatePath}`
-              : ""}
-          </span>
         </label>
-      ) : null}
+      </CaptureDetailGroup>
     </div>
+  );
+}
+
+function CaptureDetailGroup({
+  children,
+  description,
+  label,
+  open,
+  onToggle,
+}: {
+  children: React.ReactNode;
+  description: string;
+  label: string;
+  open: boolean;
+  onToggle(open: boolean): void;
+}) {
+  return (
+    <details
+      className="capture-details-section"
+      open={open}
+      onToggle={(event) => onToggle(event.currentTarget.open)}
+    >
+      <summary>
+        <span>{label}</span>
+        <small>{description}</small>
+      </summary>
+      <div className="capture-details-section-content">{children}</div>
+    </details>
   );
 }
 

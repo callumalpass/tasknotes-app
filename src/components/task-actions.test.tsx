@@ -10,6 +10,7 @@ import { MarkdownCollection } from "../storage/collection";
 import { TaskIndex } from "../storage/index";
 import { IndexedMarkdownRepository } from "../storage/repository";
 import { MemoryVault } from "../test/memory-vault";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 
 import type { Task } from "../domain/task";
@@ -36,7 +37,10 @@ describe("TaskActions", () => {
 
   function renderRow() {
     render(
-      <RepositoryProvider repository={repository}>
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
         <TaskRow onOpen={vi.fn()} onToggle={vi.fn()} task={task} />
       </RepositoryProvider>,
     );
@@ -54,6 +58,7 @@ describe("TaskActions", () => {
     renderRow();
 
     await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "In progress" }));
 
@@ -67,6 +72,7 @@ describe("TaskActions", () => {
     );
 
     await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Priority/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "High" }));
     await waitFor(async () =>
@@ -79,7 +85,7 @@ describe("TaskActions", () => {
     );
 
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Schedule/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Due tomorrow" }));
 
     await waitFor(async () =>
@@ -94,6 +100,7 @@ describe("TaskActions", () => {
     renderRow();
 
     await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Create subtask" }));
     fireEvent.change(screen.getByLabelText("Subtask title"), {
@@ -121,6 +128,7 @@ describe("TaskActions", () => {
 
     fireEvent.keyDown(menu, { key: "ArrowDown" });
     expect(screen.getByRole("menuitem", { name: "Complete" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });
@@ -130,6 +138,7 @@ describe("TaskActions", () => {
   it("uses an alert dialog and focuses the safe action before deletion", async () => {
     renderRow();
     await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
     const confirmation = screen.getByRole("alertdialog", {
@@ -138,11 +147,9 @@ describe("TaskActions", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Keep task" })).toHaveFocus(),
     );
+    expect(screen.getByRole("button", { name: "Delete task" })).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Delete permanently" }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("menuitem", { name: "Delete permanently" }),
+      screen.queryByRole("menuitem", { name: "Delete task" }),
     ).not.toBeInTheDocument();
     expect(confirmation).toHaveAttribute("aria-modal", "true");
     expect(confirmation).toBeVisible();

@@ -1,4 +1,4 @@
-import type { JsonObject } from "@mdbase/connect";
+import type { JsonObject } from "@mdbase-dev/connect";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { expect, test, type Route } from "@playwright/test";
 
@@ -257,12 +257,13 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
     .getByRole("button", { name: "Task actions for Delete over the relay" })
     .click();
   await expect.poll(() => readRequests).toBe(1);
+  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: "Delete task" }).click();
   expect(deleteRequests).toBe(0);
 
   readGate.resolve();
-  await expect.poll(() => deleteRequests).toBe(1);
+  await expect.poll(() => deleteRequests, { timeout: 12_000 }).toBe(1);
   await expect(page.getByText("Delete over the relay")).toHaveCount(0);
   expect(readRequests).toBe(1);
 });

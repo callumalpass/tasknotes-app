@@ -8,6 +8,7 @@ import { MarkdownCollection } from "../storage/collection";
 import { TaskIndex } from "../storage/index";
 import { IndexedMarkdownRepository } from "../storage/repository";
 import { MemoryVault } from "../test/memory-vault";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskModelSettingsEditor } from "./task-model-settings";
 
 describe("TaskModelSettingsEditor", () => {
@@ -30,7 +31,10 @@ describe("TaskModelSettingsEditor", () => {
 
   it("saves defaults and behavior through the repository contract", async () => {
     render(
-      <RepositoryProvider repository={repository}>
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
         <TaskModelSettingsEditor />
       </RepositoryProvider>,
     );
@@ -56,9 +60,7 @@ describe("TaskModelSettingsEditor", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Save task settings" }));
 
-    expect(
-      await screen.findByText("Saved to the type contract."),
-    ).toBeVisible();
+    expect(await screen.findByText("Saved with the collection.")).toBeVisible();
     await waitFor(async () =>
       expect(await repository.taskConfiguration()).toMatchObject({
         defaults: { status: "in-progress" },

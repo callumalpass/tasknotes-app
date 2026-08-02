@@ -2,12 +2,10 @@ import {
   ArrowLeft,
   BellOff,
   BellRing,
-  Check,
   Cloud,
   FileText,
   FolderOpen,
   HardDrive,
-  Search,
   Smartphone,
 } from "lucide-react";
 import {
@@ -31,6 +29,7 @@ import {
   type CollectionTransferProgress,
   type CollectionTransferResult,
 } from "../storage/collection-transfer";
+import { OperationErrorNotice } from "../components/operation-error-notice";
 import { transferPlatformLocalCollectionToHosted } from "../storage/local-collection-transfer";
 import {
   chooseDefaultLocalCollection,
@@ -521,11 +520,10 @@ function CollectionWelcome({
     <main className="collection-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">TaskNotes</p>
-        <h1>Choose how TaskNotes stores your tasks.</h1>
+        <h1>Choose where your task collection lives.</h1>
         <p>
-          This affects notification delivery, performance as your collection
-          grows, and where your Markdown files live.
+          TaskNotes saves changes on this device first. Hosted mdbase and
+          device-only collections both keep working offline.
         </p>
       </div>
       <div className="collection-choices collection-choice-comparison">
@@ -537,24 +535,24 @@ function CollectionWelcome({
           <Cloud aria-hidden="true" size={22} strokeWidth={1.5} />
           <span className="collection-choice-content">
             <span className="collection-choice-title">
-              <strong>mdbase</strong>
-              <span className="recommendation-label">Best experience</span>
+              <strong>Hosted mdbase</strong>
+              <span className="recommendation-label">Sync + reminders</span>
             </span>
             <span className="collection-choice-benefits">
               <small>
-                <Search aria-hidden="true" size={15} />
-                Faster search and saved views as your collection grows
+                <Smartphone aria-hidden="true" size={15} />
+                This device keeps a durable offline copy
+              </small>
+              <small>
+                <Cloud aria-hidden="true" size={15} />
+                The hosted collection is the source of truth and syncs changes
               </small>
               <small>
                 <BellRing aria-hidden="true" size={15} />
-                mdbase delivers reminders while TaskNotes is closed
-              </small>
-              <small>
-                <Check aria-hidden="true" size={15} />
-                Hosted sync or a direct connection to your computer
+                Reminders run while TaskNotes is closed
               </small>
             </span>
-            <span className="collection-choice-action">Connect mdbase</span>
+            <span className="collection-choice-action">Sync with mdbase</span>
           </span>
         </button>
         <button
@@ -564,21 +562,21 @@ function CollectionWelcome({
         >
           <HardDrive aria-hidden="true" size={22} strokeWidth={1.5} />
           <span className="collection-choice-content">
-            <strong>On this device</strong>
+            <strong>Keep on this device</strong>
             <span className="collection-choice-benefits">
               <small>
                 <FileText aria-hidden="true" size={15} />
                 {canChooseLocalFolder
-                  ? "Use a folder and its Markdown files directly"
-                  : "Keep Markdown in this browser on this device"}
-              </small>
-              <small>
-                <BellOff aria-hidden="true" size={15} />
-                Reminder details are saved, but notifications are not delivered
+                  ? "Markdown files here are the source of truth"
+                  : "Browser-held Markdown is the source of truth"}
               </small>
               <small>
                 <Smartphone aria-hidden="true" size={15} />
-                No account required
+                Works offline with no sync or account required
+              </small>
+              <small>
+                <BellOff aria-hidden="true" size={15} />
+                Reminder details are saved; notifications are not delivered
               </small>
             </span>
             <span className="collection-choice-action">
@@ -588,8 +586,10 @@ function CollectionWelcome({
         </button>
       </div>
       <p className="welcome-portability">
-        <FileText aria-hidden="true" size={16} /> Both options use portable
-        Markdown. Switching later does not move tasks between collections.
+        <FileText aria-hidden="true" size={16} /> Both choices use portable
+        Markdown. A direct computer connection is also available in mdbase
+        setup, but requires that computer to be reachable. Changing collections
+        later does not move tasks between them.
       </p>
     </main>
   );
@@ -668,7 +668,6 @@ function LocalLocationChoice({
     <main className="collection-welcome local-location-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">On this device</p>
         <h1>Use a folder for your tasks.</h1>
         <p>
           TaskNotes can use its usual folder or a compatible collection you
@@ -676,9 +675,11 @@ function LocalLocationChoice({
         </p>
       </div>
       {error ? (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
+        <OperationErrorNotice
+          action="The folder"
+          message={error}
+          recovery="Choose another folder or try again."
+        />
       ) : null}
       <div className="collection-choices">
         <button

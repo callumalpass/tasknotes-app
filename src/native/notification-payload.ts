@@ -1,7 +1,7 @@
 import type {
   MdbaseNativeNotificationData,
   MdbasePushPayload,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 
 export function parseNotificationPayload(value: unknown): MdbasePushPayload {
   if (!value || typeof value !== "object")

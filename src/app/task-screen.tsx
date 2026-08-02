@@ -18,7 +18,7 @@ import {
 
 import { LoadingRows } from "../components/loading";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
-import { MultiValueField } from "../components/multi-value-field";
+import { OperationErrorNotice } from "../components/operation-error-notice";
 import { RecurrenceField } from "../components/recurrence-field";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
@@ -27,7 +27,6 @@ import {
   TaskNotesSelect,
   TaskNotesSelectField,
 } from "../components/tasknotes-controls";
-import { recurrencePreset } from "../domain/recurrence-rule";
 import {
   activeTimeEntry,
   combineTaskDateTime,
@@ -42,6 +41,20 @@ import {
 } from "./repository-context";
 import { cleanOperationError } from "./operation-error";
 import { TimeTrackingField } from "./task-time-tracking";
+import {
+  Choice,
+  Fieldset,
+  ListField,
+  TaskFormSection,
+} from "./task-editor-layout";
+import {
+  isEmptyFieldValue,
+  organizeSummary,
+  repeatSummary,
+  timeSummary,
+  toDraft,
+  type Draft,
+} from "./task-editor-draft";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type {
@@ -58,30 +71,6 @@ const MarkdownPreview = lazy(async () => ({
 }));
 
 type SaveState = "saved" | "saving" | "error";
-type Draft = Pick<
-  Task,
-  | "title"
-  | "status"
-  | "priority"
-  | "due"
-  | "scheduled"
-  | "body"
-  | "tags"
-  | "contexts"
-  | "projects"
-  | "blockedBy"
-  | "recurrence"
-  | "recurrenceAnchor"
-  | "occurrenceMaterialization"
-  | "occurrenceNextTrigger"
-  | "occurrenceTemplate"
-  | "occurrencePastHorizon"
-  | "occurrenceFutureHorizon"
-  | "reminders"
-  | "timeEstimate"
-  | "customProperties"
->;
-
 export function TaskScreen({
   id,
   occurrenceDate,
@@ -106,9 +95,17 @@ export function TaskScreen({
         <button className="back-action" type="button" onClick={onBack}>
           <ArrowLeft size={20} /> Back
         </button>
-        <p className="inline-error" role="alert">
-          {error?.message ?? "Task not found."}
-        </p>
+        {error ? (
+          <OperationErrorNotice
+            action="The task"
+            message={error.message}
+            recovery="Go back and refresh the collection."
+          />
+        ) : (
+          <p className="inline-error" role="alert">
+            Task not found. It may have been deleted or moved.
+          </p>
+        )}
       </section>
     );
   return (
@@ -651,7 +648,9 @@ function TaskEditor({
             role="alertdialog"
           >
             <h2 id="task-delete-title">Delete this task?</h2>
-            <p>This permanently removes “{task.title}” from the collection.</p>
+            <p>
+              “{task.title}” will disappear now. You’ll have 8 seconds to undo.
+            </p>
             <div>
               <button
                 className="text-action"
@@ -981,169 +980,6 @@ function TaskEditor({
   );
 }
 
-function TaskFormSection({
-  title,
-  summary,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  summary: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <details
-      className="task-form-section"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary>
-        <span>
-          <strong>{title}</strong>
-          <small>{summary}</small>
-        </span>
-      </summary>
-      <div className="task-form-section-content">{children}</div>
-    </details>
-  );
-}
-
-function organizeSummary(draft: Draft): string {
-  const values: string[] = [];
-  if (draft.priority !== "normal" && draft.priority !== "none")
-    values.push(`${humanizeValue(draft.priority)} priority`);
-  if (draft.projects.length)
-    values.push(listSummary(draft.projects, "project"));
-  if (draft.blockedBy.length)
-    values.push(
-      `${draft.blockedBy.length} ${draft.blockedBy.length === 1 ? "dependency" : "dependencies"}`,
-    );
-  if (draft.contexts.length)
-    values.push(listSummary(draft.contexts, "context"));
-  const tags = draft.tags.filter((tag) => tag !== "task");
-  if (tags.length)
-    values.push(`${tags.length} ${tags.length === 1 ? "tag" : "tags"}`);
-  const customCount = Object.values(draft.customProperties).filter(
-    (value) => !isEmptyFieldValue(value),
-  ).length;
-  if (customCount)
-    values.push(
-      `${customCount} ${customCount === 1 ? "property" : "properties"}`,
-    );
-  return (
-    values.join(" · ") || "Priority, projects, dependencies, contexts and tags"
-  );
-}
-
-function timeSummary(task: Task, estimate?: number): string {
-  const active = activeTimeEntry(task.timeEntries);
-  const values: string[] = [];
-  if (active) values.push("Timer running");
-  else if (task.timeEntries.length)
-    values.push(
-      `${task.timeEntries.length} ${task.timeEntries.length === 1 ? "session" : "sessions"}`,
-    );
-  if (estimate) values.push(`${estimate}m estimate`);
-  return values.join(" · ") || "Estimate and work sessions";
-}
-
-function repeatSummary(draft: Draft): string {
-  const values: string[] = [];
-  if (draft.recurrence) {
-    const preset = recurrencePreset(draft.recurrence);
-    values.push(
-      preset === "advanced" ? "Advanced repeat" : humanizeValue(preset),
-    );
-  }
-  if (draft.reminders.length)
-    values.push(
-      `${draft.reminders.length} ${draft.reminders.length === 1 ? "reminder" : "reminders"}`,
-    );
-  return values.join(" · ") || "No repeat or reminder";
-}
-
-function listSummary(values: string[], singular: string): string {
-  return values.length === 1 ? values[0] : `${values.length} ${singular}s`;
-}
-
-function humanizeValue(value: string): string {
-  const normalized = value.replaceAll("_", " ").replaceAll("-", " ");
-  return normalized
-    ? `${normalized[0].toUpperCase()}${normalized.slice(1)}`
-    : value;
-}
-
-function Fieldset({
-  legend,
-  children,
-}: {
-  legend: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className="choice-field">
-      <legend>{legend}</legend>
-      <div>{children}</div>
-    </fieldset>
-  );
-}
-
-function Choice({
-  selected,
-  disabled = false,
-  children,
-  onClick,
-}: {
-  selected: boolean;
-  disabled?: boolean;
-  children: React.ReactNode;
-  onClick(): void;
-}) {
-  return (
-    <button
-      aria-pressed={selected}
-      className={selected ? "is-selected" : undefined}
-      disabled={disabled}
-      type="button"
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ListField({
-  field,
-  label,
-  placeholder,
-  values,
-  completion,
-  completeField,
-  onChange,
-}: {
-  field: string;
-  label: string;
-  placeholder: string;
-  values: string[];
-  completion: TaskFieldCompletionConfiguration;
-  completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
-  onChange(values: string[]): void;
-}) {
-  return (
-    <MultiValueField
-      completion={completion}
-      completeField={completeField}
-      field={field}
-      label={label}
-      placeholder={placeholder}
-      values={values}
-      onChange={onChange}
-    />
-  );
-}
-
 function OccurrencePolicyField({
   materialization,
   nextTrigger,
@@ -1249,31 +1085,6 @@ function formatOccurrenceDate(value: string): string {
     day: "numeric",
     month: "long",
   }).format(date);
-}
-
-function toDraft(task: Task): Draft {
-  return {
-    title: task.title,
-    status: task.status,
-    priority: task.priority,
-    due: task.due,
-    scheduled: task.scheduled,
-    body: task.body,
-    tags: task.tags ?? [],
-    contexts: task.contexts ?? [],
-    projects: task.projects ?? [],
-    blockedBy: task.blockedBy ?? [],
-    recurrence: task.recurrence,
-    recurrenceAnchor: task.recurrenceAnchor,
-    occurrenceMaterialization: task.occurrenceMaterialization,
-    occurrenceNextTrigger: task.occurrenceNextTrigger,
-    occurrenceTemplate: task.occurrenceTemplate,
-    occurrencePastHorizon: task.occurrencePastHorizon,
-    occurrenceFutureHorizon: task.occurrenceFutureHorizon,
-    reminders: task.reminders ?? [],
-    timeEstimate: task.timeEstimate,
-    customProperties: { ...(task.customProperties ?? {}) },
-  };
 }
 
 function DateTimeField({
@@ -1432,15 +1243,6 @@ function combineSchemaDateTime(
   if (!date) return undefined;
   const parsed = new Date(`${date}T${time ?? "00:00"}:00`);
   return Number.isNaN(parsed.valueOf()) ? undefined : parsed.toISOString();
-}
-
-function isEmptyFieldValue(value: unknown): boolean {
-  return (
-    value === undefined ||
-    value === null ||
-    value === "" ||
-    (Array.isArray(value) && value.length === 0)
-  );
 }
 
 function toLocalDateTime(value?: string): string {

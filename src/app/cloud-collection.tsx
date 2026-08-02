@@ -102,11 +102,10 @@ export function CloudConnection({
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <p className="eyebrow">mdbase</p>
-        <h1>Open your TaskNotes collection.</h1>
+        <h1>Sync with mdbase.</h1>
         <p>
-          mdbase keeps large collections fast and delivers task reminders.
-          Choose hosted sync or connect directly to a computer.
+          Hosted mdbase is local-first: this device keeps an offline copy, then
+          syncs changes to the shared source of truth.
         </p>
       </div>
       <div className="connection-comparison" aria-label="Connection options">
@@ -115,7 +114,8 @@ export function CloudConnection({
           <span>
             <strong>Hosted mdbase</strong>
             <small>
-              Syncs offline and keeps working when your computer is unavailable.
+              Recommended. Works offline, syncs across devices, and delivers
+              reminders while TaskNotes is closed.
             </small>
           </span>
         </div>
@@ -124,7 +124,8 @@ export function CloudConnection({
           <span>
             <strong>Connect to a computer</strong>
             <small>
-              Works while the computer is reachable and delivers task reminders.
+              Connection required. Use a collection directly while that computer
+              is reachable; it delivers task reminders.
             </small>
           </span>
         </div>

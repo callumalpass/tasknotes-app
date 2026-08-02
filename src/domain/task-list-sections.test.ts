@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { sectionTaskViewRows } from "./task-list-sections";
+import {
+  sectionTaskViewRows,
+  taskListSectionMoveInput,
+} from "./task-list-sections";
 
 import type { Task } from "./task";
 import type { TaskViewRow } from "./view";
@@ -42,6 +45,55 @@ describe("sectionTaskViewRows", () => {
 
   it("does no work when the view does not opt into sections", () => {
     expect(sectionTaskViewRows([row("task")], undefined)).toEqual([]);
+  });
+
+  it("can expose empty day lanes while arranging tasks", () => {
+    expect(
+      sectionTaskViewRows(
+        [row("today", { due: "2026-07-26" })],
+        "day",
+        "2026-07-26",
+        {
+          includeEmpty: true,
+        },
+      ).map(({ key, rows }) => [key, rows.length]),
+    ).toEqual([
+      ["overdue", 0],
+      ["today", 1],
+      ["anytime", 0],
+      ["later", 0],
+    ]);
+  });
+
+  it("defines reusable mutations for every day destination", () => {
+    const scheduled = row("scheduled", {
+      scheduled: "2026-07-20T09:30",
+      due: "2026-07-30",
+    }).task;
+    const due = row("due", { due: "2026-07-20T17:00" }).task;
+
+    expect(
+      taskListSectionMoveInput(scheduled, "day", "today", "2026-07-26"),
+    ).toEqual({ scheduled: "2026-07-26T09:30" });
+    expect(
+      taskListSectionMoveInput(due, "day", "overdue", "2026-07-26"),
+    ).toEqual({ due: "2026-07-25T17:00" });
+    expect(taskListSectionMoveInput(due, "day", "later", "2026-07-26")).toEqual(
+      { due: "2026-07-27T17:00" },
+    );
+    expect(
+      taskListSectionMoveInput(scheduled, "day", "anytime", "2026-07-26"),
+    ).toEqual({ scheduled: null, due: null });
+  });
+
+  it("preserves the full time and offset when changing a day", () => {
+    const task = row("offset", {
+      scheduled: "2026-07-20T23:30:00+10:00",
+    }).task;
+
+    expect(
+      taskListSectionMoveInput(task, "day", "today", "2026-07-26"),
+    ).toEqual({ scheduled: "2026-07-26T23:30:00+10:00" });
   });
 
   it("sections 10,000 rows within the list interaction budget", () => {

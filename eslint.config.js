@@ -60,4 +60,69 @@ export default tseslint.config(
       "react-refresh/only-export-components": "off",
     },
   },
+  {
+    files: ["src/domain/**/*.ts"],
+    ignores: ["src/domain/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "../application/**",
+                "../storage/**",
+                "../app/**",
+                "../native/**",
+                "../cloud/**",
+              ],
+              message:
+                "Domain modules must remain pure and dependency-free from outer layers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/application/**/*.ts"],
+    ignores: ["src/application/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "../app/**",
+                "../storage/**",
+                "../native/**",
+                "../cloud/**",
+              ],
+              message:
+                "Application services depend on ports and domain rules, never adapters.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/views-screen.tsx"],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 2500, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  {
+    files: ["src/app/task-screen.tsx"],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 1300, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
 );

@@ -10,17 +10,20 @@ import {
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 import { expect, it, vi } from "vitest";
 
+import { shiftTaskDate } from "../domain/task-date-actions";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { todayString } from "../domain/task";
 import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
 
 import type { Task } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 it("moves a board card immediately and rolls it back when persistence fails", async () => {
   const pending = deferred<Task>();
@@ -49,7 +52,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
 `,
     }),
     update,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
     syncStatus: async () => ({
       mode: "live",
       state: "synced",
@@ -60,7 +63,10 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -179,7 +185,10 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     expect(within(open).getByText("Move on the board")).toBeVisible(),
   );
   expect(board).toHaveAttribute("aria-busy", "false");
-  expect(screen.getByRole("alert")).toHaveTextContent("Could not move");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "The view change could not finish",
+  );
+  expect(screen.getByText(/Could not move/)).toBeInTheDocument();
 });
 
 it("recovers an uncertain manual board write before sending the queued move", async () => {
@@ -255,7 +264,8 @@ it("recovers an uncertain manual board write before sending the queued move", as
     }),
     update,
     updateMany,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration,
+    collectionInfo: testCollectionInfo,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
     syncStatus: async () => ({
       mode: "live",
       state: "synced",
@@ -266,7 +276,10 @@ it("recovers an uncertain manual board write before sending the queued move", as
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -373,6 +386,13 @@ it("serializes rapid consecutive board moves without rejecting the second move",
 `,
     }),
     update,
+    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
+      Promise.all(
+        updates.map(({ id, input }) =>
+          update(id, input as { sortOrder?: string }),
+        ),
+      ),
+    collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
     syncStatus: async () => ({
       mode: "live",
@@ -384,7 +404,10 @@ it("serializes rapid consecutive board moves without rejecting the second move",
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -485,7 +508,10 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -541,7 +567,7 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
       options: { create: false },
     },
   };
-  const tasks = [
+  const tasks: Task[] = [
     listTask("alpha", "Alpha"),
     listTask("bravo", "Bravo"),
     listTask("charlie", "Charlie"),
@@ -587,6 +613,13 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
 `,
     }),
     update,
+    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
+      Promise.all(
+        updates.map(({ id, input }) =>
+          update(id, input as { sortOrder?: string }),
+        ),
+      ),
+    collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
     syncStatus: async () => ({
       mode: "live",
@@ -598,7 +631,10 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
   } as unknown as TaskRepository;
 
   render(
-    <RepositoryProvider repository={repository}>
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
       <ViewsScreen
         documents={[
           {
@@ -655,6 +691,233 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     ]);
   });
 });
+
+it("moves a task between reusable day sections with the shared list move path", async () => {
+  const today = todayString();
+  const view = manualListView("day", { sections: "day" });
+  const tasks: Task[] = [
+    { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
+    { ...listTask("today", "Today task"), due: today },
+  ];
+  const update = vi.fn(
+    async (id: string, input: { due?: string | null; sortOrder?: string }) => {
+      const task = tasks.find((candidate) => candidate.id === id)!;
+      if (input.due !== undefined) task.due = input.due ?? undefined;
+      if (input.sortOrder !== undefined) task.sortOrder = input.sortOrder;
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return task;
+    },
+  );
+  const repository = manualListRepository(view, tasks, update, () => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: tasks.length,
+    hasMore: false,
+    groups: [],
+  }));
+
+  renderListView(repository, view);
+  fireEvent.click(await screen.findByRole("button", { name: "Reorder tasks" }));
+  const handle = await screen.findByRole("button", {
+    name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
+  });
+  const target = screen
+    .getByText("Today task")
+    .closest<HTMLElement>("[data-manual-order-task]")!;
+  mockPointerCapture(handle);
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => target),
+  });
+  fireEvent.pointerDown(handle, { pointerId: 9 });
+  fireEvent.pointerMove(handle, { clientX: 20, clientY: 20, pointerId: 9 });
+  fireEvent.pointerUp(handle, { pointerId: 9 });
+
+  await waitFor(() =>
+    expect(
+      update.mock.calls.some(
+        ([id, input]) => id === "overdue" && input.due === today,
+      ),
+    ).toBe(true),
+  );
+  await waitFor(() =>
+    expect(
+      within(screen.getByText("Today").closest("section")!).getByText(
+        "Overdue task",
+      ),
+    ).toBeVisible(),
+  );
+  expect(screen.getByText("Anytime")).toBeVisible();
+  expect(screen.getByText("Later")).toBeVisible();
+});
+
+it("moves a grouped list task by mutating the destination property", async () => {
+  const view = manualListView("status");
+  const tasks = [
+    listTask("open", "Open task"),
+    { ...listTask("done", "Done task"), status: "done" },
+  ];
+  const update = vi.fn(
+    async (id: string, input: { status?: string; sortOrder?: string }) => {
+      const task = tasks.find((candidate) => candidate.id === id)!;
+      if (input.status !== undefined) task.status = input.status;
+      if (input.sortOrder !== undefined) task.sortOrder = input.sortOrder;
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return task;
+    },
+  );
+  const execution = (): TaskViewExecution => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: { status: task.status } })),
+    totalCount: tasks.length,
+    hasMore: false,
+    groups: [...new Set(tasks.map((task) => task.status))].map((status) => ({
+      values: { status },
+      count: tasks.filter((task) => task.status === status).length,
+      summaries: {},
+    })),
+  });
+  const repository = manualListRepository(view, tasks, update, execution, {
+    groupBy: "status",
+  });
+
+  renderListView(repository, view);
+  fireEvent.click(await screen.findByRole("button", { name: "Reorder tasks" }));
+  fireEvent.keyDown(
+    await screen.findByRole("button", {
+      name: "Reorder Open task. Drag, or use up and down arrow keys.",
+    }),
+    { key: "ArrowDown" },
+  );
+
+  await waitFor(() =>
+    expect(
+      update.mock.calls.some(
+        ([id, input]) => id === "open" && input.status === "done",
+      ),
+    ).toBe(true),
+  );
+});
+
+function manualListView(
+  id: string,
+  options: Record<string, unknown> = {},
+): TaskView {
+  return {
+    key: `views/${id}.base#${id}`,
+    documentId: id,
+    documentName: id,
+    id,
+    name: id,
+    properties: [],
+    source: {
+      path: `views/${id}.base`,
+      format: "obsidian.base",
+      revision: "one",
+      writable: true,
+    },
+    presentation: {
+      type: "tasknotes.task-list",
+      mappings: {},
+      options: { create: false, ...options },
+    },
+  };
+}
+
+function manualListRepository(
+  view: TaskView,
+  tasks: Task[],
+  update: ReturnType<typeof vi.fn>,
+  execution: () => TaskViewExecution,
+  options: { groupBy?: string } = {},
+): TaskRepository {
+  return {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: tasks.length,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => tasks,
+    cachedViewExecution: async () => null,
+    executeView: async () => execution(),
+    readViewSource: async () => ({
+      path: view.source.path,
+      format: "obsidian.base",
+      revision: "one",
+      document: `views:
+  - type: tasknotesTaskList
+    name: ${view.name}
+${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC }\n` : ""}    sort:
+      - column: note.tasknotes_manual_order
+        direction: DESC
+    options: ${JSON.stringify(view.presentation?.options ?? {})}
+`,
+    }),
+    update,
+    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
+      Promise.all(
+        updates.map(({ id, input }) =>
+          (update as unknown as TaskRepository["update"])(id, input),
+        ),
+      ),
+    collectionInfo: testCollectionInfo,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+}
+
+function renderListView(repository: TaskRepository, view: TaskView) {
+  render(
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
+      <ViewsScreen
+        documents={[
+          {
+            id: view.documentId,
+            name: view.documentName,
+            source: view.source,
+            views: [view],
+          },
+        ]}
+        navigationViewKeys={[view.key]}
+        operational
+        viewKey={view.key}
+        views={[view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+}
+
+async function testCollectionInfo() {
+  return {
+    kind: "local" as const,
+    id: "optimistic-view-tests",
+    name: "Optimistic view tests",
+    location: "memory://optimistic-view-tests",
+    runtime: "browser" as const,
+  };
+}
 
 function boardExecution(): TaskViewExecution {
   const view: TaskView = {

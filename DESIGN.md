@@ -80,6 +80,9 @@ remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA
 contrast.
 
+`#808080` is a data-layer compatibility value used when parsing legacy task
+color metadata and in its fixtures. It is not an interface color.
+
 ## Theme contract
 
 TaskNotes offers System, Light, and Dark under More. System follows the device
@@ -88,12 +91,30 @@ before first paint. Components consume canvas, surface, surface-subtle, text,
 text-soft, text-muted, border, border-strong, accent, success, warning, and
 danger roles rather than fixed palette values.
 
+## Local-first trust contract
+
+Every collection choice names two things in plain language: what keeps working
+without a connection, and which copy is the source of truth. Hosted mdbase keeps
+a durable device copy for offline work and syncs it to the hosted source of
+truth. Device-only mode treats its local Markdown as the source of truth and
+does not imply that a missing connection is a problem. A direct computer
+connection is explicitly connection-dependent. Portability is a top-level
+setting, not an advanced implementation detail.
+
 ## Typography
 
 Atkinson Hyperlegible carries headings, task titles, fields, and explanatory
 copy. Azeret Mono is reserved for dates, compact section labels, sync state,
 collection names, and Markdown paths. Preserve platform text scaling and avoid
 text smaller than 11 points.
+
+The semantic type scale is intentionally small: 32px page titles, 20px section
+headings, 17px body and control text, 14px supporting copy, and 11px mono labels.
+The mature stylesheet also contains fine-grained optical adjustments between
+0.62rem and 2.35rem for dense task, calendar, metadata, and responsive
+hierarchies. Those literals are explicit legacy exceptions until the stylesheet
+is extracted into tokens; new UI should use the nearest semantic role rather
+than add another value.
 
 ## Layout
 
@@ -124,6 +145,13 @@ Today             Search       More
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
+
+The radius scale is 0 for page structure and fields with bottom rules, 6px for
+ordinary controls and notices, and 12px for modal sheets. The 26px mobile Add
+task control is the only capsule exception: its silhouette and visible label
+make the persistent primary action easy to identify in the thumb zone. Existing
+calendar, select, and drag surfaces retain optical radii from 2px through 14px
+as documented legacy exceptions; new components should use 0, 6px, or 12px.
 
 ## Signature detail
 

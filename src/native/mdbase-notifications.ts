@@ -7,7 +7,7 @@ import {
   type MdbaseNotificationRegistration,
   type MdbaseNativeNotificationRegistration,
   type MdbaseNativeNotificationData,
-} from "@mdbase/connect";
+} from "@mdbase-dev/connect";
 
 import { cloudSession } from "../cloud/connect";
 import {
