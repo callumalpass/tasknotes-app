@@ -121,7 +121,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(operations).toContain("describe");
   expect(operations).toContain("query");
 
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "Settings" }).click();
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();

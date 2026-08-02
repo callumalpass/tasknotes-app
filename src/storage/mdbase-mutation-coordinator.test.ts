@@ -1,4 +1,5 @@
 import {
+  connectError,
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
@@ -72,7 +73,7 @@ it("keeps later mutations paused until a previously unknown write recovers", asy
       calls.push("first");
       return first();
     }),
-  ).rejects.toMatchObject({ code: "direct_outcome_unknown" });
+  ).rejects.toMatchObject({ code: "operation_outcome_unknown" });
 
   await expect(
     runMdbaseMutation(connection, async () => {
@@ -93,10 +94,10 @@ it("does not send a later mutation when recovery remains uncertain", async () =>
   const second = vi.fn(async () => "second");
 
   await expect(runMdbaseMutation(connection, first)).rejects.toMatchObject({
-    code: "direct_outcome_unknown",
+    code: "operation_outcome_unknown",
   });
   await expect(runMdbaseMutation(connection, second)).rejects.toMatchObject({
-    code: "direct_outcome_unknown",
+    code: "operation_outcome_unknown",
     message: expect.stringContaining("earlier change"),
   });
 
@@ -115,7 +116,7 @@ it("unblocks later writes after an exact retry has a definitive failure", async 
   const later = vi.fn(async () => "later");
 
   await expect(runMdbaseMutation(connection, first)).rejects.toMatchObject({
-    code: "direct_outcome_unknown",
+    code: "operation_outcome_unknown",
   });
   await expect(runMdbaseMutation(connection, blocked)).rejects.toThrow(
     "Write rejected",
@@ -129,7 +130,7 @@ it("unblocks later writes after an exact retry has a definitive failure", async 
 it("does not retry a different write rejected by the SDK pending guard", async () => {
   const connection = {} as MdbaseConnection<JsonObject>;
   const operation = vi.fn(async () => {
-    throw new MdbaseConnectError(
+    throw connectError(
       "pending_mutation_unresolved",
       "Retry the same write first.",
     );
@@ -142,9 +143,10 @@ it("does not retry a different write rejected by the SDK pending guard", async (
 });
 
 function unknownOutcome(): MdbaseConnectError {
-  return new MdbaseConnectError(
-    "direct_outcome_unknown",
+  return connectError(
+    "operation_outcome_unknown",
     "The direct write may have completed.",
+    { operationOutcome: "unknown" },
   );
 }
 

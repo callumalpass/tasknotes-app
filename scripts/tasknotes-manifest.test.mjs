@@ -30,6 +30,10 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.contracts).toEqual([
       { id: "tasknotes.task", version: "0.3.0-rc.1" },
     ]);
+    expect(manifest.requirements.files).toEqual({
+      actions: ["list", "read", "add", "replace", "move", "delete"],
+      scope: { kind: "collection" },
+    });
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
     );

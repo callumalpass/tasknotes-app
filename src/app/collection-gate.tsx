@@ -17,6 +17,7 @@ import {
   useState,
 } from "react";
 
+import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 import {
   cloudSession,
   cloudControlUrl,
@@ -172,9 +173,11 @@ export function CollectionGate() {
         setMigration({
           step: "authorizing",
         });
-        await cloudSession.authorize({
-          collectionId: result.destinationCollectionId,
-        });
+        unwrapConnectOutcome(
+          await cloudSession.authorize({
+            collectionId: result.destinationCollectionId,
+          }),
+        );
       } catch (reason) {
         const pending = readPendingTransfer();
         setMigration({
@@ -207,7 +210,9 @@ export function CollectionGate() {
         await finishBrowserCallback();
       };
       try {
-        const connection = await cloudSession.handleAuthorizationCallback(url);
+        const connection = unwrapConnectOutcome(
+          await cloudSession.handleAuthorizationCallback(url),
+        );
         await closeCallbackBrowser();
         setAuthorizationError(null);
         if (pending?.adoptedCollectionId) {
@@ -275,6 +280,7 @@ export function CollectionGate() {
           setMigration({ step: "authorizing" });
           void cloudSession
             .authorize({ collectionId: adoptedCollectionId })
+            .then(unwrapConnectOutcome)
             .catch((reason) =>
               setMigration({
                 step: "error",
@@ -289,7 +295,7 @@ export function CollectionGate() {
     const initialize = async () => {
       const callbackUrl = isCloudCallback(location.href) ? location.href : null;
       if (callbackUrl) await complete(callbackUrl);
-      await cloudSession.start();
+      unwrapConnectOutcome(await cloudSession.start());
       if (!callbackUrl) resume();
     };
     queueMicrotask(
@@ -338,7 +344,9 @@ export function CollectionGate() {
         return;
       }
       if (choice === "cloud") await disableMdbaseNotifications();
-      cloudSession.select(collectionId, { history: "replace" });
+      unwrapConnectOutcome(
+        cloudSession.select(collectionId, { history: "replace" }),
+      );
       choose("cloud");
       setPickerOpen(false);
     },
@@ -352,6 +360,7 @@ export function CollectionGate() {
     setAuthorizationError(null);
     void cloudSession
       .authorize("choose")
+      .then(unwrapConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
   }
 
@@ -362,6 +371,7 @@ export function CollectionGate() {
     setAuthorizationError(null);
     void cloudSession
       .authorize("selected")
+      .then(unwrapConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
   }
 
@@ -379,6 +389,7 @@ export function CollectionGate() {
       setMigration({ step: "authorizing" });
       void cloudSession
         .authorize({ collectionId: pending.adoptedCollectionId })
+        .then(unwrapConnectOutcome)
         .catch((reason) =>
           setMigration({
             step: "error",
@@ -395,7 +406,11 @@ export function CollectionGate() {
   function finishMigration() {
     if (!migrationTarget) return;
     clearPendingTransfer();
-    cloudSession.select(migrationTarget.collectionId, { history: "replace" });
+    unwrapConnectOutcome(
+      cloudSession.select(migrationTarget.collectionId, {
+        history: "replace",
+      }),
+    );
     choose("cloud");
     setMigration(null);
     setMigrationTarget(null);
