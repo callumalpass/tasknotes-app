@@ -135,6 +135,11 @@ pnpm exec cap open ios
 
 Run the second command on macOS with Xcode installed.
 
+The **iOS release** GitHub Actions workflow can create a signed IPA and upload
+it to TestFlight without a locally owned Mac. It uses the App Store Connect
+record with SKU `tasknotes-ios`; see [docs/ios-release.md](docs/ios-release.md)
+for the one-time Apple signing, Firebase, and repository-secret setup.
+
 The installed web app uses standards-based Web Push without Firebase. Native
 connected reminders require a Firebase project and Apple Push Notifications
 configuration. See [Notifications](docs/notifications.md).
