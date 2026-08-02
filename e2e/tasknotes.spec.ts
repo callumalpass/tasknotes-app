@@ -395,13 +395,9 @@ test.beforeEach(async ({ page }) => {
     await root
       .removeEntry("TaskNotes", { recursive: true })
       .catch(() => undefined);
+    localStorage.setItem("tasknotes:collection-choice:v1", "local");
   });
   await page.reload();
-  await page.getByRole("button", { name: /Keep on this device/i }).click();
-  await expect(page.getByRole("note")).toContainText(
-    "Notifications are not available",
-  );
-  await page.getByRole("button", { name: "Use this browser" }).click();
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();

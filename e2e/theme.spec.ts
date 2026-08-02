@@ -23,10 +23,9 @@ test("follows the system theme and persists explicit overrides", async ({
     await root
       .removeEntry("TaskNotes", { recursive: true })
       .catch(() => undefined);
+    localStorage.setItem("tasknotes:collection-choice:v1", "local");
   });
   await page.reload();
-  await page.getByRole("button", { name: /Keep on this device/i }).click();
-  await page.getByRole("button", { name: "Use this browser" }).click();
 
   const root = page.locator("html");
   const readCanvas = () =>

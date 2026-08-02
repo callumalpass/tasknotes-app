@@ -85,8 +85,10 @@ try {
 
   phase("creating a browser-local collection");
   await page.goto(appUrl);
-  await page.getByRole("button", { name: /On this device/i }).click();
-  await page.getByRole("button", { name: "Use this browser" }).click();
+  await page.evaluate(() => {
+    localStorage.setItem("tasknotes:collection-choice:v1", "local");
+  });
+  await page.reload();
   await page.getByLabel("New task title").fill("Local foundation");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(

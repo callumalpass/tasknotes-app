@@ -18,12 +18,11 @@ try {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(baseUrl, { waitUntil: "networkidle" });
-
-  const localChoice = page.getByRole("button", { name: /On this device/ });
-  if (await localChoice.isVisible()) {
-    await localChoice.click();
-    await page.getByRole("heading", { name: "Today" }).waitFor();
-  }
+  await page.evaluate(() =>
+    localStorage.setItem("tasknotes:collection-choice:v1", "local"),
+  );
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: "Today" }).waitFor();
 
   const environment = await page.evaluate(() => ({
     hardwareConcurrency: navigator.hardwareConcurrency,

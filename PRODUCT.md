@@ -20,6 +20,8 @@ network request or understanding storage architecture.
 TaskNotes mobile provides one calm interface over local mdbase collections and
 offline mdbase cloud replicas. Tasks remain structured Markdown records, while
 the application makes their everyday use feel immediate and native on mobile.
+The browser companion requires mdbase and uses its durable offline replica;
+device-local Markdown collections are an Android and iOS capability.
 
 Success means that capture, review, editing, and completion remain fast while
 offline; storage choices are understandable; and users continue to trust that

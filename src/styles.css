@@ -3970,33 +3970,11 @@ button:disabled {
   margin: 22px 0 0;
 }
 
-.collection-caveat,
 .connection-comparison {
   margin-top: 32px;
 }
-
-.collection-caveat {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
-  padding: 16px 0;
-  color: var(--ink-soft);
-  border-top: 1px solid var(--line-strong);
-  border-bottom: 1px solid var(--line);
-}
-
-.collection-caveat > svg {
-  color: var(--danger);
-}
-
-.collection-caveat strong,
 .connection-comparison strong {
   color: var(--ink);
-}
-
-.collection-caveat p {
-  margin: 4px 0 0;
-  line-height: 1.45;
 }
 
 .connection-comparison {

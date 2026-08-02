@@ -7,6 +7,7 @@ const native = vi.hoisted(() => ({
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
+    getPlatform: vi.fn(() => "web"),
     isNativePlatform: vi.fn(() => true),
   },
   registerPlugin: () => ({}),
@@ -83,32 +84,23 @@ it("explains why mdbase is recommended and lets native users choose a folder", (
   ).toBeVisible();
 });
 
-it("warns before using browser storage", () => {
+it("requires mdbase in web browsers", async () => {
   vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+  localStorage.setItem("tasknotes:collection-choice:v1", "local");
   render(<CollectionGate />);
 
-  const local = screen.getByRole("button", { name: /On this device/i });
-  expect(local).toHaveTextContent(
-    "Browser-held Markdown is the source of truth",
-  );
-  expect(local).not.toHaveTextContent("Choose a folder");
-
-  fireEvent.click(local);
   expect(
-    screen.getByRole("heading", { name: "Keep tasks in this browser?" }),
+    await screen.findByRole("heading", { name: "Sync with mdbase." }),
   ).toBeVisible();
-  expect(screen.getByRole("note")).toHaveTextContent(
-    "Notifications are not available",
-  );
-  expect(screen.getByRole("note")).toHaveTextContent(
-    "Clearing its site data can also remove",
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Use this browser" }));
-  expect(localStorage.getItem("tasknotes:collection-choice:v1")).toBe("local");
   expect(
-    screen.queryByRole("heading", { name: "Keep tasks in this browser?" }),
+    screen.queryByRole("button", { name: /On this device/i }),
   ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Choose another location" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Continue to mdbase" }),
+  ).toBeVisible();
 });
 
 it("keeps an adopted collection recoverable when authorization retry fails", async () => {

@@ -7,7 +7,7 @@ import {
   localCollectionSourceName,
   type LocalCollectionLocation,
 } from "./local-collection-location";
-import { createPlatformVault } from "./vault";
+import { createLocalVault } from "./vault";
 
 export function transferPlatformLocalCollectionToHosted({
   sourceLocation,
@@ -20,7 +20,7 @@ export function transferPlatformLocalCollectionToHosted({
 }): Promise<CollectionTransferResult> {
   return transferLocalCollectionToHosted({
     ...options,
-    source: new MarkdownCollection(createPlatformVault(sourceLocation)),
+    source: new MarkdownCollection(createLocalVault(sourceLocation)),
     sourceName: localCollectionSourceName(sourceLocation),
   });
 }

@@ -1,4 +1,4 @@
-import { createPlatformVault } from "../storage/vault";
+import { createLocalVault } from "../storage/vault";
 
 const DIRECTORY = "tasks/__benchmark__";
 
@@ -11,7 +11,7 @@ export async function generateBenchmarkVault(
   count: number,
   onProgress?: (progress: BenchmarkProgress) => void,
 ): Promise<number> {
-  const vault = createPlatformVault();
+  const vault = createLocalVault();
   await vault.initialize();
   const startedAt = performance.now();
   // Establish the nested directory before concurrent writes. Capacitor's
@@ -42,7 +42,7 @@ export async function generateBenchmarkVault(
 export async function removeBenchmarkVault(
   onProgress?: (progress: BenchmarkProgress) => void,
 ): Promise<number> {
-  const vault = createPlatformVault();
+  const vault = createLocalVault();
   await vault.initialize();
   const files = await vault.listMarkdownFiles(DIRECTORY);
   const startedAt = performance.now();
