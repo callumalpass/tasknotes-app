@@ -17,7 +17,12 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.notifications.criteria).toEqual([
       {
         id: "task.reminder",
-        event: { id: "mdbase.runtime.timer.fired", version: "1.0.0" },
+        event: {
+          id: "mdbase.runtime.timer.fired",
+          version: "1.0.0",
+          digest:
+            "sha256:41105be7a7abf33b31ced47e1e1965242236e40ccaea286b959b0a8c591f5642",
+        },
         presentation: {
           title: "Task reminder",
           body: "Open TaskNotes to view your task.",
@@ -28,7 +33,11 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.notifications.native_delivery).toBeUndefined();
     expect(JSON.stringify(manifest.notifications)).not.toContain("path");
     expect(manifest.requirements.contracts).toEqual([
-      { id: "tasknotes.task", version: "0.3.0-rc.3" },
+      expect.objectContaining({
+        id: "tasknotes.task",
+        version: "0.3.0-rc.3",
+        digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      }),
     ]);
     expect(manifest.requirements.files).toEqual({
       actions: ["list", "read", "add", "replace", "move", "delete"],

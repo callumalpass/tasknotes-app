@@ -116,8 +116,12 @@ export class OpfsVault implements Vault {
   async delete(path: string): Promise<void> {
     const segments = safePath(path).split("/");
     const name = segments.pop()!;
-    const parent = await this.directory(segments.join("/"), false);
-    await parent.removeEntry(name).catch(ignoreMissing);
+    try {
+      const parent = await this.directory(segments.join("/"), false);
+      await parent.removeEntry(name);
+    } catch (error) {
+      ignoreMissing(error);
+    }
   }
 
   async rename(from: string, to: string): Promise<VaultEntry> {

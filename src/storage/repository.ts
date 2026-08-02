@@ -6,7 +6,12 @@ import {
   withoutIndexFields,
   type IndexedTask,
 } from "./index";
-import { batches, MarkdownCollection } from "./collection";
+import {
+  batches,
+  MarkdownCollection,
+  type ManagedTypeUpgradeRequest,
+} from "./collection";
+import type { DefinitionAdoptionRequest } from "./local-type-pack";
 import { createLocalVault } from "./vault";
 import { LocalViewExecutor } from "./local-views";
 import { VaultCollectionFileStore } from "./vault-files";
@@ -111,15 +116,22 @@ export class IndexedMarkdownRepository implements TaskRepository {
   private forceProjectionReindex = false;
 
   constructor(
-    options: { collection?: MarkdownCollection; index?: TaskIndex } = {},
+    options: {
+      collection?: MarkdownCollection;
+      index?: TaskIndex;
+      approveManagedTypeUpgrade?: (
+        request: ManagedTypeUpgradeRequest,
+      ) => boolean | Promise<boolean>;
+      approveDefinitionAdoption?: (
+        request: DefinitionAdoptionRequest,
+      ) => boolean | Promise<boolean>;
+    } = {},
   ) {
     this.collection =
       options.collection ??
       new MarkdownCollection(createLocalVault(), {
-        approveManagedTypeUpgrade: ({ message }) =>
-          typeof globalThis.confirm === "function"
-            ? globalThis.confirm(message)
-            : false,
+        approveManagedTypeUpgrade: options.approveManagedTypeUpgrade,
+        approveDefinitionAdoption: options.approveDefinitionAdoption,
       });
     this.index =
       options.index ?? new TaskIndex(indexName(this.collection.identifier()));

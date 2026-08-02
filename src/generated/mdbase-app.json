@@ -12,12 +12,20 @@
     "contracts": [
       {
         "id": "tasknotes.task",
-        "version": "0.3.0-rc.3"
+        "version": "0.3.0-rc.3",
+        "digest": "sha256:ef411577c2817b06ab2c8fcfe1241e005b7cd4355723b22ac14346462b5d0049"
       }
     ],
     "access": "full_collection",
     "files": {
-      "actions": ["list", "read", "add", "replace", "move", "delete"],
+      "actions": [
+        "list",
+        "read",
+        "add",
+        "replace",
+        "move",
+        "delete"
+      ],
       "scope": {
         "kind": "collection"
       }
@@ -29,30 +37,34 @@
         "manifest": {
           "kind": "mdbase.type-pack",
           "id": "tasknotes.task",
-          "version": "0.3.0-rc.3",
+          "version": "0.3.0-rc.9",
           "name": "TaskNotes task",
           "description": "TaskNotes task contract, implementation, and referenced JSON Schemas.",
           "resources": [
             {
               "kind": "contract",
+              "mode": "managed",
               "source": "contracts/tasknotes.task.md",
               "target": "_contracts/tasknotes.task.md",
-              "digest": "sha256:7f00349e4128b85067d715ad11e54b18244f9ee15d6dcfbc89989f334b095b93"
+              "digest": "sha256:1aa5c9f0f58ff5f220dd5bde02a07bf4ca1cb9ca5306647d8bcdc4bb2386632f"
             },
             {
               "kind": "type",
+              "mode": "seed",
               "source": "types/task.md",
               "target": "_types/task.md",
               "digest": "sha256:dbfe2535df3e9bc4a3cfce0ee0e4ea3d01f7e66dd869f793f10db485f144f19e"
             },
             {
               "kind": "schema",
+              "mode": "managed",
               "source": "schemas/tasknotes-task.schema.json",
               "target": "_schemas/tasknotes/tasknotes-task.schema.json",
               "digest": "sha256:3d01df62fc230dfa1cd5c290d685e285594370e17fa176bc06e48c49200d0dc8"
             },
             {
               "kind": "schema",
+              "mode": "managed",
               "source": "schemas/tasknotes-task-binding.schema.json",
               "target": "_schemas/tasknotes/tasknotes-task-binding.schema.json",
               "digest": "sha256:ce592fe951504c82441476090901f19b224e9651e2b78d7da1a464ab470719c0"
@@ -62,7 +74,7 @@
         "resources": [
           {
             "source": "contracts/tasknotes.task.md",
-            "document": "---\nkind: mdbase.contract\ncontract_type: record\nid: tasknotes.task\nversion: 0.3.0-rc.3\nname: TaskNotes task\ndescription: Portable task data and behavior defined by tasknotes-spec 0.3.0-rc.3.\nrecord_schema:\n  dialect: json-schema-2020-12\n  ref: ../_schemas/tasknotes/tasknotes-task.schema.json\nbinding_schema:\n  dialect: json-schema-2020-12\n  ref: ../_schemas/tasknotes/tasknotes-task-binding.schema.json\n---\n\n# TaskNotes task contract\n\nTypes implement this contract through `implements`; applications consume\nthe normalized contract view rather than assuming frontmatter names.\n"
+            "document": "---\nkind: mdbase.contract\ncontract_type: record\nid: tasknotes.task\nversion: 0.3.0-rc.3\nname: TaskNotes task\ndescription: Portable task data and behavior defined by tasknotes-spec 0.3.0-rc.3.\nrecord_schema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    $id: https://tasknotes.dev/schemas/tasknotes-task.schema.json\n    title: TaskNotes portable task view\n    description: The storage-neutral record view exposed by the tasknotes.task 0.3.0-rc.3 record contract.\n    type: object\n    required:\n      - status\n      - dateCreated\n    additionalProperties: false\n    properties:\n      id:\n        type: string\n        minLength: 1\n      title:\n        type: string\n        minLength: 1\n      status:\n        type: string\n        minLength: 1\n      priority:\n        type: string\n        minLength: 1\n      due:\n        anyOf:\n          - type: string\n            format: date\n          - type: string\n            format: date-time\n      scheduled:\n        anyOf:\n          - type: string\n            format: date\n          - type: string\n            format: date-time\n      contexts:\n        type: array\n        items:\n          type: string\n      projects:\n        type: array\n        items:\n          type: string\n      attachments:\n        type: array\n        uniqueItems: true\n        items:\n          type: string\n          minLength: 1\n      timeEstimate:\n        type: integer\n        minimum: 0\n      completedDate:\n        type: string\n        format: date\n      dateCreated:\n        type: string\n        format: date-time\n      dateModified:\n        type: string\n        format: date-time\n      recurrence:\n        type: string\n      recurrenceAnchor:\n        enum:\n          - scheduled\n          - completion\n      recurrenceParent:\n        type: string\n      occurrenceDate:\n        type: string\n        format: date\n      occurrenceMaterialization:\n        enum:\n          - manual\n          - on_completion\n          - rolling\n      occurrenceNextTrigger:\n        enum:\n          - completion\n          - completion_or_skip\n      occurrenceTemplate:\n        type: string\n      occurrencePastHorizon:\n        type: string\n      occurrenceFutureHorizon:\n        type: string\n      tags:\n        type: array\n        items:\n          type: string\n      timeEntries:\n        type: array\n        items:\n          type: object\n      reminders:\n        type: array\n        items:\n          type: object\n      blockedBy:\n        type: array\n        items:\n          type: object\n      completeInstances:\n        type: array\n        items:\n          type: string\n          format: date\n      skippedInstances:\n        type: array\n        items:\n          type: string\n          format: date\n      icsEventId:\n        type: array\n        items:\n          type: string\n      googleCalendarEventId:\n        type: string\n      googleCalendarExceptionEventId:\n        type: string\n      googleCalendarExceptionOriginalScheduled:\n        type: string\n        format: date\n      googleCalendarMovedOriginalDates:\n        type: array\n        items:\n          type: string\n          format: date\n      sortOrder:\n        type: string\nbinding_schema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    $id: https://tasknotes.dev/schemas/tasknotes-task-binding.schema.json\n    title: TaskNotes task data-contract binding\n    description: Semantic configuration supplied by an mdbase type that implements tasknotes.task 0.3.0-rc.3.\n    type: object\n    required:\n      - profiles\n      - capabilities\n      - title\n      - status\n      - priority\n      - recurrence\n      - occurrences\n      - links\n      - archive\n      - time_tracking\n      - templating\n    properties:\n      profiles:\n        type: array\n        minItems: 1\n        uniqueItems: true\n        items:\n          enum:\n            - core-lite\n            - recurrence\n            - templating\n            - materialized-occurrences\n            - extended\n      capabilities:\n        type: array\n        uniqueItems: true\n        items:\n          enum:\n            - dependencies\n            - reminders\n            - attachments\n            - links\n            - time-tracking\n            - materialized-occurrences\n            - rename\n            - archive\n            - batch\n            - concurrency\n            - dry-run\n            - migration\n            - templating\n      title:\n        $ref: \"#/$defs/titlePolicy\"\n      status:\n        $ref: \"#/$defs/statusPolicy\"\n      priority:\n        $ref: \"#/$defs/priorityPolicy\"\n      runtime_timezone:\n        type: string\n        minLength: 1\n      recurrence:\n        $ref: \"#/$defs/recurrencePolicy\"\n      occurrences:\n        $ref: \"#/$defs/occurrencePolicy\"\n      links:\n        $ref: \"#/$defs/linkPolicy\"\n      archive:\n        $ref: \"#/$defs/archivePolicy\"\n      time_tracking:\n        $ref: \"#/$defs/timeTrackingPolicy\"\n      templating:\n        $ref: \"#/$defs/templatingPolicy\"\n      nlp:\n        $ref: \"#/$defs/nlpPolicy\"\n    additionalProperties: false\n    $defs:\n      nonEmptyString:\n        type: string\n        minLength: 1\n      stringSet:\n        type: array\n        uniqueItems: true\n        items:\n          $ref: \"#/$defs/nonEmptyString\"\n      titlePolicy:\n        type: object\n        required:\n          - storage\n        properties:\n          storage:\n            enum:\n              - filename\n              - frontmatter\n          filename_format:\n            enum:\n              - title\n              - zettel\n              - timestamp\n              - uuid\n              - custom\n          custom_filename_template:\n            $ref: \"#/$defs/nonEmptyString\"\n        allOf:\n          - if:\n              properties:\n                filename_format:\n                  const: custom\n              required:\n                - filename_format\n            then:\n              properties:\n                custom_filename_template:\n                  $ref: \"#/$defs/nonEmptyString\"\n              required:\n                - custom_filename_template\n        additionalProperties: true\n      statusDefinition:\n        type: object\n        required:\n          - value\n          - label\n          - color\n          - is_completed\n          - is_skipped\n          - exclude_from_cycle\n          - order\n          - auto_archive\n          - auto_archive_delay_minutes\n        properties:\n          value:\n            $ref: \"#/$defs/nonEmptyString\"\n          label:\n            type: string\n          color:\n            type: string\n          icon:\n            $ref: \"#/$defs/nonEmptyString\"\n          is_completed:\n            type: boolean\n          is_skipped:\n            type: boolean\n          exclude_from_cycle:\n            type: boolean\n          next_status:\n            $ref: \"#/$defs/nonEmptyString\"\n          order:\n            type: number\n          auto_archive:\n            type: boolean\n          auto_archive_delay_minutes:\n            type: number\n            minimum: 0\n        additionalProperties: true\n      statusPolicy:\n        type: object\n        required:\n          - values\n          - default\n          - completed_values\n          - definitions\n        properties:\n          values:\n            $ref: \"#/$defs/stringSet\"\n          default:\n            $ref: \"#/$defs/nonEmptyString\"\n          completed_values:\n            $ref: \"#/$defs/stringSet\"\n          skipped_values:\n            $ref: \"#/$defs/stringSet\"\n          default_skipped:\n            $ref: \"#/$defs/nonEmptyString\"\n          definitions:\n            type: array\n            items:\n              $ref: \"#/$defs/statusDefinition\"\n        additionalProperties: false\n      priorityDefinition:\n        type: object\n        required:\n          - value\n          - label\n          - color\n          - weight\n        properties:\n          value:\n            $ref: \"#/$defs/nonEmptyString\"\n          label:\n            type: string\n          color:\n            type: string\n          icon:\n            $ref: \"#/$defs/nonEmptyString\"\n          weight:\n            type: number\n        additionalProperties: true\n      priorityPolicy:\n        type: object\n        required:\n          - values\n          - default\n          - definitions\n        properties:\n          values:\n            $ref: \"#/$defs/stringSet\"\n          default:\n            $ref: \"#/$defs/nonEmptyString\"\n          definitions:\n            type: array\n            items:\n              $ref: \"#/$defs/priorityDefinition\"\n        additionalProperties: false\n      recurrencePolicy:\n        type: object\n        required:\n          - syntax\n          - maintain_due_date_offset\n          - reset_body_checkboxes\n        properties:\n          syntax:\n            const: tasknotes\n          maintain_due_date_offset:\n            type: boolean\n          reset_body_checkboxes:\n            type: boolean\n        additionalProperties: false\n      occurrencePolicy:\n        type: object\n        required:\n          - identity_roles\n          - default_materialization\n          - default_next_trigger\n        properties:\n          identity_roles:\n            const:\n              - recurrenceParent\n              - occurrenceDate\n          default_materialization:\n            enum:\n              - manual\n              - on_completion\n              - rolling\n          default_next_trigger:\n            enum:\n              - completion\n              - completion_or_skip\n          past_horizon:\n            $ref: \"#/$defs/nonEmptyString\"\n          future_horizon:\n            $ref: \"#/$defs/nonEmptyString\"\n        additionalProperties: false\n      linkPolicy:\n        type: object\n        required:\n          - accepted_formats\n          - write_format\n        properties:\n          accepted_formats:\n            type: array\n            minItems: 1\n            uniqueItems: true\n            items:\n              enum:\n                - wikilink\n                - markdown\n          write_format:\n            enum:\n              - wikilink\n              - markdown\n        additionalProperties: false\n      archivePolicy:\n        type: object\n        required:\n          - archived_tag\n          - move_on_archive\n        properties:\n          archived_tag:\n            $ref: \"#/$defs/nonEmptyString\"\n          move_on_archive:\n            type: boolean\n          folder:\n            $ref: \"#/$defs/nonEmptyString\"\n        additionalProperties: false\n      timeTrackingPolicy:\n        type: object\n        required:\n          - auto_stop_on_complete\n        properties:\n          auto_stop_on_complete:\n            type: boolean\n        additionalProperties: false\n      templatingPolicy:\n        type: object\n        required:\n          - enabled\n          - occurrence_enabled\n        properties:\n          enabled:\n            type: boolean\n          template_path:\n            $ref: \"#/$defs/nonEmptyString\"\n          occurrence_enabled:\n            type: boolean\n          occurrence_template_path:\n            $ref: \"#/$defs/nonEmptyString\"\n          failure_mode:\n            enum:\n              - error\n              - warning_fallback\n          unknown_variable_policy:\n            enum:\n              - preserve\n              - empty\n        additionalProperties: false\n      nlpTrigger:\n        type: object\n        required:\n          - property_id\n          - trigger\n          - enabled\n        properties:\n          property_id:\n            $ref: \"#/$defs/nonEmptyString\"\n          trigger:\n            $ref: \"#/$defs/nonEmptyString\"\n          enabled:\n            type: boolean\n        additionalProperties: false\n      nlpPolicy:\n        type: object\n        required:\n          - triggers\n        properties:\n          triggers:\n            type: array\n            items:\n              $ref: \"#/$defs/nlpTrigger\"\n        additionalProperties: false\n---\n\n# TaskNotes task contract\n\nTypes implement this contract through `implements`; applications consume\nthe normalized contract view rather than assuming frontmatter names.\n"
           },
           {
             "source": "types/task.md",
@@ -80,7 +92,8 @@
         "provides": [
           {
             "id": "tasknotes.task",
-            "version": "0.3.0-rc.3"
+            "version": "0.3.0-rc.3",
+            "digest": "sha256:ef411577c2817b06ab2c8fcfe1241e005b7cd4355723b22ac14346462b5d0049"
           }
         ]
       }
@@ -92,7 +105,8 @@
         "id": "task.reminder",
         "event": {
           "id": "mdbase.runtime.timer.fired",
-          "version": "1.0.0"
+          "version": "1.0.0",
+          "digest": "sha256:41105be7a7abf33b31ced47e1e1965242236e40ccaea286b959b0a8c591f5642"
         },
         "presentation": {
           "title": "Task reminder",

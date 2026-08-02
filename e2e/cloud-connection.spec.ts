@@ -1,5 +1,8 @@
 import type { JsonObject } from "@mdbase-dev/connect";
-import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import {
+  buildTaskNotesMdbaseResources,
+  TASKNOTES_CONTRACT_DIGEST,
+} from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { expect, test, type Route } from "@playwright/test";
 
@@ -676,7 +679,7 @@ function collectionDescription() {
         contract_type: "record" as const,
         id: "tasknotes.task",
         version: TASKNOTES_SPEC_VERSION,
-        digest: `sha256:${"0".repeat(64)}`,
+        digest: TASKNOTES_CONTRACT_DIGEST,
         schema: generated.taskSchema,
         binding_schema: generated.bindingSchema,
         implementations: [

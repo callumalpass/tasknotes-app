@@ -6,7 +6,11 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
-import { Collection, installTypePack } from "@callumalpass/mdbase";
+import {
+  Collection,
+  applyTypePack,
+  assessTypePack,
+} from "@callumalpass/mdbase";
 import { chromium, expect } from "@playwright/test";
 import { parse } from "yaml";
 
@@ -1482,11 +1486,19 @@ async function provisionedResources(resources, provisions) {
       await writeFile(target, document.document);
     }
     for (const provision of provisions) {
-      const installed = await installTypePack(
-        root,
-        provision.manifest,
-        provision.resources,
-      );
+      const installedBy = "dev.tasknotes.app.cloud-e2e";
+      const assessment = await assessTypePack(root, provision, { installedBy });
+      if (!assessment.valid) {
+        throw new Error(
+          assessment.diagnostics
+            .map((diagnostic) => diagnostic.message)
+            .join("; "),
+        );
+      }
+      const installed = await applyTypePack(root, provision, {
+        installedBy,
+        expectedAssessmentDigest: assessment.result.assessment_digest,
+      });
       if (!installed.valid) {
         throw new Error(
           installed.diagnostics

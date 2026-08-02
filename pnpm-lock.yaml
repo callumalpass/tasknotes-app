@@ -392,7 +392,7 @@ packages:
   "@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz":
     resolution:
       {
-        integrity: sha512-jsN4p87I6XS5WxxyeW0moKV836sA+HiFK2JOUZ/Mcjt/qN6Q4ttBP4elu/HxXKFr4JXgwPRcpvRjxn9aZ8kHfQ==,
+        integrity: sha512-yEksrz2cAmv2wrLFNGUx19QzpVabWjNqnY/PzU7m8jVnLy4Jsg5fBGsdxHcc7lT1MoEQXF+/+Pisi7Pscu0Hqw==,
         tarball: file:vendor/callumalpass-mdbase-0.3.0-rc.4.tgz,
       }
     version: 0.3.0-rc.4
@@ -1501,7 +1501,7 @@ packages:
   "@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.9.tgz":
     resolution:
       {
-        integrity: sha512-wC0zwIhOnaxEJ3VuVnIoZqiKkQtY1YZqzGYDK8KONZf/aqegpy2cglyago0dlkkYttcm2yoHHHx7oca90HwxtA==,
+        integrity: sha512-vZw4o4f1MtXZGK3KPGr1GkrbO4Vg3pdPOuABB0x55WzfrDseB23C9iSAPqmGjUOBdWNIVHELeMn1p4LKmSjB6w==,
         tarball: file:vendor/tasknotes-model-0.3.0-rc.9.tgz,
       }
     version: 0.3.0-rc.9

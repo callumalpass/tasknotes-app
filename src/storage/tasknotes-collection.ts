@@ -4,6 +4,7 @@ import type {
   JsonObject,
 } from "@mdbase-dev/connect-protocol";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -29,7 +30,8 @@ export function resolveTaskCollection(
   const contract = resources.contracts.find(
     (candidate) =>
       candidate.id === "tasknotes.task" &&
-      candidate.version === TASKNOTES_SPEC_VERSION,
+      candidate.version === TASKNOTES_SPEC_VERSION &&
+      candidate.digest === TASKNOTES_CONTRACT_DIGEST,
   );
   if (!contract)
     throw new Error(

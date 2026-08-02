@@ -153,7 +153,7 @@ button:disabled {
   padding: 8px 12px;
   color: var(--ink);
   background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
+  border: 0;
   border-radius: 6px;
   transform: translateY(-160%);
 }
@@ -594,7 +594,7 @@ button:disabled {
   color: var(--ink);
   background: var(--paper-raised);
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow: 0 16px 36px var(--color-shadow);
 }
 
@@ -3404,6 +3404,127 @@ button:disabled {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 22px;
+}
+
+.definition-review-layer,
+.definition-review-scrim {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+}
+
+.definition-review-layer {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.definition-review-scrim {
+  z-index: 0;
+  width: 100%;
+  padding: 0;
+  background: var(--color-scrim);
+  border: 0;
+}
+
+.definition-review-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 540px);
+  max-height: min(720px, calc(100dvh - 40px));
+  overflow: auto;
+  padding: 26px;
+  background: var(--paper-raised);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 20px 58px var(--color-shadow);
+}
+
+.definition-review-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.definition-review-heading > span {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+
+.definition-review-dialog h2,
+.definition-review-dialog p {
+  margin: 0;
+}
+
+.definition-review-dialog h2 {
+  font-size: 20px;
+  letter-spacing: -0.015em;
+}
+
+.definition-review-dialog > p {
+  max-width: 68ch;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.definition-review-files {
+  display: grid;
+  gap: 1px;
+  margin-top: 20px;
+  overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.definition-review-files > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px 13px;
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+.definition-review-files code {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.definition-review-explanation {
+  margin-top: 18px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.definition-review-explanation summary {
+  width: fit-content;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.definition-review-explanation p {
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+.definition-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
 }
 
 .occurrence-banner {

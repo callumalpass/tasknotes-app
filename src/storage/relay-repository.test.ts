@@ -8,7 +8,10 @@ import {
   type QueryRecord,
   type QueryResult,
 } from "@mdbase-dev/connect";
-import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import {
+  buildTaskNotesMdbaseResources,
+  TASKNOTES_CONTRACT_DIGEST,
+} from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
@@ -1114,7 +1117,7 @@ function description(
         id: "tasknotes.task",
         contract_type: "record",
         version: "0.3.0-rc.3",
-        digest: `sha256:${"0".repeat(64)}`,
+        digest: TASKNOTES_CONTRACT_DIGEST,
         schema: generated.taskSchema,
         binding_schema: generated.bindingSchema,
         implementations: [
