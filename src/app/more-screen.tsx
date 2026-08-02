@@ -1,13 +1,11 @@
 import {
   ChevronDown,
-  ChevronRight,
   ChevronUp,
   Cloud,
   FileText,
   HardDrive,
   Info,
   Bell,
-  Columns3,
   Plus,
   SunMoon,
 } from "lucide-react";
@@ -33,15 +31,7 @@ import { useCollectionSummary, useRepository } from "./repository-context";
 import { localIndexingLabel } from "./indexing-progress";
 import { storageExplanation } from "./storage-trust";
 
-export function MoreScreen({
-  navigationViewCount,
-  onNewTask,
-  onOpenViews,
-}: {
-  navigationViewCount: number;
-  onNewTask(): void;
-  onOpenViews(): void;
-}) {
+export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
   const { info, stats, loading } = useCollectionSummary();
   const {
     indexing,
@@ -155,9 +145,12 @@ export function MoreScreen({
   }
 
   return (
-    <section className="screen settings-screen" aria-labelledby="more-title">
+    <section
+      className="screen settings-screen"
+      aria-labelledby="settings-title"
+    >
       <header className="screen-header compact-header">
-        <h1 id="more-title">More</h1>
+        <h1 id="settings-title">Settings</h1>
         <button
           aria-label="New task"
           className="icon-action more-new-task"
@@ -379,21 +372,7 @@ export function MoreScreen({
         </SettingsSection>
       ) : null}
 
-      <SettingsSection label="Preferences">
-        <button
-          className="setting-row setting-link"
-          type="button"
-          onClick={onOpenViews}
-        >
-          <Columns3 aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Saved views</span>
-          <small>
-            {navigationViewCount
-              ? `${navigationViewCount} ${navigationViewCount === 1 ? "view" : "views"} in navigation`
-              : "Lists, boards, and calendars"}
-          </small>
-          <ChevronRight aria-hidden="true" size={17} />
-        </button>
+      <SettingsSection label="Appearance">
         <div className="setting-row">
           <SunMoon aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Color theme</span>

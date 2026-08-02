@@ -258,8 +258,8 @@ async function localDefaultViewDocument(page: Page): Promise<string> {
 }
 
 async function openViewsCatalog(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Manage views" }).click();
 }
 
 async function openSettingsSection(
@@ -419,11 +419,10 @@ test("manually reorders starter-view tasks with pointer and keyboard", async ({
   const list = page.locator(".task-list-view");
   const rows = list.locator(".manual-order-row");
   await expect(rows).toHaveCount(3);
-  await expect(list.locator(".manual-order-handle")).toHaveCount(0);
-  await page.getByRole("button", { name: "Reorder tasks" }).click();
   await expect(
-    page.getByRole("button", { name: "Finish reordering" }),
+    page.getByRole("button", { name: "Turn off manual order" }),
   ).toHaveAttribute("aria-pressed", "true");
+  await expect(list.locator(".manual-order-handle")).toHaveCount(3);
   if (testInfo.project.name === "mobile") await expectTouchTargets(list);
 
   const firstHandle = page.getByRole("button", {
@@ -490,7 +489,7 @@ test("manually reorders starter-view tasks with pointer and keyboard", async ({
   });
   await editor.getByRole("button", { name: "Close view editor" }).click();
   await page.reload();
-  await expect(page.locator(".manual-order-handle")).toHaveCount(0);
+  await expect(page.locator(".manual-order-handle")).toHaveCount(3);
   await expect
     .poll(() =>
       page
@@ -789,7 +788,7 @@ test("keeps long task titles readable in lists and task details", async ({
 test("surfaces a quiet warning while a durable local mutation is pending", async ({
   page,
 }, testInfo) => {
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByText(/waiting to be written to Markdown/)).toHaveCount(
     0,
   );
@@ -820,7 +819,7 @@ test("surfaces a quiet warning while a durable local mutation is pending", async
   );
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "More", level: 1 }),
+    page.getByRole("heading", { name: "Settings", level: 1 }),
   ).toBeVisible();
 
   const warning = page.getByText(/waiting to be written to Markdown/);
@@ -974,7 +973,7 @@ test("organizes the Today list into declarative day sections", async ({
       .getByText("Anytime hierarchy task", { exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   const startedAt = await page.evaluate(() => performance.now());
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(headings).toHaveCount(3);
@@ -1002,7 +1001,7 @@ test("captures into the collection from anywhere", async ({
   ).toBe("none");
   await inlineCapture.blur();
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.locator(".global-capture-fab")).toHaveCount(0);
   const trigger = page.getByRole("button", { name: "New task", exact: true });
   const triggerBox = await trigger.boundingBox();
@@ -1046,7 +1045,7 @@ test("captures into the collection from anywhere", async ({
     ).toBeLessThanOrEqual(1);
   }
 
-  await dialog.getByLabel("New task title").fill("Captured from More");
+  await dialog.getByLabel("New task title").fill("Captured from Settings");
   const createdAt = await page.evaluate(() => performance.now());
   await dialog.getByRole("button", { name: "Add", exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -1063,7 +1062,7 @@ test("captures into the collection from anywhere", async ({
 
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(
-    page.getByText("Captured from More", { exact: true }),
+    page.getByText("Captured from Settings", { exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Control+n");
   await expect(dialog).toBeVisible();
@@ -1135,8 +1134,8 @@ test("edits task model settings in the portable type contract", async ({
   page,
 }, testInfo) => {
   const settingsStartedAt = await page.evaluate(() => performance.now());
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   const settingsRenderMs = await page.evaluate(
     (start) => performance.now() - start,
     settingsStartedAt,
@@ -1194,7 +1193,7 @@ test("edits task model settings in the portable type contract", async ({
   expect(typeSource).toContain("auto_stop_on_complete: true");
 
   await page.reload();
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await openSettingsSection(page, "Advanced");
   await expect(
     page.getByRole("combobox", { name: "Default status" }),
@@ -1220,7 +1219,7 @@ test("edits task model settings in the portable type contract", async ({
 test("auto-archives from a contract status event without polling", async ({
   page,
 }, testInfo) => {
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await openSettingsSection(page, "Advanced");
   const doneAutomation = page
     .locator(".status-automation-row")
@@ -2065,8 +2064,7 @@ views:
     await writable.close();
   });
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await openViewsCatalog(page);
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await expect(page.getByText("Work board", { exact: true })).toBeVisible();
   await expect(page.getByText("Task details", { exact: true })).toBeVisible();
@@ -2175,8 +2173,7 @@ views:
     }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await openViewsCatalog(page);
   await page.getByText("Task details", { exact: true }).click();
   await expect(
     page.locator(".saved-view-groups").getByRole("heading", {
@@ -2277,8 +2274,8 @@ views:
     .locator("#main-content")
     .getByRole("button", { name: "Views", exact: true })
     .click();
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 });
 
 test("orders several navigation views and exposes the rest from the mobile Views menu", async ({
@@ -2309,8 +2306,7 @@ test("orders several navigation views and exposes the rest from the mobile Views
     await writable.close();
   });
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await openViewsCatalog(page);
   await expect(
     page.getByRole("heading", { name: "tasknotes-app", exact: true }),
   ).toBeVisible();
@@ -2389,8 +2385,7 @@ test("keeps a task recoverable when a view filter cannot be inverted", async ({
     await writable.close();
   });
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("button", { name: /Saved views/ }).click();
+  await openViewsCatalog(page);
   await page.getByText("Future", { exact: true }).click();
   await page.getByLabel("New task title").fill("Outside the future filter");
   await page.getByRole("button", { name: "Add", exact: true }).click();

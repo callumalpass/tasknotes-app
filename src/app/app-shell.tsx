@@ -5,9 +5,9 @@ import {
   CheckCircle2,
   Columns3,
   List,
-  MoreHorizontal,
   Plus,
   Search,
+  Settings,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -75,6 +75,11 @@ export function AppShell() {
     const initial = parseRoute();
     return initial.page === "task" ? { page: "home" } : initial;
   });
+  const viewsCatalogOpen = route.page === "views" && !route.key;
+
+  useEffect(() => {
+    if (viewsCatalogOpen) void refreshViews();
+  }, [refreshViews, viewsCatalogOpen]);
 
   useEffect(() => {
     const pop = () => {
@@ -255,14 +260,7 @@ export function AppShell() {
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : workspace.page === "more" ? (
-          <MoreScreen
-            navigationViewCount={navigationViews.length}
-            onNewTask={() => setCaptureOpen(true)}
-            onOpenViews={() => {
-              void refreshViews();
-              navigate({ page: "views" });
-            }}
-          />
+          <MoreScreen onNewTask={() => setCaptureOpen(true)} />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
         ) : workspace.page === "views" || workspace.page === "home" ? (
@@ -740,8 +738,8 @@ function Navigation({
         type="button"
         onClick={() => onNavigate({ page: "more" })}
       >
-        <MoreHorizontal aria-hidden="true" size={22} strokeWidth={1.7} />
-        <span>More</span>
+        <Settings aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>Settings</span>
       </button>
     </>
   );

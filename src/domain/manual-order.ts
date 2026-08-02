@@ -46,6 +46,31 @@ export function isManualOrderProperty(
   return propertyName(property) === sortOrderField;
 }
 
+export function enableManualOrderSort(
+  sort: readonly TaskViewSort[] | undefined,
+  sortOrderField: string,
+  defaultProperty: string,
+): TaskViewSort[] {
+  const existing = sort?.find(({ property }) =>
+    isManualOrderProperty(property, sortOrderField),
+  );
+  return [
+    existing ?? { property: defaultProperty, direction: "desc" },
+    ...(sort ?? []).filter(
+      ({ property }) => !isManualOrderProperty(property, sortOrderField),
+    ),
+  ];
+}
+
+export function disableManualOrderSort(
+  sort: readonly TaskViewSort[] | undefined,
+  sortOrderField: string,
+): TaskViewSort[] {
+  return (sort ?? []).filter(
+    ({ property }) => !isManualOrderProperty(property, sortOrderField),
+  );
+}
+
 export function planManualOrder(
   tasks: readonly Task[],
   dragged: Task,

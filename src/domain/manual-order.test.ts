@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   appendManualOrderRank,
+  disableManualOrderSort,
+  enableManualOrderSort,
   isTaskNotesSortRank,
   manualOrderConfiguration,
   planManualOrder,
@@ -35,6 +37,51 @@ describe("TaskNotes manual order", () => {
         "tasknotes_manual_order",
       ),
     ).toBeNull();
+  });
+
+  it("prepends manual order without losing the existing sort conditions", () => {
+    const sort = [
+      { property: "due", direction: "asc" as const },
+      {
+        property: 'note["tasknotes_manual_order"]',
+        direction: "asc" as const,
+      },
+      { property: "priority", direction: "desc" as const },
+    ];
+
+    expect(
+      enableManualOrderSort(
+        sort,
+        "tasknotes_manual_order",
+        "note.tasknotes_manual_order",
+      ),
+    ).toEqual([
+      {
+        property: 'note["tasknotes_manual_order"]',
+        direction: "asc",
+      },
+      { property: "due", direction: "asc" },
+      { property: "priority", direction: "desc" },
+    ]);
+  });
+
+  it("removes only manual order so the preserved sorts take over", () => {
+    expect(
+      disableManualOrderSort(
+        [
+          {
+            property: "note.tasknotes_manual_order",
+            direction: "desc",
+          },
+          { property: "due", direction: "asc" },
+          { property: "priority", direction: "desc" },
+        ],
+        "tasknotes_manual_order",
+      ),
+    ).toEqual([
+      { property: "due", direction: "asc" },
+      { property: "priority", direction: "desc" },
+    ]);
   });
 
   it("rebalances missing and legacy ranks into plugin-compatible alpha ranks", () => {

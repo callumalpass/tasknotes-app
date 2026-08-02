@@ -30,6 +30,8 @@ import { kanbanPropertyRole, type KanbanFieldMapping } from "../domain/kanban";
 import { todayString } from "../domain/task";
 import {
   appendManualOrderRank,
+  disableManualOrderSort,
+  enableManualOrderSort,
   manualOrderConfiguration,
   planManualOrder,
   sortTasksByManualOrder,
@@ -61,7 +63,7 @@ import {
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
 import { localIndexingLabel } from "./indexing-progress";
-import { readViewDraft } from "../domain/view-document";
+import { readViewDraft, updateViewDocument } from "../domain/view-document";
 import { ViewTaskRow } from "./views/view-task-row";
 import { MiniCalendarView } from "./views/mini-calendar-view";
 import { calendarDateDefaults } from "../domain/mini-calendar";
@@ -182,7 +184,9 @@ export function ViewsScreen({
   const [manualOrderPending, setManualOrderPending] = useState<
     Map<number, { viewKey: string; taskId: string }>
   >(() => new Map());
-  const [reorderingView, setReorderingView] = useState<string | null>(null);
+  const [manualOrderSortPending, setManualOrderSortPending] = useState<
+    string | null
+  >(null);
   const viewMutationSequence = useRef(new Map<string, number>());
   const boardMutationQueues = useRef(new Map<string, Promise<void>>());
   const manualOrderMutationSequence = useRef(0);
@@ -292,10 +296,6 @@ export function ViewsScreen({
   );
   const selectedIsTaskList =
     selected?.presentation?.type === "tasknotes.task-list";
-  const reorderMode =
-    Boolean(manualOrder) &&
-    selectedIsTaskList &&
-    reorderingView === selected.key;
   const selectedManualOrderOperations = [...manualOrderPending.values()].filter(
     ({ viewKey: pendingViewKey }) => pendingViewKey === selected?.key,
   );
@@ -392,6 +392,45 @@ export function ViewsScreen({
         : selected?.presentation?.type === "tasknotes.mini-calendar"
           ? " is-mini-calendar-view"
           : "";
+
+  async function toggleManualOrderSort() {
+    if (
+      !selected ||
+      !selectedIsTaskList ||
+      !selected.source.writable ||
+      manualOrderSortPending
+    )
+      return;
+    const view = selected;
+    const sortOrderField = configuration.fieldMapping.sortOrder;
+    setManualOrderSortPending(view.key);
+    setViewActionError(null);
+    try {
+      const source = await repository.readViewSource(view.source.path);
+      const draft = readViewDraft(source, view.id);
+      const active = Boolean(
+        manualOrderConfiguration(draft.sort, sortOrderField),
+      );
+      const defaultProperty =
+        draft.dialect === "obsidian-bases"
+          ? basesProperty(sortOrderField)
+          : sortOrderField;
+      const sort = active
+        ? disableManualOrderSort(draft.sort, sortOrderField)
+        : enableManualOrderSort(draft.sort, sortOrderField, defaultProperty);
+      await repository.updateViewSource({
+        path: source.path,
+        ifRevision: source.revision,
+        document: updateViewDocument(source, { ...draft, sort }),
+      });
+      setSourceSort({ key: view.key, sort });
+      void onViewsChanged().catch(() => undefined);
+    } catch (reason) {
+      setViewActionError({ viewKey: view.key, message: message(reason) });
+    } finally {
+      setManualOrderSortPending((key) => (key === view.key ? null : key));
+    }
+  }
 
   async function reorderTasks(
     rows: readonly TaskViewRow[],
@@ -943,10 +982,7 @@ export function ViewsScreen({
               </small>
             ) : null}
           </div>
-          {!editing &&
-          ((manualOrder && selectedIsTaskList) ||
-            selected?.source.writable ||
-            operational) ? (
+          {!editing && (selected?.source.writable || operational) ? (
             <div className="view-header-actions">
               {operational ? (
                 <button
@@ -958,17 +994,23 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
-              {manualOrder && selectedIsTaskList ? (
+              {selectedIsTaskList && selected?.source.writable ? (
                 <button
                   aria-label={
-                    reorderMode ? "Finish reordering" : "Reorder tasks"
+                    manualOrder
+                      ? "Turn off manual order"
+                      : "Turn on manual order"
                   }
-                  aria-pressed={reorderMode}
+                  aria-pressed={Boolean(manualOrder)}
                   className="view-header-action"
-                  type="button"
-                  onClick={() =>
-                    setReorderingView(reorderMode ? null : selected.key)
+                  disabled={manualOrderSortPending === selected.key}
+                  title={
+                    manualOrder
+                      ? "Turn off manual order"
+                      : "Turn on manual order"
                   }
+                  type="button"
+                  onClick={() => void toggleManualOrderSort()}
                 >
                   <GripVertical aria-hidden="true" size={18} />
                 </button>
@@ -1146,7 +1188,6 @@ export function ViewsScreen({
             }
             manualOrder={manualOrder}
             orderPending={manualOrderPendingForSelected}
-            reorderMode={reorderMode}
             titleProperty={configuration.fieldMapping.title}
             onMove={(dragged, source, destination, targetId, placement) =>
               void moveListTask(
@@ -1902,7 +1943,6 @@ function TaskListView({
   moves,
   manualOrder,
   orderPending,
-  reorderMode,
   titleProperty,
   onMove,
   onOpen,
@@ -1913,7 +1953,6 @@ function TaskListView({
   moves: ReadonlyMap<string, { laneKey: string }>;
   manualOrder: ManualOrderConfiguration | null;
   orderPending: boolean;
-  reorderMode: boolean;
   titleProperty: string;
   onMove(
     dragged: TaskViewRow,
@@ -1960,7 +1999,7 @@ function TaskListView({
       execution.rows,
       sectionMode,
       todayString(),
-      { includeEmpty: reorderMode || moves.size > 0 },
+      { includeEmpty: Boolean(manualOrder) || moves.size > 0 },
     );
     if (sections.length) {
       grouped = true;
@@ -1989,7 +2028,6 @@ function TaskListView({
       lanes={lanes}
       manualOrder={manualOrder}
       orderPending={orderPending}
-      reorderMode={reorderMode}
       properties={execution.view.properties}
       titleProperty={titleProperty}
       onOpen={onOpen}
@@ -2006,7 +2044,6 @@ function ManualTaskRows({
   lanes,
   manualOrder,
   orderPending,
-  reorderMode,
   properties,
   titleProperty,
   onOpen,
@@ -2019,7 +2056,6 @@ function ManualTaskRows({
   lanes: TaskListLane[];
   manualOrder: ManualOrderConfiguration | null;
   orderPending: boolean;
-  reorderMode: boolean;
   properties: TaskViewProperty[];
   titleProperty: string;
   onOpen(task: Task, occurrenceDate?: string): void;
@@ -2202,14 +2238,14 @@ function ManualTaskRows({
         className={
           grouped
             ? `task-groups saved-view-groups task-list-view${daySections ? " day-task-sections" : ""}`
-            : `saved-task-list task-list-view${manualOrder && reorderMode ? " manual-order-list" : ""}`
+            : `saved-task-list task-list-view${manualOrder ? " manual-order-list" : ""}`
         }
         ref={listRef}
       >
         {lanes.map((lane) => {
           const rows = (
             <div
-              className={`saved-task-list${grouped && manualOrder && reorderMode ? " manual-order-list" : ""}`}
+              className={`saved-task-list${grouped && manualOrder ? " manual-order-list" : ""}`}
             >
               {lane.rows.map((row) => (
                 <div
@@ -2217,7 +2253,7 @@ function ManualTaskRows({
                   data-manual-order-task={row.task.id}
                   key={row.task.id}
                 >
-                  {manualOrder && reorderMode ? (
+                  {manualOrder ? (
                     <button
                       aria-label={`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
                       className="manual-order-handle"
@@ -2256,7 +2292,7 @@ function ManualTaskRows({
                   />
                 </div>
               ))}
-              {grouped && reorderMode && !lane.rows.length ? (
+              {grouped && manualOrder && !lane.rows.length ? (
                 <div className="task-list-empty-drop-zone">Drop here</div>
               ) : null}
             </div>
@@ -2282,7 +2318,7 @@ function ManualTaskRows({
           );
         })}
       </div>
-      {reorderMode && grouped && !canMoveAcrossLanes ? (
+      {manualOrder && grouped && !canMoveAcrossLanes ? (
         <p className="view-note">
           These sections are calculated, so tasks can only be reordered within
           them.
@@ -2422,6 +2458,12 @@ function safeId(value: string): string {
 function columnLabel(value: unknown): string {
   if (value === null || value === "") return "No value";
   return String(value).replaceAll("-", " ");
+}
+
+function basesProperty(field: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(field)
+    ? `note.${field}`
+    : `note[${JSON.stringify(field)}]`;
 }
 
 function message(reason: unknown): string {

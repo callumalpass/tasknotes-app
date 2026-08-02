@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { changeNotificationLabel } from "./notification-label";
 
-describe("More notification status", () => {
+describe("Settings notification status", () => {
   it("distinguishes checking, errors, and unsupported browsers", () => {
     expect(changeNotificationLabel({ state: "checking", optedIn: false })).toBe(
       "Checking",

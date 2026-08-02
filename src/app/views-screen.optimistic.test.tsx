@@ -659,16 +659,6 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     </RepositoryProvider>,
   );
 
-  expect(
-    screen.queryByRole("button", {
-      name: "Reorder Charlie. Drag, or use up and down arrow keys.",
-    }),
-  ).not.toBeInTheDocument();
-  fireEvent.click(
-    await screen.findByRole("button", {
-      name: "Reorder tasks",
-    }),
-  );
   const handle = await screen.findByRole("button", {
     name: "Reorder Charlie. Drag, or use up and down arrow keys.",
   });
@@ -690,6 +680,96 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
       "Reorder Bravo. Drag, or use up and down arrow keys.",
     ]);
   });
+});
+
+it("toggles manual order at the top while preserving fallback sorts", async () => {
+  const view = manualListView("toggle");
+  view.sort = [
+    { property: "note.due", direction: "asc" },
+    { property: "note.priority", direction: "desc" },
+  ];
+  const tasks = [listTask("alpha", "Alpha")];
+  let source = {
+    path: view.source.path,
+    format: "obsidian.base",
+    revision: "one",
+    document: `views:
+  - type: tasknotesTaskList
+    name: toggle
+    sort:
+      - property: note.due
+        direction: ASC
+      - property: note.priority
+        direction: DESC
+    options: { create: false }
+`,
+  };
+  const updateViewSource = vi.fn(
+    async (input: { path: string; document: string; ifRevision?: string }) => {
+      source = { ...source, document: input.document, revision: "two" };
+      return source;
+    },
+  );
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: tasks.length,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => tasks,
+    cachedViewExecution: async () => null,
+    executeView: async () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: [],
+    }),
+    readViewSource: async () => source,
+    updateViewSource,
+    collectionInfo: testCollectionInfo,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  renderListView(repository, view);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn on manual order" }),
+  );
+
+  await screen.findByRole("button", { name: "Turn off manual order" });
+  expect(updateViewSource).toHaveBeenCalledOnce();
+  expect(source.document.indexOf("note.tasknotes_manual_order")).toBeLessThan(
+    source.document.indexOf("note.due"),
+  );
+  expect(source.document.indexOf("note.due")).toBeLessThan(
+    source.document.indexOf("note.priority"),
+  );
+  expect(
+    await screen.findByRole("button", {
+      name: "Reorder Alpha. Drag, or use up and down arrow keys.",
+    }),
+  ).toBeVisible();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Turn off manual order" }),
+  );
+
+  await screen.findByRole("button", { name: "Turn on manual order" });
+  expect(updateViewSource).toHaveBeenCalledTimes(2);
+  expect(source.document).not.toContain("note.tasknotes_manual_order");
+  expect(source.document.indexOf("note.due")).toBeLessThan(
+    source.document.indexOf("note.priority"),
+  );
+  expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
 });
 
 it("moves a task between reusable day sections with the shared list move path", async () => {
@@ -719,7 +799,6 @@ it("moves a task between reusable day sections with the shared list move path", 
   }));
 
   renderListView(repository, view);
-  fireEvent.click(await screen.findByRole("button", { name: "Reorder tasks" }));
   const handle = await screen.findByRole("button", {
     name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
   });
@@ -786,7 +865,6 @@ it("moves a grouped list task by mutating the destination property", async () =>
   });
 
   renderListView(repository, view);
-  fireEvent.click(await screen.findByRole("button", { name: "Reorder tasks" }));
   fireEvent.keyDown(
     await screen.findByRole("button", {
       name: "Reorder Open task. Drag, or use up and down arrow keys.",

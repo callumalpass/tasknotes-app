@@ -65,8 +65,10 @@ test("views and settings have no serious accessibility violations", async ({
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await expectNoSeriousViolations(page);
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "More" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible();
+  await expect(page.getByText("Saved views", { exact: true })).toHaveCount(0);
   await expectNoSeriousViolations(page);
 });
 
