@@ -284,7 +284,7 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
                 at: file.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            try contents.write(to: file, options: .atomic)
+            try contents.write(to: file, options: [.atomic, .withoutOverwriting])
             return ["entry": try self.entry(path: path, url: file)]
         }
     }

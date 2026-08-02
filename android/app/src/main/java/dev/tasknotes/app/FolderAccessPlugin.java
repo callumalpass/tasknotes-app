@@ -300,7 +300,7 @@ public class FolderAccessPlugin extends Plugin {
                 throw new IllegalArgumentException("data must be valid base64.", error);
             }
             String temporaryPath = path + ".tasknotes-write-" + UUID.randomUUID() + ".tmp";
-            DocumentFile temporary = fileForWrite(id, temporaryPath);
+            DocumentFile temporary = fileForWrite(id, temporaryPath, mimeType(path));
             DocumentFile file;
             try {
                 try (
@@ -316,8 +316,8 @@ public class FolderAccessPlugin extends Plugin {
                     throw new IOException("The provider wrote only part of " + path + ".");
                 }
                 DocumentFile existing = resolve(id, path);
-                if (existing != null && existing.exists() && !existing.delete()) {
-                    throw new IOException("Could not replace " + path + ".");
+                if (existing != null && existing.exists()) {
+                    throw new IOException("A binary already exists at " + path + ".");
                 }
                 pathCache.remove(path);
                 if (!temporary.renameTo(fileName(path))) {
@@ -502,6 +502,10 @@ public class FolderAccessPlugin extends Plugin {
     }
 
     private DocumentFile fileForWrite(String id, String path) throws IOException {
+        return fileForWrite(id, path, mimeType(path));
+    }
+
+    private DocumentFile fileForWrite(String id, String path, String mimeType) throws IOException {
         DocumentFile existing = resolve(id, path);
         if (existing != null) {
             if (!existing.exists()) {
@@ -514,7 +518,7 @@ public class FolderAccessPlugin extends Plugin {
         }
         String parent = parentPath(path);
         DocumentFile directory = parent.isEmpty() ? requireRoot(id) : ensureDirectory(id, parent);
-        DocumentFile created = directory.createFile(mimeType(path), fileName(path));
+        DocumentFile created = directory.createFile(mimeType, fileName(path));
         if (created == null) {
             throw new IOException("Could not create " + path + ".");
         }
@@ -550,6 +554,10 @@ public class FolderAccessPlugin extends Plugin {
         entry.put("path", path);
         entry.put("lastModified", file.lastModified());
         entry.put("size", file.length());
+        String mediaType = file.getType();
+        if (mediaType != null) {
+            entry.put("mediaType", mediaType);
+        }
         return entry;
     }
 

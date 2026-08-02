@@ -21,7 +21,6 @@ const ALL_ACTIONS = new Set<CollectionFileAction>([
   "list",
   "read",
   "add",
-  "replace",
   "move",
   "delete",
 ]);
@@ -79,10 +78,11 @@ export class VaultCollectionFileStore implements CollectionFileStore {
     const resolvedMediaType = validatedMediaType(target, options.mediaType);
     throwIfAborted(options.signal);
     const existing = await this.entry(target);
-    if (options.ifRevision !== undefined) {
-      if (!existing || revision(existing) !== options.ifRevision)
-        throw new Error(`Attachment revision conflict at ${target}.`);
-    }
+    if (options.ifRevision !== undefined)
+      throw new Error(
+        "Native attachment replacement is unavailable until the folder provider can commit it atomically.",
+      );
+    if (existing) throw new Error(`An attachment already exists at ${target}.`);
     const bytes = await bytesFrom(source);
     options.onProgress?.({
       phase: "hashing",

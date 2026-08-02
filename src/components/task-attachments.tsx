@@ -3,7 +3,6 @@ import {
   FileImage,
   ImagePlus,
   LoaderCircle,
-  Trash2,
   Unlink,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -35,14 +34,8 @@ export function TaskAttachments({
   const [loading, setLoading] = useState(service.available());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<string | null>(null);
-  const [physicalDeletionAvailable, setPhysicalDeletionAvailable] = useState<
-    boolean | null
-  >(null);
   const mounted = useRef(true);
   const loadGeneration = useRef(0);
-  const keepButtonRef = useRef<HTMLButtonElement>(null);
-  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(async () => {
     if (!service.available()) return;
@@ -50,13 +43,11 @@ export function TaskAttachments({
     setLoading(true);
     try {
       await service.recover();
-      const [resolved, canDelete] = await Promise.all([
-        service.resolve((await service.currentTask(task.id)) ?? task),
-        service.physicalDeletionAvailable(),
-      ]);
+      const resolved = await service.resolve(
+        (await service.currentTask(task.id)) ?? task,
+      );
       if (mounted.current && generation === loadGeneration.current) {
         setItems(resolved);
-        setPhysicalDeletionAvailable(canDelete);
         setError(null);
       }
     } catch (reason) {
@@ -78,10 +69,6 @@ export function TaskAttachments({
       loadGeneration.current += 1;
     };
   }, [load]);
-
-  useEffect(() => {
-    if (confirming) keepButtonRef.current?.focus();
-  }, [confirming]);
 
   async function run(action: () => Promise<unknown>): Promise<void> {
     if (busy) return;
@@ -181,12 +168,10 @@ export function TaskAttachments({
           {error}
         </p>
       ) : null}
-      {physicalDeletionAvailable === false ? (
-        <p className="attachment-policy">
-          Synced images can be detached from this task. Permanent file deletion
-          waits for an authoritative mdbase reference check.
-        </p>
-      ) : null}
+      <p className="attachment-policy">
+        Detaching removes an image from this task but keeps the file in your
+        collection. Permanent deletion isn&apos;t available yet.
+      </p>
       {loading && !items.length ? (
         <p className="attachment-status" role="status">
           <LoaderCircle aria-hidden="true" className="spin" size={17} /> Loading
@@ -201,97 +186,46 @@ export function TaskAttachments({
                 <strong>{displayName(item.path ?? item.reference)}</strong>
                 <small>{attachmentState(item)}</small>
               </div>
-              {confirming === item.reference ? (
-                <div
-                  className="attachment-delete-confirm"
-                  role="group"
-                  aria-label="Confirm file deletion"
+              <div className="attachment-actions">
+                {item.file ? (
+                  <button
+                    aria-label={`Open ${displayName(item.path ?? item.reference)}`}
+                    disabled={busy}
+                    title="Open image"
+                    type="button"
+                    onClick={() => openImage(item)}
+                  >
+                    <ExternalLink aria-hidden="true" size={17} />
+                  </button>
+                ) : null}
+                <button
+                  disabled={busy || !item.file}
+                  type="button"
+                  onClick={() =>
+                    void run(async () => {
+                      await service.assertInlineInsertable(
+                        task.id,
+                        item.reference,
+                      );
+                      await onInsertInline(item.reference);
+                    })
+                  }
                 >
-                  <span>
-                    Delete this image from the collection? It will also be
-                    detached from this task. This can&apos;t be undone.
-                  </span>
-                  <button
-                    ref={keepButtonRef}
-                    type="button"
-                    onClick={() => {
-                      setConfirming(null);
-                      queueMicrotask(() => deleteTriggerRef.current?.focus());
-                    }}
-                  >
-                    Keep
-                  </button>
-                  <button
-                    className="danger"
-                    disabled={busy}
-                    type="button"
-                    onClick={() =>
-                      void run(() =>
-                        service.deletePhysical(task.id, item.reference),
-                      )
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
-              ) : (
-                <div className="attachment-actions">
-                  {item.file ? (
-                    <button
-                      aria-label={`Open ${displayName(item.path ?? item.reference)}`}
-                      disabled={busy}
-                      title="Open image"
-                      type="button"
-                      onClick={() => openImage(item)}
-                    >
-                      <ExternalLink aria-hidden="true" size={17} />
-                    </button>
-                  ) : null}
-                  <button
-                    disabled={busy || !item.file}
-                    type="button"
-                    onClick={() =>
-                      void run(async () => {
-                        await service.assertInlineInsertable(
-                          task.id,
-                          item.reference,
-                        );
-                        await onInsertInline(item.reference);
-                      })
-                    }
-                  >
-                    Insert
-                  </button>
-                  <button
-                    aria-label={`Detach ${displayName(item.path ?? item.reference)}`}
-                    disabled={busy}
-                    title="Detach from task"
-                    type="button"
-                    onClick={() =>
-                      void run(() => service.detach(task.id, item.reference))
-                    }
-                  >
-                    <Unlink aria-hidden="true" size={17} />
-                    <span>Detach</span>
-                  </button>
-                  {physicalDeletionAvailable ? (
-                    <button
-                      aria-label={`Delete ${displayName(item.path ?? item.reference)} file`}
-                      className="danger"
-                      disabled={busy || !item.file}
-                      title="Delete file"
-                      type="button"
-                      onClick={(event) => {
-                        deleteTriggerRef.current = event.currentTarget;
-                        setConfirming(item.reference);
-                      }}
-                    >
-                      <Trash2 aria-hidden="true" size={17} />
-                      <span>Delete</span>
-                    </button>
-                  ) : null}
-                </div>
-              )}
+                  Insert
+                </button>
+                <button
+                  aria-label={`Detach ${displayName(item.path ?? item.reference)}`}
+                  disabled={busy}
+                  title="Detach from task"
+                  type="button"
+                  onClick={() =>
+                    void run(() => service.detach(task.id, item.reference))
+                  }
+                >
+                  <Unlink aria-hidden="true" size={17} />
+                  <span>Detach</span>
+                </button>
+              </div>
             </li>
           ))}
         </ul>

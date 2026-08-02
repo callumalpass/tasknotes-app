@@ -62,6 +62,36 @@ describe("AttachmentService", () => {
     expect(result.task.body).toBe("Context");
   });
 
+  it("names unnamed blobs and resolves missing or invalid memberships honestly", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({ title: "Pasted image" });
+    const service = new AttachmentService(repository);
+    const result = await service.attachImage(
+      task.id,
+      new Blob([Uint8Array.of(6)]),
+    );
+
+    expect(result.file.path).toMatch(
+      /^Attachments\/[0-9a-f-]+-image-[0-9]+\.png$/,
+    );
+    await expect(service.currentTask(task.id)).resolves.toMatchObject({
+      id: task.id,
+    });
+    await expect(
+      service.resolve({
+        ...result.task,
+        attachments: [result.reference, "https://example.com/remote.png"],
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        reference: result.reference,
+        path: result.file.path,
+        file: result.file,
+      }),
+      { reference: "https://example.com/remote.png" },
+    ]);
+  });
+
   it("validates existing inline insertion without mutating Notes", async () => {
     const { repository } = await fixture();
     const task = await repository.create({ title: "Existing image" });
@@ -101,7 +131,7 @@ describe("AttachmentService", () => {
     expect(await repository.files!.list({ folder: "Attachments" })).toEqual([]);
   });
 
-  it("rejects unavailable storage, missing tasks, invalid links, and missing files", async () => {
+  it("rejects unavailable storage and missing tasks", async () => {
     const unavailable = new AttachmentService({
       files: undefined,
     } as TaskRepository);
@@ -118,15 +148,6 @@ describe("AttachmentService", () => {
         new File([Uint8Array.of(1)], "missing.png", { type: "image/png" }),
       ),
     ).rejects.toThrow("Task not found");
-    const task = await repository.create({ title: "Missing file" });
-    await expect(
-      service.deletePhysical(task.id, "https://example.com/image.png"),
-    ).rejects.toThrow("safe file path");
-    const reference = "[[Attachments/missing.png]]";
-    await repository.update(task.id, { attachments: [reference] });
-    await expect(service.deletePhysical(task.id, reference)).rejects.toThrow(
-      "already missing",
-    );
   });
 
   it("cleans a journaled link when storage rejects before writing bytes", async () => {
@@ -145,60 +166,6 @@ describe("AttachmentService", () => {
     ).rejects.toThrow("Storage full");
     await service.recover();
     expect((await repository.get(task.id))?.attachments).toEqual([]);
-    expect(await repository.files!.list({ folder: "Attachments" })).toEqual([]);
-  });
-
-  it("reference-checks physical deletion across frontmatter and task bodies", async () => {
-    const { repository } = await fixture();
-    const first = await repository.create({ title: "First" });
-    const second = await repository.create({ title: "Second" });
-    const service = new AttachmentService(repository);
-    const list = vi.spyOn(repository, "list");
-    const attached = await service.attachImage(
-      first.id,
-      new File([Uint8Array.of(4)], "shared.jpg", { type: "image/jpeg" }),
-    );
-    await repository.update(second.id, { attachments: [attached.reference] });
-
-    await expect(
-      service.deletePhysical(first.id, attached.reference),
-    ).rejects.toThrow("other tasks");
-    expect(list).toHaveBeenCalledWith({
-      status: "all",
-      archived: "include",
-      limit: Number.MAX_SAFE_INTEGER,
-    });
-    await service.detach(second.id, attached.reference);
-    await repository.update(first.id, { body: `!${attached.reference}` });
-    await expect(
-      service.deletePhysical(first.id, attached.reference),
-    ).rejects.toThrow("inline embed");
-    const encodedPath = attached.file.path.replace(
-      "shared.jpg",
-      "shared%2Ejpg",
-    );
-    await repository.update(first.id, {
-      body: `![Receipt](../${encodedPath} "Expense receipt")`,
-    });
-    await expect(
-      service.deletePhysical(first.id, attached.reference),
-    ).rejects.toThrow("inline embed");
-    await repository.update(first.id, {
-      body: `![[${attached.file.path}|Receipt alias]]`,
-    });
-    await expect(
-      service.deletePhysical(first.id, attached.reference),
-    ).rejects.toThrow("inline embed");
-    await repository.update(first.id, {
-      body: `![Receipt][expense]\n\n[expense]: ../${encodedPath} "Expense receipt"`,
-    });
-    await expect(
-      service.deletePhysical(first.id, attached.reference),
-    ).rejects.toThrow("inline embed");
-    await repository.update(first.id, { body: "" });
-
-    const updated = await service.deletePhysical(first.id, attached.reference);
-    expect(updated.attachments).toEqual([]);
     expect(await repository.files!.list({ folder: "Attachments" })).toEqual([]);
   });
 
@@ -285,55 +252,31 @@ describe("AttachmentService", () => {
     await expect(service.recover()).resolves.toBeUndefined();
   });
 
-  it("does not offer non-atomic physical deletion for mdbase collections", async () => {
+  it("rejects a successful write whose returned descriptor fails integrity", async () => {
     const { repository } = await fixture();
-    const task = await repository.create({ title: "Synced attachment" });
+    const task = await repository.create({ title: "Dishonest provider" });
     const service = new AttachmentService(repository);
-    const attached = await service.attachImage(
-      task.id,
-      new File([Uint8Array.of(7)], "hosted.png", { type: "image/png" }),
-    );
-    vi.spyOn(repository, "collectionInfo").mockResolvedValue({
-      kind: "connect",
-      id: "hosted",
-      name: "mdbase cloud",
-      location: "Offline copy on this device",
-      runtime: "browser",
-    });
-
-    await expect(
-      service.deletePhysical(task.id, attached.reference),
-    ).rejects.toThrow("authoritative reference check");
-    expect((await repository.get(task.id))?.attachments).toEqual([
-      attached.reference,
-    ]);
-    expect(
-      await repository.files!.list({ folder: "Attachments" }),
-    ).toHaveLength(1);
-  });
-
-  it("keeps membership until an interrupted physical deletion can resume", async () => {
-    const { repository } = await fixture();
-    const task = await repository.create({ title: "Delete safely" });
-    const service = new AttachmentService(repository);
-    const attached = await service.attachImage(
-      task.id,
-      new File([Uint8Array.of(7)], "delete.png", { type: "image/png" }),
-    );
-    vi.spyOn(repository.files!, "delete").mockRejectedValueOnce(
-      new Error("device storage busy"),
+    const upload = repository.files!.upload.bind(repository.files);
+    const deleteFile = vi
+      .spyOn(repository.files!, "delete")
+      .mockRejectedValueOnce(new Error("cleanup deferred"));
+    vi.spyOn(repository.files!, "upload").mockImplementationOnce(
+      async (...arguments_) => ({
+        ...(await upload(...arguments_)),
+        size: 0,
+      }),
     );
 
     await expect(
-      service.deletePhysical(task.id, attached.reference),
-    ).rejects.toThrow("device storage busy");
-    expect((await repository.get(task.id))?.attachments).toEqual([
-      attached.reference,
-    ]);
-
-    await service.recover();
+      service.attachImage(
+        task.id,
+        new File([Uint8Array.of(1, 2)], "integrity.png", {
+          type: "image/png",
+        }),
+      ),
+    ).rejects.toThrow("did not preserve every byte");
+    expect(deleteFile).toHaveBeenCalledOnce();
     expect((await repository.get(task.id))?.attachments).toEqual([]);
-    expect(await repository.files!.list({ folder: "Attachments" })).toEqual([]);
   });
 
   it("drops recovery intent safely when its task was deleted", async () => {

@@ -33,18 +33,33 @@ describe("VaultCollectionFileStore", () => {
     });
   });
 
-  it("honors revision guards and safe image paths", async () => {
-    const store = new VaultCollectionFileStore(new MemoryVault());
+  it("refuses non-atomic replacement without touching the original bytes", async () => {
+    const vault = new MemoryVault();
+    const writeBinary = vi.spyOn(vault, "writeBinary");
+    const store = new VaultCollectionFileStore(vault);
     const uploaded = await store.upload(
       "Attachments/photo.png",
       Uint8Array.of(1),
     );
+    writeBinary.mockClear();
 
     await expect(
       store.upload("Attachments/photo.png", Uint8Array.of(2), {
-        ifRevision: "stale",
+        ifRevision: uploaded.revision,
       }),
-    ).rejects.toThrow("revision conflict");
+    ).rejects.toThrow("replacement is unavailable");
+    await expect(
+      store.upload("Attachments/photo.png", Uint8Array.of(3)),
+    ).rejects.toThrow("already exists");
+    expect(store.authorizedActions().has("replace")).toBe(false);
+    expect(writeBinary).not.toHaveBeenCalled();
+    expect(
+      new Uint8Array(await (await store.download(uploaded)).arrayBuffer()),
+    ).toEqual(Uint8Array.of(1));
+  });
+
+  it("rejects unsafe paths and mismatched image formats", async () => {
+    const store = new VaultCollectionFileStore(new MemoryVault());
     await expect(
       store.upload("../photo.png", Uint8Array.of(1)),
     ).rejects.toThrow("Unsafe collection path");
@@ -56,7 +71,6 @@ describe("VaultCollectionFileStore", () => {
         mediaType: "image/svg+xml",
       }),
     ).rejects.toThrow("does not match");
-    expect(await store.download(uploaded)).toBeInstanceOf(Blob);
   });
 
   it("moves and deletes files", async () => {

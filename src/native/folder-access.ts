@@ -9,6 +9,7 @@ export interface NativeFolderEntry {
   path: string;
   lastModified: number;
   size: number;
+  mediaType?: string;
 }
 
 interface FolderAccessPlugin {

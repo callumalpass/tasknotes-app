@@ -733,9 +733,32 @@ async function folderMain() {
     })()`);
     if (
       folderBinary.data !== attachmentBase64 ||
-      folderBinary.written.entry.path !== "Attachments/folder-smoke.png"
+      folderBinary.written.entry.path !== "Attachments/folder-smoke.png" ||
+      folderBinary.written.entry.mediaType !== "image/png"
     )
       throw new Error("The retained-folder binary bridge changed image bytes.");
+    const replacement = await devtools.evaluate(`(async () => {
+      const plugin = Capacitor.Plugins.FolderAccess;
+      const request = {
+        selectionId: ${JSON.stringify(selected.selection.id)},
+        path: "Attachments/folder-smoke.png"
+      };
+      let error = "";
+      try {
+        await plugin.writeBinary({ ...request, data: "AQID" });
+      } catch (reason) {
+        error = String(reason?.message ?? reason);
+      }
+      const read = await plugin.readBinary(request);
+      return { error, data: read.data };
+    })()`);
+    if (
+      !replacement.error.includes("already exists") ||
+      replacement.data !== attachmentBase64
+    )
+      throw new Error(
+        "The retained-folder binary bridge did not preserve an existing image.",
+      );
 
     const externalTitle = `External folder smoke ${runId}`;
     await devtools.fillInput("New task title", externalTitle);

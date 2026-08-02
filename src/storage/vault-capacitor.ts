@@ -117,18 +117,26 @@ export class CapacitorVault implements BinaryVault {
 
   async writeBinary(path: string, contents: Uint8Array): Promise<VaultEntry> {
     const relativePath = safePath(path);
+    const temporaryPath = `${relativePath}.tasknotes-write-${crypto.randomUUID()}.tmp`;
     await this.ensureParentDirectory(relativePath);
-    await Filesystem.writeFile({
-      path: this.path(relativePath),
-      directory: Directory.Documents,
-      data: base64FromBytes(contents),
-      recursive: false,
-    });
-    const info = await Filesystem.stat({
-      path: this.path(relativePath),
-      directory: Directory.Documents,
-    });
-    return toEntry(relativePath, info);
+    try {
+      await Filesystem.writeFile({
+        path: this.path(temporaryPath),
+        directory: Directory.Documents,
+        data: base64FromBytes(contents),
+        recursive: false,
+      });
+      const staged = await Filesystem.stat({
+        path: this.path(temporaryPath),
+        directory: Directory.Documents,
+      });
+      if (staged.size !== contents.byteLength)
+        throw new Error(`The provider wrote only part of ${relativePath}.`);
+      return await this.rename(temporaryPath, relativePath);
+    } catch (error) {
+      await this.delete(temporaryPath);
+      throw error;
+    }
   }
 
   async delete(path: string): Promise<void> {

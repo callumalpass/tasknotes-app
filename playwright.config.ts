@@ -7,7 +7,7 @@ const webServerCommand =
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
-  // Desktop and mobile exercise the same-origin OPFS collection.
+  // Desktop and mobile share the E2E-only OPFS fixture, never a product store.
   workers: 1,
   use: {
     baseURL,

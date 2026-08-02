@@ -55,10 +55,10 @@ frontmatter `attachments` link list owns membership; an optional image embed in
 the Markdown body owns presentation; and the filesystem or mdbase file
 descriptor owns binary metadata such as size, digest, media type, and revision.
 Attaching therefore never rewrites Notes, detaching never deletes bytes, and a
-physical delete is refused while any other task or inline embed still refers to
-the file. Native collections can then delete the unreferenced bytes. Synced
-mdbase collections deliberately retain detached files until the backend can
-perform the same reference check atomically against its authoritative records.
+detached file is retained by every provider. TaskNotes will expose permanent
+deletion only when the collection authority can atomically prove that no task
+membership or inline embed still refers to the bytes and delete them in the
+same transaction.
 
 ```yaml
 attachments:

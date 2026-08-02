@@ -1,6 +1,4 @@
 import Dexie, { type EntityTable } from "dexie";
-import remarkParse from "remark-parse";
-import { unified } from "unified";
 import {
   attachmentPathFromReference,
   canonicalAttachmentReference,
@@ -18,11 +16,9 @@ interface AttachmentJournalEntry {
   collectionId: string;
   taskId: string;
   reference: string;
-  operation: "link" | "unlink";
   expectedDigest?: `sha256:${string}`;
   expectedSize?: number;
   fileSaved?: boolean;
-  fileDeleted?: boolean;
   enqueuedAt: number;
 }
 
@@ -75,7 +71,7 @@ export class AttachmentService {
         await journal.entries.delete(entry.id);
         continue;
       }
-      if (entry.operation === "link" && !entry.fileSaved) {
+      if (!entry.fileSaved) {
         const file = await this.findFile(task, entry.reference);
         if (!file || !matchesExpectedFile(file, entry)) {
           if (file)
@@ -88,12 +84,7 @@ export class AttachmentService {
         entry.fileSaved = true;
         await journal.entries.put(entry);
       }
-      if (entry.operation === "unlink" && !entry.fileDeleted) {
-        await this.deleteJournalFile(task, entry);
-        entry.fileDeleted = true;
-        await journal.entries.put(entry);
-      }
-      await this.applyJournalEntry(
+      await this.applyMembership(
         (await this.repository.get(entry.taskId)) ?? task,
         entry,
       );
@@ -143,71 +134,6 @@ export class AttachmentService {
     });
   }
 
-  /**
-   * Physically removes bytes only when no task body or other task membership
-   * still points at them. Detaching alone deliberately never deletes a file.
-   */
-  async deletePhysical(taskId: string, reference: string): Promise<Task> {
-    const store = this.requireStore();
-    if (!(await this.physicalDeletionAvailable()))
-      throw new Error(
-        "Synced collections keep detached files. Permanent deletion needs an authoritative reference check that this mdbase version does not provide yet.",
-      );
-    const task = await this.requireTask(taskId);
-    const path = attachmentPathFromReference(reference, task.path);
-    if (!path)
-      throw new Error(
-        "This attachment link does not resolve to a safe file path.",
-      );
-    const tasks = await this.repository.list({
-      status: "all",
-      archived: "include",
-      limit: Number.MAX_SAFE_INTEGER,
-    });
-    const references = tasks.flatMap((candidate) =>
-      attachmentReferences(candidate, path).map((kind) => ({
-        task: candidate,
-        kind,
-      })),
-    );
-    const blocking = references.filter(
-      ({ task: candidate, kind }) =>
-        candidate.id !== task.id || kind === "inline",
-    );
-    if (blocking.length) {
-      const inline = blocking.some(({ kind }) => kind === "inline");
-      throw new Error(
-        inline
-          ? "Remove every inline embed of this image before deleting its file."
-          : "Detach this image from its other tasks before deleting its file.",
-      );
-    }
-    const file = (await store.list({ folder: parentFolder(path) })).find(
-      (candidate) => candidate.path === path,
-    );
-    if (!file) throw new Error("The attachment file is already missing.");
-    const entry: AttachmentJournalEntry = {
-      id: crypto.randomUUID(),
-      collectionId: await this.collectionId(),
-      taskId,
-      reference,
-      operation: "unlink",
-      fileDeleted: false,
-      enqueuedAt: Date.now(),
-    };
-    await journal.entries.put(entry);
-    await store.delete(file);
-    entry.fileDeleted = true;
-    await journal.entries.put(entry);
-    const updated = await this.applyJournalEntry(task, entry);
-    await journal.entries.delete(entry.id);
-    return updated;
-  }
-
-  async physicalDeletionAvailable(): Promise<boolean> {
-    return (await this.repository.collectionInfo()).kind === "local";
-  }
-
   private async attach(
     taskId: string,
     source: File | Blob,
@@ -226,7 +152,6 @@ export class AttachmentService {
       collectionId: await this.collectionId(),
       taskId,
       reference,
-      operation: "link",
       expectedDigest,
       expectedSize,
       fileSaved: false,
@@ -263,7 +188,7 @@ export class AttachmentService {
     }
     entry.fileSaved = true;
     await journal.entries.put(entry);
-    const updated = await this.applyJournalEntry(
+    const updated = await this.applyMembership(
       (await this.repository.get(taskId)) ?? task,
       entry,
     );
@@ -271,28 +196,15 @@ export class AttachmentService {
     return { task: updated, file, reference };
   }
 
-  private async applyJournalEntry(
+  private async applyMembership(
     task: Task,
     entry: AttachmentJournalEntry,
   ): Promise<Task> {
-    if (entry.operation === "unlink") {
-      const attachments = withoutReference(task, entry.reference);
-      if (sameList(task.attachments, attachments)) return task;
-      return this.repository.update(task.id, { attachments });
-    }
     const attachments = hasReference(task, entry.reference)
       ? task.attachments
       : [...task.attachments, entry.reference];
     if (sameList(task.attachments, attachments)) return task;
     return this.repository.update(task.id, { attachments });
-  }
-
-  private async deleteJournalFile(
-    task: Task,
-    entry: AttachmentJournalEntry,
-  ): Promise<void> {
-    const file = await this.findFile(task, entry.reference);
-    if (file) await this.requireStore().delete(file);
   }
 
   private async findFile(
@@ -366,62 +278,6 @@ function withoutReference(task: Task, reference: string): string[] {
 
 function hasReference(task: Task, reference: string): boolean {
   return withoutReference(task, reference).length !== task.attachments.length;
-}
-
-function attachmentReferences(
-  task: Task,
-  path: string,
-): Array<"membership" | "inline"> {
-  const kinds: Array<"membership" | "inline"> = [];
-  if (
-    task.attachments.some(
-      (reference) => attachmentPathFromReference(reference, task.path) === path,
-    )
-  )
-    kinds.push("membership");
-  if (inlineAttachmentPaths(task).has(path)) kinds.push("inline");
-  return kinds;
-}
-
-interface MarkdownNode {
-  type?: string;
-  url?: string;
-  identifier?: string;
-  children?: MarkdownNode[];
-}
-
-const markdownParser = unified().use(remarkParse);
-
-function inlineAttachmentPaths(task: Task): Set<string> {
-  const tree = markdownParser.parse(task.body) as MarkdownNode;
-  const destinations: string[] = [];
-  const definitions = new Map<string, string>();
-  const references: string[] = [];
-  const visit = (node: MarkdownNode): void => {
-    if (node.type === "image" && node.url) destinations.push(node.url);
-    if (node.type === "definition" && node.identifier && node.url)
-      definitions.set(node.identifier.toLowerCase(), node.url);
-    if (node.type === "imageReference" && node.identifier)
-      references.push(node.identifier.toLowerCase());
-    node.children?.forEach(visit);
-  };
-  visit(tree);
-  for (const identifier of references) {
-    const destination = definitions.get(identifier);
-    if (destination) destinations.push(destination);
-  }
-  for (const match of task.body.matchAll(/!\[\[([^\]\n]+)\]\]/g))
-    destinations.push(`[[${match[1]}]]`);
-
-  const paths = new Set<string>();
-  for (const destination of destinations) {
-    const reference = destination.startsWith("[[")
-      ? destination
-      : `[image](${destination})`;
-    const resolved = attachmentPathFromReference(reference, task.path);
-    if (resolved) paths.add(resolved);
-  }
-  return paths;
 }
 
 async function sha256(blob: Blob): Promise<`sha256:${string}`> {

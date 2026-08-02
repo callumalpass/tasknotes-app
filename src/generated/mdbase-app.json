@@ -100,10 +100,6 @@
           "tag": "tasknotes-reminders"
         }
       }
-    ],
-    "native_delivery": {
-      "mode": "managed_fcm",
-      "firebase_project_id": "tasknotes-462906"
-    }
+    ]
   }
 }

@@ -3089,16 +3089,14 @@ button:disabled {
   font-size: 0.74rem;
 }
 
-.attachment-actions,
-.attachment-delete-confirm {
+.attachment-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
 }
 
-.attachment-actions button,
-.attachment-delete-confirm button {
+.attachment-actions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3121,38 +3119,19 @@ button:disabled {
 }
 
 .attachment-actions button:hover,
-.attachment-actions button:focus-visible,
-.attachment-delete-confirm button:hover,
-.attachment-delete-confirm button:focus-visible {
+.attachment-actions button:focus-visible {
   color: var(--ink);
   background: var(--paper-soft);
 }
 
-.attachment-actions button:focus-visible,
-.attachment-delete-confirm button:focus-visible {
+.attachment-actions button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent), transparent 28%);
   outline-offset: 1px;
 }
 
-.attachment-actions button.danger,
-.attachment-delete-confirm button.danger {
-  color: var(--danger);
-}
-
-.attachment-actions button:disabled,
-.attachment-delete-confirm button:disabled {
+.attachment-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
-}
-
-.attachment-delete-confirm {
-  flex-wrap: wrap;
-}
-
-.attachment-delete-confirm span {
-  margin-right: 4px;
-  color: var(--ink);
-  font-size: 0.78rem;
 }
 
 .markdown-preview {
@@ -6748,8 +6727,7 @@ button:disabled {
     grid-template-columns: 44px minmax(0, 1fr);
   }
 
-  .attachment-actions,
-  .attachment-delete-confirm {
+  .attachment-actions {
     grid-column: 1 / -1;
     justify-content: flex-start;
     padding-left: 56px;

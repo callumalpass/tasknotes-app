@@ -112,17 +112,25 @@ describe("TaskScreen", () => {
       ).toMatch(/^!\[\[Attachments\//),
     );
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Delete receipt.png file" }),
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus(),
-    );
     expect(
       screen.getByText(
-        /Delete this image from the collection\?.*detached from this task.*can.t be undone\./,
+        /Detaching removes an image from this task but keeps the file in your collection\. Permanent deletion isn.t available yet\./,
       ),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Delete receipt\.png file/ }),
+    ).not.toBeInTheDocument();
+
+    const detach = screen.getByRole("button", { name: "Detach receipt.png" });
+    await waitFor(() => expect(detach).toBeEnabled());
+    fireEvent.click(detach);
+    await waitFor(() =>
+      expect(screen.queryByText("receipt.png")).not.toBeInTheDocument(),
+    );
+    expect((await repository.get(task.id))?.attachments).toEqual([]);
+    expect(
+      await repository.files!.list({ folder: "Attachments" }),
+    ).toHaveLength(1);
   });
 
   it("preserves Notes typed while an inline image upload is in flight", async () => {
