@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import {
+  connectError,
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
@@ -1086,9 +1087,10 @@ function deferred<T>() {
 }
 
 function unknownOutcome(): MdbaseConnectError {
-  return new MdbaseConnectError(
-    "direct_outcome_unknown",
+  return connectError(
+    "operation_outcome_unknown",
     "The direct write may have completed.",
+    { operationOutcome: "unknown" },
   );
 }
 

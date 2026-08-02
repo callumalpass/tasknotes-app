@@ -1,4 +1,5 @@
 import {
+  connectError,
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
@@ -91,9 +92,9 @@ function isRetryableUnknownOutcome(reason: unknown): boolean {
 }
 
 function pendingRecoveryError(reason: unknown): MdbaseConnectError {
-  return new MdbaseConnectError(
-    "direct_outcome_unknown",
+  return connectError(
+    "operation_outcome_unknown",
     "TaskNotes is still confirming an earlier change. This change was not sent. Keep the collection connected and retry.",
-    { outcomeUnknown: true, recovery: "resolve_outcome", cause: reason },
+    { operationOutcome: "unknown", cause: reason },
   );
 }

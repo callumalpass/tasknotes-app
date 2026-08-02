@@ -2,6 +2,9 @@ import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import {
   MdbaseConnectError,
+  unwrapConnectOutcome,
+  type CollectionDescription,
+  type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
   type MdbaseOperationEnvelope,
@@ -26,6 +29,7 @@ import {
   readOnlyTaskModelSettingsError,
 } from "./connected-task-cache";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
+import { MdbaseCollectionFileStore } from "./mdbase-files";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
@@ -94,6 +98,7 @@ const PAGE_SIZE = 1_000;
  * authority to be reachable and use revisions whenever one has been observed.
  */
 export class RelayTaskRepository implements TaskRepository {
+  readonly files: MdbaseCollectionFileStore;
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
   private taskProviders = new Map<string, TaskNotesTaskModel>([
@@ -135,7 +140,9 @@ export class RelayTaskRepository implements TaskRepository {
     issues: 0,
   };
 
-  constructor(private readonly connect: MdbaseConnection<JsonObject>) {}
+  constructor(private readonly connect: MdbaseConnection<JsonObject>) {
+    this.files = new MdbaseCollectionFileStore(connect);
+  }
 
   initialize(): Promise<void> {
     this.initialization ??= this.initializeUnlocked();
@@ -143,7 +150,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    const description = await this.connect.describe();
+    const description = validResult(await this.connect.describe());
     this.configureDescription(description);
     this.collectionId = description.collection_id;
     this.viewStore = new TaskViewCache(description.collection_id);
@@ -171,7 +178,7 @@ export class RelayTaskRepository implements TaskRepository {
     this.status = { ...this.status, state: "syncing", message: undefined };
     this.emit();
     try {
-      this.configureDescription(await this.connect.describe());
+      this.configureDescription(validResult(await this.connect.describe()));
       await this.reloadCache();
       this.setConnected();
       await this.maintainRollingOccurrencesUnlocked();
@@ -749,9 +756,7 @@ export class RelayTaskRepository implements TaskRepository {
     }
   }
 
-  private configureDescription(
-    description: Awaited<ReturnType<MdbaseConnection<JsonObject>["describe"]>>,
-  ): void {
+  private configureDescription(description: CollectionDescription): void {
     const resolved = resolveTaskCollection(description);
     if (this.collectionId && description.collection_id !== this.collectionId)
       throw new Error("The connected mdbase collection changed unexpectedly.");
@@ -1135,8 +1140,12 @@ export class RelayTaskRepository implements TaskRepository {
 }
 
 function validResult<Result>(
-  envelope: MdbaseOperationEnvelope<Result>,
+  envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
 ): Result {
+  if ("ok" in envelope) return unwrapConnectOutcome(envelope);
+  // Test doubles written for the pre-beta.23 describe() shape return the
+  // description directly. Keep that narrow compatibility at this boundary.
+  if (!("valid" in envelope)) return envelope as unknown as Result;
   if (!envelope.valid)
     throw new Error(
       envelope.diagnostics.map((item) => item.message).join(" ") ||

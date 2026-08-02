@@ -3,6 +3,7 @@ import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import {
   MdbaseConnectError,
   parseMdbaseNativeNotificationData,
+  unwrapConnectOutcome,
   type MdbaseConnectionInfo,
   type MdbaseNotificationRegistration,
   type MdbaseNativeNotificationRegistration,
@@ -352,21 +353,31 @@ async function firebaseMessaging() {
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
     connection: () => currentConnection()?.info() ?? null,
-    registerNotifications: (options) => {
+    registerNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
-      return connection.registerNotifications(options);
+      return unwrapConnectOutcome(
+        await connection.registerNotifications(options),
+      );
     },
     unregisterNotifications: async (serviceWorker) => {
-      await currentConnection()?.unregisterNotifications(serviceWorker);
+      const connection = currentConnection();
+      if (connection)
+        unwrapConnectOutcome(
+          await connection.unregisterNotifications(serviceWorker),
+        );
     },
-    registerNativeNotifications: (options) => {
+    registerNativeNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
-      return connection.registerNativeNotifications(options);
+      return unwrapConnectOutcome(
+        await connection.registerNativeNotifications(options),
+      );
     },
     unregisterNativeNotifications: async () => {
-      await currentConnection()?.unregisterNativeNotifications();
+      const connection = currentConnection();
+      if (connection)
+        unwrapConnectOutcome(await connection.unregisterNativeNotifications());
     },
   },
   messaging:

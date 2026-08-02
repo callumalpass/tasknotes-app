@@ -1,9 +1,15 @@
 import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
-import type { MdbaseConnection } from "@mdbase-dev/connect";
+import {
+  unwrapConnectOutcome,
+  type ConnectOutcome,
+  type MdbaseConnection,
+  type MdbaseSyncTransport,
+} from "@mdbase-dev/connect";
 import type {
   JsonObject,
   MdbaseOperationEnvelope,
+  SyncFileSnapshotPage,
   SyncCollectionResources,
   SyncMutationReceipt,
   SyncRecord,
@@ -22,6 +28,7 @@ import {
   rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
+import { MdbaseCollectionFileStore } from "./mdbase-files";
 import {
   connectedTaskRelationships,
   connectedTaskSignature as signature,
@@ -82,6 +89,7 @@ interface CachedCloudTask {
 }
 
 export class CloudTaskRepository implements TaskRepository {
+  readonly files: MdbaseCollectionFileStore;
   private replica: OfflineReplica<CloudFrontmatter> | null = null;
   private model = new TaskNotesTaskModel();
   private resources: SyncCollectionResources | null = null;
@@ -110,7 +118,9 @@ export class CloudTaskRepository implements TaskRepository {
   private initialization: Promise<void> | null = null;
   private syncInFlight: Promise<RefreshResult> | null = null;
 
-  constructor(private readonly connect: MdbaseConnection<CloudFrontmatter>) {}
+  constructor(private readonly connect: MdbaseConnection<CloudFrontmatter>) {
+    this.files = new MdbaseCollectionFileStore(connect);
+  }
 
   initialize(): Promise<void> {
     this.initialization ??= this.initializeUnlocked();
@@ -136,7 +146,10 @@ export class CloudTaskRepository implements TaskRepository {
         conflicts: {},
       },
     );
-    this.replica = new OfflineReplica(sync.transport, store);
+    this.replica = new OfflineReplica(
+      recordSyncTransport(sync.transport),
+      store,
+    );
     const cachedResources = await this.replica.collectionResources();
     if (cachedResources) {
       this.configureModel(cachedResources);
@@ -1109,12 +1122,56 @@ function cloudErrorMessage(reason: unknown): string {
 }
 
 function validResult<Result>(
-  envelope: MdbaseOperationEnvelope<Result>,
+  envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
 ): Result {
+  if ("ok" in envelope) return unwrapConnectOutcome(envelope);
   if (!envelope.valid)
     throw new Error(
       envelope.diagnostics.map((item) => item.message).join(" ") ||
         "The collection rejected this view.",
     );
   return envelope.result;
+}
+
+/**
+ * The Connect SDK's sync facade is record-only in beta.23, while connect-sync
+ * now requires the binary plane on every transport. OfflineReplica does not
+ * consume that plane, so provide an empty, boundary-correct file snapshot.
+ */
+function recordSyncTransport<Frontmatter extends JsonObject>(
+  transport: MdbaseSyncTransport<Frontmatter>,
+) {
+  let session: Awaited<ReturnType<typeof transport.openSession>> | null = null;
+  return {
+    openSession: async () => {
+      session = await transport.openSession();
+      return session;
+    },
+    snapshot: (snapshotId: string, page?: string) =>
+      transport.snapshot(snapshotId, page),
+    changes: (after: number, limit?: number) => transport.changes(after, limit),
+    mutate: (mutation: Parameters<typeof transport.mutate>[0]) =>
+      transport.mutate(mutation),
+    fileSnapshot: async (snapshotId: string): Promise<SyncFileSnapshotPage> => {
+      if (!session || session.snapshot_id !== snapshotId)
+        throw new SyncError(
+          "invalid_snapshot",
+          "The record-only sync adapter has no matching session.",
+        );
+      return {
+        protocol_version: 1,
+        type: "file_snapshot_page",
+        snapshot_id: snapshotId,
+        scope_epoch: session.scope_epoch,
+        cursor: session.head,
+        files: [],
+      };
+    },
+    downloadFile: (): AsyncIterable<Uint8Array> => {
+      throw new SyncError(
+        "unsupported_operation",
+        "The Connect SDK record-sync facade does not expose binary downloads.",
+      );
+    },
+  };
 }

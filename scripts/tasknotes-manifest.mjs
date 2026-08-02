@@ -20,6 +20,10 @@ export async function buildTaskNotesManifest({
     requirements: {
       contracts: [{ id: "tasknotes.task", version: "0.3.0-rc.1" }],
       access: "full_collection",
+      files: {
+        actions: ["list", "read", "add", "replace", "move", "delete"],
+        scope: { kind: "collection" },
+      },
     },
     provisions: {
       type_packs: [typePack],

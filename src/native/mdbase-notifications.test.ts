@@ -1,4 +1,4 @@
-import { MdbaseConnectError } from "@mdbase-dev/connect";
+import { connectError } from "@mdbase-dev/connect";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -151,7 +151,7 @@ describe("mdbase native notifications", () => {
   it("requires renewed approval when the grant predates manifest criteria", async () => {
     const fixture = manager({
       registerNativeNotifications: vi.fn(async () => {
-        throw new MdbaseConnectError(
+        throw connectError(
           "notification_reauthorization_required",
           "Review the updated criteria.",
         );

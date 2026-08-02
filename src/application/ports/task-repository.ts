@@ -25,12 +25,15 @@ import type {
   TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
 } from "../../domain/view";
+import type { CollectionFileStore } from "./collection-file-store";
 
 /**
  * Application-facing collection boundary. Storage and provider adapters
  * implement this port; React and domain services never depend on an adapter.
  */
 export interface TaskRepository {
+  /** Present for connected collections whose authority implements mdbase files. */
+  readonly files?: CollectionFileStore;
   initialize(): Promise<void>;
   refresh(): Promise<RefreshResult>;
   indexingProgress?(): RepositoryIndexingProgress;

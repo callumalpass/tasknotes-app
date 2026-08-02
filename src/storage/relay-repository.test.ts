@@ -1,4 +1,5 @@
 import {
+  connectError,
   MdbaseConnectError,
   type CollectionDescription,
   type JsonObject,
@@ -271,7 +272,7 @@ describe("relay task repository", () => {
 
     await expect(
       repository.update("first", { title: "First recovered" }),
-    ).rejects.toMatchObject({ code: "direct_outcome_unknown" });
+    ).rejects.toMatchObject({ code: "operation_outcome_unknown" });
     await expect(
       repository.update("second", { title: "Second moved" }),
     ).resolves.toMatchObject({ title: "Second moved" });
@@ -1036,9 +1037,10 @@ function deferred<T>() {
 }
 
 function unknownOutcome(): MdbaseConnectError {
-  return new MdbaseConnectError(
-    "direct_outcome_unknown",
+  return connectError(
+    "operation_outcome_unknown",
     "The direct write may have completed.",
+    { operationOutcome: "unknown" },
   );
 }
 

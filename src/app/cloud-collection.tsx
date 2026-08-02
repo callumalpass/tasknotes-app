@@ -1,5 +1,6 @@
 import { BellRing, MonitorUp } from "lucide-react";
 import { useMemo, useState } from "react";
+import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 
 import { cloudSession } from "../cloud/connect";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
@@ -81,7 +82,11 @@ export function CloudConnection({
     setOpening(kind);
     setStartError(null);
     try {
-      await cloudSession.authorize(kind === "another" ? "choose" : "selected");
+      unwrapConnectOutcome(
+        await cloudSession.authorize(
+          kind === "another" ? "choose" : "selected",
+        ),
+      );
     } catch (reason) {
       setStartError(message(reason));
     } finally {
@@ -92,7 +97,9 @@ export function CloudConnection({
   function open(collectionId: string) {
     setStartError(null);
     try {
-      cloudSession.select(collectionId, { history: "replace" });
+      unwrapConnectOutcome(
+        cloudSession.select(collectionId, { history: "replace" }),
+      );
     } catch (reason) {
       setStartError(message(reason));
     }

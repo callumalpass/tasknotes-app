@@ -1,13 +1,12 @@
-import type { MdbaseConnection } from "@mdbase-dev/connect";
+import type {
+  MdbaseConnection,
+  MdbaseSyncTransport,
+} from "@mdbase-dev/connect";
 import type {
   JsonObject,
   SyncCollectionResources,
 } from "@mdbase-dev/connect-protocol";
-import {
-  MemoryAuthority,
-  SyncError,
-  type SyncTransport,
-} from "@mdbase-dev/connect-sync";
+import { MemoryAuthority, SyncError } from "@mdbase-dev/connect-sync";
 import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import { describe, expect, it, vi } from "vitest";
 
@@ -177,7 +176,7 @@ function resourcesWithArchive(): SyncCollectionResources {
 function connect(
   collectionId: string,
   replicaId: string,
-  transport: SyncTransport<JsonObject>,
+  transport: MdbaseSyncTransport<JsonObject>,
   operations: object = {},
 ): MdbaseConnection<JsonObject> {
   return {
@@ -212,7 +211,7 @@ describe("cloud task repository", () => {
       "collection_open_failed",
       "collection failed to open: failed to read collection record 'broken.md': Failed to parse YAML frontmatter",
     );
-    const transport: SyncTransport<JsonObject> = {
+    const transport: MdbaseSyncTransport<JsonObject> = {
       openSession: vi.fn().mockRejectedValue(failure),
       snapshot: vi.fn(),
       changes: vi.fn(),
@@ -229,7 +228,7 @@ describe("cloud task repository", () => {
 
   it("still explains that an offline first open needs a connection", async () => {
     const failure = new SyncError("offline", "Network unavailable.");
-    const transport: SyncTransport<JsonObject> = {
+    const transport: MdbaseSyncTransport<JsonObject> = {
       openSession: vi.fn().mockRejectedValue(failure),
       snapshot: vi.fn(),
       changes: vi.fn(),
@@ -266,7 +265,7 @@ describe("cloud task repository", () => {
     const created = await first.create({ title: "Available from cache" });
     await first.refresh();
 
-    const stalledTransport: SyncTransport<JsonObject> = {
+    const stalledTransport: MdbaseSyncTransport<JsonObject> = {
       openSession: vi.fn(async () => {
         throw new Error("Cached startup unexpectedly opened a session.");
       }),
@@ -569,7 +568,7 @@ describe("cloud task repository", () => {
     });
     let online = true;
     const upstream = authority.transport(phoneId);
-    const phoneTransport: SyncTransport<JsonObject> = {
+    const phoneTransport: MdbaseSyncTransport<JsonObject> = {
       openSession: () => network(() => upstream.openSession()),
       snapshot: (snapshot, page) =>
         network(() => upstream.snapshot(snapshot, page)),
@@ -667,7 +666,7 @@ describe("cloud task repository", () => {
     });
     let online = true;
     const upstream = authority.transport(phoneId);
-    const phoneTransport: SyncTransport<JsonObject> = {
+    const phoneTransport: MdbaseSyncTransport<JsonObject> = {
       openSession: () => network(() => upstream.openSession()),
       snapshot: (snapshot, page) =>
         network(() => upstream.snapshot(snapshot, page)),
@@ -765,7 +764,7 @@ describe("cloud task repository", () => {
     });
     let online = true;
     const upstream = authority.transport(phoneId);
-    const phoneTransport: SyncTransport<JsonObject> = {
+    const phoneTransport: MdbaseSyncTransport<JsonObject> = {
       openSession: () => network(() => upstream.openSession()),
       snapshot: (snapshot, page) =>
         network(() => upstream.snapshot(snapshot, page)),
@@ -975,7 +974,7 @@ describe("cloud task repository", () => {
     });
     let online = true;
     const upstream = authority.transport(replicaId);
-    const transport: SyncTransport<JsonObject> = {
+    const transport: MdbaseSyncTransport<JsonObject> = {
       openSession: () => network(() => upstream.openSession()),
       snapshot: (snapshot, page) =>
         network(() => upstream.snapshot(snapshot, page)),
@@ -1023,7 +1022,7 @@ describe("cloud task repository", () => {
       });
     let phoneOnline = true;
     const upstream = authority.transport(phoneId);
-    const phoneTransport: SyncTransport<JsonObject> = {
+    const phoneTransport: MdbaseSyncTransport<JsonObject> = {
       openSession: () => network(() => upstream.openSession()),
       snapshot: (snapshot, page) =>
         network(() => upstream.snapshot(snapshot, page)),

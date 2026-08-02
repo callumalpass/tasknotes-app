@@ -350,8 +350,10 @@ function clientDouble(
       expires_at: session.expiresAt,
     },
     import: {
+      import_id: adoptionId,
       manifest_url: `https://provider.test/v1/authority-imports/${adoptionId}/manifest`,
       records_url: `https://provider.test/v1/authority-imports/${adoptionId}/records`,
+      files_url: `https://provider.test/v1/authority-imports/${adoptionId}/files`,
       finalize_url: `https://provider.test/v1/authority-imports/${adoptionId}/finalize`,
       access_token: "ati_test_secret_long_enough",
     },

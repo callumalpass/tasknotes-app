@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { connectSuccess } from "@mdbase-dev/connect";
 
 import bundledManifest from "../generated/mdbase-app.json";
 import { CLOUD_OPERATIONS, cloudConnect, cloudSession } from "./connect";
@@ -36,7 +37,7 @@ describe("TaskNotes mdbase session", () => {
   it("authorizes another collection with an explicit choose intent", async () => {
     const authorize = vi
       .spyOn(cloudConnect, "authorize")
-      .mockResolvedValue({ kind: "redirecting" });
+      .mockResolvedValue(connectSuccess({ kind: "redirecting" }));
 
     await cloudSession.authorize("choose");
 
@@ -50,7 +51,7 @@ describe("TaskNotes mdbase session", () => {
   it("authorizes an exact newly adopted collection", async () => {
     const authorize = vi
       .spyOn(cloudConnect, "authorize")
-      .mockResolvedValue({ kind: "redirecting" });
+      .mockResolvedValue(connectSuccess({ kind: "redirecting" }));
 
     await cloudSession.authorize({ collectionId: "hosted-after-adoption" });
 
