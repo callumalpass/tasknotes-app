@@ -5,6 +5,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.util.Base64;
 
 import androidx.activity.result.ActivityResult;
 import androidx.documentfile.provider.DocumentFile;
@@ -262,6 +263,83 @@ public class FolderAccessPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void readBinary(PluginCall call) {
+        run(call, () -> {
+            String id = requiredString(call, "selectionId");
+            String path = safePath(requiredString(call, "path"), false);
+            DocumentFile file = requireFile(id, path);
+            try (
+                InputStream raw = getContext().getContentResolver().openInputStream(file.getUri());
+                BufferedInputStream input = raw == null ? null : new BufferedInputStream(raw)
+            ) {
+                if (input == null) {
+                    throw new IOException("Could not open " + path + ".");
+                }
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                copy(input, output);
+                JSObject response = new JSObject();
+                response.put("data", Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP));
+                return response;
+            }
+        });
+    }
+
+    @PluginMethod
+    public void writeBinary(PluginCall call) {
+        run(call, () -> {
+            String id = requiredString(call, "selectionId");
+            String path = safePath(requiredString(call, "path"), false);
+            String data = call.getString("data");
+            if (data == null) {
+                throw new IllegalArgumentException("data is required.");
+            }
+            byte[] bytes;
+            try {
+                bytes = Base64.decode(data, Base64.DEFAULT);
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("data must be valid base64.", error);
+            }
+            String temporaryPath = path + ".tasknotes-write-" + UUID.randomUUID() + ".tmp";
+            DocumentFile temporary = fileForWrite(id, temporaryPath, mimeType(path));
+            DocumentFile file;
+            try {
+                try (
+                    OutputStream raw = getContext().getContentResolver().openOutputStream(temporary.getUri(), "wt");
+                    BufferedOutputStream output = raw == null ? null : new BufferedOutputStream(raw)
+                ) {
+                    if (output == null) {
+                        throw new IOException("Could not open " + path + " for writing.");
+                    }
+                    output.write(bytes);
+                }
+                if (temporary.length() != bytes.length) {
+                    throw new IOException("The provider wrote only part of " + path + ".");
+                }
+                DocumentFile existing = resolve(id, path);
+                if (existing != null && existing.exists()) {
+                    throw new IOException("A binary already exists at " + path + ".");
+                }
+                pathCache.remove(path);
+                if (!temporary.renameTo(fileName(path))) {
+                    throw new IOException("Could not commit " + path + ".");
+                }
+                pathCache.remove(temporaryPath);
+                file = resolve(id, path);
+                if (file == null || file.length() != bytes.length) {
+                    throw new IOException("Committed binary could not be verified: " + path + ".");
+                }
+            } catch (Exception error) {
+                temporary.delete();
+                pathCache.remove(temporaryPath);
+                throw error;
+            }
+            JSObject response = new JSObject();
+            response.put("entry", entry(path, file));
+            return response;
+        });
+    }
+
+    @PluginMethod
     public void rename(PluginCall call) {
         run(call, () -> {
             String id = requiredString(call, "selectionId");
@@ -424,6 +502,10 @@ public class FolderAccessPlugin extends Plugin {
     }
 
     private DocumentFile fileForWrite(String id, String path) throws IOException {
+        return fileForWrite(id, path, mimeType(path));
+    }
+
+    private DocumentFile fileForWrite(String id, String path, String mimeType) throws IOException {
         DocumentFile existing = resolve(id, path);
         if (existing != null) {
             if (!existing.exists()) {
@@ -436,7 +518,7 @@ public class FolderAccessPlugin extends Plugin {
         }
         String parent = parentPath(path);
         DocumentFile directory = parent.isEmpty() ? requireRoot(id) : ensureDirectory(id, parent);
-        DocumentFile created = directory.createFile(mimeType(path), fileName(path));
+        DocumentFile created = directory.createFile(mimeType, fileName(path));
         if (created == null) {
             throw new IOException("Could not create " + path + ".");
         }
@@ -472,6 +554,10 @@ public class FolderAccessPlugin extends Plugin {
         entry.put("path", path);
         entry.put("lastModified", file.lastModified());
         entry.put("size", file.length());
+        String mediaType = file.getType();
+        if (mediaType != null) {
+            entry.put("mediaType", mediaType);
+        }
         return entry;
     }
 
@@ -543,6 +629,12 @@ public class FolderAccessPlugin extends Plugin {
             // unknown extension is created as text/plain.
             return "application/octet-stream";
         }
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".avif")) return "image/avif";
+        if (lower.endsWith(".heic") || lower.endsWith(".heif")) return "image/heic";
         return "text/plain";
     }
 

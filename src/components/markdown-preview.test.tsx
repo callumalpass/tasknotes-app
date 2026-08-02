@@ -44,4 +44,20 @@ describe("MarkdownPreview", () => {
     render(<MarkdownPreview source=" " />);
     expect(screen.getByText(/Nothing to preview yet/)).toBeVisible();
   });
+
+  it("resolves Obsidian image embeds through collection storage", async () => {
+    const resolveImage = vi.fn(async () => null);
+    render(
+      <MarkdownPreview
+        resolveImage={resolveImage}
+        source={"Before\n\n![[Attachments/receipt photo.jpg|Receipt]]"}
+      />,
+    );
+
+    expect(await screen.findByText("Image unavailable offline")).toBeVisible();
+    expect(resolveImage).toHaveBeenCalledWith(
+      "[[Attachments/receipt photo.jpg]]",
+    );
+    expect(screen.getByRole("img", { name: "Receipt" })).toBeVisible();
+  });
 });

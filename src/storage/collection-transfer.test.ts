@@ -6,6 +6,7 @@ import {
   type AuthorityAdoptionSession,
   type AuthorityAdoptionView,
   type PreparedAuthorityAdoption,
+  type UploadAuthoritySnapshotOptions,
 } from "@mdbase-dev/connect-sync/adoption";
 import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -23,6 +24,7 @@ describe("local to hosted collection adoption", () => {
   it("uploads a replacement final snapshot after a late edit and archives the local authority", async () => {
     const source = await localCollection();
     const snapshots: AuthorityImportSnapshot[] = [];
+    const uploadedFileBytes: Uint8Array[][] = [];
     const client = clientDouble({
       afterFirstUpload: async () => {
         await source.vault.writeText(
@@ -30,7 +32,18 @@ describe("local to hosted collection adoption", () => {
           "---\ntitle: Late\n---\nArrived during staging.\n",
         );
       },
-      upload: (snapshot) => snapshots.push(snapshot),
+      upload: async (snapshot, uploadOptions) => {
+        snapshots.push(snapshot);
+        uploadedFileBytes.push(
+          await Promise.all(
+            snapshot.files.map(async (file) =>
+              Uint8Array.from(
+                await bytesFromSource(await uploadOptions?.fileSource?.(file)),
+              ),
+            ),
+          ),
+        );
+      },
     });
 
     const result = await transferLocalCollectionToHosted({
@@ -42,6 +55,17 @@ describe("local to hosted collection adoption", () => {
     });
 
     expect(snapshots).toHaveLength(2);
+    expect(snapshots[0].files).toEqual([
+      expect.objectContaining({
+        path: "Attachments/source.png",
+        media_type: "image/png",
+        media_class: "image",
+      }),
+    ]);
+    expect(uploadedFileBytes).toEqual([
+      [Uint8Array.of(137, 80, 78, 71, 1)],
+      [Uint8Array.of(137, 80, 78, 71, 1)],
+    ]);
     expect(snapshots[0].records.map((record) => record.path)).toEqual([
       "notes/context.md",
       "tasks/source.md",
@@ -314,13 +338,20 @@ async function localCollection() {
     "views/tasks.base",
     "views:\n  - type: table\n    name: Tasks\n",
   );
+  await vault.writeBinary(
+    "Attachments/source.png",
+    Uint8Array.of(137, 80, 78, 71, 1),
+  );
   return { collection, taskId, vault };
 }
 
 function clientDouble(
   options: {
     afterFirstUpload?: () => Promise<void>;
-    upload?: (snapshot: AuthorityImportSnapshot) => void;
+    upload?: (
+      snapshot: AuthorityImportSnapshot,
+      options?: UploadAuthoritySnapshotOptions,
+    ) => void | Promise<void>;
     complete?: () => Promise<never>;
     exchange?:
       | PreparedAuthorityAdoption
@@ -399,9 +430,10 @@ function clientDouble(
       _session: AuthorityAdoptionSession,
       _prepared: PreparedAuthorityAdoption,
       snapshot: AuthorityImportSnapshot,
+      uploadOptions?: UploadAuthoritySnapshotOptions,
     ) => {
       uploads += 1;
-      options.upload?.(snapshot);
+      await options.upload?.(snapshot, uploadOptions);
       if (uploads === 1) await options.afterFirstUpload?.();
     },
     complete: async (
@@ -415,6 +447,17 @@ function clientDouble(
       };
     },
   } as unknown as AuthorityAdoptionClient;
+}
+
+async function bytesFromSource(
+  source: Blob | ArrayBuffer | ArrayBufferView | undefined,
+): Promise<Uint8Array> {
+  if (!source)
+    throw new Error("The adoption did not request attachment bytes.");
+  if (source instanceof Blob) return new Uint8Array(await source.arrayBuffer());
+  if (ArrayBuffer.isView(source))
+    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  return new Uint8Array(source);
 }
 
 function adoptionView(

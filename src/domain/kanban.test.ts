@@ -79,6 +79,7 @@ function task(): Task {
     tags: [],
     contexts: [],
     projects: [],
+    attachments: [],
     blockedBy: [],
     completeInstances: [],
     skippedInstances: [],

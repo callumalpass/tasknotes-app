@@ -167,6 +167,7 @@ function task(id: string, sortOrder?: string): Task {
     tags: [],
     contexts: [],
     projects: [],
+    attachments: [],
     blockedBy: [],
     completeInstances: [],
     skippedInstances: [],

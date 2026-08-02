@@ -4,8 +4,10 @@ const folderAccess = vi.hoisted(() => ({
   ensureDirectory: vi.fn(),
   exists: vi.fn(),
   listFiles: vi.fn(),
+  readBinary: vi.fn(),
   readText: vi.fn(),
   rename: vi.fn(),
+  writeBinary: vi.fn(),
   writeText: vi.fn(),
 }));
 
@@ -90,4 +92,28 @@ it("filters every path containing an excluded component", async () => {
   await expect(vault.listCollectionFiles([".md"])).resolves.toEqual([
     { path: "visible.md", lastModified: 1, size: 1 },
   ]);
+});
+
+it("round-trips binary bytes through the retained-folder bridge", async () => {
+  folderAccess.readBinary.mockResolvedValue({ data: "AP8MYw==" });
+  folderAccess.writeBinary.mockResolvedValue({
+    entry: { path: "Attachments/photo.jpg", lastModified: 3, size: 4 },
+  });
+  const vault = new NativeFolderVault(selection);
+
+  await expect(vault.readBinary("Attachments/photo.jpg")).resolves.toEqual(
+    Uint8Array.of(0, 255, 12, 99),
+  );
+  await expect(
+    vault.writeBinary("Attachments/photo.jpg", Uint8Array.of(0, 255, 12, 99)),
+  ).resolves.toEqual({
+    path: "Attachments/photo.jpg",
+    lastModified: 3,
+    size: 4,
+  });
+  expect(folderAccess.writeBinary).toHaveBeenCalledWith({
+    selectionId: selection.id,
+    path: "Attachments/photo.jpg",
+    data: "AP8MYw==",
+  });
 });

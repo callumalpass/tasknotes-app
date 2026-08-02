@@ -29,6 +29,7 @@ import {
 } from "../domain/task-occurrence";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
+import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
 import {
   connectedTaskRelationships,
   connectedTaskSignature as signature,
@@ -89,7 +90,7 @@ interface CachedCloudTask {
 }
 
 export class CloudTaskRepository implements TaskRepository {
-  readonly files: MdbaseCollectionFileStore;
+  readonly files: LocalFirstMdbaseFileStore;
   private replica: OfflineReplica<CloudFrontmatter> | null = null;
   private model = new TaskNotesTaskModel();
   private resources: SyncCollectionResources | null = null;
@@ -119,7 +120,10 @@ export class CloudTaskRepository implements TaskRepository {
   private syncInFlight: Promise<RefreshResult> | null = null;
 
   constructor(private readonly connect: MdbaseConnection<CloudFrontmatter>) {
-    this.files = new MdbaseCollectionFileStore(connect);
+    this.files = new LocalFirstMdbaseFileStore(
+      new MdbaseCollectionFileStore(connect),
+      connect.collectionId,
+    );
   }
 
   initialize(): Promise<void> {
@@ -128,6 +132,7 @@ export class CloudTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
+    await this.files.sync().catch(() => undefined);
     const sync = this.connect.sync();
     if (!sync) {
       throw new Error(

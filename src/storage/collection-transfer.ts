@@ -4,12 +4,17 @@ import {
   AuthorityAdoptionOutcomeUnknownError,
   buildPortableAuthoritySnapshot,
   type AuthorityAdoptionSession,
+  type AuthorityImportFileSource,
   type AuthorityAdoptionVerification,
   type PreparedAuthorityAdoption,
 } from "@mdbase-dev/connect-sync/adoption";
-import type { AuthorityImportSnapshot } from "@mdbase-dev/connect-protocol";
+import type {
+  AuthorityImportSnapshot,
+  CollectionFileDescriptor,
+} from "@mdbase-dev/connect-protocol";
 
 import type { MarkdownCollection } from "./collection";
+import { isBinaryVault } from "./vault-contract";
 
 export type CollectionTransferPhase =
   | "reading"
@@ -157,13 +162,15 @@ export async function transferLocalCollectionToHosted({
   onProgress?.({
     phase: "uploading",
     completed: 0,
-    total: initial.records.length + initial.resources.documents!.length,
+    total: snapshotItemCount(initial.snapshot),
   });
-  await client.uploadSnapshot(session, prepared, initial);
+  await client.uploadSnapshot(session, prepared, initial.snapshot, {
+    fileSource: initial.fileSource,
+  });
   onProgress?.({
     phase: "uploading",
-    completed: initial.records.length + initial.resources.documents!.length,
-    total: initial.records.length + initial.resources.documents!.length,
+    completed: snapshotItemCount(initial.snapshot),
+    total: snapshotItemCount(initial.snapshot),
   });
 
   onProgress?.({ phase: "fencing", completed: 0, total: 1 });
@@ -171,26 +178,31 @@ export async function transferLocalCollectionToHosted({
   const final = await capture(source);
   let activationAttempted = false;
   try {
-    await source.persistAuthorityAdoptionSnapshot(session.adoptionId, final);
+    await source.persistAuthorityAdoptionSnapshot(
+      session.adoptionId,
+      final.snapshot,
+    );
     onCheckpoint?.({
       session,
       snapshot: {
-        sourceRevision: final.source_revision,
-        manifestDigest: final.manifest_digest,
-        sourceHead: final.source_head,
+        sourceRevision: final.snapshot.source_revision,
+        manifestDigest: final.snapshot.manifest_digest,
+        sourceHead: final.snapshot.source_head,
       },
     });
-    if (!sameSnapshot(initial, final)) {
+    if (!sameSnapshot(initial.snapshot, final.snapshot)) {
       prepared = await requirePrepared(client, session);
-      await client.uploadSnapshot(session, prepared, final);
+      await client.uploadSnapshot(session, prepared, final.snapshot, {
+        fileSource: final.fileSource,
+      });
     }
     onProgress?.({ phase: "fencing", completed: 1, total: 1 });
     onProgress?.({ phase: "activating", completed: 0, total: 1 });
     activationAttempted = true;
-    await client.complete(session, final);
+    await client.complete(session, final.snapshot);
     await fence.markHosted();
     onProgress?.({ phase: "activating", completed: 1, total: 1 });
-    return resultFor(final);
+    return resultFor(final.snapshot);
   } catch (reason) {
     if (!activationAttempted) {
       await fence.release();
@@ -212,16 +224,37 @@ async function requirePrepared(
   return resumed;
 }
 
-async function capture(
-  source: MarkdownCollection,
-): Promise<AuthorityImportSnapshot> {
+async function capture(source: MarkdownCollection): Promise<{
+  snapshot: AuthorityImportSnapshot;
+  fileSource: (
+    file: CollectionFileDescriptor,
+  ) => Promise<AuthorityImportFileSource>;
+}> {
   const snapshot = await source.authoritySnapshot();
-  return buildPortableAuthoritySnapshot({
-    collectionId: snapshot.collectionId,
-    specVersion: snapshot.specVersion,
-    resources: snapshot.resources,
-    records: snapshot.records,
-  });
+  if (snapshot.files.length && !isBinaryVault(source.vault))
+    throw new Error("This local collection cannot read its attachment bytes.");
+  return {
+    snapshot: buildPortableAuthoritySnapshot({
+      collectionId: snapshot.collectionId,
+      specVersion: snapshot.specVersion,
+      resources: snapshot.resources,
+      records: snapshot.records,
+      files: snapshot.files,
+    }),
+    fileSource: async (file) => {
+      if (!isBinaryVault(source.vault))
+        throw new Error("This local collection cannot read attachment bytes.");
+      return source.vault.readBinary(file.path);
+    },
+  };
+}
+
+function snapshotItemCount(snapshot: AuthorityImportSnapshot): number {
+  return (
+    snapshot.records.length +
+    (snapshot.resources.documents?.length ?? 0) +
+    snapshot.files.length
+  );
 }
 
 function sameSnapshot(

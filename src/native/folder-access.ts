@@ -9,6 +9,7 @@ export interface NativeFolderEntry {
   path: string;
   lastModified: number;
   size: number;
+  mediaType?: string;
 }
 
 interface FolderAccessPlugin {
@@ -32,7 +33,16 @@ interface FolderAccessPlugin {
     selectionId: string;
     path: string;
   }): Promise<{ data: string }>;
+  readBinary(options: {
+    selectionId: string;
+    path: string;
+  }): Promise<{ data: string }>;
   writeText(options: {
+    selectionId: string;
+    path: string;
+    data: string;
+  }): Promise<{ entry: NativeFolderEntry }>;
+  writeBinary(options: {
     selectionId: string;
     path: string;
     data: string;

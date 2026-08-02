@@ -32,7 +32,7 @@ function resources(): SyncCollectionResources {
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.1",
+      candidate.version === "0.3.0-rc.3",
   )!;
   return {
     revision: crypto.randomUUID(),
@@ -51,7 +51,7 @@ function resources(): SyncCollectionResources {
       {
         id: "tasknotes.task",
         contract_type: "record",
-        version: "0.3.0-rc.1",
+        version: "0.3.0-rc.3",
         digest: `sha256:${"0".repeat(64)}`,
         schema: generated.taskSchema,
         binding_schema: generated.bindingSchema,

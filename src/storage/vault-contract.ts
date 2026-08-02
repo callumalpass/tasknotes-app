@@ -20,6 +20,18 @@ export interface Vault {
   location(): string;
 }
 
+export interface BinaryVault extends Vault {
+  readBinary(path: string): Promise<Uint8Array>;
+  writeBinary(path: string, contents: Uint8Array): Promise<VaultEntry>;
+}
+
+export function isBinaryVault(vault: Vault): vault is BinaryVault {
+  return (
+    typeof (vault as Partial<BinaryVault>).readBinary === "function" &&
+    typeof (vault as Partial<BinaryVault>).writeBinary === "function"
+  );
+}
+
 export function safePath(value: string): string {
   const normalized = value.replaceAll("\\", "/");
   const segments = normalized.split("/");

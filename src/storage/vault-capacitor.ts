@@ -8,21 +8,23 @@ import {
 import {
   isExcludedCollectionComponent,
   safePath,
-  type Vault,
+  type BinaryVault,
   type VaultEntry,
 } from "./vault-contract";
 import { isMissingFileError } from "./vault-errors";
 
 const ROOT = "TaskNotes";
 
-export class CapacitorVault implements Vault {
+export class CapacitorVault implements BinaryVault {
   readonly kind = "native" as const;
+  private readonly directoryOperations = new Map<string, Promise<void>>();
 
   identifier(): string {
     return "native-default";
   }
 
   async initialize(): Promise<void> {
+    await this.ensureRootDirectory();
     await this.ensureDirectory("tasks");
     await this.ensureDirectory("_types");
     await this.ensureDirectory("views");
@@ -88,18 +90,53 @@ export class CapacitorVault implements Vault {
 
   async writeText(path: string, contents: string): Promise<VaultEntry> {
     const relativePath = safePath(path);
+    await this.ensureParentDirectory(relativePath);
     await Filesystem.writeFile({
       path: this.path(relativePath),
       directory: Directory.Documents,
       encoding: Encoding.UTF8,
       data: contents,
-      recursive: true,
+      recursive: false,
     });
     const info = await Filesystem.stat({
       path: this.path(relativePath),
       directory: Directory.Documents,
     });
     return toEntry(relativePath, info);
+  }
+
+  async readBinary(path: string): Promise<Uint8Array> {
+    const result = await Filesystem.readFile({
+      path: this.path(path),
+      directory: Directory.Documents,
+    });
+    if (typeof result.data !== "string")
+      return new Uint8Array(await result.data.arrayBuffer());
+    return bytesFromBase64(result.data);
+  }
+
+  async writeBinary(path: string, contents: Uint8Array): Promise<VaultEntry> {
+    const relativePath = safePath(path);
+    const temporaryPath = `${relativePath}.tasknotes-write-${crypto.randomUUID()}.tmp`;
+    await this.ensureParentDirectory(relativePath);
+    try {
+      await Filesystem.writeFile({
+        path: this.path(temporaryPath),
+        directory: Directory.Documents,
+        data: base64FromBytes(contents),
+        recursive: false,
+      });
+      const staged = await Filesystem.stat({
+        path: this.path(temporaryPath),
+        directory: Directory.Documents,
+      });
+      if (staged.size !== contents.byteLength)
+        throw new Error(`The provider wrote only part of ${relativePath}.`);
+      return await this.rename(temporaryPath, relativePath);
+    } catch (error) {
+      await this.delete(temporaryPath);
+      throw error;
+    }
   }
 
   async delete(path: string): Promise<void> {
@@ -149,14 +186,63 @@ export class CapacitorVault implements Vault {
     return `${ROOT}/${safePath(path)}`;
   }
 
-  private async ensureDirectory(path: string): Promise<void> {
-    if (await this.exists(path)) return;
+  private async ensureRootDirectory(): Promise<void> {
+    try {
+      await Filesystem.stat({
+        path: ROOT,
+        directory: Directory.Documents,
+      });
+      return;
+    } catch (error) {
+      if (!isMissingFileError(error)) throw error;
+    }
     await Filesystem.mkdir({
-      path: this.path(path),
+      path: ROOT,
       directory: Directory.Documents,
       recursive: true,
     });
   }
+
+  private ensureDirectory(path: string): Promise<void> {
+    const relativePath = safePath(path);
+    const active = this.directoryOperations.get(relativePath);
+    if (active) return active;
+    const operation = this.createDirectory(relativePath).finally(() => {
+      this.directoryOperations.delete(relativePath);
+    });
+    this.directoryOperations.set(relativePath, operation);
+    return operation;
+  }
+
+  private async createDirectory(path: string): Promise<void> {
+    if (await this.exists(path)) return;
+    try {
+      await Filesystem.mkdir({
+        path: this.path(path),
+        directory: Directory.Documents,
+        recursive: true,
+      });
+    } catch (error) {
+      if (!(await this.exists(path))) throw error;
+    }
+  }
+
+  private async ensureParentDirectory(path: string): Promise<void> {
+    const separator = path.lastIndexOf("/");
+    if (separator > 0) await this.ensureDirectory(path.slice(0, separator));
+  }
+}
+
+function base64FromBytes(bytes: Uint8Array): string {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  return btoa(binary);
+}
+
+function bytesFromBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
 function toEntry(path: string, info: FileInfo): VaultEntry {

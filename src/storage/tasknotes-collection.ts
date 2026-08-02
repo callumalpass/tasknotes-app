@@ -3,6 +3,7 @@ import type {
   CollectionTypeDescriptor,
   JsonObject,
 } from "@mdbase-dev/connect-protocol";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -27,11 +28,12 @@ export function resolveTaskCollection(
 ): ResolvedTaskCollection {
   const contract = resources.contracts.find(
     (candidate) =>
-      candidate.id === "tasknotes.task" && candidate.version === "0.3.0-rc.1",
+      candidate.id === "tasknotes.task" &&
+      candidate.version === TASKNOTES_SPEC_VERSION,
   );
   if (!contract)
     throw new Error(
-      "This collection does not provide tasknotes.task 0.3.0-rc.1.",
+      `This collection does not provide tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
     );
   const providers = contract.implementations.map((implementation) => {
     const type = resources.types.find(
@@ -70,7 +72,7 @@ export function resolveTaskTypeDefinition(
     overrides.fields ?? taskNotesImplementation(definition)?.fields;
   const implementation = {
     contract: "tasknotes.task",
-    version: "0.3.0-rc.1",
+    version: TASKNOTES_SPEC_VERSION,
     fields: fields ?? {},
     binding: configuration ?? {},
   };
@@ -130,7 +132,7 @@ function taskNotesImplementation(
       typeof candidate === "object" &&
       !Array.isArray(candidate) &&
       (candidate as Record<string, unknown>).contract === "tasknotes.task" &&
-      (candidate as Record<string, unknown>).version === "0.3.0-rc.1",
+      (candidate as Record<string, unknown>).version === TASKNOTES_SPEC_VERSION,
   );
 }
 

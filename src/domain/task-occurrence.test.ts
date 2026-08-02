@@ -28,6 +28,7 @@ const task: Task = {
   tags: ["task"],
   contexts: [],
   projects: [],
+  attachments: [],
   blockedBy: [],
   recurrence: "FREQ=WEEKLY;BYDAY=MO,WE",
   completeInstances: ["2026-08-05"],

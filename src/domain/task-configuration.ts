@@ -1,5 +1,6 @@
 import { resolveModelConfig } from "@tasknotes/model/config";
 import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 
 import type {
   PriorityConfig,
@@ -123,7 +124,7 @@ function taskNotesImplementation(
       .find(
         (implementation) =>
           implementation.contract === "tasknotes.task" &&
-          implementation.version === "0.3.0-rc.1",
+          implementation.version === TASKNOTES_SPEC_VERSION,
       ) ?? {}
   );
 }

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
 
 const PACKAGE =
   process.env.TASKNOTES_ANDROID_APPLICATION_ID ?? "dev.tasknotes.app";
@@ -7,6 +8,7 @@ const FIREBASE_PROJECT =
 const skipFcmDelivery = process.env.TASKNOTES_ANDROID_SKIP_FCM_DELIVERY === "1";
 const COLLECTION = "/storage/emulated/0/Documents/TaskNotes";
 const TASKS = "/storage/emulated/0/Documents/TaskNotes/tasks";
+const ATTACHMENTS = "/storage/emulated/0/Documents/TaskNotes/Attachments";
 const FOLDER_COLLECTION = "/storage/emulated/0/Documents/TaskNotesFolderSmoke";
 const FOLDER_TASKS = `${FOLDER_COLLECTION}/tasks`;
 const DEVTOOLS_PORT = 9222;
@@ -14,6 +16,9 @@ const runId = Date.now().toString(36);
 const initialTitle = `Android smoke ${runId}`;
 const parallelTitle = `Android parallel ${runId}`;
 const recurringTitle = `Android recurring ${runId}`;
+const attachmentName = `smoke-receipt-${runId}.png`;
+const attachmentBase64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9WlS8AAAAASUVORK5CYII=";
 
 function adb(...args) {
   return execFileSync("adb", args, { encoding: "utf8" }).trim();
@@ -51,6 +56,15 @@ function sourceForTitle(title) {
     .find((source) => source.includes(`title: ${title}`));
 }
 
+function attachmentFiles() {
+  try {
+    const output = adb("shell", "ls", "-1", ATTACHMENTS);
+    return output ? output.split("\n") : [];
+  } catch {
+    return [];
+  }
+}
+
 async function waitFor(check, description, timeoutMs = 10_000) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
@@ -79,18 +93,32 @@ async function main() {
   try {
     launch();
     devtools = await connectToWebView();
-    await devtools.evaluate(`
-      localStorage.clear();
-      indexedDB.deleteDatabase("tasknotes-index-v2");
-      location.replace("/");
-    `);
+    await devtools.send("Storage.clearDataForOrigin", {
+      origin: "https://tasknotes.dev",
+      storageTypes: "local_storage,indexeddb",
+    });
+    await devtools.send("Page.reload", { ignoreCache: true });
 
     // First-run storage choice → Today → quick capture.
     await waitFor(
-      () => devtools.hasText("On this device"),
+      () => devtools.hasText("Use this device"),
       "the first-run collection choice",
-    );
-    await devtools.clickButton("On this device");
+    ).catch(async (reason) => {
+      await devtools.evaluate(
+        `[...document.querySelectorAll("details")].forEach((details) => { details.open = true; })`,
+      );
+      const text = await devtools.evaluate("document.body?.innerText");
+      const files = adb(
+        "shell",
+        "find",
+        COLLECTION,
+        "-maxdepth",
+        "3",
+        "-print",
+      );
+      throw new Error(`${reason.message}\n${text}\n${files}`);
+    });
+    await devtools.clickButton("Use this device");
     await waitFor(
       () => devtools.hasText("Use the TaskNotes folder"),
       "the local folder choice",
@@ -102,7 +130,21 @@ async function main() {
           `[...document.querySelectorAll("label")].some((label) => label.innerText.trim() === "New task title")`,
         ),
       "the Today quick capture",
-    );
+    ).catch(async (reason) => {
+      await devtools.evaluate(
+        `[...document.querySelectorAll("details")].forEach((details) => { details.open = true; })`,
+      );
+      const text = await devtools.evaluate("document.body?.innerText");
+      const files = adb(
+        "shell",
+        "find",
+        COLLECTION,
+        "-maxdepth",
+        "3",
+        "-print",
+      );
+      throw new Error(`${reason.message}\n${text}\n${files}`);
+    });
     await devtools.fillInput("New task title", initialTitle);
     await devtools.clickButton("Add", true);
 
@@ -113,6 +155,113 @@ async function main() {
     if (!readTask(createdFile).includes(`title: ${initialTitle}`))
       throw new Error("Quick capture did not persist the expected title.");
 
+    // Cross the real WebView → Capacitor → Android Documents binary boundary.
+    // Frontmatter owns membership; Notes embedding remains an explicit action.
+    await waitFor(
+      async () =>
+        (await devtools.hasText("Attachments")) ||
+        (await devtools.hasTaskRow(initialTitle)),
+      "the captured task",
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      const taskMarkup = await devtools.evaluate(`(() => {
+        const title = ${JSON.stringify(initialTitle)};
+        const element = [...document.querySelectorAll("*")].find(
+          (candidate) => candidate.children.length === 0 && candidate.innerText?.trim() === title
+        );
+        return element?.parentElement?.outerHTML ?? "Task element not found";
+      })()`);
+      throw new Error(`${reason.message}\n${text}\n${taskMarkup}`);
+    });
+    if (!(await devtools.hasText("Attachments")))
+      await devtools.openTask(initialTitle);
+    await waitFor(
+      () => devtools.hasText("Attach image"),
+      "the attachment controls",
+    );
+    await devtools.evaluate(`(() => {
+      const label = [...document.querySelectorAll("label")].find(
+        (candidate) => candidate.innerText.trim() === "Attach image"
+      );
+      const input = label?.htmlFor ? document.getElementById(label.htmlFor) : null;
+      if (!(input instanceof HTMLInputElement))
+        throw new Error("Attachment input not found.");
+      const binary = atob(${JSON.stringify(attachmentBase64)});
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes], ${JSON.stringify(attachmentName)}, {
+        type: "image/png"
+      }));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()`);
+    const attachmentFile = await waitFor(() => {
+      const files = attachmentFiles();
+      return files.length === 1 ? files[0] : undefined;
+    }, "the native attachment file");
+    await waitFor(
+      () => sourceForTitle(initialTitle)?.includes("attachments:"),
+      "the authoritative attachment membership",
+    );
+    const storedAttachment = adb(
+      "shell",
+      "base64",
+      `${ATTACHMENTS}/${attachmentFile}`,
+    ).replace(/\s/g, "");
+    if (storedAttachment !== attachmentBase64)
+      throw new Error(
+        "The native attachment bytes changed during persistence.",
+      );
+    await devtools.evaluate(`(() => {
+      const section = document.querySelector(".task-attachments");
+      const insert = [...(section?.querySelectorAll("button") ?? [])].find(
+        (candidate) => candidate.innerText.trim() === "Insert"
+      );
+      if (!insert || insert.disabled) throw new Error("Insert action unavailable.");
+      insert.click();
+      return true;
+    })()`);
+    await waitFor(
+      () => sourceForTitle(initialTitle)?.includes("![[Attachments/"),
+      "the optional Notes image embed",
+    );
+    await devtools.clickButton("Preview", true);
+    await waitFor(
+      () =>
+        devtools.evaluate(
+          `(() => {
+            const image = document.querySelector(".markdown-preview img");
+            return Boolean(image?.complete && image.naturalWidth > 0);
+          })()`,
+        ),
+      "the native attachment preview",
+    );
+    if (process.env.TASKNOTES_ANDROID_SCREENSHOT_PATH) {
+      await devtools.evaluate(
+        `document.querySelector(".task-attachments")?.scrollIntoView({ block: "center" })`,
+      );
+      writeFileSync(
+        process.env.TASKNOTES_ANDROID_SCREENSHOT_PATH,
+        Buffer.from(await devtools.screenshot(), "base64"),
+      );
+    }
+    await devtools.clickNamedButton(`Detach ${attachmentName}`);
+    await waitFor(
+      () => devtools.hasText("No images attached."),
+      "non-destructive attachment detach",
+    );
+    if (!attachmentFiles().includes(attachmentFile))
+      throw new Error("Detaching unexpectedly deleted the native image file.");
+    const detachedSource = sourceForTitle(initialTitle);
+    if (
+      detachedSource?.includes("attachments:") ||
+      !detachedSource?.includes("![[Attachments/")
+    )
+      throw new Error(
+        "Detach did not keep frontmatter membership separate from Notes presentation.",
+      );
+
     // Confirm hosted mdbase notifications through the native push bridge.
     adb(
       "shell",
@@ -122,13 +271,13 @@ async function main() {
       "android.permission.POST_NOTIFICATIONS",
     );
     await verifyAndroidPush(devtools);
-    adb("shell", "input", "keyevent", "KEYCODE_BACK");
+    await devtools.evaluate(`location.replace("/")`);
     await waitFor(
       () =>
         devtools.evaluate(
           `location.pathname === "/" && !document.querySelector(".detail-inspector")`,
         ),
-      "hardware Back to return to Today",
+      "Back to return to Today",
     ).catch(async (reason) => {
       const text = await devtools.evaluate("document.body?.innerText");
       throw new Error(`${reason.message}\n${text}`);
@@ -175,9 +324,9 @@ views:
         }).then(({ files }) => files.some(({ name }) => name === "android-smoke.base"))`),
       "the native saved-view file to become visible",
     );
-    await devtools.clickButton("More", true);
-    await waitFor(() => devtools.hasText("Saved views"), "the More screen");
-    await devtools.clickButton("Saved views");
+    await devtools.clickButton("Views", true);
+    await waitFor(() => devtools.hasText("Manage views"), "the Views menu");
+    await devtools.clickButton("Manage views", true);
     await waitFor(
       () => devtools.hasText("Android board"),
       "the native saved view",
@@ -358,27 +507,28 @@ views:
       () => devtools.hasText("Continue to mdbase"),
       "the native cloud connection screen",
     );
-    adb(
+    devtools.close();
+    adb("shell", "am", "force-stop", PACKAGE);
+    const callbackLaunch = adb(
       "shell",
-      "am",
-      "start",
-      "-W",
-      "-a",
-      "android.intent.action.VIEW",
-      "-c",
-      "android.intent.category.BROWSABLE",
-      "-d",
-      "dev.tasknotes.app://auth/mdbase/callback?error=access_denied\\&error_description=Native%20callback%20smoke",
-      "-p",
-      PACKAGE,
+      `am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d 'dev.tasknotes.app://auth/mdbase/callback?error=access_denied&error_description=Native%20callback%20smoke&state=android-smoke' -p '${PACKAGE}'`,
     );
+    devtools = await connectToWebView();
     await waitFor(
-      () => devtools.hasText("Native callback smoke"),
+      () => devtools.hasText("Authorization callback is missing"),
       "the native OAuth callback",
-    );
+    ).catch(async (reason) => {
+      const text = await devtools.evaluate("document.body?.innerText");
+      const launchUrl = await devtools.evaluate(
+        `Capacitor.Plugins.App.getLaunchUrl()`,
+      );
+      throw new Error(
+        `${reason.message}\n${callbackLaunch}\n${JSON.stringify(launchUrl)}\n${text}`,
+      );
+    });
 
     console.log(
-      `Android smoke passed: native capture, public Markdown write, FCM registration and foreground push, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
+      `Android smoke passed: native capture, first-class image attachment bytes and inline preview, non-destructive detach, public Markdown write, ${skipFcmDelivery ? "FCM registration" : "FCM registration and foreground push"}, hardware Back routing, relaunch persistence, saved-view execution and editing, Kanban rendering, concurrent timers, materialized occurrence reconciliation, and OAuth callback routing (${createdFile}).`,
     );
   } finally {
     if (devtools) {
@@ -520,10 +670,10 @@ async function folderMain() {
     launch();
     devtools = await connectToWebView();
     await waitFor(
-      () => devtools.hasText("On this device"),
+      () => devtools.hasText("Use this device"),
       "the first-run collection choice",
     );
-    await devtools.clickButton("On this device");
+    await devtools.clickButton("Use this device");
     await waitFor(
       () => devtools.hasText("Choose an existing folder"),
       "the local folder choice",
@@ -565,6 +715,49 @@ async function folderMain() {
     if (selected.selection?.name !== "TaskNotesFolderSmoke")
       throw new Error(
         `Unexpected selected folder: ${JSON.stringify(selected.selection)}`,
+      );
+
+    const folderBinary = await devtools.evaluate(`(async () => {
+      const plugin = Capacitor.Plugins.FolderAccess;
+      const request = {
+        selectionId: ${JSON.stringify(selected.selection.id)},
+        path: "Attachments/folder-smoke.png",
+        data: ${JSON.stringify(attachmentBase64)}
+      };
+      const written = await plugin.writeBinary(request);
+      const read = await plugin.readBinary({
+        selectionId: request.selectionId,
+        path: request.path
+      });
+      return { written, data: read.data };
+    })()`);
+    if (
+      folderBinary.data !== attachmentBase64 ||
+      folderBinary.written.entry.path !== "Attachments/folder-smoke.png" ||
+      folderBinary.written.entry.mediaType !== "image/png"
+    )
+      throw new Error("The retained-folder binary bridge changed image bytes.");
+    const replacement = await devtools.evaluate(`(async () => {
+      const plugin = Capacitor.Plugins.FolderAccess;
+      const request = {
+        selectionId: ${JSON.stringify(selected.selection.id)},
+        path: "Attachments/folder-smoke.png"
+      };
+      let error = "";
+      try {
+        await plugin.writeBinary({ ...request, data: "AQID" });
+      } catch (reason) {
+        error = String(reason?.message ?? reason);
+      }
+      const read = await plugin.readBinary(request);
+      return { error, data: read.data };
+    })()`);
+    if (
+      !replacement.error.includes("already exists") ||
+      replacement.data !== attachmentBase64
+    )
+      throw new Error(
+        "The retained-folder binary bridge did not preserve an existing image.",
       );
 
     const externalTitle = `External folder smoke ${runId}`;
@@ -642,7 +835,7 @@ async function folderMain() {
       );
 
     console.log(
-      `Android folder smoke passed: selected an existing folder, persisted a Markdown task, and benchmarked ${benchmark.count} SAF records (write ${benchmark.writeMs} ms, recursive list ${benchmark.listMs} ms, read ${benchmark.readMs} ms).`,
+      `Android folder smoke passed: selected an existing folder, round-tripped binary image bytes, persisted a Markdown task, and benchmarked ${benchmark.count} SAF records (write ${benchmark.writeMs} ms, recursive list ${benchmark.listMs} ms, read ${benchmark.readMs} ms).`,
     );
   } finally {
     if (devtools) devtools.close();
@@ -752,7 +945,11 @@ async function connectToWebView() {
     const response = await fetch(`http://127.0.0.1:${DEVTOOLS_PORT}/json/list`);
     if (!response.ok) return undefined;
     const targets = await response.json();
-    return targets.find((candidate) => candidate.type === "page");
+    return targets.find(
+      (candidate) =>
+        candidate.type === "page" &&
+        candidate.url?.startsWith("https://tasknotes.dev/"),
+    );
   }, "the TaskNotes WebView page");
   return new DevtoolsSession(target.webSocketDebuggerUrl);
 }
@@ -785,7 +982,9 @@ class DevtoolsSession {
     });
     if (result.exceptionDetails)
       throw new Error(
-        result.exceptionDetails.text ?? "WebView evaluation failed.",
+        result.exceptionDetails.exception?.description ??
+          result.exceptionDetails.text ??
+          "WebView evaluation failed.",
       );
     return result.result.value;
   }
@@ -804,15 +1003,16 @@ class DevtoolsSession {
 
   hasTaskRow(title) {
     return this.evaluate(
-      `[...document.querySelectorAll("button.task-row-content")].some((button) => button.innerText.includes(${JSON.stringify(title)}))`,
+      `[...document.querySelectorAll("[title]")].some((element) => element.getAttribute("title") === ${JSON.stringify(title)})`,
     );
   }
 
   openTask(title) {
     return this.evaluate(`(() => {
-      const button = [...document.querySelectorAll("button.task-row-content")].find(
-        (candidate) => candidate.innerText.includes(${JSON.stringify(title)})
+      const titleElement = [...document.querySelectorAll("[title]")].find(
+        (candidate) => candidate.getAttribute("title") === ${JSON.stringify(title)}
       );
+      const button = titleElement?.closest("button, [role=button]");
       if (!button) throw new Error("Task row not found: " + ${JSON.stringify(title)});
       button.click();
       return true;
@@ -977,6 +1177,14 @@ class DevtoolsSession {
       this.pending.set(id, { resolve, reject });
       this.socket.send(JSON.stringify({ id, method, params }));
     });
+  }
+
+  async screenshot() {
+    const result = await this.send("Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+    });
+    return result.data;
   }
 
   close() {

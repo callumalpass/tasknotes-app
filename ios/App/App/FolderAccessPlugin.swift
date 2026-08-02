@@ -14,7 +14,9 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
         CAPPluginMethod(name: "ensureDirectory", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "listFiles", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "readText", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readBinary", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "writeText", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "writeBinary", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "rename", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "deleteFile", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "exists", returnType: CAPPluginReturnPromise)
@@ -253,6 +255,36 @@ public class FolderAccessPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDe
                 withIntermediateDirectories: true
             )
             try Data(contents.utf8).write(to: file, options: .atomic)
+            return ["entry": try self.entry(path: path, url: file)]
+        }
+    }
+
+    @objc public func readBinary(_ call: CAPPluginCall) {
+        perform(call, writing: false) { root in
+            let path = try self.requiredPath(call, key: "path")
+            let file = try self.url(root: root, path: path)
+            guard FileManager.default.fileExists(atPath: file.path) else {
+                throw FolderAccessError.notFound("File not found: \(path)")
+            }
+            return ["data": try Data(contentsOf: file).base64EncodedString()]
+        }
+    }
+
+    @objc public func writeBinary(_ call: CAPPluginCall) {
+        perform(call, writing: true) { root in
+            let path = try self.requiredPath(call, key: "path")
+            guard
+                let encoded = call.getString("data"),
+                let contents = Data(base64Encoded: encoded)
+            else {
+                throw FolderAccessError.invalidInput("data must be valid base64.")
+            }
+            let file = try self.url(root: root, path: path)
+            try FileManager.default.createDirectory(
+                at: file.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try contents.write(to: file, options: [.atomic, .withoutOverwriting])
             return ["entry": try self.entry(path: path, url: file)]
         }
     }

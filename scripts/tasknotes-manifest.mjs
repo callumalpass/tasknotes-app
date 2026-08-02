@@ -1,4 +1,5 @@
 import { buildTaskNotesMdbaseTypePack } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 
 export async function buildTaskNotesManifest({
   appUrl,
@@ -18,7 +19,7 @@ export async function buildTaskNotesManifest({
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
     requirements: {
-      contracts: [{ id: "tasknotes.task", version: "0.3.0-rc.1" }],
+      contracts: [{ id: "tasknotes.task", version: TASKNOTES_SPEC_VERSION }],
       access: "full_collection",
       files: {
         actions: ["list", "read", "add", "replace", "move", "delete"],

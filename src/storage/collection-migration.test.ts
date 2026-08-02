@@ -19,7 +19,7 @@ describe("managed TaskNotes type upgrades", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     )!;
     const extension = implementation.binding as Record<string, unknown>;
     extension.profiles = ["core-lite"];
@@ -42,7 +42,7 @@ describe("managed TaskNotes type upgrades", () => {
     ).find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.1",
+        candidate.version === "0.3.0-rc.3",
     )!;
     const upgradedExtension = upgradedImplementation.binding as Record<
       string,

@@ -43,6 +43,7 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     options: {
       mediaType?: string;
       ifRevision?: string;
+      transferId?: string;
       signal?: AbortSignal;
       onProgress?: (progress: CollectionFileProgress) => void;
     } = {},
@@ -66,14 +67,27 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     return this.connection.files.downloadStream(toMdbaseFile(file), options);
   }
 
-  async move(file: CollectionFile, path: string): Promise<CollectionFile> {
+  async move(
+    file: CollectionFile,
+    path: string,
+    options: { mutationId?: string; signal?: AbortSignal } = {},
+  ): Promise<CollectionFile> {
     return fromMdbaseFile(
-      await this.connection.files.move(toMdbaseFile(file), path),
+      await this.connection.files.move(toMdbaseFile(file), path, {
+        ifRevision: file.revision,
+        ...options,
+      }),
     );
   }
 
-  async delete(file: CollectionFile): Promise<void> {
-    await this.connection.files.delete(toMdbaseFile(file));
+  async delete(
+    file: CollectionFile,
+    options: { mutationId?: string; signal?: AbortSignal } = {},
+  ): Promise<void> {
+    await this.connection.files.delete(toMdbaseFile(file), {
+      ifRevision: file.revision,
+      ...options,
+    });
   }
 }
 

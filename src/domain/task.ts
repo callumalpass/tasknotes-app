@@ -40,6 +40,8 @@ export interface Task {
   tags: string[];
   contexts: string[];
   projects: string[];
+  /** Canonical frontmatter links that define attachment membership. */
+  attachments: string[];
   blockedBy: TaskDependency[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
@@ -73,6 +75,7 @@ export interface CreateTaskInput {
   tags?: string[];
   contexts?: string[];
   projects?: string[];
+  attachments?: string[];
   blockedBy?: TaskDependency[];
   recurrence?: string;
   recurrenceAnchor?: "scheduled" | "completion";
@@ -101,6 +104,7 @@ export interface UpdateTaskInput {
   tags?: string[];
   contexts?: string[];
   projects?: string[];
+  attachments?: string[];
   blockedBy?: TaskDependency[];
   recurrence?: string | null;
   recurrenceAnchor?: "scheduled" | "completion";

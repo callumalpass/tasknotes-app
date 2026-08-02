@@ -236,6 +236,7 @@ function makeTask(patch: Partial<Task> = {}): Task {
     revision: 1,
     frontmatter: {},
     ...patch,
+    attachments: patch.attachments ?? [],
   };
 }
 
