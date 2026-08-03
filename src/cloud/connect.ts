@@ -12,25 +12,6 @@ import type {
 } from "@mdbase-dev/connect-protocol";
 import bundledManifest from "../generated/mdbase-app.json";
 
-export const CLOUD_OPERATIONS = [
-  "describe",
-  "changes",
-  "read",
-  "query",
-  "list_views",
-  "execute_view",
-  "read_view_source",
-  "create_view_source",
-  "update_view_source",
-  "delete_view_source",
-  "create",
-  "update",
-  "delete",
-  "rename",
-  "reconcile_timers",
-  "sync",
-] as const;
-
 const serverUrl =
   import.meta.env.VITE_MDBASE_CONNECT_URL ?? "https://connect.mdbase.dev";
 const manifest =
@@ -58,9 +39,8 @@ const cloudSelection = new MdbaseBrowserSelection({
   fallbackPath: joinBase(""),
 });
 
-export const cloudSession = cloudConnect.createSession({
+export const cloudSession = cloudConnect.createApplicationSession({
   selection: cloudSelection,
-  operations: [...CLOUD_OPERATIONS],
   autoSelect: "never",
 });
 
@@ -69,9 +49,9 @@ export function cloudControlUrl(): string {
 }
 
 export function isHostedCloudConnection(
-  connection: Pick<MdbaseConnectionInfo, "route">,
+  connection: Pick<MdbaseConnectionInfo, "authority">,
 ): boolean {
-  return connection.route === "remote";
+  return connection.authority.kind === "hosted";
 }
 
 export function isCloudCallback(value: string): boolean {

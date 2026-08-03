@@ -2,10 +2,10 @@
   "manifest_version": 1,
   "id": "dev.tasknotes.app",
   "name": "TaskNotes",
-  "homepage": "https://app.tasknotes.dev/",
-  "icon": "https://app.tasknotes.dev/icon.png",
+  "homepage": "http://127.0.0.1:4173/",
+  "icon": "http://127.0.0.1:4173/icon.png",
   "redirect_uris": [
-    "https://app.tasknotes.dev/auth/mdbase/callback",
+    "http://127.0.0.1:4173/auth/mdbase/callback",
     "dev.tasknotes.app://auth/mdbase/callback"
   ],
   "requirements": {
@@ -16,6 +16,34 @@
         "digest": "sha256:ef411577c2817b06ab2c8fcfe1241e005b7cd4355723b22ac14346462b5d0049"
       }
     ],
+    "capabilities": {
+      "contract_version": 1,
+      "required": [
+        "collection.inspect",
+        "records.watch",
+        "records.read",
+        "records.query",
+        "records.create",
+        "records.update",
+        "records.delete",
+        "records.rename",
+        "views.list",
+        "views.execute",
+        "views.source.read",
+        "views.source.create",
+        "views.source.update",
+        "views.source.delete",
+        "definitions.type-pack.apply",
+        "timers.reconcile",
+        "files.list",
+        "files.read",
+        "files.add",
+        "files.replace",
+        "files.move",
+        "files.delete"
+      ],
+      "optional": ["sync.offline-replica", "notifications.background-delivery"]
+    },
     "access": "full_collection",
     "files": {
       "actions": ["list", "read", "add", "replace", "move", "delete"],

@@ -19,7 +19,7 @@ import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
 } from "../native/mdbase-notifications";
-import { cloudSession, CLOUD_OPERATIONS } from "../cloud/connect";
+import { cloudSession } from "../cloud/connect";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -315,7 +315,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
             type="button"
             onClick={() =>
               void cloudSession
-                .ensureOperations([...CLOUD_OPERATIONS])
+                .authorize("selected")
                 .then(unwrapConnectOutcome)
                 .catch((reason: unknown) =>
                   setChangeNotificationsError(

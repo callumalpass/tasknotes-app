@@ -69,7 +69,7 @@ function reconcileConnectNotifications(
         const tasks = await current.list({ status: "open", limit: 50_000 });
         const snapshot = cloudSession.getSnapshot();
         const connection =
-          snapshot.status === "ready" ? snapshot.connection : null;
+          snapshot.status === "ready" ? cloudSession.connection() : null;
         if (!connection) throw new Error("TaskNotes is not connected.");
         const operationInput = {
           namespace: TIMER_NAMESPACE,

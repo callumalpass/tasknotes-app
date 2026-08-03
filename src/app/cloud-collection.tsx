@@ -29,16 +29,20 @@ export default function CloudCollection({
   reset(): void;
 }) {
   const session = useCloudSessionSnapshot();
-  const connection = session.status === "ready" ? session.connection : null;
+  const connection =
+    session.status === "ready" ? cloudSession.connection() : null;
   const opened = useMemo(
     () =>
-      connection
+      connection && session.status === "ready"
         ? {
             collectionId: connection.collectionId,
-            repository: createConnectTaskRepository(connection),
+            repository: createConnectTaskRepository(
+              connection,
+              session.capabilities,
+            ),
           }
         : null,
-    [connection],
+    [connection, session],
   );
 
   if (!opened)
@@ -76,9 +80,7 @@ export function CloudConnection({
   const session = useCloudSessionSnapshot();
   const connections = session.connections;
   const selectedCollectionId =
-    session.status === "ready" || session.status === "unavailable"
-      ? session.collectionId
-      : null;
+    "collectionId" in session ? session.collectionId : null;
   const selectedConnection = connections.find(
     (connection) => connection.collectionId === selectedCollectionId,
   );
@@ -107,6 +109,18 @@ export function CloudConnection({
       );
     } catch (reason) {
       setStartError(message(reason));
+    }
+  }
+
+  async function applyDefinitionUpdates() {
+    setOpening("reconnect");
+    setStartError(null);
+    try {
+      unwrapConnectOutcome(await cloudSession.applyDefinitionUpdates());
+    } catch (reason) {
+      setStartError(message(reason));
+    } finally {
+      setOpening(null);
     }
   }
 
@@ -146,6 +160,47 @@ export function CloudConnection({
         <p className="inline-error" role="alert">
           {error ?? startError}
         </p>
+      ) : null}
+      {session.status === "checking_definitions" ? (
+        <p className="connection-status" role="status">
+          Checking this collection’s TaskNotes definitions…
+        </p>
+      ) : null}
+      {session.status === "blocked" ? (
+        <p className="inline-error" role="alert">
+          {session.problem.message}
+        </p>
+      ) : null}
+      {session.status === "definition_review_required" ? (
+        <section
+          className="connection-update"
+          aria-labelledby="definition-update-title"
+        >
+          <h2 id="definition-update-title">Task definitions changed</h2>
+          <p>
+            Review the source-of-truth changes before updating this collection.
+            No task records change until you continue.
+          </p>
+          <ul>
+            {session.updates.map((update) => (
+              <li key={update.id}>
+                {update.name}: {update.currentVersion ?? "not installed"} →{" "}
+                {update.desiredVersion}
+              </li>
+            ))}
+          </ul>
+          <button
+            className="outline-action"
+            disabled={
+              opening !== null ||
+              session.updates.some((update) => !update.canApply)
+            }
+            onClick={() => void applyDefinitionUpdates()}
+            type="button"
+          >
+            Review and update definitions
+          </button>
+        </section>
       ) : null}
       <div className="welcome-actions">
         {connections.map((connection) => (

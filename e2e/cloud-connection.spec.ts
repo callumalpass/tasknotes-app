@@ -1,4 +1,11 @@
 import type { JsonObject } from "@mdbase-dev/connect";
+import type { FileCapability } from "@mdbase-dev/connect-protocol";
+import { operationsForApplicationCapabilities } from "@mdbase-dev/connect-protocol";
+import type { MdbaseAppManifest } from "@mdbase-dev/connect";
+import {
+  installMdbaseBrowserFixture,
+  type MdbaseBrowserFixtureController,
+} from "@mdbase-dev/connect-testing";
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
@@ -7,16 +14,17 @@ import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { expect, test, type Route } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
+import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
 
 const TASKNOTES_COLLECTION_ID = "01922222-2222-7222-8222-222222222222";
-const TASKNOTES_STORAGE_PREFIX =
-  "mdbase-connect:https://connect.mdbase.dev:bundle:dev.tasknotes.app";
-const TASKNOTES_TOKEN_KEY = `${TASKNOTES_STORAGE_PREFIX}:token:${TASKNOTES_COLLECTION_ID}`;
-const TASKNOTES_CONNECTIONS_KEY = `${TASKNOTES_STORAGE_PREFIX}:connections`;
 
 test("opens an ordinary relay collection without requiring hosted sync", async ({
   page,
 }) => {
+  // The route must exist before fixture installation so the specific
+  // assessment route registered later wins Playwright's LIFO matching.
+  // eslint-disable-next-line prefer-const
+  let authorization!: MdbaseBrowserFixtureController;
   const operations: string[] = [];
   const task = new TaskNotesTaskModel().create(
     { title: "Task from the relay" },
@@ -25,7 +33,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
-      const request = operationRequest(route);
+      const request = await operationRequest(route, authorization);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -67,55 +75,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     },
   );
 
-  await page.goto("./");
-  await page.evaluate(
-    ({ tokenKey, connectionsKey, collectionId, contract }) => {
-      localStorage.clear();
-      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      history.replaceState(null, "", `?collection=${collectionId}`);
-      localStorage.setItem(
-        connectionsKey,
-        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
-      );
-      localStorage.setItem(
-        tokenKey,
-        JSON.stringify({
-          version: 1,
-          accessToken: "mdb_local",
-          refreshToken: "ref_local",
-          clientId: "01911111-1111-7111-8111-111111111111",
-          collectionId,
-          collectionName: "TaskNotes E2E",
-          operations: [
-            "describe",
-            "changes",
-            "read",
-            "query",
-            "create",
-            "update",
-            "delete",
-            "rename",
-            "list_views",
-            "execute_view",
-          ],
-          scope: {
-            contracts: [contract],
-            access: "full_collection",
-          },
-          expiresAt: Date.now() + 60_000,
-          refreshExpiresAt: Date.now() + 120_000,
-          savedAt: Date.now(),
-        }),
-      );
-    },
-    {
-      tokenKey: TASKNOTES_TOKEN_KEY,
-      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
-      collectionId: TASKNOTES_COLLECTION_ID,
-      contract: tasknotesGrantContract(),
-    },
-  );
-
+  authorization = await installRelayAuthorization(page);
   await page.reload();
 
   await expect(page.getByText("Task from the relay")).toBeVisible();
@@ -142,13 +102,11 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     page.getByRole("button", { name: "Connect another collection" }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() => ({
-      choice: localStorage.getItem("tasknotes:collection-choice:v1"),
-      hasConnection: Object.keys(localStorage).some((key) =>
-        key.includes(":token:"),
-      ),
-    })),
-  ).toEqual({ choice: "cloud", hasConnection: true });
+    await page.evaluate(() =>
+      localStorage.getItem("tasknotes:collection-choice:v1"),
+    ),
+  ).toBe("cloud");
+  expect(await authorization.isInstalled(page)).toBe(true);
 
   await page.reload();
   await page.getByRole("button", { name: "Today" }).click();
@@ -158,6 +116,8 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
 test("acknowledges slow relay creates and prefetches revisions before delete", async ({
   page,
 }) => {
+  // eslint-disable-next-line prefer-const -- assigned after route registration
+  let authorization!: MdbaseBrowserFixtureController;
   const model = new TaskNotesTaskModel();
   const existing = model.create(
     { title: "Delete over the relay" },
@@ -181,7 +141,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
-      const request = operationRequest(route);
+      const request = await operationRequest(route, authorization);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -233,15 +193,7 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
     },
   );
 
-  await installRelayAuthorization(page, [
-    "describe",
-    "query",
-    "read",
-    "create",
-    "delete",
-    "list_views",
-    "execute_view",
-  ]);
+  authorization = await installRelayAuthorization(page);
   await page.reload();
   await expect(page.getByText("Delete over the relay")).toBeVisible();
 
@@ -284,6 +236,8 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
 test("restores a custom home view and its cached rows before relay refresh", async ({
   page,
 }) => {
+  // eslint-disable-next-line prefer-const -- assigned after route registration
+  let cachedHomeFixture!: MdbaseBrowserFixtureController;
   const collectionId = "01933333-3333-7333-8333-333333333333";
   const task = new TaskNotesTaskModel().create(
     { title: "Visible from cached home" },
@@ -296,7 +250,7 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
-      const request = operationRequest(route);
+      const request = await operationRequest(route, cachedHomeFixture);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -377,59 +331,47 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   );
 
   await page.goto("./");
-  await page.evaluate(
-    async ({ collectionId, tokenKey, connectionsKey, contract }) => {
-      localStorage.clear();
-      await new Promise<void>((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(
-          `tasknotes-views:${collectionId}`,
-        );
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      });
-      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      history.replaceState(null, "", `?collection=${collectionId}`);
-      localStorage.setItem(
-        connectionsKey,
-        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
-      );
-      localStorage.setItem(
-        "tasknotes:navigation-views:v2",
-        JSON.stringify({
-          "connect:Live connection through mdbase": ["Views/work.md#open"],
-        }),
-      );
-      localStorage.setItem(
-        tokenKey,
-        JSON.stringify({
-          version: 1,
-          accessToken: "mdb_cached_home",
-          refreshToken: "ref_cached_home",
-          clientId: "01911111-1111-7111-8111-111111111111",
-          collectionId,
-          collectionName: "Live connection through mdbase",
-          operations: [
-            "describe",
-            "query",
-            "list_views",
-            "execute_view",
-            "read_view_source",
-          ],
-          scope: {
-            contracts: [contract],
-            access: "full_collection",
-          },
-          expiresAt: Date.now() + 60_000,
-          refreshExpiresAt: Date.now() + 120_000,
-          savedAt: Date.now(),
-        }),
-      );
+  cachedHomeFixture = await installMdbaseBrowserFixture(page, {
+    serverUrl: "https://connect.mdbase.dev",
+    application: { manifest: bundledManifest as MdbaseAppManifest },
+    collection: {
+      id: collectionId,
+      name: "Live connection through mdbase",
+      operations: liveConnectorOperations(),
+      scope: {
+        contracts: [tasknotesGrantContract()],
+        access: "full_collection",
+      },
+      fileCapability: tasknotesFileCapability(),
     },
-    {
-      collectionId,
-      tokenKey: `${TASKNOTES_STORAGE_PREFIX}:token:${collectionId}`,
-      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
-      contract: tasknotesGrantContract(),
+    authority: { kind: "connector" },
+  });
+  await page.evaluate(async (collectionId) => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(
+        `tasknotes-views:${collectionId}`,
+      );
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+    history.replaceState(null, "", `?collection=${collectionId}`);
+    localStorage.setItem(
+      "tasknotes:navigation-views:v2",
+      JSON.stringify({
+        "connect:Live connection through mdbase": ["Views/work.md#open"],
+      }),
+    );
+  }, collectionId);
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/assess_type_pack",
+    async (route) => {
+      const request = await operationRequest(route, cachedHomeFixture);
+      await fulfillOperation(
+        route,
+        request.request_id,
+        valid({ status: "current" }),
+      );
     },
   );
 
@@ -476,6 +418,8 @@ test("restores a custom home view and its cached rows before relay refresh", asy
 test("edits a contract-defined task without collapsing custom status or fields", async ({
   page,
 }) => {
+  // eslint-disable-next-line prefer-const -- assigned after route registration
+  let authorization!: MdbaseBrowserFixtureController;
   const configuration = {
     statuses: [
       status("todo", "To do", 1),
@@ -548,7 +492,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
     async (route) => {
-      const request = operationRequest(route);
+      const request = await operationRequest(route, authorization);
       const operation = new URL(route.request().url()).pathname
         .split("/")
         .at(-1)!;
@@ -591,7 +535,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
       );
     },
   );
-  await installRelayAuthorization(page);
+  authorization = await installRelayAuthorization(page);
   await page.reload();
 
   await page
@@ -760,59 +704,54 @@ function tasknotesGrantContract() {
 
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
-  operations = [
-    "describe",
-    "query",
-    "read",
-    "update",
-    "list_views",
-    "execute_view",
-  ],
 ) {
   await page.goto("./");
-  await page.evaluate(
-    ({
-      authorizedOperations,
-      tokenKey,
-      connectionsKey,
-      collectionId,
-      contract,
-    }) => {
-      localStorage.clear();
-      localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-      history.replaceState(null, "", `?collection=${collectionId}`);
-      localStorage.setItem(
-        connectionsKey,
-        JSON.stringify({ version: 1, collectionIds: [collectionId] }),
-      );
-      localStorage.setItem(
-        tokenKey,
-        JSON.stringify({
-          version: 1,
-          accessToken: "mdb_configured",
-          refreshToken: "ref_configured",
-          clientId: "01911111-1111-7111-8111-111111111111",
-          collectionId,
-          collectionName: "TaskNotes E2E",
-          operations: authorizedOperations,
-          scope: {
-            contracts: [contract],
-            access: "full_collection",
-          },
-          expiresAt: Date.now() + 60_000,
-          refreshExpiresAt: Date.now() + 120_000,
-          savedAt: Date.now(),
-        }),
-      );
+  const fixture = await installMdbaseBrowserFixture(page, {
+    serverUrl: "https://connect.mdbase.dev",
+    application: { manifest: bundledManifest as MdbaseAppManifest },
+    collection: {
+      id: TASKNOTES_COLLECTION_ID,
+      name: "TaskNotes E2E",
+      operations: liveConnectorOperations(),
+      scope: {
+        contracts: [tasknotesGrantContract()],
+        access: "full_collection",
+      },
+      fileCapability: tasknotesFileCapability(),
     },
-    {
-      authorizedOperations: operations,
-      tokenKey: TASKNOTES_TOKEN_KEY,
-      connectionsKey: TASKNOTES_CONNECTIONS_KEY,
-      collectionId: TASKNOTES_COLLECTION_ID,
-      contract: tasknotesGrantContract(),
+    authority: { kind: "connector" },
+  });
+  await page.evaluate((collectionId) => {
+    localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
+    history.replaceState(null, "", `?collection=${collectionId}`);
+  }, TASKNOTES_COLLECTION_ID);
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/assess_type_pack",
+    async (route) => {
+      const request = await operationRequest(route, fixture);
+      await fulfillOperation(
+        route,
+        request.request_id,
+        valid({ status: "current" }),
+      );
     },
   );
+  return fixture;
+}
+
+function liveConnectorOperations() {
+  return operationsForApplicationCapabilities(
+    (bundledManifest as MdbaseAppManifest).requirements!.capabilities!,
+  ).filter((operation) => operation !== "sync");
+}
+
+function tasknotesFileCapability(): FileCapability {
+  return {
+    kind: "files" as const,
+    protocol_version: 1 as const,
+    actions: ["list", "read", "add", "replace", "move", "delete"],
+    scope: { kind: "collection" as const },
+  };
 }
 
 function status(
@@ -841,39 +780,50 @@ function valid<T>(result: T) {
   return { valid: true as const, diagnostics: [], result };
 }
 
-function operationRequest(route: Route): {
+const relayRequests = new WeakMap<
+  Route,
+  {
+    fixture: MdbaseBrowserFixtureController;
+    request: import("@mdbase-dev/connect-protocol").EncryptedRelayOperationRequest;
+  }
+>();
+
+async function operationRequest(
+  route: Route,
+  fixture: MdbaseBrowserFixtureController,
+): Promise<{
   protocol_version: 1;
   request_id: string;
   input: JsonObject;
-} {
-  const request = route.request().postDataJSON() as {
-    protocol_version?: unknown;
-    request_id?: unknown;
-    input?: unknown;
-  };
-  expect(request.protocol_version).toBe(1);
-  expect(request.request_id).toEqual(expect.any(String));
-  expect(request.input).toEqual(expect.any(Object));
-  return request as {
-    protocol_version: 1;
-    request_id: string;
-    input: JsonObject;
+}> {
+  if (!fixture.relay)
+    throw new Error("The connector relay fixture is unavailable.");
+  const operation = await fixture.relay.decrypt(route.request().postDataJSON());
+  expect(new URL(route.request().url()).pathname.split("/").at(-1)).toBe(
+    operation.operation,
+  );
+  expect(operation.input).toEqual(expect.any(Object));
+  relayRequests.set(route, { fixture, request: operation.request });
+  return {
+    protocol_version: 1,
+    request_id: operation.request.request_id,
+    input: operation.input as JsonObject,
   };
 }
 
-function fulfillOperation(
+async function fulfillOperation(
   route: Route,
   requestId: string,
   result: unknown,
 ): Promise<void> {
-  return route.fulfill({
+  const relay = relayRequests.get(route);
+  if (!relay?.fixture.relay || relay.request.request_id !== requestId) {
+    throw new Error("The encrypted relay request is unavailable.");
+  }
+  const envelope = await relay.fixture.relay.success(relay.request, result);
+  await route.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({
-      protocol_version: 1,
-      request_id: requestId,
-      ok: true,
-      result,
-    }),
+    body: JSON.stringify({ envelope }),
   });
 }
 
