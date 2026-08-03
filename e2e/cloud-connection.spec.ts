@@ -126,9 +126,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/mdbase keeps connected reminders running/),
-  ).toBeVisible();
+  await expect(page.getByText(/mdbase keeps reminders running/)).toBeVisible();
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await page.getByRole("button", { name: "Change collection" }).click();
   await expect(
@@ -260,10 +258,22 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
   await expect.poll(() => readRequests).toBe(1);
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete task" }).click();
+  await expect(page.locator(".undo-toast")).toContainText(
+    "Deleted “Delete over the relay”",
+  );
   expect(deleteRequests).toBe(0);
 
   readGate.resolve();
+  await page
+    .getByRole("button", { name: "Task actions for Create over the relay" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete task" }).click();
   await expect.poll(() => deleteRequests, { timeout: 12_000 }).toBe(1);
+  await expect(page.locator(".undo-toast")).toContainText(
+    "Deleted “Create over the relay”",
+  );
+  await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByText("Delete over the relay")).toHaveCount(0);
   expect(readRequests).toBe(1);
 });

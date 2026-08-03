@@ -1429,8 +1429,10 @@ button:disabled {
   accent-color: var(--accent);
 }
 
-.task-model-toggle span {
+.task-model-toggle span,
+.task-model-toggle label {
   color: var(--ink-soft);
+  cursor: pointer;
 }
 
 .task-model-save {
@@ -3528,17 +3530,29 @@ button:disabled {
     min-height: 48px;
   }
 
-  body:has(input:focus, textarea:focus) .bottom-navigation {
+  body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+      textarea:focus
+    )
+    .bottom-navigation {
     display: none;
   }
 
-  body:has(input:focus, textarea:focus) .global-capture-fab {
+  body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+      textarea:focus
+    )
+    .global-capture-fab {
     pointer-events: none;
     opacity: 0;
     transform: translateY(8px);
   }
 
-  body:has(input:focus, textarea:focus) .page-surface {
+  body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+      textarea:focus
+    )
+    .page-surface {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
@@ -3608,7 +3622,7 @@ button:disabled {
 
 .undo-toast {
   position: fixed;
-  z-index: 70;
+  z-index: 25;
   right: max(18px, env(safe-area-inset-right));
   bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 82px);
   display: flex;

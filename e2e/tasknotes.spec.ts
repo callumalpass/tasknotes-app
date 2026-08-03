@@ -347,8 +347,20 @@ async function openNavigationView(page: Page, name: string): Promise<void> {
 }
 
 async function openSearch(page: Page): Promise<void> {
+  const searchbox = page.getByRole("searchbox", { name: "Search tasks" });
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
-  await navigation.getByRole("button", { name: "Search", exact: true }).click();
+  const searchButton = navigation.getByRole("button", {
+    name: "Search",
+    exact: true,
+  });
+  await expect
+    .poll(
+      async () =>
+        (await searchbox.isVisible()) || (await searchButton.isVisible()),
+    )
+    .toBe(true);
+  if (await searchbox.isVisible()) return;
+  await searchButton.click();
 }
 
 async function chooseOption(
@@ -2356,7 +2368,7 @@ test("orders several navigation views and exposes the rest from the mobile Views
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
-    await expect(navigation.getByRole("button")).toHaveCount(5);
+    await expect(navigation.getByRole("button")).toHaveCount(4);
     await expect(
       navigation.getByRole("button", { name: "Search", exact: true }),
     ).toBeVisible();
