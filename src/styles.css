@@ -538,6 +538,23 @@ button:disabled {
   border-top: 0;
 }
 
+.view-detail.is-kanban-view {
+  display: flex;
+  height: calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom));
+  min-height: 0;
+  flex-direction: column;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.view-detail.is-kanban-view > .kanban-board {
+  min-height: 0;
+  flex: 1 1 0;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  overflow: auto;
+}
+
 .task-groups {
   padding-top: 18px;
 }
@@ -841,10 +858,6 @@ button:disabled {
   border-radius: 0;
 }
 
-.task-actions-subtask input:focus-visible {
-  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
-}
-
 .task-actions-subtask button.primary {
   justify-content: center;
   min-height: 44px;
@@ -908,13 +921,12 @@ button:disabled {
 
 .completion-control:hover span,
 .completion-control:focus-visible span {
-  border-color: var(--accent);
+  background-color: var(--accent-soft);
 }
 
 .completion-control[aria-pressed="true"] span {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23356f96' stroke-width='2'%3E%3Cpath d='m6 12 4 4 8-9'/%3E%3C/svg%3E")
     center / 17px no-repeat;
-  border-color: var(--accent);
 }
 
 .task-row-content {
@@ -1552,19 +1564,6 @@ button:disabled {
   outline: 0;
 }
 
-.title-field:focus-visible,
-.notes-field textarea:focus-visible,
-.form-field input:focus-visible,
-.form-field select:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent), transparent 28%);
-  outline-offset: 2px;
-}
-
-.title-field:focus-visible,
-.form-field input:focus-visible {
-  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
-}
-
 .form-field select {
   width: 100%;
   min-height: 44px;
@@ -1658,7 +1657,6 @@ button:disabled {
 .choice-field button.is-selected {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent), var(--paper) 55%);
 }
 
 .choice-field button:disabled {
@@ -1906,9 +1904,7 @@ button:disabled {
 }
 
 .tasknotes-control-trigger:focus-visible {
-  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
-  outline: 1px solid color-mix(in srgb, var(--accent), transparent 35%);
-  outline-offset: 2px;
+  border-bottom-color: var(--line-strong);
 }
 
 .tasknotes-popover-scrim {
@@ -2124,7 +2120,6 @@ button:disabled {
 .tasknotes-calendar-grid [role="gridcell"][aria-selected="true"] {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent), transparent 70%);
 }
 
 .tasknotes-calendar-grid [role="gridcell"].is-outside {
@@ -2315,10 +2310,6 @@ button:disabled {
   padding: 5px 0;
   border-bottom: 1px solid var(--line-strong);
   cursor: text;
-}
-
-.multi-value-control:focus-within {
-  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
 }
 
 .multi-value-control input {
@@ -2646,7 +2637,6 @@ button:disabled {
 .recurrence-weekdays button.is-selected {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent), var(--paper) 58%);
 }
 
 .recurrence-weekdays small {
@@ -2764,8 +2754,6 @@ button:disabled {
 
 .reminder-quick-actions button:is(:hover, :focus-visible) {
   background: var(--accent-soft);
-  border-color: var(--accent);
-  outline: 0;
 }
 
 .reminder-list {
@@ -4278,8 +4266,6 @@ button:disabled {
   letter-spacing: 0.05em;
   line-height: 1.35;
   text-transform: uppercase;
-  border: 1px solid color-mix(in srgb, var(--accent), var(--line) 70%);
-  border-radius: 4px;
 }
 
 .collection-choices small {
@@ -4397,7 +4383,7 @@ button:disabled {
   color: var(--accent);
   font-weight: 700;
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--accent), var(--line) 58%);
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -4893,11 +4879,6 @@ button:disabled {
   border-radius: 0;
 }
 
-.view-editor-body input:not([type]):focus-visible,
-.view-editor-body input[type="text"]:focus-visible {
-  border-bottom-color: color-mix(in srgb, var(--accent), var(--line) 68%);
-}
-
 .view-editor-body textarea {
   width: 100%;
   min-height: 116px;
@@ -4933,49 +4914,65 @@ button:disabled {
 .view-kind-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-.view-kind-options button {
+.view-editor-body .view-kind-options label {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr) 22px;
+  gap: 8px;
   align-items: center;
-  min-height: 58px;
-  padding: 8px 10px;
+  min-height: 56px;
+  padding: 7px 12px;
   color: var(--ink-soft);
-  text-align: left;
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 6px;
   cursor: pointer;
 }
 
-.view-kind-options button > svg {
+.view-kind-options label:nth-child(odd) {
+  padding-left: 0;
+  border-right: 1px solid var(--line);
+}
+
+.view-kind-options label:nth-child(even) {
+  padding-right: 0;
+}
+
+.view-kind-options label:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--line);
+}
+
+.view-kind-options label > svg {
   color: var(--ink-muted);
 }
 
-.view-kind-options button > span {
+.view-kind-options label > span {
   display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
-.view-kind-options button strong {
+.view-kind-options label strong {
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: var(--type-supporting);
 }
 
-.view-kind-options button small {
+.view-kind-options label small {
   color: var(--ink-muted);
-  font-size: 0.72rem;
+  font-size: var(--type-label);
+  line-height: 1.35;
 }
 
-.view-kind-options button[aria-pressed="true"] {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent), var(--line) 65%);
+.view-kind-options input {
+  width: 18px;
+  height: 18px;
+  margin: 0 2px 0 0;
+  accent-color: var(--accent);
 }
 
-.view-kind-options button[aria-pressed="true"] > svg,
-.view-kind-options button[aria-pressed="true"] strong {
+.view-kind-options label:has(input:checked) > svg,
+.view-kind-options label:has(input:checked) strong {
   color: var(--accent);
 }
 
@@ -5104,6 +5101,12 @@ button:disabled {
   gap: 8px;
 }
 
+.expression-mode {
+  width: max-content;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .expression-mode button,
 .filter-add-actions button,
 .add-view-property button {
@@ -5122,8 +5125,14 @@ button:disabled {
 
 .expression-mode button[aria-pressed="true"] {
   color: var(--accent);
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent), var(--line) 65%);
+  background: transparent;
+  box-shadow: inset 0 -1px var(--accent);
+}
+
+.expression-mode button {
+  min-height: var(--control-min-size);
+  border: 0;
+  border-radius: 0;
 }
 
 .filter-group {
@@ -5807,7 +5816,7 @@ button:disabled {
   font-weight: 650;
   line-height: 1.25;
   background: var(--paper-raised);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
   box-shadow: 0 14px 34px var(--color-shadow);
   pointer-events: none;
@@ -5867,7 +5876,6 @@ button:disabled {
 .kanban-empty-drop-zone.is-active {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: var(--accent);
 }
 
 .view-note {
@@ -5939,7 +5947,7 @@ button:disabled {
 
 .mini-calendar-grid button[aria-selected="true"] {
   color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
 }
 
 .mini-calendar-grid i {
@@ -6427,6 +6435,10 @@ button:disabled {
     padding-bottom: 0;
   }
 
+  .view-detail.is-kanban-view {
+    height: 100dvh;
+  }
+
   .detail-inspector {
     grid-column: 2;
   }
@@ -6869,6 +6881,17 @@ button:disabled {
 
   .view-kind-options {
     grid-template-columns: 1fr;
+  }
+
+  .view-editor-body .view-kind-options label {
+    padding-right: 0;
+    padding-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .view-editor-body .view-kind-options label:last-child {
+    border-bottom: 0;
   }
 
   .field-grid,

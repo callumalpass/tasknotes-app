@@ -470,6 +470,11 @@ it("serializes rapid consecutive board moves without rejecting the second move",
       "false",
     ),
   );
+  expect(
+    within(screen.getByRole("region", { name: "Done column" })).getByText(
+      "Move on the board",
+    ),
+  ).toBeVisible();
 });
 
 it("shows a cached view while its authoritative result refreshes", async () => {
@@ -580,6 +585,7 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     hasMore: false,
     groups: [],
   });
+  const staleExecution = structuredClone(execution());
   const update = vi.fn(async (id: string, input: { sortOrder?: string }) => {
     const task = tasks.find((candidate) => candidate.id === id)!;
     task.sortOrder = input.sortOrder;
@@ -599,7 +605,7 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     }),
     list: async () => tasks,
     cachedViewExecution: async () => null,
-    executeView: async () => execution(),
+    executeView: async () => staleExecution,
     readViewSource: async () => ({
       path: view.source.path,
       format: "obsidian.base",
@@ -771,6 +777,58 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     source.document.indexOf("note.priority"),
   );
   expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
+});
+
+it("offers manual order from a writable kanban view", async () => {
+  const execution = boardExecution();
+  execution.view.source.writable = true;
+  let source = {
+    path: execution.view.source.path,
+    format: "obsidian.base",
+    revision: "one",
+    document: `views:
+  - type: tasknotesKanban
+    name: Board
+    groupBy: { property: status, direction: ASC }
+`,
+  };
+  const updateViewSource = vi.fn(
+    async (input: { path: string; document: string; ifRevision?: string }) => {
+      source = { ...source, document: input.document, revision: "two" };
+      return source;
+    },
+  );
+  const repository = {
+    initialize: async () => undefined,
+    refresh: async () => ({
+      scanned: 1,
+      changed: 0,
+      removed: 0,
+      elapsedMs: 0,
+    }),
+    list: async () => [execution.rows[0].task],
+    cachedViewExecution: async () => null,
+    executeView: async () => execution,
+    readViewSource: async () => source,
+    updateViewSource,
+    collectionInfo: testCollectionInfo,
+    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
+    syncStatus: async () => ({
+      mode: "live",
+      state: "synced",
+      pending: 0,
+      issues: 0,
+    }),
+    syncIssues: async () => [],
+  } as unknown as TaskRepository;
+
+  renderListView(repository, execution.view);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn on manual order" }),
+  );
+
+  await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
+  expect(source.document).toContain("note.tasknotes_manual_order");
 });
 
 it("moves a task between reusable day sections with the shared list move path", async () => {

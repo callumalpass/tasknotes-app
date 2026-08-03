@@ -54,6 +54,7 @@ export function TaskCapture({
   defaults,
   placeholder = "Add a task — tomorrow 9am, #tag, +project",
   showGuide = false,
+  retainFocusAfterCreate = false,
   focusRequest,
   onCreated,
   onOpenCreated,
@@ -64,6 +65,7 @@ export function TaskCapture({
   defaults?: Partial<CreateTaskInput>;
   placeholder?: string;
   showGuide?: boolean;
+  retainFocusAfterCreate?: boolean;
   focusRequest?: number;
   onCreated?(task: Task): Promise<TaskCaptureFollowUp | void>;
   onOpenCreated?(task: Task): void;
@@ -306,6 +308,8 @@ export function TaskCapture({
       setFollowUp(null);
       inputRef.current?.blur();
       const created = await createTask(next.input);
+      if (retainFocusAfterCreate)
+        inputRef.current?.focus({ preventScroll: true });
       setWarning(
         created.operationWarnings?.map(cleanTemplateWarning).join(" ") ?? null,
       );

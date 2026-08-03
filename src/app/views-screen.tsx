@@ -69,6 +69,14 @@ import { MiniCalendarView } from "./views/mini-calendar-view";
 import { calendarDateDefaults } from "../domain/mini-calendar";
 import { NavigationViewOrder, ViewIcon } from "./views/navigation-view-order";
 import { ProjectsView } from "./views/projects-view";
+import {
+  removeConfirmedBoardMoves,
+  removeConfirmedListMoves,
+  removeConfirmedManualRanks,
+  type OptimisticBoardMove,
+  type OptimisticListMove,
+  type OptimisticManualRank,
+} from "./optimistic-view-reconciliation";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -134,26 +142,14 @@ export function ViewsScreen({
   );
   const [editing, setEditing] = useState<TaskView | "new" | null>(null);
   const [boardMoves, setBoardMoves] = useState<
-    Map<
-      string,
-      {
-        viewKey: string;
-        property: string;
-        value: unknown;
-        sequence: number;
-      }
-    >
+    Map<string, OptimisticBoardMove>
   >(() => new Map());
-  const [listMoves, setListMoves] = useState<
-    Map<
-      string,
-      {
-        viewKey: string;
-        laneKey: string;
-        sequence: number;
-      }
-    >
+  const [boardMovesPending, setBoardMovesPending] = useState<
+    Map<string, { viewKey: string; sequence: number }>
   >(() => new Map());
+  const [listMoves, setListMoves] = useState<Map<string, OptimisticListMove>>(
+    () => new Map(),
+  );
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
@@ -179,7 +175,7 @@ export function ViewsScreen({
     sort: NonNullable<TaskView["sort"]>;
   } | null>(null);
   const [manualRanks, setManualRanks] = useState<
-    Map<string, { viewKey: string; sortOrder: string; operationId: number }>
+    Map<string, OptimisticManualRank>
   >(() => new Map());
   const [manualOrderPending, setManualOrderPending] = useState<
     Map<number, { viewKey: string; taskId: string }>
@@ -216,6 +212,28 @@ export function ViewsScreen({
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
+  const reconcileOptimisticExecution = useCallback(
+    (nextExecution: TaskViewExecution, nextViewKey: string) => {
+      const rows = new Map(
+        nextExecution.rows.map((row) => [row.task.id, row] as const),
+      );
+      setManualRanks((ranks) =>
+        removeConfirmedManualRanks(
+          ranks,
+          rows,
+          nextViewKey,
+          configuration.fieldMapping.sortOrder,
+        ),
+      );
+      setBoardMoves((moves) =>
+        removeConfirmedBoardMoves(moves, rows, nextViewKey),
+      );
+      setListMoves((moves) =>
+        removeConfirmedListMoves(moves, rows, nextViewKey),
+      );
+    },
+    [configuration.fieldMapping.sortOrder],
+  );
   useEffect(() => {
     if (!viewKey || !selected) return;
     let active = true;
@@ -236,6 +254,7 @@ export function ViewsScreen({
         if (!active) return;
         refreshed = true;
         setExecution(result);
+        reconcileOptimisticExecution(result, selected.key);
         setExecutionError(null);
         setRefreshingExecution(null);
       },
@@ -249,7 +268,13 @@ export function ViewsScreen({
     return () => {
       active = false;
     };
-  }, [repository, selected, viewKey, viewRevision]);
+  }, [
+    reconcileOptimisticExecution,
+    repository,
+    selected,
+    viewKey,
+    viewRevision,
+  ]);
   useEffect(() => {
     if (!viewKey || !selected) return;
     let active = true;
@@ -294,8 +319,6 @@ export function ViewsScreen({
     currentSort,
     configuration.fieldMapping.sortOrder,
   );
-  const selectedIsTaskList =
-    selected?.presentation?.type === "tasknotes.task-list";
   const selectedManualOrderOperations = [...manualOrderPending.values()].filter(
     ({ viewKey: pendingViewKey }) => pendingViewKey === selected?.key,
   );
@@ -387,19 +410,16 @@ export function ViewsScreen({
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list"
       ? " is-task-list-view"
-      : selected?.presentation?.type === "tasknotes.calendar"
-        ? " is-full-calendar-view"
-        : selected?.presentation?.type === "tasknotes.mini-calendar"
-          ? " is-mini-calendar-view"
-          : "";
+      : selected?.presentation?.type === "tasknotes.kanban"
+        ? " is-kanban-view"
+        : selected?.presentation?.type === "tasknotes.calendar"
+          ? " is-full-calendar-view"
+          : selected?.presentation?.type === "tasknotes.mini-calendar"
+            ? " is-mini-calendar-view"
+            : "";
 
   async function toggleManualOrderSort() {
-    if (
-      !selected ||
-      !selectedIsTaskList ||
-      !selected.source.writable ||
-      manualOrderSortPending
-    )
+    if (!selected || !selected.source.writable || manualOrderSortPending)
       return;
     const view = selected;
     const sortOrderField = configuration.fieldMapping.sortOrder;
@@ -438,8 +458,8 @@ export function ViewsScreen({
     targetId: string | undefined,
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
-  ) {
-    if (!selected || !manualOrder) return;
+  ): Promise<boolean> {
+    if (!selected || !manualOrder) return false;
     const plan = planManualOrder(
       rows.map(({ task }) => task),
       dragged.task,
@@ -450,7 +470,8 @@ export function ViewsScreen({
     const draggedWrite = plan.writes.find(
       ({ taskId }) => taskId === dragged.task.id,
     );
-    if (!plan.writes.length && !Object.keys(additionalInput).length) return;
+    if (!plan.writes.length && !Object.keys(additionalInput).length)
+      return true;
     const operationId = manualOrderMutationSequence.current + 1;
     manualOrderMutationSequence.current = operationId;
     const view = selected;
@@ -497,7 +518,9 @@ export function ViewsScreen({
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);
           setExecutionError(null);
+          reconcileOptimisticExecution(refreshed, view.key);
         }
+        return true;
       } catch (reason) {
         if (selectedKeyRef.current === view.key) {
           setViewActionError({
@@ -513,7 +536,6 @@ export function ViewsScreen({
               // The original mutation error is more useful than a refresh error.
             });
         }
-      } finally {
         setManualRanks((current) => {
           const next = new Map(current);
           for (const write of plan.writes) {
@@ -522,6 +544,8 @@ export function ViewsScreen({
           }
           return next;
         });
+        return false;
+      } finally {
         setManualOrderPending((pending) => {
           if (!pending.has(operationId)) return pending;
           const next = new Map(pending);
@@ -530,8 +554,11 @@ export function ViewsScreen({
         });
       }
     });
-    manualOrderMutationQueue.current = operation.catch(() => undefined);
-    await operation;
+    manualOrderMutationQueue.current = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   }
 
   async function moveBoardTask(
@@ -584,17 +611,14 @@ export function ViewsScreen({
           });
           return next;
         });
-      try {
-        await reorderTasks(
-          order.rows,
-          row,
-          order.targetId,
-          order.placement,
-          changesColumn ? input : {},
-        );
-      } finally {
-        clearBoardMove(row.task.id, sequence);
-      }
+      const saved = await reorderTasks(
+        order.rows,
+        row,
+        order.targetId,
+        order.placement,
+        changesColumn ? input : {},
+      );
+      if (!saved) clearBoardMove(row.task.id, sequence);
       return;
     }
 
@@ -607,6 +631,11 @@ export function ViewsScreen({
         value,
         sequence,
       });
+      return next;
+    });
+    setBoardMovesPending((pending) => {
+      const next = new Map(pending);
+      next.set(row.task.id, { viewKey: selected.key, sequence });
       return next;
     });
     selectionFeedback();
@@ -624,6 +653,7 @@ export function ViewsScreen({
     } catch (reason) {
       if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
       clearBoardMove(row.task.id, sequence);
+      clearBoardMovePending(row.task.id, sequence);
       if (selectedKeyRef.current === selected.key)
         setViewActionError({
           viewKey: selected.key,
@@ -639,18 +669,19 @@ export function ViewsScreen({
     try {
       const refreshed = await repository.executeView(selected);
       if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
-      clearBoardMove(row.task.id, sequence);
       if (selectedKeyRef.current !== selected.key) return;
       setExecution(refreshed);
       setExecutionError(null);
+      reconcileOptimisticExecution(refreshed, selected.key);
     } catch (reason) {
       if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
-      clearBoardMove(row.task.id, sequence);
       if (selectedKeyRef.current === selected.key)
         setViewActionError({
           viewKey: selected.key,
           message: `The move was saved, but this view could not refresh. ${message(reason)}`,
         });
+    } finally {
+      clearBoardMovePending(row.task.id, sequence);
     }
   }
 
@@ -660,6 +691,15 @@ export function ViewsScreen({
       if (!move || (sequence !== undefined && move.sequence !== sequence))
         return moves;
       const next = new Map(moves);
+      next.delete(taskId);
+      return next;
+    });
+  }
+
+  function clearBoardMovePending(taskId: string, sequence: number) {
+    setBoardMovesPending((pending) => {
+      if (pending.get(taskId)?.sequence !== sequence) return pending;
+      const next = new Map(pending);
       next.delete(taskId);
       return next;
     });
@@ -693,19 +733,19 @@ export function ViewsScreen({
         next.set(row.task.id, {
           viewKey: selected.key,
           laneKey: destination.key,
+          input,
           sequence,
         });
         return next;
       });
-    try {
-      await reorderTasks(
-        destination.rows,
-        row,
-        targetId,
-        placement,
-        changesLane ? input : {},
-      );
-    } finally {
+    const saved = await reorderTasks(
+      destination.rows,
+      row,
+      targetId,
+      placement,
+      changesLane ? input : {},
+    );
+    if (!saved)
       setListMoves((moves) => {
         const move = moves.get(row.task.id);
         if (!move || move.sequence !== sequence) return moves;
@@ -713,7 +753,6 @@ export function ViewsScreen({
         next.delete(row.task.id);
         return next;
       });
-    }
   }
 
   async function refreshAfterCreate(task: Task) {
@@ -983,7 +1022,7 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
-              {selectedIsTaskList && selected?.source.writable ? (
+              {selected?.source.writable ? (
                 <button
                   aria-label={
                     manualOrder
@@ -1055,6 +1094,7 @@ export function ViewsScreen({
             completeField={completeField}
             defaults={captureDefaults}
             focusRequest={currentCreationContext?.focusRequest}
+            retainFocusAfterCreate
             placeholder={
               currentCreationContext
                 ? `Add to ${currentCreationContext.label}`
@@ -1100,6 +1140,13 @@ export function ViewsScreen({
                 [...boardMoves].filter(
                   ([, move]) => move.viewKey === selected?.key,
                 ),
+              )
+            }
+            pendingMoveTaskIds={
+              new Set(
+                [...boardMovesPending]
+                  .filter(([, move]) => move.viewKey === selected?.key)
+                  .map(([taskId]) => taskId),
               )
             }
             statusColumns={[...configuration.statuses]
@@ -1205,6 +1252,7 @@ function KanbanView({
   orderPending,
   orderPendingTaskIds,
   moves,
+  pendingMoveTaskIds,
   priorityColumns,
   statusColumns,
   onMove,
@@ -1217,6 +1265,7 @@ function KanbanView({
   manualOrder: ManualOrderConfiguration | null;
   orderPending: boolean;
   orderPendingTaskIds: ReadonlySet<string>;
+  pendingMoveTaskIds: ReadonlySet<string>;
   moves: Map<
     string,
     {
@@ -1552,12 +1601,12 @@ function KanbanView({
     if (!horizontalDistance && !verticalDistance) return;
 
     const previousLeft = board.scrollLeft;
-    const previousTop = window.scrollY;
+    const previousTop = board.scrollTop;
     if (horizontalDistance) board.scrollLeft += horizontalDistance;
-    if (verticalDistance) window.scrollBy(0, verticalDistance);
+    if (verticalDistance) board.scrollTop += verticalDistance;
     const drop = dropAt(pointer.x, pointer.y);
     updateDropFeedback(drop);
-    if (board.scrollLeft !== previousLeft || window.scrollY !== previousTop)
+    if (board.scrollLeft !== previousLeft || board.scrollTop !== previousTop)
       autoScrollFrame.current = requestAnimationFrame(continueAutoScroll);
   }
 
@@ -1720,7 +1769,7 @@ function KanbanView({
         </p>
       ) : null}
       <div
-        aria-busy={orderPending || moves.size > 0}
+        aria-busy={orderPending || pendingMoveTaskIds.size > 0}
         className={`kanban-board${dragging ? " is-dragging" : ""}`}
         aria-label={`${execution.view.name} board`}
         onKeyDown={(event) => {
@@ -1763,7 +1812,7 @@ function KanbanView({
               <div className="kanban-column-cards">
                 {column.rows.map((row) => {
                   const pending =
-                    moves.has(row.task.id) ||
+                    pendingMoveTaskIds.has(row.task.id) ||
                     orderPendingTaskIds.has(row.task.id);
                   const draggingThisCard =
                     dragging?.row.task.id === row.task.id;
@@ -2399,10 +2448,7 @@ interface ViewProps {
 
 function executionWithManualRanks(
   execution: TaskViewExecution,
-  ranks: ReadonlyMap<
-    string,
-    { viewKey: string; sortOrder: string; operationId: number }
-  >,
+  ranks: ReadonlyMap<string, OptimisticManualRank>,
   viewKey: string,
   order: ManualOrderConfiguration,
   sortOrderField: string,

@@ -144,6 +144,9 @@ Today             Search       More
 - Buttons are text or lightly outlined controls. There are no black or saturated filled buttons.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
+- Persistent selection uses an accent label, icon, check, or soft fill. Do not
+  enclose selected controls in accent-colored borders; reserve accent outlines
+  for keyboard focus.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - Mobile bottom navigation exposes at most four destinations: one pinned view,
@@ -159,6 +162,14 @@ Today             Search       More
   seconds.
 - Disclosure rows use a title, a plain-language current-value summary, and the
   same chevron treatment across capture, task editing, views, and settings.
+- Every writable saved view exposes manual ordering in its page header. The
+  control updates the view's sort rule; layouts that support spatial ordering
+  also expose direct drag and keyboard arrangement.
+- The saved-view capture field retains focus after a successful creation so a
+  user can enter several tasks without returning to the field.
+- A kanban board consumes the remaining usable viewport. Its horizontal
+  scrollbar stays at the bottom of the screen while columns scroll within that
+  surface.
 
 The radius scale is 0 for page structure and fields with bottom rules, 6px for
 ordinary controls and notices, and 12px for modal sheets. The 26px mobile Add
