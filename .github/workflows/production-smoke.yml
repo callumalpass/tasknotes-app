@@ -47,7 +47,7 @@ jobs:
       - name: Check pull request artifact
         if: github.event_name == 'pull_request'
         run: |
-          pnpm preview --host 127.0.0.1 --port 4173 --strictPort &
+          pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort &
           preview_pid=$!
           trap 'kill "$preview_pid"' EXIT
 
