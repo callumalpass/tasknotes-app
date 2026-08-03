@@ -1,10 +1,4 @@
-import {
-  Archive,
-  ArchiveRestore,
-  ArrowLeft,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -19,6 +13,7 @@ import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
 import { LoadingRows } from "../components/loading";
 import { TaskAttachments } from "../components/task-attachments";
+import { TaskActions } from "../components/task-actions";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -42,7 +37,6 @@ import {
   useTask,
   useTaskRelationships,
 } from "./repository-context";
-import { cleanOperationError } from "./operation-error";
 import { TimeTrackingField } from "./task-time-tracking";
 import {
   Choice,
@@ -135,7 +129,6 @@ function TaskEditor({
 }) {
   const {
     updateTask,
-    deleteTask,
     toggleTask,
     skipTask,
     materializeOccurrence,
@@ -143,7 +136,6 @@ function TaskEditor({
     stopTimeTracking,
     replaceTimeEntries,
     removeTimeEntry,
-    setTaskArchived,
     configuration,
     repository,
     sync,
@@ -208,18 +200,11 @@ function TaskEditor({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
   const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [timeAction, setTimeAction] = useState(false);
   const [timeError, setTimeError] = useState<string | null>(null);
-  const [archiveAction, setArchiveAction] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
   const mounted = useRef(true);
-  const toolbarMenuRef = useRef<HTMLDivElement>(null);
-  const toolbarMenuTriggerRef = useRef<HTMLButtonElement>(null);
-  const deleteDialogRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const editVersion = useRef(0);
   const draftRef = useRef(draft);
@@ -245,91 +230,6 @@ function TaskEditor({
       mounted.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!toolbarMenuOpen) return;
-    queueMicrotask(() =>
-      toolbarMenuRef.current
-        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
-        ?.focus(),
-    );
-    const close = (event: PointerEvent) => {
-      if (
-        toolbarMenuRef.current?.contains(event.target as Node) ||
-        toolbarMenuTriggerRef.current?.contains(event.target as Node)
-      )
-        return;
-      setToolbarMenuOpen(false);
-    };
-    const keyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setToolbarMenuOpen(false);
-        toolbarMenuTriggerRef.current?.focus();
-        return;
-      }
-      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-      const items = [
-        ...(toolbarMenuRef.current?.querySelectorAll<HTMLButtonElement>(
-          "[role='menuitem']:not(:disabled)",
-        ) ?? []),
-      ];
-      if (!items.length) return;
-      const current = items.indexOf(
-        document.activeElement as HTMLButtonElement,
-      );
-      const next =
-        event.key === "Home"
-          ? 0
-          : event.key === "End"
-            ? items.length - 1
-            : event.key === "ArrowDown"
-              ? (current + 1) % items.length
-              : (current - 1 + items.length) % items.length;
-      event.preventDefault();
-      items[next]?.focus();
-    };
-    window.addEventListener("pointerdown", close);
-    window.addEventListener("keydown", keyDown);
-    return () => {
-      window.removeEventListener("pointerdown", close);
-      window.removeEventListener("keydown", keyDown);
-    };
-  }, [toolbarMenuOpen]);
-
-  useEffect(() => {
-    if (!confirmDelete) return;
-    queueMicrotask(() =>
-      deleteDialogRef.current
-        ?.querySelector<HTMLButtonElement>("[data-safe-action]")
-        ?.focus(),
-    );
-    const keyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setConfirmDelete(false);
-        toolbarMenuTriggerRef.current?.focus();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const controls = [
-        ...(deleteDialogRef.current?.querySelectorAll<HTMLButtonElement>(
-          "button:not(:disabled)",
-        ) ?? []),
-      ];
-      if (!controls.length) return;
-      const first = controls[0];
-      const last = controls.at(-1);
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", keyDown);
-    return () => window.removeEventListener("keydown", keyDown);
-  }, [confirmDelete]);
 
   const persist = useCallback(
     (value: Draft, version: number): Promise<void> => {
@@ -478,11 +378,6 @@ function TaskEditor({
     }
   }
 
-  async function remove() {
-    await deleteTask(task.id);
-    onBack();
-  }
-
   async function toggleOccurrence() {
     const date = occurrenceDate ?? task.occurrenceDate;
     if (!date || occurrenceAction) return;
@@ -549,36 +444,6 @@ function TaskEditor({
     }
   }
 
-  async function changeArchiveState() {
-    if (archiveAction) return;
-    setArchiveAction(true);
-    setArchiveError(null);
-    try {
-      if (dirty) await persist(draft, editVersion.current);
-      const updated = await setTaskArchived(task.id, !task.archived);
-      if (updated.operationWarnings?.length) {
-        if (mounted.current) {
-          setArchiveError(updated.operationWarnings.join(" "));
-          setArchiveAction(false);
-        }
-        return;
-      }
-      onBack();
-    } catch (reason) {
-      if (mounted.current) {
-        setArchiveError(
-          reason instanceof Error ? reason.message : String(reason),
-        );
-        setArchiveAction(false);
-      }
-    }
-  }
-
-  function closeDelete() {
-    setConfirmDelete(false);
-    queueMicrotask(() => toolbarMenuTriggerRef.current?.focus());
-  }
-
   return (
     <section className="screen task-screen" aria-label="Task details">
       <header className="task-toolbar">
@@ -612,104 +477,19 @@ function TaskEditor({
                 ? "Save failed · Retry"
                 : "Saved"}
         </button>
-        <button
-          aria-controls={toolbarMenuOpen ? "task-toolbar-menu" : undefined}
-          aria-expanded={toolbarMenuOpen}
-          aria-haspopup="menu"
-          aria-label="More task actions"
-          className="icon-action"
-          ref={toolbarMenuTriggerRef}
-          type="button"
-          onClick={() => setToolbarMenuOpen((open) => !open)}
-        >
-          <MoreHorizontal aria-hidden="true" size={20} strokeWidth={1.7} />
-        </button>
-        {toolbarMenuOpen ? (
-          <div
-            aria-label="Task options"
-            className="task-toolbar-menu"
-            id="task-toolbar-menu"
-            ref={toolbarMenuRef}
-            role="menu"
-          >
-            <button
-              disabled={archiveAction}
-              role="menuitem"
-              type="button"
-              onClick={() => {
-                setToolbarMenuOpen(false);
-                void changeArchiveState();
-              }}
-            >
-              {task.archived ? (
-                <ArchiveRestore aria-hidden="true" size={18} />
-              ) : (
-                <Archive aria-hidden="true" size={18} />
-              )}
-              {task.archived ? "Restore task" : "Archive task"}
-            </button>
-            <button
-              className="danger"
-              role="menuitem"
-              type="button"
-              onClick={() => {
-                setToolbarMenuOpen(false);
-                setConfirmDelete(true);
-              }}
-            >
-              <Trash2 aria-hidden="true" size={18} />
-              Delete task
-            </button>
-          </div>
-        ) : null}
+        <TaskActions
+          beforeAction={flushBeforeAttachmentMutation}
+          context="detail"
+          occurrenceDate={occurrenceDate}
+          task={task}
+          onArchived={onBack}
+          onDeleted={onBack}
+          onToggle={async () => {
+            if (occurrenceDate || task.occurrenceDate) await toggleOccurrence();
+            else await toggleTask(task.id);
+          }}
+        />
       </header>
-
-      {archiveError ? (
-        <p className="inline-error" role="alert">
-          {cleanOperationError(archiveError)}
-        </p>
-      ) : null}
-
-      {confirmDelete ? (
-        <div className="task-delete-layer">
-          <button
-            aria-hidden="true"
-            className="task-delete-scrim"
-            tabIndex={-1}
-            type="button"
-            onClick={closeDelete}
-          />
-          <section
-            aria-labelledby="task-delete-title"
-            aria-modal="true"
-            className="task-delete-dialog"
-            ref={deleteDialogRef}
-            role="alertdialog"
-          >
-            <h2 id="task-delete-title">Delete this task?</h2>
-            <p>
-              “{task.title}” will disappear now. You’ll have 8 seconds to undo.
-            </p>
-            <div>
-              <button
-                className="text-action"
-                data-safe-action
-                type="button"
-                onClick={closeDelete}
-              >
-                Keep task
-              </button>
-              <button
-                className="danger-outline-action"
-                type="button"
-                onClick={() => void remove()}
-              >
-                Delete task
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
 
       {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
         <div className="occurrence-banner">

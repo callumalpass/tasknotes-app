@@ -347,8 +347,20 @@ async function openNavigationView(page: Page, name: string): Promise<void> {
 }
 
 async function openSearch(page: Page): Promise<void> {
+  const searchbox = page.getByRole("searchbox", { name: "Search tasks" });
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
-  await navigation.getByRole("button", { name: "Search", exact: true }).click();
+  const searchButton = navigation.getByRole("button", {
+    name: "Search",
+    exact: true,
+  });
+  await expect
+    .poll(
+      async () =>
+        (await searchbox.isVisible()) || (await searchButton.isVisible()),
+    )
+    .toBe(true);
+  if (await searchbox.isVisible()) return;
+  await searchButton.click();
 }
 
 async function chooseOption(
@@ -1348,7 +1360,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   ).toHaveValue("30");
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  await page.getByRole("button", { name: "Upcoming" }).click();
+  await openNavigationView(page, "Upcoming");
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
@@ -1365,7 +1377,7 @@ test("edits planning fields, recurrence, reminders, and upcoming tasks", async (
   await expect(upcomingTask).toBeVisible();
   await openNavigationView(page, "Calendar");
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
-  await page.getByRole("button", { name: "Upcoming", exact: true }).click();
+  await openNavigationView(page, "Upcoming");
   await expect(
     page.locator(".full-calendar-view.is-agenda .fc-list"),
   ).toBeVisible();
@@ -1568,17 +1580,13 @@ test("archives and restores a Markdown task without deleting it", async ({
   await page.getByText("Keep archived history", { exact: true }).click();
   const taskOptions = page.getByRole("button", { name: "More task actions" });
   await taskOptions.click();
-  await expect(
-    page.getByRole("menuitem", { name: "Archive task" }),
-  ).toBeFocused();
+  await expect(page.getByRole("menuitem", { name: "Complete" })).toBeFocused();
   await page.keyboard.press("End");
-  await expect(
-    page.getByRole("menuitem", { name: "Delete task" }),
-  ).toBeFocused();
+  await expect(page.getByRole("menuitem", { name: "Delete" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(taskOptions).toBeFocused();
   await taskOptions.click();
-  await page.getByRole("menuitem", { name: "Archive task" }).click();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
   await expect(
     page.getByText("Keep archived history", { exact: true }),
   ).toHaveCount(0);
@@ -1587,7 +1595,7 @@ test("archives and restores a Markdown task without deleting it", async ({
   await expect(page.getByRole("heading", { name: "Archive" })).toBeVisible();
   await page.getByText("Keep archived history", { exact: true }).click();
   await page.getByRole("button", { name: "More task actions" }).click();
-  await page.getByRole("menuitem", { name: "Restore task" }).click();
+  await page.getByRole("menuitem", { name: "Restore" }).click();
   await expect(page.getByText("No tasks match this view")).toBeVisible();
   const restoredDocuments = await localTaskDocuments(page);
   expect(restoredDocuments).toHaveLength(1);
@@ -1609,19 +1617,21 @@ test("keeps destructive task actions quiet and safely confirmed", async ({
 
   const taskOptions = page.getByRole("button", { name: "More task actions" });
   await taskOptions.click();
-  await page.getByRole("menuitem", { name: "Delete task" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirmation = page.getByRole("alertdialog", {
-    name: "Delete this task?",
+    name: "Delete with confirmation",
   });
   await expect(confirmation).toBeVisible();
   await expect(
     confirmation.getByRole("button", { name: "Keep task" }),
   ).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(taskOptions).toBeFocused();
 
   await taskOptions.click();
-  await page.getByRole("menuitem", { name: "Delete task" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await confirmation.getByRole("button", { name: "Delete task" }).click();
   await expect(
     page.locator(".task-row-title").getByText("Delete with confirmation", {
@@ -1651,7 +1661,7 @@ test("interprets natural-language capture and preserves timed task fields", asyn
   await expect(page.getByText("45 min", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
-  await page.getByRole("button", { name: "Upcoming" }).click();
+  await openNavigationView(page, "Upcoming");
   await page
     .getByRole("button", { name: /^Prepare launch / })
     .first()
@@ -1831,9 +1841,25 @@ test("projects, completes, and skips recurring occurrences by date", async ({
     .getByLabel("New task title")
     .fill("Daily standup today 9am every day");
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: "Upcoming" }).click();
+  await openNavigationView(page, "Upcoming");
   await page.getByRole("button", { name: /^Daily standup Today,/ }).click();
   await expect(page.getByText("Occurrence", { exact: true })).toBeVisible();
+  const occurrenceActions = page.getByRole("button", {
+    name: "More task actions",
+  });
+  await occurrenceActions.click();
+  await expect(
+    page.getByRole("menuitem", { name: "Complete occurrence" }),
+  ).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /Status/ })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Repeating task actions" }).click();
+  await expect(page.getByRole("menuitem", { name: /Status/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("menuitem", { name: "Repeating task actions" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(occurrenceActions).toBeFocused();
   await page.getByRole("button", { name: "Complete", exact: true }).click();
   await expect(page.getByRole("button", { name: "Mark open" })).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -1857,7 +1883,7 @@ test("materializes one durable occurrence and reconciles it after reload", async
     .getByLabel("New task title")
     .fill("Materialized review today every day");
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: "Upcoming" }).click();
+  await openNavigationView(page, "Upcoming");
   await page
     .getByRole("button", { name: /^Materialized review Today/ })
     .click();
@@ -1996,7 +2022,7 @@ Created on {{date}} from the collection template.`);
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
 
   await page.getByLabel("New task title").fill("Template-backed task");
-  await page.getByRole("button", { name: "Details" }).click();
+  await page.getByRole("button", { name: "Add details" }).click();
   await page
     .locator(".capture-details-section > summary")
     .filter({ hasText: "Repeat" })
@@ -2342,7 +2368,7 @@ test("orders several navigation views and exposes the rest from the mobile Views
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
-    await expect(navigation.getByRole("button")).toHaveCount(5);
+    await expect(navigation.getByRole("button")).toHaveCount(4);
     await expect(
       navigation.getByRole("button", { name: "Search", exact: true }),
     ).toBeVisible();
@@ -2733,14 +2759,12 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Start timer" }).click();
   await expect(page.getByText("Timer running", { exact: true })).toBeVisible();
 
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   await expect(
     page.getByRole("menuitem", { name: "Stop timer" }),
   ).toBeVisible();
@@ -2750,14 +2774,13 @@ test("offers task actions without opening the editor", async ({ page }) => {
   await page
     .getByRole("button", { name: "Task actions for Act from the task row" })
     .click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Archive" }).click();
   await expect(
     page.getByText("Act from the task row", { exact: true }),
   ).toHaveCount(0);
 });
 
-test("uses the plugin-inspired task action hierarchy", async ({
+test("uses a comprehensive task action hierarchy", async ({
   page,
   context,
 }, testInfo) => {
@@ -2773,7 +2796,11 @@ test("uses the plugin-inspired task action hierarchy", async ({
   const startedAt = await page.evaluate(() => performance.now());
   await title.click({ button: "right" });
   await expect(
-    page.getByRole("menu", { name: "Actions for Context action parent" }),
+    testInfo.project.name === "mobile"
+      ? page.getByRole("dialog", { name: "Context action parent" })
+      : page.getByRole("menu", {
+          name: "Actions for Context action parent",
+        }),
   ).toBeVisible();
   const menuOpenMs = await page.evaluate(
     (start) => performance.now() - start,
@@ -2785,27 +2812,24 @@ test("uses the plugin-inspired task action hierarchy", async ({
   });
   expect(menuOpenMs).toBeLessThan(500);
 
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: /Status/ }).click();
-  await page.getByRole("menuitem", { name: "In progress" }).click();
+  await page.getByRole("menuitemradio", { name: "In progress" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   const trigger = page.getByRole("button", {
     name: "Task actions for Context action parent",
   });
   await trigger.click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: /Priority/ }).click();
-  await page.getByRole("menuitem", { name: "High" }).click();
+  await page.getByRole("menuitemradio", { name: "High" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   await trigger.click();
-  await page.getByRole("menuitem", { name: /Schedule/ }).click();
+  await page.getByRole("menuitem", { name: /Dates/ }).click();
   await page.getByRole("menuitem", { name: "Due today" }).click();
   await expect(page.getByRole("menu")).toHaveCount(0);
 
   await trigger.click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   const organizeStartedAt = await page.evaluate(() => performance.now());
   await page.getByRole("menuitem", { name: "Organize" }).click();
   const relationshipsAction = page.getByRole("menuitem", {
@@ -2842,7 +2866,6 @@ test("uses the plugin-inspired task action hierarchy", async ({
   ).toBeVisible();
 
   await trigger.click();
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Copy" }).click();
   await page.getByRole("menuitem", { name: /Copy task link/ }).click();
   await expect

@@ -9,7 +9,7 @@ import { toOperationalError } from "./operational-error";
 
 import type { OperationalError } from "./operational-error";
 
-const DEFAULT_UNDO_WINDOW_MS = 8_000;
+const DEFAULT_UNDO_WINDOW_MS = 30_000;
 
 export interface TaskCommandRepository {
   get(id: string): Promise<Task | null>;

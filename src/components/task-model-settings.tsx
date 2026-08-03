@@ -1,5 +1,5 @@
 import { Save, Settings2 } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 
 import { useRepository } from "../app/repository-context";
 import { DurationField } from "./duration-field";
@@ -42,6 +42,7 @@ export function TaskModelSettingsEditor() {
   const [draft, setDraft] = useState(() => settingsDraft(configuration));
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState("");
+  const automationIdPrefix = useId();
 
   useEffect(() => {
     let active = true;
@@ -277,11 +278,13 @@ export function TaskModelSettingsEditor() {
                 autoArchive: false,
                 autoArchiveDelay: 5,
               };
+              const inputId = `${automationIdPrefix}-${status.value}`;
               return (
                 <div className="status-automation-row" key={status.value}>
-                  <label className="task-model-toggle">
+                  <div className="task-model-toggle">
                     <input
                       checked={automation.autoArchive}
+                      id={inputId}
                       type="checkbox"
                       onChange={(event) =>
                         change({
@@ -295,8 +298,8 @@ export function TaskModelSettingsEditor() {
                         })
                       }
                     />
-                    <span>{status.label}</span>
-                  </label>
+                    <label htmlFor={inputId}>{status.label}</label>
+                  </div>
                   <label className="auto-archive-delay">
                     <span>Delay</span>
                     <input

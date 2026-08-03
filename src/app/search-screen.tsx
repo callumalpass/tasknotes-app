@@ -28,7 +28,7 @@ export function SearchScreen({
 
   return (
     <section className="screen" aria-labelledby="search-title">
-      <header className="screen-header compact-header detail-header">
+      <header className="screen-header compact-header detail-header search-header">
         <button
           aria-label="Back"
           className="icon-action"
@@ -50,6 +50,7 @@ export function SearchScreen({
         </label>
         <input
           id="task-search"
+          autoFocus
           autoCapitalize="none"
           autoCorrect="off"
           placeholder="Tasks, tags, projects"
@@ -144,7 +145,7 @@ function BrowseFields({
           <h2>{group.label}</h2>
           <div>
             {group.values
-              .slice(0, expandedGroups.has(group.label) ? undefined : 8)
+              .slice(0, expandedGroups.has(group.label) ? undefined : 4)
               .map((value) => (
                 <button
                   key={value}
@@ -155,7 +156,7 @@ function BrowseFields({
                   {cleanField(value)}
                 </button>
               ))}
-            {group.values.length > 8 ? (
+            {group.values.length > 4 ? (
               <button
                 className="browse-fields-more"
                 type="button"

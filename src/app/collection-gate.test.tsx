@@ -58,14 +58,16 @@ it("explains why mdbase is recommended and lets native users choose a folder", (
   render(<CollectionGate />);
 
   const mdbase = screen.getByRole("button", { name: /mdbase/i });
-  expect(mdbase).toHaveTextContent("Sync + reminders");
-  expect(mdbase).toHaveTextContent("durable offline copy");
-  expect(mdbase).toHaveTextContent("Reminders run while TaskNotes is closed");
+  expect(mdbase).toHaveTextContent("Recommended");
+  expect(mdbase).toHaveTextContent("Keep working");
+  expect(mdbase).toHaveTextContent("Deliver reminders");
   expect(
-    screen.getByRole("button", { name: /On this device/i }),
-  ).toHaveTextContent("Reminder details are saved");
+    screen.getByRole("button", { name: /Keep only on this device/i }),
+  ).toHaveTextContent("Save reminder details");
 
-  fireEvent.click(screen.getByRole("button", { name: /On this device/i }));
+  fireEvent.click(
+    screen.getByRole("button", { name: /Keep only on this device/i }),
+  );
   expect(
     screen.getByRole("heading", { name: "Use a folder for your tasks." }),
   ).toBeVisible();
@@ -79,7 +81,7 @@ it("explains why mdbase is recommended and lets native users choose a folder", (
   fireEvent.click(screen.getByRole("button", { name: "Back" }));
   expect(
     screen.getByRole("heading", {
-      name: "Choose where your task collection lives.",
+      name: "Choose how you want to keep your tasks.",
     }),
   ).toBeVisible();
 });
@@ -93,7 +95,7 @@ it("requires mdbase in web browsers", async () => {
     await screen.findByRole("heading", { name: "Sync with mdbase." }),
   ).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: /On this device/i }),
+    screen.queryByRole("button", { name: /Keep only on this device/i }),
   ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Choose another location" }),

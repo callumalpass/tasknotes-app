@@ -76,7 +76,7 @@ describe("TaskScreen", () => {
     const archive = vi.spyOn(repository, "setArchived");
 
     fireEvent.click(screen.getByRole("button", { name: "More task actions" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Archive task" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Archive" }));
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Save failed/ })).toBeVisible(),

@@ -216,7 +216,7 @@ export function AppShell() {
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
       : workspace.page === "views" && !workspace.key
-        ? "more"
+        ? "views"
         : workspace.page === "views"
           ? "views"
           : workspace.page;
@@ -315,7 +315,7 @@ export function AppShell() {
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation items-${Math.min(navigationViews.length, 2) + 3}`}
+          className={`bottom-navigation items-${Math.min(navigationViews.length, 1) + 3}`}
           aria-label="Primary"
         >
           <Navigation
@@ -527,7 +527,7 @@ function Navigation({
   onNavigate(route: Route): void;
 }) {
   const visibleViews =
-    mode === "mobile" ? navigationViews.slice(0, 2) : navigationViews;
+    mode === "mobile" ? navigationViews.slice(0, 1) : navigationViews;
   const additionalViews =
     mode === "mobile" ? navigationViews.slice(visibleViews.length) : [];
   const hiddenNavigationViewActive =

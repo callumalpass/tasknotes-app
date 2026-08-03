@@ -58,9 +58,8 @@ describe("TaskActions", () => {
     renderRow();
 
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "In progress" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "In progress" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({
@@ -72,9 +71,8 @@ describe("TaskActions", () => {
     );
 
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Priority/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "High" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "High" }));
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({
         priority: "high",
@@ -85,7 +83,7 @@ describe("TaskActions", () => {
     );
 
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Schedule/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Due tomorrow" }));
 
     await waitFor(async () =>
@@ -100,7 +98,6 @@ describe("TaskActions", () => {
     renderRow();
 
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Create subtask" }));
     fireEvent.change(screen.getByLabelText("Subtask title"), {
@@ -126,9 +123,7 @@ describe("TaskActions", () => {
       expect(screen.getByRole("menuitem", { name: "Edit" })).toHaveFocus(),
     );
 
-    fireEvent.keyDown(menu, { key: "ArrowDown" });
-    expect(screen.getByRole("menuitem", { name: "Complete" })).toHaveFocus();
-    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
+    expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });
@@ -138,11 +133,10 @@ describe("TaskActions", () => {
   it("uses an alert dialog and focuses the safe action before deletion", async () => {
     renderRow();
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
     const confirmation = screen.getByRole("alertdialog", {
-      name: "Actions for Menu parent",
+      name: "Menu parent",
     });
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Keep task" })).toHaveFocus(),
@@ -153,5 +147,51 @@ describe("TaskActions", () => {
     ).not.toBeInTheDocument();
     expect(confirmation).toHaveAttribute("aria-modal", "true");
     expect(confirmation).toBeVisible();
+  });
+
+  it("keeps occurrence actions separate from series-wide changes", async () => {
+    task = await repository.update(task.id, {
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260803",
+    });
+    const onToggle = vi.fn();
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskRow
+          occurrence={{
+            completed: false,
+            date: "2026-08-03",
+            key: `${task.id}:2026-08-03`,
+            skipped: false,
+            task,
+          }}
+          onOpen={vi.fn()}
+          onToggle={onToggle}
+          task={task}
+        />
+      </RepositoryProvider>,
+    );
+
+    await openMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: /Status/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Complete occurrence" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("menuitem", { name: "Repeating task actions" }),
+    ).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Repeating task actions" }),
+    );
+    expect(screen.getByRole("menuitem", { name: /Status/ })).toBeVisible();
+    expect(
+      screen.getByRole("menuitem", { name: "Delete repeating task" }),
+    ).toBeVisible();
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });

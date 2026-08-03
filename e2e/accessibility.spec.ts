@@ -4,7 +4,10 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 async function resetApplication(page: Page): Promise<void> {
-  await page.goto("./");
+  // Reset from a same-origin document that does not initialize the Vault.
+  // Removing the OPFS directory while TaskNotes is opening can correctly put
+  // the live app into its restart-required recovery state.
+  await page.goto("./tasknotes-mark.svg");
   await page.evaluate(async () => {
     localStorage.clear();
     await Promise.all(
@@ -24,7 +27,7 @@ async function resetApplication(page: Page): Promise<void> {
       .removeEntry("TaskNotes", { recursive: true })
       .catch(() => undefined);
   });
-  await page.reload();
+  await page.goto("./");
 }
 
 async function expectNoSeriousViolations(page: Page): Promise<void> {
