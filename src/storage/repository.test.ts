@@ -838,7 +838,7 @@ describe("IndexedMarkdownRepository", () => {
     ).resolves.toEqual([
       expect.objectContaining({
         label: "Mobile roadmap",
-        value: "[[Projects/mobile]]",
+        value: "[[Projects/mobile|Mobile roadmap]]",
       }),
     ]);
     const firstReadCount = readText.mock.calls.length;

@@ -196,6 +196,18 @@ function TaskEditor({
     }),
     [draft.blockedBy, repositoryRelationships],
   );
+  const projectLabels = useMemo(
+    () =>
+      new Map(
+        draft.projects.flatMap((project) => {
+          const task = repositoryRelationships.projectTasks.find((candidate) =>
+            recordMatchesLink(candidate.path, project),
+          );
+          return task ? [[project, task.title] as const] : [];
+        }),
+      ),
+    [draft.projects, repositoryRelationships.projectTasks],
+  );
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -666,6 +678,7 @@ function TaskEditor({
               label="Projects"
               placeholder="Website, Home"
               values={draft.projects}
+              valueLabels={projectLabels}
               completion={
                 configuration.fieldCompletions[
                   configuration.fieldMapping.projects

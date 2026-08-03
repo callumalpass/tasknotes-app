@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronUp,
   Columns3,
+  FilePenLine,
   FolderKanban,
   List,
 } from "lucide-react";
@@ -11,17 +12,28 @@ import type { TaskView } from "../../domain/view";
 
 export function NavigationViewOrder({
   keys,
+  specialViews = [],
   views,
   onMove,
 }: {
   keys: string[];
+  specialViews?: Array<{ key: string; name: string }>;
   views: TaskView[];
   onMove(key: string, direction: -1 | 1): void;
 }) {
-  const ordered = keys.flatMap((key) => {
+  const ordered: Array<
+    | { key: string; name: string; special: true }
+    | (TaskView & { special: false })
+  > = [];
+  for (const key of keys) {
+    const special = specialViews.find((candidate) => candidate.key === key);
+    if (special) {
+      ordered.push({ ...special, special: true });
+      continue;
+    }
     const view = views.find((candidate) => candidate.key === key);
-    return view ? [view] : [];
-  });
+    if (view) ordered.push({ ...view, special: false });
+  }
   return (
     <section
       className="navigation-view-order"
@@ -36,12 +48,16 @@ export function NavigationViewOrder({
       <ol>
         {ordered.map((view, index) => (
           <li key={view.key}>
-            <ViewIcon view={view} />
+            {view.special ? (
+              <FilePenLine aria-hidden="true" size={21} strokeWidth={1.55} />
+            ) : (
+              <ViewIcon view={view} />
+            )}
             <span>{view.name}</span>
             <div className="navigation-order-actions">
               <button
                 aria-label={`Move ${view.name} earlier`}
-                disabled={index === 0}
+                disabled={index === 0 || (view.special && index === 1)}
                 type="button"
                 onClick={() => onMove(view.key, -1)}
               >
@@ -49,7 +65,9 @@ export function NavigationViewOrder({
               </button>
               <button
                 aria-label={`Move ${view.name} later`}
-                disabled={index === ordered.length - 1}
+                disabled={
+                  index === ordered.length - 1 || ordered[index + 1]?.special
+                }
                 type="button"
                 onClick={() => onMove(view.key, 1)}
               >

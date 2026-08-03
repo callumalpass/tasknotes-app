@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Columns3,
+  FilePenLine,
   List,
   Plus,
   Search,
@@ -23,6 +24,8 @@ import { useCollectionGate } from "./collection-context";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { SearchScreen } from "./search-screen";
+import { ScratchpadScreen } from "./scratchpad-screen";
+import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
@@ -30,7 +33,7 @@ import { ViewsScreen } from "./views-screen";
 import type { TaskView } from "../domain/view";
 
 type Route =
-  | { page: "home" | "search" | "more" }
+  | { page: "home" | "search" | "scratchpad" | "more" }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
@@ -62,6 +65,7 @@ export function AppShell() {
     views,
     error: viewsError,
     navigationViews,
+    navigationKeys,
     homeView,
     loading: viewsLoading,
     refresh: refreshViews,
@@ -249,7 +253,8 @@ export function AppShell() {
           active={activePage}
           homeViewKey={homeView?.key}
           mode="desktop"
-          navigationViews={navigationViews}
+          navigationKeys={navigationKeys}
+          views={views ?? []}
           onNavigate={navigate}
         />
       </aside>
@@ -259,6 +264,10 @@ export function AppShell() {
             onBack={() => navigate({ page: "home" }, true)}
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
+        ) : workspace.page === "scratchpad" ? (
+          <ScratchpadScreen
+            onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+          />
         ) : workspace.page === "more" ? (
           <MoreScreen onNewTask={() => setCaptureOpen(true)} />
         ) : workspace.page === "home" && viewsLoading ? (
@@ -267,7 +276,7 @@ export function AppShell() {
           <ViewsScreen
             documents={documents}
             error={viewsError}
-            navigationViewKeys={navigationViews.map((view) => view.key)}
+            navigationViewKeys={navigationKeys}
             operational={workspaceIsNavigationView}
             views={views}
             viewKey={workspaceViewKey}
@@ -288,6 +297,7 @@ export function AppShell() {
                   : { page: "views", key: view.key },
               )
             }
+            onOpenScratchpad={() => navigate({ page: "scratchpad" })}
             onToggleNavigationView={toggleNavigationView}
             onMoveNavigationView={moveNavigationView}
             onViewsChanged={refreshViews}
@@ -315,14 +325,15 @@ export function AppShell() {
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation items-${Math.min(navigationViews.length, 1) + 3}`}
+          className={`bottom-navigation items-${Math.min(navigationKeys.length, 2) + 3}`}
           aria-label="Primary"
         >
           <Navigation
             active={activePage}
             homeViewKey={homeView?.key}
             mode="mobile"
-            navigationViews={navigationViews}
+            navigationKeys={navigationKeys}
+            views={views ?? []}
             onNavigate={navigate}
           />
         </nav>
@@ -517,36 +528,53 @@ function Navigation({
   active,
   homeViewKey,
   mode,
-  navigationViews,
+  navigationKeys,
+  views,
   onNavigate,
 }: {
   active: string;
   homeViewKey?: string;
   mode: "desktop" | "mobile";
-  navigationViews: TaskView[];
+  navigationKeys: string[];
+  views: TaskView[];
   onNavigate(route: Route): void;
 }) {
-  const visibleViews =
-    mode === "mobile" ? navigationViews.slice(0, 1) : navigationViews;
-  const additionalViews =
-    mode === "mobile" ? navigationViews.slice(visibleViews.length) : [];
-  const hiddenNavigationViewActive =
-    active.startsWith("view:") &&
-    !visibleViews.some((view) => active === `view:${view.key}`);
-  const items: {
+  const navigationEntries: {
     key: string;
     label: string;
     icon: typeof CheckCircle2;
     route: Route;
-  }[] = visibleViews.map((view) => ({
-    key: `view:${view.key}`,
-    label: view.name,
-    icon: navigationViewIcon(view),
-    route:
-      view.key === homeViewKey
-        ? ({ page: "home" } as const)
-        : ({ page: "views", key: view.key } as const),
-  }));
+  }[] = [];
+  for (const key of navigationKeys) {
+    if (key === SCRATCHPAD_NAVIGATION_KEY) {
+      navigationEntries.push({
+        key: "scratchpad",
+        label: "Scratchpad",
+        icon: FilePenLine,
+        route: { page: "scratchpad" },
+      });
+      continue;
+    }
+    const view = views.find((candidate) => candidate.key === key);
+    if (view)
+      navigationEntries.push({
+        key: `view:${view.key}`,
+        label: view.name,
+        icon: navigationViewIcon(view),
+        route:
+          view.key === homeViewKey
+            ? { page: "home" }
+            : { page: "views", key: view.key },
+      });
+  }
+  const visibleViews =
+    mode === "mobile" ? navigationEntries.slice(0, 2) : navigationEntries;
+  const additionalViews =
+    mode === "mobile" ? navigationEntries.slice(visibleViews.length) : [];
+  const hiddenNavigationViewActive = additionalViews.some(
+    (view) => active === view.key,
+  );
+  const items = visibleViews;
   const [menuPosition, setMenuPosition] = useState<{
     left: number;
     top: number;
@@ -699,25 +727,17 @@ function Navigation({
               style={menuPosition}
             >
               {additionalViews.map((view) => {
-                const Icon = navigationViewIcon(view);
+                const Icon = view.icon;
                 return (
                   <button
-                    aria-current={
-                      active === `view:${view.key}` ? "page" : undefined
-                    }
+                    aria-current={active === view.key ? "page" : undefined}
                     key={view.key}
                     role="menuitem"
                     type="button"
-                    onClick={() =>
-                      choose(
-                        view.key === homeViewKey
-                          ? { page: "home" }
-                          : { page: "views", key: view.key },
-                      )
-                    }
+                    onClick={() => choose(view.route)}
                   >
                     <Icon aria-hidden="true" size={19} strokeWidth={1.7} />
-                    <span>{view.name}</span>
+                    <span>{view.label}</span>
                   </button>
                 );
               })}
@@ -772,6 +792,7 @@ function parseRoute(): Route {
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
+  if (path === "/scratchpad") return { page: "scratchpad" };
   if (path === "/more") return { page: "more" };
   return { page: "home" };
 }

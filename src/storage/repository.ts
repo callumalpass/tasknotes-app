@@ -46,6 +46,10 @@ import type {
 } from "../domain/task";
 import type { TaskRelationships } from "../domain/task-relationships";
 import type {
+  ArchiveScratchpadInput,
+  SaveScratchpadInput,
+} from "../domain/scratchpad";
+import type {
   TaskCollectionConfiguration,
   TaskModelSettingsAccess,
   TaskModelSettingsPatch,
@@ -538,6 +542,18 @@ export class IndexedMarkdownRepository implements TaskRepository {
 
   deleteViewSource(path: string, ifRevision?: string): Promise<void> {
     return this.collection.deleteViewSource(path, ifRevision);
+  }
+
+  getActiveScratchpad() {
+    return this.exclusive(() => this.collection.getActiveScratchpad());
+  }
+
+  saveScratchpad(input: SaveScratchpadInput) {
+    return this.exclusive(() => this.collection.saveScratchpad(input));
+  }
+
+  archiveScratchpad(input: ArchiveScratchpadInput) {
+    return this.exclusive(() => this.collection.archiveScratchpad(input));
   }
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {

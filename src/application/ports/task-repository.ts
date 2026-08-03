@@ -14,6 +14,12 @@ import type {
 } from "../../domain/task-configuration";
 import type { TaskRelationships } from "../../domain/task-relationships";
 import type {
+  ArchiveScratchpadInput,
+  SaveScratchpadInput,
+  ScratchpadArchiveResult,
+  ScratchpadDocument,
+} from "../../domain/scratchpad";
+import type {
   FieldCompletion,
   FieldCompletionRequest,
 } from "../../domain/completion";
@@ -77,6 +83,12 @@ export interface TaskRepository {
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument>;
   deleteViewSource(path: string, ifRevision?: string): Promise<void>;
+  /** Typed collection document used by the first-class Scratchpad view. */
+  getActiveScratchpad?(): Promise<ScratchpadDocument>;
+  saveScratchpad?(input: SaveScratchpadInput): Promise<ScratchpadDocument>;
+  archiveScratchpad?(
+    input: ArchiveScratchpadInput,
+  ): Promise<ScratchpadArchiveResult>;
   taskConfiguration(): Promise<TaskCollectionConfiguration>;
   taskModelSettingsAccess(): Promise<TaskModelSettingsAccess>;
   updateTaskModelSettings(

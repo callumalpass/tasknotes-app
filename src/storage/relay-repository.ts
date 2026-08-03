@@ -31,6 +31,19 @@ import {
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
 import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
+import {
+  activeScratchpad,
+  assertScratchpadRevision,
+  newScratchpadValues,
+  scratchpadFromRecord,
+  scratchpadFrontmatter,
+} from "./scratchpads";
+import {
+  SCRATCHPAD_TYPE,
+  scratchpadArchivePath,
+  type ArchiveScratchpadInput,
+  type SaveScratchpadInput,
+} from "../domain/scratchpad";
 import { resolveTaskCollection } from "./tasknotes-collection";
 import { TaskViewCache } from "./view-cache";
 import {
@@ -658,6 +671,129 @@ export class RelayTaskRepository implements TaskRepository {
       this.noteOperationFailure(reason);
       throw reason;
     }
+  }
+
+  getActiveScratchpad() {
+    return this.serializeWrite("scratchpad:active", async () => {
+      const records = await this.scratchpadRecords();
+      const active = activeScratchpad(records);
+      if (active) return active;
+      return this.createActiveScratchpad();
+    });
+  }
+
+  saveScratchpad(input: SaveScratchpadInput) {
+    return this.serializeWrite(`scratchpad:${input.id}`, async () => {
+      const record = await this.requireScratchpadRecord(input.id);
+      const current = scratchpadFromRecord(record);
+      assertScratchpadRevision(current, input);
+      const updated = validResult(
+        await this.connect.update({
+          path: current.path,
+          if_revision: current.revision,
+          patch: asJson(
+            scratchpadFrontmatter(current, {
+              dateModified: new Date().toISOString(),
+            }),
+          ),
+          body: input.body,
+        }),
+      );
+      this.setConnected();
+      this.emit();
+      return scratchpadFromRecord(updated);
+    });
+  }
+
+  archiveScratchpad(input: ArchiveScratchpadInput) {
+    return this.serializeWrite(`scratchpad:${input.id}`, async () => {
+      const record = await this.requireScratchpadRecord(input.id);
+      const current = scratchpadFromRecord(record);
+      assertScratchpadRevision(current, input);
+      const now = new Date().toISOString();
+      const updated = validResult(
+        await this.connect.update({
+          path: current.path,
+          if_revision: current.revision,
+          patch: asJson(
+            scratchpadFrontmatter(current, {
+              state: "converted",
+              title: input.title?.trim() || "Scratchpad",
+              dateModified: now,
+              dateConverted: now,
+            }),
+          ),
+          body: input.body,
+        }),
+      );
+      const path = await this.availableScratchpadPath(
+        scratchpadArchivePath(input.title, new Date(now)),
+      );
+      const archived = validResult(
+        await this.connect.rename({
+          from: updated.path,
+          to: path,
+          if_revision: updated.revision,
+          update_refs: false,
+        }),
+      );
+      const active = await this.createActiveScratchpad();
+      this.setConnected();
+      this.emit();
+      return { archived: scratchpadFromRecord(archived), active };
+    });
+  }
+
+  private async scratchpadRecords(): Promise<RecordDocument<JsonObject>[]> {
+    const result = validResult(
+      await this.connect.query({
+        types: [SCRATCHPAD_TYPE],
+        include_body: true,
+        frontmatter_mode: "persisted",
+        limit: 1_000,
+      }),
+    );
+    return Promise.all(
+      result.results.map(async (record) =>
+        validResult(await this.connect.read({ path: record.path })),
+      ),
+    );
+  }
+
+  private async requireScratchpadRecord(
+    id: string,
+  ): Promise<RecordDocument<JsonObject>> {
+    const record = (await this.scratchpadRecords()).find(
+      (candidate) => candidate.frontmatter.id === id,
+    );
+    if (!record) throw new Error("The scratchpad is no longer available.");
+    return record;
+  }
+
+  private async createActiveScratchpad() {
+    const values = newScratchpadValues();
+    const created = validResult(
+      await this.connect.create({
+        path: values.path,
+        type: SCRATCHPAD_TYPE,
+        frontmatter: asJson(values.frontmatter),
+        body: values.body,
+      }),
+    );
+    return scratchpadFromRecord(created);
+  }
+
+  private async availableScratchpadPath(path: string): Promise<string> {
+    const paths = new Set(
+      (await this.scratchpadRecords()).map((record) => record.path),
+    );
+    if (!paths.has(path)) return path;
+    const stem = path.replace(/\.md$/i, "");
+    for (let suffix = 2; suffix < 10_000; suffix += 1) {
+      const candidate = `${stem} (${suffix}).md`;
+      if (!paths.has(candidate)) return candidate;
+    }
+    throw new Error("Could not choose a unique scratchpad archive path.");
   }
 
   private invalidateViewsAfterMutation(): void {

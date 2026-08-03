@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, X } from "lucide-react";
 
-import { linkTarget } from "../domain/completion";
+import { linkLabel, linkTarget } from "../domain/completion";
 
 import type {
   FieldCompletion,
@@ -16,6 +16,7 @@ export function MultiValueField({
   values,
   completion,
   completeField,
+  valueLabels,
   valueLabel = displayValue,
   onChange,
 }: {
@@ -25,6 +26,7 @@ export function MultiValueField({
   values: string[];
   completion: TaskFieldCompletionConfiguration;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
+  valueLabels?: ReadonlyMap<string, string>;
   valueLabel?(value: string): string;
   onChange(values: string[]): void;
 }) {
@@ -37,6 +39,12 @@ export function MultiValueField({
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
+  const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
+    {},
+  );
+
+  const labelFor = (value: string) =>
+    selectedLabels[value] ?? valueLabels?.get(value) ?? valueLabel(value);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +94,7 @@ export function MultiValueField({
     [],
   );
 
-  function add(value: string) {
+  function add(value: string, label?: string) {
     const next = value.trim();
     if (!next) return;
     if (
@@ -96,7 +104,9 @@ export function MultiValueField({
       )
     ) {
       onChange([...values, next]);
-      setAnnouncement(`${valueLabel(next)} added`);
+      if (label)
+        setSelectedLabels((current) => ({ ...current, [next]: label }));
+      setAnnouncement(`${label ?? labelFor(next)} added`);
     }
     setQuery("");
     setOpen(true);
@@ -105,7 +115,7 @@ export function MultiValueField({
 
   function addQuery() {
     const option = options[activeIndex];
-    if (option) add(option.value);
+    if (option) add(option.value, option.label);
     else add(query.replace(/,$/, ""));
   }
 
@@ -132,7 +142,7 @@ export function MultiValueField({
     if (event.key === "Backspace" && !query && values.length) {
       const removed = values.at(-1);
       onChange(values.slice(0, -1));
-      if (removed) setAnnouncement(`${valueLabel(removed)} removed`);
+      if (removed) setAnnouncement(`${labelFor(removed)} removed`);
       return;
     }
     if (event.key === "Escape") {
@@ -152,14 +162,14 @@ export function MultiValueField({
       >
         {values.map((value) => (
           <span className="field-token" key={value}>
-            <span>{valueLabel(value)}</span>
+            <span>{labelFor(value)}</span>
             <button
-              aria-label={`Remove ${valueLabel(value)}`}
+              aria-label={`Remove ${labelFor(value)}`}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 onChange(values.filter((candidate) => candidate !== value));
-                setAnnouncement(`${valueLabel(value)} removed`);
+                setAnnouncement(`${labelFor(value)} removed`);
               }}
             >
               <X aria-hidden="true" size={13} strokeWidth={1.8} />
@@ -217,7 +227,7 @@ export function MultiValueField({
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => add(option.value)}
+                onClick={() => add(option.value, option.label)}
               >
                 <span>
                   <strong>{option.label}</strong>
@@ -252,6 +262,8 @@ export function MultiValueField({
 }
 
 function displayValue(value: string): string {
+  const label = linkLabel(value);
+  if (label) return label;
   const target = linkTarget(value);
   return target.split("/").at(-1) || value;
 }
