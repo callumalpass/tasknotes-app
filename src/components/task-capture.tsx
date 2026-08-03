@@ -53,6 +53,7 @@ export function TaskCapture({
   completeField,
   defaults,
   placeholder = "Add a task — tomorrow 9am, #tag, +project",
+  showGuide = false,
   focusRequest,
   onCreated,
   onOpenCreated,
@@ -62,6 +63,7 @@ export function TaskCapture({
   completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   defaults?: Partial<CreateTaskInput>;
   placeholder?: string;
+  showGuide?: boolean;
   focusRequest?: number;
   onCreated?(task: Task): Promise<TaskCaptureFollowUp | void>;
   onOpenCreated?(task: Task): void;
@@ -409,6 +411,12 @@ export function TaskCapture({
         ) : null}
       </div>
 
+      {showGuide && !text.trim() ? (
+        <p className="capture-guide">
+          Add dates and tags naturally — try “Call Sam tomorrow 9am #work”.
+        </p>
+      ) : null}
+
       {suggestions.length ? (
         <div
           id={suggestionsId}
@@ -451,7 +459,7 @@ export function TaskCapture({
             aria-expanded={expanded}
             onClick={() => setExpanded((value) => !value)}
           >
-            {expanded ? "Less" : "Details"}
+            {expanded ? "Hide details" : "Add details"}
           </button>
         </div>
       ) : null}
@@ -693,8 +701,10 @@ function CaptureDetailGroup({
       onToggle={(event) => onToggle(event.currentTarget.open)}
     >
       <summary>
-        <span>{label}</span>
-        <small>{description}</small>
+        <span>
+          <strong>{label}</strong>
+          <small>{description}</small>
+        </span>
       </summary>
       <div className="capture-details-section-content">{children}</div>
     </details>

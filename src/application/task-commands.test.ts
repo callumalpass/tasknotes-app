@@ -50,7 +50,7 @@ describe("TaskCommandService", () => {
     await service.initialize();
     await service.requestDeletion("task-1");
 
-    await vi.advanceTimersByTimeAsync(8_000);
+    await vi.advanceTimersByTimeAsync(30_000);
 
     expect(repository.delete).toHaveBeenCalledWith("task-1");
     expect(onDeleted).toHaveBeenCalledWith("task-1");
@@ -74,7 +74,7 @@ describe("TaskCommandService", () => {
     expect(reopened.snapshot().pendingDeletion).toMatchObject({
       taskId: "task-1",
     });
-    await vi.advanceTimersByTimeAsync(6_000);
+    await vi.advanceTimersByTimeAsync(28_000);
     expect(repository.delete).toHaveBeenCalledOnce();
     expect(journal.commands).toEqual([]);
     reopened.dispose();
@@ -88,7 +88,7 @@ describe("TaskCommandService", () => {
     await service.initialize();
     await service.requestDeletion("task-1");
 
-    await vi.advanceTimersByTimeAsync(8_000);
+    await vi.advanceTimersByTimeAsync(30_000);
 
     expect(service.snapshot()).toMatchObject({
       pendingDeletion: { taskId: "task-1" },

@@ -146,6 +146,19 @@ Today             Search       More
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
+- Mobile bottom navigation exposes at most four destinations: one pinned view,
+  Search, Views, and Settings. Additional pinned views remain available from
+  Views.
+- Task actions use one vocabulary in lists and detail. On phones they appear in
+  a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
+  tasks expose the complete action set without a generic “More” layer.
+- A recurring occurrence exposes only occurrence-safe actions first. Anything
+  that changes the series sits behind an explicit “Repeating task actions”
+  boundary.
+- Destructive task actions require confirmation and remain recoverable for 30
+  seconds.
+- Disclosure rows use a title, a plain-language current-value summary, and the
+  same chevron treatment across capture, task editing, views, and settings.
 
 The radius scale is 0 for page structure and fields with bottom rules, 6px for
 ordinary controls and notices, and 12px for modal sheets. The 26px mobile Add

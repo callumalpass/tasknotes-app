@@ -517,10 +517,10 @@ function CollectionWelcome({
     <main className="collection-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Choose where your task collection lives.</h1>
+        <h1>Choose how you want to keep your tasks.</h1>
         <p>
-          TaskNotes saves changes on this device first. Hosted mdbase and
-          device-only collections both keep working offline.
+          Both choices save changes on this device first and keep your tasks as
+          portable Markdown.
         </p>
       </div>
       <div className="collection-choices collection-choice-comparison">
@@ -532,24 +532,26 @@ function CollectionWelcome({
           <Cloud aria-hidden="true" size={22} strokeWidth={1.5} />
           <span className="collection-choice-content">
             <span className="collection-choice-title">
-              <strong>Hosted mdbase</strong>
-              <span className="recommendation-label">Sync + reminders</span>
+              <strong>Sync across devices</strong>
+              <span className="recommendation-label">Recommended</span>
             </span>
             <span className="collection-choice-benefits">
               <small>
                 <Smartphone aria-hidden="true" size={15} />
-                This device keeps a durable offline copy
+                Keep working when this device is offline
               </small>
               <small>
                 <Cloud aria-hidden="true" size={15} />
-                The hosted collection is the source of truth and syncs changes
+                Sync changes through hosted mdbase
               </small>
               <small>
                 <BellRing aria-hidden="true" size={15} />
-                Reminders run while TaskNotes is closed
+                Deliver reminders while TaskNotes is closed
               </small>
             </span>
-            <span className="collection-choice-action">Sync with mdbase</span>
+            <span className="collection-choice-action">
+              Continue with mdbase
+            </span>
           </span>
         </button>
         <button
@@ -559,31 +561,38 @@ function CollectionWelcome({
         >
           <HardDrive aria-hidden="true" size={22} strokeWidth={1.5} />
           <span className="collection-choice-content">
-            <strong>Keep on this device</strong>
+            <strong>Keep only on this device</strong>
             <span className="collection-choice-benefits">
               <small>
                 <FileText aria-hidden="true" size={15} />
-                Markdown files here are the source of truth
+                Store ordinary Markdown in a folder you choose
               </small>
               <small>
                 <Smartphone aria-hidden="true" size={15} />
-                Works offline with no sync or account required
+                Use TaskNotes without an account or connection
               </small>
               <small>
                 <BellOff aria-hidden="true" size={15} />
-                Reminder details are saved; notifications are not delivered
+                Save reminder details without sending notifications
               </small>
             </span>
-            <span className="collection-choice-action">Use this device</span>
+            <span className="collection-choice-action">Choose a folder</span>
           </span>
         </button>
       </div>
-      <p className="welcome-portability">
-        <FileText aria-hidden="true" size={16} /> Both choices use portable
-        Markdown. A direct computer connection is also available in mdbase
-        setup, but requires that computer to be reachable. Changing collections
-        later does not move tasks between them.
-      </p>
+      <details className="welcome-details">
+        <summary>How storage works</summary>
+        <p>
+          With sync, hosted mdbase is the source of truth and this device keeps
+          an offline copy. With a device folder, those Markdown files are the
+          source of truth. You can change collections later, but TaskNotes will
+          not move tasks between them automatically.
+        </p>
+        <p>
+          mdbase can also connect directly to a computer, which must remain
+          reachable while you use that collection.
+        </p>
+      </details>
     </main>
   );
 }

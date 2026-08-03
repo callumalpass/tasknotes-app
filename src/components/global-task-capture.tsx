@@ -29,7 +29,9 @@ export function GlobalTaskCapture({
   useEffect(() => {
     if (!open) return;
     returnFocusRef.current = document.activeElement as HTMLElement | null;
+    const app = document.getElementById("root");
     const previousOverflow = document.body.style.overflow;
+    if (app) app.inert = true;
     document.body.style.overflow = "hidden";
     const keydown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -54,6 +56,7 @@ export function GlobalTaskCapture({
     };
     window.addEventListener("keydown", keydown);
     return () => {
+      if (app) app.inert = false;
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", keydown);
       queueMicrotask(() => returnFocusRef.current?.focus());
@@ -95,6 +98,7 @@ export function GlobalTaskCapture({
           completeField={completeField}
           focusRequest={1}
           placeholder="What needs doing?"
+          showGuide
           onCreated={async () => onClose()}
           onOpenCreated={(task) => {
             onClose();

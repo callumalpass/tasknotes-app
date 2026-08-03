@@ -175,7 +175,7 @@ it("creates a task with a structured dependency from capture details", async () 
   fireEvent.change(screen.getByLabelText("New task title"), {
     target: { value: "Review proposal" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Details" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add details" }));
   fireEvent.focus(await screen.findByRole("combobox", { name: "Blocked by" }));
   fireEvent.click(
     await screen.findByRole("option", { name: /Draft proposal/ }),

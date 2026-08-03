@@ -12,9 +12,12 @@ import {
   FolderTree,
   Link2,
   MoreHorizontal,
+  NotebookPen,
   Pencil,
   Play,
   Plus,
+  Repeat2,
+  SkipForward,
   Square,
   Star,
   Trash2,
@@ -38,7 +41,7 @@ interface MenuPosition {
 
 type MenuPanel =
   | "actions"
-  | "more"
+  | "series"
   | "status"
   | "priority"
   | "dates"
@@ -47,36 +50,63 @@ type MenuPanel =
   | "copy"
   | "delete";
 
+interface TaskActionsProps {
+  task: Task;
+  occurrenceDate?: string;
+  context?: "row" | "detail";
+  beforeAction?(): Promise<void>;
+  onOpen?(task: Task, occurrenceDate?: string): void;
+  onToggle(task: Task, occurrenceDate?: string): void | Promise<void>;
+  onArchived?(): void;
+  onDeleted?(): void;
+}
+
 export function TaskActions({
   task,
   occurrenceDate,
+  context = "row",
+  beforeAction,
   onOpen,
   onToggle,
-}: {
-  task: Task;
-  occurrenceDate?: string;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
-}) {
+  onArchived,
+  onDeleted,
+}: TaskActionsProps) {
   const {
     configuration,
     repository,
     createTask,
     deleteTask,
+    materializeOccurrence,
     setTaskArchived,
+    skipTask,
     startTimeTracking,
     stopTimeTracking,
     updateTask,
   } = useRepository();
   const [position, setPosition] = useState<MenuPosition | null>(null);
-  const [panel, setPanel] = useState<MenuPanel>("actions");
+  const [panels, setPanels] = useState<MenuPanel[]>(["actions"]);
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mobile, setMobile] = useState(false);
   const menuId = useId();
+  const headingId = `${menuId}-heading`;
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panel = panels.at(-1) ?? "actions";
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
+  const virtualOccurrence = Boolean(
+    occurrenceDate && task.recurrence && !task.occurrenceDate,
+  );
+  const occurrence = task.occurrenceDate ?? occurrenceDate;
+  const occurrenceComplete = task.occurrenceDate
+    ? task.completed
+    : Boolean(
+        occurrenceDate && task.completeInstances.includes(occurrenceDate),
+      );
+  const occurrenceSkipped = task.occurrenceDate
+    ? task.skipped
+    : Boolean(occurrenceDate && task.skippedInstances.includes(occurrenceDate));
   const status =
     configuration.statuses.find((option) => option.value === task.status)
       ?.label ?? task.status;
@@ -85,19 +115,30 @@ export function TaskActions({
       ?.label ?? task.priority;
 
   useEffect(() => {
+    const query = window.matchMedia?.("(max-width: 839px)");
+    if (!query) return;
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
     if (!position) return;
     const close = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) closeMenu();
+      const target = event.target as Node;
+      if (
+        menuRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      )
+        return;
+      closeMenu();
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (panel !== "actions") {
-        event.preventDefault();
-        setPanel(parentPanel(panel));
-      } else {
-        closeMenu();
-        triggerRef.current?.focus();
-      }
+      event.preventDefault();
+      if (panels.length > 1) goBack();
+      else closeMenu(true);
     };
     window.addEventListener("pointerdown", close);
     window.addEventListener("keydown", escape);
@@ -105,7 +146,7 @@ export function TaskActions({
       window.removeEventListener("pointerdown", close);
       window.removeEventListener("keydown", escape);
     };
-  }, [panel, position]);
+  }, [panels, position]);
 
   useEffect(() => {
     if (!position || panel === "subtask") return;
@@ -113,18 +154,30 @@ export function TaskActions({
       const selector =
         panel === "delete"
           ? "[data-safe-action]"
-          : "[role='menuitem']:not(:disabled)";
+          : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
     });
   }, [panel, position]);
 
+  useEffect(() => {
+    if (!position || !mobile) return;
+    const app = document.getElementById("root");
+    const previousOverflow = document.body.style.overflow;
+    if (app) app.inert = true;
+    document.body.style.overflow = "hidden";
+    return () => {
+      if (app) app.inert = false;
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobile, position]);
+
   function openFromTrigger() {
     if (position) {
-      closeMenu();
+      closeMenu(true);
       return;
     }
     const rect = triggerRef.current?.getBoundingClientRect();
-    const width = 272;
+    const width = 304;
     openMenu(
       (rect?.right ?? innerWidth - 16) - width,
       (rect?.bottom ?? 64) + 4,
@@ -136,13 +189,13 @@ export function TaskActions({
   }
 
   function openMenu(x: number, y: number) {
-    const width = 272;
-    const estimatedHeight = 520;
+    const width = 304;
+    const estimatedHeight = 640;
     setError("");
-    setPanel("actions");
+    setPanels(["actions"]);
     setSubtaskTitle("");
-    // Relay query results do not carry a revision. Fetch it while the person is
-    // choosing an action so revision-guarded writes do not add a later round trip.
+    // Relay query results do not carry a revision. Warm it while the person is
+    // choosing so guarded writes do not add a later network round trip.
     void repository.get(task.id).catch(() => undefined);
     setPosition({
       x: Math.max(8, Math.min(x, innerWidth - width - 8)),
@@ -153,21 +206,34 @@ export function TaskActions({
     });
   }
 
-  function closeMenu() {
+  function closeMenu(restoreFocus = false) {
     setPosition(null);
-    setPanel("actions");
+    setPanels(["actions"]);
     setSubtaskTitle("");
     setError("");
+    if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
   }
 
-  async function run(action: () => Promise<unknown>) {
+  function navigate(next: MenuPanel) {
+    setPanels((current) => [...current, next]);
+  }
+
+  function goBack() {
+    setPanels((current) =>
+      current.length > 1 ? current.slice(0, -1) : current,
+    );
+  }
+
+  async function run(action: () => Promise<unknown>, after?: () => void) {
     if (busy) return;
     setBusy(true);
     setError("");
     try {
+      await beforeAction?.();
       await action();
       actionFeedback();
       closeMenu();
+      after?.();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -177,7 +243,11 @@ export function TaskActions({
 
   function openEditor() {
     closeMenu();
-    onOpen(task, occurrenceDate);
+    onOpen?.(task, occurrenceDate);
+  }
+
+  async function toggle() {
+    await onToggle(task, occurrenceDate);
   }
 
   const today = todayString();
@@ -193,15 +263,28 @@ export function TaskActions({
         configuration.linkWriteFormat,
       ).value
     : "";
+  const rootRole =
+    panel === "delete"
+      ? "alertdialog"
+      : mobile || panel === "subtask"
+        ? "dialog"
+        : "menu";
+  const actionMenuRole = mobile && panel !== "subtask" && panel !== "delete";
 
   return (
     <>
       <button
         aria-controls={position ? menuId : undefined}
         aria-expanded={Boolean(position)}
-        aria-haspopup="menu"
-        aria-label={`Task actions for ${task.title}`}
-        className="task-actions-trigger"
+        aria-haspopup={mobile ? "dialog" : "menu"}
+        aria-label={
+          context === "detail"
+            ? "More task actions"
+            : `Task actions for ${task.title}`
+        }
+        className={
+          context === "detail" ? "icon-action" : "task-actions-trigger"
+        }
         ref={triggerRef}
         title={`Actions for ${task.title}`}
         type="button"
@@ -215,369 +298,351 @@ export function TaskActions({
       </button>
       {position
         ? createPortal(
-            <div
-              aria-label={`Actions for ${task.title}`}
-              aria-modal={
-                panel === "subtask" || panel === "delete" ? true : undefined
-              }
-              className="task-actions-menu"
-              id={menuId}
-              ref={menuRef}
-              role={
-                panel === "subtask"
-                  ? "dialog"
-                  : panel === "delete"
-                    ? "alertdialog"
-                    : "menu"
-              }
-              style={{ left: position.x, top: position.y }}
-              onKeyDown={handleMenuKeys}
-            >
-              <div className="task-actions-heading">
-                <strong>{task.title}</strong>
-                <button type="button" onClick={closeMenu}>
-                  Close
-                </button>
-              </div>
-              {panel !== "actions" ? (
-                <div className="task-actions-subheading">
-                  <button
-                    aria-label="Back to task actions"
-                    type="button"
-                    onClick={() => setPanel(parentPanel(panel))}
-                  >
-                    <ChevronLeft aria-hidden="true" size={18} />
-                  </button>
-                  <strong>{panelTitle(panel)}</strong>
-                </div>
-              ) : null}
-              <div className={`task-actions-items is-${panel}`}>
-                {panel === "actions" ? (
-                  <>
-                    <MenuAction
-                      icon={Pencil}
-                      label="Edit"
-                      onClick={openEditor}
-                    />
-                    <MenuAction
-                      icon={task.completed ? Circle : Check}
-                      label={task.completed ? "Mark open" : "Complete"}
-                      onClick={() => {
-                        closeMenu();
-                        onToggle(task, occurrenceDate);
-                      }}
-                    />
-                    <MenuAction
-                      detail={dateSummary(task)}
-                      icon={CalendarClock}
-                      label="Schedule"
-                      next
-                      onClick={() => setPanel("dates")}
-                    />
-                    <MenuAction
-                      icon={MoreHorizontal}
-                      label="More"
-                      next
-                      onClick={() => setPanel("more")}
-                    />
-                  </>
-                ) : null}
-                {panel === "more" ? (
-                  <>
-                    <MenuAction
-                      detail={status}
-                      icon={Circle}
-                      label="Status"
-                      next
-                      onClick={() => setPanel("status")}
-                    />
-                    <MenuAction
-                      detail={priority}
-                      icon={Star}
-                      label="Priority"
-                      next
-                      onClick={() => setPanel("priority")}
-                    />
-                    <MenuAction
-                      icon={FolderTree}
-                      label="Organize"
-                      next
-                      onClick={() => setPanel("organize")}
-                    />
-                    <MenuSeparator />
-                    <MenuAction
-                      disabled={busy}
-                      icon={tracking ? Square : Play}
-                      label={tracking ? "Stop timer" : "Start timer"}
-                      onClick={() =>
-                        void run(() =>
-                          tracking
-                            ? stopTimeTracking(task.id)
-                            : startTimeTracking(task.id),
-                        )
-                      }
-                    />
-                    <MenuAction
-                      disabled={busy}
-                      icon={task.archived ? ArchiveRestore : Archive}
-                      label={task.archived ? "Restore" : "Archive"}
-                      onClick={() =>
-                        void run(() => setTaskArchived(task.id, !task.archived))
-                      }
-                    />
-                    <MenuAction
-                      icon={Copy}
-                      label="Copy"
-                      next
-                      onClick={() => setPanel("copy")}
-                    />
-                    <MenuSeparator />
-                    <MenuAction
-                      danger
-                      icon={Trash2}
-                      label="Delete"
-                      onClick={() => setPanel("delete")}
-                    />
-                  </>
-                ) : null}
-                {panel === "status"
-                  ? configuration.statuses.map((option) => (
-                      <MenuAction
-                        current={option.value === task.status}
-                        disabled={busy}
-                        icon={option.value === task.status ? Check : Circle}
-                        key={option.value}
-                        label={option.label}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { status: option.value }),
-                          )
-                        }
-                      />
-                    ))
-                  : null}
-                {panel === "priority"
-                  ? configuration.priorities.map((option) => (
-                      <MenuAction
-                        current={option.value === task.priority}
-                        disabled={busy}
-                        icon={option.value === task.priority ? Check : Star}
-                        key={option.value}
-                        label={option.label}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { priority: option.value }),
-                          )
-                        }
-                      />
-                    ))
-                  : null}
-                {panel === "dates" ? (
-                  <>
-                    <MenuAction
-                      disabled={busy}
-                      icon={CalendarClock}
-                      label="Due today"
-                      onClick={() =>
-                        void run(() => updateTask(task.id, { due: today }))
-                      }
-                    />
-                    <MenuAction
-                      disabled={busy}
-                      icon={CalendarClock}
-                      label="Due tomorrow"
-                      onClick={() =>
-                        void run(() => updateTask(task.id, { due: tomorrow }))
-                      }
-                    />
-                    <MenuAction
-                      disabled={busy}
-                      icon={CalendarClock}
-                      label="Schedule today"
-                      onClick={() =>
-                        void run(() =>
-                          updateTask(task.id, { scheduled: today }),
-                        )
-                      }
-                    />
-                    <MenuAction
-                      disabled={busy}
-                      icon={CalendarClock}
-                      label="Schedule tomorrow"
-                      onClick={() =>
-                        void run(() =>
-                          updateTask(task.id, { scheduled: tomorrow }),
-                        )
-                      }
-                    />
-                    <MenuAction
-                      disabled={busy || (!task.due && !task.scheduled)}
-                      icon={ChevronRight}
-                      label="Postpone one day"
-                      onClick={() =>
-                        void run(() =>
-                          updateTask(task.id, {
-                            ...(task.due
-                              ? { due: shiftTaskDate(task.due, 1) }
-                              : {}),
-                            ...(task.scheduled
-                              ? {
-                                  scheduled: shiftTaskDate(task.scheduled, 1),
-                                }
-                              : {}),
-                          }),
-                        )
-                      }
-                    />
-                    <MenuSeparator />
-                    {task.due ? (
-                      <MenuAction
-                        disabled={busy}
-                        icon={Trash2}
-                        label="Clear due date"
-                        onClick={() =>
-                          void run(() => updateTask(task.id, { due: null }))
-                        }
-                      />
-                    ) : null}
-                    {task.scheduled ? (
-                      <MenuAction
-                        disabled={busy}
-                        icon={Trash2}
-                        label="Clear scheduled date"
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { scheduled: null }),
-                          )
-                        }
-                      />
-                    ) : null}
-                    <MenuAction
-                      icon={Pencil}
-                      label="Edit all dates"
-                      onClick={openEditor}
-                    />
-                  </>
-                ) : null}
-                {panel === "organize" ? (
-                  <>
-                    <MenuAction
-                      detail={
-                        projectLink ? "Linked to this task" : "Waiting for sync"
-                      }
-                      disabled={!projectLink}
-                      icon={Plus}
-                      label="Create subtask"
-                      onClick={() => setPanel("subtask")}
-                    />
-                    <MenuAction
-                      detail="Projects and dependencies"
-                      icon={Link2}
-                      label="Edit relationships"
-                      onClick={openEditor}
-                    />
-                    <MenuAction
-                      detail={
-                        task.reminders.length
-                          ? `${task.reminders.length} set`
-                          : "None set"
-                      }
-                      icon={CalendarClock}
-                      label="Edit reminders"
-                      onClick={openEditor}
-                    />
-                  </>
-                ) : null}
-                {panel === "subtask" ? (
-                  <form
-                    aria-label={`Create a subtask of ${task.title}`}
-                    className="task-actions-subtask"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      const title = subtaskTitle.trim();
-                      if (!title) return;
-                      void run(() =>
-                        createTask({ title, projects: [projectLink] }),
-                      );
-                    }}
-                  >
-                    <label>
-                      <span>Subtask title</span>
-                      <input
-                        autoFocus
-                        disabled={busy}
-                        value={subtaskTitle}
-                        onChange={(event) =>
-                          setSubtaskTitle(event.target.value)
-                        }
-                      />
-                    </label>
-                    <button
-                      className="primary"
-                      disabled={busy || !subtaskTitle.trim()}
-                      type="submit"
-                    >
-                      <Plus aria-hidden="true" size={18} /> Add subtask
-                    </button>
-                  </form>
-                ) : null}
-                {panel === "copy" ? (
-                  <>
-                    <MenuAction
-                      icon={FileText}
-                      label="Copy title"
-                      onClick={() => void run(() => writeClipboard(task.title))}
-                    />
-                    <MenuAction
-                      detail={
-                        configuration.linkWriteFormat === "markdown"
-                          ? "Markdown link"
-                          : "Wikilink"
-                      }
-                      disabled={!projectLink}
-                      icon={Link2}
-                      label="Copy task link"
-                      onClick={() =>
-                        void run(() => writeClipboard(projectLink))
-                      }
-                    />
-                    <MenuAction
-                      disabled={!task.path}
-                      icon={Clipboard}
-                      label="Copy path"
-                      onClick={() => void run(() => writeClipboard(task.path))}
-                    />
-                  </>
-                ) : null}
-                {panel === "delete" ? (
-                  <div className="task-actions-confirm">
-                    <p>Delete this task? You’ll have 8 seconds to undo.</p>
-                    <button
-                      data-safe-action
-                      type="button"
-                      onClick={() => setPanel("more")}
-                    >
-                      Keep task
-                    </button>
-                    <button
-                      className="danger"
-                      disabled={busy}
-                      type="button"
-                      onClick={() => void run(() => deleteTask(task.id))}
-                    >
-                      <Trash2 aria-hidden="true" size={18} /> Delete task
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-              {error ? (
-                <OperationErrorNotice
-                  action="The task action"
-                  className="task-actions-error"
-                  message={error}
-                  recovery="The menu is still open so you can retry."
+            <div className="task-actions-layer">
+              {mobile ? (
+                <button
+                  aria-hidden="true"
+                  className="task-actions-scrim"
+                  tabIndex={-1}
+                  type="button"
+                  onClick={() => closeMenu(true)}
                 />
               ) : null}
+              <div
+                aria-label={
+                  rootRole === "menu" ? `Actions for ${task.title}` : undefined
+                }
+                aria-labelledby={rootRole !== "menu" ? headingId : undefined}
+                aria-modal={rootRole !== "menu" ? true : undefined}
+                className="task-actions-menu"
+                id={menuId}
+                ref={menuRef}
+                role={rootRole}
+                style={{ left: position.x, top: position.y }}
+                onKeyDown={handleMenuKeys}
+              >
+                <div className="task-actions-heading">
+                  <strong id={headingId}>{task.title}</strong>
+                  <button type="button" onClick={() => closeMenu(true)}>
+                    Close
+                  </button>
+                </div>
+                {panel !== "actions" ? (
+                  <div className="task-actions-subheading">
+                    <button
+                      aria-label="Back to previous actions"
+                      type="button"
+                      onClick={goBack}
+                    >
+                      <ChevronLeft aria-hidden="true" size={18} />
+                    </button>
+                    <strong>{panelTitle(panel)}</strong>
+                  </div>
+                ) : null}
+                <div
+                  className={`task-actions-items is-${panel}`}
+                  role={actionMenuRole ? "menu" : undefined}
+                >
+                  {panel === "actions" ? (
+                    virtualOccurrence ? (
+                      <>
+                        <MenuAction
+                          disabled={busy}
+                          icon={occurrenceComplete ? Circle : Check}
+                          label={
+                            occurrenceComplete
+                              ? "Mark occurrence open"
+                              : "Complete occurrence"
+                          }
+                          onClick={() => void run(toggle)}
+                        />
+                        <MenuAction
+                          disabled={busy || !occurrence}
+                          icon={SkipForward}
+                          label={
+                            occurrenceSkipped
+                              ? "Unskip occurrence"
+                              : "Skip occurrence"
+                          }
+                          onClick={() =>
+                            void run(() => skipTask(task.id, occurrence!))
+                          }
+                        />
+                        <MenuAction
+                          disabled={busy || !occurrenceDate}
+                          icon={NotebookPen}
+                          label="Make occurrence note"
+                          onClick={() =>
+                            void run(async () => {
+                              const result = await materializeOccurrence(
+                                task.id,
+                                occurrenceDate!,
+                              );
+                              onOpen?.(result.task);
+                            })
+                          }
+                        />
+                        <MenuSeparator />
+                        <MenuAction
+                          detail="Changes every occurrence"
+                          icon={Repeat2}
+                          label="Repeating task actions"
+                          next
+                          onClick={() => navigate("series")}
+                        />
+                      </>
+                    ) : (
+                      <TaskActionList />
+                    )
+                  ) : null}
+                  {panel === "series" ? <TaskActionList series /> : null}
+                  {panel === "status"
+                    ? configuration.statuses.map((option) => (
+                        <MenuAction
+                          checked={option.value === task.status}
+                          disabled={busy}
+                          icon={option.value === task.status ? Check : Circle}
+                          key={option.value}
+                          label={option.label}
+                          radio
+                          onClick={() =>
+                            void run(() =>
+                              updateTask(task.id, { status: option.value }),
+                            )
+                          }
+                        />
+                      ))
+                    : null}
+                  {panel === "priority"
+                    ? configuration.priorities.map((option) => (
+                        <MenuAction
+                          checked={option.value === task.priority}
+                          disabled={busy}
+                          icon={option.value === task.priority ? Check : Star}
+                          key={option.value}
+                          label={option.label}
+                          radio
+                          onClick={() =>
+                            void run(() =>
+                              updateTask(task.id, { priority: option.value }),
+                            )
+                          }
+                        />
+                      ))
+                    : null}
+                  {panel === "dates" ? (
+                    <>
+                      <MenuAction
+                        disabled={busy}
+                        icon={CalendarClock}
+                        label="Due today"
+                        onClick={() =>
+                          void run(() => updateTask(task.id, { due: today }))
+                        }
+                      />
+                      <MenuAction
+                        disabled={busy}
+                        icon={CalendarClock}
+                        label="Due tomorrow"
+                        onClick={() =>
+                          void run(() => updateTask(task.id, { due: tomorrow }))
+                        }
+                      />
+                      <MenuAction
+                        disabled={busy}
+                        icon={CalendarClock}
+                        label="Schedule today"
+                        onClick={() =>
+                          void run(() =>
+                            updateTask(task.id, { scheduled: today }),
+                          )
+                        }
+                      />
+                      <MenuAction
+                        disabled={busy}
+                        icon={CalendarClock}
+                        label="Schedule tomorrow"
+                        onClick={() =>
+                          void run(() =>
+                            updateTask(task.id, { scheduled: tomorrow }),
+                          )
+                        }
+                      />
+                      <MenuAction
+                        disabled={busy || (!task.due && !task.scheduled)}
+                        icon={ChevronRight}
+                        label="Move dates one day later"
+                        onClick={() =>
+                          void run(() =>
+                            updateTask(task.id, {
+                              ...(task.due
+                                ? { due: shiftTaskDate(task.due, 1) }
+                                : {}),
+                              ...(task.scheduled
+                                ? {
+                                    scheduled: shiftTaskDate(task.scheduled, 1),
+                                  }
+                                : {}),
+                            }),
+                          )
+                        }
+                      />
+                      <MenuSeparator />
+                      {task.due ? (
+                        <MenuAction
+                          disabled={busy}
+                          icon={Trash2}
+                          label="Clear due date"
+                          onClick={() =>
+                            void run(() => updateTask(task.id, { due: null }))
+                          }
+                        />
+                      ) : null}
+                      {task.scheduled ? (
+                        <MenuAction
+                          disabled={busy}
+                          icon={Trash2}
+                          label="Clear scheduled date"
+                          onClick={() =>
+                            void run(() =>
+                              updateTask(task.id, { scheduled: null }),
+                            )
+                          }
+                        />
+                      ) : null}
+                      {onOpen ? (
+                        <MenuAction
+                          icon={Pencil}
+                          label="Edit dates and reminders"
+                          onClick={openEditor}
+                        />
+                      ) : null}
+                    </>
+                  ) : null}
+                  {panel === "organize" ? (
+                    <>
+                      <MenuAction
+                        detail={
+                          projectLink
+                            ? "Linked to this task"
+                            : "Available after sync"
+                        }
+                        disabled={!projectLink}
+                        icon={Plus}
+                        label="Create subtask"
+                        onClick={() => navigate("subtask")}
+                      />
+                      {onOpen ? (
+                        <MenuAction
+                          detail="Projects and dependencies"
+                          icon={Link2}
+                          label="Edit relationships"
+                          onClick={openEditor}
+                        />
+                      ) : null}
+                    </>
+                  ) : null}
+                  {panel === "subtask" ? (
+                    <form
+                      aria-label={`Create a subtask of ${task.title}`}
+                      className="task-actions-subtask"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const title = subtaskTitle.trim();
+                        if (!title) return;
+                        void run(() =>
+                          createTask({ title, projects: [projectLink] }),
+                        );
+                      }}
+                    >
+                      <label>
+                        <span>Subtask title</span>
+                        <input
+                          autoFocus
+                          disabled={busy}
+                          value={subtaskTitle}
+                          onChange={(event) =>
+                            setSubtaskTitle(event.target.value)
+                          }
+                        />
+                      </label>
+                      <button
+                        className="primary"
+                        disabled={busy || !subtaskTitle.trim()}
+                        type="submit"
+                      >
+                        <Plus aria-hidden="true" size={18} /> Add subtask
+                      </button>
+                    </form>
+                  ) : null}
+                  {panel === "copy" ? (
+                    <>
+                      <MenuAction
+                        icon={FileText}
+                        label="Copy title"
+                        onClick={() =>
+                          void run(() => writeClipboard(task.title))
+                        }
+                      />
+                      <MenuAction
+                        detail={
+                          configuration.linkWriteFormat === "markdown"
+                            ? "Markdown link"
+                            : "Wikilink"
+                        }
+                        disabled={!projectLink}
+                        icon={Link2}
+                        label="Copy task link"
+                        onClick={() =>
+                          void run(() => writeClipboard(projectLink))
+                        }
+                      />
+                      <MenuAction
+                        disabled={!task.path}
+                        icon={Clipboard}
+                        label="Copy path"
+                        onClick={() =>
+                          void run(() => writeClipboard(task.path))
+                        }
+                      />
+                    </>
+                  ) : null}
+                  {panel === "delete" ? (
+                    <div className="task-actions-confirm">
+                      <p>
+                        {virtualOccurrence
+                          ? "Delete this repeating task and all of its occurrences?"
+                          : "Delete this task?"}{" "}
+                        You’ll have 30 seconds to undo.
+                      </p>
+                      <button data-safe-action type="button" onClick={goBack}>
+                        Keep task
+                      </button>
+                      <button
+                        className="danger"
+                        disabled={busy}
+                        type="button"
+                        onClick={() =>
+                          void run(() => deleteTask(task.id), onDeleted)
+                        }
+                      >
+                        <Trash2 aria-hidden="true" size={18} />
+                        {virtualOccurrence
+                          ? "Delete repeating task"
+                          : "Delete task"}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                {error ? (
+                  <OperationErrorNotice
+                    action="The task action"
+                    className="task-actions-error"
+                    message={error}
+                    recovery="The menu is still open so you can retry."
+                  />
+                ) : null}
+              </div>
             </div>,
             document.body,
           )
@@ -585,8 +650,94 @@ export function TaskActions({
     </>
   );
 
+  function TaskActionList({ series = false }: { series?: boolean }) {
+    return (
+      <>
+        {context === "row" && onOpen ? (
+          <MenuAction
+            icon={Pencil}
+            label={series ? "Edit repeating task" : "Edit"}
+            onClick={openEditor}
+          />
+        ) : null}
+        <MenuAction
+          disabled={busy}
+          icon={task.completed ? Circle : Check}
+          label={task.completed ? "Mark open" : "Complete"}
+          onClick={() => void run(toggle)}
+        />
+        <MenuAction
+          detail={status}
+          icon={Circle}
+          label="Status"
+          next
+          onClick={() => navigate("status")}
+        />
+        <MenuAction
+          detail={dateSummary(task)}
+          icon={CalendarClock}
+          label="Dates"
+          next
+          onClick={() => navigate("dates")}
+        />
+        <MenuAction
+          detail={priority}
+          icon={Star}
+          label="Priority"
+          next
+          onClick={() => navigate("priority")}
+        />
+        <MenuSeparator />
+        <MenuAction
+          disabled={busy}
+          icon={tracking ? Square : Play}
+          label={tracking ? "Stop timer" : "Start timer"}
+          onClick={() =>
+            void run(() =>
+              tracking ? stopTimeTracking(task.id) : startTimeTracking(task.id),
+            )
+          }
+        />
+        <MenuAction
+          icon={FolderTree}
+          label="Organize"
+          next
+          onClick={() => navigate("organize")}
+        />
+        <MenuAction
+          icon={Copy}
+          label="Copy"
+          next
+          onClick={() => navigate("copy")}
+        />
+        <MenuSeparator />
+        <MenuAction
+          disabled={busy}
+          icon={task.archived ? ArchiveRestore : Archive}
+          label={task.archived ? "Restore" : "Archive"}
+          onClick={() =>
+            void run(async () => {
+              const updated = await setTaskArchived(task.id, !task.archived);
+              if (updated.operationWarnings?.length)
+                throw new Error(updated.operationWarnings.join(" "));
+            }, onArchived)
+          }
+        />
+        <MenuAction
+          danger
+          icon={Trash2}
+          label={series ? "Delete repeating task" : "Delete"}
+          onClick={() => navigate("delete")}
+        />
+      </>
+    );
+  }
+
   function handleMenuKeys(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Tab" && (panel === "subtask" || panel === "delete")) {
+    if (
+      event.key === "Tab" &&
+      (mobile || panel === "subtask" || panel === "delete")
+    ) {
       const controls = [
         ...(menuRef.current?.querySelectorAll<HTMLElement>(
           "button:not(:disabled), input:not(:disabled)",
@@ -608,9 +759,9 @@ export function TaskActions({
       event.target instanceof HTMLTextAreaElement
     )
       return;
-    if (event.key === "ArrowLeft" && panel !== "actions") {
+    if (event.key === "ArrowLeft" && panels.length > 1) {
       event.preventDefault();
-      setPanel(parentPanel(panel));
+      goBack();
       return;
     }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
@@ -618,7 +769,7 @@ export function TaskActions({
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
         panel === "subtask" || panel === "delete"
           ? "button:not(:disabled)"
-          : "[role='menuitem']:not(:disabled)",
+          : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)",
       ) ?? []),
     ];
     if (!items.length) return;
@@ -637,31 +788,33 @@ export function TaskActions({
 }
 
 function MenuAction({
-  current = false,
+  checked = false,
   danger = false,
   detail,
   disabled = false,
   icon: Icon,
   label,
   next = false,
+  radio = false,
   onClick,
 }: {
-  current?: boolean;
+  checked?: boolean;
   danger?: boolean;
   detail?: string;
   disabled?: boolean;
   icon: typeof Circle;
   label: string;
   next?: boolean;
+  radio?: boolean;
   onClick(): void;
 }) {
   return (
     <button
       aria-label={label}
-      aria-current={current ? "true" : undefined}
+      aria-checked={radio ? checked : undefined}
       className={danger ? "danger" : undefined}
       disabled={disabled}
-      role="menuitem"
+      role={radio ? "menuitemradio" : "menuitem"}
       type="button"
       onClick={onClick}
     >
@@ -683,22 +836,15 @@ function MenuSeparator() {
   return <hr aria-hidden="true" />;
 }
 
-function panelTitle(panel: MenuPanel): string {
-  if (panel === "more") return "More actions";
+function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
+  if (panel === "series") return "Repeating task";
   if (panel === "status") return "Status";
   if (panel === "priority") return "Priority";
-  if (panel === "dates") return "Schedule";
+  if (panel === "dates") return "Dates";
   if (panel === "organize") return "Organize";
   if (panel === "subtask") return "New subtask";
   if (panel === "copy") return "Copy";
-  if (panel === "delete") return "Delete task";
-  return "Task actions";
-}
-
-function parentPanel(panel: Exclude<MenuPanel, "actions">): MenuPanel {
-  if (panel === "more" || panel === "dates") return "actions";
-  if (panel === "subtask") return "organize";
-  return "more";
+  return "Delete task";
 }
 
 function dateSummary(task: Task): string {
