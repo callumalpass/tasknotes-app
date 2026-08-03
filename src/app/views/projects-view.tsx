@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 
 import { TaskRow } from "../../components/task-row";
 import {
+  linkLabel,
   linkTarget,
   recordCompletion,
   type CollectionRecord,
@@ -63,7 +64,7 @@ export function ProjectsView({
       }
       const key = `link:${target.toLocaleLowerCase()}`;
       const group = groups.get(key) ?? {
-        label: target.split("/").at(-1) || value,
+        label: linkLabel(value) ?? target.split("/").at(-1) ?? value,
         value,
         tasks: [],
       };

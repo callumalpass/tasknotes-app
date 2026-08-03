@@ -125,7 +125,7 @@ describe("relay task repository", () => {
     expect(first).toEqual(second);
     expect(first).toContainEqual({
       kind: "record",
-      value: "[[Projects/Mobile]]",
+      value: "[[Projects/Mobile|Mobile roadmap]]",
       label: "Mobile roadmap",
       detail: "Projects/Mobile.md",
       path: "Projects/Mobile.md",

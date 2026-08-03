@@ -13,27 +13,7 @@ export function readNavigationViewKeys(
   storage: Pick<Storage, "getItem">,
   scope: string,
 ): string[] | undefined {
-  try {
-    const value = JSON.parse(storage.getItem(STORAGE_KEY) ?? "{}") as unknown;
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const keys = (value as Record<string, unknown>)[scope];
-      if (Array.isArray(keys))
-        return unique(
-          keys.filter(
-            (candidate): candidate is string =>
-              typeof candidate === "string" && Boolean(candidate),
-          ),
-        );
-    }
-    const legacy = JSON.parse(
-      storage.getItem(LEGACY_STORAGE_KEY) ?? "{}",
-    ) as unknown;
-    if (!legacy || typeof legacy !== "object" || Array.isArray(legacy)) return;
-    const key = (legacy as Record<string, unknown>)[scope];
-    return typeof key === "string" && key ? [key] : undefined;
-  } catch {
-    return;
-  }
+  return readScopedKeys(storage, STORAGE_KEY, scope);
 }
 
 export function readPreviousNavigationViewKeys(
@@ -41,6 +21,22 @@ export function readPreviousNavigationViewKeys(
   scope: string,
 ): string[] | undefined {
   return readScopedKeys(storage, PREVIOUS_STORAGE_KEY, scope);
+}
+
+export function readLegacyPrimaryViewKey(
+  storage: Pick<Storage, "getItem">,
+  scope: string,
+): string | undefined {
+  try {
+    const value = JSON.parse(
+      storage.getItem(LEGACY_STORAGE_KEY) ?? "{}",
+    ) as unknown;
+    if (!value || typeof value !== "object" || Array.isArray(value)) return;
+    const key = (value as Record<string, unknown>)[scope];
+    return typeof key === "string" && key ? key : undefined;
+  } catch {
+    return;
+  }
 }
 
 export function writeNavigationViewKeys(

@@ -83,6 +83,7 @@ export function ListField({
   values,
   completion,
   completeField,
+  valueLabels,
   onChange,
 }: {
   field: string;
@@ -91,6 +92,7 @@ export function ListField({
   values: string[];
   completion: TaskFieldCompletionConfiguration;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
+  valueLabels?: ReadonlyMap<string, string>;
   onChange(values: string[]): void;
 }) {
   return (
@@ -101,6 +103,7 @@ export function ListField({
       label={label}
       placeholder={placeholder}
       values={values}
+      valueLabels={valueLabels}
       onChange={onChange}
     />
   );

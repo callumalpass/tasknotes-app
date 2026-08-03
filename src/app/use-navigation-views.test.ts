@@ -5,6 +5,7 @@ import {
   writeNavigationViewKeys,
 } from "./navigation-views";
 import { resolveNavigationViewCatalog } from "./use-navigation-views";
+import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 
 import type { TaskViewDocument } from "../domain/view";
 
@@ -17,6 +18,45 @@ const info = {
 };
 
 describe("home view restoration", () => {
+  it("pins Scratchpad second for a new collection", () => {
+    const resolved = resolveNavigationViewCatalog(
+      info,
+      [starterViews()],
+      false,
+      memoryStorage(),
+    );
+
+    expect(resolved?.navigationKeys.slice(0, 3)).toEqual([
+      "views/tasknotes-app.base#today",
+      SCRATCHPAD_NAVIGATION_KEY,
+      "views/tasknotes-app.base#upcoming",
+    ]);
+  });
+
+  it.each([
+    ["tasknotes:navigation-views:v2", ["views/tasknotes-app.base#today"]],
+    ["tasknotes:primary-views:v1", "views/tasknotes-app.base#today"],
+  ])("inserts Scratchpad when migrating %s preferences", (key, value) => {
+    const storage = memoryStorage({
+      [key]: JSON.stringify({ "connect:collection-home": value }),
+    });
+
+    const resolved = resolveNavigationViewCatalog(
+      info,
+      [starterViews()],
+      false,
+      storage,
+    );
+
+    expect(resolved?.navigationKeys).toEqual([
+      "views/tasknotes-app.base#today",
+      SCRATCHPAD_NAVIGATION_KEY,
+    ]);
+    expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
+      resolved?.navigationKeys,
+    );
+  });
+
   it("keeps startup unresolved instead of briefly selecting Today", () => {
     const storage = memoryStorage();
     writeNavigationViewKeys(storage, "connect:collection-home", [
@@ -145,8 +185,8 @@ function starterViews(): TaskViewDocument {
   };
 }
 
-function memoryStorage() {
-  const values = new Map<string, string>();
+function memoryStorage(initial: Record<string, string> = {}) {
+  const values = new Map(Object.entries(initial));
   return {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),

@@ -1,7 +1,6 @@
 import {
   ChevronLeft,
   ChevronRight,
-  FilePenLine,
   GripVertical,
   Pencil,
   Pin,
@@ -79,6 +78,7 @@ import {
   type OptimisticManualRank,
 } from "./optimistic-view-reconciliation";
 import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
+import { ScratchpadCatalogEntry } from "./views/scratchpad-catalog-entry";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -876,63 +876,11 @@ export function ViewsScreen({
                 onMove={onMoveNavigationView}
               />
               <div className="view-document-list">
-                <section
-                  className="view-document"
-                  aria-labelledby="view-document-tasknotes"
-                >
-                  <header className="view-document-heading">
-                    <h2 id="view-document-tasknotes">TaskNotes</h2>
-                    <small>Working tools</small>
-                  </header>
-                  <div className="saved-view-list">
-                    <div className="saved-view-row">
-                      <button
-                        className="saved-view-open"
-                        type="button"
-                        onClick={onOpenScratchpad}
-                      >
-                        <FilePenLine
-                          aria-hidden="true"
-                          size={21}
-                          strokeWidth={1.55}
-                        />
-                        <span>
-                          <strong>Scratchpad</strong>
-                          <small>Shape an outline before creating tasks</small>
-                        </span>
-                        <ChevronRight aria-hidden="true" size={18} />
-                      </button>
-                      <button
-                        aria-label={
-                          navigationViewKeys.includes(SCRATCHPAD_NAVIGATION_KEY)
-                            ? "Remove Scratchpad from navigation"
-                            : "Add Scratchpad to navigation"
-                        }
-                        aria-pressed={navigationViewKeys.includes(
-                          SCRATCHPAD_NAVIGATION_KEY,
-                        )}
-                        className="saved-view-pin"
-                        type="button"
-                        onClick={() => {
-                          selectionFeedback();
-                          onToggleNavigationView(SCRATCHPAD_NAVIGATION_KEY);
-                        }}
-                      >
-                        <Pin
-                          aria-hidden="true"
-                          fill={
-                            navigationViewKeys.includes(
-                              SCRATCHPAD_NAVIGATION_KEY,
-                            )
-                              ? "currentColor"
-                              : "none"
-                          }
-                          size={17}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </section>
+                <ScratchpadCatalogEntry
+                  navigationKeys={navigationViewKeys}
+                  onOpen={onOpenScratchpad}
+                  onToggleNavigation={onToggleNavigationView}
+                />
                 {documents.map((document) => (
                   <section
                     className="view-document"

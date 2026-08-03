@@ -7,6 +7,7 @@ import { useRepository } from "./repository-context";
 import {
   moveNavigationViewKey,
   navigationViewScope,
+  readLegacyPrimaryViewKey,
   readPreviousNavigationViewKeys,
   readNavigationViewKeys,
   SCRATCHPAD_NAVIGATION_KEY,
@@ -181,6 +182,17 @@ export function resolveNavigationViewCatalog(
         : undefined);
     if (previous) {
       stored = withDefaultScratchpad(previous);
+      writeNavigationViewKeys(storage, scope, stored);
+    }
+  }
+  if (!stored) {
+    const legacy =
+      readLegacyPrimaryViewKey(storage, scope) ??
+      (info.id
+        ? readLegacyPrimaryViewKey(storage, `${info.kind}:${info.location}`)
+        : undefined);
+    if (legacy) {
+      stored = withDefaultScratchpad([legacy]);
       writeNavigationViewKeys(storage, scope, stored);
     }
   }

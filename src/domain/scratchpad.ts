@@ -1,5 +1,5 @@
 export const SCRATCHPAD_TYPE = "tasknotes-scratch";
-export const SCRATCHPAD_FOLDER = "TaskNotes/Scratchpads";
+export const SCRATCHPAD_FOLDER = "scratchpads";
 export const ACTIVE_SCRATCHPAD_PATH = `${SCRATCHPAD_FOLDER}/Scratchpad.md`;
 
 export type ScratchpadState = "active" | "converted";
@@ -258,7 +258,7 @@ schema:
         format: date-time
 collection:
   path:
-    folder: TaskNotes/Scratchpads
+    folder: scratchpads
     template: "{{title}}"
   display:
     name_field: title

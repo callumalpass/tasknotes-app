@@ -113,7 +113,19 @@ export function ScratchpadScreen({
     try {
       const next = await repository.getActiveScratchpad();
       const parsed = parseScratchBody(next.body);
-      const visible = parsed.length ? parsed : [createScratchNode()];
+      const tasks = parsed.some((node) => node.kind === "task")
+        ? await repository.list({
+            status: "all",
+            archived: "include",
+            limit: 50_000,
+          })
+        : [];
+      const hydrated = hydrateLinkedNodes(
+        parsed,
+        tasks,
+        configuration.linkWriteFormat,
+      );
+      const visible = hydrated.length ? hydrated : [createScratchNode()];
       documentRef.current = next;
       nodesRef.current = visible;
       setDocument(next);
@@ -124,10 +136,11 @@ export function ScratchpadScreen({
     } finally {
       setLoading(false);
     }
-  }, [repository]);
+  }, [configuration.linkWriteFormat, repository]);
 
   useEffect(() => {
-    void load();
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
   }, [load]);
 
   const persist = useCallback(
@@ -243,10 +256,8 @@ export function ScratchpadScreen({
   }, [repository, suggestionKey, suggestionRequest]);
 
   useEffect(() => {
-    if (!activeNode || activeNode.kind !== "draft" || !activeNode.text.trim()) {
-      setPreview(null);
+    if (!activeNode || activeNode.kind !== "draft" || !activeNode.text.trim())
       return;
-    }
     let active = true;
     const id = activeNode.id;
     const text = activeNode.text;
@@ -998,6 +1009,34 @@ function scratchBody(nodes: readonly ScratchNode[]): string {
   return serializeScratchNodes(
     nodes.filter((node) => node.kind === "task" || Boolean(node.text.trim())),
   );
+}
+
+function hydrateLinkedNodes(
+  nodes: readonly ScratchNode[],
+  tasks: readonly Task[],
+  linkWriteFormat: "wikilink" | "markdown",
+): ScratchNode[] {
+  return nodes.map((node) => {
+    if (node.kind !== "task" || !node.link) return node;
+    const task = tasks.find((candidate) =>
+      recordMatchesLink(candidate.path, node.link!),
+    );
+    if (!task) return node;
+    return {
+      ...node,
+      text: task.title,
+      taskId: task.id,
+      link: recordCompletion(
+        {
+          path: task.path,
+          label: task.title,
+          frontmatter: task.frontmatter,
+          types: ["task"],
+        },
+        linkWriteFormat,
+      ).value,
+    };
+  });
 }
 
 function message(reason: unknown): string {

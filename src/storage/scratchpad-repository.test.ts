@@ -16,7 +16,7 @@ describe("local scratchpad repository", () => {
 
     const active = await repository.getActiveScratchpad();
     expect(active).toMatchObject({
-      path: "TaskNotes/Scratchpads/Scratchpad.md",
+      path: "scratchpads/Scratchpad.md",
       state: "active",
     });
     const source = parseFrontmatter(await vault.readText(active.path));
@@ -47,12 +47,12 @@ describe("local scratchpad repository", () => {
       dateConverted: expect.any(String),
     });
     expect(result.archived.path).toMatch(
-      /^TaskNotes\/Scratchpads\/\d{4}-\d{2}-\d{2} – Launch plan\.md$/,
+      /^scratchpads\/\d{4}-\d{2}-\d{2} – Launch plan\.md$/,
     );
     expect(result.archived.body).toContain("[[tasks/announcement");
     expect(result.active).toMatchObject({
       state: "active",
-      path: "TaskNotes/Scratchpads/Scratchpad.md",
+      path: "scratchpads/Scratchpad.md",
       body: "",
     });
     expect(result.active.id).not.toBe(active.id);
@@ -77,7 +77,7 @@ describe("local scratchpad repository", () => {
       active.id,
       crypto.randomUUID(),
     );
-    await vault.writeText("TaskNotes/Scratchpads/Other.md", duplicate);
+    await vault.writeText("scratchpads/Other.md", duplicate);
     await expect(repository.getActiveScratchpad()).rejects.toThrow(
       "More than one active scratchpad",
     );

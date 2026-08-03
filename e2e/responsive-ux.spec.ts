@@ -36,7 +36,7 @@ test("keeps navigation calm across the phone and rail boundary", async ({
   await page.setViewportSize({ width: 839, height: 900 });
   const bottomNavigation = page.locator(".bottom-navigation");
   await expect(bottomNavigation).toBeVisible();
-  await expect(bottomNavigation.getByRole("button")).toHaveCount(4);
+  await expect(bottomNavigation.getByRole("button")).toHaveCount(5);
   await expect(page.locator(".navigation-rail")).toBeHidden();
   await expectNoHorizontalOverflow(page);
   await page.screenshot({

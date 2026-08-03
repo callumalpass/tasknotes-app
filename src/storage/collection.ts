@@ -623,7 +623,12 @@ export class MarkdownCollection {
   }
 
   async getActiveScratchpad(): Promise<ScratchpadDocument> {
-    const entries = await this.vault.listFiles(SCRATCHPAD_FOLDER, [".md"]);
+    const entries = await this.vault
+      .listFiles(SCRATCHPAD_FOLDER, [".md"])
+      .catch((reason: unknown) => {
+        if (isMissingPath(reason)) return [];
+        throw reason;
+      });
     const scratchpads = (
       await Promise.all(
         entries.map((entry) =>
@@ -1358,7 +1363,7 @@ function hasTaskNotesImplementation(type: Record<string, unknown>): boolean {
 function isMissingPath(reason: unknown): boolean {
   return (
     (reason instanceof DOMException && reason.name === "NotFoundError") ||
-    /not exist|not found/i.test(String(reason))
+    /not exist|not(?:\s+be)?\s+found|could not be found/i.test(String(reason))
   );
 }
 

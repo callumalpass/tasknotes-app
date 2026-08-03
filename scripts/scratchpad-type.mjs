@@ -37,7 +37,7 @@ schema:
         format: date-time
 collection:
   path:
-    folder: TaskNotes/Scratchpads
+    folder: scratchpads
     template: "{{title}}"
   display:
     name_field: title

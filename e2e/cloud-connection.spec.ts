@@ -450,11 +450,11 @@ test("restores a custom home view and its cached rows before relay refresh", asy
   expect(
     await page.evaluate((scope) => {
       const stored = JSON.parse(
-        localStorage.getItem("tasknotes:navigation-views:v2") ?? "{}",
+        localStorage.getItem("tasknotes:navigation-views:v3") ?? "{}",
       ) as Record<string, string[]>;
       return stored[scope];
     }, `connect:${collectionId}`),
-  ).toEqual(["Views/work.md#open"]);
+  ).toEqual(["Views/work.md#open", "tasknotes:scratchpad"]);
 
   warm = true;
   await page.reload();

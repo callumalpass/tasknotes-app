@@ -123,12 +123,16 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
 a:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent), transparent 25%);
   outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 -2px var(--ink-muted);
 }
 
 button:disabled {
@@ -2982,7 +2986,7 @@ button:disabled {
 }
 
 .task-attachment-add-actions input:focus-visible + label {
-  outline: 2px solid color-mix(in srgb, var(--accent), transparent 28%);
+  outline: 2px solid var(--ink-muted);
   outline-offset: 2px;
 }
 
@@ -3887,7 +3891,7 @@ button:disabled {
 }
 
 .scratchpad-error button {
-  min-height: 34px;
+  min-height: 44px;
   color: inherit;
   background: transparent;
   border: 0;
@@ -3921,7 +3925,7 @@ button:disabled {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 36px 26px minmax(0, 1fr) 36px 36px;
+  grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px;
   min-height: 52px;
   align-items: center;
   border-bottom: 1px solid var(--line);
@@ -3966,7 +3970,7 @@ button:disabled {
 .scratchpad-row-menu-trigger,
 .scratchpad-convert-line {
   display: inline-flex;
-  min-width: 36px;
+  min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -3987,7 +3991,7 @@ button:disabled {
 }
 
 .scratchpad-kind-toggle {
-  min-width: 26px;
+  min-width: 44px;
 }
 
 .scratchpad-draft-mark {
@@ -4050,7 +4054,7 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 0 72px 9px 62px;
+  padding: 0 88px 9px;
   margin-top: -4px;
   border-bottom: 1px solid var(--line);
 }
@@ -4125,12 +4129,12 @@ button:disabled {
 .scratchpad-add-actions {
   display: flex;
   gap: 18px;
-  padding: 14px 0 10px 62px;
+  padding: 14px 0 10px 88px;
 }
 
 .scratchpad-add-actions button {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   gap: 7px;
   padding: 0 4px;
@@ -4147,7 +4151,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 18px 0 0 62px;
+  padding: 18px 0 0 88px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: 0.64rem;
@@ -4300,7 +4304,7 @@ button:disabled {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 34px 24px minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px;
   }
 
   .scratchpad-convert-line {
@@ -4308,13 +4312,13 @@ button:disabled {
   }
 
   .scratchpad-nlp-preview {
-    padding-right: 40px;
-    padding-left: 58px;
+    padding-right: 88px;
+    padding-left: 88px;
   }
 
   .scratchpad-add-actions,
   .scratchpad-path {
-    padding-left: 58px;
+    padding-left: 88px;
   }
 
   .scratchpad-dialog-backdrop {
@@ -7510,29 +7514,18 @@ button:disabled {
   }
 }
 
-:is(
-  button,
-  summary,
-  input,
-  textarea,
-  select,
-  [role="combobox"],
-  [role="gridcell"]
-):focus-visible {
+:is(button, summary, [role="gridcell"]):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent), transparent 24%) !important;
   outline-offset: 2px;
 }
 
-.capture-composer .quick-capture input:focus-visible {
+:is(input, textarea, select, [role="combobox"]):focus-visible {
   outline: 0 !important;
+  box-shadow: inset 0 -2px var(--ink-muted);
 }
 
 .capture-composer .quick-capture:focus-within {
-  border-bottom-color: color-mix(
-    in srgb,
-    var(--accent),
-    var(--line-strong) 78%
-  );
+  border-bottom-color: var(--ink-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {
