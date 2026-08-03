@@ -26,6 +26,7 @@ describe("ScratchpadScreen", () => {
       collection: new MarkdownCollection(vault),
       index,
     });
+    await repository.initialize();
   });
 
   afterEach(async () => {
@@ -83,7 +84,6 @@ describe("ScratchpadScreen", () => {
   });
 
   it("resolves a linked task title after reloading a bare filepath", async () => {
-    await repository.initialize();
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
       title: "Readable title property",
