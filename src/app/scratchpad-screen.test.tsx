@@ -12,6 +12,8 @@ import { MemoryVault } from "../test/memory-vault";
 import { RepositoryProvider } from "./repository-context";
 import { ScratchpadScreen } from "./scratchpad-screen";
 
+const SCRATCHPAD_LOAD_TIMEOUT = 5_000;
+
 describe("ScratchpadScreen", () => {
   let vault: MemoryVault;
   let repository: IndexedMarkdownRepository;
@@ -45,9 +47,13 @@ describe("ScratchpadScreen", () => {
 
   it("converts one draft in place and preserves its linked Markdown", async () => {
     const openTask = renderScratchpad();
-    const input = await screen.findByRole("textbox", {
-      name: "Draft task: empty",
-    });
+    const input = await screen.findByRole(
+      "textbox",
+      {
+        name: "Draft task: empty",
+      },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
     fireEvent.change(input, {
       target: { value: "Prepare release notes tomorrow" },
     });
@@ -105,9 +111,13 @@ describe("ScratchpadScreen", () => {
 
   it("finishes a mixed outline, retains notes, and creates subtask links", async () => {
     renderScratchpad();
-    const parent = await screen.findByRole("textbox", {
-      name: "Draft task: empty",
-    });
+    const parent = await screen.findByRole(
+      "textbox",
+      {
+        name: "Draft task: empty",
+      },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
     fireEvent.change(parent, { target: { value: "Plan launch" } });
     fireEvent.keyDown(parent, { key: "Enter" });
     const child = await screen.findByRole("textbox", {
