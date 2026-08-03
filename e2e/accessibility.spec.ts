@@ -75,6 +75,27 @@ test("views and settings have no serious accessibility violations", async ({
   await expectNoSeriousViolations(page);
 });
 
+test("scratchpad editor has no serious accessibility violations", async ({
+  page,
+}) => {
+  await resetApplication(page);
+  await page.evaluate(() =>
+    localStorage.setItem("tasknotes:collection-choice:v1", "local"),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Today", level: 1 }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", level: 1 }),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Draft task: empty" })
+    .fill("Accessible outline item tomorrow");
+  await expectNoSeriousViolations(page);
+});
+
 test("task list and editor have no serious accessibility violations", async ({
   page,
 }) => {

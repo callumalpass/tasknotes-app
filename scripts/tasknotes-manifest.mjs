@@ -1,5 +1,6 @@
 import { buildTaskNotesMdbaseTypePack } from "@tasknotes/model/mdbase";
 import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
+import { buildScratchpadTypePack } from "./scratchpad-type.mjs";
 
 export async function buildTaskNotesManifest({
   appUrl,
@@ -32,7 +33,7 @@ export async function buildTaskNotesManifest({
       },
     },
     provisions: {
-      type_packs: [typePack],
+      type_packs: [typePack, buildScratchpadTypePack()],
     },
     notifications: {
       criteria: [

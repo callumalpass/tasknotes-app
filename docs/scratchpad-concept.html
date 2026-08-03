@@ -1,0 +1,2370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#fbfcfe" />
+    <title>TaskNotes scratchpad concept</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.2.5/400.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.2.5/700.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/azeret-mono@5.2.5/500.css"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --paper: oklch(99.2% 0.004 255);
+        --paper-raised: oklch(99.7% 0.002 255);
+        --paper-soft: oklch(97.8% 0.006 255);
+        --ink: oklch(25% 0.018 255);
+        --ink-soft: oklch(43% 0.016 255);
+        --ink-muted: oklch(56% 0.014 255);
+        --line: oklch(92.5% 0.007 255);
+        --line-strong: oklch(84% 0.01 255);
+        --accent: oklch(50% 0.09 238);
+        --accent-soft: oklch(96% 0.018 238);
+        --accent-quiet: oklch(88% 0.035 238);
+        --danger: oklch(51% 0.09 28);
+        --success: oklch(49% 0.065 153);
+        --shadow: oklch(20% 0.02 255 / 0.12);
+        --scrim: oklch(16% 0.012 255 / 0.28);
+        --nav-width: 190px;
+        --bottom-nav-height: 70px;
+        --page-inset: 20px;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --paper: oklch(17.5% 0.012 255);
+        --paper-raised: oklch(21.5% 0.014 255);
+        --paper-soft: oklch(20% 0.013 255);
+        --ink: oklch(92% 0.008 255);
+        --ink-soft: oklch(78% 0.01 255);
+        --ink-muted: oklch(67% 0.012 255);
+        --line: oklch(29% 0.012 255);
+        --line-strong: oklch(40% 0.014 255);
+        --accent: oklch(73% 0.09 238);
+        --accent-soft: oklch(27% 0.03 238);
+        --accent-quiet: oklch(36% 0.045 238);
+        --danger: oklch(72% 0.11 28);
+        --success: oklch(72% 0.08 153);
+        --shadow: oklch(5% 0.01 255 / 0.28);
+        --scrim: oklch(5% 0.01 255 / 0.6);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+        background: var(--paper);
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+
+      button,
+      input {
+        color: inherit;
+        font: inherit;
+      }
+
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent), transparent 22%);
+        outline-offset: 2px;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .skip-link {
+        position: fixed;
+        z-index: 50;
+        top: 8px;
+        left: 8px;
+        padding: 9px 12px;
+        color: var(--ink);
+        background: var(--paper-raised);
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        transform: translateY(-160%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .icon {
+        width: 19px;
+        height: 19px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.7;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: var(--nav-width) minmax(0, 1fr);
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+
+      .navigation-rail {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        padding: 24px 14px 18px;
+        background: var(--paper-soft);
+        border-right: 1px solid var(--line);
+      }
+
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 44px;
+        padding: 0 8px;
+        margin-bottom: 32px;
+        font-size: 1.06rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .wordmark svg {
+        width: 25px;
+        height: 25px;
+      }
+
+      .new-task,
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 10px;
+        text-align: left;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .new-task {
+        justify-content: space-between;
+        margin-bottom: 20px;
+        color: var(--paper-raised);
+        background: var(--accent);
+      }
+
+      .new-task > span:first-of-type {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .new-task kbd {
+        color: inherit;
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.66rem;
+        opacity: 0.72;
+      }
+
+      .nav-list {
+        display: grid;
+        gap: 2px;
+      }
+
+      .nav-item {
+        color: var(--ink-soft);
+        background: transparent;
+      }
+
+      .nav-item:hover {
+        color: var(--ink);
+        background: color-mix(in srgb, var(--paper), transparent 20%);
+      }
+
+      .nav-item[aria-current="page"] {
+        color: var(--ink);
+        font-weight: 700;
+        background: var(--accent-soft);
+      }
+
+      .nav-item[aria-current="page"] .icon {
+        color: var(--accent);
+      }
+
+      .collection-status {
+        margin: auto 10px 0;
+        padding-top: 16px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.66rem;
+        line-height: 1.55;
+        border-top: 1px solid var(--line);
+      }
+
+      .collection-status strong {
+        display: block;
+        color: var(--ink-soft);
+        font-weight: 500;
+      }
+
+      .page-surface {
+        min-width: 0;
+      }
+
+      .scratchpad {
+        width: min(100%, 920px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 44px clamp(24px, 5vw, 68px) 150px;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 28px;
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        line-height: 1.08;
+      }
+
+      .record-path {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 9px 0 0;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.69rem;
+        line-height: 1.5;
+      }
+
+      .record-path .icon {
+        width: 14px;
+        height: 14px;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .icon-button,
+      .quiet-button,
+      .convert-button,
+      .sheet-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .icon-button {
+        width: 44px;
+        padding: 0;
+      }
+
+      .quiet-button,
+      .convert-button,
+      .sheet-button {
+        padding: 0 14px;
+      }
+
+      .icon-button:hover,
+      .quiet-button:hover,
+      .sheet-button:hover {
+        color: var(--ink);
+        border-color: var(--ink-muted);
+      }
+
+      .convert-button {
+        color: var(--paper-raised);
+        background: var(--accent);
+        border-color: transparent;
+      }
+
+      .convert-button:hover {
+        filter: brightness(0.96);
+      }
+
+      .convert-button:disabled {
+        cursor: default;
+        filter: none;
+        opacity: 0.46;
+      }
+
+      .outline-help {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        min-height: 48px;
+        padding: 9px 0;
+        color: var(--ink-muted);
+        font-size: 17px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .outline-help p {
+        margin: 0;
+      }
+
+      .outline-help kbd {
+        min-width: 24px;
+        padding: 2px 5px;
+        color: var(--ink-soft);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.67rem;
+        text-align: center;
+        background: var(--paper-soft);
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+      }
+
+      .saved-state {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex: none;
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.67rem;
+      }
+
+      .saved-state::before {
+        width: 6px;
+        height: 6px;
+        content: "";
+        background: var(--success);
+        border-radius: 50%;
+      }
+
+      .outline-region {
+        position: relative;
+        margin-top: 14px;
+      }
+
+      .outline-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .outline-row {
+        --level: 0;
+        position: relative;
+        display: grid;
+        grid-template-columns:
+          calc(34px + var(--level) * 26px) minmax(0, 1fr)
+          auto;
+        min-height: 62px;
+        border-bottom: 1px solid var(--line);
+        transition:
+          background 160ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+
+      .outline-row[data-level="1"] {
+        --level: 1;
+      }
+
+      .outline-row[data-level="2"] {
+        --level: 2;
+      }
+
+      .outline-row[data-level="3"] {
+        --level: 3;
+      }
+
+      .outline-row:hover,
+      .outline-row:focus-within {
+        background: color-mix(in srgb, var(--paper-soft), transparent 26%);
+      }
+
+      .outline-row.is-dragging {
+        color: var(--ink-muted);
+        background: var(--accent-soft);
+        opacity: 0.48;
+      }
+
+      .outline-row.is-active {
+        background: color-mix(in srgb, var(--accent-soft), transparent 36%);
+      }
+
+      .hierarchy-gutter {
+        position: relative;
+        min-width: 0;
+      }
+
+      .hierarchy-gutter::before {
+        position: absolute;
+        top: 0;
+        bottom: -1px;
+        left: calc(16px + var(--level) * 26px);
+        width: 1px;
+        content: "";
+        background: var(--accent-quiet);
+      }
+
+      .hierarchy-gutter::after {
+        position: absolute;
+        top: 30px;
+        left: calc(16px + var(--level) * 26px);
+        width: 12px;
+        height: 1px;
+        content: "";
+        background: var(--accent-quiet);
+      }
+
+      .ancestor-guide {
+        position: absolute;
+        top: 0;
+        bottom: -1px;
+        width: 1px;
+        background: var(--line-strong);
+      }
+
+      .ancestor-guide.one {
+        left: 16px;
+      }
+
+      .ancestor-guide.two {
+        left: 42px;
+      }
+
+      .ancestor-guide.three {
+        left: 68px;
+      }
+
+      .outline-row[data-level="0"] .ancestor-guide,
+      .outline-row[data-level="1"] .ancestor-guide.two,
+      .outline-row[data-level="1"] .ancestor-guide.three,
+      .outline-row[data-level="2"] .ancestor-guide.three {
+        display: none;
+      }
+
+      .drag-handle {
+        position: absolute;
+        z-index: 2;
+        top: 9px;
+        left: calc(3px + var(--level) * 26px);
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 44px;
+        padding: 0;
+        color: var(--ink-muted);
+        background: var(--paper);
+        border: 0;
+        border-radius: 6px;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .outline-row:hover .drag-handle,
+      .outline-row:focus-within .drag-handle {
+        color: var(--accent);
+      }
+
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .drag-handle .icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      .line-content {
+        position: relative;
+        min-width: 0;
+        padding: 8px 10px 8px 38px;
+      }
+
+      .node-kind-button {
+        position: absolute;
+        top: 8px;
+        left: 2px;
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 36px;
+        padding: 0;
+        color: var(--ink-muted);
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .node-kind-button:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .node-kind-button .icon {
+        width: 17px;
+        height: 17px;
+      }
+
+      .outline-row[data-kind="note"] .task-input {
+        color: var(--ink-soft);
+      }
+
+      .outline-row[data-kind="linked"] .task-input {
+        color: var(--accent);
+        font-weight: 700;
+        cursor: default;
+      }
+
+      .outline-row[data-kind="linked"] .node-kind-button {
+        color: var(--accent);
+      }
+
+      .task-input {
+        display: block;
+        width: 100%;
+        min-height: 30px;
+        padding: 3px 0;
+        font-size: 1.05rem;
+        line-height: 1.4;
+        background: transparent;
+        border: 0;
+        outline: 0;
+      }
+
+      .task-input::placeholder {
+        color: var(--ink-muted);
+        opacity: 1;
+      }
+
+      .task-input:focus-visible {
+        outline: 0;
+      }
+
+      .nlp-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        min-height: 18px;
+        margin-top: 2px;
+      }
+
+      .nlp-preview:empty {
+        min-height: 0;
+      }
+
+      .metadata-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 20px;
+        padding: 1px 6px;
+        color: var(--ink-soft);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 11px;
+        background: var(--paper-soft);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .metadata-chip.accent {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-color: var(--accent-quiet);
+      }
+
+      .row-actions {
+        display: flex;
+        align-items: center;
+        align-self: center;
+        gap: 2px;
+        padding-right: 2px;
+        opacity: 0;
+        transition: opacity 140ms ease-out;
+      }
+
+      .outline-row:hover .row-actions,
+      .outline-row:focus-within .row-actions,
+      .outline-row.is-active .row-actions {
+        opacity: 1;
+      }
+
+      .row-action {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 44px;
+        padding: 0;
+        color: var(--ink-muted);
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .row-action:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .row-action .icon {
+        width: 17px;
+        height: 17px;
+      }
+
+      .add-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        min-height: 52px;
+        padding: 0 4px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .add-line {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 44px;
+        padding: 0 11px;
+        color: var(--ink-muted);
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .add-line:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .drop-marker {
+        position: fixed;
+        z-index: 25;
+        display: none;
+        height: 2px;
+        pointer-events: none;
+        background: var(--accent);
+        border-radius: 0;
+      }
+
+      .drop-marker::before {
+        position: absolute;
+        top: -4px;
+        left: 0;
+        width: 10px;
+        height: 10px;
+        content: "";
+        background: var(--paper);
+        border: 2px solid var(--accent);
+        border-radius: 50%;
+      }
+
+      .drag-label {
+        position: fixed;
+        z-index: 30;
+        display: none;
+        max-width: min(360px, calc(100vw - 32px));
+        padding: 10px 13px;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 17px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        pointer-events: none;
+        background: var(--paper-raised);
+        border-radius: 6px;
+        box-shadow: 0 12px 30px var(--shadow);
+      }
+
+      .drag-label small {
+        display: block;
+        margin-top: 2px;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 11px;
+      }
+
+      .conversion-dock {
+        position: sticky;
+        z-index: 10;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        min-height: 78px;
+        padding: 12px 0;
+        margin-top: 34px;
+        background: color-mix(in srgb, var(--paper), transparent 3%);
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .conversion-summary {
+        min-width: 0;
+      }
+
+      .conversion-summary strong {
+        display: block;
+        font-size: 17px;
+      }
+
+      .conversion-summary span {
+        display: block;
+        margin-top: 3px;
+        overflow: hidden;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.67rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .bottom-navigation {
+        display: none;
+      }
+
+      .source-panel {
+        position: fixed;
+        z-index: 40;
+        top: 0;
+        right: 0;
+        width: min(440px, 100%);
+        height: 100vh;
+        height: 100dvh;
+        padding: 24px;
+        overflow: auto;
+        background: var(--paper-raised);
+        border-left: 1px solid var(--line-strong);
+        box-shadow: -20px 0 56px var(--shadow);
+        transform: translateX(105%);
+        visibility: hidden;
+        transition:
+          transform 220ms var(--ease-out),
+          visibility 0s linear 220ms;
+      }
+
+      .source-panel.is-open {
+        transform: translateX(0);
+        visibility: visible;
+        transition-delay: 0s;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .source-note {
+        margin: 0;
+        padding: 18px 0;
+        overflow-x: auto;
+        color: var(--ink-soft);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 11px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .panel-note {
+        margin: 16px 0 0;
+        color: var(--ink-muted);
+        font-size: 17px;
+        line-height: 1.5;
+      }
+
+      .scrim {
+        position: fixed;
+        z-index: 35;
+        inset: 0;
+        display: none;
+        background: var(--scrim);
+      }
+
+      .scrim.is-open {
+        display: block;
+      }
+
+      dialog {
+        width: min(540px, calc(100% - 32px));
+        padding: 0;
+        color: var(--ink);
+        background: var(--paper-raised);
+        border: 0;
+        border-radius: 12px;
+        box-shadow: 0 24px 70px var(--shadow);
+      }
+
+      dialog::backdrop {
+        background: var(--scrim);
+      }
+
+      .conversion-sheet {
+        padding: 26px;
+      }
+
+      .conversion-sheet h2 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+
+      .conversion-sheet > p {
+        max-width: 48ch;
+        margin: 9px 0 22px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+      }
+
+      .conversion-plan {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 13px 20px;
+        padding: 16px 0;
+        margin: 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .conversion-plan dt {
+        color: var(--ink-muted);
+        font-size: 17px;
+      }
+
+      .conversion-plan dd {
+        margin: 0;
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 11px;
+        text-align: right;
+      }
+
+      .sheet-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 22px;
+      }
+
+      .success-view {
+        display: none;
+        min-height: calc(100vh - 190px);
+        align-content: center;
+        max-width: 620px;
+        padding: 60px 0;
+      }
+
+      .success-view.is-visible {
+        display: grid;
+      }
+
+      .success-mark {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 20px;
+        color: var(--success);
+        border: 1px solid var(--line-strong);
+        border-radius: 50%;
+      }
+
+      .success-view h2 {
+        margin: 0;
+        font-size: 2rem;
+        letter-spacing: -0.03em;
+      }
+
+      .success-view p {
+        max-width: 52ch;
+        margin: 10px 0 0;
+        color: var(--ink-soft);
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .archived-path {
+        display: block;
+        margin-top: 20px;
+        padding: 12px 0;
+        color: var(--ink-muted);
+        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-size: 0.7rem;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .success-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 24px;
+      }
+
+      @media (max-width: 760px) {
+        .app-shell {
+          display: block;
+        }
+
+        .navigation-rail {
+          display: none;
+        }
+
+        .scratchpad {
+          padding: calc(24px + env(safe-area-inset-top)) var(--page-inset)
+            calc(150px + var(--bottom-nav-height) + env(safe-area-inset-bottom));
+        }
+
+        .page-header {
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .record-path {
+          max-width: 235px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .header-actions .quiet-button span {
+          display: none;
+        }
+
+        .header-actions .quiet-button {
+          width: 44px;
+          padding: 0;
+        }
+
+        .outline-help {
+          align-items: flex-start;
+        }
+
+        .outline-help p {
+          max-width: 230px;
+        }
+
+        .outline-help kbd {
+          display: none;
+        }
+
+        .outline-row {
+          grid-template-columns: calc(31px + var(--level) * 18px) minmax(
+              0,
+              1fr
+            );
+        }
+
+        .hierarchy-gutter::before {
+          left: calc(14px + var(--level) * 18px);
+        }
+
+        .hierarchy-gutter::after {
+          left: calc(14px + var(--level) * 18px);
+          width: 9px;
+        }
+
+        .ancestor-guide.one {
+          left: 14px;
+        }
+
+        .ancestor-guide.two {
+          left: 32px;
+        }
+
+        .ancestor-guide.three {
+          left: 50px;
+        }
+
+        .drag-handle {
+          left: calc(var(--level) * 18px);
+        }
+
+        .line-content {
+          padding-right: 4px;
+          padding-left: 36px;
+        }
+
+        .row-actions {
+          position: absolute;
+          z-index: 4;
+          right: 0;
+          bottom: 4px;
+          padding-left: 8px;
+          background: linear-gradient(90deg, transparent, var(--paper) 18%);
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .outline-row:focus-within .row-actions,
+        .outline-row.is-active .row-actions {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .outline-row:focus-within .nlp-preview,
+        .outline-row.is-active .nlp-preview {
+          padding-right: 122px;
+        }
+
+        .conversion-dock {
+          position: fixed;
+          right: 0;
+          bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+          left: 0;
+          min-height: 72px;
+          padding: 10px var(--page-inset);
+          margin: 0;
+          background: var(--paper-raised);
+        }
+
+        .conversion-summary span {
+          max-width: 185px;
+        }
+
+        .conversion-dock .convert-button span {
+          display: none;
+        }
+
+        .conversion-dock .convert-button {
+          width: 48px;
+          padding: 0;
+        }
+
+        .bottom-navigation {
+          position: fixed;
+          z-index: 20;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          min-height: calc(
+            var(--bottom-nav-height) + env(safe-area-inset-bottom)
+          );
+          padding-bottom: env(safe-area-inset-bottom);
+          background: var(--paper-soft);
+          border-top: 1px solid var(--line);
+        }
+
+        .bottom-navigation button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 3px;
+          min-height: 58px;
+          padding: 6px 2px;
+          color: var(--ink-muted);
+          font-size: 0.69rem;
+          background: transparent;
+          border: 0;
+        }
+
+        .bottom-navigation button[aria-current="page"] {
+          color: var(--accent);
+          font-weight: 700;
+        }
+
+        .bottom-navigation .icon {
+          width: 21px;
+          height: 21px;
+        }
+
+        dialog {
+          width: 100%;
+          max-width: none;
+          margin: auto 0 0;
+          border-radius: 12px 12px 0 0;
+        }
+
+        .source-panel {
+          top: auto;
+          bottom: 0;
+          width: 100%;
+          height: min(78vh, 680px);
+          border-top: 1px solid var(--line-strong);
+          border-left: 0;
+          border-radius: 12px 12px 0 0;
+          transform: translateY(105%);
+        }
+
+        .source-panel.is-open {
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 420px) {
+        .scratchpad {
+          --page-inset: 16px;
+        }
+
+        h1 {
+          font-size: 32px;
+        }
+
+        .task-input {
+          font-size: 17px;
+        }
+
+        .conversion-summary strong {
+          font-size: 17px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#scratchpad-title">Skip to scratchpad</a>
+
+    <svg class="visually-hidden" aria-hidden="true">
+      <symbol id="i-plus" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-list" viewBox="0 0 24 24">
+        <path d="M8 6h11M8 12h11M8 18h11M4 6h.01M4 12h.01M4 18h.01" />
+      </symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24">
+        <path
+          d="M6 3v3M18 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"
+        />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24">
+        <rect x="4" y="4" width="6" height="6" rx="1" />
+        <rect x="14" y="4" width="6" height="6" rx="1" />
+        <rect x="4" y="14" width="6" height="6" rx="1" />
+        <rect x="14" y="14" width="6" height="6" rx="1" />
+      </symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.09h-4V21a1.7 1.7 0 0 0-1.06-1.58 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4h-.09v-4H3a1.7 1.7 0 0 0 1.58-1.06 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1v-.09h4V3a1.7 1.7 0 0 0 1.06 1.58 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.38.35.72.6 1 .28.28.64.4 1 .4h.09v4H21a1.7 1.7 0 0 0-1.6.6Z"
+        />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path d="M6 3h8l4 4v14H6Z" />
+        <path d="M14 3v5h5" />
+      </symbol>
+      <symbol id="i-code" viewBox="0 0 24 24">
+        <path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" />
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 15.3A8 8 0 0 1 8.7 4 8 8 0 1 0 20 15.3Z" />
+      </symbol>
+      <symbol id="i-grip" viewBox="0 0 24 24">
+        <circle cx="9" cy="7" r="1" />
+        <circle cx="15" cy="7" r="1" />
+        <circle cx="9" cy="12" r="1" />
+        <circle cx="15" cy="12" r="1" />
+        <circle cx="9" cy="17" r="1" />
+        <circle cx="15" cy="17" r="1" />
+      </symbol>
+      <symbol id="i-indent" viewBox="0 0 24 24">
+        <path d="M11 6h9M11 12h9M11 18h9M4 8l4 4-4 4" />
+      </symbol>
+      <symbol id="i-outdent" viewBox="0 0 24 24">
+        <path d="M11 6h9M11 12h9M11 18h9M8 8l-4 4 4 4" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M18 6 6 18" />
+      </symbol>
+      <symbol id="i-circle" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="7.5" />
+      </symbol>
+      <symbol id="i-note" viewBox="0 0 24 24">
+        <path d="M5 7h14M5 12h10M5 17h7" />
+      </symbol>
+      <symbol id="i-link" viewBox="0 0 24 24">
+        <path
+          d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"
+        />
+      </symbol>
+      <symbol id="i-file-plus" viewBox="0 0 24 24">
+        <path d="M6 3h8l4 4v14H6Z" />
+        <path d="M14 3v5h5M9 14h6M12 11v6" />
+      </symbol>
+    </svg>
+
+    <div class="app-shell">
+      <aside class="navigation-rail" aria-label="Primary navigation">
+        <div class="wordmark">
+          <svg viewBox="0 0 100 101" aria-hidden="true">
+            <path
+              d="M98.5.6c-.38 0-.83.09-1.33.23-2 .59-4.66 2.18-5.78 3.22-1.25 1.16-4.93 5.57-8.4 9.67-3.55 4.2-8.2 9.8-12.56 15.36-9.09 11.05-19.45 22.93-28.54 29.97-1.48 1.14-2.98 1.54-4.46 1.38-5.34-.58-10.03-8.57-13.72-13.1-4.7-5.8-8.29-10.1-11.27-4.7-2.14 5.4-2.2 13.1-10.09 18.47-4.81 3.97-.67 7.1 6.54 11.15 7.28 4.73 17.75 11.63 25.63 24.16 1.52 2.41 6.4 4.76 8.07 1.2 10.57-19.7 17.89-27.3 41.9-47.08 4.82-3.96 5.06-9.32 6.04-17.02.81-7.64 2.02-17.43 8.43-29.95.74-1.46.87-2.26.4-2.66-.19-.18-.48-.27-.86-.26Z"
+              fill="#8061d9"
+            />
+          </svg>
+          <span>TaskNotes</span>
+        </div>
+
+        <button class="new-task" type="button">
+          <span
+            ><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg
+            >New task</span
+          >
+          <kbd>⌘N</kbd>
+        </button>
+
+        <nav class="nav-list">
+          <button class="nav-item" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-check" /></svg
+            >Today
+          </button>
+          <button class="nav-item" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg
+            >Upcoming
+          </button>
+          <button class="nav-item" aria-current="page" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-list" /></svg
+            >Scratchpad
+          </button>
+          <button class="nav-item" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg
+            >Search
+          </button>
+          <button class="nav-item" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg
+            >Views
+          </button>
+          <button class="nav-item" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-settings" /></svg
+            >Settings
+          </button>
+        </nav>
+
+        <div class="collection-status">
+          <strong>Personal</strong>
+          Device copy ready<br />All changes saved
+        </div>
+      </aside>
+
+      <main class="page-surface">
+        <section class="scratchpad" aria-labelledby="scratchpad-title">
+          <div id="active-view">
+            <header class="page-header">
+              <div>
+                <h1 id="scratchpad-title">Scratchpad</h1>
+                <p class="record-path">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-file" />
+                  </svg>
+                  Scratchpads/Scratchpad.md
+                </p>
+              </div>
+              <div class="header-actions">
+                <button
+                  class="quiet-button"
+                  id="source-button"
+                  aria-label="View Markdown source"
+                  type="button"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-code" />
+                  </svg>
+                  <span>Markdown</span>
+                </button>
+                <button
+                  class="icon-button"
+                  id="theme-button"
+                  aria-label="Toggle dark appearance"
+                  type="button"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-moon" />
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="outline-help">
+              <p>
+                Every line starts as a task. Use its marker for a note, or
+                create a TaskNote early.
+              </p>
+              <div class="saved-state" aria-live="polite">
+                <span>Saved on this device</span>
+              </div>
+            </div>
+
+            <div class="outline-region">
+              <ol
+                class="outline-list"
+                id="outline-list"
+                aria-label="Proposed tasks"
+              >
+                <li class="outline-row" data-kind="note" data-level="0">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Melbourne launch and its children"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Note"
+                      value="Melbourne launch"
+                    />
+                    <div class="nlp-preview"></div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="task" data-level="1">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Draft the announcement"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Proposed subtask"
+                      value="Draft the announcement tomorrow at 10am !high"
+                    />
+                    <div class="nlp-preview">
+                      <span class="metadata-chip accent">Tomorrow 10:00</span
+                      ><span class="metadata-chip">High priority</span>
+                    </div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="task" data-level="1">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Prepare store screenshots and its subtasks"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Proposed subtask"
+                      value="Prepare store screenshots"
+                    />
+                    <div class="nlp-preview"></div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="task" data-level="2">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Capture dark mode set"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Proposed nested subtask"
+                      value="Capture dark mode set @desktop"
+                    />
+                    <div class="nlp-preview">
+                      <span class="metadata-chip">@desktop</span>
+                    </div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li
+                  class="outline-row is-active"
+                  data-kind="linked"
+                  data-level="1"
+                >
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Book venue TaskNote"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Created TaskNote"
+                      value="Book venue"
+                      readonly
+                    />
+                    <div class="nlp-preview">
+                      <span class="metadata-chip accent">TaskNote</span
+                      ><span class="metadata-chip">Due Wed 5 Aug</span>
+                    </div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="note" data-level="0">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Travel notes and its children"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Note"
+                      value="Travel notes"
+                    />
+                    <div class="nlp-preview"></div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="task" data-level="1">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Book train to Sydney"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Proposed subtask"
+                      value="Book train to Sydney due Sunday"
+                    />
+                    <div class="nlp-preview">
+                      <span class="metadata-chip accent">Due Sun 9 Aug</span>
+                    </div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+
+                <li class="outline-row" data-kind="task" data-level="1">
+                  <div class="hierarchy-gutter">
+                    <i class="ancestor-guide one"></i
+                    ><i class="ancestor-guide two"></i
+                    ><i class="ancestor-guide three"></i>
+                    <button
+                      class="drag-handle"
+                      aria-label="Move Send itinerary to Mum"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-grip" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="line-content">
+                    <input
+                      class="task-input"
+                      aria-label="Proposed subtask"
+                      value="Send itinerary to Mum"
+                    />
+                    <div class="nlp-preview"></div>
+                  </div>
+                  <div class="row-actions">
+                    <button
+                      class="row-action outdent"
+                      aria-label="Outdent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-outdent" />
+                      </svg>
+                    </button>
+                    <button
+                      class="row-action indent"
+                      aria-label="Indent task"
+                      type="button"
+                    >
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#i-indent" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ol>
+
+              <div class="add-controls">
+                <button class="add-line" id="add-line" type="button">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-circle" />
+                  </svg>
+                  Add task
+                </button>
+                <button class="add-line" id="add-note" type="button">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-note" />
+                  </svg>
+                  Add note
+                </button>
+              </div>
+            </div>
+
+            <footer class="conversion-dock">
+              <div class="conversion-summary">
+                <strong><span id="task-count">5</span> proposed tasks</strong>
+                <span id="node-summary"
+                  >2 notes · 1 TaskNote already created</span
+                >
+              </div>
+              <button
+                class="convert-button"
+                id="convert-button"
+                aria-label="Convert outline"
+                type="button"
+              >
+                <span>Convert outline</span>
+                <svg class="icon" aria-hidden="true">
+                  <use href="#i-arrow" />
+                </svg>
+              </button>
+            </footer>
+          </div>
+
+          <section
+            class="success-view"
+            id="success-view"
+            aria-labelledby="success-title"
+          >
+            <div class="success-mark">
+              <svg class="icon" aria-hidden="true"><use href="#i-check" /></svg>
+            </div>
+            <h2 id="success-title" tabindex="-1">Outline converted</h2>
+            <p id="success-copy">
+              Five TaskNotes were created. Notes remain in the archived outline,
+              and a new scratchpad is ready.
+            </p>
+            <span class="archived-path"
+              >Scratchpads/2026-08-03 – Plan Melbourne launch.md</span
+            >
+            <div class="success-actions">
+              <button class="quiet-button" id="view-archive" type="button">
+                View archived outline
+              </button>
+              <button class="convert-button" id="new-scratchpad" type="button">
+                Open new scratchpad
+              </button>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <nav class="bottom-navigation" aria-label="Primary navigation">
+      <button type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-check" /></svg
+        ><span>Today</span>
+      </button>
+      <button aria-current="page" type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-list" /></svg
+        ><span>Scratchpad</span>
+      </button>
+      <button type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg
+        ><span>Search</span>
+      </button>
+      <button type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg
+        ><span>Views</span>
+      </button>
+    </nav>
+
+    <div class="scrim" id="source-scrim"></div>
+    <aside
+      class="source-panel"
+      id="source-panel"
+      aria-labelledby="source-title"
+      aria-hidden="true"
+    >
+      <header class="panel-header">
+        <div>
+          <h2 id="source-title">Markdown source</h2>
+          <p class="record-path">Scratchpads/Scratchpad.md</p>
+        </div>
+        <button
+          class="icon-button"
+          id="close-source"
+          aria-label="Close Markdown source"
+          type="button"
+        >
+          <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </header>
+      <pre class="source-note" id="source-note"></pre>
+      <p class="panel-note">
+        This is the durable document in your collection. Converting it will
+        replace each line with a link to its TaskNote, then archive the file.
+      </p>
+    </aside>
+
+    <dialog id="conversion-dialog" aria-labelledby="dialog-title">
+      <form class="conversion-sheet" method="dialog">
+        <h2 id="dialog-title">Convert this outline?</h2>
+        <p>
+          TaskNotes will create each task, preserve the indentation as parent
+          relationships, and save this outline with links to the new files.
+        </p>
+        <dl class="conversion-plan">
+          <dt>TaskNotes to create</dt>
+          <dd id="dialog-task-count">5</dd>
+          <dt>Note nodes retained</dt>
+          <dd id="dialog-note-count">2</dd>
+          <dt>Parent relationships</dt>
+          <dd id="dialog-relation-count">1</dd>
+          <dt>Saved outline</dt>
+          <dd>Scratchpads/2026-08-03…</dd>
+          <dt>New scratchpad</dt>
+          <dd>Created automatically</dd>
+        </dl>
+        <div class="sheet-actions">
+          <button class="sheet-button" value="cancel">Keep editing</button>
+          <button
+            class="convert-button"
+            id="confirm-convert"
+            value="default"
+            type="button"
+          >
+            Create tasks
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="drop-marker" id="drop-marker"></div>
+    <div class="drag-label" id="drag-label"></div>
+
+    <script>
+      const outline = document.querySelector("#outline-list");
+      const sourcePanel = document.querySelector("#source-panel");
+      const sourceScrim = document.querySelector("#source-scrim");
+      const sourceNote = document.querySelector("#source-note");
+      const conversionDialog = document.querySelector("#conversion-dialog");
+      const dropMarker = document.querySelector("#drop-marker");
+      const dragLabel = document.querySelector("#drag-label");
+      let dragState = null;
+
+      function rows() {
+        return [...outline.querySelectorAll(".outline-row")];
+      }
+
+      function level(row) {
+        return Number(row.dataset.level || 0);
+      }
+
+      function title(row) {
+        return row.querySelector(".task-input").value.trim();
+      }
+
+      function kind(row) {
+        return row.dataset.kind || "task";
+      }
+
+      function cleanTitle(value) {
+        return value
+          .replace(
+            /\s+(tomorrow|next Friday|this weekend|due Sunday|by Wednesday)(?:\s+at\s+10am)?/gi,
+            "",
+          )
+          .replace(/\s+([#!@][\w-]+|!high)/g, "")
+          .trim();
+      }
+
+      function subtree(root) {
+        const all = rows();
+        const start = all.indexOf(root);
+        const rootLevel = level(root);
+        let end = start + 1;
+        while (end < all.length && level(all[end]) > rootLevel) end += 1;
+        return all.slice(start, end);
+      }
+
+      function outlineStats() {
+        const all = rows().filter((row) => title(row));
+        const stats = { tasks: 0, notes: 0, linked: 0, relations: 0 };
+        const ancestors = [];
+        for (const row of all) {
+          const rowLevel = level(row);
+          ancestors.length = rowLevel;
+          const rowKind = kind(row);
+          if (rowKind === "note") stats.notes += 1;
+          if (rowKind === "task") stats.tasks += 1;
+          if (rowKind === "linked") stats.linked += 1;
+          if (
+            rowKind !== "note" &&
+            [...ancestors]
+              .reverse()
+              .some((ancestor) => kind(ancestor) !== "note")
+          )
+            stats.relations += 1;
+          ancestors[rowLevel] = row;
+        }
+        return stats;
+      }
+
+      function updateCounts() {
+        const stats = outlineStats();
+        document.querySelector("#task-count").textContent = stats.tasks;
+        document.querySelector("#node-summary").textContent =
+          `${stats.notes} note${stats.notes === 1 ? "" : "s"} · ` +
+          `${stats.linked} TaskNote${stats.linked === 1 ? "" : "s"} already created`;
+        document.querySelector("#dialog-task-count").textContent = stats.tasks;
+        document.querySelector("#dialog-note-count").textContent = stats.notes;
+        document.querySelector("#dialog-relation-count").textContent =
+          stats.relations;
+        document.querySelector("#convert-button").disabled = stats.tasks === 0;
+      }
+
+      function markdown(archived = false) {
+        const all = rows().filter((row) => title(row));
+        return all
+          .map((row) => {
+            const indent = "  ".repeat(level(row));
+            const text = cleanTitle(title(row));
+            if (kind(row) === "note") return `${indent}- ${title(row)}`;
+            if (kind(row) === "linked" || archived)
+              return `${indent}- [[Tasks/${text}|${text}]]`;
+            return `${indent}- [ ] ${title(row)}`;
+          })
+          .join("\n");
+      }
+
+      function openSource(archived = false) {
+        sourceNote.textContent = markdown(archived);
+        sourcePanel.classList.add("is-open");
+        sourcePanel.setAttribute("aria-hidden", "false");
+        sourceScrim.classList.add("is-open");
+        sourcePanel.querySelector("button").focus();
+      }
+
+      function closeSource() {
+        sourcePanel.classList.remove("is-open");
+        sourcePanel.setAttribute("aria-hidden", "true");
+        sourceScrim.classList.remove("is-open");
+        document.querySelector("#source-button")?.focus();
+      }
+
+      function setLevel(row, nextLevel) {
+        const all = rows();
+        const index = all.indexOf(row);
+        const previousLevel = index > 0 ? level(all[index - 1]) : 0;
+        row.dataset.level = Math.max(
+          0,
+          Math.min(3, previousLevel + 1, nextLevel),
+        );
+      }
+
+      function moveSubtree(row, direction) {
+        const group = subtree(row);
+        if (direction < 0) {
+          const previous = row.previousElementSibling;
+          if (!previous) return;
+          const previousGroup = subtree(previous);
+          outline.insertBefore(group[0], previousGroup[0]);
+          for (let index = 1; index < group.length; index += 1) {
+            outline.insertBefore(group[index], previousGroup[0]);
+          }
+        } else {
+          const last = group[group.length - 1];
+          const next = last.nextElementSibling;
+          if (!next) return;
+          const nextGroup = subtree(next);
+          const after = nextGroup[nextGroup.length - 1].nextElementSibling;
+          for (const item of group) outline.insertBefore(item, after);
+        }
+      }
+
+      function createRow(value = "", rowLevel = 0, rowKind = "task") {
+        const template = rows()[0].cloneNode(true);
+        template.classList.remove("is-active", "is-dragging");
+        template.dataset.level = rowLevel;
+        template.dataset.kind = rowKind;
+        template.querySelector(".node-kind-button")?.remove();
+        template.querySelector(".materialize")?.remove();
+        template.querySelector(".task-input").value = value;
+        template.querySelector(".task-input").readOnly = false;
+        template.querySelector(".nlp-preview").replaceChildren();
+        template
+          .querySelector(".drag-handle")
+          .setAttribute("aria-label", `Move ${rowKind} node`);
+        return template;
+      }
+
+      function insertRow(afterRow, rowKind = "task") {
+        const newRow = createRow("", afterRow ? level(afterRow) : 0, rowKind);
+        if (afterRow) outline.insertBefore(newRow, afterRow.nextElementSibling);
+        else outline.append(newRow);
+        bindRow(newRow);
+        updateCounts();
+        newRow.querySelector(".task-input").focus();
+      }
+
+      function setNodeKind(row, nextKind) {
+        row.dataset.kind = nextKind;
+        const input = row.querySelector(".task-input");
+        const marker = row.querySelector(".node-kind-button");
+        const action = row.querySelector(".materialize");
+        const preview = row.querySelector(".nlp-preview");
+        const config = {
+          task: {
+            marker: "#i-circle",
+            markerLabel: "Change proposed task to note",
+            action: "#i-file-plus",
+            actionLabel: "Create TaskNote now",
+            inputLabel: "Proposed task",
+          },
+          note: {
+            marker: "#i-note",
+            markerLabel: "Change note to proposed task",
+            action: "#i-circle",
+            actionLabel: "Change note to proposed task",
+            inputLabel: "Note",
+          },
+          linked: {
+            marker: "#i-link",
+            markerLabel: "Created TaskNote",
+            action: "#i-arrow",
+            actionLabel: "Open TaskNote",
+            inputLabel: "Created TaskNote",
+          },
+        }[nextKind];
+        marker.innerHTML = `<svg class="icon" aria-hidden="true"><use href="${config.marker}" /></svg>`;
+        marker.setAttribute("aria-label", config.markerLabel);
+        marker.title = config.markerLabel;
+        action.innerHTML = `<svg class="icon" aria-hidden="true"><use href="${config.action}" /></svg>`;
+        action.setAttribute("aria-label", config.actionLabel);
+        action.title = config.actionLabel;
+        input.setAttribute("aria-label", config.inputLabel);
+        input.readOnly = nextKind === "linked";
+        if (nextKind === "note") preview.replaceChildren();
+        if (
+          nextKind === "linked" &&
+          !preview.textContent.includes("TaskNote")
+        ) {
+          const chip = document.createElement("span");
+          chip.className = "metadata-chip accent";
+          chip.textContent = "TaskNote";
+          preview.prepend(chip);
+        }
+        updateCounts();
+      }
+
+      function installNodeControls(row) {
+        const marker = document.createElement("button");
+        marker.className = "node-kind-button";
+        marker.type = "button";
+        row.querySelector(".line-content").prepend(marker);
+        const action = document.createElement("button");
+        action.className = "row-action materialize";
+        action.type = "button";
+        row.querySelector(".row-actions").prepend(action);
+        marker.addEventListener("click", () => {
+          if (kind(row) === "linked") return;
+          setNodeKind(row, kind(row) === "task" ? "note" : "task");
+          row.querySelector(".task-input").focus();
+        });
+        action.addEventListener("click", () => {
+          if (kind(row) === "task") {
+            row.querySelector(".task-input").value = cleanTitle(title(row));
+            setNodeKind(row, "linked");
+          } else if (kind(row) === "note") {
+            setNodeKind(row, "task");
+          } else {
+            const status = document.querySelector(".saved-state span");
+            status.textContent = `TaskNote ready to open`;
+            window.setTimeout(() => {
+              status.textContent = "Saved on this device";
+            }, 1200);
+          }
+          row.querySelector(".task-input").focus();
+        });
+        setNodeKind(row, kind(row));
+      }
+
+      function bindRow(row) {
+        installNodeControls(row);
+        const input = row.querySelector(".task-input");
+        input.addEventListener("focus", () => {
+          rows().forEach((item) =>
+            item.classList.toggle("is-active", item === row),
+          );
+        });
+        input.addEventListener("input", () => {
+          updateCounts();
+          document.querySelector(".saved-state span").textContent = "Saving…";
+          clearTimeout(input.saveTimer);
+          input.saveTimer = setTimeout(() => {
+            document.querySelector(".saved-state span").textContent =
+              "Saved on this device";
+          }, 420);
+        });
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Tab") {
+            event.preventDefault();
+            setLevel(row, level(row) + (event.shiftKey ? -1 : 1));
+            updateCounts();
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            insertRow(row);
+          }
+          if (event.altKey && event.key === "ArrowUp") {
+            event.preventDefault();
+            moveSubtree(row, -1);
+          }
+          if (event.altKey && event.key === "ArrowDown") {
+            event.preventDefault();
+            moveSubtree(row, 1);
+          }
+          if (event.key === "Backspace" && !input.value && rows().length > 1) {
+            event.preventDefault();
+            const previous =
+              row.previousElementSibling?.querySelector(".task-input");
+            row.remove();
+            updateCounts();
+            previous?.focus();
+          }
+        });
+        row.querySelector(".indent").addEventListener("click", () => {
+          setLevel(row, level(row) + 1);
+          input.focus();
+          updateCounts();
+        });
+        row.querySelector(".outdent").addEventListener("click", () => {
+          setLevel(row, level(row) - 1);
+          input.focus();
+          updateCounts();
+        });
+        row
+          .querySelector(".drag-handle")
+          .addEventListener("pointerdown", startDrag);
+      }
+
+      function startDrag(event) {
+        if (event.button !== 0) return;
+        const row = event.currentTarget.closest(".outline-row");
+        const group = subtree(row);
+        dragState = {
+          pointerId: event.pointerId,
+          row,
+          group,
+          startX: event.clientX,
+          startY: event.clientY,
+          target: row,
+          before: true,
+          proposedLevel: level(row),
+          started: false,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.currentTarget.addEventListener("pointermove", moveDrag);
+        event.currentTarget.addEventListener("pointerup", endDrag, {
+          once: true,
+        });
+        event.currentTarget.addEventListener("pointercancel", endDrag, {
+          once: true,
+        });
+      }
+
+      function moveDrag(event) {
+        if (!dragState || event.pointerId !== dragState.pointerId) return;
+        const distance = Math.hypot(
+          event.clientX - dragState.startX,
+          event.clientY - dragState.startY,
+        );
+        if (!dragState.started && distance < 7) return;
+        if (!dragState.started) {
+          dragState.started = true;
+          dragState.group.forEach((row) => row.classList.add("is-dragging"));
+          dragLabel.style.display = "block";
+        }
+        event.preventDefault();
+        dragLabel.innerHTML = `${title(dragState.row)}<small>${dragState.group.length > 1 ? `${dragState.group.length} node branch` : "1 node"}</small>`;
+        dragLabel.style.left = `${Math.min(event.clientX + 16, window.innerWidth - dragLabel.offsetWidth - 12)}px`;
+        dragLabel.style.top = `${Math.min(event.clientY + 14, window.innerHeight - dragLabel.offsetHeight - 12)}px`;
+
+        const candidate = document
+          .elementFromPoint(event.clientX, event.clientY)
+          ?.closest(".outline-row");
+        if (!candidate || dragState.group.includes(candidate)) return;
+        const rect = candidate.getBoundingClientRect();
+        dragState.target = candidate;
+        dragState.before = event.clientY < rect.top + rect.height / 2;
+        const listRect = outline.getBoundingClientRect();
+        const horizontal = Math.round(
+          (event.clientX - listRect.left - 36) / 26,
+        );
+        const candidateIndex = rows().indexOf(candidate);
+        const maximum =
+          candidateIndex > 0 ? level(rows()[candidateIndex - 1]) + 1 : 0;
+        dragState.proposedLevel = Math.max(0, Math.min(3, maximum, horizontal));
+        dropMarker.style.display = "block";
+        dropMarker.style.left = `${Math.max(listRect.left, rect.left + dragState.proposedLevel * 18)}px`;
+        dropMarker.style.width = `${Math.max(100, listRect.right - Math.max(listRect.left, rect.left + dragState.proposedLevel * 18))}px`;
+        dropMarker.style.top = `${dragState.before ? rect.top - 1 : rect.bottom - 1}px`;
+      }
+
+      function endDrag(event) {
+        const handle = event.currentTarget;
+        handle.removeEventListener("pointermove", moveDrag);
+        if (!dragState) return;
+        if (
+          dragState.started &&
+          dragState.target &&
+          !dragState.group.includes(dragState.target)
+        ) {
+          const originalLevel = level(dragState.row);
+          const levelDelta = dragState.proposedLevel - originalLevel;
+          const reference = dragState.before
+            ? dragState.target
+            : dragState.target.nextElementSibling;
+          for (const row of dragState.group)
+            outline.insertBefore(row, reference);
+          for (const row of dragState.group) {
+            row.dataset.level = Math.max(
+              0,
+              Math.min(3, level(row) + levelDelta),
+            );
+          }
+        }
+        dragState.group.forEach((row) => row.classList.remove("is-dragging"));
+        dropMarker.style.display = "none";
+        dragLabel.style.display = "none";
+        dragState = null;
+        updateCounts();
+      }
+
+      rows().forEach(bindRow);
+
+      document
+        .querySelector("#add-line")
+        .addEventListener("click", () => insertRow(rows().at(-1), "task"));
+      document
+        .querySelector("#add-note")
+        .addEventListener("click", () => insertRow(rows().at(-1), "note"));
+      document
+        .querySelector("#source-button")
+        .addEventListener("click", () => openSource(false));
+      document
+        .querySelector("#close-source")
+        .addEventListener("click", closeSource);
+      sourceScrim.addEventListener("click", closeSource);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && sourcePanel.classList.contains("is-open"))
+          closeSource();
+      });
+
+      document.querySelector("#theme-button").addEventListener("click", () => {
+        const root = document.documentElement;
+        root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+      });
+
+      document
+        .querySelector("#convert-button")
+        .addEventListener("click", () => {
+          updateCounts();
+          conversionDialog.showModal();
+        });
+
+      document
+        .querySelector("#confirm-convert")
+        .addEventListener("click", () => {
+          const stats = outlineStats();
+          for (const row of rows()) {
+            if (kind(row) !== "task") continue;
+            row.querySelector(".task-input").value = cleanTitle(title(row));
+            setNodeKind(row, "linked");
+          }
+          conversionDialog.close();
+          document.querySelector("#active-view").style.display = "none";
+          document.querySelector("#success-copy").textContent =
+            `${stats.tasks} TaskNote${stats.tasks === 1 ? " was" : "s were"} created. ` +
+            `${stats.notes} note${stats.notes === 1 ? " remains" : "s remain"} in the archived outline, and a new scratchpad is ready.`;
+          document.querySelector("#success-view").classList.add("is-visible");
+          document.querySelector("#success-title").focus?.();
+        });
+
+      document
+        .querySelector("#view-archive")
+        .addEventListener("click", () => openSource(true));
+      document
+        .querySelector("#new-scratchpad")
+        .addEventListener("click", () => window.location.reload());
+
+      updateCounts();
+    </script>
+  </body>
+</html>

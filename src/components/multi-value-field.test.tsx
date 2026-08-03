@@ -23,7 +23,9 @@ it("selects record completions while preserving their portable link value", asyn
     await screen.findByRole("option", { name: /Mobile roadmap/ }),
   );
 
-  expect(screen.getByText("Mobile")).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Remove Mobile roadmap" }),
+  ).toBeVisible();
   expect(screen.getByTestId("values")).toHaveTextContent(
     '["[[Projects/Mobile]]"]',
   );
@@ -35,6 +37,19 @@ it("selects record completions while preserving their portable link value", asyn
       limit: 12,
     }),
   );
+});
+
+it("renders persisted record values with resolved titles instead of paths", () => {
+  render(
+    <Harness
+      complete={async () => []}
+      initialValues={["[[tasks/opaque-file-id]]"]}
+      valueLabels={new Map([["[[tasks/opaque-file-id]]", "Readable title"]])}
+    />,
+  );
+
+  expect(screen.getByText("Readable title")).toBeVisible();
+  expect(screen.queryByText("opaque-file-id")).not.toBeInTheDocument();
 });
 
 it("keeps free-form entry and keyboard removal lightweight", async () => {
@@ -53,10 +68,14 @@ it("keeps free-form entry and keyboard removal lightweight", async () => {
 
 function Harness({
   complete,
+  initialValues = [],
+  valueLabels,
 }: {
   complete: ComponentProps<typeof MultiValueField>["completeField"];
+  initialValues?: string[];
+  valueLabels?: ReadonlyMap<string, string>;
 }) {
-  const [values, setValues] = useState<string[]>([]);
+  const [values, setValues] = useState<string[]>(initialValues);
   return (
     <>
       <MultiValueField
@@ -66,6 +85,7 @@ function Harness({
         label="Projects"
         placeholder="Website, Home"
         values={values}
+        valueLabels={valueLabels}
         onChange={setValues}
       />
       <output data-testid="values">{JSON.stringify(values)}</output>

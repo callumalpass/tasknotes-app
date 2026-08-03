@@ -29,16 +29,34 @@ export function recordCompletion(
 ): FieldCompletion {
   const path = record.path.replace(/\.md$/i, "");
   const label = record.label?.trim() || recordLabel(record);
+  const basename = path.split("/").at(-1) ?? path;
+  const alias = wikiAlias(label, basename);
   return {
     kind: "record",
     value:
       writeFormat === "markdown"
         ? `[${label}](/${encodeMarkdownPath(record.path)})`
-        : `[[${path}]]`,
+        : `[[${path}${alias ? `|${alias}` : ""}]]`,
     label,
     detail: record.path,
     path: record.path,
   };
+}
+
+/** Returns the human-facing label embedded in a portable record link. */
+export function linkLabel(value: string): string | undefined {
+  const source = value.trim();
+  const wikilink = source.match(/^!?\[\[([\s\S]+?)\]\]$/);
+  if (wikilink) {
+    const separator = wikilink[1].indexOf("|");
+    if (separator >= 0) {
+      const label = wikilink[1].slice(separator + 1).trim();
+      return label || undefined;
+    }
+    return;
+  }
+  const markdown = source.match(/^!?\[([^\]]+)\]\([^)]+\)$/);
+  return markdown?.[1].trim() || undefined;
 }
 
 export function recordLabel(record: {
@@ -95,4 +113,9 @@ function encodeMarkdownPath(path: string): string {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+function wikiAlias(label: string, basename: string): string | undefined {
+  if (label === basename || /[\]|\r\n]/.test(label)) return;
+  return label;
 }

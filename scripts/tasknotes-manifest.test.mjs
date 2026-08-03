@@ -46,6 +46,19 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
     );
+    expect(manifest.provisions.type_packs[1]).toMatchObject({
+      manifest: {
+        id: "tasknotes.scratch",
+        resources: [
+          {
+            kind: "type",
+            target: "_types/tasknotes-scratch.md",
+            digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          },
+        ],
+      },
+      provides: [],
+    });
   });
 
   it("adds only the public Firebase project ID when configured", async () => {

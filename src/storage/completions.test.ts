@@ -77,6 +77,10 @@ it("honors known target types while retaining untyped portable notes", () => {
     "Portable project",
     "Typed project",
   ]);
+  expect(values.map(({ value }) => value)).toEqual([
+    "[[Projects/portable|Portable project]]",
+    "[[Projects/typed|Typed project]]",
+  ]);
 });
 
 it("filters a large in-memory record catalog within the interaction budget", () => {

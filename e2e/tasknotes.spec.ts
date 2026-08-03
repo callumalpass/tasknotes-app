@@ -368,6 +368,52 @@ async function openNavigationView(page: Page, name: string): Promise<void> {
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 
+async function nestScratchpadItem(
+  page: Page,
+  handle: Locator,
+  target: Locator,
+  touch: boolean,
+): Promise<void> {
+  const [sourceBox, targetBox] = await Promise.all([
+    handle.boundingBox(),
+    target.boundingBox(),
+  ]);
+  if (!sourceBox || !targetBox)
+    throw new Error("Scratchpad drag elements are not laid out");
+  const start = {
+    x: sourceBox.x + sourceBox.width / 2,
+    y: sourceBox.y + sourceBox.height / 2,
+  };
+  const end = {
+    x: targetBox.x + Math.min(110, targetBox.width / 2),
+    y: targetBox.y + targetBox.height / 2,
+  };
+  if (!touch) {
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 6 });
+    await page.mouse.up();
+    return;
+  }
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ ...start, id: 1 }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ ...end, id: 1 }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await session.detach();
+  }
+}
+
 async function openSearch(page: Page): Promise<void> {
   const searchbox = page.getByRole("searchbox", { name: "Search tasks" });
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
@@ -448,6 +494,109 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Today", level: 1 }),
   ).toBeVisible();
+});
+
+test("shapes, converts, and archives a mixed scratchpad outline", async ({
+  page,
+}, testInfo) => {
+  await openNavigationView(page, "Scratchpad");
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", level: 1 }),
+  ).toBeVisible();
+  if (testInfo.project.name === "mobile") {
+    await expect(
+      page.locator(".bottom-navigation").getByRole("button"),
+    ).toHaveCount(5);
+    await expectTouchTargets(page.locator(".scratchpad-screen"));
+  }
+
+  const parent = page.locator("[data-scratch-input]").first();
+  await parent.fill("Plan launch");
+  await parent.press("Enter");
+  const child = page.locator("[data-scratch-input]").last();
+  await child.fill("Write announcement tomorrow");
+  await child.press("Tab");
+  await page.getByRole("button", { name: "Add note" }).click();
+  await page
+    .getByRole("textbox", { name: "Note: empty" })
+    .fill("Keep the tone straightforward");
+  const noteRow = page
+    .getByRole("textbox", { name: "Note: Keep the tone straightforward" })
+    .locator("xpath=ancestor::*[@data-scratch-row][1]");
+  const parentRow = page
+    .getByRole("textbox", { name: "Draft task: Plan launch" })
+    .locator("xpath=ancestor::*[@data-scratch-row][1]");
+  await nestScratchpadItem(
+    page,
+    noteRow.getByRole("button", {
+      name: "Move Keep the tone straightforward",
+    }),
+    parentRow,
+    testInfo.project.name === "mobile",
+  );
+  await expect(noteRow).toHaveAttribute("aria-level", "2");
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `scratchpad-outline-${testInfo.project.name}.png`,
+    ),
+    fullPage: true,
+  });
+
+  await page
+    .getByRole("button", { name: "Create TaskNote for Plan launch" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Plan launch", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Plan launch", exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const root = await navigator.storage.getDirectory();
+        const tasknotes = await root.getDirectoryHandle("TaskNotes");
+        const scratchpads = await tasknotes.getDirectoryHandle("scratchpads");
+        const file = await scratchpads.getFileHandle("Scratchpad.md");
+        return (await file.getFile()).text();
+      }),
+    )
+    .toContain("|Plan launch]]");
+  await page.getByRole("button", { name: "Finish", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Finish this scratchpad?" }),
+  ).toContainText("1 draft task");
+  await page.getByRole("button", { name: "Create tasks and finish" }).click();
+  await expect(page.getByText("Finished “Plan launch”")).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Draft task: empty" }),
+  ).toBeVisible();
+
+  const archive = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const tasknotes = await root.getDirectoryHandle("TaskNotes");
+    const scratchpads = await tasknotes.getDirectoryHandle("scratchpads");
+    const entries: Array<{ name: string; source: string }> = [];
+    for await (const [name, handle] of scratchpads.entries()) {
+      if (handle.kind !== "file" || name === "Scratchpad.md") continue;
+      entries.push({ name, source: await (await handle.getFile()).text() });
+    }
+    return entries[0];
+  });
+  expect(archive?.name).toMatch(/^\d{4}-\d{2}-\d{2} – Plan launch\.md$/);
+  expect(archive?.source).toContain("type: tasknotes-scratch");
+  expect(archive?.source).toContain("state: converted");
+  expect(archive?.source).toContain("Keep the tone straightforward");
+  expect(archive?.source.match(/\[\[tasks\//g)).toHaveLength(2);
+
+  await page.screenshot({
+    path: testInfo.outputPath(`scratchpad-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
 });
 
 test("manually reorders starter-view tasks with pointer and keyboard", async ({
@@ -1745,14 +1894,14 @@ Project notes`);
   await expect(suggestion).toBeVisible();
   await suggestion.click();
   await expect(
-    page.getByRole("button", { name: "Remove mobile" }),
+    page.getByRole("button", { name: "Remove Mobile roadmap", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await openNavigationView(page, "Projects");
 
   await expect(
-    page.getByRole("heading", { name: /Projects\/mobile/, level: 2 }),
+    page.getByRole("heading", { name: "Mobile roadmap", level: 2 }),
   ).toBeVisible();
   await expect(
     page.getByText("Prepare mobile release", { exact: true }),
@@ -1763,7 +1912,9 @@ Project notes`);
   expect(documents).toHaveLength(1);
   expect(
     documents.some((source) =>
-      /projects:\s*\n\s*-\s+['"]?\[\[Projects\/mobile\]\]['"]?/.test(source),
+      /projects:\s*\n\s*-\s+['"]?\[\[Projects\/mobile\|Mobile roadmap\]\]['"]?/.test(
+        source,
+      ),
     ),
   ).toBe(true);
 });
@@ -2403,20 +2554,22 @@ test("orders several navigation views and exposes the rest from the mobile Views
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
   await page.getByRole("button", { name: "Move Focus earlier" }).click();
+  await page.getByRole("button", { name: "Move Focus earlier" }).click();
 
   const ordered = page.locator(".navigation-view-order li");
-  await expect(ordered).toHaveCount(7);
+  await expect(ordered).toHaveCount(8);
   await expect(ordered.nth(0)).toContainText("Focus");
   await expect(ordered.nth(1)).toContainText("Today");
-  await expect(ordered.nth(2)).toContainText("Upcoming");
-  await expect(ordered.nth(3)).toContainText("Calendar");
-  await expect(ordered.nth(4)).toContainText("Projects");
-  await expect(ordered.nth(5)).toContainText("Archive");
-  await expect(ordered.nth(6)).toContainText("Later");
+  await expect(ordered.nth(2)).toContainText("Scratchpad");
+  await expect(ordered.nth(3)).toContainText("Upcoming");
+  await expect(ordered.nth(4)).toContainText("Calendar");
+  await expect(ordered.nth(5)).toContainText("Projects");
+  await expect(ordered.nth(6)).toContainText("Archive");
+  await expect(ordered.nth(7)).toContainText("Later");
 
   if (testInfo.project.name === "mobile") {
     const navigation = page.locator(".bottom-navigation");
-    await expect(navigation.getByRole("button")).toHaveCount(4);
+    await expect(navigation.getByRole("button")).toHaveCount(5);
     await expect(
       navigation.getByRole("button", { name: "Search", exact: true }),
     ).toBeVisible();
@@ -2923,7 +3076,7 @@ test("uses a comprehensive task action hierarchy", async ({
   await page.getByRole("menuitem", { name: /Copy task link/ }).click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toMatch(/^\[\[tasks\/\d+\]\]$/);
+    .toMatch(/^\[\[tasks\/\d+\|Context action parent\]\]$/);
   const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
 
   const today = await page.evaluate(() => {
@@ -2938,10 +3091,10 @@ test("uses a comprehensive task action hierarchy", async ({
     .poll(async () => {
       const documents = await localTaskDocuments(page);
       const parent = documents.find((source) =>
-        source.includes("Context action parent"),
+        source.includes("title: Context action parent"),
       );
       const child = documents.find((source) =>
-        source.includes("Context action child"),
+        source.includes("title: Context action child"),
       );
       return {
         parent:

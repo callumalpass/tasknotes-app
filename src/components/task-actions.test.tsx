@@ -110,7 +110,7 @@ describe("TaskActions", () => {
         (candidate) => candidate.title === "Menu child",
       );
       expect(child?.projects).toEqual([
-        `[[${task.path.replace(/\.md$/i, "")}]]`,
+        `[[${task.path.replace(/\.md$/i, "")}|${task.title}]]`,
       ]);
     });
   });
