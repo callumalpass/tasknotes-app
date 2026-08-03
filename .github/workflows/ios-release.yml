@@ -1,0 +1,208 @@
+name: iOS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: App Store marketing version, for example 1.0.0
+        required: true
+        default: 1.0.0
+        type: string
+      upload:
+        description: Upload the signed build to TestFlight
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags: ["ios-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+      TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Validate Xcode and release configuration
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          REQUESTED_UPLOAD: ${{ inputs.upload }}
+        run: |
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          sdk_major="${sdk_version%%.*}"
+          if [ "$sdk_major" -lt 26 ]; then
+            echo "TaskNotes releases require the iOS 26 SDK or newer; found $sdk_version." >&2
+            exit 1
+          fi
+
+          if [[ "$GITHUB_REF" == refs/tags/ios-v* ]]; then
+            version="${GITHUB_REF_NAME#ios-v}"
+            upload=true
+          else
+            version="$REQUESTED_VERSION"
+            upload="$REQUESTED_UPLOAD"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+([.][0-9]+){1,2}$ ]]; then
+            echo "Invalid iOS marketing version: $version" >&2
+            exit 1
+          fi
+
+          test -n "$APPLE_DISTRIBUTION_CERTIFICATE_BASE64"
+          test -n "$APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD"
+          test -n "$APPLE_PROVISIONING_PROFILE_BASE64"
+          test -n "$APPLE_TEAM_ID"
+          test -n "$GOOGLE_SERVICE_INFO_PLIST_BASE64"
+          test -n "$TASKNOTES_FIREBASE_PROJECT_ID"
+          if [ "$upload" = true ]; then
+            test -n "$APP_STORE_CONNECT_ISSUER_ID"
+            test -n "$APP_STORE_CONNECT_KEY_ID"
+            test -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64"
+          fi
+
+          echo "TASKNOTES_IOS_VERSION=$version" >> "$GITHUB_ENV"
+          echo "TASKNOTES_IOS_BUILD=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "TASKNOTES_IOS_UPLOAD=$upload" >> "$GITHUB_ENV"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Restore Firebase configuration
+        run: >-
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" |
+          base64 --decode > ios/App/App/GoogleService-Info.plist
+
+      - name: Install dependencies and verify application
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm verify
+          pnpm exec cap sync ios
+
+      - name: Install Apple signing identity
+        run: |
+          certificate_path="$RUNNER_TEMP/tasknotes-distribution.p12"
+          profile_source_path="$RUNNER_TEMP/tasknotes-app-store.mobileprovision"
+          profile_plist_path="$RUNNER_TEMP/tasknotes-profile.plist"
+          keychain_path="$RUNNER_TEMP/tasknotes-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 24)"
+
+          printf '%s' "$APPLE_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode > "$certificate_path"
+          printf '%s' "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$profile_source_path"
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" \
+            -P "$APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$keychain_path"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -k "$keychain_password" \
+            "$keychain_path"
+          security list-keychain -d user -s "$keychain_path"
+
+          security cms -D -i "$profile_source_path" > "$profile_plist_path"
+          profile_uuid="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$profile_plist_path")"
+          profile_name="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$profile_plist_path")"
+          profile_install_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          profile_install_path="$profile_install_dir/$profile_uuid.mobileprovision"
+          mkdir -p "$profile_install_dir"
+          cp "$profile_source_path" "$profile_install_path"
+
+          echo "TASKNOTES_KEYCHAIN_PATH=$keychain_path" >> "$GITHUB_ENV"
+          echo "TASKNOTES_PROFILE_INSTALL_PATH=$profile_install_path" >> "$GITHUB_ENV"
+          echo "TASKNOTES_PROVISIONING_PROFILE_NAME=$profile_name" >> "$GITHUB_ENV"
+
+      - name: Archive signed iOS application
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/TaskNotes.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY='Apple Distribution' \
+            PROVISIONING_PROFILE_SPECIFIER="$TASKNOTES_PROVISIONING_PROFILE_NAME" \
+            MARKETING_VERSION="$TASKNOTES_IOS_VERSION" \
+            CURRENT_PROJECT_VERSION="$TASKNOTES_IOS_BUILD" \
+            clean archive
+
+      - name: Export signed IPA
+        run: |
+          export_options="$RUNNER_TEMP/TaskNotesExportOptions.plist"
+          cp ios/App/ExportOptions.plist "$export_options"
+          /usr/libexec/PlistBuddy \
+            -c "Set :teamID $APPLE_TEAM_ID" \
+            "$export_options"
+          /usr/libexec/PlistBuddy \
+            -c "Set :provisioningProfiles:dev.tasknotes.app $TASKNOTES_PROVISIONING_PROFILE_NAME" \
+            "$export_options"
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$RUNNER_TEMP/TaskNotes.xcarchive" \
+            -exportPath "$RUNNER_TEMP/TaskNotesExport" \
+            -exportOptionsPlist "$export_options"
+
+      - name: Upload signed IPA artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tasknotes-ios-${{ env.TASKNOTES_IOS_VERSION }}-${{ env.TASKNOTES_IOS_BUILD }}
+          path: ${{ runner.temp }}/TaskNotesExport/*.ipa
+          if-no-files-found: error
+
+      - name: Upload to TestFlight
+        if: env.TASKNOTES_IOS_UPLOAD == 'true'
+        run: |
+          api_keys_dir="$RUNNER_TEMP/private_keys"
+          api_key_path="$api_keys_dir/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          mkdir -p "$api_keys_dir"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$api_key_path"
+          ipa_path="$(find "$RUNNER_TEMP/TaskNotesExport" -maxdepth 1 -name '*.ipa' -print -quit)"
+          test -n "$ipa_path"
+          cd "$RUNNER_TEMP"
+          xcrun altool \
+            --upload-app \
+            --type ios \
+            --file "$ipa_path" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          if [ -n "${TASKNOTES_KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$TASKNOTES_KEYCHAIN_PATH" || true
+          fi
+          if [ -n "${TASKNOTES_PROFILE_INSTALL_PATH:-}" ]; then
+            rm -f "$TASKNOTES_PROFILE_INSTALL_PATH"
+          fi
+          rm -f ios/App/App/GoogleService-Info.plist
