@@ -144,7 +144,7 @@ function BrowseFields({
           <h2>{group.label}</h2>
           <div>
             {group.values
-              .slice(0, expandedGroups.has(group.label) ? undefined : 8)
+              .slice(0, expandedGroups.has(group.label) ? undefined : 4)
               .map((value) => (
                 <button
                   key={value}
@@ -155,7 +155,7 @@ function BrowseFields({
                   {cleanField(value)}
                 </button>
               ))}
-            {group.values.length > 8 ? (
+            {group.values.length > 4 ? (
               <button
                 className="browse-fields-more"
                 type="button"

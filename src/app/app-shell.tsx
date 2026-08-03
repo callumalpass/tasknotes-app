@@ -216,7 +216,7 @@ export function AppShell() {
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
       : workspace.page === "views" && !workspace.key
-        ? "more"
+        ? "views"
         : workspace.page === "views"
           ? "views"
           : workspace.page;

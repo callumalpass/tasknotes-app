@@ -802,24 +802,14 @@ export function ViewsScreen({
             </div>
             <div className="views-header-actions">
               <button
-                aria-label="Create view"
-                className="icon-action"
-                title="Create view"
+                className="outline-action views-create-action"
                 type="button"
                 onFocus={preloadViewEditor}
                 onClick={() => setEditing("new")}
                 onPointerEnter={preloadViewEditor}
               >
                 <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
-              </button>
-              <button
-                aria-label="Search tasks"
-                className="icon-action"
-                title="Search tasks"
-                type="button"
-                onClick={onSearch}
-              >
-                <Search aria-hidden="true" size={20} strokeWidth={1.7} />
+                Create view
               </button>
             </div>
           </header>
@@ -850,7 +840,6 @@ export function ViewsScreen({
                       <h2 id={`view-document-${safeId(document.id)}`}>
                         {document.name}
                       </h2>
-                      <small>{document.source.path}</small>
                     </header>
                     <div className="saved-view-list">
                       {document.views.map((view) => {

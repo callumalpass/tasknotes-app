@@ -1116,7 +1116,7 @@ button:disabled {
 }
 
 .browse-fields button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   color: var(--ink-soft);
   background: transparent;
@@ -4140,8 +4140,7 @@ button:disabled {
   border-radius: 4px;
 }
 
-.collection-choices small,
-.welcome-portability {
+.collection-choices small {
   color: var(--ink-muted);
   font-size: 0.9rem;
   line-height: 1.4;
@@ -4170,11 +4169,27 @@ button:disabled {
   font-weight: 700;
 }
 
-.welcome-portability {
+.welcome-details {
+  margin-top: 22px;
+  color: var(--ink-muted);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.welcome-details summary {
   display: flex;
+  width: max-content;
+  min-height: 44px;
   align-items: center;
-  gap: 7px;
-  margin: 22px 0 0;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.welcome-details p {
+  max-width: 64ch;
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .connection-comparison {
@@ -4364,6 +4379,14 @@ button:disabled {
 .views-header-actions {
   display: flex;
   gap: 2px;
+}
+
+.views-create-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 13px;
 }
 
 .view-header h1 {
