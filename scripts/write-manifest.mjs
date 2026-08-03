@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { format } from "prettier";
 
 import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
@@ -31,7 +32,7 @@ const manifest = await buildTaskNotesManifest({
   resources,
 });
 
-const serialized = `${JSON.stringify(manifest, null, 2)}\n`;
+const serialized = await format(JSON.stringify(manifest), { parser: "json" });
 await Promise.all(
   targets.map(async (target) => {
     await mkdir(resolve(target, ".."), { recursive: true });
