@@ -2,7 +2,11 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
-import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import {
+  buildTaskNotesMdbaseResources,
+  buildTaskNotesMdbaseTypePack,
+  type TaskNotesMdbaseOptions,
+} from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import { parseDocument } from "yaml";
@@ -44,6 +48,10 @@ import type {
 import type { Vault, VaultEntry } from "./vault";
 import { isBinaryVault } from "./vault-contract";
 import { VaultCollectionFileStore } from "./vault-files";
+import {
+  applyLocalTypePack,
+  type DefinitionAdoptionRequest,
+} from "./local-type-pack";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -94,6 +102,9 @@ export class MarkdownCollection {
       approveManagedTypeUpgrade?: (
         request: ManagedTypeUpgradeRequest,
       ) => boolean | Promise<boolean>;
+      approveDefinitionAdoption?: (
+        request: DefinitionAdoptionRequest,
+      ) => boolean | Promise<boolean>;
     } = {},
   ) {}
 
@@ -104,7 +115,7 @@ export class MarkdownCollection {
     await this.hydrateAuthorityState();
     this.assertAuthorityWritable(options.authorityAdoptionId);
     const defaults = defaultTaskCollectionConfiguration();
-    const resources = buildTaskNotesMdbaseResources({
+    const resourceOptions: TaskNotesMdbaseOptions = {
       profiles: ["core-lite", "recurrence", "materialized-occurrences"],
       modelConfig: {
         ...defaults,
@@ -124,9 +135,39 @@ export class MarkdownCollection {
           },
         ],
       },
-    });
+    };
+    const initialResources = buildTaskNotesMdbaseResources(resourceOptions);
+    await this.vault.ensureText(
+      initialResources.paths.config,
+      initialResources.configDocument,
+    );
+    await this.ensureViewConfiguration(initialResources.paths.config);
+    const definitionFolders = await this.readDefinitionFolders(
+      initialResources.paths.config,
+    );
+    this.typesFolder = definitionFolders.types;
+    this.contractsFolder = definitionFolders.contracts;
+    const resources = buildTaskNotesMdbaseResources(resourceOptions);
     const generatedType = structuredClone(resources.type);
+    const taskSchema = structuredClone(resources.taskSchema);
     const implementation = taskNotesImplementation(generatedType);
+    const taskDateSchema = {
+      anyOf: [
+        { type: "string", format: "date" },
+        { type: "string", format: "date-time" },
+      ],
+    };
+    const fields = implementation.fields as Record<string, string>;
+    const generatedSchema = (
+      generatedType.schema as {
+        value: { properties: Record<string, unknown> };
+      }
+    ).value;
+    generatedSchema.properties[fields.due] = taskDateSchema;
+    generatedSchema.properties[fields.scheduled] = taskDateSchema;
+    (taskSchema.properties as Record<string, unknown>).due = taskDateSchema;
+    (taskSchema.properties as Record<string, unknown>).scheduled =
+      taskDateSchema;
     const extension = implementation.binding as Record<string, unknown>;
     extension.status = {
       ...(extension.status as Record<string, unknown>),
@@ -140,37 +181,25 @@ export class MarkdownCollection {
       past_horizon: defaults.occurrences.pastHorizon,
       future_horizon: defaults.occurrences.futureHorizon,
     };
-    const generated = parseFrontmatter(resources.typeDocument);
-    await this.vault.ensureText(
-      resources.paths.config,
-      resources.configDocument,
+    const typeDocument = serializeMarkdownDocument(
+      generatedType,
+      `# Task\n\nTask records live under \`${resources.paths.records}/\`.\n`,
     );
-    await Promise.all([
-      this.vault.ensureText(
-        resources.paths.contract,
-        resources.contractDocument,
-      ),
-      this.vault.ensureText(
-        resources.paths.taskSchema,
-        resources.taskSchemaDocument,
-      ),
-      this.vault.ensureText(
-        resources.paths.bindingSchema,
-        resources.bindingSchemaDocument,
-      ),
-    ]);
-    await this.ensureViewConfiguration(resources.paths.config);
-    const definitionFolders = await this.readDefinitionFolders(
-      resources.paths.config,
-    );
-    this.typesFolder = definitionFolders.types;
-    this.contractsFolder = definitionFolders.contracts;
-    const existingTypes = await this.listTypeFiles(this.typesFolder);
-    if (!existingTypes.length)
-      await this.vault.ensureText(
-        `${this.typesFolder}/task.md`,
-        serializeMarkdownDocument(generatedType, generated.body),
-      );
+    const pack = await buildTaskNotesMdbaseTypePack({
+      ...resources,
+      type: generatedType,
+      typeDocument,
+      taskSchema,
+      taskSchemaDocument: `${JSON.stringify(taskSchema, null, 2)}\n`,
+    });
+    await applyLocalTypePack(this.vault, pack, {
+      installedBy: "dev.tasknotes.app",
+      approveAdoption: this.options.approveDefinitionAdoption,
+      targetOverrides: {
+        [resources.paths.type]: `${this.typesFolder}/task.md`,
+        [resources.paths.contract]: `${this.contractsFolder}/tasknotes.task.md`,
+      },
+    });
     await this.refreshConfiguration();
   }
 

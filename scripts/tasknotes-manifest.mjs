@@ -1,5 +1,5 @@
 import { buildTaskNotesMdbaseTypePack } from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
 
 export async function buildTaskNotesManifest({
   appUrl,
@@ -8,6 +8,11 @@ export async function buildTaskNotesManifest({
   resources,
 }) {
   const typePack = await buildTaskNotesMdbaseTypePack(resources);
+  const taskContract = typePack.provides.find(
+    (contract) => contract.id === "tasknotes.task",
+  );
+  if (!taskContract)
+    throw new Error("TaskNotes pack provides no task contract.");
   return {
     manifest_version: 1,
     id: "dev.tasknotes.app",
@@ -19,7 +24,7 @@ export async function buildTaskNotesManifest({
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
     requirements: {
-      contracts: [{ id: "tasknotes.task", version: TASKNOTES_SPEC_VERSION }],
+      contracts: [taskContract],
       access: "full_collection",
       files: {
         actions: ["list", "read", "add", "replace", "move", "delete"],
@@ -33,7 +38,7 @@ export async function buildTaskNotesManifest({
       criteria: [
         {
           id: "task.reminder",
-          event: { id: "mdbase.runtime.timer.fired", version: "1.0.0" },
+          event: MDBASE_TIMER_FIRED_CONTRACT,
           presentation: {
             title: "Task reminder",
             body: "Open TaskNotes to view your task.",
