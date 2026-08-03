@@ -18,14 +18,7 @@
     ],
     "access": "full_collection",
     "files": {
-      "actions": [
-        "list",
-        "read",
-        "add",
-        "replace",
-        "move",
-        "delete"
-      ],
+      "actions": ["list", "read", "add", "replace", "move", "delete"],
       "scope": {
         "kind": "collection"
       }
