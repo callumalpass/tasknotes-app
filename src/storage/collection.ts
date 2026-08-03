@@ -22,6 +22,17 @@ import type {
 } from "@mdbase-dev/connect-protocol";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import {
+  ACTIVE_SCRATCHPAD_PATH,
+  SCRATCHPAD_FOLDER,
+  SCRATCHPAD_TYPE,
+  SCRATCHPAD_TYPE_DOCUMENT,
+  scratchpadArchivePath,
+  type ArchiveScratchpadInput,
+  type SaveScratchpadInput,
+  type ScratchpadArchiveResult,
+  type ScratchpadDocument,
+} from "../domain/scratchpad";
 import { viewSourceRevision } from "./local-views";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { resolveTaskTypeDefinition } from "./tasknotes-collection";
@@ -200,6 +211,10 @@ export class MarkdownCollection {
         [resources.paths.contract]: `${this.contractsFolder}/tasknotes.task.md`,
       },
     });
+    await this.vault.ensureText(
+      `${this.typesFolder}/${SCRATCHPAD_TYPE}.md`,
+      SCRATCHPAD_TYPE_DOCUMENT,
+    );
     await this.refreshConfiguration();
   }
 
@@ -605,6 +620,140 @@ export class MarkdownCollection {
         "This view changed after it was opened. Reload it before deleting.",
       );
     await this.vault.delete(path);
+  }
+
+  async getActiveScratchpad(): Promise<ScratchpadDocument> {
+    const entries = await this.vault.listFiles(SCRATCHPAD_FOLDER, [".md"]);
+    const scratchpads = (
+      await Promise.all(
+        entries.map((entry) =>
+          this.readScratchpad(entry.path).catch(() => null),
+        ),
+      )
+    ).filter((document): document is ScratchpadDocument => Boolean(document));
+    const active = scratchpads.filter(
+      (document) => document.state === "active",
+    );
+    if (active.length > 1)
+      throw new Error(
+        "More than one active scratchpad was found. Move or merge one before continuing.",
+      );
+    return active[0] ?? this.createActiveScratchpad();
+  }
+
+  async saveScratchpad(
+    input: SaveScratchpadInput,
+  ): Promise<ScratchpadDocument> {
+    this.assertAuthorityWritable();
+    const current = await this.readScratchpad(input.path);
+    assertScratchpadWrite(current, input);
+    const now = new Date().toISOString();
+    await this.vault.writeText(
+      current.path,
+      serializeMarkdownDocument(
+        scratchpadFrontmatter({ ...current, dateModified: now }),
+        input.body,
+      ),
+    );
+    return this.readScratchpad(current.path);
+  }
+
+  async archiveScratchpad(
+    input: ArchiveScratchpadInput,
+  ): Promise<ScratchpadArchiveResult> {
+    this.assertAuthorityWritable();
+    const current = await this.readScratchpad(input.path);
+    assertScratchpadWrite(current, input);
+    const now = new Date().toISOString();
+    const path = await this.availableScratchpadArchivePath(
+      scratchpadArchivePath(input.title, new Date(now)),
+    );
+    await this.vault.rename(current.path, path);
+    await this.vault.writeText(
+      path,
+      serializeMarkdownDocument(
+        scratchpadFrontmatter({
+          ...current,
+          path,
+          state: "converted",
+          dateModified: now,
+          dateConverted: now,
+          title: input.title?.trim() || "Scratchpad",
+        }),
+        input.body,
+      ),
+    );
+    return {
+      archived: await this.readScratchpad(path),
+      active: await this.createActiveScratchpad(),
+    };
+  }
+
+  private async readScratchpad(path: string): Promise<ScratchpadDocument> {
+    const source = await this.vault.readText(path);
+    const parsed = parseFrontmatter(source);
+    const frontmatter = parsed.frontmatter;
+    if (frontmatter.type !== SCRATCHPAD_TYPE)
+      throw new Error(`${path} is not a TaskNotes scratchpad.`);
+    const id = stringProperty(frontmatter, "id");
+    const state = stringProperty(frontmatter, "state");
+    const dateCreated = stringProperty(frontmatter, "dateCreated");
+    const dateModified = stringProperty(frontmatter, "dateModified");
+    if (state !== "active" && state !== "converted")
+      throw new Error(`${path} has an invalid scratchpad state.`);
+    return {
+      id,
+      path,
+      revision: await viewSourceRevision(source),
+      state,
+      dateCreated,
+      dateModified,
+      ...(typeof frontmatter.dateConverted === "string"
+        ? { dateConverted: frontmatter.dateConverted }
+        : {}),
+      ...(typeof frontmatter.title === "string"
+        ? { title: frontmatter.title }
+        : {}),
+      body: parsed.body,
+    };
+  }
+
+  private async createActiveScratchpad(): Promise<ScratchpadDocument> {
+    this.assertAuthorityWritable();
+    if (await this.vault.exists(ACTIVE_SCRATCHPAD_PATH)) {
+      const existing = await this.readScratchpad(ACTIVE_SCRATCHPAD_PATH).catch(
+        () => null,
+      );
+      if (existing) return existing;
+      throw new Error(
+        `${ACTIVE_SCRATCHPAD_PATH} already exists and is not a TaskNotes scratchpad.`,
+      );
+    }
+    const now = new Date().toISOString();
+    await this.vault.writeText(
+      ACTIVE_SCRATCHPAD_PATH,
+      serializeMarkdownDocument(
+        {
+          type: SCRATCHPAD_TYPE,
+          id: crypto.randomUUID(),
+          state: "active",
+          dateCreated: now,
+          dateModified: now,
+        },
+        "",
+      ),
+    );
+    return this.readScratchpad(ACTIVE_SCRATCHPAD_PATH);
+  }
+
+  private async availableScratchpadArchivePath(path: string): Promise<string> {
+    if (!(await this.vault.exists(path))) return path;
+    const stem = path.replace(/\.md$/i, "");
+    for (let suffix = 2; suffix < 10_000; suffix += 1) {
+      const candidate = `${stem} (${suffix}).md`;
+      if (!(await this.vault.exists(candidate))) return candidate;
+    }
+    throw new Error("Could not choose a unique scratchpad archive path.");
   }
 
   async read(document: VaultEntry): Promise<Task | null> {
@@ -1133,6 +1282,46 @@ function explicitRecordTypes(frontmatter: Record<string, unknown>): string[] {
       values.map((value) => value.trim().toLocaleLowerCase()).filter(Boolean),
     ),
   ];
+}
+
+function stringProperty(
+  frontmatter: Record<string, unknown>,
+  property: string,
+): string {
+  const value = frontmatter[property];
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`Scratchpad ${property} must be a non-empty string.`);
+  return value;
+}
+
+function assertScratchpadWrite(
+  current: ScratchpadDocument,
+  input: SaveScratchpadInput,
+): void {
+  if (current.id !== input.id)
+    throw new Error("The active scratchpad changed. Reload it before saving.");
+  if (current.state !== "active")
+    throw new Error("A converted scratchpad cannot be changed here.");
+  if (input.revision && input.revision !== current.revision)
+    throw new Error(
+      "This scratchpad changed after it was opened. Reload it before saving.",
+    );
+}
+
+function scratchpadFrontmatter(
+  document: ScratchpadDocument,
+): Record<string, unknown> {
+  return {
+    type: SCRATCHPAD_TYPE,
+    id: document.id,
+    state: document.state,
+    ...(document.title ? { title: document.title } : {}),
+    dateCreated: document.dateCreated,
+    dateModified: document.dateModified,
+    ...(document.dateConverted
+      ? { dateConverted: document.dateConverted }
+      : {}),
+  };
 }
 
 function taskNotesImplementation(

@@ -1,7 +1,9 @@
 import type { CollectionInfo } from "../application/ports/task-repository";
 
-const STORAGE_KEY = "tasknotes:navigation-views:v2";
+const STORAGE_KEY = "tasknotes:navigation-views:v3";
+const PREVIOUS_STORAGE_KEY = "tasknotes:navigation-views:v2";
 const LEGACY_STORAGE_KEY = "tasknotes:primary-views:v1";
+export const SCRATCHPAD_NAVIGATION_KEY = "tasknotes:scratchpad";
 
 export function navigationViewScope(info: CollectionInfo): string {
   return `${info.kind}:${info.id ?? info.location}`;
@@ -32,6 +34,13 @@ export function readNavigationViewKeys(
   } catch {
     return;
   }
+}
+
+export function readPreviousNavigationViewKeys(
+  storage: Pick<Storage, "getItem">,
+  scope: string,
+): string[] | undefined {
+  return readScopedKeys(storage, PREVIOUS_STORAGE_KEY, scope);
 }
 
 export function writeNavigationViewKeys(
@@ -72,4 +81,26 @@ export function moveNavigationViewKey(
 
 function unique(keys: readonly string[]): string[] {
   return [...new Set(keys)];
+}
+
+function readScopedKeys(
+  storage: Pick<Storage, "getItem">,
+  key: string,
+  scope: string,
+): string[] | undefined {
+  try {
+    const value = JSON.parse(storage.getItem(key) ?? "{}") as unknown;
+    if (!value || typeof value !== "object" || Array.isArray(value)) return;
+    const keys = (value as Record<string, unknown>)[scope];
+    return Array.isArray(keys)
+      ? unique(
+          keys.filter(
+            (candidate): candidate is string =>
+              typeof candidate === "string" && Boolean(candidate),
+          ),
+        )
+      : undefined;
+  } catch {
+    return;
+  }
 }

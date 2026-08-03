@@ -7,7 +7,9 @@ import { useRepository } from "./repository-context";
 import {
   moveNavigationViewKey,
   navigationViewScope,
+  readPreviousNavigationViewKeys,
   readNavigationViewKeys,
+  SCRATCHPAD_NAVIGATION_KEY,
   writeNavigationViewKeys,
 } from "./navigation-views";
 
@@ -26,6 +28,7 @@ export function useNavigationViews(): {
   views: TaskView[] | null;
   error: string;
   navigationViews: TaskView[];
+  navigationKeys: string[];
   homeView?: TaskView;
   loading: boolean;
   refresh(): Promise<void>;
@@ -117,18 +120,23 @@ export function useNavigationViews(): {
   );
   const toggleNavigationView = useCallback(
     (key: string) =>
-      setNavigationKeys((keys) =>
-        keys.includes(key)
-          ? keys.length === 1
-            ? keys
-            : keys.filter((candidate) => candidate !== key)
-          : [...keys, key],
-      ),
+      setNavigationKeys((keys) => {
+        if (!keys.includes(key)) return [...keys, key];
+        const taskViewCount = keys.filter(
+          (candidate) => candidate !== SCRATCHPAD_NAVIGATION_KEY,
+        ).length;
+        if (key !== SCRATCHPAD_NAVIGATION_KEY && taskViewCount === 1)
+          return keys;
+        return keys.filter((candidate) => candidate !== key);
+      }),
     [setNavigationKeys],
   );
   const moveNavigationView = useCallback(
     (key: string, direction: -1 | 1) =>
-      setNavigationKeys((keys) => moveNavigationViewKey(keys, key, direction)),
+      setNavigationKeys((keys) => {
+        const next = moveNavigationViewKey(keys, key, direction);
+        return next[0] === SCRATCHPAD_NAVIGATION_KEY ? keys : next;
+      }),
     [setNavigationKeys],
   );
   return {
@@ -136,6 +144,7 @@ export function useNavigationViews(): {
     views,
     error: catalog.error,
     navigationViews,
+    navigationKeys: catalog.navigationKeys,
     homeView: navigationViews[0],
     loading: catalog.documents === null,
     refresh,
@@ -155,14 +164,30 @@ export function resolveNavigationViewCatalog(
   const available = new Set(
     flattenViewDocuments(documents).map((view) => view.key),
   );
+  available.add(SCRATCHPAD_NAVIGATION_KEY);
   let stored = readNavigationViewKeys(storage, scope);
   if (!stored && info.id) {
     stored = readNavigationViewKeys(storage, `${info.kind}:${info.location}`);
     if (stored) writeNavigationViewKeys(storage, scope, stored);
   }
+  if (!stored) {
+    const previous =
+      readPreviousNavigationViewKeys(storage, scope) ??
+      (info.id
+        ? readPreviousNavigationViewKeys(
+            storage,
+            `${info.kind}:${info.location}`,
+          )
+        : undefined);
+    if (previous) {
+      stored = withDefaultScratchpad(previous);
+      writeNavigationViewKeys(storage, scope, stored);
+    }
+  }
   if (requireStoredViews && stored?.[0] && !available.has(stored[0]))
     return null;
-  const requested = stored ?? defaultNavigationViewKeys(documents);
+  const requested =
+    stored ?? withDefaultScratchpad(defaultNavigationViewKeys(documents));
   const navigationKeys = requested.filter((key) => available.has(key));
   if (!navigationKeys.length) {
     const defaults = defaultNavigationViewKeys(documents);
@@ -185,4 +210,9 @@ export function resolveNavigationViewCatalog(
     scope,
     navigationKeys,
   };
+}
+
+function withDefaultScratchpad(keys: readonly string[]): string[] {
+  if (keys.includes(SCRATCHPAD_NAVIGATION_KEY)) return [...keys];
+  return [...keys.slice(0, 1), SCRATCHPAD_NAVIGATION_KEY, ...keys.slice(1)];
 }

@@ -31,6 +31,19 @@ import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
 import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
 import {
+  activeScratchpad,
+  assertScratchpadRevision,
+  newScratchpadValues,
+  scratchpadFromRecord,
+  scratchpadFrontmatter,
+} from "./scratchpads";
+import {
+  SCRATCHPAD_TYPE,
+  scratchpadArchivePath,
+  type ArchiveScratchpadInput,
+  type SaveScratchpadInput,
+} from "../domain/scratchpad";
+import {
   connectedTaskRelationships,
   connectedTaskSignature as signature,
   connectedTaskStats,
@@ -644,6 +657,115 @@ export class CloudTaskRepository implements TaskRepository {
     return (await this.requireReplica().conflictEntries()).map(
       ({ recordId, receipt }) => this.toIssue(recordId, receipt),
     );
+  }
+
+  async getActiveScratchpad() {
+    const records = await this.scratchpadRecords();
+    const active = activeScratchpad(records);
+    if (active) return active;
+    const values = newScratchpadValues();
+    const record = await this.requireReplica().queueCreate({
+      recordId: String(values.frontmatter.id),
+      path: values.path,
+      frontmatter: asJson(values.frontmatter),
+      body: values.body,
+      types: [SCRATCHPAD_TYPE],
+    });
+    this.emit();
+    return scratchpadFromRecord(record);
+  }
+
+  async saveScratchpad(input: SaveScratchpadInput) {
+    const record = await this.requireScratchpadRecord(input.id);
+    const current = scratchpadFromRecord(record);
+    assertScratchpadRevision(current, input);
+    const dateModified = new Date().toISOString();
+    await this.requireReplica().queueUpdate({
+      recordId: record.record_id,
+      baseRevision: record.revision,
+      patch: asJson(scratchpadFrontmatter(current, { dateModified })),
+      body: input.body,
+    });
+    this.emit();
+    return scratchpadFromRecord(await this.requireScratchpadRecord(input.id));
+  }
+
+  async archiveScratchpad(input: ArchiveScratchpadInput) {
+    const record = await this.requireScratchpadRecord(input.id);
+    const current = scratchpadFromRecord(record);
+    assertScratchpadRevision(current, input);
+    const now = new Date().toISOString();
+    await this.requireReplica().queueUpdate({
+      recordId: record.record_id,
+      baseRevision: record.revision,
+      patch: asJson(
+        scratchpadFrontmatter(current, {
+          state: "converted",
+          title: input.title?.trim() || "Scratchpad",
+          dateModified: now,
+          dateConverted: now,
+        }),
+      ),
+      body: input.body,
+    });
+    const updated = await this.requireScratchpadRecord(input.id);
+    const path = await this.availableScratchpadPath(
+      scratchpadArchivePath(input.title, new Date(now)),
+    );
+    await this.requireReplica().queueRename({
+      recordId: updated.record_id,
+      path,
+      baseRevision: updated.revision,
+    });
+    const archived = scratchpadFromRecord(
+      await this.requireScratchpadRecord(input.id),
+    );
+    const active = await this.createActiveScratchpad();
+    this.emit();
+    return { archived, active };
+  }
+
+  private async scratchpadRecords(): Promise<SyncRecord<CloudFrontmatter>[]> {
+    return (await this.requireReplica().records()).filter(
+      (record) =>
+        record.types.includes(SCRATCHPAD_TYPE) ||
+        record.frontmatter.type === SCRATCHPAD_TYPE,
+    );
+  }
+
+  private async requireScratchpadRecord(
+    id: string,
+  ): Promise<SyncRecord<CloudFrontmatter>> {
+    const record = (await this.scratchpadRecords()).find(
+      (candidate) => candidate.frontmatter.id === id,
+    );
+    if (!record) throw new Error("The scratchpad is no longer available.");
+    return record;
+  }
+
+  private async createActiveScratchpad() {
+    const values = newScratchpadValues();
+    const record = await this.requireReplica().queueCreate({
+      recordId: String(values.frontmatter.id),
+      path: values.path,
+      frontmatter: asJson(values.frontmatter),
+      body: values.body,
+      types: [SCRATCHPAD_TYPE],
+    });
+    return scratchpadFromRecord(record);
+  }
+
+  private async availableScratchpadPath(path: string): Promise<string> {
+    const paths = new Set(
+      (await this.requireReplica().records()).map((record) => record.path),
+    );
+    if (!paths.has(path)) return path;
+    const stem = path.replace(/\.md$/i, "");
+    for (let suffix = 2; suffix < 10_000; suffix += 1) {
+      const candidate = `${stem} (${suffix}).md`;
+      if (!paths.has(candidate)) return candidate;
+    }
+    throw new Error("Could not choose a unique scratchpad archive path.");
   }
 
   async resolveSyncIssue(
