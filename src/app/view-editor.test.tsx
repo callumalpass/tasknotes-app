@@ -69,7 +69,7 @@ describe("ViewEditor", () => {
       screen.getByRole("combobox", { name: "Sort property 1" }),
     ).toHaveValue("priority");
 
-    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Board" }));
     expect(screen.getByRole("combobox", { name: "Board column" })).toHaveValue(
       "status",
     );
@@ -110,7 +110,7 @@ describe("ViewEditor", () => {
     fireEvent.change(await screen.findByLabelText("Name"), {
       target: { value: "Schedule" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Calendar" }));
 
     expect(screen.getByRole("heading", { name: "Calendar" })).toBeVisible();
     fireEvent.click(screen.getByRole("heading", { name: "Calendar" }));
@@ -226,6 +226,20 @@ describe("ViewEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps the active field focused while editing an existing view", async () => {
+    renderEditor({ repository: repository(), view: savedView() });
+
+    await screen.findByRole("dialog", { name: "Edit view" });
+    const name = await screen.findByLabelText("Name");
+    name.focus();
+    fireEvent.change(name, { target: { value: "W" } });
+
+    expect(name).toHaveFocus();
+    fireEvent.change(name, { target: { value: "Work" } });
+    expect(name).toHaveFocus();
+    expect(name).toHaveValue("Work");
   });
 
   it("closes after the write without waiting for catalogue reconciliation", async () => {

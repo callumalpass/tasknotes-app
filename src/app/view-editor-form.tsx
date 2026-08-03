@@ -492,19 +492,21 @@ function ViewIdentitySection({
         <legend>Layout</legend>
         <div className="view-kind-options">
           {layouts.map(({ value, label, description, icon: Icon }) => (
-            <button
-              aria-label={label}
-              aria-pressed={draft.renderer === value}
-              key={value}
-              type="button"
-              onClick={() => onChange(changeRenderer(draft, value))}
-            >
+            <label key={value}>
               <Icon aria-hidden="true" size={17} strokeWidth={1.7} />
               <span>
                 <strong>{label}</strong>
                 <small>{description}</small>
               </span>
-            </button>
+              <input
+                aria-label={label}
+                checked={draft.renderer === value}
+                name="view-layout"
+                type="radio"
+                value={value}
+                onChange={() => onChange(changeRenderer(draft, value))}
+              />
+            </label>
           ))}
         </div>
       </fieldset>

@@ -271,8 +271,24 @@ async function localDefaultViewDocument(page: Page): Promise<string> {
 }
 
 async function openViewsCatalog(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  const views = page.getByRole("button", { name: "Views", exact: true });
+  await revealNavigationButton(page, views);
+  await views.click();
   await page.getByRole("menuitem", { name: "Manage views" }).click();
+}
+
+async function revealNavigationButton(
+  page: Page,
+  button: Locator,
+): Promise<void> {
+  await expect
+    .poll(async () => {
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur(),
+      );
+      return button.isVisible();
+    })
+    .toBe(true);
 }
 
 async function openSettingsSection(
@@ -339,10 +355,16 @@ async function openNavigationView(page: Page, name: string): Promise<void> {
   const navigation = page.locator(".bottom-navigation, .navigation-rail");
   const direct = navigation.getByRole("button", { name, exact: true });
   if (await direct.count()) {
+    await revealNavigationButton(page, direct);
     await direct.click();
     return;
   }
-  await navigation.getByRole("button", { name: "Views", exact: true }).click();
+  const views = navigation.getByRole("button", {
+    name: "Views",
+    exact: true,
+  });
+  await revealNavigationButton(page, views);
+  await views.click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 
@@ -653,7 +675,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     ).toContainText("Cancelled moving");
   }
   await expect(board.locator(".kanban-card.is-dragging")).toHaveCount(0);
-  const beforeScroll = await page.evaluate(() => window.scrollY);
+  const beforeScroll = await board.evaluate((element) => element.scrollTop);
   const viewport = page.viewportSize();
   if (testInfo.project.name === "mobile") {
     const touch = await startKanbanTouchDrag(page, firstCard);
@@ -662,7 +684,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
     ).toHaveCount(1);
     await touch.move(touch.start.x, (viewport?.height ?? 568) - 3);
     await expect
-      .poll(() => page.evaluate(() => window.scrollY))
+      .poll(() => board.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(beforeScroll);
     await expect(page.locator("[data-kanban-drag-preview]")).toBeVisible();
     await touch.finish();
@@ -685,7 +707,7 @@ test("keeps kanban movement predictable across sort modes and viewport edges", a
       { steps: 8 },
     );
     await expect
-      .poll(() => page.evaluate(() => window.scrollY))
+      .poll(() => board.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(beforeScroll);
     await expect(page.locator("[data-kanban-drag-preview]")).toBeVisible();
     await page.mouse.up();
@@ -2114,6 +2136,28 @@ views:
     .getByRole("button", { name: "Work board", exact: true })
     .click();
   await expect(page.getByLabel("Work board board")).toBeVisible();
+  const boardViewport = await page
+    .getByLabel("Work board board")
+    .evaluate((board) => {
+      const boardBounds = board.getBoundingClientRect();
+      const screenBounds = board.parentElement!.getBoundingClientRect();
+      return {
+        boardBottom: boardBounds.bottom,
+        screenBottom: screenBounds.bottom,
+        viewportHeight: window.innerHeight,
+        horizontalOverflow: board.scrollWidth > board.clientWidth,
+      };
+    });
+  expect(
+    Math.abs(boardViewport.boardBottom - boardViewport.screenBottom),
+  ).toBeLessThanOrEqual(1);
+  expect(boardViewport.screenBottom).toBeLessThanOrEqual(
+    boardViewport.viewportHeight,
+  );
+  expect(
+    boardViewport.viewportHeight - boardViewport.screenBottom,
+  ).toBeLessThanOrEqual(testInfo.project.name === "mobile" ? 84 : 1);
+  expect(boardViewport.horizontalOverflow).toBe(true);
   await expect(
     page.getByText("Plan saved views", { exact: true }),
   ).toBeVisible();
@@ -2136,6 +2180,7 @@ views:
   await expect(
     inProgressColumn.getByText("Column capture", { exact: true }),
   ).toBeVisible();
+  await expect(boardCapture).toBeFocused();
   await expect(page.locator(".kanban-drag-handle")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Arrange cards" })).toHaveCount(
     0,
@@ -2229,6 +2274,9 @@ views:
     .getByRole("button", { name: "Views", exact: true })
     .click();
   await page.getByText("Dates", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Turn on manual order" }),
+  ).toBeVisible();
   await expect(page.locator(".full-calendar-view .fc-daygrid")).toBeVisible();
   await expect(page.locator(".global-capture-fab")).toHaveCount(1);
   if (testInfo.project.name === "mobile") {
@@ -2447,7 +2495,7 @@ test("creates, edits, executes, and deletes a saved view", async ({
   ).toBeVisible();
 
   await page.getByLabel("Name").fill("Open work");
-  await page.getByRole("button", { name: "Board", exact: true }).click();
+  await page.getByRole("radio", { name: "Board", exact: true }).check();
   const editor = page.getByRole("dialog", { name: "Create a view" });
   const disclosureStartedAt = await page.evaluate(() => performance.now());
   await openViewEditorSection(editor, "Filter");
@@ -2505,7 +2553,12 @@ test("creates, edits, executes, and deletes a saved view", async ({
 
   await page.getByRole("button", { name: "Edit Open work" }).click();
   await expect(page.getByRole("dialog", { name: "Edit view" })).toBeVisible();
-  await page.getByRole("button", { name: "List", exact: true }).click();
+  const editedName = page.getByLabel("Name", { exact: true });
+  await editedName.press("End");
+  await editedName.pressSequentially(" refined");
+  await expect(editedName).toHaveValue("Open work refined");
+  await editedName.fill("Open work");
+  await page.getByRole("radio", { name: "List", exact: true }).check();
   await page.getByRole("button", { name: "Save view", exact: true }).click();
   await expect(page.getByLabel("Open work board")).toHaveCount(0);
   await expect(
@@ -2581,8 +2634,8 @@ views:
     await expect(editor).toBeVisible();
     await expect(editor.getByLabel("Name", { exact: true })).toHaveValue(name);
     await expect(
-      editor.getByRole("button", { name: layout, exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+      editor.getByRole("radio", { name: layout, exact: true }),
+    ).toBeChecked();
     for (const section of [
       "View",
       "Computed properties",

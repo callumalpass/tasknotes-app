@@ -90,6 +90,30 @@ it("acknowledges a task immediately while a remote create is pending", async () 
   ).not.toBeInTheDocument();
 });
 
+it("returns focus to a retained capture field after creating a task", async () => {
+  const create = vi.fn(async (input: CreateTaskInput) => task(input));
+
+  render(
+    <TaskCapture
+      retainFocusAfterCreate
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+    />,
+  );
+
+  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  input.focus();
+  fireEvent.change(input, { target: { value: "First task" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+  await waitFor(() => expect(create).toHaveBeenCalledOnce());
+  await waitFor(() => expect(input).toHaveFocus());
+  expect(input).toHaveValue("");
+
+  fireEvent.change(input, { target: { value: "Second task" } });
+  expect(input).toHaveFocus();
+});
+
 it("restores the submitted text when a remote create fails", async () => {
   const create = vi.fn(async () => {
     throw new Error("The relay is unavailable.");

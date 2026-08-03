@@ -54,6 +54,7 @@ export function ViewEditor({
   const [error, setError] = useState("");
   const editorRef = useRef<HTMLElement>(null);
   const confirmationRef = useRef<HTMLElement>(null);
+  const focusedInitialEditor = useRef(false);
   const fingerprint = useMemo(() => draftFingerprint(draft), [draft]);
   const dirty =
     draft !== null && (source === null || fingerprint !== initialFingerprint);
@@ -90,7 +91,8 @@ export function ViewEditor({
   }, [repository, view]);
 
   useEffect(() => {
-    if (!draft || !view) return;
+    if (!draft || !view || focusedInitialEditor.current) return;
+    focusedInitialEditor.current = true;
     editorRef.current?.focus();
   }, [draft, view]);
 
