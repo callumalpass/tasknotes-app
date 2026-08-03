@@ -258,7 +258,6 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
     .getByRole("button", { name: "Task actions for Delete over the relay" })
     .click();
   await expect.poll(() => readRequests).toBe(1);
-  await page.getByRole("menuitem", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete task" }).click();
   expect(deleteRequests).toBe(0);

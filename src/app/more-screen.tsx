@@ -273,69 +273,68 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
             </>
           )}
         </div>
+      </SettingsSection>
 
-        <div className="settings-subsection">
-          <h3>Notifications</h3>
-          <div className="setting-row">
-            <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
-            <span>Task reminders</span>
-            <small>
-              {mdbaseReminders
-                ? changeNotificationLabel(changeNotifications)
-                : "mdbase collections only"}
-            </small>
-          </div>
-          <p className="section-copy">
+      <SettingsSection label="Notifications">
+        <div className="setting-row">
+          <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Task reminders</span>
+          <small>
             {mdbaseReminders
-              ? "mdbase keeps connected reminders running when this app is closed. Notification text never includes task content."
-              : "Task reminder delivery requires an mdbase collection."}
-          </p>
-          {mdbaseReminders &&
-          (changeNotifications.state === "off" ||
-            changeNotifications.state === "enabled" ||
-            (changeNotifications.state === "denied" &&
-              changeNotifications.optedIn)) ? (
-            <button
-              className="text-action"
-              disabled={changeNotificationsBusy}
-              type="button"
-              onClick={() => void toggleChangeNotifications()}
-            >
-              {changeNotificationsBusy
-                ? "Updating"
-                : changeNotifications.optedIn
-                  ? "Turn off reminders"
-                  : "Turn on reminders"}
-            </button>
-          ) : null}
-          {mdbaseReminders &&
-          changeNotifications.state === "reauthorization_required" ? (
-            <button
-              className="text-action"
-              type="button"
-              onClick={() =>
-                void cloudSession
-                  .ensureOperations([...CLOUD_OPERATIONS])
-                  .then(unwrapConnectOutcome)
-                  .catch((reason: unknown) =>
-                    setChangeNotificationsError(
-                      reason instanceof Error ? reason.message : String(reason),
-                    ),
-                  )
-              }
-            >
-              Review notification access
-            </button>
-          ) : null}
-          {choice === "cloud" && changeNotificationsError ? (
-            <OperationErrorNotice
-              action="Notification settings"
-              className="notification-error"
-              message={changeNotificationsError}
-              recovery="Check the connection and try again."
-            />
-          ) : null}
+              ? changeNotificationLabel(changeNotifications)
+              : "mdbase collections only"}
+          </small>
         </div>
+        <p className="section-copy">
+          {mdbaseReminders
+            ? "mdbase keeps reminders running when TaskNotes is closed. Notification text never includes task content."
+            : "Connect an mdbase collection to deliver task reminders."}
+        </p>
+        {mdbaseReminders &&
+        (changeNotifications.state === "off" ||
+          changeNotifications.state === "enabled" ||
+          (changeNotifications.state === "denied" &&
+            changeNotifications.optedIn)) ? (
+          <button
+            className="text-action"
+            disabled={changeNotificationsBusy}
+            type="button"
+            onClick={() => void toggleChangeNotifications()}
+          >
+            {changeNotificationsBusy
+              ? "Updating"
+              : changeNotifications.optedIn
+                ? "Turn off reminders"
+                : "Turn on reminders"}
+          </button>
+        ) : null}
+        {mdbaseReminders &&
+        changeNotifications.state === "reauthorization_required" ? (
+          <button
+            className="text-action"
+            type="button"
+            onClick={() =>
+              void cloudSession
+                .ensureOperations([...CLOUD_OPERATIONS])
+                .then(unwrapConnectOutcome)
+                .catch((reason: unknown) =>
+                  setChangeNotificationsError(
+                    reason instanceof Error ? reason.message : String(reason),
+                  ),
+                )
+            }
+          >
+            Review notification access
+          </button>
+        ) : null}
+        {choice === "cloud" && changeNotificationsError ? (
+          <OperationErrorNotice
+            action="Notification settings"
+            className="notification-error"
+            message={changeNotificationsError}
+            recovery="Check the connection and try again."
+          />
+        ) : null}
       </SettingsSection>
 
       {syncIssues.length ? (
@@ -382,7 +381,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         </div>
       </SettingsSection>
 
-      <SettingsSection label="Portability">
+      <SettingsSection label="About & portability">
         <div className="setting-row">
           <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Portable Markdown</span>
@@ -392,6 +391,11 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
           Tasks are ordinary Markdown records. Field mappings and TaskNotes
           settings travel with the collection.
         </p>
+        <div className="setting-row">
+          <Info aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>TaskNotes</span>
+          <small>Version 0.1.0</small>
+        </div>
       </SettingsSection>
 
       <SettingsSection collapsible label="Advanced">
@@ -433,7 +437,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection label="Help">
+      <SettingsSection collapsible label="Help">
         <details className="help-topic">
           <summary>Where are my tasks saved?</summary>
           <p>{storageExplanation(sync.mode)}</p>
@@ -453,14 +457,6 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
             mdbase. Simply opening another collection does not move its tasks.
           </p>
         </details>
-      </SettingsSection>
-
-      <SettingsSection label="About">
-        <div className="setting-row">
-          <Info aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>TaskNotes</span>
-          <small>Version 0.1.0</small>
-        </div>
       </SettingsSection>
     </section>
   );

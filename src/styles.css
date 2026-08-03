@@ -38,6 +38,8 @@
   --success: var(--color-success);
   --ink-faint: color-mix(in srgb, var(--ink-muted), var(--paper) 18%);
   --font-mono: "Azeret Mono", ui-monospace, monospace;
+  --type-supporting: 0.875rem;
+  --type-label: 0.6875rem;
   --control-min-size: 44px;
   --page-inset: 20px;
   --nav-height: 70px;
@@ -297,6 +299,15 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.capture-guide {
+  margin: 0;
+  padding: 9px 0 12px 30px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--line);
+}
+
 .capture-suggestions {
   position: relative;
   z-index: 2;
@@ -388,29 +399,28 @@ button:disabled {
 }
 
 .capture-details-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   min-height: 52px;
   padding: 9px 2px;
   color: var(--ink);
   cursor: pointer;
+  list-style: none;
 }
 
-.capture-details-section > summary::marker {
-  color: var(--ink-muted);
+.capture-details-section > summary > span {
+  display: grid;
+  gap: 3px;
 }
 
-.capture-details-section > summary span,
-.capture-details-section > summary small {
-  display: block;
-  margin-left: 5px;
-}
-
-.capture-details-section > summary span {
+.capture-details-section > summary strong {
   font-size: 0.88rem;
   font-weight: 650;
 }
 
 .capture-details-section > summary small {
-  margin-top: 3px;
   color: var(--ink-muted);
   font-size: 0.72rem;
   font-weight: 400;
@@ -587,8 +597,8 @@ button:disabled {
 .task-actions-menu {
   position: fixed;
   z-index: 40;
-  width: 272px;
-  max-height: min(520px, calc(100dvh - 16px));
+  width: 304px;
+  max-height: min(640px, calc(100dvh - 16px));
   padding: 7px;
   overflow-y: auto;
   color: var(--ink);
@@ -596,6 +606,16 @@ button:disabled {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   box-shadow: 0 16px 36px var(--color-shadow);
+}
+
+.task-actions-scrim {
+  position: fixed;
+  z-index: 39;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  background: var(--color-scrim);
+  border: 0;
 }
 
 .navigation-views-menu {
@@ -754,7 +774,7 @@ button:disabled {
   font-size: 0.72rem;
 }
 
-.task-actions-items button[aria-current="true"] {
+.task-actions-items button[aria-checked="true"] {
   color: var(--accent);
 }
 
@@ -1491,43 +1511,6 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
-.task-toolbar-menu {
-  position: absolute;
-  z-index: 8;
-  top: 52px;
-  right: 0;
-  display: grid;
-  width: 210px;
-  padding: 7px;
-  background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: 9px;
-  box-shadow: 0 14px 38px var(--color-shadow-soft);
-}
-
-.task-toolbar-menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: var(--control-min-size);
-  padding: 0 10px;
-  color: var(--ink);
-  text-align: left;
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.task-toolbar-menu button:hover,
-.task-toolbar-menu button:focus-visible {
-  background: var(--paper-soft);
-}
-
-.task-toolbar-menu button.danger {
-  color: var(--danger);
-}
-
 .save-state {
   justify-self: center;
   min-height: var(--control-min-size);
@@ -2060,8 +2043,8 @@ button:disabled {
 
 .tasknotes-calendar-heading > button {
   display: grid;
-  width: 40px;
-  min-height: 40px;
+  width: var(--control-min-size);
+  min-height: var(--control-min-size);
   padding: 0;
   place-items: center;
   color: var(--ink-soft);
@@ -2366,8 +2349,8 @@ button:disabled {
 .field-token button {
   display: grid;
   place-items: center;
-  width: 28px;
-  min-height: 28px;
+  width: var(--control-min-size);
+  min-height: var(--control-min-size);
   padding: 0;
   color: var(--ink-muted);
   background: transparent;
@@ -3266,13 +3249,37 @@ button:disabled {
 }
 
 .task-form-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   min-height: 70px;
   padding: 15px 2px;
   cursor: pointer;
+  list-style: none;
 }
 
-.task-form-section > summary::marker {
-  color: var(--ink-muted);
+.capture-details-section > summary::-webkit-details-marker,
+.task-form-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.capture-details-section > summary::after,
+.task-form-section > summary::after {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  margin-right: 5px;
+  border-right: 1.5px solid var(--ink-muted);
+  border-bottom: 1.5px solid var(--ink-muted);
+  content: "";
+  transform: rotate(45deg);
+  transition: transform 150ms var(--ease-out);
+}
+
+.capture-details-section[open] > summary::after,
+.task-form-section[open] > summary::after {
+  transform: rotate(225deg);
 }
 
 .task-form-section > summary > span {
@@ -3350,60 +3357,6 @@ button:disabled {
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: 0.7rem;
   overflow-wrap: anywhere;
-}
-
-.task-delete-layer,
-.task-delete-scrim {
-  position: fixed;
-  z-index: 60;
-  inset: 0;
-}
-
-.task-delete-layer {
-  display: grid;
-  place-items: center;
-  padding: 20px;
-}
-
-.task-delete-scrim {
-  z-index: 0;
-  width: 100%;
-  padding: 0;
-  background: var(--color-scrim);
-  border: 0;
-}
-
-.task-delete-dialog {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 390px);
-  padding: 24px;
-  background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: 9px;
-  box-shadow: 0 18px 52px var(--color-shadow);
-}
-
-.task-delete-dialog h2,
-.task-delete-dialog p {
-  margin: 0;
-}
-
-.task-delete-dialog h2 {
-  font-size: 1.08rem;
-}
-
-.task-delete-dialog p {
-  margin-top: 7px;
-  color: var(--ink-soft);
-  line-height: 1.45;
-}
-
-.task-delete-dialog > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 22px;
 }
 
 .occurrence-banner {
@@ -3679,7 +3632,7 @@ button:disabled {
 
 .undo-toast > button {
   min-width: 54px;
-  min-height: 36px;
+  min-height: var(--control-min-size);
   color: var(--paper-raised);
   font-weight: 700;
   background: transparent;
@@ -4188,7 +4141,7 @@ button:disabled {
 .welcome-details p {
   max-width: 64ch;
   margin: 0 0 14px;
-  font-size: 0.875rem;
+  font-size: var(--type-supporting);
   line-height: 1.5;
 }
 
@@ -4692,6 +4645,37 @@ button:disabled {
   display: grid;
 }
 
+.view-editor-intro {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--line);
+}
+
+.view-source-details {
+  padding: 10px 0 20px;
+  color: var(--ink-muted);
+  border-top: 1px solid var(--line);
+}
+
+.view-source-details summary {
+  display: flex;
+  width: max-content;
+  min-height: var(--control-min-size);
+  align-items: center;
+  cursor: pointer;
+}
+
+.view-source-details code {
+  display: block;
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+}
+
 .view-editor-body label,
 .view-kind-field,
 .filter-group {
@@ -4977,7 +4961,7 @@ button:disabled {
   display: grid;
   grid-template-columns:
     minmax(120px, 1fr) minmax(130px, 1fr) minmax(110px, 1fr)
-    36px;
+    var(--control-min-size);
   gap: 8px;
   align-items: end;
 }
@@ -4986,9 +4970,9 @@ button:disabled {
 .view-order-actions button {
   display: grid;
   place-items: center;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
+  width: var(--control-min-size);
+  min-width: var(--control-min-size);
+  height: var(--control-min-size);
   padding: 0;
   color: var(--ink-muted);
   background: transparent;
@@ -6197,6 +6181,10 @@ button:disabled {
     border-right: 1px solid var(--line);
   }
 
+  .search-header > .icon-action {
+    display: none;
+  }
+
   .wordmark {
     display: flex;
     align-items: center;
@@ -6233,13 +6221,13 @@ button:disabled {
   .navigation-rail > .global-capture-navigation {
     min-height: 44px;
     margin-bottom: 20px;
-    color: var(--color-on-accent);
-    background: var(--accent);
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--line-strong);
   }
 
   .navigation-rail > .global-capture-navigation kbd {
-    color: inherit;
-    opacity: 0.72;
+    color: var(--ink-muted);
   }
 
   .global-capture-fab {

@@ -88,19 +88,19 @@ export function ViewEditorForm({
 
   return (
     <div className="view-editor-form">
+      {autoFocusName ? (
+        <p className="view-editor-intro">
+          Start with a name and layout. Everything else is optional.
+        </p>
+      ) : null}
       <ViewIdentitySection
         autoFocusName={autoFocusName}
         draft={draft}
         onChange={onChange}
       />
 
-      <ComputedPropertiesSection
-        draft={draft}
-        error={computedError}
-        onChange={onChange}
-      />
-
       <EditorSection
+        defaultOpen={autoFocusName}
         description="Choose which tasks belong in this view."
         id="view-filter"
         summary={draft.filter ? "Custom filter" : "All tasks"}
@@ -293,6 +293,12 @@ export function ViewEditorForm({
         configuration={configuration}
         draft={draft}
         repository={repository}
+        onChange={onChange}
+      />
+
+      <ComputedPropertiesSection
+        draft={draft}
+        error={computedError}
         onChange={onChange}
       />
     </div>

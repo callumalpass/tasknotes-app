@@ -28,7 +28,7 @@ export function SearchScreen({
 
   return (
     <section className="screen" aria-labelledby="search-title">
-      <header className="screen-header compact-header detail-header">
+      <header className="screen-header compact-header detail-header search-header">
         <button
           aria-label="Back"
           className="icon-action"
@@ -50,6 +50,7 @@ export function SearchScreen({
         </label>
         <input
           id="task-search"
+          autoFocus
           autoCapitalize="none"
           autoCorrect="off"
           placeholder="Tasks, tags, projects"
