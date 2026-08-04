@@ -1,31 +1,37 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/mdbase-dev/mdbase-connect",
-  "revision": "58665cbf4e9a8fdf03e9811fe8fe3c0b573dc9f0",
+  "revision": "4371c96eaa706a062292ed193ec40a491a3ee56c",
   "artifacts": [
     {
       "package": "connect",
-      "file": "mdbase-dev-connect-0.1.0-beta.28-58665cbf4e9a.tgz",
-      "bytes": 119991,
-      "sha512": "n4wFqmFQ4XpbPUQbFWGDI/NgfRA5FZLIaeXdVVQJZpiZ1V4C1Es17gXCvhrLDiD/cj/hgkBvcmiZ82nACWHt8g=="
+      "file": "mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz",
+      "bytes": 120394,
+      "sha512": "RxPccsgReMtdMYygLECNFh65Sn/A+0fMq4hZE+/cn+8wp99HWhoKT0RggVjNQw++nRuo8oyu7gfa3gCPiFYlYQ=="
+    },
+    {
+      "package": "devkit",
+      "file": "mdbase-dev-connect-dev-0.1.0-beta.29-4371c96eaa70.tgz",
+      "bytes": 9239,
+      "sha512": "6uxKlLPb3oZmi4ipYkl3pHnWWEL/MKq2g+pp7U2KdKM8Jt1nurA9t0LyzguTdJxpNlCa529RVftricPRivSs9Q=="
     },
     {
       "package": "protocol",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.28-58665cbf4e9a.tgz",
-      "bytes": 40563,
-      "sha512": "C6ffo2mGlWAXeVIRCEwSwWDJoczCvuT5gkPYswZ1ERQuvQoVomJzw6vvtKBZTIEbjLEZCpUpf3HdbxRw3ZE07Q=="
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz",
+      "bytes": 45105,
+      "sha512": "twgEsCzZXSX2rKBAkEmRv8AV0liawfdCFaNFGLX5v1RoVBLJ3C3aT97J9wG9ppHnI2YNt47S6A2FdlrxNDP8VA=="
     },
     {
       "package": "sync",
-      "file": "mdbase-dev-connect-sync-0.1.0-beta.28-58665cbf4e9a.tgz",
-      "bytes": 81010,
-      "sha512": "zO2ger220Ql7/bnDKsfyt2ubhz/wDJ119bxPpX401y/madIAbQsBmC/PgV7bnNseaXQ6HflV5uAtgZYgbBm7fg=="
+      "file": "mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz",
+      "bytes": 81033,
+      "sha512": "cVkG5pMf48bEieWwwvUrPOy36LEi6DhtTDE6Z0chwoZTnucsy7ThCVGivtsKBznZQ02piMt+3hhCiGkqdmDKCw=="
     },
     {
       "package": "testing",
-      "file": "mdbase-dev-connect-testing-0.1.0-beta.28-58665cbf4e9a.tgz",
+      "file": "mdbase-dev-connect-testing-0.1.0-beta.29-4371c96eaa70.tgz",
       "bytes": 6270,
-      "sha512": "rCn4JVRhx6fEipHGqIOcgtwvnau5O0v3jb0EQal2dA1iuE9wLct2kJp/CoTw4SeQXd9A+6Xhj0yIAkrQbhoVTw=="
+      "sha512": "PB9510qpHQKKJUMRvzmPCcHeIiRYFaJc58upHs6EKj3W4eZfpboUw0iLKutzPPIwptvIoAV5c1FliuuInvv4kA=="
     }
   ]
 }

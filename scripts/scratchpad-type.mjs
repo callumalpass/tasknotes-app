@@ -76,6 +76,7 @@ export function buildScratchpadTypePack() {
       resources: [
         {
           kind: "type",
+          mode: "seed",
           source,
           target: "_types/tasknotes-scratch.md",
           digest: `sha256:${createHash("sha256").update(scratchpadTypeDocument).digest("hex")}`,
