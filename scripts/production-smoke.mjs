@@ -46,7 +46,6 @@ const checks = [
       throw new Error("The deployed notification service worker is invalid.");
   },
   async () => {
-    if (!requireConnectManifestValidation) return;
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
     const callback = `${appOrigin}/auth/mdbase/callback`;
     if (
@@ -68,6 +67,7 @@ const checks = [
       );
   },
   async () => {
+    if (!requireConnectManifestValidation) return;
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
     const validation = await postJson(`${connectOrigin}/v1/apps/validate`, {
       manifest,
