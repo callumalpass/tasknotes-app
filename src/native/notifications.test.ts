@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
-  const reconcileTimers = vi.fn(async (input: unknown) => input);
+  const reconcileTimers = vi.fn(async (input: unknown) => ({
+    ok: true as const,
+    value: input,
+  }));
   return {
-    connection: { reconcileTimers },
+    connection: {
+      pendingMutation: () => null,
+      pendingMutations: () => [],
+      reconcileTimers,
+    },
     reconcileTimers,
   };
 });
@@ -158,7 +165,10 @@ describe("mdbase task reminders", () => {
     const connection =
       mocks.connection as unknown as MdbaseConnection<JsonObject>;
     const activeWrite = deferred<void>();
-    const write = runMdbaseMutation(connection, () => activeWrite.promise);
+    const write = runMdbaseMutation(connection, () => activeWrite.promise, {
+      key: "test:active-write",
+      mapRecovered: () => undefined,
+    });
 
     const reconciliation = reconcileTaskNotifications(repository, "connect");
     await Promise.resolve();

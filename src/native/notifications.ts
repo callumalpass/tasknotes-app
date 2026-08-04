@@ -2,9 +2,15 @@ import { reminderFireTime } from "../domain/reminder";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
-import type { MdbaseDesiredTimer } from "@mdbase-dev/connect";
+import {
+  unwrapConnectOutcome,
+  type MdbaseDesiredTimer,
+} from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
-import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
+import {
+  mdbaseMutationKey,
+  runMdbaseMutation,
+} from "../storage/mdbase-mutation-coordinator";
 
 const TIMER_NAMESPACE = "task-reminders";
 const TIMER_CRITERION = "task.reminder";
@@ -76,8 +82,17 @@ function reconcileConnectNotifications(
           criterion_id: TIMER_CRITERION,
           timers: await desiredTaskTimers(tasks),
         };
-        await runMdbaseMutation(connection, () =>
-          connection.reconcileTimers(operationInput),
+        await runMdbaseMutation(
+          connection,
+          async () => {
+            unwrapConnectOutcome(
+              await connection.reconcileTimers(operationInput),
+            );
+          },
+          {
+            key: mdbaseMutationKey("timers:reconcile", operationInput),
+            mapRecovered: () => undefined,
+          },
         );
         completedReconciliation = target;
       }

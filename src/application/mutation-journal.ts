@@ -4,6 +4,8 @@ export interface PendingTaskDeletion {
   collectionId: string;
   taskId: string;
   title: string;
+  /** SDK mutation request paired with this app intent after an unknown outcome. */
+  authorityRequestId?: string;
   requestedAt: number;
   commitAfter: number;
 }

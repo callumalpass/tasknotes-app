@@ -1,4 +1,9 @@
-import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
+import {
+  connectFailure,
+  connectSuccess,
+  type JsonObject,
+  type MdbaseConnection,
+} from "@mdbase-dev/connect";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
@@ -231,25 +236,29 @@ describe("mdbase task repository", () => {
     expect(listener).toHaveBeenCalledOnce();
   });
 
-  it("retries an unknown live write with the exact same provider input", async () => {
+  it("recovers an unknown live write by its exact authority request", async () => {
     const fixture = mdbaseFixture([
       taskRecord("existing", "Original title", "r1"),
     ]);
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
     const persist = fixture.update.getMockImplementation()!;
-    fixture.update
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockImplementationOnce(persist);
+    let recovery: ReturnType<typeof fixture.stagePendingMutation> | undefined;
+    fixture.update.mockImplementationOnce(async (input) => {
+      recovery = fixture.stagePendingMutation("fixture-request", async () => {
+        const envelope = await persist(input);
+        if (!envelope.valid) throw new Error("Fixture update was invalid.");
+        return connectSuccess(envelope.result);
+      });
+      throw unknownOutcome();
+    });
 
     await expect(
       repository.update("existing", { title: "Recovered title" }),
     ).resolves.toMatchObject({ title: "Recovered title" });
 
-    expect(fixture.update).toHaveBeenCalledTimes(2);
-    expect(fixture.update.mock.calls[1]![0]).toBe(
-      fixture.update.mock.calls[0]![0],
-    );
+    expect(fixture.update).toHaveBeenCalledOnce();
+    expect(recovery?.recover).toHaveBeenCalledOnce();
   });
 
   it("recovers a pending live write before sending a later task change", async () => {
@@ -260,10 +269,18 @@ describe("mdbase task repository", () => {
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
     const persist = fixture.update.getMockImplementation()!;
-    fixture.update
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockImplementation(persist);
+    let recovery: ReturnType<typeof fixture.stagePendingMutation> | undefined;
+    fixture.update.mockImplementationOnce(async (input) => {
+      let attempt = 0;
+      recovery = fixture.stagePendingMutation("fixture-request", async () => {
+        attempt += 1;
+        if (attempt === 1) return connectFailure(unknownOutcome().problem);
+        const envelope = await persist(input);
+        if (!envelope.valid) throw new Error("Fixture update was invalid.");
+        return connectSuccess(envelope.result);
+      });
+      throw unknownOutcome();
+    });
 
     await expect(
       repository.update("first", { title: "First recovered" }),
@@ -272,16 +289,11 @@ describe("mdbase task repository", () => {
       repository.update("second", { title: "Second moved" }),
     ).resolves.toMatchObject({ title: "Second moved" });
 
-    expect(fixture.update).toHaveBeenCalledTimes(4);
-    expect(fixture.update.mock.calls[1]![0]).toBe(
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+    expect(fixture.update.mock.calls[1]![0]).not.toBe(
       fixture.update.mock.calls[0]![0],
     );
-    expect(fixture.update.mock.calls[2]![0]).toBe(
-      fixture.update.mock.calls[0]![0],
-    );
-    expect(fixture.update.mock.calls[3]![0]).not.toBe(
-      fixture.update.mock.calls[0]![0],
-    );
+    expect(recovery?.recover).toHaveBeenCalledTimes(2);
   });
 
   it("reloads the canonical description and sends its create path to the provider", async () => {

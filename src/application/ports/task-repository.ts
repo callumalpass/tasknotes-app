@@ -62,7 +62,7 @@ export interface TaskRepository {
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setArchived(id: string, archived: boolean): Promise<Task>;
-  delete(id: string): Promise<void>;
+  delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
   stats(): Promise<TaskStats>;
   cachedViews(): Promise<TaskViewDocument[]>;
   listViews(): Promise<TaskViewDocument[]>;
