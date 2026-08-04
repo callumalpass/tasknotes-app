@@ -115,16 +115,19 @@ describe("mdbase task reminders", () => {
 
     await reconcileTaskNotifications(repository, "connect");
 
-    expect(mocks.reconcileTimers).toHaveBeenCalledWith({
-      namespace: "task-reminders",
-      criterion_id: "task.reminder",
-      timers: [
-        {
-          id: expect.stringMatching(/^[a-f0-9]{64}$/),
-          fire_at: "2099-07-26T00:00:00.000Z",
-        },
-      ],
-    });
+    expect(mocks.reconcileTimers).toHaveBeenCalledWith(
+      {
+        namespace: "task-reminders",
+        criterion_id: "task.reminder",
+        timers: [
+          {
+            id: expect.stringMatching(/^[a-f0-9]{64}$/),
+            fire_at: "2099-07-26T00:00:00.000Z",
+          },
+        ],
+      },
+      { timeoutMs: 45_000 },
+    );
   });
 
   it("does no reminder work when mdbase reminder delivery is disabled", async () => {
@@ -151,11 +154,14 @@ describe("mdbase task reminders", () => {
       status: "open",
       limit: 50_000,
     });
-    expect(mocks.reconcileTimers).toHaveBeenCalledWith({
-      namespace: "task-reminders",
-      criterion_id: "task.reminder",
-      timers: [],
-    });
+    expect(mocks.reconcileTimers).toHaveBeenCalledWith(
+      {
+        namespace: "task-reminders",
+        criterion_id: "task.reminder",
+        timers: [],
+      },
+      { timeoutMs: 45_000 },
+    );
   });
 
   it("waits for an active task write before reconciling reminders", async () => {

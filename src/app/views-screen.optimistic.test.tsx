@@ -220,7 +220,9 @@ it("recovers an uncertain manual board write before sending the queued move", as
   };
   let recoveryActive = false;
   const providerUpdate = vi.fn(
-    async (_id: string, _input: { sortOrder?: string; status?: string }) => {
+    async (id: string, input: { sortOrder?: string; status?: string }) => {
+      void id;
+      void input;
       recoveryActive = true;
       throw unknownOutcome();
     },

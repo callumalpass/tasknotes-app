@@ -12,6 +12,7 @@ import {
 } from "@mdbase-dev/connect";
 
 import { cloudSession } from "../cloud/connect";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   androidPushMessaging,
   type NativeMessaging,
@@ -359,27 +360,39 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
       return unwrapConnectOutcome(
-        await connection.registerNotifications(options),
+        await connection.registerNotifications({
+          ...options,
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+        }),
       );
     },
     unregisterNotifications: async (serviceWorker) => {
       const connection = currentConnection();
       if (connection)
         unwrapConnectOutcome(
-          await connection.unregisterNotifications(serviceWorker),
+          await connection.unregisterNotifications(serviceWorker, {
+            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+          }),
         );
     },
     registerNativeNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
       return unwrapConnectOutcome(
-        await connection.registerNativeNotifications(options),
+        await connection.registerNativeNotifications({
+          ...options,
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+        }),
       );
     },
     unregisterNativeNotifications: async () => {
       const connection = currentConnection();
       if (connection)
-        unwrapConnectOutcome(await connection.unregisterNativeNotifications());
+        unwrapConnectOutcome(
+          await connection.unregisterNativeNotifications({
+            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+          }),
+        );
     },
   },
   messaging:

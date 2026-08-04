@@ -39,8 +39,11 @@ export function mdbaseFixture(
   const records = new Map(initial.map((record) => [record.path, record]));
   const pendingMutations = new Map<string, PendingMutation<unknown>>();
   let revision = initial.length + 1;
-  const describeCollection = vi.fn(async () =>
-    description(templating, archive, collectionId),
+  const describeCollection = vi.fn(
+    async (options?: { signal?: AbortSignal }) => {
+      void options;
+      return description(templating, archive, collectionId);
+    },
   );
   const query = vi.fn(async (input?: Record<string, unknown>) => {
     const requestedTypes = Array.isArray(input?.types)

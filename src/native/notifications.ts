@@ -7,6 +7,7 @@ import {
   type MdbaseDesiredTimer,
 } from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   mdbaseMutationKey,
   runMdbaseMutation,
@@ -82,16 +83,20 @@ function reconcileConnectNotifications(
           criterion_id: TIMER_CRITERION,
           timers: await desiredTaskTimers(tasks),
         };
+        const request = {
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+        };
         await runMdbaseMutation(
           connection,
           async () => {
             unwrapConnectOutcome(
-              await connection.reconcileTimers(operationInput),
+              await connection.reconcileTimers(operationInput, request),
             );
           },
           {
             key: mdbaseMutationKey("timers:reconcile", operationInput),
             mapRecovered: () => undefined,
+            request,
           },
         );
         completedReconciliation = target;

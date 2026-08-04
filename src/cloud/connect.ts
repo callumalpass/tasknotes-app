@@ -11,9 +11,12 @@ import type {
   MdbaseAppManifest,
 } from "@mdbase-dev/connect-protocol";
 import bundledManifest from "../generated/mdbase-app.json";
+import { TASKNOTES_REQUEST_BUDGETS } from "./request-budgets";
 
 const serverUrl =
   import.meta.env.VITE_MDBASE_CONNECT_URL ?? "https://connect.mdbase.dev";
+const loopbackUrl =
+  import.meta.env.VITE_MDBASE_CONNECT_LOOPBACK_URL ?? "http://127.0.0.1:28485";
 const manifest =
   import.meta.env.VITE_MDBASE_MANIFEST_URL ??
   (bundledManifest as MdbaseAppManifest);
@@ -23,8 +26,15 @@ const redirectUri = Capacitor.isNativePlatform()
 
 export const cloudConnect = new MdbaseConnect<JsonObject>({
   serverUrl,
+  loopbackUrl,
   manifest,
   redirectUri,
+  timeouts: {
+    requestMs: TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+    watchStartMs: TASKNOTES_REQUEST_BUDGETS.watchStartMs,
+    uploadMs: TASKNOTES_REQUEST_BUDGETS.uploadMs,
+    syncMs: TASKNOTES_REQUEST_BUDGETS.syncMs,
+  },
   relayEncryption:
     import.meta.env.MODE === "e2e" &&
     import.meta.env.VITE_MDBASE_REQUIRE_RELAY_ENCRYPTION !== "1"

@@ -168,6 +168,7 @@ export function RepositoryProvider({
   }, [loadConnection, reminderAuthority, repository]);
 
   useEffect(() => {
+    repository.resume?.();
     let active = true;
     let unsubscribeCommands: (() => void) | undefined;
     let resolveTaskCommands: (service: TaskCommandService | null) => void;
@@ -269,6 +270,7 @@ export function RepositoryProvider({
       });
     return () => {
       active = false;
+      repository.dispose?.();
       unsubscribeCommands?.();
       taskCommandsRef.current?.dispose();
       taskCommandsRef.current = null;
@@ -301,19 +303,27 @@ export function RepositoryProvider({
       const handle = CapacitorApp.addListener(
         "appStateChange",
         ({ isActive }) => {
-          if (isActive && status === "ready")
-            void refresh().catch(() => undefined);
+          if (!isActive) {
+            repository.suspend?.();
+            return;
+          }
+          repository.resume?.();
+          if (status === "ready") void refresh().catch(() => undefined);
         },
       );
       return () => void handle.then((listener) => listener.remove());
     }
     const onVisibility = () => {
-      if (document.visibilityState === "visible" && status === "ready")
-        void refresh().catch(() => undefined);
+      if (document.visibilityState !== "visible") {
+        repository.suspend?.();
+        return;
+      }
+      repository.resume?.();
+      if (status === "ready") void refresh().catch(() => undefined);
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [refresh, status]);
+  }, [refresh, repository, status]);
 
   useEffect(() => {
     if (status !== "ready" || Capacitor.isNativePlatform()) return;

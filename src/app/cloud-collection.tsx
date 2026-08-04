@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 
 import { cloudSession } from "../cloud/connect";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
@@ -64,6 +65,7 @@ export function CloudConnection({ error }: { error: string | null }) {
       unwrapConnectOutcome(
         await cloudSession.authorize(
           kind === "another" ? "choose" : "selected",
+          { timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs },
         ),
       );
     } catch (reason) {
@@ -88,7 +90,11 @@ export function CloudConnection({ error }: { error: string | null }) {
     setOpening("reconnect");
     setStartError(null);
     try {
-      unwrapConnectOutcome(await cloudSession.applyDefinitionUpdates());
+      unwrapConnectOutcome(
+        await cloudSession.applyDefinitionUpdates({
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
+        }),
+      );
     } catch (reason) {
       setStartError(message(reason));
     } finally {

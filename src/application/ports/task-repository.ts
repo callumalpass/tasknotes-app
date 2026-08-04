@@ -90,6 +90,12 @@ export interface TaskRepository {
   collectionInfo(): Promise<CollectionInfo>;
   connectionStatus(): Promise<RepositoryConnectionStatus>;
   subscribe(listener: () => void): () => void;
+  /** Cancel active foreground authority work without discarding local UI state. */
+  suspend?(): void;
+  /** Open a fresh foreground cancellation scope after suspension. */
+  resume?(): void;
+  /** Permanently cancel this collection instance when selection changes. */
+  dispose?(): void;
 }
 
 export interface CollectionInfo {
