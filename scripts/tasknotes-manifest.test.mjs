@@ -52,6 +52,7 @@ describe("TaskNotes mdbase manifest", () => {
         resources: [
           {
             kind: "type",
+            mode: "seed",
             target: "_types/tasknotes-scratch.md",
             digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
           },
@@ -59,6 +60,11 @@ describe("TaskNotes mdbase manifest", () => {
       },
       provides: [],
     });
+    for (const pack of manifest.provisions.type_packs) {
+      for (const resource of pack.manifest.resources) {
+        expect(resource.mode).toMatch(/^(managed|seed)$/);
+      }
+    }
   });
 
   it("adds only the public Firebase project ID when configured", async () => {

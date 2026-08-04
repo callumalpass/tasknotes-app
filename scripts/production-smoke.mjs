@@ -64,6 +64,20 @@ const checks = [
       );
   },
   async () => {
+    const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
+    const validation = await postJson(`${connectOrigin}/v1/apps/validate`, {
+      manifest,
+    });
+    if (
+      validation.valid !== true ||
+      validation.declaration?.family_identity !== "bundle:dev.tasknotes.app" ||
+      !/^[a-f0-9]{64}$/.test(validation.declaration?.manifest_digest ?? "")
+    )
+      throw new Error(
+        "The deployed TaskNotes declaration is not accepted by mdbase connect.",
+      );
+  },
+  async () => {
     const callback = await text(`${appOrigin}/auth/mdbase/callback`);
     if (!callback.includes('<div id="root"></div>'))
       throw new Error(
@@ -102,6 +116,24 @@ async function retry(check) {
 
 async function json(url) {
   return JSON.parse(await text(url));
+}
+
+async function postJson(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "user-agent": "tasknotes-production-smoke/1",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const detail = payload?.error?.message ?? `HTTP ${response.status}`;
+    throw new Error(`${url} rejected the declaration: ${detail}`);
+  }
+  return payload;
 }
 
 async function text(url) {
