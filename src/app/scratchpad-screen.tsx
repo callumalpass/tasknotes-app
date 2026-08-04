@@ -93,6 +93,7 @@ export function ScratchpadScreen({
   const documentRef = useRef<ScratchpadDocument | null>(null);
   const nodesRef = useRef<ScratchNode[]>([]);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
+  const autosaveSuspended = useRef(false);
   const focusAfterRender = useRef<{ id: string; cursor?: number } | undefined>(
     undefined,
   );
@@ -149,13 +150,16 @@ export function ScratchpadScreen({
       const current = documentRef.current;
       if (!current || !repository.saveScratchpad)
         return Promise.reject(new Error("Scratchpad storage is unavailable."));
-      if (body === current.body) return Promise.resolve(current);
       setSaveState("saving");
       const operation = saveTail.current
         .catch(() => undefined)
         .then(async () => {
           const latest = documentRef.current;
           if (!latest) throw new Error("The scratchpad is not open.");
+          if (body === latest.body) {
+            setSaveState("saved");
+            return latest;
+          }
           const saved = await repository.saveScratchpad!({
             id: latest.id,
             path: latest.path,
@@ -180,12 +184,14 @@ export function ScratchpadScreen({
   );
 
   useEffect(() => {
-    if (!document) return;
+    if (!document || finishing || autosaveSuspended.current) return;
     const body = scratchBody(nodes);
     if (body === documentRef.current?.body) return;
-    const timeout = window.setTimeout(() => void persist(nodes), 260);
+    const timeout = window.setTimeout(() => {
+      if (!autosaveSuspended.current) void persist(nodes);
+    }, 260);
     return () => window.clearTimeout(timeout);
-  }, [document, nodes, persist]);
+  }, [document, finishing, nodes, persist]);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -500,6 +506,7 @@ export function ScratchpadScreen({
 
   async function finishScratchpad() {
     if (!repository.archiveScratchpad || finishing) return;
+    autosaveSuspended.current = true;
     setFinishing(true);
     setError("");
     try {
@@ -535,6 +542,7 @@ export function ScratchpadScreen({
     } catch (reason) {
       setError(message(reason));
     } finally {
+      autosaveSuspended.current = false;
       setFinishing(false);
     }
   }

@@ -1,6 +1,12 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { recordMatchesLink } from "../domain/completion";
@@ -172,5 +178,39 @@ describe("ScratchpadScreen", () => {
     );
     expect(archive?.body).toContain("Keep the tone straightforward");
     expect(archive?.body).toContain("[[tasks/");
+  });
+
+  it("suspends a pending autosave as soon as finishing begins", async () => {
+    const saveScratchpad = vi.spyOn(repository, "saveScratchpad");
+    const create = repository.create.bind(repository);
+    let releaseCreate!: () => void;
+    const createBlocked = new Promise<void>((resolve) => {
+      releaseCreate = resolve;
+    });
+    vi.spyOn(repository, "create").mockImplementation(async (input) => {
+      await createBlocked;
+      return create(input);
+    });
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    vi.useFakeTimers();
+    fireEvent.change(input, { target: { value: "Plan launch" } });
+    fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create tasks and finish" }),
+    );
+
+    await act(async () => vi.advanceTimersByTimeAsync(320));
+    const savesBeforeRelease = saveScratchpad.mock.calls.length;
+    vi.useRealTimers();
+    expect(savesBeforeRelease).toBe(0);
+
+    releaseCreate();
+    await screen.findByText("Finished “Plan launch”");
+    expect((await repository.getActiveScratchpad()).body).toBe("");
   });
 });
