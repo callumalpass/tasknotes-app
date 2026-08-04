@@ -485,6 +485,39 @@ describe("mdbase task repository", () => {
     });
   });
 
+  it("restarts initialization after a lifecycle remount cancels the first attempt", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("existing", "Visible after remount", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    let firstSignal: AbortSignal | undefined;
+    fixture.describe.mockImplementationOnce(
+      (options?: { signal?: AbortSignal }) =>
+        new Promise((_, reject) => {
+          firstSignal = options?.signal;
+          firstSignal?.addEventListener(
+            "abort",
+            () => reject(firstSignal?.reason),
+            {
+              once: true,
+            },
+          );
+        }),
+    );
+
+    const interrupted = repository.initialize();
+    await vi.waitFor(() => expect(firstSignal).toBeDefined());
+    repository.dispose();
+    repository.resume();
+
+    await expect(interrupted).rejects.toMatchObject({ name: "AbortError" });
+    await expect(repository.initialize()).resolves.toBeUndefined();
+    await expect(repository.list()).resolves.toMatchObject([
+      { id: "existing", title: "Visible after remount" },
+    ]);
+    expect(fixture.describe).toHaveBeenCalledTimes(2);
+  });
+
   it("round-trips time sessions through revision-guarded relay writes", async () => {
     const fixture = mdbaseFixture([
       taskRecord("timed", "Profile the relay", "r1"),

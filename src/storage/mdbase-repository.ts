@@ -166,8 +166,14 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   resume(): void {
-    if (this.operationController.signal.aborted)
+    if (this.operationController.signal.aborted) {
       this.operationController = new AbortController();
+      // A lifecycle interruption can abort the first initialization attempt
+      // (including React Strict Mode's development remount). Do not retain that
+      // rejected promise: the resumed owner must be able to open the same
+      // repository with the fresh lifecycle signal.
+      this.initialization = null;
+    }
   }
 
   dispose(): void {

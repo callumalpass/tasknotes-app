@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
@@ -27,8 +28,16 @@ export default defineConfig({
     },
   },
   server: {
-    host: "127.0.0.1",
-    port: 4173,
+    host: process.env.TASKNOTES_DEV_HOST ?? "127.0.0.1",
+    port: Number(process.env.TASKNOTES_DEV_PORT ?? 4173),
+    strictPort: true,
+    https:
+      process.env.TASKNOTES_HTTPS_KEY && process.env.TASKNOTES_HTTPS_CERT
+        ? {
+            key: readFileSync(process.env.TASKNOTES_HTTPS_KEY),
+            cert: readFileSync(process.env.TASKNOTES_HTTPS_CERT),
+          }
+        : undefined,
     headers: {
       "Service-Worker-Allowed": process.env.VITE_BASE_PATH ?? "/",
     },

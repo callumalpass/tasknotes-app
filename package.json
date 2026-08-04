@@ -23,6 +23,7 @@
     "test:coverage:layers": "pnpm test:coverage:application && pnpm test:coverage:domain",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:connect": "playwright test --config playwright.dogfood.config.ts",
     "test:production-smoke": "node scripts/production-smoke.mjs",
     "test:conformance:tasknotes": "node scripts/run-tasknotes-conformance.mjs",
     "test:conformance:mdbase": "node scripts/verify-mdbase-collection.mjs",
