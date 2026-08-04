@@ -4,6 +4,7 @@ import {
   MdbaseConnectError,
   parseMdbaseNativeNotificationData,
   unwrapConnectOutcome,
+  type MdbaseCapabilityState,
   type MdbaseConnectionInfo,
   type MdbaseNotificationRegistration,
   type MdbaseNativeNotificationRegistration,
@@ -20,7 +21,7 @@ import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
-const TIMER_OPERATIONS = ["reconcile_timers"] as const;
+const TIMER_CAPABILITY = "timers.reconcile" as const;
 
 export type MdbaseNotificationState =
   | "checking"
@@ -45,6 +46,9 @@ export interface MdbaseNotificationWake {
 
 interface NotificationConnect {
   connection(): MdbaseConnectionInfo | null;
+  capabilityState(
+    capability: typeof TIMER_CAPABILITY,
+  ): MdbaseCapabilityState | null;
   registerNotifications(options: {
     serviceWorker: ServiceWorkerRegistration;
   }): Promise<MdbaseNotificationRegistration>;
@@ -75,11 +79,7 @@ export class MdbaseNotificationManager {
     if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn };
-    if (
-      TIMER_OPERATIONS.some(
-        (operation) => !connection.operations.includes(operation),
-      )
-    )
+    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn };
@@ -99,11 +99,7 @@ export class MdbaseNotificationManager {
     if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn: false };
-    if (
-      TIMER_OPERATIONS.some(
-        (operation) => !connection.operations.includes(operation),
-      )
-    )
+    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn: false };
@@ -353,6 +349,12 @@ async function firebaseMessaging() {
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
     connection: () => currentConnection()?.info() ?? null,
+    capabilityState: (capability) => {
+      const snapshot = cloudSession.getSnapshot();
+      return "capabilities" in snapshot
+        ? (snapshot.capabilities.values[capability]?.state ?? null)
+        : null;
+    },
     registerNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
@@ -395,5 +397,5 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
 
 function currentConnection() {
   const snapshot = cloudSession.getSnapshot();
-  return snapshot.status === "ready" ? snapshot.connection : null;
+  return snapshot.status === "ready" ? cloudSession.connection() : null;
 }

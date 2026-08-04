@@ -53,10 +53,7 @@ describe("mdbase native notifications", () => {
 
   it("requires renewed timer access before asking for notification permission", async () => {
     const fixture = manager({
-      connection: vi.fn(() => ({
-        collectionId: "collection",
-        operations: ["read"],
-      })),
+      capabilityState: vi.fn(() => "requires_authorization"),
     });
     expect(await fixture.subject.enable()).toEqual({
       state: "reauthorization_required",
@@ -232,6 +229,7 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
         collectionId: "collection",
         operations: ["reconcile_timers"],
       })),
+    capabilityState: overrides.capabilityState ?? vi.fn(() => "available"),
     registerNotifications:
       overrides.registerNotifications ?? vi.fn(async () => ({})),
     unregisterNotifications:

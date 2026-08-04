@@ -16,7 +16,7 @@ export default defineConfig({
   webServer: {
     command: webServerCommand,
     url: baseURL,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

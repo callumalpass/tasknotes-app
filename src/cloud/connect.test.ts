@@ -1,10 +1,29 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { connectSuccess } from "@mdbase-dev/connect";
 
 import bundledManifest from "../generated/mdbase-app.json";
-import { CLOUD_OPERATIONS, cloudConnect, cloudSession } from "./connect";
+import { operationsForApplicationCapabilities } from "@mdbase-dev/connect-protocol";
+import { cloudConnect, cloudSession } from "./connect";
+
+const expectedOperations = operationsForApplicationCapabilities(
+  bundledManifest.requirements.capabilities as never,
+);
 
 describe("TaskNotes mdbase session", () => {
+  beforeAll(async () => {
+    await cloudSession.start();
+  });
+
+  afterAll(() => cloudSession.destroy());
+
   afterEach(() => {
     history.replaceState(null, "", "/");
     vi.restoreAllMocks();
@@ -42,7 +61,7 @@ describe("TaskNotes mdbase session", () => {
     await cloudSession.authorize("choose");
 
     expect(authorize).toHaveBeenCalledWith({
-      operations: [...CLOUD_OPERATIONS],
+      operations: expectedOperations,
       target: { kind: "choose" },
       returnTo: "/",
     });
@@ -56,7 +75,7 @@ describe("TaskNotes mdbase session", () => {
     await cloudSession.authorize({ collectionId: "hosted-after-adoption" });
 
     expect(authorize).toHaveBeenCalledWith({
-      operations: [...CLOUD_OPERATIONS],
+      operations: expectedOperations,
       target: {
         kind: "collection",
         collectionId: "hosted-after-adoption",

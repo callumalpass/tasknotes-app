@@ -47,6 +47,7 @@ export function completeRecords(
   request: FieldCompletionRequest,
   writeFormat: "wikilink" | "markdown",
 ): FieldCompletion[] {
+  const query = request.query?.trim().toLocaleLowerCase() ?? "";
   const targetTypes = new Set(
     (request.targetTypes ?? []).map((value) => value.toLocaleLowerCase()),
   );
@@ -58,8 +59,13 @@ export function completeRecords(
       !record.types.some((type) => targetTypes.has(type.toLocaleLowerCase()))
     )
       continue;
+    if (
+      query &&
+      !record.label.toLocaleLowerCase().includes(query) &&
+      !record.path.toLocaleLowerCase().includes(query)
+    )
+      continue;
     const completion = recordCompletion(record, writeFormat);
-    if (!completionMatches(completion, request.query ?? "")) continue;
     values.set(record.path.toLocaleLowerCase(), completion);
   }
   return [...values.values()]

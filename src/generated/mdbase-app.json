@@ -16,6 +16,34 @@
         "digest": "sha256:ef411577c2817b06ab2c8fcfe1241e005b7cd4355723b22ac14346462b5d0049"
       }
     ],
+    "capabilities": {
+      "contract_version": 1,
+      "required": [
+        "collection.inspect",
+        "records.watch",
+        "records.read",
+        "records.query",
+        "records.create",
+        "records.update",
+        "records.delete",
+        "records.rename",
+        "views.list",
+        "views.execute",
+        "views.source.read",
+        "views.source.create",
+        "views.source.update",
+        "views.source.delete",
+        "definitions.type-pack.apply",
+        "timers.reconcile",
+        "files.list",
+        "files.read",
+        "files.add",
+        "files.replace",
+        "files.move",
+        "files.delete"
+      ],
+      "optional": ["sync.offline-replica", "notifications.background-delivery"]
+    },
     "access": "full_collection",
     "files": {
       "actions": ["list", "read", "add", "replace", "move", "delete"],

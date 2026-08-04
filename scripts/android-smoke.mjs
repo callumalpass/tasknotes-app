@@ -59,7 +59,14 @@ function sourceForTitle(title) {
 function attachmentFiles() {
   try {
     const output = adb("shell", "ls", "-1", ATTACHMENTS);
-    return output ? output.split("\n") : [];
+    return output
+      ? output
+          .split("\n")
+          .filter(
+            (file) =>
+              !file.includes(".tasknotes-write-") && !file.endsWith(".tmp"),
+          )
+      : [];
   } catch {
     return [];
   }

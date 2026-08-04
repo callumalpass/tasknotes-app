@@ -726,17 +726,25 @@ describe("relay task repository", () => {
 
   it("hides replicated-versus-live selection behind one repository factory", () => {
     const relay = relayFixture([]).connect;
-    expect(createConnectTaskRepository(relay)).toBeInstanceOf(
-      RelayTaskRepository,
-    );
+    expect(
+      createConnectTaskRepository(relay, syncCapabilities("unsupported")),
+    ).toBeInstanceOf(RelayTaskRepository);
     const replicated = {
       sync: () => ({ collectionId: "replicated", replicaId: "phone" }),
     } as unknown as MdbaseConnection<JsonObject>;
-    expect(createConnectTaskRepository(replicated)).toBeInstanceOf(
-      CloudTaskRepository,
-    );
+    expect(
+      createConnectTaskRepository(replicated, syncCapabilities("available")),
+    ).toBeInstanceOf(CloudTaskRepository);
   });
 });
+
+function syncCapabilities(state: "available" | "unsupported") {
+  return {
+    contractVersion: 1,
+    requiredAvailable: true,
+    values: { "sync.offline-replica": { state } },
+  } as unknown as import("@mdbase-dev/connect").MdbaseEffectiveCapabilities;
+}
 
 function relayFixture(
   initial: TestRecord[],

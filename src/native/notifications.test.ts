@@ -14,6 +14,7 @@ vi.mock("../cloud/connect", () => ({
       status: "ready",
       connection: mocks.connection,
     }),
+    connection: () => mocks.connection,
   },
 }));
 
