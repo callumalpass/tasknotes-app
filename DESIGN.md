@@ -91,16 +91,15 @@ before first paint. Components consume canvas, surface, surface-subtle, text,
 text-soft, text-muted, border, border-strong, accent, success, warning, and
 danger roles rather than fixed palette values.
 
-## Local-first trust contract
+## Storage trust contract
 
-Every collection choice names two things in plain language: what keeps working
-without a connection, and which copy is the source of truth. Hosted mdbase keeps
-a durable device copy for offline work and syncs it to the hosted source of
-truth. On Android and iOS, device-only mode treats its local Markdown as the
-source of truth and does not imply that a missing connection is a problem. Web
-browsers require mdbase and never offer browser storage as a collection
-authority. A direct computer connection is explicitly connection-dependent.
-Portability is a top-level setting, not an advanced implementation detail.
+Every collection choice names its mdbase authority in plain language. Hosted
+collections require connectivity; connected-computer collections require that
+computer to remain reachable. A completed write has been accepted by that
+authority. TaskNotes never presents browser or device storage as another copy
+of the collection, and it does not imply offline availability. Portability is
+visible through Markdown paths and collection information without exposing
+transport details in ordinary task flows.
 
 ## Typography
 
@@ -149,9 +148,8 @@ Today             Search       More
   for keyboard focus.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
-- Mobile bottom navigation exposes at most four destinations: one pinned view,
-  Search, Views, and Settings. Additional pinned views remain available from
-  Views.
+- Mobile bottom navigation prioritizes pinned work views and a More
+  destination. More separates Search, the complete Views catalog, and Settings.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.

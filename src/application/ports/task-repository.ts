@@ -42,13 +42,6 @@ export interface TaskRepository {
   readonly files?: CollectionFileStore;
   initialize(): Promise<void>;
   refresh(): Promise<RefreshResult>;
-  indexingProgress?(): RepositoryIndexingProgress;
-  subscribeIndexing?(
-    listener: (
-      progress: RepositoryIndexingProgress,
-      publishTasks: boolean,
-    ) => void,
-  ): () => void;
   list(query?: TaskListQuery): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
@@ -95,35 +88,22 @@ export interface TaskRepository {
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
-  syncStatus(): Promise<RepositorySyncStatus>;
-  syncIssues(): Promise<RepositorySyncIssue[]>;
-  resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
+  connectionStatus(): Promise<RepositoryConnectionStatus>;
   subscribe(listener: () => void): () => void;
 }
 
 export interface CollectionInfo {
-  kind: "local" | "connect";
+  kind: "connect";
   id?: string;
   name: string;
   location: string;
   runtime: "browser" | "native";
 }
 
-export interface RepositorySyncStatus {
-  mode: "local" | "live" | "replicated";
-  state: "local" | "synced" | "syncing" | "offline" | "issues";
-  pending: number;
-  issues: number;
-  lastSyncedAt?: string;
+export interface RepositoryConnectionStatus {
+  state: "connecting" | "connected" | "unavailable";
+  lastReachedAt?: string;
   message?: string;
-}
-
-export interface RepositorySyncIssue {
-  id: string;
-  path?: string;
-  title: string;
-  message: string;
-  canKeepLocal: boolean;
 }
 
 export interface RefreshResult {
@@ -131,11 +111,4 @@ export interface RefreshResult {
   changed: number;
   removed: number;
   elapsedMs: number;
-}
-
-export interface RepositoryIndexingProgress {
-  phase: "idle" | "scanning" | "indexing";
-  completed: number;
-  total: number;
-  complete: boolean;
 }

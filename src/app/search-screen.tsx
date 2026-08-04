@@ -5,7 +5,6 @@ import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
-import { localIndexingLabel } from "./indexing-progress";
 
 import type { Task } from "../domain/task";
 
@@ -18,7 +17,7 @@ export function SearchScreen({
 }) {
   const [query, setQuery] = useState("");
   const deferred = useDebounced(query, 160);
-  const { indexing, toggleTask } = useRepository();
+  const { toggleTask } = useRepository();
   const { tasks, loading } = useTasks({
     status: "all",
     search: deferred,
@@ -69,11 +68,6 @@ export function SearchScreen({
           </button>
         ) : null}
       </div>
-      {!indexing.complete ? (
-        <p className="indexing-detail" role="status">
-          {localIndexingLabel(indexing)} Search results will keep updating.
-        </p>
-      ) : null}
       {!searching ? (
         <BrowseFields tasks={tasks} onChoose={setQuery} />
       ) : loading ? (
@@ -96,12 +90,8 @@ export function SearchScreen({
         </>
       ) : (
         <EmptyState
-          title={indexing.complete ? "No tasks matched." : "Still indexing."}
-          body={
-            indexing.complete
-              ? "Try fewer words or another spelling."
-              : "Matching tasks will appear as they are found."
-          }
+          title="No tasks matched."
+          body="Try fewer words or another spelling."
         />
       )}
     </section>

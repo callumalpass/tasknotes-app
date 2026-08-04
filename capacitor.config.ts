@@ -15,7 +15,6 @@ const iosFirebaseConfigured =
 const sharedNativePlugins = [
   "@capacitor/app",
   "@capacitor/browser",
-  "@capacitor/filesystem",
   "@capacitor/haptics",
 ];
 

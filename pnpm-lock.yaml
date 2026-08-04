@@ -7,7 +7,6 @@ settings:
 overrides:
   "@mdbase-dev/connect-protocol": file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz
   "@mdbase-dev/connect": file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz
-  "@mdbase-dev/connect-sync": file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz
 
 importers:
   .:
@@ -24,9 +23,6 @@ importers:
       "@capacitor/core":
         specifier: 8.4.2
         version: 8.4.2
-      "@capacitor/filesystem":
-        specifier: 8.1.2
-        version: 8.1.2(@capacitor/core@8.4.2)
       "@capacitor/haptics":
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.4.2)
@@ -63,9 +59,6 @@ importers:
       "@mdbase-dev/connect-protocol":
         specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz
-      "@mdbase-dev/connect-sync":
-        specifier: file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz
-        version: file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz
       "@tasknotes/model":
         specifier: file:vendor/tasknotes-model-0.3.0-rc.9.tgz
         version: file:vendor/tasknotes-model-0.3.0-rc.9.tgz
@@ -471,14 +464,6 @@ packages:
       {
         integrity: sha512-fQPRb3JXRaU2pnufDUvqOjhsrYxDQeFRZyaj/sHydIUxD2NxOGHKMpmKUdI+U4OOmKuGZyvRpi7TSJU+7Bjbmg==,
       }
-
-  "@capacitor/filesystem@8.1.2":
-    resolution:
-      {
-        integrity: sha512-doaaMfGoFR2hWU6aV6u83I+5ZsGyJVq+Gz4r9lMpJzUKMm1eMu0hLnFdV1aXZlU9FlK/RndFrVD8oRZfNOqWgQ==,
-      }
-    peerDependencies:
-      "@capacitor/core": ">=8.0.0"
 
   "@capacitor/haptics@8.0.2":
     resolution:
@@ -1267,15 +1252,6 @@ packages:
         tarball: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz,
       }
     version: 0.1.0-beta.29
-
-  "@mdbase-dev/connect-sync@file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz":
-    resolution:
-      {
-        integrity: sha512-cVkG5pMf48bEieWwwvUrPOy36LEi6DhtTDE6Z0chwoZTnucsy7ThCVGivtsKBznZQ02piMt+3hhCiGkqdmDKCw==,
-        tarball: file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz,
-      }
-    version: 0.1.0-beta.29
-    hasBin: true
 
   "@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.29-4371c96eaa70.tgz":
     resolution:
@@ -6547,11 +6523,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  "@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2)":
-    dependencies:
-      "@capacitor/core": 8.4.2
-      "@capacitor/synapse": 1.0.4
-
   "@capacitor/haptics@8.0.2(@capacitor/core@8.4.2)":
     dependencies:
       "@capacitor/core": 8.4.2
@@ -7190,12 +7161,6 @@ snapshots:
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
-
-  "@mdbase-dev/connect-sync@file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz":
-    dependencies:
-      "@mdbase-dev/connect-protocol": file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz
-      "@noble/hashes": 2.2.0
-      yaml: 2.9.0
 
   "@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.29-4371c96eaa70.tgz":
     dependencies:

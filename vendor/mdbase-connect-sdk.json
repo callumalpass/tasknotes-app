@@ -22,12 +22,6 @@
       "sha512": "twgEsCzZXSX2rKBAkEmRv8AV0liawfdCFaNFGLX5v1RoVBLJ3C3aT97J9wG9ppHnI2YNt47S6A2FdlrxNDP8VA=="
     },
     {
-      "package": "sync",
-      "file": "mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz",
-      "bytes": 81033,
-      "sha512": "cVkG5pMf48bEieWwwvUrPOy36LEi6DhtTDE6Z0chwoZTnucsy7ThCVGivtsKBznZQ02piMt+3hhCiGkqdmDKCw=="
-    },
-    {
       "package": "testing",
       "file": "mdbase-dev-connect-testing-0.1.0-beta.29-4371c96eaa70.tgz",
       "bytes": 6270,

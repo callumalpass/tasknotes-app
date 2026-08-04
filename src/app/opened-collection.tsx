@@ -3,31 +3,20 @@ import { useEffect, useMemo } from "react";
 import { IndexedDbMutationJournal } from "../storage/application-journal";
 
 import { AppShell } from "./app-shell";
-import {
-  CollectionGateContext,
-  type CollectionChoice,
-} from "./collection-context";
+import { CollectionGateContext } from "./collection-context";
 import { RepositoryProvider } from "./repository-context";
 
 import type { TaskRepository } from "../application/ports/task-repository";
 
 export function OpenedCollection({
-  authorizeAnotherCloudCollection,
-  canChooseLocalFolder,
-  choice,
-  changeConnectedCollection,
-  changeLocalCollection,
-  choose,
-  reauthorizeCurrentCloudCollection,
+  authorizeAnotherCollection,
+  changeCollection,
+  reauthorizeCurrentCollection,
   repository,
 }: {
-  authorizeAnotherCloudCollection(): void;
-  canChooseLocalFolder: boolean;
-  choice: CollectionChoice;
-  changeConnectedCollection(): void;
-  changeLocalCollection(): void;
-  choose(choice: CollectionChoice): void;
-  reauthorizeCurrentCloudCollection(): void;
+  authorizeAnotherCollection(): void;
+  changeCollection(): void;
+  reauthorizeCurrentCollection(): void;
   repository: TaskRepository;
 }) {
   const mutationJournal = useMemo(() => new IndexedDbMutationJournal(), []);
@@ -39,29 +28,21 @@ export function OpenedCollection({
   );
   const value = useMemo(
     () => ({
-      authorizeAnotherCloudCollection,
-      canChooseLocalFolder,
-      choice,
-      choose,
-      changeConnectedCollection,
-      changeLocalCollection,
-      reauthorizeCurrentCloudCollection,
+      authorizeAnotherCollection,
+      changeCollection,
+      reauthorizeCurrentCollection,
     }),
     [
-      authorizeAnotherCloudCollection,
-      canChooseLocalFolder,
-      choice,
-      choose,
-      changeConnectedCollection,
-      changeLocalCollection,
-      reauthorizeCurrentCloudCollection,
+      authorizeAnotherCollection,
+      changeCollection,
+      reauthorizeCurrentCollection,
     ],
   );
   return (
     <CollectionGateContext.Provider value={value}>
       <RepositoryProvider
         mutationJournal={mutationJournal}
-        reminderAuthority={choice === "cloud" ? "connect" : "none"}
+        reminderAuthority="connect"
         repository={repository}
       >
         <AppShell />

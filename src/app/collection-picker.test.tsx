@@ -23,134 +23,28 @@ const connections = [
   },
 ];
 
-it("presents browser, folder, and mdbase collections in one picker", () => {
-  const selectLocal = vi.fn();
-  const selectCloud = vi.fn();
-  const move = vi.fn();
-
+it("presents only mdbase collections and their authoritative location", () => {
+  const select = vi.fn();
   renderPicker({
-    cloudConnections: connections,
-    rememberedExternal: {
-      mode: "external",
-      id: "folder-work",
-      name: "Work vault",
-    },
-    onMoveToMdbase: move,
-    onSelectCloud: selectCloud,
-    onSelectLocal: selectLocal,
+    connections,
+    selectedCollectionId: "hosted",
+    onSelect: select,
   });
 
-  expect(screen.getByRole("heading", { name: "Collections" })).toBeVisible();
-  expect(screen.getByText("TaskNotes folder")).toBeVisible();
-  expect(screen.getByText("Work vault")).toBeVisible();
   expect(screen.getByText("Hosted tasks").parentElement).toHaveTextContent(
     "Hosted by mdbase",
   );
   expect(screen.getByText("Studio computer").parentElement).toHaveTextContent(
     "Connected computer",
   );
-  expect(
-    screen.getByRole("button", { name: /TaskNotes folder/ }),
-  ).toHaveAttribute("aria-current", "true");
-
-  fireEvent.click(screen.getByRole("button", { name: /Work vault/ }));
-  expect(selectLocal).toHaveBeenCalledWith({
-    mode: "external",
-    id: "folder-work",
-    name: "Work vault",
-  });
-
-  fireEvent.click(screen.getByRole("button", { name: /Hosted tasks/ }));
-  expect(selectCloud).toHaveBeenCalledWith("hosted");
-
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: /Move this collection to mdbase/,
-    }),
+  expect(screen.queryByText("On this device")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Hosted tasks/ })).toHaveAttribute(
+    "aria-current",
+    "true",
   );
-  expect(move).toHaveBeenCalledOnce();
-});
 
-it("explains atomic hosted adoption instead of asking for an empty destination", () => {
-  const authorize = vi.fn();
-  renderPicker({
-    cloudConnections: connections,
-    migration: { step: "destination" },
-    onAuthorizeMigration: authorize,
-  });
-
-  expect(screen.getByRole("heading", { name: "Move to mdbase" })).toBeVisible();
-  expect(screen.getByText(/Markdown tasks, collection settings/)).toBeVisible();
-  expect(
-    screen.queryByRole("button", { name: /Hosted tasks/ }),
-  ).not.toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: /Continue with mdbase/ }));
-  expect(authorize).toHaveBeenCalledOnce();
-});
-
-it("reports adopted totals and the archived local source", () => {
-  const finish = vi.fn();
-  renderPicker({
-    migration: {
-      step: "complete",
-      destinationName: "Hosted tasks",
-      result: {
-        records: 12,
-        views: 2,
-        destinationCollectionId: "hosted",
-      },
-    },
-    onFinishMigration: finish,
-  });
-
-  expect(
-    screen.getByRole("heading", { name: "Hosted tasks is hosted." }),
-  ).toBeVisible();
-  expect(
-    screen.getByText(
-      /12 records and 2 saved views adopted as one checked copy/,
-    ),
-  ).toBeVisible();
-  expect(screen.getByText(/read-only archive/)).toBeVisible();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Open hosted collection" }),
-  );
-  expect(finish).toHaveBeenCalledOnce();
-});
-
-it.each([
-  ["hosted authorization", { step: "authorizing" } as const],
-  [
-    "snapshot transfer",
-    {
-      step: "running",
-      destinationName: "Hosted tasks",
-      progress: { phase: "uploading", completed: 1, total: 2 },
-    } as const,
-  ],
-  [
-    "mandatory recovery",
-    {
-      step: "error",
-      message: "Authorization was interrupted.",
-      canRetry: true,
-      mustResume: true,
-    } as const,
-  ],
-])("cannot be dismissed during %s", (_label, migration) => {
-  const close = vi.fn();
-  renderPicker({ migration, onClose: close });
-
-  expect(
-    screen.getByRole("button", { name: "Close collection picker" }),
-  ).toBeDisabled();
-  expect(
-    screen.getByRole("button", { name: "Back to collections" }),
-  ).toBeDisabled();
-
-  fireEvent.keyDown(window, { key: "Escape" });
-  expect(close).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: /Studio computer/ }));
+  expect(select).toHaveBeenCalledWith("computer");
 });
 
 it("contains focus and restores it when the picker closes", async () => {
@@ -159,7 +53,7 @@ it("contains focus and restores it when the picker closes", async () => {
   document.body.append(trigger);
   trigger.focus();
 
-  const rendered = renderPicker();
+  const rendered = renderPicker({ connections });
   await waitFor(() =>
     expect(
       screen.getByRole("button", { name: "Close collection picker" }),
@@ -167,8 +61,7 @@ it("contains focus and restores it when the picker closes", async () => {
   );
 
   const buttons = screen.getByRole("dialog").querySelectorAll("button");
-  const last = buttons.item(buttons.length - 1);
-  last.focus();
+  buttons.item(buttons.length - 1).focus();
   fireEvent.keyDown(window, { key: "Tab" });
   expect(
     screen.getByRole("button", { name: "Close collection picker" }),
@@ -182,24 +75,14 @@ it("contains focus and restores it when the picker closes", async () => {
 function renderPicker(
   overrides: Partial<React.ComponentProps<typeof CollectionPicker>> = {},
 ) {
-  const properties: React.ComponentProps<typeof CollectionPicker> = {
-    activeChoice: "local",
-    activeLocalLocation: { mode: "default" },
-    canChooseLocalFolder: true,
-    cloudConnections: [],
-    migration: null,
-    selectedCloudCollectionId: null,
-    onAuthorizeCloud: vi.fn(),
-    onAuthorizeMigration: vi.fn(),
-    onBackFromMigration: vi.fn(),
-    onChooseFolder: vi.fn(),
-    onClose: vi.fn(),
-    onFinishMigration: vi.fn(),
-    onMoveToMdbase: vi.fn(),
-    onRetryMigration: vi.fn(),
-    onSelectCloud: vi.fn(),
-    onSelectLocal: vi.fn(),
-    ...overrides,
-  };
-  return render(<CollectionPicker {...properties} />);
+  return render(
+    <CollectionPicker
+      connections={[]}
+      selectedCollectionId={null}
+      onAuthorize={vi.fn()}
+      onClose={vi.fn()}
+      onSelect={vi.fn()}
+      {...overrides}
+    />,
+  );
 }

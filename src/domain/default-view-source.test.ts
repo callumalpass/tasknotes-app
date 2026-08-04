@@ -60,7 +60,7 @@ describe("TaskNotes starter views", () => {
         document: "",
       })),
       listViews: vi.fn(async () => [created]),
-      syncStatus: vi.fn(),
+      connectionStatus: vi.fn(),
     } as unknown as TaskRepository;
 
     await expect(
@@ -240,7 +240,7 @@ describe("TaskNotes starter views", () => {
         throw new Error("create_view_source is unavailable");
       }),
       listViews: vi.fn(async () => [existing]),
-      syncStatus: vi.fn(),
+      connectionStatus: vi.fn(),
     } as unknown as TaskRepository;
 
     await expect(
@@ -250,7 +250,7 @@ describe("TaskNotes starter views", () => {
         defaultTaskCollectionConfiguration(),
       ),
     ).resolves.toEqual([existing]);
-    expect(repository.syncStatus).not.toHaveBeenCalled();
+    expect(repository.connectionStatus).not.toHaveBeenCalled();
   });
 });
 

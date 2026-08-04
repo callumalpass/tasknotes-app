@@ -2,33 +2,21 @@ import "fake-indexeddb/auto";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
-import { MarkdownCollection } from "../storage/collection";
-import { TaskIndex } from "../storage/index";
-import { IndexedMarkdownRepository } from "../storage/repository";
-import { MemoryVault } from "../test/memory-vault";
+import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { GlobalTaskCapture } from "./global-task-capture";
 
 describe("GlobalTaskCapture", () => {
-  let repository: IndexedMarkdownRepository;
-  let index: TaskIndex;
+  let repository: MdbaseTaskRepository;
 
   beforeEach(async () => {
     localStorage.clear();
-    index = new TaskIndex(`global-capture-${crypto.randomUUID()}`);
-    repository = new IndexedMarkdownRepository({
-      collection: new MarkdownCollection(new MemoryVault()),
-      index,
-    });
+    repository = createTestMdbaseRepository();
     await repository.initialize();
-  });
-
-  afterEach(async () => {
-    index.close();
-    await index.delete();
   });
 
   it("focuses, creates through the repository, and closes", async () => {

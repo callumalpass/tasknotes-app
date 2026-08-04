@@ -17,7 +17,7 @@ export const TASKNOTES_FILE_ACTIONS = [
   "delete",
 ] as const satisfies readonly CollectionFileAction[];
 
-/** Application-facing adapter over beta.23's resumable, integrity-checked file client. */
+/** Application-facing adapter over the mdbase file capability. */
 export class MdbaseCollectionFileStore implements CollectionFileStore {
   constructor(private readonly connection: MdbaseConnection) {}
 

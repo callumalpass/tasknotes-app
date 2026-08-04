@@ -23,12 +23,10 @@ export async function ensureTaskNotesDefaultViewSource(
       name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
       document: taskNotesDefaultBaseDocument(configuration),
     });
-  } catch (baseError) {
+  } catch {
     const concurrent = await repository.listViews();
     if (concurrent.some(isTaskNotesDefaultViewDocument)) return concurrent;
     if (concurrent.length) return concurrent;
-    const sync = await repository.syncStatus();
-    if (sync.mode !== "replicated") throw baseError;
     await repository.createViewSource({
       format: "mdbase.view",
       name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,

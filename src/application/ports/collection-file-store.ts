@@ -13,9 +13,6 @@ export interface CollectionFile {
   mediaType?: string;
   mediaClass: CollectionFileMediaClass;
   modifiedAt: string;
-  /** Availability is advisory UI state; it is never persisted into task YAML. */
-  availability?: "local" | "remote" | "local-and-remote";
-  pending?: "upload" | "move" | "delete";
 }
 
 export interface CollectionFileProgress {
@@ -65,6 +62,4 @@ export interface CollectionFileStore {
     file: CollectionFile,
     options?: { mutationId?: string; signal?: AbortSignal },
   ): Promise<void>;
-  /** Flush durable local mutations when the authority is reachable. */
-  sync?(): Promise<void>;
 }

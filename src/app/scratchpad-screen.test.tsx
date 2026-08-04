@@ -1,37 +1,25 @@
 import "fake-indexeddb/auto";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { recordMatchesLink } from "../domain/completion";
-import { MarkdownCollection } from "../storage/collection";
-import { TaskIndex } from "../storage/index";
-import { IndexedMarkdownRepository } from "../storage/repository";
+import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { mdbaseFixture } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
-import { MemoryVault } from "../test/memory-vault";
 import { RepositoryProvider } from "./repository-context";
 import { ScratchpadScreen } from "./scratchpad-screen";
 
 const SCRATCHPAD_LOAD_TIMEOUT = 5_000;
 
 describe("ScratchpadScreen", () => {
-  let vault: MemoryVault;
-  let repository: IndexedMarkdownRepository;
-  let index: TaskIndex;
+  let fixture: ReturnType<typeof mdbaseFixture>;
+  let repository: MdbaseTaskRepository;
 
   beforeEach(async () => {
-    vault = new MemoryVault();
-    index = new TaskIndex(`scratchpad-screen-${crypto.randomUUID()}`);
-    repository = new IndexedMarkdownRepository({
-      collection: new MarkdownCollection(vault),
-      index,
-    });
+    fixture = mdbaseFixture([]);
+    repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
-  });
-
-  afterEach(async () => {
-    index.close();
-    await index.delete();
   });
 
   function renderScratchpad(onOpenTask = vi.fn()) {
@@ -177,12 +165,12 @@ describe("ScratchpadScreen", () => {
 
     const active = await repository.getActiveScratchpad();
     expect(active.body).toBe("");
-    const archive = [...vault.files.entries()].find(
-      ([path]) =>
-        path.startsWith("scratchpads/") && path !== "scratchpads/Scratchpad.md",
+    const archive = [...fixture.records.values()].find(
+      (record) =>
+        record.path.startsWith("scratchpads/") &&
+        record.path !== "scratchpads/Scratchpad.md",
     );
-    const archivedText = new TextDecoder().decode(archive?.[1].contents);
-    expect(archivedText).toContain("Keep the tone straightforward");
-    expect(archivedText).toContain("[[tasks/");
+    expect(archive?.body).toContain("Keep the tone straightforward");
+    expect(archive?.body).toContain("[[tasks/");
   });
 });

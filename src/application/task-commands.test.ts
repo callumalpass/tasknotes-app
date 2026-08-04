@@ -106,64 +106,20 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
-  it("replays a partially failed task batch after restart", async () => {
+  it("sends task batches directly to the repository without journaling them", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
-    repository.update
-      .mockResolvedValueOnce({ id: "task-1", title: "First" } as Task)
-      .mockRejectedValueOnce(new Error("Storage interrupted"));
-    const first = new TaskCommandService({ repository, journal });
-    await first.initialize();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
 
     await expect(
-      first.updateTasks([
+      service.updateTasks([
         { id: "task-1", input: { sortOrder: "tnabcdefghij" } },
         { id: "task-2", input: { sortOrder: "tnbcdefghijk" } },
       ]),
-    ).rejects.toThrow("Storage interrupted");
-    expect(journal.commands).toHaveLength(1);
-    first.dispose();
+    ).resolves.toHaveLength(2);
 
-    repository.update.mockResolvedValue({
-      id: "task-replayed",
-      title: "Replayed",
-    } as Task);
-    const reopened = new TaskCommandService({ repository, journal });
-    await reopened.initialize();
-
-    expect(repository.update).toHaveBeenCalledTimes(4);
-    expect(journal.commands).toEqual([]);
-    reopened.dispose();
-  });
-
-  it("exposes failed recovery and retries it without accepting a newer batch", async () => {
-    const journal = new MemoryMutationJournal();
-    await journal.put({
-      kind: "update-tasks",
-      operationId: "waiting-batch",
-      collectionId: "local:test-collection",
-      requestedAt: Date.now(),
-      updates: [{ id: "task-1", input: { status: "done" } }],
-    });
-    const repository = taskRepository();
-    repository.update.mockRejectedValueOnce(new Error("Network unavailable"));
-    const service = new TaskCommandService({ repository, journal });
-
-    await service.initialize();
-
-    expect(service.snapshot()).toMatchObject({
-      pendingRecoveryCount: 1,
-      recoveryError: { code: "unavailable", retryable: true },
-    });
-    repository.update.mockResolvedValue({
-      id: "task-1",
-      title: "Recovered",
-    } as Task);
-    await service.retryRecovery();
-    expect(service.snapshot()).toMatchObject({
-      pendingRecoveryCount: 0,
-      recoveryError: null,
-    });
+    expect(repository.updateMany).toHaveBeenCalledOnce();
     expect(journal.commands).toEqual([]);
     service.dispose();
   });
@@ -207,7 +163,7 @@ function taskRepository() {
       return { ...task, id };
     }),
     collectionInfo: vi.fn(async () => ({
-      kind: "local" as const,
+      kind: "connect" as const,
       id: "test-collection",
       name: "Test",
       location: "Memory",

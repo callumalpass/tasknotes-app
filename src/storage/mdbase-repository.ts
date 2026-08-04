@@ -30,7 +30,6 @@ import {
 } from "./connected-task-cache";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
-import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
 import {
   activeScratchpad,
   assertScratchpadRevision,
@@ -45,7 +44,6 @@ import {
   type SaveScratchpadInput,
 } from "../domain/scratchpad";
 import { resolveTaskCollection } from "./tasknotes-collection";
-import { TaskViewCache } from "./view-cache";
 import {
   completeRecords,
   completeTaskValues,
@@ -84,19 +82,18 @@ import type {
 import type {
   CollectionInfo,
   RefreshResult,
-  RepositorySyncIssue,
-  RepositorySyncStatus,
+  RepositoryConnectionStatus,
   TaskRepository,
 } from "../application/ports/task-repository";
 
-interface CachedRelayTask {
+interface CachedMdbaseTask {
   task: Task;
   revision?: string;
   model: TaskNotesTaskModel;
   typeName: string;
 }
 
-interface ReadableRelayRecord {
+interface ReadableMdbaseRecord {
   path: string;
   frontmatter?: JsonObject;
   effective_frontmatter?: JsonObject;
@@ -111,22 +108,21 @@ const PAGE_SIZE = 1_000;
  * Reads are cached for the current app session; writes require the collection
  * authority to be reachable and use revisions whenever one has been observed.
  */
-export class RelayTaskRepository implements TaskRepository {
-  readonly files: LocalFirstMdbaseFileStore;
+export class MdbaseTaskRepository implements TaskRepository {
+  readonly files: MdbaseCollectionFileStore;
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
   private taskProviders = new Map<string, TaskNotesTaskModel>([
     ["task", this.model],
   ]);
   private displayName = "mdbase collection";
-  private readonly cache = new Map<string, CachedRelayTask>();
+  private readonly cache = new Map<string, CachedMdbaseTask>();
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private readonly viewExecutionInFlight = new Map<
     string,
     Promise<TaskViewExecution>
   >();
-  private viewStore: TaskViewCache | null = null;
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
@@ -135,7 +131,7 @@ export class RelayTaskRepository implements TaskRepository {
   private readonly reservedTaskPaths = new Set<string>();
   private readonly revisionReads = new Map<
     string,
-    Promise<Required<CachedRelayTask>>
+    Promise<Required<CachedMdbaseTask>>
   >();
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
@@ -147,18 +143,12 @@ export class RelayTaskRepository implements TaskRepository {
     string,
     Promise<FieldCompletion[]>
   >();
-  private status: RepositorySyncStatus = {
-    mode: "live",
-    state: "syncing",
-    pending: 0,
-    issues: 0,
+  private status: RepositoryConnectionStatus = {
+    state: "connecting",
   };
 
   constructor(private readonly connect: MdbaseConnection<JsonObject>) {
-    this.files = new LocalFirstMdbaseFileStore(
-      new MdbaseCollectionFileStore(connect),
-      connect.collectionId,
-    );
+    this.files = new MdbaseCollectionFileStore(connect);
   }
 
   initialize(): Promise<void> {
@@ -167,12 +157,9 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    await this.files.sync().catch(() => undefined);
     const description = validResult(await this.connect.describe());
     this.configureDescription(description);
     this.collectionId = description.collection_id;
-    this.viewStore = new TaskViewCache(description.collection_id);
-    this.viewCache = await this.viewStore.readViewDocuments().catch(() => []);
     await this.reloadCache();
     this.setConnected();
     await this.maintainRollingOccurrencesUnlocked();
@@ -193,7 +180,7 @@ export class RelayTaskRepository implements TaskRepository {
     const before = new Map(
       [...this.cache.values()].map(({ task }) => [task.id, signature(task)]),
     );
-    this.status = { ...this.status, state: "syncing", message: undefined };
+    this.status = { ...this.status, state: "connecting", message: undefined };
     this.emit();
     try {
       this.configureDescription(validResult(await this.connect.describe()));
@@ -292,7 +279,7 @@ export class RelayTaskRepository implements TaskRepository {
     });
     const result = validResult(response);
     const records: CollectionRecord[] = result.results.map((record) => {
-      const frontmatter = relayFrontmatter(record);
+      const frontmatter = mdbaseFrontmatter(record);
       return {
         path: record.path,
         label:
@@ -547,9 +534,6 @@ export class RelayTaskRepository implements TaskRepository {
       this.viewCache = normalizeViewDocuments(
         validResult(await this.connect.listViews()) as ProviderViewList,
       );
-      await this.viewStore
-        ?.writeViewDocuments(this.viewCache)
-        .catch(() => undefined);
       return structuredClone(this.viewCache);
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -564,9 +548,7 @@ export class RelayTaskRepository implements TaskRepository {
 
   async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
     const key = viewExecutionKey(view);
-    const cached =
-      this.viewExecutionCache.get(key) ??
-      (await this.viewStore?.readExecution(view).catch(() => null));
+    const cached = this.viewExecutionCache.get(key);
     if (!cached) return null;
     this.viewExecutionCache.set(key, cached);
     return structuredClone(cached);
@@ -602,7 +584,6 @@ export class RelayTaskRepository implements TaskRepository {
         (record) => this.readRecord(record)?.task ?? null,
       );
       this.viewExecutionCache.set(viewExecutionKey(view), execution);
-      await this.viewStore?.writeExecution(execution).catch(() => undefined);
       return execution;
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -810,16 +791,8 @@ export class RelayTaskRepository implements TaskRepository {
     };
   }
 
-  async syncStatus(): Promise<RepositorySyncStatus> {
+  async connectionStatus(): Promise<RepositoryConnectionStatus> {
     return { ...this.status };
-  }
-
-  async syncIssues(): Promise<RepositorySyncIssue[]> {
-    return [];
-  }
-
-  async resolveSyncIssue(): Promise<void> {
-    throw new Error("This live collection has no queued sync issues.");
   }
 
   subscribe(listener: () => void): () => void {
@@ -828,7 +801,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private async reloadCache(): Promise<void> {
-    const next = new Map<string, CachedRelayTask>();
+    const next = new Map<string, CachedMdbaseTask>();
     let offset = 0;
     let snapshot: string | undefined;
     let hasMore = true;
@@ -864,10 +837,12 @@ export class RelayTaskRepository implements TaskRepository {
     for (const [id, value] of next) this.cache.set(id, value);
   }
 
-  private async requireCurrent(id: string): Promise<Required<CachedRelayTask>> {
+  private async requireCurrent(
+    id: string,
+  ): Promise<Required<CachedMdbaseTask>> {
     const cached = this.cache.get(id);
     if (!cached) throw new Error("Task not found.");
-    if (cached.revision) return cached as Required<CachedRelayTask>;
+    if (cached.revision) return cached as Required<CachedMdbaseTask>;
     const pending = this.revisionReads.get(id);
     if (pending) return pending;
     const read = this.readCurrent(id, cached).finally(() => {
@@ -879,8 +854,8 @@ export class RelayTaskRepository implements TaskRepository {
 
   private async readCurrent(
     id: string,
-    cached: CachedRelayTask,
-  ): Promise<Required<CachedRelayTask>> {
+    cached: CachedMdbaseTask,
+  ): Promise<Required<CachedMdbaseTask>> {
     try {
       const result = validResult(
         await this.connect.read({ path: cached.task.path }),
@@ -910,7 +885,7 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private async persistUpdate(
-    current: Required<CachedRelayTask>,
+    current: Required<CachedMdbaseTask>,
     next: Task,
   ): Promise<Task> {
     const operationInput = {
@@ -962,15 +937,15 @@ export class RelayTaskRepository implements TaskRepository {
   }
 
   private readRecord(
-    record: ReadableRelayRecord,
-  ): Omit<CachedRelayTask, "revision"> | null {
+    record: ReadableMdbaseRecord,
+  ): Omit<CachedMdbaseTask, "revision"> | null {
     const provider = this.providerForTypes(record.types ?? []);
     if (!provider) return null;
     try {
       return {
         task: provider.model.read({
           path: record.path,
-          frontmatter: relayFrontmatter(record),
+          frontmatter: mdbaseFrontmatter(record),
           body: record.body ?? "",
         }),
         ...provider,
@@ -1230,18 +1205,15 @@ export class RelayTaskRepository implements TaskRepository {
 
   private setConnected(): void {
     this.status = {
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
-      lastSyncedAt: new Date().toISOString(),
+      state: "connected",
+      lastReachedAt: new Date().toISOString(),
     };
   }
 
   private setOffline(reason: unknown): void {
     this.status = {
       ...this.status,
-      state: "offline",
+      state: "unavailable",
       message: connectionErrorMessage(reason),
     };
   }
@@ -1249,7 +1221,10 @@ export class RelayTaskRepository implements TaskRepository {
   private noteOperationFailure(reason: unknown): void {
     if (isConnectionFailure(reason)) {
       const message = connectionErrorMessage(reason);
-      if (this.status.state === "offline" && this.status.message === message)
+      if (
+        this.status.state === "unavailable" &&
+        this.status.message === message
+      )
         return;
       this.setOffline(reason);
       this.emit();
@@ -1312,7 +1287,7 @@ function asJson(value: Record<string, unknown>): JsonObject {
   return structuredClone(value) as JsonObject;
 }
 
-function relayFrontmatter(record: ReadableRelayRecord): JsonObject {
+function mdbaseFrontmatter(record: ReadableMdbaseRecord): JsonObject {
   return record.effective_frontmatter ?? record.frontmatter ?? {};
 }
 

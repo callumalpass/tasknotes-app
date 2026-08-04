@@ -52,7 +52,7 @@ export async function buildTaskNotesManifest({
           "files.move",
           "files.delete",
         ],
-        optional: ["sync.offline-replica", "notifications.background-delivery"],
+        optional: ["notifications.background-delivery"],
       },
       access: "full_collection",
       files: {

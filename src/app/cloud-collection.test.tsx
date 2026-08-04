@@ -81,7 +81,7 @@ beforeEach(() => {
 });
 
 it("switches from a stale bookmark to a remembered collection without reloading", () => {
-  render(<CloudConnection error={null} onBack={vi.fn()} />);
+  render(<CloudConnection error={null} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Open Work tasks" }));
 
@@ -94,13 +94,13 @@ it("switches from a stale bookmark to a remembered collection without reloading"
 });
 
 it("lists remembered collections and authorizes another with choose intent", () => {
-  render(<CloudConnection error={null} onBack={vi.fn()} />);
+  render(<CloudConnection error={null} />);
 
   expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Open Work tasks" })).toBeVisible();
   expect(
     screen.getByText("Connect to a computer").parentElement,
-  ).toHaveTextContent("delivers task reminders");
+  ).toHaveTextContent("computer is reachable");
 
   fireEvent.click(
     screen.getByRole("button", { name: "Connect another collection" }),

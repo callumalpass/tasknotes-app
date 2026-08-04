@@ -373,11 +373,8 @@ function repository(
     completeField: async () => [],
     readViewSource: async () => source,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
     ...overrides,

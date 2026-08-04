@@ -3,7 +3,6 @@ import {
   ChevronUp,
   Cloud,
   FileText,
-  HardDrive,
   Info,
   Bell,
   Plus,
@@ -14,7 +13,6 @@ import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
-import { OperationErrorNotice } from "../components/operation-error-notice";
 import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
@@ -29,21 +27,12 @@ import {
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
-import { localIndexingLabel } from "./indexing-progress";
 import { storageExplanation } from "./storage-trust";
 
 export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
   const { info, stats, loading } = useCollectionSummary();
-  const {
-    indexing,
-    lastRefresh,
-    refresh,
-    refreshing,
-    sync,
-    syncIssues,
-    resolveSyncIssue,
-  } = useRepository();
-  const { choice, changeConnectedCollection } = useCollectionGate();
+  const { connection, lastRefresh, refresh, refreshing } = useRepository();
+  const { changeCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
   const [changeNotifications, setChangeNotifications] =
     useState<MdbaseNotificationStatus>({
@@ -54,15 +43,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
   const [changeNotificationsError, setChangeNotificationsError] = useState<
     string | null
   >(null);
-  const [benchmark, setBenchmark] = useState<{
-    state: "idle" | "writing" | "removing" | "done" | "error";
-    detail: string;
-  }>({ state: "idle", detail: "" });
-  const benchmarkTools = import.meta.env.VITE_BENCHMARK_TOOLS === "1";
-  const mdbaseReminders = choice === "cloud";
-
   useEffect(() => {
-    if (!mdbaseReminders) return;
     let active = true;
     void mdbaseNotifications
       .status()
@@ -80,7 +61,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
     return () => {
       active = false;
     };
-  }, [mdbaseReminders]);
+  }, []);
 
   async function toggleChangeNotifications() {
     setChangeNotificationsBusy(true);
@@ -96,52 +77,6 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
       );
     } finally {
       setChangeNotificationsBusy(false);
-    }
-  }
-
-  async function generateBenchmark() {
-    setBenchmark({ state: "writing", detail: "Starting…" });
-    try {
-      const { generateBenchmarkVault } = await import("../dev/benchmark");
-      const writeMs = await generateBenchmarkVault(10_000, (progress) =>
-        setBenchmark({
-          state: "writing",
-          detail: `${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()} files`,
-        }),
-      );
-      const indexed = await refresh();
-      setBenchmark({
-        state: "done",
-        detail: `Wrote files in ${writeMs.toLocaleString()} ms; indexed ${indexed.scanned.toLocaleString()} in ${indexed.elapsedMs.toLocaleString()} ms.`,
-      });
-    } catch (reason) {
-      setBenchmark({
-        state: "error",
-        detail: reason instanceof Error ? reason.message : String(reason),
-      });
-    }
-  }
-
-  async function removeBenchmark() {
-    setBenchmark({ state: "removing", detail: "Starting…" });
-    try {
-      const { removeBenchmarkVault } = await import("../dev/benchmark");
-      const deleteMs = await removeBenchmarkVault((progress) =>
-        setBenchmark({
-          state: "removing",
-          detail: `${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()} files`,
-        }),
-      );
-      await refresh();
-      setBenchmark({
-        state: "idle",
-        detail: `Removed in ${deleteMs.toLocaleString()} ms.`,
-      });
-    } catch (reason) {
-      setBenchmark({
-        state: "error",
-        detail: reason instanceof Error ? reason.message : String(reason),
-      });
     }
   }
 
@@ -164,12 +99,8 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
       </header>
       <SettingsSection label="Collection">
         <div className="setting-row">
-          {info?.kind === "connect" ? (
-            <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-          ) : (
-            <HardDrive aria-hidden="true" size={20} strokeWidth={1.6} />
-          )}
-          <span>{info?.name ?? "On this device"}</span>
+          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>{info?.name ?? "mdbase collection"}</span>
           <small>
             {loading
               ? "Opening"
@@ -181,7 +112,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
           type="button"
           onClick={() => setShowLocation((value) => !value)}
         >
-          <span>{storageExplanation(sync.mode)}</span>
+          <span>{storageExplanation()}</span>
           {showLocation ? (
             <ChevronUp aria-hidden="true" size={17} />
           ) : (
@@ -191,36 +122,14 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         {showLocation && info ? (
           <code className="collection-path">{info.location}</code>
         ) : null}
-        {choice === "local" && sync.pending ? (
-          <p className="refresh-detail" role="status">
-            {sync.pending} local{" "}
-            {sync.pending === 1 ? "change is" : "changes are"} waiting to be
-            written to Markdown. TaskNotes will retry automatically.
-          </p>
-        ) : null}
         <button
           className="text-action"
           disabled={refreshing}
           type="button"
           onClick={() => void refresh()}
         >
-          {refreshing
-            ? sync.mode === "replicated"
-              ? "Syncing"
-              : sync.mode === "live"
-                ? "Refreshing"
-                : "Checking files"
-            : sync.mode === "replicated"
-              ? "Sync now"
-              : sync.mode === "live"
-                ? "Refresh now"
-                : "Check files now"}
+          {refreshing ? "Refreshing" : "Refresh now"}
         </button>
-        {choice === "local" && indexing.phase !== "idle" ? (
-          <p className="refresh-detail" role="status">
-            {localIndexingLabel(indexing)}
-          </p>
-        ) : null}
         {lastRefresh ? (
           <p className="refresh-detail">
             {lastRefresh.scanned.toLocaleString()} records checked in{" "}
@@ -232,46 +141,22 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
           <div className="setting-row">
             <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
             <span>mdbase</span>
-            <small>{syncLabel(sync)}</small>
+            <small>{connectionLabel(connection)}</small>
           </div>
-          {choice === "local" ? (
-            <>
-              <p className="section-copy">
-                This device works independently with no sync required. You can
-                open another local collection or move this one to hosted mdbase.
-              </p>
-              <button
-                className="text-action"
-                type="button"
-                onClick={changeConnectedCollection}
-              >
-                Change collection
-              </button>
-            </>
-          ) : (
-            <>
-              {sync.message ? (
-                <p className="section-copy" role="status">
-                  {sync.message}
-                </p>
-              ) : null}
-              {sync.pending ? (
-                <p className="refresh-detail">
-                  {sync.pending} {sync.pending === 1 ? "change" : "changes"}{" "}
-                  waiting to upload.
-                </p>
-              ) : null}
-              <div className="cloud-actions">
-                <button
-                  className="text-action"
-                  type="button"
-                  onClick={changeConnectedCollection}
-                >
-                  Change collection
-                </button>
-              </div>
-            </>
-          )}
+          {connection.message ? (
+            <p className="section-copy" role="status">
+              {connection.message}
+            </p>
+          ) : null}
+          <div className="cloud-actions">
+            <button
+              className="text-action"
+              type="button"
+              onClick={changeCollection}
+            >
+              Change collection
+            </button>
+          </div>
         </div>
       </SettingsSection>
 
@@ -279,22 +164,16 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         <div className="setting-row">
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Task reminders</span>
-          <small>
-            {mdbaseReminders
-              ? changeNotificationLabel(changeNotifications)
-              : "mdbase collections only"}
-          </small>
+          <small>{changeNotificationLabel(changeNotifications)}</small>
         </div>
         <p className="section-copy">
-          {mdbaseReminders
-            ? "mdbase keeps reminders running when TaskNotes is closed. Notification text never includes task content."
-            : "Connect an mdbase collection to deliver task reminders."}
+          mdbase keeps reminders running when TaskNotes is closed. Notification
+          text never includes task content.
         </p>
-        {mdbaseReminders &&
-        (changeNotifications.state === "off" ||
-          changeNotifications.state === "enabled" ||
-          (changeNotifications.state === "denied" &&
-            changeNotifications.optedIn)) ? (
+        {changeNotifications.state === "off" ||
+        changeNotifications.state === "enabled" ||
+        (changeNotifications.state === "denied" &&
+          changeNotifications.optedIn) ? (
           <button
             className="text-action"
             disabled={changeNotificationsBusy}
@@ -308,8 +187,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
                 : "Turn on reminders"}
           </button>
         ) : null}
-        {mdbaseReminders &&
-        changeNotifications.state === "reauthorization_required" ? (
+        {changeNotifications.state === "reauthorization_required" ? (
           <button
             className="text-action"
             type="button"
@@ -327,51 +205,12 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
             Review notification access
           </button>
         ) : null}
-        {choice === "cloud" && changeNotificationsError ? (
-          <OperationErrorNotice
-            action="Notification settings"
-            className="notification-error"
-            message={changeNotificationsError}
-            recovery="Check the connection and try again."
-          />
+        {changeNotificationsError ? (
+          <p className="inline-error" role="alert">
+            {changeNotificationsError}
+          </p>
         ) : null}
       </SettingsSection>
-
-      {syncIssues.length ? (
-        <SettingsSection label="Sync issues">
-          <p className="section-copy">
-            Choose which version to keep. Other tasks can continue syncing.
-          </p>
-          <div className="sync-issue-list">
-            {syncIssues.map((issue) => (
-              <div className="sync-issue" key={issue.id}>
-                <div>
-                  <strong>{issue.title}</strong>
-                  <small>{issue.message}</small>
-                </div>
-                <div>
-                  {issue.canKeepLocal ? (
-                    <button
-                      className="text-action"
-                      type="button"
-                      onClick={() => void resolveSyncIssue(issue.id, "local")}
-                    >
-                      Keep this device
-                    </button>
-                  ) : null}
-                  <button
-                    className="text-action"
-                    type="button"
-                    onClick={() => void resolveSyncIssue(issue.id, "remote")}
-                  >
-                    Use cloud version
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SettingsSection>
-      ) : null}
 
       <SettingsSection label="Appearance">
         <div className="setting-row">
@@ -402,59 +241,24 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         <TaskModelSettingsEditor />
       </SettingsSection>
 
-      {benchmarkTools ? (
-        <SettingsSection collapsible label="Developer benchmark">
-          <p className="section-copy">
-            Debug build only. Creates disposable local Markdown records.
-          </p>
-          <div className="benchmark-actions">
-            <button
-              className="text-action"
-              disabled={
-                benchmark.state === "writing" || benchmark.state === "removing"
-              }
-              type="button"
-              onClick={() => void generateBenchmark()}
-            >
-              Generate 10,000 records
-            </button>
-            <button
-              className="text-action danger"
-              disabled={
-                benchmark.state === "writing" || benchmark.state === "removing"
-              }
-              type="button"
-              onClick={() => void removeBenchmark()}
-            >
-              Remove benchmark
-            </button>
-          </div>
-          {benchmark.detail ? (
-            <p className="refresh-detail" role="status">
-              {benchmark.detail}
-            </p>
-          ) : null}
-        </SettingsSection>
-      ) : null}
-
       <SettingsSection collapsible label="Help">
         <details className="help-topic">
           <summary>Where are my tasks saved?</summary>
-          <p>{storageExplanation(sync.mode)}</p>
+          <p>{storageExplanation()}</p>
         </details>
         <details className="help-topic">
-          <summary>What does local-first mean?</summary>
+          <summary>Does TaskNotes work offline?</summary>
           <p>
-            You can read and change tasks without waiting for a network. Hosted
-            mdbase syncs the device copy when a connection returns; a direct
-            computer connection needs that computer to be reachable.
+            No. TaskNotes reads and writes the authoritative mdbase collection
+            directly. Hosted collections need a network connection; a computer
+            collection also needs that computer to be reachable.
           </p>
         </details>
         <details className="help-topic">
-          <summary>Can I move collections later?</summary>
+          <summary>Can I change collections later?</summary>
           <p>
-            Yes. Use Collection above to move device-only Markdown to hosted
-            mdbase. Simply opening another collection does not move its tasks.
+            Yes. Use Collection above to open another mdbase collection.
+            Changing collections does not move records between them.
           </p>
         </details>
       </SettingsSection>
@@ -493,18 +297,12 @@ function ThemeSelect() {
   );
 }
 
-function syncLabel(sync: ReturnType<typeof useRepository>["sync"]): string {
-  if (sync.mode === "local") return "Device-only · no sync needed";
-  if (sync.state === "syncing")
-    return sync.mode === "live" ? "Refreshing" : "Syncing";
-  if (sync.state === "offline")
-    return sync.mode === "live"
-      ? "Collection unavailable"
-      : "Offline · changes saved here";
-  if (sync.state === "issues")
-    return `${sync.issues} sync ${sync.issues === 1 ? "issue" : "issues"}`;
-  if (sync.pending) return `${sync.pending} waiting`;
-  return sync.mode === "live" ? "Connected" : "Up to date";
+function connectionLabel(
+  connection: ReturnType<typeof useRepository>["connection"],
+): string {
+  if (connection.state === "connecting") return "Connecting";
+  if (connection.state === "unavailable") return "Collection unavailable";
+  return "Connected";
 }
 
 function SettingsSection({

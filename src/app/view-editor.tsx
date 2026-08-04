@@ -64,15 +64,12 @@ export function ViewEditor({
     void Promise.all([
       repository.taskConfiguration(),
       view ? repository.readViewSource(view.source.path) : null,
-      repository.syncStatus(),
     ]).then(
-      ([configuration, loadedSource, sync]) => {
+      ([configuration, loadedSource]) => {
         if (!active) return;
         const next = loadedSource
           ? readViewDraft(loadedSource, view!.id)
-          : emptyViewDraft(
-              sync.mode === "replicated" ? "mdbase-cel" : "obsidian-bases",
-            );
+          : emptyViewDraft("obsidian-bases");
         setSource(loadedSource);
         setDraft(next);
         setInitialFingerprint(draftFingerprint(next));

@@ -54,11 +54,8 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     }),
     update,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -267,11 +264,8 @@ it("recovers an uncertain manual board write before sending the queued move", as
     updateMany,
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -395,11 +389,8 @@ it("serializes rapid consecutive board moves without rejecting the second move",
       ),
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -504,11 +495,8 @@ it("shows a cached view while its authoritative result refreshes", async () => {
 `,
     }),
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -628,11 +616,8 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
       ),
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -738,11 +723,8 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     updateViewSource,
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -813,11 +795,8 @@ it("offers manual order from a writable kanban view", async () => {
     updateViewSource,
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;
@@ -1005,11 +984,8 @@ ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC
       ),
     collectionInfo: testCollectionInfo,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    syncStatus: async () => ({
-      mode: "live",
-      state: "synced",
-      pending: 0,
-      issues: 0,
+    connectionStatus: async () => ({
+      state: "connected",
     }),
     syncIssues: async () => [],
   } as unknown as TaskRepository;

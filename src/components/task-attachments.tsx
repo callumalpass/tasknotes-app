@@ -281,9 +281,6 @@ function displayName(path: string): string {
 
 function attachmentState(item: ResolvedTaskAttachment): string {
   if (!item.file) return "File missing";
-  if (item.file.pending === "upload")
-    return "Saved locally · Waiting to upload";
-  if (item.file.availability === "local") return "Saved on this device";
   return formatBytes(item.file.size);
 }
 
