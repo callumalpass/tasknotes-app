@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? "/",
-  plugins: [react()],
+  plugins: [androidNotificationSmokeEntry(), react()],
   build: {
     // Collection and cloud runtimes load after the small location gate. Keep
     // warnings focused on unexpectedly large individual chunks.
@@ -62,3 +62,20 @@ export default defineConfig({
     restoreMocks: true,
   },
 });
+
+function androidNotificationSmokeEntry() {
+  return {
+    name: "tasknotes-android-notification-smoke-entry",
+    transformIndexHtml: {
+      order: "pre" as const,
+      handler(html: string): string {
+        return process.env.VITE_TASKNOTES_ANDROID_NOTIFICATION_TEST === "1"
+          ? html.replace(
+              "/src/main.tsx",
+              "/src/native/android-notification-smoke-main.tsx",
+            )
+          : html;
+      },
+    },
+  };
+}
