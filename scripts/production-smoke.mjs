@@ -24,7 +24,8 @@ const checks = [
     if (
       !html.includes('<div id="root"></div>') ||
       !html.includes("TaskNotes") ||
-      !html.includes("manifest.webmanifest")
+      !html.includes("manifest.webmanifest") ||
+      !html.includes('<meta name="mobile-web-app-capable" content="yes"')
     )
       throw new Error("The deployed TaskNotes shell is incomplete.");
   },
