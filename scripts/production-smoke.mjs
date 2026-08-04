@@ -4,6 +4,8 @@ const appOrigin =
   process.env.TASKNOTES_PRODUCTION_URL ?? "https://app.tasknotes.dev";
 const requireNotificationManifest =
   process.env.TASKNOTES_REQUIRE_NOTIFICATION_MANIFEST !== "0";
+const requireConnectManifestValidation =
+  process.env.TASKNOTES_REQUIRE_CONNECT_MANIFEST_VALIDATION !== "0";
 const retryDelays = [3_000, 6_000, 12_000, 20_000, 20_000];
 
 const checks = [
@@ -43,6 +45,7 @@ const checks = [
       throw new Error("The deployed notification service worker is invalid.");
   },
   async () => {
+    if (!requireConnectManifestValidation) return;
     const manifest = await json(`${appOrigin}/.well-known/mdbase-app.json`);
     const callback = `${appOrigin}/auth/mdbase/callback`;
     if (

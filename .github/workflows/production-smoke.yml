@@ -68,6 +68,7 @@ jobs:
         env:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_PRODUCTION_URL: http://127.0.0.1:4173/tasknotes-app
+          TASKNOTES_REQUIRE_CONNECT_MANIFEST_VALIDATION: "0"
 
       - name: Run desktop browser integration
         if: github.event_name == 'pull_request'
