@@ -1,34 +1,22 @@
 import "fake-indexeddb/auto";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 
-import { MarkdownCollection } from "../storage/collection";
-import { TaskIndex } from "../storage/index";
-import { IndexedMarkdownRepository } from "../storage/repository";
-import { MemoryVault } from "../test/memory-vault";
+import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider, useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
 
-let repository: IndexedMarkdownRepository;
-let index: TaskIndex;
+let repository: MdbaseTaskRepository;
 let task: Task;
 
 beforeEach(async () => {
-  index = new TaskIndex(`deletion-undo-${crypto.randomUUID()}`);
-  repository = new IndexedMarkdownRepository({
-    collection: new MarkdownCollection(new MemoryVault()),
-    index,
-  });
+  repository = createTestMdbaseRepository();
   await repository.initialize();
   task = await repository.create({ title: "Recoverable task" });
-});
-
-afterEach(async () => {
-  index.close();
-  await index.delete();
 });
 
 it("keeps the task recoverable during the deletion undo window", async () => {

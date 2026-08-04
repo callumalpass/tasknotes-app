@@ -1,10 +1,6 @@
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { CollectionInfo } from "./ports/task-repository";
-import type {
-  MutationJournal,
-  PendingTaskDeletion,
-  PendingTaskUpdateBatch,
-} from "./mutation-journal";
+import type { MutationJournal, PendingTaskDeletion } from "./mutation-journal";
 import { toOperationalError } from "./operational-error";
 
 import type { OperationalError } from "./operational-error";
@@ -24,8 +20,6 @@ export interface TaskCommandRepository {
 export interface TaskCommandSnapshot {
   pendingDeletion: PendingTaskDeletion | null;
   deletionError: OperationalError | null;
-  recoveryError: OperationalError | null;
-  pendingRecoveryCount: number;
 }
 
 interface TaskCommandClock {
@@ -44,15 +38,13 @@ const systemClock: TaskCommandClock = {
 };
 
 /**
- * Coordinates task commands whose accepted intent must survive application
- * shutdown. React observes this service; it does not own command durability.
+ * Coordinates delayed deletions whose undo window must survive application
+ * shutdown. Other task changes go straight to the repository.
  */
 export class TaskCommandService {
   private collectionId: string | null = null;
   private pendingDeletion: PendingTaskDeletion | null = null;
   private deletionError: OperationalError | null = null;
-  private recoveryError: OperationalError | null = null;
-  private pendingRecoveryCount = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tail: Promise<void> = Promise.resolve();
   private disposed = false;
@@ -78,13 +70,9 @@ export class TaskCommandService {
     const commands = (await this.options.journal.list(this.collectionId)).sort(
       (left, right) => left.requestedAt - right.requestedAt,
     );
-    await this.recoverUpdateBatches(commands);
-    const deletions = commands
-      .filter(
-        (command): command is PendingTaskDeletion =>
-          command.kind === "delete-task",
-      )
-      .sort((left, right) => left.requestedAt - right.requestedAt);
+    const deletions = commands.sort(
+      (left, right) => left.requestedAt - right.requestedAt,
+    );
 
     // The UI currently presents one undo operation. Any older accepted command
     // is completed before the newest command is restored.
@@ -107,8 +95,6 @@ export class TaskCommandService {
         ? { ...this.pendingDeletion }
         : null,
       deletionError: this.deletionError,
-      recoveryError: this.recoveryError,
-      pendingRecoveryCount: this.pendingRecoveryCount,
     };
   }
 
@@ -149,22 +135,14 @@ export class TaskCommandService {
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]> {
     return this.enqueue(async () => {
-      if (!this.collectionId)
-        throw new Error("Task commands have not been initialized.");
-      if (this.recoveryError) {
-        await this.recoverUpdateBatches();
-        if (this.recoveryError) throw this.recoveryError;
-      }
       if (!updates.length) return [];
-      const command: PendingTaskUpdateBatch = {
-        kind: "update-tasks",
-        operationId: crypto.randomUUID(),
-        collectionId: this.collectionId,
-        requestedAt: this.clock.now(),
-        updates: structuredClone([...updates]),
-      };
-      await this.options.journal.put(command);
-      return this.applyUpdateBatch(command);
+      try {
+        const tasks = await this.options.repository.updateMany(updates);
+        await this.options.onTasksUpdated?.(tasks, updates);
+        return tasks;
+      } catch (reason) {
+        throw toOperationalError(reason, "update-tasks");
+      }
     });
   }
 
@@ -184,13 +162,6 @@ export class TaskCommandService {
     return this.enqueue(async () => {
       if (this.pendingDeletion)
         await this.commitDeletionNow(this.pendingDeletion);
-    });
-  }
-
-  retryRecovery(): Promise<void> {
-    return this.enqueue(async () => {
-      await this.recoverUpdateBatches();
-      if (this.recoveryError) throw this.recoveryError;
     });
   }
 
@@ -229,48 +200,6 @@ export class TaskCommandService {
     } finally {
       this.publish();
     }
-  }
-
-  private async applyUpdateBatch(
-    command: PendingTaskUpdateBatch,
-  ): Promise<Task[]> {
-    try {
-      const tasks = await this.options.repository.updateMany(command.updates);
-      await this.options.onTasksUpdated?.(tasks, command.updates);
-      await this.options.journal.remove(command.operationId);
-      this.publish();
-      return tasks;
-    } catch (reason) {
-      throw toOperationalError(reason, "update-tasks");
-    }
-  }
-
-  private async recoverUpdateBatches(
-    knownCommands?: readonly (PendingTaskDeletion | PendingTaskUpdateBatch)[],
-  ): Promise<void> {
-    if (!this.collectionId) return;
-    const commands = (
-      knownCommands ?? (await this.options.journal.list(this.collectionId))
-    )
-      .filter(
-        (command): command is PendingTaskUpdateBatch =>
-          command.kind === "update-tasks",
-      )
-      .sort((left, right) => left.requestedAt - right.requestedAt);
-    this.pendingRecoveryCount = commands.length;
-    this.recoveryError = null;
-    for (let index = 0; index < commands.length; index += 1) {
-      try {
-        await this.applyUpdateBatch(commands[index]!);
-        this.pendingRecoveryCount = commands.length - index - 1;
-      } catch (reason) {
-        this.recoveryError = toOperationalError(reason, "recover-task-changes");
-        this.pendingRecoveryCount = commands.length - index;
-        this.publish();
-        return;
-      }
-    }
-    this.publish();
   }
 
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {

@@ -2,290 +2,115 @@
 
 ## Purpose
 
-TaskNotes uses one web application across browsers, Android, and iOS without
-turning the local collection into browser-owned application state. Each task is
-a portable Markdown record governed by the shared TaskNotes model and mdbase
-resources.
+TaskNotes runs one React application in browsers, Android, and iOS. mdbase is
+the sole durable collection boundary. The selected authority may be hosted or
+exposed by a connected computer; that topology is an mdbase concern, not a
+TaskNotes storage mode.
 
 ## Data flow
 
 ```text
- React screens and feature components
+React screens and feature components
                  │
-        application services ───── durable command journal
-                 │                         │
-        TaskRepository port         operational IndexedDB
+         application services
                  │
-      ┌──────────┴──────────────┐
-      ▼                         ▼
-native Markdown adapter   cloud/relay adapters
-      │                         │
- MarkdownCollection        OfflineReplica / hosted API
-      │                         │
-    Vault                IndexedDB + hosted provider
-      │
-native Documents / selected folder
+         TaskRepository port
+                 │
+      MdbaseTaskRepository
+                 │
+       MdbaseConnection API
+                 │
+       hosted or computer authority
 ```
 
-Dependencies point inward. Domain modules are pure TaskNotes rules.
-Application modules own commands, read-model invalidation, recovery, and the
-`TaskRepository` port. Storage, cloud, native, and IndexedDB modules are
-adapters. Only collection composition modules construct adapters; React
-providers require explicit ports and services.
+Dependencies point inward. Domain modules contain pure TaskNotes rules.
+Application modules own commands, query invalidation, and the repository port.
+The mdbase adapter translates provider-neutral operations and model records.
+Only collection composition constructs the adapter; screens do not branch on
+authority topology.
 
-Screens use the same list, mutation, completion, status, and issue vocabulary
-for every collection location. Platform checks stay inside the `Vault`
-factory, while synchronization stays inside cloud adapters. Feature renderers
-live in focused modules under `app/views` and editor draft/layout concerns are
-kept outside the task screen coordinator.
+## State ownership
 
-## Commands and recovery
-
-An accepted multi-record update or delayed deletion is written to the durable
-application command journal before it is exposed to React. The journal is
-operational metadata, not a task authority: local Markdown and the hosted
-collection retain the authority described above.
-
-Task update commands are absolute, idempotent patches. Startup replays them in
-accepted order and retains the first failed command for an explicit retry.
-Deletion intent survives reload throughout its undo window; an expired intent
-is committed idempotently. React observes typed command snapshots containing
-stable operational error codes and never owns persistence timers.
-
-Repository mutations publish through the required subscription contract.
-Query-scoped external-store revisions invalidate task details, relationships,
-lists, views, and summaries without placing a provider-wide mutation counter
-in React state.
+- The mdbase authority owns task records, view sources, collection resources,
+  scratchpads, and attachment bytes.
+- `MdbaseTaskRepository` keeps an in-memory session cache for coherent reads,
+  search, optimistic UI coordination, and a last-result fallback during a
+  transient request failure. It is discarded when the page closes.
+- IndexedDB does not contain a task or file replica. It may retain bounded UI
+  intent that is not collection data, currently the 30-second undo window for
+  a delayed deletion and attachment-operation coordination.
+- Normal creates and updates go directly to mdbase. There is no TaskNotes
+  outbox, reconciliation engine, or conflict resolver.
 
 ## Invariants
 
-1. Local Markdown files are authoritative. A cloud device replica may hold the
-   only copy of an unsynchronized write until the hosted authority accepts it.
-2. Every persisted task passes through `@tasknotes/model` for mapping and
-   mutation semantics.
+1. A successful mutation means the mdbase authority accepted it.
+2. Every persisted task passes through `@tasknotes/model` mapping and mutation
+   semantics.
 3. `mdbase.yaml` and the type providing `tasknotes.task` are canonical
-   collection resources. The type may use a custom name and types folder.
-4. Paths crossing the vault boundary are relative, normalized, and may not
-   traverse above the collection root.
-5. Repository mutations are serialized. A screen can navigate immediately;
-   its pending write remains ordered with later operations.
-6. Reconciliation is incremental. Unchanged files are identified by path,
-   modification time, and size without reading their contents.
-7. Invalid external records remain untouched and are omitted from the task
+   collection resources; provider type names and field mappings may vary.
+4. Invalid external records remain untouched and are omitted from the task
    projection.
-8. Cloud mutations update the durable device replica before any network work.
-9. Hosted provider credentials remain inside the mdbase client transport and
-   are never exposed to application state or UI code.
-10. A conflict blocks only its record. Other queued records continue syncing,
-    and the user can keep either the device or hosted version.
-11. `attachments` in task frontmatter is authoritative for task membership.
-    Optional body embeds are presentation, while file descriptors are
-    authoritative for binary metadata; none is inferred from another.
-12. Detaching a file is non-destructive. TaskNotes withholds permanent deletion
-    until a collection authority can atomically check every attachment list and
-    body embed and delete only still-unreferenced bytes.
+5. Writes to the same logical record are serialized at the repository boundary.
+6. Provider credentials remain inside mdbase Connect and are never exposed to
+   React state or UI code.
+7. The task frontmatter `attachments` list owns attachment membership. Optional
+   body embeds own presentation; mdbase file descriptors own binary metadata.
+8. Detaching a file is non-destructive. Permanent deletion requires an atomic
+   authority-level reference check that is not yet offered.
 
-## Attachments and local-first files
+## Connection lifecycle
 
-Task attachments use canonical collection-relative wiki links such as
-`[[Attachments/receipt.jpg]]`. The task model validates and normalizes those
-links without putting file metadata into YAML. Occurrence tasks inherit the
-same references and never duplicate the underlying bytes.
+TaskNotes discovers and authorizes through mdbase Connect using Authorization
+Code with PKCE. Its manifest requires the `tasknotes.task` contract and carries
+the portable TaskNotes type pack for collection provisioning. It requests full
+collection access because TaskNotes also edits Markdown bodies, manages saved
+views, scratchpads, and attachments.
 
-Native Android and iOS collections store image bytes beside Markdown through
-the same granted folder boundary. Listing derives portable descriptors with a
-SHA-256 content digest and reuses them while path, modification time, and size
-are unchanged. Attachment writes are journaled before binary work: bytes are
-staged and verified first, then startup recovery completes frontmatter
-membership. Native replacement is not advertised because Files providers do
-not offer a portable atomic replace operation. An interruption can therefore
-leave a recoverable extra file, never an attachment that quietly claims missing
-bytes or an overwritten original. Browser-local attachment storage is
-intentionally absent: browser collections use mdbase.
-
-For mdbase collections, bytes are committed to the durable IndexedDB replica
-and outbox before network work begins. Underlying file transport operations keep
-stable transfer or mutation identities across restart, so retry is idempotent.
-Reads prefer the device replica; reconciliation uploads pending work and fills
-missing local bytes from the hosted authority. A pending-local state is shown
-to the user but is never written into task frontmatter.
-
-TaskNotes does not initiate physical attachment deletion for any provider. A
-native folder can change outside the app, and an mdbase replica cannot prove
-that another offline device has not created a reference. Neither authority yet
-offers the required atomic reference-check-and-delete operation. Detach is
-available and leaves safe orphan bytes; permanent cleanup must wait for that
-authoritative transaction.
-
-Collection adoption captures task records and file descriptors in one
-authority snapshot, then transfers the corresponding bytes. A final snapshot
-closes the edit window before cutover, using stable portable file identities so
-retries cannot create duplicate attachments.
-
-## Collection lifecycle
-
-On first local open, the vault installs the managed mdbase configuration and
-TaskNotes type when absent. Each refresh re-resolves the canonical type from
-the configured types folder before projecting records. Compatible field,
-status, and path changes apply immediately; an incompatible definition is
-reported while the last usable projection remains available.
-
-Managed schema upgrades show their affected type path and require user
-approval before the type or task records are rewritten. Declining keeps the
-canonical files untouched and suppresses repeat prompts until that type
-changes.
-
-Startup loads any existing projection before reconciling the filesystem. When
-the projection is empty, the application still opens after collection
-configuration is ready, then indexes Markdown in bounded background batches.
-Each batch commits durable projection rows, yields so foreground mutations can
-run, and publishes progressive results. Empty states remain explicitly marked
-as incomplete until the scan finishes. Saved views use the streamed task cache
-during reconciliation so rendering a partial result cannot trigger a second
-full parse.
-
-The in-memory projection supports immediate list and token search operations.
-Large Today lists are revealed in 300-row increments so the DOM does not grow
-to thousands of rows on initial render.
-
-## Views and navigation
-
-`TaskRepository.listViews()` preserves the provider's saved-view document
-shape. A document corresponds to one source file and contains its named views
-in source order. The UI derives a flat index only when resolving a stable
-`source path + view id` key; the Views catalog keeps source ownership visible.
-
-Today, Upcoming, Calendar, and Projects are managed starter views in the
-TaskNotes view document. They use the same catalog, routing, navigation, and
-presentation dispatch as collection views while retaining their specialized
-task renderers. The managed source carries a version marker so additive starter
-view migrations run once and later user edits remain authoritative.
-
-Projects is a relationship view rather than a folder browser. Its saved query
-selects collection records with backlinks from active tasks through the
-configured projects field. The view engine constructs the backlink index once
-per execution. The renderer indexes returned project paths and makes one pass
-over the in-memory task projection, avoiding a task-by-project nested scan.
-Creating a task from a project injects the project link into the configured
-field.
-
-Navigation is a collection-scoped ordered list of view keys stored as a device
-preference. Its first item is the home view. Desktop shows the complete list;
-mobile shows the first three views and a Views overflow destination. Removing
-the final navigation view is disallowed so the collection always has a home.
-
-## Field completion
-
-Task field controls request completions through `TaskRepository.completeField`.
-The request describes values or records, the configured field name, optional
-target types, and schema enum values. This keeps storage, query dialect, and
-link serialization out of React components.
-
-Value completion reads the existing task projection, so contexts, tags, and
-other repeated values are immediate. Record completion searches the local
-collection, the offline cloud replica, or the relay query endpoint. Relay
-requests are debounced, coalesced while in flight, bounded, and cached briefly.
-The selected record is persisted as a collection-root wikilink or Markdown
-link according to collection configuration.
-
-Custom fields also inherit JSON Schema editing semantics. Required fields are
-validated on create and update, read-only values cannot be overwritten by the
-app, enums use strict selectors, and `date-time` values are stored as RFC 3339
-instants.
-
-## Platform storage
-
-Web browsers open mdbase collections only. The hosted provider is authoritative
-and IndexedDB holds the durable offline replica; browser storage is never the
-authority for a web collection.
-
-`CapacitorVault` stores the default native collection in the platform Documents
-directory. Android records are visible under `Documents/TaskNotes`. iOS enables
-file sharing and opening documents in place so the default collection can be
-inspected through Files.
-
-`NativeFolderVault` opens an existing folder selected through the platform file
-picker. Android persists a Storage Access Framework tree grant. iOS persists a
-security-scoped bookmark and uses coordinated reads and writes. The native
-bridge enumerates collection entries in batches, validates every relative path,
-and requires the expected selection identifier on each operation so a
-repository cannot cross into a newly selected folder. Folder-specific
-IndexedDB projections keep cached tasks and navigation preferences isolated.
-
-Users may revoke a grant, move a folder, sign out of a provider, or make a
-cloud-backed folder temporarily unavailable. Those failures leave Markdown
-untouched and return the user to folder selection.
-
-## Cloud lifecycle
-
-TaskNotes discovers and authorizes through mdbase connect using Authorization
-Code with PKCE. The application manifest requires the `tasknotes.task` contract
-and provides the portable TaskNotes type document when a collection needs it.
-During approval, the generic Connect portal provisions that app-owned type into
-the selected hosted collection, so Connect itself contains no TaskNotes
-knowledge.
-
-The manifest deliberately requests `full_collection` access as well as naming
-the contract. The contract tells TaskNotes which types it can understand and
-how their fields map to the portable task model; it is not an authorization
-shortcut. TaskNotes also edits Markdown bodies, stores saved views, and keeps a
-complete durable offline replica. Contract-scoped access excludes bodies and
-fields outside the contract, so it is too narrow for those product features.
-
-After token exchange, the mdbase client supplies a credential-owning sync
-transport to `OfflineReplica`. First open downloads collection resources and a
-snapshot. Later opens load the persistent IndexedDB replica immediately and
-pull changes in the background. A failed pull leaves the collection usable and
-marks queued mutations as waiting. Resume pushes local mutations and then
-pulls the authoritative change stream. Resource revisions are re-resolved
-before records after every sync, so hosted schema changes take effect without
-reconnecting.
+After authorization, TaskNotes constructs exactly one `MdbaseTaskRepository`
+from the credential-owning `MdbaseConnection`. Initialization resolves the
+collection contract and loads task records. Refresh re-reads canonical mdbase
+state. If the authority is unavailable, the current in-memory session can stay
+visible, but new writes and a new application session require the authority.
 
 Native authorization opens the system browser and returns through
 `dev.tasknotes.app://auth/mdbase/callback`. Web authorization returns to the
-same application origin. The collection and cloud runtimes are separate lazy
-chunks, keeping the first-run location screen small.
+same application origin.
+
+## Attachments
+
+Task attachments use collection-relative wiki links such as
+`[[Attachments/receipt.jpg]]`. The model validates and normalizes those links
+without putting file metadata into YAML. Occurrence tasks inherit references
+without duplicating bytes.
+
+Attachment operations use mdbase file capabilities. Bytes are added first and
+verified, then task membership is updated. The small operation journal exists
+to recover this two-resource coordination; it never becomes a readable file
+replica. Inline Notes embeds are optional and independent of membership.
+
+## Views, search, and completion
+
+Saved views remain provider-owned. `listViews` preserves source documents and
+`executeView` delegates evaluation to mdbase. The current session caches the
+last catalog and execution only to avoid UI discontinuity during a transient
+failure.
+
+Task list and value completion use the in-memory session projection. Record
+completion queries mdbase, with short-lived in-memory coalescing and debounce.
+No durable local index participates in either path.
 
 ## Testing boundaries
 
-- A shared `TaskRepository` behavioural contract runs against local Markdown,
-  durable cloud replica, and live relay adapters. It covers idempotent open and
-  delete, batch ordering, query visibility, capabilities, and subscriptions.
-- Application and domain layers have independent coverage floors in addition
-  to the whole-program coverage gate.
-- Unit tests use an in-memory vault and fake IndexedDB to exercise repository
-  reconciliation and mutation ordering.
-- TaskNotes conformance runs against the shared model package.
-- The generated collection is opened and mutated by the real mdbase v0.3
-  TypeScript engine.
-- Playwright covers browser CRUD, search, reload persistence, and background
-  saves at desktop and phone sizes. Pull requests run the desktop browser
-  integration suite, and axe checks onboarding, task editing, views, and
-  settings at both configured viewport projects.
-- The general browser UI harness may use an OPFS-backed local fixture only in
-  E2E mode. Production and development web builds cannot open that adapter.
-- The cloud browser vertical slice crosses the portal, OAuth server, SDK,
-  provider HTTP boundary, offline replica, and conflict UI.
-- The Android smoke test crosses the real WebView-to-Filesystem bridge and
-  verifies the resulting public Markdown file, official
-  PushNotifications FCM registration and foreground delivery, process restart,
-  and private-use OAuth callback.
-- Debug-only benchmark controls create and remove app-owned large-vault
-  fixtures, avoiding misleading results from Android scoped-storage ownership.
-
-## Migration from `tasknotes-mobile`
-
-The Expo application remains untouched while this implementation matures.
-Migration should proceed in explicit gates:
-
-1. Reach feature parity for the daily task flows selected for the first public
-   release.
-2. Test iOS on physical hardware and confirm Files integration, backgrounding,
-   keyboard behaviour, and safe-area layouts.
-3. Add a one-time importer for the Expo app-private collection. The new Android
-   public Documents collection is deliberately separate and is not migrated
-   implicitly.
-4. Exercise the production mdbase cloud service with a private test account and
-   deployed TaskNotes manifest.
-5. Change the production application ID only after data migration and rollback
-   behaviour have been exercised on both platforms.
+- The shared repository contract runs against `MdbaseTaskRepository`.
+- Unit tests exercise model mapping, direct mutations, unknown-outcome retry,
+  views, scratchpads, attachments, reminders, and UI flows with an in-memory
+  mdbase protocol fixture.
+- TaskNotes conformance runs against the shared model package, and the mdbase
+  oracle opens and mutates a generated real collection.
+- Playwright uses the mdbase Connect browser fixture and encrypted connector
+  operation boundary at desktop and phone viewports. It covers authorization,
+  collection selection, task reads and writes, delayed deletion, custom
+  contracts, and onboarding accessibility.
+- `cap sync`, Android Gradle checks, and the iOS project validate that native
+  packaging contains no obsolete filesystem bridge.

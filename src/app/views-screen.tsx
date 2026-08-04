@@ -62,7 +62,6 @@ import {
 } from "./repository-context";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
-import { localIndexingLabel } from "./indexing-progress";
 import { readViewDraft, updateViewDocument } from "../domain/view-document";
 import { ViewTaskRow } from "./views/view-task-row";
 import { MiniCalendarView } from "./views/mini-calendar-view";
@@ -132,7 +131,6 @@ export function ViewsScreen({
     updateTask,
     updateTasks,
     configuration,
-    indexing,
     pendingDeletion,
   } = useRepository();
   const viewRevision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
@@ -761,25 +759,7 @@ export function ViewsScreen({
 
   async function refreshAfterCreate(task: Task) {
     if (!selected) return;
-    const sync = await repository.syncStatus();
-    const replicated = sync.mode === "replicated";
-    if (replicated) {
-      await repository.refresh();
-      const settled = await repository.syncStatus();
-      if (
-        settled.state !== "synced" ||
-        settled.pending > 0 ||
-        settled.issues > 0
-      )
-        return {
-          message: "Task created. This view will check for it after syncing.",
-        };
-    }
-    let refreshed = await repository.executeView(selected);
-    if (replicated && !refreshed.rows.some((row) => row.task.id === task.id))
-      // A pre-sync refresh may still have occupied the repository's in-flight
-      // execution slot. Once it settles, one fresh execution is authoritative.
-      refreshed = await repository.executeView(selected);
+    const refreshed = await repository.executeView(selected);
     if (selectedKeyRef.current === selected.key) {
       setExecution(refreshed);
       setExecutionError(null);
@@ -1007,11 +987,7 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
-            {!indexing.complete ? (
-              <small aria-live="polite" role="status">
-                {localIndexingLabel(indexing)}
-              </small>
-            ) : visibleExecution && currentExecutionRefreshing ? (
+            {visibleExecution && currentExecutionRefreshing ? (
               <span
                 aria-live="polite"
                 className="visually-hidden"
@@ -1074,12 +1050,6 @@ export function ViewsScreen({
             </div>
           ) : null}
         </header>
-        {!indexing.complete ? (
-          <p className="indexing-detail" role="status">
-            Results will appear while TaskNotes finishes checking this
-            collection.
-          </p>
-        ) : null}
         {error ? (
           <OperationErrorNotice
             action="This view"
@@ -1228,7 +1198,6 @@ export function ViewsScreen({
         ) : (
           <TaskListView
             configuration={configuration}
-            collectionComplete={indexing.complete}
             execution={presentedExecution}
             moves={
               new Map(
@@ -1990,7 +1959,6 @@ interface TaskListLane {
 }
 
 function TaskListView({
-  collectionComplete,
   configuration,
   execution,
   moves,
@@ -2001,7 +1969,6 @@ function TaskListView({
   onOpen,
   onToggle,
 }: ViewProps & {
-  collectionComplete: boolean;
   configuration: TaskCollectionConfiguration;
   moves: ReadonlyMap<string, { laneKey: string }>;
   manualOrder: ManualOrderConfiguration | null;
@@ -2018,17 +1985,11 @@ function TaskListView({
   if (!execution.rows.length)
     return (
       <div className="plain-empty task-list-view">
-        <h2>
-          {collectionComplete
-            ? "No tasks match this view"
-            : "Indexing your tasks"}
-        </h2>
+        <h2>No tasks match this view</h2>
         <p>
-          {collectionComplete
-            ? execution.view.presentation?.options.create === false
-              ? "Adjust this view’s filters or choose another view."
-              : "Add a task above, or adjust this view’s filters."
-            : "Matching tasks will appear as they are found."}
+          {execution.view.presentation?.options.create === false
+            ? "Adjust this view’s filters or choose another view."
+            : "Add a task above, or adjust this view’s filters."}
         </p>
       </div>
     );

@@ -26,7 +26,7 @@ import {
 import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 
 import type { Task } from "../domain/task";
-import type { TaskRepository } from "../storage/repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
 
 describe("mdbase task reminders", () => {
@@ -87,11 +87,8 @@ describe("mdbase task reminders", () => {
 
   it("keeps connected reminders at the mdbase authority", async () => {
     const repository = {
-      syncStatus: vi.fn(async () => ({
-        mode: "replicated",
-        state: "synced",
-        pending: 0,
-        issues: 0,
+      connectionStatus: vi.fn(async () => ({
+        state: "connected",
       })),
       list: vi.fn(async () => [
         {
@@ -123,7 +120,7 @@ describe("mdbase task reminders", () => {
     });
   });
 
-  it("does no reminder work for a local collection", async () => {
+  it("does no reminder work when mdbase reminder delivery is disabled", async () => {
     const repository = {
       list: vi.fn(async () => []),
     } as unknown as TaskRepository;
@@ -135,11 +132,8 @@ describe("mdbase task reminders", () => {
 
   it("reconciles reminders for a live connector collection", async () => {
     const repository = {
-      syncStatus: vi.fn(async () => ({
-        mode: "live",
-        state: "synced",
-        pending: 0,
-        issues: 0,
+      connectionStatus: vi.fn(async () => ({
+        state: "connected",
       })),
       list: vi.fn(async () => []),
     } as unknown as TaskRepository;

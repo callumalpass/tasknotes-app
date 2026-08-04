@@ -7,7 +7,7 @@ const webServerCommand =
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
-  // Desktop and mobile share the E2E-only OPFS fixture, never a product store.
+  // Desktop and mobile exercise the same direct mdbase application path.
   workers: 1,
   use: {
     baseURL,

@@ -45,9 +45,7 @@ import type { TaskRelationships } from "../domain/task-relationships";
 import type {
   CollectionInfo,
   RefreshResult,
-  RepositoryIndexingProgress,
-  RepositorySyncIssue,
-  RepositorySyncStatus,
+  RepositoryConnectionStatus,
   TaskRepository,
 } from "../application/ports/task-repository";
 import type { MutationJournal } from "../application/mutation-journal";
@@ -60,16 +58,12 @@ interface RepositoryContextValue {
   status: StorageStatus;
   error: Error | null;
   refreshing: boolean;
-  indexing: RepositoryIndexingProgress;
   lastRefresh: RefreshResult | null;
-  sync: RepositorySyncStatus;
-  syncIssues: RepositorySyncIssue[];
+  connection: RepositoryConnectionStatus;
   invalidation: QueryInvalidationStore;
   configuration: TaskCollectionConfiguration;
   pendingDeletion: { id: string; title: string } | null;
   deletionError: OperationalError | null;
-  recoveryError: OperationalError | null;
-  pendingRecoveryCount: number;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   updateTasks(
@@ -89,12 +83,10 @@ interface RepositoryContextValue {
   deleteTask(id: string): Promise<void>;
   undoTaskDeletion(): Promise<void>;
   retryTaskDeletion(): Promise<void>;
-  retryTaskRecovery(): Promise<void>;
   updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration>;
   refresh(): Promise<RefreshResult>;
-  resolveSyncIssue(id: string, resolution: "local" | "remote"): Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryContextValue | null>(null);
@@ -117,20 +109,10 @@ export function RepositoryProvider({
   const [status, setStatus] = useState<StorageStatus>("opening");
   const [error, setError] = useState<Error | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [indexing, setIndexing] = useState<RepositoryIndexingProgress>({
-    phase: "idle",
-    completed: 0,
-    total: 0,
-    complete: true,
-  });
   const [lastRefresh, setLastRefresh] = useState<RefreshResult | null>(null);
-  const [sync, setSync] = useState<RepositorySyncStatus>({
-    mode: "local",
-    state: "local",
-    pending: 0,
-    issues: 0,
+  const [connection, setConnection] = useState<RepositoryConnectionStatus>({
+    state: "connecting",
   });
-  const [syncIssues, setSyncIssues] = useState<RepositorySyncIssue[]>([]);
   const [invalidation] = useState(() => new QueryInvalidationStore());
   const [pendingDeletion, setPendingDeletion] = useState<{
     id: string;
@@ -139,10 +121,6 @@ export function RepositoryProvider({
   const [deletionError, setDeletionError] = useState<OperationalError | null>(
     null,
   );
-  const [recoveryError, setRecoveryError] = useState<OperationalError | null>(
-    null,
-  );
-  const [pendingRecoveryCount, setPendingRecoveryCount] = useState(0);
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
@@ -153,13 +131,9 @@ export function RepositoryProvider({
     useRef<Promise<TaskCommandService | null> | null>(null);
 
   const bump = useCallback(() => invalidation.invalidateAll(), [invalidation]);
-  const loadSync = useCallback(async () => {
-    const [nextStatus, nextIssues] = await Promise.all([
-      repository.syncStatus(),
-      repository.syncIssues(),
-    ]);
-    setSync(nextStatus);
-    setSyncIssues(nextIssues);
+  const loadConnection = useCallback(async () => {
+    const nextStatus = await repository.connectionStatus();
+    setConnection(nextStatus);
   }, [repository]);
   const refresh = useCallback(() => {
     if (refreshInFlight.current) return refreshInFlight.current;
@@ -173,7 +147,7 @@ export function RepositoryProvider({
         await autoArchiveRef.current?.reconcile();
         setLastRefresh(result);
         setError(null);
-        void loadSync().catch(() => undefined);
+        void loadConnection().catch(() => undefined);
         if (reminderAuthority === "connect")
           void reconcileTaskNotifications(repository, reminderAuthority).catch(
             () => undefined,
@@ -191,7 +165,7 @@ export function RepositoryProvider({
       });
     refreshInFlight.current = run;
     return run;
-  }, [loadSync, reminderAuthority, repository]);
+  }, [loadConnection, reminderAuthority, repository]);
 
   useEffect(() => {
     let active = true;
@@ -268,8 +242,6 @@ export function RepositoryProvider({
               : null,
           );
           setDeletionError(snapshot.deletionError);
-          setRecoveryError(snapshot.recoveryError);
-          setPendingRecoveryCount(snapshot.pendingRecoveryCount);
         };
         unsubscribeCommands = taskCommands.subscribe(publishCommandSnapshot);
         await taskCommands.initialize();
@@ -282,16 +254,8 @@ export function RepositoryProvider({
         }
         resolveTaskCommands!(taskCommands);
         setConfiguration(nextConfiguration);
-        setIndexing(
-          repository.indexingProgress?.() ?? {
-            phase: "idle",
-            completed: 0,
-            total: 0,
-            complete: true,
-          },
-        );
         setStatus("ready");
-        void loadSync().catch(() => undefined);
+        void loadConnection().catch(() => undefined);
         void reconcileTaskNotifications(repository, reminderAuthority).catch(
           () => undefined,
         );
@@ -316,7 +280,7 @@ export function RepositoryProvider({
   }, [
     bump,
     invalidation,
-    loadSync,
+    loadConnection,
     mutationJournal,
     refresh,
     reminderAuthority,
@@ -327,18 +291,10 @@ export function RepositoryProvider({
     if (!repository.subscribe) return;
     return repository.subscribe(() => {
       bump();
-      void loadSync().catch(() => undefined);
+      void loadConnection().catch(() => undefined);
       void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
-  }, [bump, loadSync, repository]);
-
-  useEffect(() => {
-    if (!repository.subscribeIndexing) return;
-    return repository.subscribeIndexing((progress, publishTasks) => {
-      setIndexing(progress);
-      if (publishTasks) bump();
-    });
-  }, [bump, repository]);
+  }, [bump, loadConnection, repository]);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -360,12 +316,7 @@ export function RepositoryProvider({
   }, [refresh, status]);
 
   useEffect(() => {
-    if (
-      status !== "ready" ||
-      sync.mode === "local" ||
-      Capacitor.isNativePlatform()
-    )
-      return;
+    if (status !== "ready" || Capacitor.isNativePlatform()) return;
     const refreshIfAvailable = () => {
       if (document.visibilityState === "visible" && navigator.onLine !== false)
         void refresh().catch(() => undefined);
@@ -376,7 +327,7 @@ export function RepositoryProvider({
       window.removeEventListener("online", refreshIfAvailable);
       window.clearInterval(timer);
     };
-  }, [refresh, status, sync.mode]);
+  }, [refresh, status]);
 
   const createTask = useCallback(
     async (input: CreateTaskInput) => {
@@ -510,18 +461,6 @@ export function RepositoryProvider({
   const retryTaskDeletion = useCallback(async () => {
     await taskCommandsRef.current?.retryDeletion();
   }, []);
-  const retryTaskRecovery = useCallback(async () => {
-    const commands = await taskCommandsReadyRef.current;
-    if (!commands) throw new Error("Task commands are not ready.");
-    await commands.retryRecovery();
-  }, []);
-  const resolveSyncIssue = useCallback(
-    async (id: string, resolution: "local" | "remote") => {
-      await repository.resolveSyncIssue(id, resolution);
-      await loadSync();
-    },
-    [loadSync, repository],
-  );
   const updateTaskModelSettings = useCallback(
     async (patch: TaskModelSettingsPatch) => {
       const next = await repository.updateTaskModelSettings(patch);
@@ -539,16 +478,12 @@ export function RepositoryProvider({
       status,
       error,
       refreshing,
-      indexing,
       lastRefresh,
-      sync,
-      syncIssues,
+      connection,
       invalidation,
       configuration,
       pendingDeletion,
       deletionError,
-      recoveryError,
-      pendingRecoveryCount,
       createTask,
       updateTask,
       updateTasks,
@@ -563,26 +498,20 @@ export function RepositoryProvider({
       deleteTask,
       undoTaskDeletion,
       retryTaskDeletion,
-      retryTaskRecovery,
       updateTaskModelSettings,
       refresh,
-      resolveSyncIssue,
     }),
     [
       repository,
       status,
       error,
       refreshing,
-      indexing,
       lastRefresh,
-      sync,
-      syncIssues,
+      connection,
       invalidation,
       configuration,
       pendingDeletion,
       deletionError,
-      recoveryError,
-      pendingRecoveryCount,
       createTask,
       updateTask,
       updateTasks,
@@ -597,10 +526,8 @@ export function RepositoryProvider({
       deleteTask,
       undoTaskDeletion,
       retryTaskDeletion,
-      retryTaskRecovery,
       updateTaskModelSettings,
       refresh,
-      resolveSyncIssue,
     ],
   );
 

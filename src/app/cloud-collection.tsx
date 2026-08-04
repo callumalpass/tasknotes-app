@@ -6,27 +6,18 @@ import { cloudSession } from "../cloud/connect";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
-import type { CollectionChoice } from "./collection-context";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
-  authorizeAnotherCloudCollection,
   authorizationError,
-  canChooseLocalFolder,
-  changeLocalCollection,
-  choose,
+  authorizeAnotherCollection,
   openCollectionPicker,
-  reauthorizeCurrentCloudCollection,
-  reset,
+  reauthorizeCurrentCollection,
 }: {
-  authorizeAnotherCloudCollection(): void;
   authorizationError: string | null;
-  canChooseLocalFolder: boolean;
-  changeLocalCollection(): void;
-  choose(choice: CollectionChoice): void;
+  authorizeAnotherCollection(): void;
   openCollectionPicker(): void;
-  reauthorizeCurrentCloudCollection(): void;
-  reset(): void;
+  reauthorizeCurrentCollection(): void;
 }) {
   const session = useCloudSessionSnapshot();
   const connection =
@@ -36,45 +27,26 @@ export default function CloudCollection({
       connection && session.status === "ready"
         ? {
             collectionId: connection.collectionId,
-            repository: createConnectTaskRepository(
-              connection,
-              session.capabilities,
-            ),
+            repository: createConnectTaskRepository(connection),
           }
         : null,
     [connection, session],
   );
 
-  if (!opened)
-    return (
-      <CloudConnection
-        error={authorizationError}
-        onBack={canChooseLocalFolder ? reset : undefined}
-      />
-    );
+  if (!opened) return <CloudConnection error={authorizationError} />;
 
   return (
     <OpenedCollection
-      authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
-      canChooseLocalFolder={canChooseLocalFolder}
-      changeConnectedCollection={openCollectionPicker}
-      changeLocalCollection={changeLocalCollection}
-      choice="cloud"
-      choose={choose}
+      authorizeAnotherCollection={authorizeAnotherCollection}
+      changeCollection={openCollectionPicker}
       key={opened.collectionId}
-      reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
+      reauthorizeCurrentCollection={reauthorizeCurrentCollection}
       repository={opened.repository}
     />
   );
 }
 
-export function CloudConnection({
-  error,
-  onBack,
-}: {
-  error: string | null;
-  onBack?: () => void;
-}) {
+export function CloudConnection({ error }: { error: string | null }) {
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const session = useCloudSessionSnapshot();
@@ -128,10 +100,10 @@ export function CloudConnection({
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Sync with mdbase.</h1>
+        <h1>Open TaskNotes with mdbase.</h1>
         <p>
-          Hosted mdbase is local-first: this device keeps an offline copy, then
-          syncs changes to the shared source of truth.
+          Choose where your Markdown collection lives. TaskNotes reads and
+          writes it directly through mdbase.
         </p>
       </div>
       <div className="connection-comparison" aria-label="Connection options">
@@ -140,8 +112,8 @@ export function CloudConnection({
           <span>
             <strong>Hosted mdbase</strong>
             <small>
-              Recommended. Works offline, syncs across devices, and delivers
-              reminders while TaskNotes is closed.
+              Recommended. Available anywhere with a connection and able to
+              deliver reminders while TaskNotes is closed.
             </small>
           </span>
         </div>
@@ -150,8 +122,8 @@ export function CloudConnection({
           <span>
             <strong>Connect to a computer</strong>
             <small>
-              Connection required. Use a collection directly while that computer
-              is reachable; it delivers task reminders.
+              Keep the collection on your computer and use it while that
+              computer is reachable.
             </small>
           </span>
         </div>
@@ -236,11 +208,6 @@ export function CloudConnection({
             {opening === "reconnect"
               ? "Opening mdbase…"
               : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
-          </button>
-        ) : null}
-        {onBack ? (
-          <button className="text-action" type="button" onClick={onBack}>
-            Choose another location
           </button>
         ) : null}
       </div>

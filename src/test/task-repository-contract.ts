@@ -7,7 +7,7 @@ export interface TaskRepositoryContractFixture {
   cleanup?(): Promise<void> | void;
 }
 
-/** Shared behavioural contract for every local, replicated, and relay adapter. */
+/** Shared behavioural contract for the provider-neutral mdbase adapter. */
 export function taskRepositoryContract(
   adapter: string,
   createFixture: () => Promise<TaskRepositoryContractFixture>,
@@ -34,11 +34,8 @@ export function taskRepositoryContract(
       expect(await fixture.repository.taskConfiguration()).toMatchObject({
         statuses: expect.any(Array),
       });
-      expect(await fixture.repository.syncStatus()).toMatchObject({
-        mode: expect.any(String),
-        state: expect.any(String),
-        pending: expect.any(Number),
-        issues: expect.any(Number),
+      expect(await fixture.repository.connectionStatus()).toMatchObject({
+        state: "connected",
       });
     });
 

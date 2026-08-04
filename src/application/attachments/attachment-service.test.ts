@@ -1,22 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { MarkdownCollection } from "../../storage/collection";
-import { TaskIndex } from "../../storage/index";
-import { IndexedMarkdownRepository } from "../../storage/repository";
-import { MemoryVault } from "../../test/memory-vault";
+import { MdbaseTaskRepository } from "../../storage/mdbase-repository";
+import { createTestMdbaseRepository } from "../../test/mdbase-fixture";
+import { MemoryCollectionFileStore } from "../../test/memory-collection-files";
 import { AttachmentService } from "./attachment-service";
 
 import type { TaskRepository } from "../ports/task-repository";
 
-const indexes: TaskIndex[] = [];
-
-afterEach(async () => {
-  await Promise.all(indexes.splice(0).map((index) => index.delete()));
-});
-
 describe("AttachmentService", () => {
   it("makes frontmatter membership authoritative and keeps detach non-destructive", async () => {
-    const { repository, vault } = await fixture();
+    const { repository, files } = await fixture();
     const task = await repository.create({
       title: "Expense report",
       body: "Notes",
@@ -36,9 +29,9 @@ describe("AttachmentService", () => {
     expect(attached.task.attachments).toEqual([attached.reference]);
     expect(attached.task.frontmatter.attachments).toEqual([attached.reference]);
     expect(attached.task.body).toBe("Notes");
-    expect(await vault.readBinary(attached.file.path)).toEqual(
-      Uint8Array.of(1, 2, 3),
-    );
+    expect(
+      new Uint8Array(await (await files.download(attached.file)).arrayBuffer()),
+    ).toEqual(Uint8Array.of(1, 2, 3));
 
     const detached = await service.detach(task.id, attached.reference);
     expect(detached.attachments).toEqual([]);
@@ -305,16 +298,12 @@ describe("AttachmentService", () => {
 });
 
 async function fixture(): Promise<{
-  repository: IndexedMarkdownRepository;
-  vault: MemoryVault;
+  repository: MdbaseTaskRepository;
+  files: MemoryCollectionFileStore;
 }> {
-  const vault = new MemoryVault();
-  const index = new TaskIndex(`attachments-${crypto.randomUUID()}`);
-  indexes.push(index);
-  const repository = new IndexedMarkdownRepository({
-    collection: new MarkdownCollection(vault),
-    index,
-  });
+  const repository = createTestMdbaseRepository();
+  const files = new MemoryCollectionFileStore();
+  Object.defineProperty(repository, "files", { value: files });
   await repository.initialize();
-  return { repository, vault };
+  return { repository, files };
 }

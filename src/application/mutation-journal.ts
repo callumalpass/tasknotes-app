@@ -1,5 +1,3 @@
-import type { UpdateTaskInput } from "../domain/task";
-
 export interface PendingTaskDeletion {
   kind: "delete-task";
   operationId: string;
@@ -10,15 +8,7 @@ export interface PendingTaskDeletion {
   commitAfter: number;
 }
 
-export interface PendingTaskUpdateBatch {
-  kind: "update-tasks";
-  operationId: string;
-  collectionId: string;
-  requestedAt: number;
-  updates: Array<{ id: string; input: UpdateTaskInput }>;
-}
-
-export type DurableTaskCommand = PendingTaskDeletion | PendingTaskUpdateBatch;
+export type DurableTaskCommand = PendingTaskDeletion;
 
 /**
  * Durable application intent that is separate from task data and projections.

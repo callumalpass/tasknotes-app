@@ -1,38 +1,26 @@
 import "fake-indexeddb/auto";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { todayString } from "../domain/task";
-import { MarkdownCollection } from "../storage/collection";
-import { TaskIndex } from "../storage/index";
-import { IndexedMarkdownRepository } from "../storage/repository";
-import { MemoryVault } from "../test/memory-vault";
+import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 
 import type { Task } from "../domain/task";
 
 describe("TaskActions", () => {
-  let repository: IndexedMarkdownRepository;
-  let index: TaskIndex;
+  let repository: MdbaseTaskRepository;
   let task: Task;
 
   beforeEach(async () => {
-    index = new TaskIndex(`task-actions-${crypto.randomUUID()}`);
-    repository = new IndexedMarkdownRepository({
-      collection: new MarkdownCollection(new MemoryVault()),
-      index,
-    });
+    repository = createTestMdbaseRepository();
     await repository.initialize();
     task = await repository.create({ title: "Menu parent" });
-  });
-
-  afterEach(async () => {
-    index.close();
-    await index.delete();
   });
 
   function renderRow() {

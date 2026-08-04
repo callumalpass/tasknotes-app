@@ -1,15 +1,9 @@
 import { createContext, useContext } from "react";
 
-export type CollectionChoice = "local" | "cloud";
-
 export interface CollectionGateContextValue {
-  canChooseLocalFolder: boolean;
-  choice: CollectionChoice;
-  choose(choice: CollectionChoice): void;
-  authorizeAnotherCloudCollection(): void;
-  changeConnectedCollection(): void;
-  changeLocalCollection(): void;
-  reauthorizeCurrentCloudCollection(): void;
+  authorizeAnotherCollection(): void;
+  changeCollection(): void;
+  reauthorizeCurrentCollection(): void;
 }
 
 export const CollectionGateContext =

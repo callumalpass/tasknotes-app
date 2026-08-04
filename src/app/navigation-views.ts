@@ -56,7 +56,7 @@ export function writeNavigationViewKeys(
         ),
       );
   } catch {
-    // Replace malformed device-local preferences with a valid record.
+    // Replace malformed browser preferences with a valid record.
   }
   values[scope] = unique(keys);
   storage.setItem(STORAGE_KEY, JSON.stringify(values));

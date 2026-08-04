@@ -25,7 +25,7 @@ describe("navigation view preferences", () => {
         kind: "connect",
         id: "collection-2",
         name: "Tasks",
-        location: "Offline copy on this device",
+        location: "Connected through mdbase",
         runtime: "browser",
       }),
     ).toBe("connect:collection-2");
@@ -33,19 +33,19 @@ describe("navigation view preferences", () => {
 
   it("preserves other collection preferences when setting and clearing", () => {
     const storage = memoryStorage();
-    writeNavigationViewKeys(storage, "local:a", ["view-a", "view-c"]);
+    writeNavigationViewKeys(storage, "connect:a", ["view-a", "view-c"]);
     writeNavigationViewKeys(storage, "connect:b", ["view-b"]);
-    writeNavigationViewKeys(storage, "local:a", ["view-c"]);
+    writeNavigationViewKeys(storage, "connect:a", ["view-c"]);
 
-    expect(readNavigationViewKeys(storage, "local:a")).toEqual(["view-c"]);
+    expect(readNavigationViewKeys(storage, "connect:a")).toEqual(["view-c"]);
     expect(readNavigationViewKeys(storage, "connect:b")).toEqual(["view-b"]);
   });
 
-  it("recovers from malformed device-local state", () => {
+  it("recovers from malformed preferences", () => {
     const storage = memoryStorage("not-json");
-    expect(readNavigationViewKeys(storage, "local:a")).toBeUndefined();
-    writeNavigationViewKeys(storage, "local:a", ["view-a"]);
-    expect(readNavigationViewKeys(storage, "local:a")).toEqual(["view-a"]);
+    expect(readNavigationViewKeys(storage, "connect:a")).toBeUndefined();
+    writeNavigationViewKeys(storage, "connect:a", ["view-a"]);
+    expect(readNavigationViewKeys(storage, "connect:a")).toEqual(["view-a"]);
   });
 
   it("reorders views without losing any keys", () => {

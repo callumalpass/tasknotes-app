@@ -43,6 +43,12 @@ describe("TaskNotes mdbase manifest", () => {
       actions: ["list", "read", "add", "replace", "move", "delete"],
       scope: { kind: "collection" },
     });
+    expect(manifest.requirements.capabilities.optional).toEqual([
+      "notifications.background-delivery",
+    ]);
+    expect(manifest.requirements.capabilities.required).not.toContain(
+      "sync.offline-replica",
+    );
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
     );

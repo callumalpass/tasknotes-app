@@ -23,15 +23,10 @@
     "test:coverage:layers": "pnpm test:coverage:application && pnpm test:coverage:domain",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:cloud": "node scripts/cloud-e2e.mjs",
     "test:production-smoke": "node scripts/production-smoke.mjs",
-    "test:android-smoke": "node scripts/android-smoke.mjs",
-    "test:android-folder-smoke": "node scripts/android-smoke.mjs --folder",
     "test:conformance:tasknotes": "node scripts/run-tasknotes-conformance.mjs",
     "test:conformance:mdbase": "node scripts/verify-mdbase-collection.mjs",
     "test:conformance": "pnpm test:conformance:tasknotes && pnpm test:conformance:mdbase",
-    "fixture:benchmark": "node scripts/generate-benchmark-vault.mjs",
-    "benchmark:index": "node scripts/benchmark-local-index.mjs",
     "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm test:coverage:layers && pnpm test:conformance && pnpm build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -43,7 +38,6 @@
     "@capacitor/app": "8.1.1",
     "@capacitor/browser": "8.0.2",
     "@capacitor/core": "8.4.2",
-    "@capacitor/filesystem": "8.1.2",
     "@capacitor/haptics": "8.0.2",
     "@capacitor/push-notifications": "8.0.2",
     "@fontsource/atkinson-hyperlegible": "5.3.0",
@@ -56,7 +50,6 @@
     "@fullcalendar/timegrid": "6.1.17",
     "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz",
     "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz",
-    "@mdbase-dev/connect-sync": "file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.9.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
@@ -104,8 +97,7 @@
   "pnpm": {
     "overrides": {
       "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz",
-      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz",
-      "@mdbase-dev/connect-sync": "file:vendor/mdbase-dev-connect-sync-0.1.0-beta.29-4371c96eaa70.tgz"
+      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz"
     }
   }
 }

@@ -45,20 +45,13 @@ export function AppShell() {
     refresh,
     pendingDeletion,
     deletionError,
-    recoveryError,
-    pendingRecoveryCount,
     undoTaskDeletion,
     retryTaskDeletion,
-    retryTaskRecovery,
   } = useRepository();
   const {
-    authorizeAnotherCloudCollection,
-    canChooseLocalFolder,
-    choice,
-    changeConnectedCollection,
-    changeLocalCollection,
-    choose,
-    reauthorizeCurrentCloudCollection,
+    authorizeAnotherCollection,
+    changeCollection,
+    reauthorizeCurrentCollection,
   } = useCollectionGate();
   const {
     documents,
@@ -136,12 +129,11 @@ export function AppShell() {
   }, [navigate, navigationViews, route]);
 
   useEffect(() => {
-    if (choice !== "cloud") return;
     return mdbaseNotifications.listen(({ opened }) => {
       void refresh().catch(() => undefined);
       if (opened) navigate({ page: "home" }, true);
     });
-  }, [choice, navigate, refresh]);
+  }, [navigate, refresh]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -171,29 +163,23 @@ export function AppShell() {
         <img alt="" src={tasknotesMarkUrl} />
         <p>Opening your tasks</p>
         <LoadingRows count={4} />
-        {choice === "cloud" ? (
-          <button
-            className="text-action opening-change-collection"
-            type="button"
-            onClick={changeConnectedCollection}
-          >
-            Choose another mdbase collection
-          </button>
-        ) : null}
+        <button
+          className="text-action opening-change-collection"
+          type="button"
+          onClick={changeCollection}
+        >
+          Choose another mdbase collection
+        </button>
       </main>
     );
   }
   if (status === "error") {
     return (
       <StorageErrorScreen
-        authorizeAnotherCloudCollection={authorizeAnotherCloudCollection}
-        canChooseLocalFolder={canChooseLocalFolder}
-        changeConnectedCollection={changeConnectedCollection}
-        changeLocalCollection={changeLocalCollection}
-        choice={choice}
-        choose={choose}
+        authorizeAnotherCollection={authorizeAnotherCollection}
+        changeCollection={changeCollection}
         error={error}
-        reauthorizeCurrentCloudCollection={reauthorizeCurrentCloudCollection}
+        reauthorizeCurrentCollection={reauthorizeCurrentCollection}
         retry={() => void refresh()}
       />
     );
@@ -388,47 +374,24 @@ export function AppShell() {
           />
         </div>
       ) : null}
-      {recoveryError ? (
-        <div className="undo-toast deletion-error-toast" role="alert">
-          <span>
-            {pendingRecoveryCount} saved task change
-            {pendingRecoveryCount === 1 ? " is" : "s are"} waiting
-          </span>
-          <button
-            type="button"
-            onClick={() => void retryTaskRecovery().catch(() => undefined)}
-          >
-            Retry
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
 
 export function StorageErrorScreen({
-  authorizeAnotherCloudCollection,
-  canChooseLocalFolder,
-  changeConnectedCollection,
-  changeLocalCollection,
-  choice,
-  choose,
+  authorizeAnotherCollection,
+  changeCollection,
   error,
-  reauthorizeCurrentCloudCollection,
+  reauthorizeCurrentCollection,
   retry,
 }: {
-  authorizeAnotherCloudCollection(): void;
-  canChooseLocalFolder: boolean;
-  changeConnectedCollection(): void;
-  changeLocalCollection(): void;
-  choice: "local" | "cloud";
-  choose(choice: "local" | "cloud"): void;
+  authorizeAnotherCollection(): void;
+  changeCollection(): void;
   error: Error | null;
-  reauthorizeCurrentCloudCollection(): void;
+  reauthorizeCurrentCollection(): void;
   retry(): void;
 }) {
-  const authorizationExpired =
-    choice === "cloud" && isAuthorizationError(error);
+  const authorizationExpired = isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">
       <img alt="" src={tasknotesMarkUrl} />
@@ -439,7 +402,7 @@ export function StorageErrorScreen({
       </h1>
       <p>
         {authorizationExpired
-          ? "Your connection has expired. Your tasks and offline data remain unchanged."
+          ? "Your connection has expired. Reconnect to continue."
           : "The collection is unavailable right now."}
       </p>
       <div className="welcome-actions">
@@ -448,14 +411,14 @@ export function StorageErrorScreen({
             <button
               className="outline-action"
               type="button"
-              onClick={reauthorizeCurrentCloudCollection}
+              onClick={reauthorizeCurrentCollection}
             >
               Reconnect this collection
             </button>
             <button
               className="text-action"
               type="button"
-              onClick={authorizeAnotherCloudCollection}
+              onClick={authorizeAnotherCollection}
             >
               Choose another mdbase collection
             </button>
@@ -465,38 +428,22 @@ export function StorageErrorScreen({
             <button className="outline-action" type="button" onClick={retry}>
               Try again
             </button>
-            {choice === "cloud" ? (
-              <button
-                className="text-action"
-                type="button"
-                onClick={authorizeAnotherCloudCollection}
-              >
-                Choose another mdbase collection
-              </button>
-            ) : null}
-            {canChooseLocalFolder ? (
-              <button
-                className="text-action"
-                type="button"
-                onClick={changeLocalCollection}
-              >
-                Choose a folder
-              </button>
-            ) : null}
+            <button
+              className="text-action"
+              type="button"
+              onClick={authorizeAnotherCollection}
+            >
+              Choose another mdbase collection
+            </button>
           </>
         )}
-        {choice === "local" || canChooseLocalFolder ? (
-          <button
-            className="text-action"
-            type="button"
-            onClick={() => {
-              if (choice === "cloud") changeConnectedCollection();
-              choose(choice === "local" ? "cloud" : "local");
-            }}
-          >
-            {choice === "cloud" ? "Use on this device" : "Connect to mdbase"}
-          </button>
-        ) : null}
+        <button
+          className="text-action"
+          type="button"
+          onClick={changeCollection}
+        >
+          Open a saved collection
+        </button>
       </div>
       <details className="technical-details">
         <summary>Technical details</summary>

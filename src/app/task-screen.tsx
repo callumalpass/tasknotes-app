@@ -138,7 +138,6 @@ function TaskEditor({
     removeTimeEntry,
     configuration,
     repository,
-    sync,
   } = useRepository();
   const { relationships: repositoryRelationships } = useTaskRelationships(
     task.id,
@@ -808,7 +807,7 @@ function TaskEditor({
             />
           ) : null}
           <ReminderEditor
-            deliveryMode={sync.mode === "local" ? "local" : "mdbase"}
+            deliveryMode="mdbase"
             due={draft.due}
             reminders={draft.reminders}
             scheduled={draft.scheduled}

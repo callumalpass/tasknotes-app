@@ -13,4 +13,43 @@ describe("native Capacitor configuration", () => {
     expect(source).toMatch(/@capacitor\/push-notifications/);
     expect(source).not.toMatch(/useLegacyBridge/);
   });
+
+  it("contains no device-filesystem storage bridge", async () => {
+    const [
+      packageSource,
+      config,
+      androidSettings,
+      androidActivity,
+      iosPackage,
+    ] = await Promise.all([
+      readFile(resolve(process.cwd(), "package.json"), "utf8"),
+      readFile(resolve(process.cwd(), "capacitor.config.ts"), "utf8"),
+      readFile(
+        resolve(process.cwd(), "android/capacitor.settings.gradle"),
+        "utf8",
+      ),
+      readFile(
+        resolve(
+          process.cwd(),
+          "android/app/src/main/java/dev/tasknotes/app/MainActivity.java",
+        ),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), "ios/App/CapApp-SPM/Package.swift"),
+        "utf8",
+      ),
+    ]);
+
+    for (const source of [
+      packageSource,
+      config,
+      androidSettings,
+      androidActivity,
+      iosPackage,
+    ]) {
+      expect(source).not.toMatch(/capacitor[-/]filesystem/i);
+      expect(source).not.toMatch(/FolderAccess/);
+    }
+  });
 });
