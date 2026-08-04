@@ -40,7 +40,7 @@ async function authorize(page: Page): Promise<void> {
   const collection = page.locator('input[type="radio"]').first();
   await expect(collection).toBeAttached();
   if (!(await collection.isChecked())) await collection.check();
-  await page.getByRole("button", { name: "Allow TaskNotes" }).click();
+  await page.getByRole("button", { name: /allow TaskNotes$/i }).click();
 
   const capture = page.getByLabel("New task title");
   const applyDefinitions = page.getByRole("button", {
