@@ -92,9 +92,22 @@ function isRetryableUnknownOutcome(reason: unknown): boolean {
 }
 
 function pendingRecoveryError(reason: unknown): MdbaseConnectError {
+  if (!(reason instanceof MdbaseConnectError)) throw reason;
+  const details = reason.details;
+  if (
+    !details ||
+    typeof details !== "object" ||
+    !("request_id" in details) ||
+    typeof details.request_id !== "string"
+  )
+    return reason;
   return connectError(
     "operation_outcome_unknown",
     "TaskNotes is still confirming an earlier change. This change was not sent. Keep the collection connected and retry.",
-    { operationOutcome: "unknown", cause: reason },
+    {
+      operationOutcome: "unknown",
+      cause: reason,
+      details: { request_id: details.request_id },
+    },
   );
 }

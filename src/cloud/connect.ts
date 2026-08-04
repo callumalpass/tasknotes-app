@@ -39,7 +39,7 @@ const cloudSelection = new MdbaseBrowserSelection({
   fallbackPath: joinBase(""),
 });
 
-export const cloudSession = cloudConnect.createApplicationSession({
+export const cloudSession = cloudConnect.application({
   selection: cloudSelection,
   autoSelect: "never",
 });

@@ -349,7 +349,10 @@ export function unknownOutcome(): MdbaseConnectError {
   return connectError(
     "operation_outcome_unknown",
     "The direct write may have completed.",
-    { operationOutcome: "unknown" },
+    {
+      operationOutcome: "unknown",
+      details: { request_id: "fixture-request" },
+    },
   );
 }
 
