@@ -96,13 +96,36 @@ export function activeScratchpad(
 
 export function assertScratchpadRevision(
   current: ScratchpadDocument,
-  input: { id: string; revision?: string },
+  input: { id: string; revision: string },
+): void {
+  assertScratchpadIdentity(current, input);
+  if (input.revision !== current.revision)
+    throw new Error(
+      "This scratchpad changed after it was opened. Reload it before saving.",
+    );
+}
+
+function assertScratchpadIdentity(
+  current: ScratchpadDocument,
+  input: { id: string },
 ): void {
   if (current.id !== input.id)
     throw new Error("The active scratchpad changed. Reload it before saving.");
   if (current.state !== "active")
     throw new Error("A converted scratchpad cannot be changed here.");
-  if (input.revision && input.revision !== current.revision)
+}
+
+/**
+ * Accept a hosted replica revision advance only when it acknowledged the exact
+ * body the editor was already based on. A different body remains a real edit
+ * conflict, even when the editor's revision is merely stale.
+ */
+export function assertScratchpadRebase(
+  current: ScratchpadDocument,
+  input: { id: string; revision: string; baseBody: string },
+): void {
+  assertScratchpadIdentity(current, input);
+  if (input.revision !== current.revision && input.baseBody !== current.body)
     throw new Error(
       "This scratchpad changed after it was opened. Reload it before saving.",
     );

@@ -32,7 +32,7 @@ import { MdbaseCollectionFileStore } from "./mdbase-files";
 import { LocalFirstMdbaseFileStore } from "./local-first-mdbase-files";
 import {
   activeScratchpad,
-  assertScratchpadRevision,
+  assertScratchpadRebase,
   newScratchpadValues,
   scratchpadFromRecord,
   scratchpadFrontmatter,
@@ -131,6 +131,8 @@ export class CloudTaskRepository implements TaskRepository {
   };
   private initialization: Promise<void> | null = null;
   private syncInFlight: Promise<RefreshResult> | null = null;
+  private replicaOperationTail: Promise<void> = Promise.resolve();
+  private refreshAfterCurrentSync = false;
 
   constructor(private readonly connect: MdbaseConnection<CloudFrontmatter>) {
     this.files = new LocalFirstMdbaseFileStore(
@@ -212,8 +214,14 @@ export class CloudTaskRepository implements TaskRepository {
 
   refresh(): Promise<RefreshResult> {
     if (this.syncInFlight) return this.syncInFlight;
-    const run = this.syncUnlocked().finally(() => {
+    const run = this.serializeReplicaOperation(() =>
+      this.syncUnlocked(),
+    ).finally(() => {
       this.syncInFlight = null;
+      if (this.refreshAfterCurrentSync) {
+        this.refreshAfterCurrentSync = false;
+        void this.refresh();
+      }
     });
     this.syncInFlight = run;
     return run;
@@ -659,70 +667,89 @@ export class CloudTaskRepository implements TaskRepository {
     );
   }
 
-  async getActiveScratchpad() {
-    const records = await this.scratchpadRecords();
-    const active = activeScratchpad(records);
-    if (active) return active;
-    const values = newScratchpadValues();
-    const record = await this.requireReplica().queueCreate({
-      recordId: String(values.frontmatter.id),
-      path: values.path,
-      frontmatter: asJson(values.frontmatter),
-      body: values.body,
-      types: [SCRATCHPAD_TYPE],
+  getActiveScratchpad() {
+    return this.serializeWrite("scratchpad:active", async () => {
+      let created = false;
+      const document = await this.serializeReplicaOperation(async () => {
+        const records = await this.scratchpadRecords();
+        const active = activeScratchpad(records);
+        if (active) return active;
+        const values = newScratchpadValues();
+        const record = await this.requireReplica().queueCreate({
+          recordId: String(values.frontmatter.id),
+          path: values.path,
+          frontmatter: asJson(values.frontmatter),
+          body: values.body,
+          types: [SCRATCHPAD_TYPE],
+        });
+        created = true;
+        return scratchpadFromRecord(record);
+      });
+      if (created) await this.afterLocalMutation();
+      return document;
     });
-    this.emit();
-    return scratchpadFromRecord(record);
   }
 
-  async saveScratchpad(input: SaveScratchpadInput) {
-    const record = await this.requireScratchpadRecord(input.id);
-    const current = scratchpadFromRecord(record);
-    assertScratchpadRevision(current, input);
-    const dateModified = new Date().toISOString();
-    await this.requireReplica().queueUpdate({
-      recordId: record.record_id,
-      baseRevision: record.revision,
-      patch: asJson(scratchpadFrontmatter(current, { dateModified })),
-      body: input.body,
+  saveScratchpad(input: SaveScratchpadInput) {
+    return this.serializeWrite(`scratchpad:${input.id}`, async () => {
+      const saved = await this.serializeReplicaOperation(async () => {
+        const record = await this.requireScratchpadRecord(input.id);
+        const current = scratchpadFromRecord(record);
+        assertScratchpadRebase(current, input);
+        const dateModified = new Date().toISOString();
+        await this.requireReplica().queueUpdate({
+          recordId: record.record_id,
+          baseRevision: record.revision,
+          patch: asJson(scratchpadFrontmatter(current, { dateModified })),
+          body: input.body,
+        });
+        return scratchpadFromRecord(
+          await this.requireScratchpadRecord(input.id),
+        );
+      });
+      await this.afterLocalMutation();
+      return saved;
     });
-    this.emit();
-    return scratchpadFromRecord(await this.requireScratchpadRecord(input.id));
   }
 
-  async archiveScratchpad(input: ArchiveScratchpadInput) {
-    const record = await this.requireScratchpadRecord(input.id);
-    const current = scratchpadFromRecord(record);
-    assertScratchpadRevision(current, input);
-    const now = new Date().toISOString();
-    await this.requireReplica().queueUpdate({
-      recordId: record.record_id,
-      baseRevision: record.revision,
-      patch: asJson(
-        scratchpadFrontmatter(current, {
-          state: "converted",
-          title: input.title?.trim() || "Scratchpad",
-          dateModified: now,
-          dateConverted: now,
-        }),
-      ),
-      body: input.body,
+  archiveScratchpad(input: ArchiveScratchpadInput) {
+    return this.serializeWrite(`scratchpad:${input.id}`, async () => {
+      const result = await this.serializeReplicaOperation(async () => {
+        const record = await this.requireScratchpadRecord(input.id);
+        const current = scratchpadFromRecord(record);
+        assertScratchpadRebase(current, input);
+        const now = new Date().toISOString();
+        await this.requireReplica().queueUpdate({
+          recordId: record.record_id,
+          baseRevision: record.revision,
+          patch: asJson(
+            scratchpadFrontmatter(current, {
+              state: "converted",
+              title: input.title?.trim() || "Scratchpad",
+              dateModified: now,
+              dateConverted: now,
+            }),
+          ),
+          body: input.body,
+        });
+        const updated = await this.requireScratchpadRecord(input.id);
+        const path = await this.availableScratchpadPath(
+          scratchpadArchivePath(input.title, new Date(now)),
+        );
+        await this.requireReplica().queueRename({
+          recordId: updated.record_id,
+          path,
+          baseRevision: updated.revision,
+        });
+        const archived = scratchpadFromRecord(
+          await this.requireScratchpadRecord(input.id),
+        );
+        const active = await this.createActiveScratchpad();
+        return { archived, active };
+      });
+      await this.afterLocalMutation();
+      return result;
     });
-    const updated = await this.requireScratchpadRecord(input.id);
-    const path = await this.availableScratchpadPath(
-      scratchpadArchivePath(input.title, new Date(now)),
-    );
-    await this.requireReplica().queueRename({
-      recordId: updated.record_id,
-      path,
-      baseRevision: updated.revision,
-    });
-    const archived = scratchpadFromRecord(
-      await this.requireScratchpadRecord(input.id),
-    );
-    const active = await this.createActiveScratchpad();
-    this.emit();
-    return { archived, active };
   }
 
   private async scratchpadRecords(): Promise<SyncRecord<CloudFrontmatter>[]> {
@@ -871,6 +898,10 @@ export class CloudTaskRepository implements TaskRepository {
   private async afterLocalMutation(): Promise<void> {
     await this.updateStatusCounts();
     this.emit();
+    if (this.syncInFlight) {
+      this.refreshAfterCurrentSync = true;
+      return;
+    }
     void this.refresh();
   }
 
@@ -1094,6 +1125,19 @@ export class CloudTaskRepository implements TaskRepository {
     operation: () => Promise<T>,
   ): Promise<T> {
     return this.serializeWrites([key], operation);
+  }
+
+  private serializeReplicaOperation<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const result = this.replicaOperationTail
+      .catch(() => undefined)
+      .then(operation);
+    this.replicaOperationTail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
   }
 
   private serializeWrites<T>(

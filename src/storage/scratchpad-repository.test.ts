@@ -33,10 +33,12 @@ describe("local scratchpad repository", () => {
 
     const saved = await repository.saveScratchpad({
       ...active,
+      baseBody: active.body,
       body: "- [ ] Draft announcement tomorrow\n- Context only\n",
     });
     const result = await repository.archiveScratchpad({
       ...saved,
+      baseBody: saved.body,
       title: "Launch plan",
       body: "- [[tasks/announcement|Draft announcement]]\n- Context only\n",
     });
@@ -69,6 +71,7 @@ describe("local scratchpad repository", () => {
       repository.saveScratchpad({
         ...active,
         revision: "sha256:stale",
+        baseBody: active.body,
         body: "- [ ] Overwrite\n",
       }),
     ).rejects.toThrow("changed after it was opened");
