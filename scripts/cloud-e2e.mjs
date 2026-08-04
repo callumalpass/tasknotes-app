@@ -229,6 +229,42 @@ try {
     "The local record was not copied to hosted storage",
   );
 
+  phase("converting a hosted scratchpad draft during background sync");
+  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", level: 1 }),
+  ).toBeVisible();
+  const hostedDraft = page.getByRole("textbox", {
+    name: "Draft task: empty",
+  });
+  await hostedDraft.fill("Hosted scratchpad draft");
+  await page
+    .getByRole("button", {
+      name: "Create TaskNote for Hosted scratchpad draft",
+    })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Hosted scratchpad draft",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".scratchpad-error")).toHaveCount(0);
+  await expect
+    .poll(
+      () =>
+        hosted.authority
+          .serialize()
+          .records.find(
+            (record) =>
+              record.frontmatter.type === "tasknotes-scratch" &&
+              record.frontmatter.state === "active",
+          )?.body,
+      { timeout: 10_000 },
+    )
+    .toContain("Hosted scratchpad draft");
+  await page.getByRole("button", { name: "Cloud board", exact: true }).click();
+
   phase("creating a task locally and synchronizing it to the authority");
   await page.getByLabel("New task title").fill("Cloud foundation");
   await page.getByRole("button", { name: "Add", exact: true }).click();

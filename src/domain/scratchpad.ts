@@ -20,7 +20,9 @@ export interface ScratchpadDocument {
 export interface SaveScratchpadInput {
   id: string;
   path: string;
-  revision?: string;
+  revision: string;
+  /** Exact body the editor loaded or received from its preceding save. */
+  baseBody: string;
   body: string;
 }
 

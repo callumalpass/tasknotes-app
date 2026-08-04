@@ -83,6 +83,27 @@ describe("ScratchpadScreen", () => {
     await waitFor(() => expect(openTask).toHaveBeenCalledOnce());
   });
 
+  it("sends the editor's base body with an autosave", async () => {
+    const saveScratchpad = vi.spyOn(repository, "saveScratchpad");
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+
+    fireEvent.change(input, { target: { value: "A durable draft" } });
+
+    await waitFor(() =>
+      expect(saveScratchpad).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseBody: "",
+          body: "- [ ] A durable draft\n",
+        }),
+      ),
+    );
+  });
+
   it("resolves a linked task title after reloading a bare filepath", async () => {
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
@@ -93,6 +114,7 @@ describe("ScratchpadScreen", () => {
       id: scratchpad.id,
       path: scratchpad.path,
       revision: scratchpad.revision,
+      baseBody: scratchpad.body,
       body: `- [[${renamed.path.replace(/\.md$/i, "")}]]\n`,
     });
 

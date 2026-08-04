@@ -160,6 +160,7 @@ export function ScratchpadScreen({
             id: latest.id,
             path: latest.path,
             revision: latest.revision,
+            baseBody: latest.body,
             body,
           });
           documentRef.current = saved;
@@ -519,6 +520,7 @@ export function ScratchpadScreen({
         id: latest.id,
         path: latest.path,
         revision: latest.revision,
+        baseBody: latest.body,
         title,
         body: scratchBody(working),
       });

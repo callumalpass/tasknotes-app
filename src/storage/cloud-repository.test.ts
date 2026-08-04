@@ -618,6 +618,174 @@ describe("cloud task repository", () => {
     }
   });
 
+  it("rebases a scratchpad save after sync acknowledges the editor's unchanged body", async () => {
+    const authority = new MemoryAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+    });
+    const repository = new CloudTaskRepository(
+      connect(
+        authority.collectionId,
+        replicaId,
+        authority.transport(replicaId),
+      ),
+    );
+    await repository.initialize();
+
+    const opened = await repository.getActiveScratchpad();
+    const draftBody = "- [ ] Convert this draft\n";
+    const locallySaved = await repository.saveScratchpad({
+      id: opened.id,
+      path: opened.path,
+      revision: opened.revision,
+      baseBody: opened.body,
+      body: draftBody,
+    });
+
+    await repository.refresh();
+
+    const convertedBody = "- [[tasks/Convert this draft]]\n";
+    await expect(
+      repository.saveScratchpad({
+        id: locallySaved.id,
+        path: locallySaved.path,
+        revision: locallySaved.revision,
+        baseBody: locallySaved.body,
+        body: convertedBody,
+      }),
+    ).resolves.toMatchObject({ body: convertedBody });
+  });
+
+  it("serializes a scratchpad save that starts during its acknowledgement sync", async () => {
+    const authority = new MemoryAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const replicaId = crypto.randomUUID();
+    authority.registerReplica({
+      id: replicaId,
+      name: "Phone",
+      mode: "read_write",
+    });
+    const upstream = authority.transport(replicaId);
+    let releaseAcknowledgement!: () => void;
+    let reportAcknowledgement!: () => void;
+    const acknowledgementReleased = new Promise<void>((resolve) => {
+      releaseAcknowledgement = resolve;
+    });
+    const acknowledgementStarted = new Promise<void>((resolve) => {
+      reportAcknowledgement = resolve;
+    });
+    let paused = false;
+    const transport: MdbaseSyncTransport<JsonObject> = {
+      openSession: () => upstream.openSession(),
+      snapshot: (snapshot, page) => upstream.snapshot(snapshot, page),
+      changes: (after, limit) => upstream.changes(after, limit),
+      mutate: async (mutation) => {
+        if (!paused && mutation.operation === "update") {
+          paused = true;
+          reportAcknowledgement();
+          await acknowledgementReleased;
+        }
+        return upstream.mutate(mutation);
+      },
+    };
+    const repository = new CloudTaskRepository(
+      connect(authority.collectionId, replicaId, transport),
+    );
+    await repository.initialize();
+
+    const opened = await repository.getActiveScratchpad();
+    const locallySaved = await repository.saveScratchpad({
+      id: opened.id,
+      path: opened.path,
+      revision: opened.revision,
+      baseBody: opened.body,
+      body: "- [ ] Convert during sync\n",
+    });
+    await acknowledgementStarted;
+
+    const convertedBody = "- [[tasks/Convert during sync]]\n";
+    const converting = repository.saveScratchpad({
+      id: locallySaved.id,
+      path: locallySaved.path,
+      revision: locallySaved.revision,
+      baseBody: locallySaved.body,
+      body: convertedBody,
+    });
+    releaseAcknowledgement();
+    await converting;
+    await repository.refresh();
+    await repository.refresh();
+
+    expect(await repository.syncIssues()).toEqual([]);
+    expect(await repository.syncStatus()).toMatchObject({ pending: 0 });
+    expect(
+      authority
+        .serialize()
+        .records.find(({ record_id }) => record_id === opened.id)?.body,
+    ).toBe(convertedBody);
+  });
+
+  it("still rejects a scratchpad save when another device changed its body", async () => {
+    const authority = new MemoryAuthority<JsonObject>({
+      resources: resources(),
+    });
+    const phoneId = crypto.randomUUID();
+    const laptopId = crypto.randomUUID();
+    for (const [id, name] of [
+      [phoneId, "Phone"],
+      [laptopId, "Laptop"],
+    ] as const)
+      authority.registerReplica({ id, name, mode: "read_write" });
+    const phone = new CloudTaskRepository(
+      connect(authority.collectionId, phoneId, authority.transport(phoneId)),
+    );
+    const laptop = new CloudTaskRepository(
+      connect(authority.collectionId, laptopId, authority.transport(laptopId)),
+    );
+    await Promise.all([phone.initialize(), laptop.initialize()]);
+
+    const opened = await phone.getActiveScratchpad();
+    const draftBody = "- [ ] Original draft\n";
+    const locallySaved = await phone.saveScratchpad({
+      id: opened.id,
+      path: opened.path,
+      revision: opened.revision,
+      baseBody: opened.body,
+      body: draftBody,
+    });
+    await phone.refresh();
+    await laptop.refresh();
+
+    const laptopCopy = await laptop.getActiveScratchpad();
+    await laptop.saveScratchpad({
+      id: laptopCopy.id,
+      path: laptopCopy.path,
+      revision: laptopCopy.revision,
+      baseBody: laptopCopy.body,
+      body: "- [ ] Changed on the laptop\n",
+    });
+    await laptop.refresh();
+    await phone.refresh();
+
+    await expect(
+      phone.saveScratchpad({
+        id: locallySaved.id,
+        path: locallySaved.path,
+        revision: locallySaved.revision,
+        baseBody: locallySaved.body,
+        body: "- [[tasks/Original draft]]\n",
+      }),
+    ).rejects.toThrow(
+      "This scratchpad changed after it was opened. Reload it before saving.",
+    );
+  });
+
   it("uses TaskNotes recurring-instance completion semantics", async () => {
     const authority = new MemoryAuthority<JsonObject>({
       resources: resources(),
