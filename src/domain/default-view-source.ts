@@ -1,5 +1,5 @@
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
-import { stringify } from "yaml";
+import { parse, stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { TaskViewDocument } from "./view";
@@ -12,6 +12,46 @@ export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Projects",
   "Archive",
 ] as const;
+export const TASKNOTES_DEFAULT_VIEW_SOURCES = TASKNOTES_DEFAULT_VIEW_NAMES.map(
+  (name) => ({
+    name,
+    path: `views/tasknotes/${name.toLowerCase()}.base`,
+  }),
+);
+
+export interface TaskNotesDefaultViewSource {
+  name: (typeof TASKNOTES_DEFAULT_VIEW_NAMES)[number];
+  path: string;
+  document: string;
+}
+
+export function taskNotesDefaultBaseSources(
+  configuration: TaskCollectionConfiguration,
+): TaskNotesDefaultViewSource[] {
+  const definition = parse(taskNotesDefaultBaseDocument(configuration)) as {
+    formulas?: Record<string, unknown>;
+    properties?: Record<string, unknown>;
+    views: Array<{ name: string } & Record<string, unknown>>;
+  };
+  return TASKNOTES_DEFAULT_VIEW_SOURCES.map((source) => {
+    const view = definition.views.find(({ name }) => name === source.name);
+    if (!view)
+      throw new Error(`TaskNotes has no '${source.name}' starter view.`);
+    return {
+      ...source,
+      document: stringify(
+        {
+          ...(definition.formulas ? { formulas: definition.formulas } : {}),
+          ...(definition.properties
+            ? { properties: definition.properties }
+            : {}),
+          views: [view],
+        },
+        { lineWidth: 0 },
+      ),
+    };
+  });
+}
 
 export function taskNotesDefaultBaseDocument(
   configuration: TaskCollectionConfiguration,
@@ -244,6 +284,9 @@ export function isTaskNotesDefaultViewDocument(
 ): boolean {
   const filename = document.source.path.split("/").at(-1)?.toLowerCase() ?? "";
   return (
+    TASKNOTES_DEFAULT_VIEW_SOURCES.some(
+      ({ path }) => path === document.source.path.toLowerCase(),
+    ) ||
     filename === `${TASKNOTES_DEFAULT_VIEW_SOURCE_NAME}.base` ||
     filename === `${TASKNOTES_DEFAULT_VIEW_SOURCE_NAME}.md` ||
     document.id === TASKNOTES_DEFAULT_VIEW_SOURCE_NAME
@@ -253,10 +296,16 @@ export function isTaskNotesDefaultViewDocument(
 export function defaultNavigationViewKeys(
   documents: readonly TaskViewDocument[],
 ): string[] {
-  const source = documents.find(isTaskNotesDefaultViewDocument);
-  if (!source) return [];
-  return TASKNOTES_DEFAULT_VIEW_NAMES.flatMap((name) => {
-    const view = source.views.find((candidate) => candidate.name === name);
+  const defaults = documents.filter(isTaskNotesDefaultViewDocument);
+  return TASKNOTES_DEFAULT_VIEW_SOURCES.flatMap(({ name, path }) => {
+    const source =
+      defaults.find(
+        (document) => document.source.path.toLowerCase() === path,
+      ) ??
+      defaults.find((document) =>
+        document.views.some((candidate) => candidate.name === name),
+      );
+    const view = source?.views.find((candidate) => candidate.name === name);
     return view ? [view.key] : [];
   });
 }

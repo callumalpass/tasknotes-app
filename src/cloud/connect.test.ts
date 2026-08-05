@@ -16,10 +16,39 @@ import { cloudConnect, cloudSession } from "./connect";
 const expectedOperations = operationsForApplicationCapabilities(
   bundledManifest.requirements.capabilities as never,
 );
+let registrationRequestBody: unknown;
 
 describe("TaskNotes mdbase session", () => {
   beforeAll(async () => {
-    await cloudSession.start();
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (input, init) => {
+        if (!String(input).endsWith("/v1/apps/register")) {
+          throw new Error(
+            `Unexpected TaskNotes session request: ${String(input)}`,
+          );
+        }
+        registrationRequestBody = JSON.parse(String(init?.body));
+        return new Response(
+          JSON.stringify({
+            application: {
+              id: "00000000-0000-0000-0000-000000000001",
+              family_identity: "bundle:dev.tasknotes.app",
+              manifest_digest: "a".repeat(64),
+              name: "TaskNotes",
+              homepage: "https://app.tasknotes.dev/",
+              requirements: bundledManifest.requirements,
+            },
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      });
+    const started = await cloudSession.start();
+    fetch.mockRestore();
+    if (!started.ok) throw new Error(started.problem.message);
   });
 
   afterAll(() => cloudSession.destroy());
@@ -29,26 +58,8 @@ describe("TaskNotes mdbase session", () => {
     vi.restoreAllMocks();
   });
 
-  it("registers the generated declaration inline", async () => {
-    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          application: {
-            id: "00000000-0000-0000-0000-000000000001",
-            name: "TaskNotes",
-            homepage: "https://app.tasknotes.dev/",
-          },
-        }),
-        {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        },
-      ),
-    );
-
-    await cloudConnect.register();
-
-    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({
+  it("registers the generated declaration inline", () => {
+    expect(registrationRequestBody).toEqual({
       manifest: bundledManifest,
     });
   });

@@ -21,15 +21,15 @@ describe("home view restoration", () => {
   it("pins Scratchpad second for a new collection", () => {
     const resolved = resolveNavigationViewCatalog(
       info,
-      [starterViews()],
+      starterViews(),
       false,
       memoryStorage(),
     );
 
     expect(resolved?.navigationKeys.slice(0, 3)).toEqual([
-      "views/tasknotes-app.base#today",
+      "views/tasknotes/today.base#today",
       SCRATCHPAD_NAVIGATION_KEY,
-      "views/tasknotes-app.base#upcoming",
+      "views/tasknotes/upcoming.base#upcoming",
     ]);
   });
 
@@ -43,13 +43,13 @@ describe("home view restoration", () => {
 
     const resolved = resolveNavigationViewCatalog(
       info,
-      [starterViews()],
+      starterViews(),
       false,
       storage,
     );
 
     expect(resolved?.navigationKeys).toEqual([
-      "views/tasknotes-app.base#today",
+      "views/tasknotes/today.base#today",
       SCRATCHPAD_NAVIGATION_KEY,
     ]);
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
@@ -84,15 +84,15 @@ describe("home view restoration", () => {
     const starter = starterViews();
     const resolved = resolveNavigationViewCatalog(
       info,
-      [starter],
+      starter,
       false,
       storage,
     );
     expect(resolved?.navigationKeys).toEqual(
-      starter.views.map((view) => view.key),
+      starter.flatMap((document) => document.views.map((view) => view.key)),
     );
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual([
-      ...starter.views.map((view) => view.key),
+      ...starter.flatMap((document) => document.views.map((view) => view.key)),
     ]);
   });
 
@@ -162,27 +162,31 @@ function workViews(): TaskViewDocument {
   };
 }
 
-function starterViews(): TaskViewDocument {
-  const source = {
-    path: "views/tasknotes-app.base",
-    format: "obsidian.base",
-    revision: "view-r1",
-    writable: true,
-  };
-  return {
-    id: "tasknotes-app",
-    name: "tasknotes-app",
-    source,
-    views: ["today", "upcoming", "calendar"].map((id) => ({
-      key: `${source.path}#${id}`,
-      documentId: "tasknotes-app",
-      documentName: "tasknotes-app",
+function starterViews(): TaskViewDocument[] {
+  return ["today", "upcoming", "calendar"].map((id) => {
+    const source = {
+      path: `views/tasknotes/${id}.base`,
+      format: "obsidian.base",
+      revision: "view-r1",
+      writable: true,
+    };
+    return {
       id,
-      name: `${id[0].toUpperCase()}${id.slice(1)}`,
-      properties: [],
+      name: id,
       source,
-    })),
-  };
+      views: [
+        {
+          key: `${source.path}#${id}`,
+          documentId: id,
+          documentName: id,
+          id,
+          name: `${id[0].toUpperCase()}${id.slice(1)}`,
+          properties: [],
+          source,
+        },
+      ],
+    };
+  });
 }
 
 function memoryStorage(initial: Record<string, string> = {}) {

@@ -539,13 +539,13 @@ async function installRelayAuthorization(
     history.replaceState(null, "", `?collection=${collectionId}`);
   }, TASKNOTES_COLLECTION_ID);
   await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/assess_type_pack",
+    "https://connect.mdbase.dev/v1/authorities/**/operations/assess_collection_setup",
     async (route) => {
       const request = await operationRequest(route, fixture);
       await fulfillOperation(
         route,
         request.request_id,
-        valid({ status: "current" }),
+        valid(currentCollectionSetup(request.input)),
       );
     },
   );
@@ -642,20 +642,20 @@ async function fulfillOperation(
 
 function defaultViewDocuments() {
   return {
-    views: [
-      {
-        id: "tasknotes-app",
-        name: "TaskNotes",
+    views: ["today", "upcoming", "calendar", "projects", "archive"].map(
+      (id) => ({
+        id,
+        name: id,
         source: {
-          path: "Views/tasknotes-app.md",
-          format: "mdbase.view",
+          path: `views/tasknotes/${id}.base`,
+          format: "obsidian.base",
           revision: "view-r1",
           writable: false,
         },
         views: [
           {
-            id: "today",
-            name: "Today",
+            id,
+            name: `${id[0].toUpperCase()}${id.slice(1)}`,
             properties: [],
             presentation: {
               type: "tasknotes.task-list",
@@ -665,9 +665,9 @@ function defaultViewDocuments() {
             },
           },
         ],
-      },
-    ],
-    meta: { total_count: 1 },
+      }),
+    ),
+    meta: { total_count: 5 },
   };
 }
 
@@ -688,9 +688,33 @@ function defaultViewExecution(
     meta: {
       total_count: records.length,
       has_more: false,
-      view: { path: "Views/tasknotes-app.md", id: "today" },
+      view: { path: "views/tasknotes/today.base", id: "today" },
       groups: [],
     },
+  };
+}
+
+function currentCollectionSetup(input: JsonObject) {
+  const digest = `sha256:${"a".repeat(64)}`;
+  return {
+    status: "current",
+    applicable: true,
+    application_id: input.application_id,
+    declaration_digest: input.declaration_digest,
+    provision_digest: digest,
+    collection_revision: digest,
+    final_collection_revision: digest,
+    configuration: [
+      {
+        requirement: "tasknotes-base-sources",
+        path: "/x-obsidian/bases/include",
+        value: "views/tasknotes/**/*.base",
+        action: "current",
+      },
+    ],
+    type_packs: [],
+    final_resource_revisions: {},
+    assessment_digest: digest,
   };
 }
 

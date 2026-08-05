@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const connect = vi.hoisted(() => {
   const connections = [
@@ -49,6 +49,9 @@ const connect = vi.hoisted(() => {
     for (const listener of listeners) listener();
   });
   return {
+    applyCollectionSetup: vi.fn(() =>
+      Promise.resolve({ ok: true, value: state.snapshot }),
+    ),
     authorize: vi.fn(() => Promise.resolve({ kind: "redirecting" })),
     getSnapshot: () => state.snapshot,
     reset: () => {
@@ -58,6 +61,9 @@ const connect = vi.hoisted(() => {
         reason: "not_authorized",
         connections,
       };
+    },
+    setSnapshot: (snapshot: Record<string, unknown>) => {
+      state.snapshot = snapshot;
     },
     select,
     subscribe: (listener: () => void) => {
@@ -77,7 +83,84 @@ beforeEach(() => {
   history.replaceState(null, "", "/?collection=collection-stale");
   connect.reset();
   connect.authorize.mockClear();
+  connect.applyCollectionSetup.mockClear();
   connect.select.mockClear();
+});
+
+it("shows and applies the exact reviewed collection setup", async () => {
+  connect.setSnapshot({
+    status: "setup_review_required",
+    collectionId: "collection-online",
+    connections: [],
+    info: connect.getSnapshot(),
+    capabilities: {},
+    update: {
+      status: "provision",
+      applicable: true,
+      canApply: true,
+      configuration: [
+        {
+          requirement: "tasknotes-base-sources",
+          path: "/x-obsidian/bases/include",
+          value: "views/tasknotes/**/*.base",
+          action: "add",
+        },
+      ],
+      typePacks: [],
+    },
+  });
+
+  render(<CloudConnection error={null} />);
+
+  expect(screen.getByText("Review TaskNotes setup")).toBeVisible();
+  expect(screen.getByText(/views\/tasknotes\/\*\*\/\*\.base/)).toBeVisible();
+  expect(connect.applyCollectionSetup).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply reviewed setup" }));
+  await waitFor(() =>
+    expect(connect.applyCollectionSetup).toHaveBeenCalledWith({
+      timeoutMs: 60_000,
+    }),
+  );
+});
+
+it("explains a setup conflict without mutating the collection", () => {
+  connect.setSnapshot({
+    status: "setup_review_required",
+    collectionId: "collection-online",
+    connections: [],
+    info: connect.getSnapshot(),
+    capabilities: {},
+    update: {
+      status: "conflict",
+      applicable: false,
+      canApply: false,
+      configuration: [
+        {
+          requirement: "tasknotes-base-sources",
+          path: "/x-obsidian/bases/include",
+          value: "views/tasknotes/**/*.base",
+          action: "conflict",
+          conflict: {
+            message:
+              "Base source includes must be a list, but this collection uses text.",
+          },
+        },
+      ],
+      typePacks: [],
+    },
+  });
+
+  render(<CloudConnection error={null} />);
+
+  expect(
+    screen.getByText(
+      "Base source includes must be a list, but this collection uses text.",
+    ),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Apply reviewed setup" }),
+  ).toBeDisabled();
+  expect(connect.applyCollectionSetup).not.toHaveBeenCalled();
 });
 
 it("switches from a stale bookmark to a remembered collection without reloading", () => {
