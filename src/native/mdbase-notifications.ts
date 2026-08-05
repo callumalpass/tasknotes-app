@@ -3,7 +3,6 @@ import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import {
   MdbaseConnectError,
   parseMdbaseNativeNotificationData,
-  unwrapConnectOutcome,
   type MdbaseCapabilityState,
   type MdbaseConnectionInfo,
   type MdbaseNotificationRegistration,
@@ -12,6 +11,7 @@ import {
 } from "@mdbase-dev/connect";
 
 import { cloudSession } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   androidPushMessaging,
@@ -359,7 +359,7 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
     registerNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
-      return unwrapConnectOutcome(
+      return requireConnectOutcome(
         await connection.registerNotifications({
           ...options,
           timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
@@ -369,7 +369,7 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
     unregisterNotifications: async (serviceWorker) => {
       const connection = currentConnection();
       if (connection)
-        unwrapConnectOutcome(
+        requireConnectOutcome(
           await connection.unregisterNotifications(serviceWorker, {
             timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
           }),
@@ -378,7 +378,7 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
     registerNativeNotifications: async (options) => {
       const connection = currentConnection();
       if (!connection) throw new Error("TaskNotes is not connected.");
-      return unwrapConnectOutcome(
+      return requireConnectOutcome(
         await connection.registerNativeNotifications({
           ...options,
           timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
@@ -388,7 +388,7 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
     unregisterNativeNotifications: async () => {
       const connection = currentConnection();
       if (connection)
-        unwrapConnectOutcome(
+        requireConnectOutcome(
           await connection.unregisterNativeNotifications({
             timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
           }),

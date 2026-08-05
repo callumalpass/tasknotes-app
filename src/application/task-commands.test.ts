@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { connectError } from "@mdbase-dev/connect";
+import { connectError } from "@mdbase-dev/connect-testing";
 
 import { TaskCommandService } from "./task-commands";
 

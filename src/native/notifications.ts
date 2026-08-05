@@ -2,11 +2,9 @@ import { reminderFireTime } from "../domain/reminder";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
-import {
-  unwrapConnectOutcome,
-  type MdbaseDesiredTimer,
-} from "@mdbase-dev/connect";
+import { type MdbaseDesiredTimer } from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   mdbaseMutationKey,
@@ -80,7 +78,7 @@ function reconcileConnectNotifications(
         if (!connection) throw new Error("TaskNotes is not connected.");
         const operationInput = {
           namespace: TIMER_NAMESPACE,
-          criterion_id: TIMER_CRITERION,
+          criterionId: TIMER_CRITERION,
           timers: await desiredTaskTimers(tasks),
         };
         const request = {
@@ -89,7 +87,7 @@ function reconcileConnectNotifications(
         await runMdbaseMutation(
           connection,
           async () => {
-            unwrapConnectOutcome(
+            requireConnectOutcome(
               await connection.reconcileTimers(operationInput, request),
             );
           },
@@ -121,7 +119,7 @@ export async function desiredTaskTimers(
       return [
         {
           sourceId: JSON.stringify([task.id, reminder.id]),
-          fire_at: new Date(timestamp).toISOString(),
+          fireAt: new Date(timestamp).toISOString(),
         },
       ];
     });

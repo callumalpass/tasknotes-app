@@ -7,8 +7,8 @@ import {
   useState,
 } from "react";
 
-import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 import { cloudSession, isCloudCallback } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { appPlatform } from "../native/app-platform";
@@ -39,7 +39,7 @@ export function CollectionGate() {
       if (!isCloudCallback(url) || handledCallbackUrls.current.has(url)) return;
       handledCallbackUrls.current.add(url);
       try {
-        unwrapConnectOutcome(
+        requireConnectOutcome(
           await cloudSession.handleAuthorizationCallback(url, requestOptions()),
         );
         setAuthorizationError(null);
@@ -55,7 +55,7 @@ export function CollectionGate() {
 
   useEffect(() => {
     const initialize = async () => {
-      unwrapConnectOutcome(await cloudSession.start(requestOptions()));
+      requireConnectOutcome(await cloudSession.start(requestOptions()));
       if (isCloudCallback(location.href)) await complete(location.href);
     };
     queueMicrotask(() => {
@@ -82,7 +82,7 @@ export function CollectionGate() {
     setAuthorizationError(null);
     void cloudSession
       .authorize("choose", requestOptions())
-      .then(unwrapConnectOutcome)
+      .then(requireConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
   }, [requestOptions]);
 
@@ -91,13 +91,13 @@ export function CollectionGate() {
     setAuthorizationError(null);
     void cloudSession
       .authorize("selected", requestOptions())
-      .then(unwrapConnectOutcome)
+      .then(requireConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
   }, [requestOptions]);
 
   const selectCollection = useCallback((collectionId: string) => {
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         cloudSession.select(collectionId, { history: "replace" }),
       );
       setAuthorizationError(null);

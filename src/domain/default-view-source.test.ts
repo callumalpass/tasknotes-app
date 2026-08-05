@@ -19,9 +19,11 @@ describe("TaskNotes starter views", () => {
     const parsed = parse(
       taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
     ) as {
+      formulas: Record<string, string>;
       views: Array<{
         name: string;
         type: string;
+        filters?: { and?: Array<string | Record<string, unknown>> };
         options?: Record<string, unknown>;
         sort?: Array<{ property: string; direction: string }>;
       }>;
@@ -41,6 +43,12 @@ describe("TaskNotes starter views", () => {
     expect(parsed.views[2].options).toMatchObject({
       calendarView: "dayGridMonth",
       showRecurring: true,
+    });
+    expect(parsed.formulas).toMatchObject({
+      taskDay: "if(formula.taskDate.isEmpty(), null, date(formula.taskDate))",
+    });
+    expect(parsed.views[0].filters?.and?.at(-1)).toEqual({
+      or: ["formula.taskDay.isEmpty()", "formula.taskDay <= today()"],
     });
     expect(parsed.views[3].options).toEqual({ create: false });
     expect(parsed.views[4].options).toEqual({ create: false });
@@ -159,6 +167,7 @@ describe("TaskNotes starter views", () => {
     expect(archive?.presentation.options).toEqual({ create: false });
     expect(query.projections.task_date.expr).toContain("scheduled");
     expect(query.projections.task_day.expr).toContain("projection.task_date");
+    expect(query.projections.task_day.expr).not.toContain(".format(");
     expect(projects?.where).toContain('note["projects"].isEmpty() == false');
     expect(projects?.select).not.toContain("projects");
     expect(projects?.group_by).toEqual([
@@ -172,6 +181,9 @@ describe("TaskNotes starter views", () => {
     expect(
       views.find(({ id }) => id === "today")?.presentation.options,
     ).toEqual({ sections: "day" });
+    expect(views.find(({ id }) => id === "today")?.where).toContain(
+      "projection.task_day <= today()",
+    );
     for (const view of views)
       expect(view.order_by?.[0]).toEqual({
         field: "tasknotes_manual_order",

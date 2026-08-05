@@ -1,6 +1,6 @@
 import { MdbaseFileClient, type MdbaseConnection } from "@mdbase-dev/connect";
 import type {
-  CollectionFileDescriptor,
+  CollectionFileDescriptor as WireCollectionFileDescriptor,
   FileTransferSession,
   OpenFileUploadRequest,
 } from "@mdbase-dev/connect-protocol";
@@ -121,14 +121,14 @@ interface PendingTransfer {
   direction: "upload" | "download";
   size: number;
   upload?: OpenFileUploadRequest;
-  file?: CollectionFileDescriptor;
+  file?: WireCollectionFileDescriptor;
   chunks: Map<number, Uint8Array>;
 }
 
 class MemoryFileAuthority {
   private readonly files = new Map<
     string,
-    { descriptor: CollectionFileDescriptor; bytes: Uint8Array }
+    { descriptor: WireCollectionFileDescriptor; bytes: Uint8Array }
   >();
   private readonly transfers = new Map<string, PendingTransfer>();
 
@@ -154,6 +154,22 @@ class MemoryFileAuthority {
     path = "",
     input?: unknown,
   ): Promise<Result> => {
+    const statusMatch =
+      method === "GET" ? path.match(/^transfers\/(.+)$/u) : null;
+    if (statusMatch) {
+      const transferId = decodeURIComponent(statusMatch[1]!);
+      const transfer = this.transfers.get(transferId);
+      if (!transfer) throw new Error("Transfer not found.");
+      return {
+        protocol_version: 1,
+        type: "file_transfer_status",
+        transfer_id: transferId,
+        state: "open",
+        received: [],
+        received_bytes: 0,
+        uploaded_parts: [],
+      } as Result;
+    }
     if (method === "GET") {
       const folder = new URLSearchParams(path.replace(/^\?/, "")).get("folder");
       const files = [...this.files.values()]
@@ -187,7 +203,7 @@ class MemoryFileAuthority {
       const existing = [...this.files.values()].find(
         ({ descriptor }) => descriptor.path === upload.path,
       );
-      const descriptor: CollectionFileDescriptor = {
+      const descriptor: WireCollectionFileDescriptor = {
         file_id: existing?.descriptor.file_id ?? crypto.randomUUID(),
         path: upload.path,
         revision: crypto.randomUUID(),

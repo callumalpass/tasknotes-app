@@ -1,5 +1,4 @@
 import {
-  connectError,
   MdbaseConnectError,
   type CollectionDescription,
   type ConnectOutcome,
@@ -10,6 +9,7 @@ import {
   type QueryRecord,
   type QueryResult,
 } from "@mdbase-dev/connect";
+import { connectError } from "@mdbase-dev/connect-testing";
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
@@ -57,15 +57,14 @@ export function mdbaseFixture(
     return valid<QueryResult<JsonObject>>({
       results: matching.map((record) => ({
         path: record.path,
-        effective_frontmatter:
-          record.effective_frontmatter ?? record.frontmatter,
+        effectiveFrontmatter: record.effectiveFrontmatter ?? record.frontmatter,
         body: record.body,
         types: record.types,
         file: record.file ?? testQueryFile(record.path),
       })),
       meta: {
-        total_count: matching.length,
-        has_more: false,
+        totalCount: matching.length,
+        hasMore: false,
         snapshot: "tasks-1",
       },
     });
@@ -100,11 +99,11 @@ export function mdbaseFixture(
       path: string;
       patch: JsonObject;
       body?: string;
-      if_revision?: string;
+      ifRevision?: string;
     }) => {
       const current = records.get(input.path);
       if (!current) throw new Error("Task not found.");
-      if (input.if_revision !== current.revision)
+      if (input.ifRevision !== current.revision)
         throw new Error("Revision conflict.");
       const frontmatter = structuredClone(current.frontmatter);
       for (const [key, value] of Object.entries(input.patch)) {
@@ -121,27 +120,25 @@ export function mdbaseFixture(
       return valid(record);
     },
   );
-  const remove = vi.fn(
-    async (input: { path: string; if_revision?: string }) => {
-      const current = records.get(input.path);
-      if (!current) throw new Error("Task not found.");
-      if (input.if_revision !== current.revision)
-        throw new Error("Revision conflict.");
-      records.delete(input.path);
-      return valid({ path: input.path, deleted: true });
-    },
-  );
+  const remove = vi.fn(async (input: { path: string; ifRevision?: string }) => {
+    const current = records.get(input.path);
+    if (!current) throw new Error("Task not found.");
+    if (input.ifRevision !== current.revision)
+      throw new Error("Revision conflict.");
+    records.delete(input.path);
+    return valid({ path: input.path, deleted: true });
+  });
   const rename = vi.fn(
     async (input: {
       from: string;
       to: string;
-      if_revision?: string;
-      update_refs?: boolean;
+      ifRevision?: string;
+      updateRefs?: boolean;
     }) => {
       const current = records.get(input.from);
       if (!current) throw new Error("Task not found.");
       if (records.has(input.to)) throw new Error("Destination already exists.");
-      if (input.if_revision !== current.revision)
+      if (input.ifRevision !== current.revision)
         throw new Error("Revision conflict.");
       const record: TestRecord = {
         ...current,
@@ -177,22 +174,21 @@ export function mdbaseFixture(
           ],
         },
       ],
-      meta: { total_count: 1 },
+      meta: { totalCount: 1 },
     }),
   );
   const executeView = vi.fn(async () =>
     valid({
       results: [...records.values()].map((record) => ({
         path: record.path,
-        effective_frontmatter:
-          record.effective_frontmatter ?? record.frontmatter,
+        effectiveFrontmatter: record.effectiveFrontmatter ?? record.frontmatter,
         body: record.body,
         types: record.types,
         values: { status: record.frontmatter.status ?? "open" },
       })),
       meta: {
-        total_count: records.size,
-        has_more: false,
+        totalCount: records.size,
+        hasMore: false,
         view: { path: "views/tasks.base", id: "kanban" },
         groups: [],
       },
@@ -242,10 +238,10 @@ export function mdbaseFixture(
     },
   );
   const updateViewSource = vi.fn(
-    async (input: { path: string; document: string; if_revision?: string }) => {
+    async (input: { path: string; document: string; ifRevision?: string }) => {
       const current = viewSources.get(input.path);
       if (!current) throw new Error("View source not found.");
-      if (input.if_revision !== current.revision)
+      if (input.ifRevision !== current.revision)
         throw new Error("Revision conflict.");
       const source = {
         ...current,
@@ -257,10 +253,10 @@ export function mdbaseFixture(
     },
   );
   const deleteViewSource = vi.fn(
-    async (input: { path: string; if_revision?: string }) => {
+    async (input: { path: string; ifRevision?: string }) => {
       const current = viewSources.get(input.path);
       if (!current) throw new Error("View source not found.");
-      if (input.if_revision !== current.revision)
+      if (input.ifRevision !== current.revision)
         throw new Error("Revision conflict.");
       viewSources.delete(input.path);
       return valid({ path: input.path, deleted: true });
@@ -347,7 +343,7 @@ export function taskRecord(
 export interface TestRecord {
   path: string;
   frontmatter: JsonObject;
-  effective_frontmatter?: JsonObject;
+  effectiveFrontmatter?: JsonObject;
   body: string;
   types: string[];
   revision: string;
@@ -421,10 +417,10 @@ export function description(
       folder: "TaskNotes/Archive",
     };
   return {
-    protocol_version: 1,
-    collection_id: collectionId,
-    display_name: "Local tasks",
-    spec_version: "0.3.0",
+    protocolVersion: 1,
+    collectionId,
+    displayName: "Local tasks",
+    specVersion: "0.3.0",
     operations: [
       "describe",
       "query",
@@ -440,7 +436,7 @@ export function description(
       "delete",
       "rename",
     ],
-    change_cursor: 0,
+    changeCursor: 0,
     types: [
       {
         name: "task",
@@ -454,15 +450,15 @@ export function description(
     contracts: [
       {
         id: "tasknotes.task",
-        contract_type: "record",
+        contractType: "record",
         version: "0.3.0-rc.3",
         digest: TASKNOTES_CONTRACT_DIGEST,
         schema: generated.taskSchema,
-        binding_schema: generated.bindingSchema,
+        bindingSchema: generated.bindingSchema,
         implementations: [
           {
-            type_name: "task",
-            type_version: 1,
+            typeName: "task",
+            typeVersion: 1,
             digest: `sha256:${"1".repeat(64)}`,
             fields: implementation.fields,
             binding: configuration,
@@ -507,7 +503,7 @@ export function multipleProviderDescription(): CollectionDescription {
   });
   result.contracts[0]!.implementations.push({
     ...taskImplementation,
-    type_name: "work_task",
+    typeName: "work_task",
     digest: `sha256:${"2".repeat(64)}`,
     fields: {
       ...taskImplementation.fields,

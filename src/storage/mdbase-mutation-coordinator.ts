@@ -1,12 +1,14 @@
 import {
-  connectError,
-  ConnectOutcomeError,
-  MdbaseConnectError,
-  unwrapConnectOutcome,
   type ConnectRequestOptions,
   type JsonObject,
   type MdbaseConnection,
 } from "@mdbase-dev/connect";
+import {
+  connectProblemFromError,
+  noPendingMutationError,
+  pendingRecoveryError,
+  requireConnectOutcome,
+} from "../cloud/outcome";
 
 type MutationOperation<Result> = () => Promise<Result>;
 
@@ -97,7 +99,7 @@ class MdbaseMutationCoordinator {
     if (requested) {
       const handle = this.connection.pendingMutation<Recovered>(requested);
       if (handle) {
-        const value = unwrapConnectOutcome(await handle.recover(request));
+        const value = requireConnectOutcome(await handle.recover(request));
         this.pending.delete(requested);
         return { matched: true, value: current.mapRecovered(value) };
       }
@@ -111,12 +113,12 @@ class MdbaseMutationCoordinator {
         return { matched: true, value: value as Result };
       }
       try {
-        const value = unwrapConnectOutcome(await handle.recover(request));
+        const value = requireConnectOutcome(await handle.recover(request));
         this.pending.delete(handle.requestId);
         pending?.mapRecovered(value);
       } catch (reason) {
         if (unknownOutcomeRequestId(reason))
-          throw pendingRecoveryError(reason, handle.requestId);
+          throw pendingRecoveryError(handle.requestId, reason);
         this.pending.delete(handle.requestId);
         throw reason;
       }
@@ -131,17 +133,14 @@ class MdbaseMutationCoordinator {
     const handle = this.connection.pendingMutation<unknown>(pending.requestId);
     if (!handle) {
       this.pending.delete(pending.requestId);
-      throw connectError(
-        "no_pending_mutation",
-        "There is no interrupted mutation to resume.",
-      );
+      throw noPendingMutationError();
     }
     try {
-      const value = unwrapConnectOutcome(await handle.recover(request));
+      const value = requireConnectOutcome(await handle.recover(request));
       this.pending.delete(pending.requestId);
       return pending.mapRecovered(value);
     } catch (reason) {
-      if (unknownOutcomeRequestId(reason)) throw asConnectError(reason);
+      if (unknownOutcomeRequestId(reason)) throw reason;
       this.pending.delete(pending.requestId);
       throw reason;
     }
@@ -174,11 +173,7 @@ export function mdbaseMutationKey(operation: string, input: unknown): string {
 }
 
 export function unknownOutcomeRequestId(reason: unknown): string | null {
-  const problem =
-    reason instanceof MdbaseConnectError ||
-    reason instanceof ConnectOutcomeError
-      ? reason.problem
-      : null;
+  const problem = connectProblemFromError(reason);
   if (!problem || problem.operation_outcome !== "unknown") return null;
   const details = problem.details;
   if (
@@ -201,25 +196,4 @@ function coordinatorFor(
     coordinators.set(connection, coordinator);
   }
   return coordinator;
-}
-
-function asConnectError(reason: unknown): MdbaseConnectError {
-  return reason instanceof ConnectOutcomeError
-    ? new MdbaseConnectError(reason.problem, { cause: reason })
-    : (reason as MdbaseConnectError);
-}
-
-function pendingRecoveryError(
-  reason: unknown,
-  requestId: string,
-): MdbaseConnectError {
-  return connectError(
-    "operation_outcome_unknown",
-    "TaskNotes is still confirming an earlier change. This change was not sent. Keep the collection connected and retry recovery.",
-    {
-      operationOutcome: "unknown",
-      details: { request_id: requestId },
-      cause: reason,
-    },
-  );
 }

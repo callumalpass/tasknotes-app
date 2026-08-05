@@ -1,9 +1,5 @@
-import {
-  connectFailure,
-  connectSuccess,
-  type JsonObject,
-  type MdbaseConnection,
-} from "@mdbase-dev/connect";
+import { type JsonObject, type MdbaseConnection } from "@mdbase-dev/connect";
+import { connectFailure, connectSuccess } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
@@ -49,7 +45,7 @@ describe("mdbase task repository", () => {
       ],
       false,
       false,
-      collection.collection_id as ReturnType<typeof crypto.randomUUID>,
+      collection.collectionId as ReturnType<typeof crypto.randomUUID>,
     );
     fixture.describe.mockResolvedValue(collection);
     const repository = new MdbaseTaskRepository(fixture.connect);
@@ -93,7 +89,7 @@ describe("mdbase task repository", () => {
       { id: "canonical", title: "Visible canonical task" },
     ]);
     expect(fixture.query).toHaveBeenCalledWith(
-      expect.objectContaining({ frontmatter_mode: "effective" }),
+      expect.objectContaining({ frontmatterMode: "effective" }),
       expect.objectContaining({ signal: expect.anything() }),
     );
   });
@@ -136,8 +132,8 @@ describe("mdbase task repository", () => {
     const completionQuery = fixture.query.mock.calls[1]?.[0];
     expect(completionQuery).toMatchObject({
       limit: 48,
-      frontmatter_mode: "effective",
-      order_by: [{ field: "file.path", direction: "asc" }],
+      frontmatterMode: "effective",
+      orderBy: [{ field: "file.path", direction: "asc" }],
     });
     expect(String(completionQuery?.where)).toContain(
       'file.path.lower().contains("mobile")',
@@ -170,7 +166,7 @@ describe("mdbase task repository", () => {
     });
     expect(fixture.read).toHaveBeenCalledTimes(1);
     expect(
-      fixture.update.mock.calls.map(([input]) => input.if_revision),
+      fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2"]);
 
     const created = await repository.create({ title: "New relay task" });
@@ -180,7 +176,7 @@ describe("mdbase task repository", () => {
     await repository.delete(created.id);
     expect(await repository.get(created.id)).toBeNull();
     expect(fixture.remove).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "r4" }),
+      expect.objectContaining({ ifRevision: "r4" }),
       expect.objectContaining({ signal: expect.anything() }),
     );
     expect(await repository.connectionStatus()).toMatchObject({
@@ -314,7 +310,7 @@ describe("mdbase task repository", () => {
     next.contracts[0] = {
       ...next.contracts[0],
       implementations: next.contracts[0].implementations.map(
-        (implementation) => ({ ...implementation, type_name: "todo" }),
+        (implementation) => ({ ...implementation, typeName: "todo" }),
       ),
     };
     fixture.describe.mockResolvedValueOnce(next);
@@ -423,7 +419,7 @@ describe("mdbase task repository", () => {
 
     expect(fixture.read).toHaveBeenCalledTimes(1);
     expect(fixture.remove).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "r1" }),
+      expect.objectContaining({ ifRevision: "r1" }),
       expect.objectContaining({ signal: expect.anything() }),
     );
   });
@@ -545,7 +541,7 @@ describe("mdbase task repository", () => {
       [],
     );
     expect(
-      fixture.update.mock.calls.map(([input]) => input.if_revision),
+      fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2", "r3", "r4"]);
   });
 
@@ -625,7 +621,7 @@ describe("mdbase task repository", () => {
       {
         from: "tasks/archived.md",
         to: "TaskNotes/Archive/archived.md",
-        if_revision: "r2",
+        ifRevision: "r2",
         update_refs: true,
       },
       expect.objectContaining({ signal: expect.anything() }),
@@ -755,7 +751,7 @@ describe("mdbase task repository", () => {
     });
     expect(updated).toMatchObject({ revision: "view-r3" });
     expect(fixture.updateViewSource).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "view-r2" }),
+      expect.objectContaining({ ifRevision: "view-r2" }),
       expect.objectContaining({ signal: expect.anything() }),
     );
 
@@ -763,7 +759,7 @@ describe("mdbase task repository", () => {
     expect(fixture.deleteViewSource).toHaveBeenCalledWith(
       {
         path: updated.path,
-        if_revision: "view-r3",
+        ifRevision: "view-r3",
       },
       expect.objectContaining({ signal: expect.anything() }),
     );

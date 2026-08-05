@@ -2,7 +2,6 @@ import { Capacitor } from "@capacitor/core";
 import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import {
   MdbaseConnectError,
-  unwrapConnectOutcome,
   type CollectionDescription,
   type ConnectOutcome,
   type JsonObject,
@@ -11,6 +10,7 @@ import {
   type RecordDocument,
 } from "@mdbase-dev/connect";
 
+import { requireConnectOutcome } from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import {
@@ -100,7 +100,7 @@ interface CachedMdbaseTask {
 interface ReadableMdbaseRecord {
   path: string;
   frontmatter?: JsonObject;
-  effective_frontmatter?: JsonObject;
+  effectiveFrontmatter?: JsonObject;
   body?: string;
   types?: string[];
 }
@@ -193,7 +193,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       await this.connect.describe(this.requestOptions()),
     );
     this.configureDescription(description);
-    this.collectionId = description.collection_id;
+    this.collectionId = description.collectionId;
     await this.reloadCache();
     this.setConnected();
     await this.maintainRollingOccurrencesUnlocked();
@@ -310,9 +310,9 @@ export class MdbaseTaskRepository implements TaskRepository {
               ].join(" || "),
             }
           : {}),
-        order_by: [{ field: "file.path", direction: "asc" }],
+        orderBy: [{ field: "file.path", direction: "asc" }],
         limit: Math.max(completionLimit(request) * 4, 48),
-        frontmatter_mode: "effective",
+        frontmatterMode: "effective",
       },
       this.requestOptions(),
     );
@@ -516,7 +516,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const operationInput = {
         from: updated.path,
         to: destination,
-        if_revision: saved?.revision,
+        ifRevision: saved?.revision,
         update_refs: true,
       };
       try {
@@ -566,7 +566,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const current = await this.requireCurrent(id);
       const operationInput = {
         path: current.task.path,
-        if_revision: current.revision,
+        ifRevision: current.revision,
         check_backlinks: true,
       };
       try {
@@ -733,7 +733,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     const operationInput = {
       path: input.path,
       document: input.document,
-      if_revision: input.ifRevision,
+      ifRevision: input.ifRevision,
     };
     try {
       const applyUpdated = (updated: TaskViewSourceDocument) => {
@@ -764,7 +764,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
-    const operationInput = { path, if_revision: ifRevision };
+    const operationInput = { path, ifRevision };
     try {
       const applyDeleted = () => {
         this.invalidateViewsAfterMutation();
@@ -808,7 +808,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       assertScratchpadRevision(current, input);
       const operationInput = {
         path: current.path,
-        if_revision: current.revision,
+        ifRevision: current.revision,
         patch: asJson(
           scratchpadFrontmatter(current, {
             dateModified: new Date().toISOString(),
@@ -834,7 +834,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const now = new Date().toISOString();
       const updateInput = {
         path: current.path,
-        if_revision: current.revision,
+        ifRevision: current.revision,
         patch: asJson(
           scratchpadFrontmatter(current, {
             state: "converted",
@@ -855,7 +855,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const renameInput = {
         from: updated.path,
         to: path,
-        if_revision: updated.revision,
+        ifRevision: updated.revision,
         update_refs: false,
       };
       const archived = await runMdbaseMutation(
@@ -882,8 +882,8 @@ export class MdbaseTaskRepository implements TaskRepository {
       await this.connect.query(
         {
           types: [SCRATCHPAD_TYPE],
-          include_body: true,
-          frontmatter_mode: "persisted",
+          includeBody: true,
+          frontmatterMode: "persisted",
           limit: 1_000,
         },
         this.requestOptions(),
@@ -996,8 +996,8 @@ export class MdbaseTaskRepository implements TaskRepository {
       const response = await this.connect.query(
         {
           types: [...this.taskProviders.keys()],
-          include_body: true,
-          frontmatter_mode: "effective",
+          includeBody: true,
+          frontmatterMode: "effective",
           limit: PAGE_SIZE,
           offset,
           ...(snapshot ? { snapshot } : {}),
@@ -1020,7 +1020,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         });
       }
       offset += page.results.length;
-      hasMore = Boolean(page.meta?.has_more && page.results.length > 0);
+      hasMore = Boolean(page.meta?.hasMore && page.results.length > 0);
     }
 
     this.cache.clear();
@@ -1067,14 +1067,14 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private configureDescription(description: CollectionDescription): void {
     const resolved = resolveTaskCollection(description);
-    if (this.collectionId && description.collection_id !== this.collectionId)
+    if (this.collectionId && description.collectionId !== this.collectionId)
       throw new Error("The connected mdbase collection changed unexpectedly.");
     this.model = resolved.model;
     this.taskTypeName = resolved.typeName;
     this.taskProviders = new Map(
       resolved.providers.map((provider) => [provider.typeName, provider.model]),
     );
-    this.displayName = description.display_name;
+    this.displayName = description.displayName;
   }
 
   private async persistUpdate(
@@ -1085,7 +1085,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       path: current.task.path,
       patch: frontmatterPatch(current.task.frontmatter, next.frontmatter),
       body: next.body,
-      if_revision: current.revision,
+      ifRevision: current.revision,
     };
     try {
       return await runMdbaseMutation(
@@ -1476,7 +1476,7 @@ export class MdbaseTaskRepository implements TaskRepository {
 function validResult<Result>(
   envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
 ): Result {
-  if ("ok" in envelope) return unwrapConnectOutcome(envelope);
+  if ("ok" in envelope) return requireConnectOutcome(envelope);
   // Test doubles written for the pre-beta.23 describe() shape return the
   // description directly. Keep that narrow compatibility at this boundary.
   if (!("valid" in envelope)) return envelope as unknown as Result;
@@ -1506,7 +1506,7 @@ function asJson(value: Record<string, unknown>): JsonObject {
 }
 
 function mdbaseFrontmatter(record: ReadableMdbaseRecord): JsonObject {
-  return record.effective_frontmatter ?? record.frontmatter ?? {};
+  return record.effectiveFrontmatter ?? record.frontmatter ?? {};
 }
 
 function errorMessage(reason: unknown): string {

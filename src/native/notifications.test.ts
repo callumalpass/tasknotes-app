@@ -76,11 +76,11 @@ describe("mdbase task reminders", () => {
     expect(timers).toEqual([
       {
         id: expect.stringMatching(/^[a-f0-9]{64}$/),
-        fire_at: "2026-07-26T00:00:00.000Z",
+        fireAt: "2026-07-26T00:00:00.000Z",
       },
       {
         id: expect.stringMatching(/^[a-f0-9]{64}$/),
-        fire_at: "2026-07-25T11:00:00.000Z",
+        fireAt: "2026-07-25T11:00:00.000Z",
       },
     ]);
     expect(
@@ -118,11 +118,11 @@ describe("mdbase task reminders", () => {
     expect(mocks.reconcileTimers).toHaveBeenCalledWith(
       {
         namespace: "task-reminders",
-        criterion_id: "task.reminder",
+        criterionId: "task.reminder",
         timers: [
           {
             id: expect.stringMatching(/^[a-f0-9]{64}$/),
-            fire_at: "2099-07-26T00:00:00.000Z",
+            fireAt: "2099-07-26T00:00:00.000Z",
           },
         ],
       },
@@ -157,7 +157,7 @@ describe("mdbase task reminders", () => {
     expect(mocks.reconcileTimers).toHaveBeenCalledWith(
       {
         namespace: "task-reminders",
-        criterion_id: "task.reminder",
+        criterionId: "task.reminder",
         timers: [],
       },
       { timeoutMs: 45_000 },

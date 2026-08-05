@@ -1,12 +1,14 @@
 import {
-  connectError,
-  connectFailure,
-  connectSuccess,
   type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
   type PendingMutation,
 } from "@mdbase-dev/connect";
+import {
+  connectError,
+  connectFailure,
+  connectSuccess,
+} from "@mdbase-dev/connect-testing";
 import { expect, it, vi } from "vitest";
 
 import {

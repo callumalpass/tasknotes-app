@@ -1,4 +1,4 @@
-import { connectError } from "@mdbase-dev/connect";
+import { connectError } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 
 import {

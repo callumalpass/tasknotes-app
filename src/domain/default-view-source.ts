@@ -66,8 +66,8 @@ export function taskNotesDefaultBaseDocument(
   const manualOrder = basesProperty(fields.sortOrder);
   const taskDate = `if(${scheduled}.isEmpty() == false, ${scheduled}, ${due})`;
   const taskDay =
-    'if(formula.taskDate.isEmpty(), null, date(formula.taskDate).format("YYYY-MM-DD"))';
-  const today = 'today().format("YYYY-MM-DD")';
+    "if(formula.taskDate.isEmpty(), null, date(formula.taskDate))";
+  const today = "today()";
 
   return stringify(
     {
@@ -186,7 +186,7 @@ export function taskNotesDefaultCanonicalDocument(
   const fields = configuration.fieldMapping;
   const taskDate = `if(${fields.scheduled}.isEmpty() == false, ${fields.scheduled}, ${fields.due})`;
   const taskDay =
-    'if(projection.task_date.isEmpty(), null, date(projection.task_date).format("YYYY-MM-DD"))';
+    "if(projection.task_date.isEmpty(), null, date(projection.task_date))";
   const sharedWhere = activeTaskFilters(configuration).join(" && ");
   const selection = [
     fields.title,
@@ -212,7 +212,7 @@ export function taskNotesDefaultCanonicalDocument(
         {
           id: "today",
           name: "Today",
-          where: `(${sharedWhere}) && (projection.task_day.isEmpty() || projection.task_day <= today().format("YYYY-MM-DD"))`,
+          where: `(${sharedWhere}) && (projection.task_day.isEmpty() || projection.task_day <= today())`,
           select: selection,
           order_by: [
             { field: fields.sortOrder, direction: "desc" },

@@ -7,10 +7,10 @@ import {
   it,
   vi,
 } from "vitest";
-import { connectSuccess } from "@mdbase-dev/connect";
+import { operationsForApplicationCapabilities } from "@mdbase-dev/connect";
+import { connectSuccess } from "@mdbase-dev/connect-testing";
 
 import bundledManifest from "../generated/mdbase-app.json";
-import { operationsForApplicationCapabilities } from "@mdbase-dev/connect-protocol";
 import { cloudConnect, cloudSession } from "./connect";
 
 const expectedOperations = operationsForApplicationCapabilities(

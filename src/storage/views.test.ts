@@ -132,8 +132,8 @@ describe("provider view documents", () => {
       {
         results: [],
         meta: {
-          total_count: 2,
-          has_more: false,
+          totalCount: 2,
+          hasMore: false,
           groups: [
             {
               values: { project: "mdbase" },
@@ -172,11 +172,11 @@ describe("provider view documents", () => {
         results: [
           {
             path: "tasks/canonical.md",
-            effective_frontmatter: { title: "Canonical title" },
+            effectiveFrontmatter: { title: "Canonical title" },
             types: ["task"],
           },
         ],
-        meta: { total_count: 1, has_more: false },
+        meta: { totalCount: 1, hasMore: false },
       },
       () => null,
     );
@@ -209,12 +209,12 @@ describe("provider view documents", () => {
         results: [
           {
             path: "notes/body-only.md",
-            effective_frontmatter: {},
+            effectiveFrontmatter: {},
             body: "# Body only",
             types: [],
           },
         ],
-        meta: { total_count: 1, has_more: false },
+        meta: { totalCount: 1, hasMore: false },
       },
       () => null,
     );
@@ -245,11 +245,11 @@ describe("provider view documents", () => {
     };
     const malformed = {
       results: [{ path: "notes/malformed.md", body: "# Missing projection" }],
-      meta: { total_count: 1, has_more: false },
+      meta: { totalCount: 1, hasMore: false },
     } as unknown as ProviderViewExecution;
 
     expect(() => normalizeViewExecution(view, malformed, () => null)).toThrow(
-      'Invalid saved-view record "notes/malformed.md": effective_frontmatter must be an object.',
+      'Invalid saved-view record "notes/malformed.md": effectiveFrontmatter must be an object.',
     );
   });
 });

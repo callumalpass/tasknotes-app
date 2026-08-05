@@ -1,5 +1,7 @@
-import type { MdbaseConnection } from "@mdbase-dev/connect";
-import type { CollectionFileDescriptor } from "@mdbase-dev/connect-protocol";
+import type {
+  CollectionFileDescriptor,
+  MdbaseConnection,
+} from "@mdbase-dev/connect";
 
 import type {
   CollectionFile,
@@ -124,26 +126,26 @@ function withOperationSignal<Options extends { signal?: AbortSignal }>(
 
 function fromMdbaseFile(file: CollectionFileDescriptor): CollectionFile {
   return {
-    fileId: file.file_id,
+    fileId: file.fileId,
     path: file.path,
     revision: file.revision,
-    contentDigest: file.content_digest,
+    contentDigest: file.contentDigest,
     size: file.size,
-    ...(file.media_type ? { mediaType: file.media_type } : {}),
-    mediaClass: file.media_class,
-    modifiedAt: file.modified_at,
+    ...(file.mediaType ? { mediaType: file.mediaType } : {}),
+    mediaClass: file.mediaClass,
+    modifiedAt: file.modifiedAt,
   };
 }
 
 function toMdbaseFile(file: CollectionFile): CollectionFileDescriptor {
   return {
-    file_id: file.fileId,
+    fileId: file.fileId,
     path: file.path,
     revision: file.revision,
-    content_digest: file.contentDigest,
+    contentDigest: file.contentDigest,
     size: file.size,
-    ...(file.mediaType ? { media_type: file.mediaType } : {}),
-    media_class: file.mediaClass,
-    modified_at: file.modifiedAt,
+    ...(file.mediaType ? { mediaType: file.mediaType } : {}),
+    mediaClass: file.mediaClass,
+    modifiedAt: file.modifiedAt,
   };
 }

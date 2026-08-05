@@ -1,8 +1,7 @@
 import { BellRing, MonitorUp } from "lucide-react";
 import { useMemo, useState } from "react";
-import { unwrapConnectOutcome } from "@mdbase-dev/connect";
-
 import { cloudSession } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { createConnectTaskRepository } from "../storage/connect-repository";
@@ -62,7 +61,7 @@ export function CloudConnection({ error }: { error: string | null }) {
     setOpening(kind);
     setStartError(null);
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         await cloudSession.authorize(
           kind === "another" ? "choose" : "selected",
           { timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs },
@@ -78,7 +77,7 @@ export function CloudConnection({ error }: { error: string | null }) {
   function open(collectionId: string) {
     setStartError(null);
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         cloudSession.select(collectionId, { history: "replace" }),
       );
     } catch (reason) {
@@ -90,7 +89,7 @@ export function CloudConnection({ error }: { error: string | null }) {
     setOpening("reconnect");
     setStartError(null);
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         await cloudSession.applyCollectionSetup({
           timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
         }),

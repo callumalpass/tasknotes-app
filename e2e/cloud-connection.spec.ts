@@ -518,6 +518,32 @@ function tasknotesGrantContract() {
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
 ) {
+  await page.route(
+    "https://connect.mdbase.dev/v1/apps/register",
+    async (route) => {
+      expect(route.request().postDataJSON()).toMatchObject({
+        manifest: {
+          manifest_version: 1,
+          id: bundledManifest.id,
+        },
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          application: {
+            id: "01922222-2222-7222-8222-222222222221",
+            family_identity: `bundle:${bundledManifest.id}`,
+            manifest_digest: "0".repeat(64),
+            name: bundledManifest.name,
+            distribution: "web",
+            homepage: bundledManifest.homepage,
+            requirements: bundledManifest.requirements,
+          },
+        }),
+      });
+    },
+  );
   await page.goto("./");
   const fixture = await installMdbaseBrowserFixture(page, {
     serverUrl: "https://connect.mdbase.dev",

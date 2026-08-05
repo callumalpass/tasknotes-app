@@ -43,11 +43,11 @@ async function authorize(page: Page): Promise<void> {
   await page.getByRole("button", { name: /allow TaskNotes$/i }).click();
 
   const capture = page.getByLabel("New task title");
-  const applyDefinitions = page.getByRole("button", {
-    name: "Review and update definitions",
+  const applySetup = page.getByRole("button", {
+    name: "Apply reviewed setup",
   });
-  await expect(capture.or(applyDefinitions)).toBeVisible();
-  if (await applyDefinitions.isVisible()) await applyDefinitions.click();
+  await expect(capture.or(applySetup)).toBeVisible();
+  if (await applySetup.isVisible()) await applySetup.click();
   await expect(capture).toBeVisible();
 }
 
@@ -69,6 +69,17 @@ test("recovers one exact task after authority responses are lost", async ({
   page,
 }) => {
   await authorize(page);
+  const collectionConfig = await readFile(
+    `${collectionDir}/mdbase.yaml`,
+    "utf8",
+  );
+  expect(collectionConfig).toContain("views/tasknotes/**/*.base");
+  const todayView = await readFile(
+    `${collectionDir}/views/tasknotes/today.base`,
+    "utf8",
+  );
+  expect(todayView).toContain("formula.taskDay <= today()");
+  expect(todayView).not.toContain('taskDay <= today().format("YYYY-MM-DD")');
   const filesBefore = await markdownFiles();
   const title = `TaskNotes durable recovery ${Date.now()}`;
 

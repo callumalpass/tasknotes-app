@@ -2,7 +2,7 @@ import type {
   CollectionContractDescriptor,
   CollectionTypeDescriptor,
   JsonObject,
-} from "@mdbase-dev/connect-protocol";
+} from "@mdbase-dev/connect";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -39,14 +39,14 @@ export function resolveTaskCollection(
     );
   const providers = contract.implementations.map((implementation) => {
     const type = resources.types.find(
-      (candidate) => candidate.name === implementation.type_name,
+      (candidate) => candidate.name === implementation.typeName,
     );
     if (!type)
       throw new Error(
-        `The TaskNotes implementation type "${implementation.type_name}" is missing.`,
+        `The TaskNotes implementation type "${implementation.typeName}" is missing.`,
       );
     return resolveTaskTypeDefinition(type.definition ?? {}, {
-      typeName: implementation.type_name,
+      typeName: implementation.typeName,
       schema: type.schema,
       fields: implementation.fields,
       collection: type.collection,

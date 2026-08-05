@@ -7,13 +7,12 @@ import {
   within,
 } from "@testing-library/react";
 import {
-  connectError,
-  connectSuccess,
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
   type PendingMutation,
 } from "@mdbase-dev/connect";
+import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
 import { expect, it, vi } from "vitest";
 
 import { shiftTaskDate } from "../domain/task-date-actions";

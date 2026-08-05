@@ -44,14 +44,14 @@ export interface ProviderViewList {
 export interface ProviderViewExecution {
   results: Array<{
     path: string;
-    effective_frontmatter: Record<string, unknown>;
+    effectiveFrontmatter: Record<string, unknown>;
     body?: string;
     types?: string[];
     values?: Record<string, unknown>;
   }>;
   meta: {
-    total_count: number;
-    has_more: boolean;
+    totalCount: number;
+    hasMore: boolean;
     groups?: TaskViewGroup[];
   };
 }
@@ -130,7 +130,7 @@ export function normalizeViewExecution(
     rows,
     records: result.results.map((record) => {
       assertEffectiveFrontmatter(record);
-      const frontmatter = record.effective_frontmatter;
+      const frontmatter = record.effectiveFrontmatter;
       return {
         record: {
           path: record.path,
@@ -142,8 +142,8 @@ export function normalizeViewExecution(
         values: structuredClone(record.values ?? {}),
       };
     }),
-    totalCount: result.meta.total_count,
-    hasMore: result.meta.has_more,
+    totalCount: result.meta.totalCount,
+    hasMore: result.meta.hasMore,
     groups: structuredClone(result.meta.groups ?? []),
   };
 }
@@ -151,10 +151,10 @@ export function normalizeViewExecution(
 function assertEffectiveFrontmatter(
   record: ProviderViewExecution["results"][number],
 ): void {
-  const value = record.effective_frontmatter;
+  const value = record.effectiveFrontmatter;
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new Error(
-      `Invalid saved-view record "${record.path}": effective_frontmatter must be an object.`,
+      `Invalid saved-view record "${record.path}": effectiveFrontmatter must be an object.`,
     );
 }
 

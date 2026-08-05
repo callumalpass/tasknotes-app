@@ -3,13 +3,10 @@ import { Capacitor } from "@capacitor/core";
 import {
   MdbaseBrowserSelection,
   MdbaseConnect,
+  type JsonObject,
+  type MdbaseAppManifest,
   type MdbaseConnectionInfo,
 } from "@mdbase-dev/connect";
-
-import type {
-  JsonObject,
-  MdbaseAppManifest,
-} from "@mdbase-dev/connect-protocol";
 import bundledManifest from "../generated/mdbase-app.json";
 import { TASKNOTES_REQUEST_BUDGETS } from "./request-budgets";
 
