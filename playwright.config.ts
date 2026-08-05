@@ -6,6 +6,7 @@ const webServerCommand =
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/dogfood/**",
   fullyParallel: false,
   // Desktop and mobile exercise the same direct mdbase application path.
   workers: 1,

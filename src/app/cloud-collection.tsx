@@ -1,8 +1,8 @@
 import { BellRing, MonitorUp } from "lucide-react";
 import { useMemo, useState } from "react";
-import { unwrapConnectOutcome } from "@mdbase-dev/connect";
-
 import { cloudSession } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { tasknotesMarkUrl } from "./assets";
@@ -61,9 +61,10 @@ export function CloudConnection({ error }: { error: string | null }) {
     setOpening(kind);
     setStartError(null);
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         await cloudSession.authorize(
           kind === "another" ? "choose" : "selected",
+          { timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs },
         ),
       );
     } catch (reason) {
@@ -76,7 +77,7 @@ export function CloudConnection({ error }: { error: string | null }) {
   function open(collectionId: string) {
     setStartError(null);
     try {
-      unwrapConnectOutcome(
+      requireConnectOutcome(
         cloudSession.select(collectionId, { history: "replace" }),
       );
     } catch (reason) {
@@ -84,11 +85,15 @@ export function CloudConnection({ error }: { error: string | null }) {
     }
   }
 
-  async function applyDefinitionUpdates() {
+  async function applyCollectionSetup() {
     setOpening("reconnect");
     setStartError(null);
     try {
-      unwrapConnectOutcome(await cloudSession.applyDefinitionUpdates());
+      requireConnectOutcome(
+        await cloudSession.applyCollectionSetup({
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
+        }),
+      );
     } catch (reason) {
       setStartError(message(reason));
     } finally {
@@ -133,9 +138,9 @@ export function CloudConnection({ error }: { error: string | null }) {
           {error ?? startError}
         </p>
       ) : null}
-      {session.status === "checking_definitions" ? (
+      {session.status === "checking_setup" ? (
         <p className="connection-status" role="status">
-          Checking this collection’s TaskNotes definitions…
+          Checking this collection’s TaskNotes setup…
         </p>
       ) : null}
       {session.status === "blocked" ? (
@@ -143,34 +148,45 @@ export function CloudConnection({ error }: { error: string | null }) {
           {session.problem.message}
         </p>
       ) : null}
-      {session.status === "definition_review_required" ? (
+      {session.status === "setup_review_required" ? (
         <section
           className="connection-update"
-          aria-labelledby="definition-update-title"
+          aria-labelledby="collection-setup-title"
         >
-          <h2 id="definition-update-title">Task definitions changed</h2>
+          <h2 id="collection-setup-title">Review TaskNotes setup</h2>
           <p>
-            Review the source-of-truth changes before updating this collection.
-            No task records change until you continue.
+            TaskNotes needs the following collection settings and definitions.
+            Your task records and unrelated collection settings will not change.
           </p>
           <ul>
-            {session.updates.map((update) => (
+            {session.update.configuration
+              .filter((configuration) => configuration.action !== "current")
+              .map((configuration) => (
+                <li key={configuration.requirement}>
+                  {configuration.action === "conflict"
+                    ? configuration.conflict?.message
+                    : `Allow TaskNotes Base views at ${String(configuration.value)}`}
+                </li>
+              ))}
+            {session.update.typePacks.map((update) => (
               <li key={update.id}>
                 {update.name}: {update.currentVersion ?? "not installed"} →{" "}
                 {update.desiredVersion}
               </li>
             ))}
           </ul>
+          <p>
+            If you do not approve this setup, TaskNotes cannot create its
+            portable views in this collection. You can choose another collection
+            below.
+          </p>
           <button
             className="outline-action"
-            disabled={
-              opening !== null ||
-              session.updates.some((update) => !update.canApply)
-            }
-            onClick={() => void applyDefinitionUpdates()}
+            disabled={opening !== null || !session.update.canApply}
+            onClick={() => void applyCollectionSetup()}
             type="button"
           >
-            Review and update definitions
+            Apply reviewed setup
           </button>
         </section>
       ) : null}

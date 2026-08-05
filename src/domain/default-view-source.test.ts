@@ -6,6 +6,7 @@ import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import {
   defaultNavigationViewKeys,
   taskNotesDefaultBaseDocument,
+  taskNotesDefaultBaseSources,
   taskNotesDefaultCanonicalDocument,
 } from "./default-view-source";
 import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
@@ -18,9 +19,11 @@ describe("TaskNotes starter views", () => {
     const parsed = parse(
       taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
     ) as {
+      formulas: Record<string, string>;
       views: Array<{
         name: string;
         type: string;
+        filters?: { and?: Array<string | Record<string, unknown>> };
         options?: Record<string, unknown>;
         sort?: Array<{ property: string; direction: string }>;
       }>;
@@ -41,6 +44,12 @@ describe("TaskNotes starter views", () => {
       calendarView: "dayGridMonth",
       showRecurring: true,
     });
+    expect(parsed.formulas).toMatchObject({
+      taskDay: "if(formula.taskDate.isEmpty(), null, date(formula.taskDate))",
+    });
+    expect(parsed.views[0].filters?.and?.at(-1)).toEqual({
+      or: ["formula.taskDay.isEmpty()", "formula.taskDay <= today()"],
+    });
     expect(parsed.views[3].options).toEqual({ create: false });
     expect(parsed.views[4].options).toEqual({ create: false });
     for (const view of parsed.views)
@@ -50,16 +59,17 @@ describe("TaskNotes starter views", () => {
       });
   });
 
-  it("creates the Base once and returns the provider-owned definitions", async () => {
-    const created = starterDocument();
+  it("creates each namespaced Base once and returns provider-owned definitions", async () => {
+    const created = starterDocuments();
+    const createViewSource = vi.fn(async (input: { path: string }) => ({
+      path: input.path,
+      format: "obsidian.base",
+      revision: "1",
+      document: "",
+    }));
     const repository = {
-      createViewSource: vi.fn(async () => ({
-        path: created.source.path,
-        format: "obsidian.base",
-        revision: "1",
-        document: "",
-      })),
-      listViews: vi.fn(async () => [created]),
+      createViewSource,
+      listViews: vi.fn(async () => created),
       connectionStatus: vi.fn(),
     } as unknown as TaskRepository;
 
@@ -69,20 +79,62 @@ describe("TaskNotes starter views", () => {
         [],
         defaultTaskCollectionConfiguration(),
       ),
-    ).resolves.toEqual([created]);
-    expect(repository.createViewSource).toHaveBeenCalledWith(
-      expect.objectContaining({
-        format: "obsidian.base",
-        name: "tasknotes-app",
-      }),
+    ).resolves.toEqual(created);
+    expect(createViewSource.mock.calls.map(([input]) => input.path)).toEqual(
+      taskNotesDefaultBaseSources(defaultTaskCollectionConfiguration()).map(
+        ({ path }) => path,
+      ),
     );
 
     await ensureTaskNotesDefaultViewSource(
       repository,
-      [created],
+      created,
       defaultTaskCollectionConfiguration(),
     );
-    expect(repository.createViewSource).toHaveBeenCalledTimes(1);
+    expect(repository.createViewSource).toHaveBeenCalledTimes(5);
+  });
+
+  it("resumes an ambiguous create while preserving an upgraded legacy source", async () => {
+    const legacy = legacyStarterDocument();
+    const namespaced = starterDocuments();
+    const current = [legacy];
+    let first = true;
+    const createViewSource = vi.fn(async (input: { path: string }) => {
+      const created = namespaced.find(
+        (document) => document.source.path === input.path,
+      );
+      if (!created) throw new Error(`Unexpected starter path '${input.path}'.`);
+      current.push(created);
+      if (first) {
+        first = false;
+        throw new Error("The response was lost after the authority committed.");
+      }
+      return {
+        path: input.path,
+        format: "obsidian.base",
+        revision: "1",
+        document: "",
+      };
+    });
+    const updateViewSource = vi.fn();
+    const deleteViewSource = vi.fn();
+    const repository = {
+      createViewSource,
+      listViews: vi.fn(async () => [...current]),
+      updateViewSource,
+      deleteViewSource,
+    } as unknown as TaskRepository;
+
+    await expect(
+      ensureTaskNotesDefaultViewSource(
+        repository,
+        [legacy],
+        defaultTaskCollectionConfiguration(),
+      ),
+    ).resolves.toHaveLength(6);
+    expect(createViewSource).toHaveBeenCalledTimes(5);
+    expect(updateViewSource).not.toHaveBeenCalled();
+    expect(deleteViewSource).not.toHaveBeenCalled();
   });
 
   it("generates canonical projections and ordinary project grouping", () => {
@@ -115,6 +167,7 @@ describe("TaskNotes starter views", () => {
     expect(archive?.presentation.options).toEqual({ create: false });
     expect(query.projections.task_date.expr).toContain("scheduled");
     expect(query.projections.task_day.expr).toContain("projection.task_date");
+    expect(query.projections.task_day.expr).not.toContain(".format(");
     expect(projects?.where).toContain('note["projects"].isEmpty() == false');
     expect(projects?.select).not.toContain("projects");
     expect(projects?.group_by).toEqual([
@@ -128,6 +181,9 @@ describe("TaskNotes starter views", () => {
     expect(
       views.find(({ id }) => id === "today")?.presentation.options,
     ).toEqual({ sections: "day" });
+    expect(views.find(({ id }) => id === "today")?.where).toContain(
+      "projection.task_day <= today()",
+    );
     for (const view of views)
       expect(view.order_by?.[0]).toEqual({
         field: "tasknotes_manual_order",
@@ -136,7 +192,7 @@ describe("TaskNotes starter views", () => {
   });
 
   it("leaves an existing default source untouched", async () => {
-    const existing = starterDocument();
+    const existing = starterDocuments();
     const repository = {
       createViewSource: vi.fn(),
       readViewSource: vi.fn(),
@@ -147,10 +203,10 @@ describe("TaskNotes starter views", () => {
     await expect(
       ensureTaskNotesDefaultViewSource(
         repository,
-        [existing],
+        existing,
         defaultTaskCollectionConfiguration(),
       ),
-    ).resolves.toEqual([existing]);
+    ).resolves.toEqual(existing);
     expect(repository.createViewSource).not.toHaveBeenCalled();
     expect(repository.readViewSource).not.toHaveBeenCalled();
     expect(repository.updateViewSource).not.toHaveBeenCalled();
@@ -158,7 +214,17 @@ describe("TaskNotes starter views", () => {
   });
 
   it("uses the starter view order for first-run navigation", () => {
-    expect(defaultNavigationViewKeys([starterDocument()])).toEqual([
+    expect(defaultNavigationViewKeys(starterDocuments())).toEqual([
+      "views/tasknotes/today.base#today",
+      "views/tasknotes/upcoming.base#upcoming",
+      "views/tasknotes/calendar.base#calendar",
+      "views/tasknotes/projects.base#projects",
+      "views/tasknotes/archive.base#archive",
+    ]);
+  });
+
+  it("keeps legacy navigation available while upgraded sources are created", () => {
+    expect(defaultNavigationViewKeys([legacyStarterDocument()])).toEqual([
       "views/tasknotes-app.base#today",
       "views/tasknotes-app.base#upcoming",
       "views/tasknotes-app.base#calendar",
@@ -210,25 +276,26 @@ describe("TaskNotes starter views", () => {
     ).toContain('file.hasTag("archived") == true');
   });
 
-  it("keeps provider views when a read-only collection cannot create starter views", async () => {
+  it("surfaces a collection that cannot create its required starter views", async () => {
+    const starter = starterDocuments()[0];
     const existing = {
-      ...starterDocument(),
+      ...starter,
       id: "work",
       source: {
-        ...starterDocument().source,
+        ...starter.source,
         path: "views/work.base",
         writable: false,
       },
       views: [
         {
-          ...starterDocument().views[0],
+          ...starter.views[0],
           key: "views/work.base#open",
           documentId: "work",
           documentName: "Work",
           id: "open",
           name: "Open work",
           source: {
-            ...starterDocument().source,
+            ...starter.source,
             path: "views/work.base",
             writable: false,
           },
@@ -249,12 +316,43 @@ describe("TaskNotes starter views", () => {
         [existing],
         defaultTaskCollectionConfiguration(),
       ),
-    ).resolves.toEqual([existing]);
+    ).rejects.toThrow("create_view_source is unavailable");
     expect(repository.connectionStatus).not.toHaveBeenCalled();
   });
 });
 
-function starterDocument(): TaskViewDocument {
+function starterDocuments(): TaskViewDocument[] {
+  return ["today", "upcoming", "calendar", "projects", "archive"].map((id) =>
+    starterDocument(id),
+  );
+}
+
+function starterDocument(id: string): TaskViewDocument {
+  const source = {
+    path: `views/tasknotes/${id}.base`,
+    format: "obsidian.base",
+    revision: "1",
+    writable: true,
+  };
+  return {
+    id,
+    name: id,
+    source,
+    views: [
+      {
+        key: `${source.path}#${id}`,
+        documentId: id,
+        documentName: id,
+        id,
+        name: `${id[0].toUpperCase()}${id.slice(1)}`,
+        properties: [],
+        source,
+      },
+    ],
+  };
+}
+
+function legacyStarterDocument(): TaskViewDocument {
   const source = {
     path: "views/tasknotes-app.base",
     format: "obsidian.base",

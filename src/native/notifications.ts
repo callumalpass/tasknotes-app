@@ -2,9 +2,14 @@ import { reminderFireTime } from "../domain/reminder";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
-import type { MdbaseDesiredTimer } from "@mdbase-dev/connect";
+import { type MdbaseDesiredTimer } from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
-import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
+import { requireConnectOutcome } from "../cloud/outcome";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
+import {
+  mdbaseMutationKey,
+  runMdbaseMutation,
+} from "../storage/mdbase-mutation-coordinator";
 
 const TIMER_NAMESPACE = "task-reminders";
 const TIMER_CRITERION = "task.reminder";
@@ -73,11 +78,24 @@ function reconcileConnectNotifications(
         if (!connection) throw new Error("TaskNotes is not connected.");
         const operationInput = {
           namespace: TIMER_NAMESPACE,
-          criterion_id: TIMER_CRITERION,
+          criterionId: TIMER_CRITERION,
           timers: await desiredTaskTimers(tasks),
         };
-        await runMdbaseMutation(connection, () =>
-          connection.reconcileTimers(operationInput),
+        const request = {
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+        };
+        await runMdbaseMutation(
+          connection,
+          async () => {
+            requireConnectOutcome(
+              await connection.reconcileTimers(operationInput, request),
+            );
+          },
+          {
+            key: mdbaseMutationKey("timers:reconcile", operationInput),
+            mapRecovered: () => undefined,
+            request,
+          },
         );
         completedReconciliation = target;
       }
@@ -101,7 +119,7 @@ export async function desiredTaskTimers(
       return [
         {
           sourceId: JSON.stringify([task.id, reminder.id]),
-          fire_at: new Date(timestamp).toISOString(),
+          fireAt: new Date(timestamp).toISOString(),
         },
       ];
     });

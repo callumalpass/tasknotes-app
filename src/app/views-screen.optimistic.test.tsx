@@ -7,11 +7,12 @@ import {
   within,
 } from "@testing-library/react";
 import {
-  connectError,
   MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
+  type PendingMutation,
 } from "@mdbase-dev/connect";
+import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
 import { expect, it, vi } from "vitest";
 
 import { shiftTaskDate } from "../domain/task-date-actions";
@@ -191,7 +192,6 @@ it("moves a board card immediately and rolls it back when persistence fails", as
 
 it("recovers an uncertain manual board write before sending the queued move", async () => {
   const pending = deferred<void>();
-  const connection = {} as MdbaseConnection<JsonObject>;
   const execution = boardExecution();
   const queued = listTask("task-2", "Move next");
   const stationary = listTask("task-3", "Stay in place");
@@ -201,28 +201,58 @@ it("recovers an uncertain manual board write before sending the queued move", as
   );
   execution.totalCount = 3;
   execution.groups[0].count = 3;
-  let attempt = 0;
+  const applyProviderUpdate = (
+    id: string,
+    input: { sortOrder?: string; status?: string },
+  ) => {
+    const row = execution.rows.find(({ task }) => task.id === id)!;
+    if (input.sortOrder !== undefined) {
+      row.task.sortOrder = input.sortOrder;
+      row.task.frontmatter.tasknotes_manual_order = input.sortOrder;
+    }
+    if (input.status !== undefined) {
+      row.task.status = input.status;
+      row.task.frontmatter.status = input.status;
+      row.values.status = input.status;
+    }
+    return row.task;
+  };
+  let recoveryActive = false;
   const providerUpdate = vi.fn(
     async (id: string, input: { sortOrder?: string; status?: string }) => {
-      attempt += 1;
-      if (attempt === 1) throw unknownOutcome();
-      if (attempt === 2) await pending.promise;
-      const row = execution.rows.find(({ task }) => task.id === id)!;
-      if (input.sortOrder !== undefined) {
-        row.task.sortOrder = input.sortOrder;
-        row.task.frontmatter.tasknotes_manual_order = input.sortOrder;
-      }
-      if (input.status !== undefined) {
-        row.task.status = input.status;
-        row.task.frontmatter.status = input.status;
-        row.values.status = input.status;
-      }
-      return row.task;
+      void id;
+      void input;
+      recoveryActive = true;
+      throw unknownOutcome();
     },
   );
+  const recovery = vi.fn(async () => {
+    await pending.promise;
+    const [id, input] = providerUpdate.mock.calls[0]!;
+    recoveryActive = false;
+    return connectSuccess(applyProviderUpdate(id, input));
+  });
+  const pendingMutation = {
+    requestId: "view-test-request",
+    operation: "update",
+    fingerprint: "view-test-fingerprint",
+    status: "outcome_unknown",
+    createdAt: "2026-08-05T00:00:00.000Z",
+    recover: recovery,
+  } satisfies PendingMutation<Task>;
+  const connection = {
+    pendingMutation: (requestId: string) =>
+      recoveryActive && requestId === pendingMutation.requestId
+        ? pendingMutation
+        : null,
+    pendingMutations: () => (recoveryActive ? [pendingMutation] : []),
+  } as unknown as MdbaseConnection<JsonObject>;
   const update = vi.fn(
     (id: string, input: { sortOrder?: string; status?: string }) =>
-      runMdbaseMutation(connection, () => providerUpdate(id, input)),
+      runMdbaseMutation(connection, () => providerUpdate(id, input), {
+        key: JSON.stringify(["view:update", id, input]),
+        mapRecovered: (task: Task) => task,
+      }),
   );
   const updateMany = vi.fn(
     async (
@@ -333,11 +363,8 @@ it("recovers an uncertain manual board write before sending the queued move", as
   expect(queuedCard).toHaveClass("is-pending");
   expect(stationaryCard).toHaveAttribute("aria-busy", "false");
   expect(stationaryCard).not.toHaveClass("is-pending");
-  await waitFor(() => expect(providerUpdate).toHaveBeenCalledTimes(2));
-  expect(providerUpdate.mock.calls[1]).toEqual(providerUpdate.mock.calls[0]);
-  expect(providerUpdate.mock.calls[1]![1]).toBe(
-    providerUpdate.mock.calls[0]![1],
-  );
+  await waitFor(() => expect(recovery).toHaveBeenCalledOnce());
+  expect(providerUpdate).toHaveBeenCalledOnce();
 
   await act(async () => pending.resolve());
   await waitFor(() =>
@@ -1126,7 +1153,10 @@ function unknownOutcome(): MdbaseConnectError {
   return connectError(
     "operation_outcome_unknown",
     "The direct write may have completed.",
-    { operationOutcome: "unknown" },
+    {
+      operationOutcome: "unknown",
+      details: { request_id: "view-test-request" },
+    },
   );
 }
 

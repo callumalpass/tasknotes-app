@@ -1,9 +1,4 @@
-import {
-  isTaskNotesDefaultViewDocument,
-  taskNotesDefaultBaseDocument,
-  taskNotesDefaultCanonicalDocument,
-  TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
-} from "../domain/default-view-source";
+import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 
 import type { TaskRepository } from "./ports/task-repository";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -14,24 +9,34 @@ export async function ensureTaskNotesDefaultViewSource(
   documents: TaskViewDocument[],
   configuration: TaskCollectionConfiguration,
 ): Promise<TaskViewDocument[]> {
-  const existing = documents.find(isTaskNotesDefaultViewDocument);
-  if (existing) return documents;
-
-  try {
-    await repository.createViewSource({
-      format: "obsidian.base",
-      name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
-      document: taskNotesDefaultBaseDocument(configuration),
-    });
-  } catch {
-    const concurrent = await repository.listViews();
-    if (concurrent.some(isTaskNotesDefaultViewDocument)) return concurrent;
-    if (concurrent.length) return concurrent;
-    await repository.createViewSource({
-      format: "mdbase.view",
-      name: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
-      document: taskNotesDefaultCanonicalDocument(configuration),
-    });
+  const sources = taskNotesDefaultBaseSources(configuration);
+  if (sources.every((source) => hasSource(documents, source.path))) {
+    return documents;
+  }
+  let current = documents;
+  for (const source of sources) {
+    if (hasSource(current, source.path)) continue;
+    try {
+      await repository.createViewSource({
+        path: source.path,
+        format: "obsidian.base",
+        name: source.name,
+        document: source.document,
+      });
+    } catch (reason) {
+      const concurrent = await repository.listViews();
+      if (!hasSource(concurrent, source.path)) throw reason;
+      current = concurrent;
+    }
   }
   return repository.listViews();
+}
+
+function hasSource(
+  documents: readonly TaskViewDocument[],
+  path: string,
+): boolean {
+  return documents.some(
+    (document) => document.source.path.toLowerCase() === path.toLowerCase(),
+  );
 }

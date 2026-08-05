@@ -97,6 +97,20 @@ the foreground. `TASKNOTES_ANDROID_SKIP_FCM_DELIVERY=1` may be used to
 continue diagnosing unrelated smoke steps during a confirmed FCM outage, but
 that run does not count as a push-delivery pass.
 
+Run the gate against exactly one connected Android device or emulator after a
+Firebase-configured test build:
+
+```sh
+TASKNOTES_FIREBASE_PROJECT_ID=tasknotes-462906 \
+  VITE_TASKNOTES_ANDROID_NOTIFICATION_TEST=1 pnpm cap:sync
+(cd android && ./gradlew test lint assembleDebug)
+pnpm test:android-smoke
+```
+
+The caller must have `adb`, `gcloud`, and permission to send Cloud Messaging
+messages to the TaskNotes Firebase project. The build-only smoke entry is
+removed from ordinary production bundles.
+
 ## Allow Connect to send
 
 Connect sends through the FCM HTTP v1 API. Grant the Connect sender service

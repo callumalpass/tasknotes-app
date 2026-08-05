@@ -1,5 +1,7 @@
-import type { MdbaseConnection } from "@mdbase-dev/connect";
-import type { CollectionFileDescriptor } from "@mdbase-dev/connect-protocol";
+import type {
+  CollectionFileDescriptor,
+  MdbaseConnection,
+} from "@mdbase-dev/connect";
 
 import type {
   CollectionFile,
@@ -19,7 +21,11 @@ export const TASKNOTES_FILE_ACTIONS = [
 
 /** Application-facing adapter over the mdbase file capability. */
 export class MdbaseCollectionFileStore implements CollectionFileStore {
-  constructor(private readonly connection: MdbaseConnection) {}
+  constructor(
+    private readonly connection: MdbaseConnection,
+    private readonly operationSignal: () => AbortSignal | undefined = () =>
+      undefined,
+  ) {}
 
   authorizedActions(): ReadonlySet<CollectionFileAction> {
     return new Set(
@@ -32,7 +38,9 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
 
   async list(options: { folder?: string; signal?: AbortSignal } = {}) {
     const files: CollectionFile[] = [];
-    for await (const file of this.connection.files.list(options))
+    for await (const file of this.connection.files.list(
+      withOperationSignal(options, this.operationSignal()),
+    ))
       files.push(fromMdbaseFile(file));
     return files;
   }
@@ -49,7 +57,11 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     } = {},
   ): Promise<CollectionFile> {
     return fromMdbaseFile(
-      await this.connection.files.upload(path, source, options),
+      await this.connection.files.upload(
+        path,
+        source,
+        withOperationSignal(options, this.operationSignal()),
+      ),
     );
   }
 
@@ -57,14 +69,20 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     file: CollectionFile,
     options: Parameters<MdbaseConnection["files"]["download"]>[1] = {},
   ): Promise<Blob> {
-    return this.connection.files.download(toMdbaseFile(file), options);
+    return this.connection.files.download(
+      toMdbaseFile(file),
+      withOperationSignal(options, this.operationSignal()),
+    );
   }
 
   downloadStream(
     file: CollectionFile,
     options: Parameters<MdbaseConnection["files"]["downloadStream"]>[1] = {},
   ): Promise<ReadableStream<Uint8Array>> {
-    return this.connection.files.downloadStream(toMdbaseFile(file), options);
+    return this.connection.files.downloadStream(
+      toMdbaseFile(file),
+      withOperationSignal(options, this.operationSignal()),
+    );
   }
 
   async move(
@@ -75,7 +93,7 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     return fromMdbaseFile(
       await this.connection.files.move(toMdbaseFile(file), path, {
         ifRevision: file.revision,
-        ...options,
+        ...withOperationSignal(options, this.operationSignal()),
       }),
     );
   }
@@ -86,33 +104,48 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
   ): Promise<void> {
     await this.connection.files.delete(toMdbaseFile(file), {
       ifRevision: file.revision,
-      ...options,
+      ...withOperationSignal(options, this.operationSignal()),
     });
   }
 }
 
+function withOperationSignal<Options extends { signal?: AbortSignal }>(
+  options: Options,
+  operationSignal: AbortSignal | undefined,
+): Options {
+  const signals = [options.signal, operationSignal].filter(
+    (signal): signal is AbortSignal => signal !== undefined,
+  );
+  return {
+    ...options,
+    ...(signals.length
+      ? { signal: signals.length === 1 ? signals[0] : AbortSignal.any(signals) }
+      : {}),
+  };
+}
+
 function fromMdbaseFile(file: CollectionFileDescriptor): CollectionFile {
   return {
-    fileId: file.file_id,
+    fileId: file.fileId,
     path: file.path,
     revision: file.revision,
-    contentDigest: file.content_digest,
+    contentDigest: file.contentDigest,
     size: file.size,
-    ...(file.media_type ? { mediaType: file.media_type } : {}),
-    mediaClass: file.media_class,
-    modifiedAt: file.modified_at,
+    ...(file.mediaType ? { mediaType: file.mediaType } : {}),
+    mediaClass: file.mediaClass,
+    modifiedAt: file.modifiedAt,
   };
 }
 
 function toMdbaseFile(file: CollectionFile): CollectionFileDescriptor {
   return {
-    file_id: file.fileId,
+    fileId: file.fileId,
     path: file.path,
     revision: file.revision,
-    content_digest: file.contentDigest,
+    contentDigest: file.contentDigest,
     size: file.size,
-    ...(file.mediaType ? { media_type: file.mediaType } : {}),
-    media_class: file.mediaClass,
-    modified_at: file.modifiedAt,
+    ...(file.mediaType ? { mediaType: file.mediaType } : {}),
+    mediaClass: file.mediaClass,
+    modifiedAt: file.modifiedAt,
   };
 }

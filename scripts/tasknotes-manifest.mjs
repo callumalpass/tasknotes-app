@@ -44,6 +44,7 @@ export async function buildTaskNotesManifest({
           "views.source.update",
           "views.source.delete",
           "definitions.type-pack.apply",
+          "collection.setup.apply",
           "timers.reconcile",
           "files.list",
           "files.read",
@@ -59,9 +60,25 @@ export async function buildTaskNotesManifest({
         actions: ["list", "read", "add", "replace", "move", "delete"],
         scope: { kind: "collection" },
       },
+      configuration: [
+        {
+          id: "tasknotes-base-sources",
+          path: "/x-obsidian/bases/include",
+          predicate: "contains",
+          value: "views/tasknotes/**/*.base",
+        },
+      ],
     },
     provisions: {
       type_packs: [typePack, buildScratchpadTypePack()],
+      configuration: [
+        {
+          requirement: "tasknotes-base-sources",
+          operation: "set_add",
+          path: "/x-obsidian/bases/include",
+          value: "views/tasknotes/**/*.base",
+        },
+      ],
     },
     notifications: {
       criteria: [

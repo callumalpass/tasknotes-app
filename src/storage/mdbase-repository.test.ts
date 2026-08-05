@@ -1,4 +1,5 @@
-import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
+import { type JsonObject, type MdbaseConnection } from "@mdbase-dev/connect";
+import { connectFailure, connectSuccess } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
@@ -44,7 +45,7 @@ describe("mdbase task repository", () => {
       ],
       false,
       false,
-      collection.collection_id as ReturnType<typeof crypto.randomUUID>,
+      collection.collectionId as ReturnType<typeof crypto.randomUUID>,
     );
     fixture.describe.mockResolvedValue(collection);
     const repository = new MdbaseTaskRepository(fixture.connect);
@@ -63,6 +64,7 @@ describe("mdbase task repository", () => {
       expect.objectContaining({
         patch: expect.objectContaining({ summary: "Mapped work task updated" }),
       }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
     expect(fixture.update.mock.calls.at(-1)?.[0].patch).not.toHaveProperty(
       "title",
@@ -71,6 +73,7 @@ describe("mdbase task repository", () => {
     await repository.create({ title: "Created deterministically" });
     expect(fixture.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "task" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -86,7 +89,8 @@ describe("mdbase task repository", () => {
       { id: "canonical", title: "Visible canonical task" },
     ]);
     expect(fixture.query).toHaveBeenCalledWith(
-      expect.objectContaining({ frontmatter_mode: "effective" }),
+      expect.objectContaining({ frontmatterMode: "effective" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -128,8 +132,8 @@ describe("mdbase task repository", () => {
     const completionQuery = fixture.query.mock.calls[1]?.[0];
     expect(completionQuery).toMatchObject({
       limit: 48,
-      frontmatter_mode: "effective",
-      order_by: [{ field: "file.path", direction: "asc" }],
+      frontmatterMode: "effective",
+      orderBy: [{ field: "file.path", direction: "asc" }],
     });
     expect(String(completionQuery?.where)).toContain(
       'file.path.lower().contains("mobile")',
@@ -162,7 +166,7 @@ describe("mdbase task repository", () => {
     });
     expect(fixture.read).toHaveBeenCalledTimes(1);
     expect(
-      fixture.update.mock.calls.map(([input]) => input.if_revision),
+      fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2"]);
 
     const created = await repository.create({ title: "New relay task" });
@@ -172,7 +176,8 @@ describe("mdbase task repository", () => {
     await repository.delete(created.id);
     expect(await repository.get(created.id)).toBeNull();
     expect(fixture.remove).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "r4" }),
+      expect.objectContaining({ ifRevision: "r4" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
     expect(await repository.connectionStatus()).toMatchObject({
       state: "connected",
@@ -231,25 +236,29 @@ describe("mdbase task repository", () => {
     expect(listener).toHaveBeenCalledOnce();
   });
 
-  it("retries an unknown live write with the exact same provider input", async () => {
+  it("recovers an unknown live write by its exact authority request", async () => {
     const fixture = mdbaseFixture([
       taskRecord("existing", "Original title", "r1"),
     ]);
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
     const persist = fixture.update.getMockImplementation()!;
-    fixture.update
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockImplementationOnce(persist);
+    let recovery: ReturnType<typeof fixture.stagePendingMutation> | undefined;
+    fixture.update.mockImplementationOnce(async (input) => {
+      recovery = fixture.stagePendingMutation("fixture-request", async () => {
+        const envelope = await persist(input);
+        if (!envelope.valid) throw new Error("Fixture update was invalid.");
+        return connectSuccess(envelope.result);
+      });
+      throw unknownOutcome();
+    });
 
     await expect(
       repository.update("existing", { title: "Recovered title" }),
     ).resolves.toMatchObject({ title: "Recovered title" });
 
-    expect(fixture.update).toHaveBeenCalledTimes(2);
-    expect(fixture.update.mock.calls[1]![0]).toBe(
-      fixture.update.mock.calls[0]![0],
-    );
+    expect(fixture.update).toHaveBeenCalledOnce();
+    expect(recovery?.recover).toHaveBeenCalledOnce();
   });
 
   it("recovers a pending live write before sending a later task change", async () => {
@@ -260,10 +269,18 @@ describe("mdbase task repository", () => {
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
     const persist = fixture.update.getMockImplementation()!;
-    fixture.update
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockRejectedValueOnce(unknownOutcome())
-      .mockImplementation(persist);
+    let recovery: ReturnType<typeof fixture.stagePendingMutation> | undefined;
+    fixture.update.mockImplementationOnce(async (input) => {
+      let attempt = 0;
+      recovery = fixture.stagePendingMutation("fixture-request", async () => {
+        attempt += 1;
+        if (attempt === 1) return connectFailure(unknownOutcome().problem);
+        const envelope = await persist(input);
+        if (!envelope.valid) throw new Error("Fixture update was invalid.");
+        return connectSuccess(envelope.result);
+      });
+      throw unknownOutcome();
+    });
 
     await expect(
       repository.update("first", { title: "First recovered" }),
@@ -272,16 +289,11 @@ describe("mdbase task repository", () => {
       repository.update("second", { title: "Second moved" }),
     ).resolves.toMatchObject({ title: "Second moved" });
 
-    expect(fixture.update).toHaveBeenCalledTimes(4);
-    expect(fixture.update.mock.calls[1]![0]).toBe(
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+    expect(fixture.update.mock.calls[1]![0]).not.toBe(
       fixture.update.mock.calls[0]![0],
     );
-    expect(fixture.update.mock.calls[2]![0]).toBe(
-      fixture.update.mock.calls[0]![0],
-    );
-    expect(fixture.update.mock.calls[3]![0]).not.toBe(
-      fixture.update.mock.calls[0]![0],
-    );
+    expect(recovery?.recover).toHaveBeenCalledTimes(2);
   });
 
   it("reloads the canonical description and sends its create path to the provider", async () => {
@@ -298,7 +310,7 @@ describe("mdbase task repository", () => {
     next.contracts[0] = {
       ...next.contracts[0],
       implementations: next.contracts[0].implementations.map(
-        (implementation) => ({ ...implementation, type_name: "todo" }),
+        (implementation) => ({ ...implementation, typeName: "todo" }),
       ),
     };
     fixture.describe.mockResolvedValueOnce(next);
@@ -313,6 +325,7 @@ describe("mdbase task repository", () => {
         path: `canonical/${created.id}.md`,
         type: "todo",
       }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -365,6 +378,7 @@ describe("mdbase task repository", () => {
     expect(created.path).toBe("tasks/review-mobile-release.md");
     expect(fixture.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ path: "tasks/review-mobile-release.md" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -405,7 +419,8 @@ describe("mdbase task repository", () => {
 
     expect(fixture.read).toHaveBeenCalledTimes(1);
     expect(fixture.remove).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "r1" }),
+      expect.objectContaining({ ifRevision: "r1" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -428,6 +443,75 @@ describe("mdbase task repository", () => {
     expect(await repository.connectionStatus()).toMatchObject({
       state: "unavailable",
     });
+  });
+
+  it("aborts active foreground work on suspend and resumes with a fresh signal", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("existing", "Still visible", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    let activeSignal: AbortSignal | undefined;
+    fixture.describe.mockImplementationOnce(
+      (options?: { signal?: AbortSignal }) =>
+        new Promise((_, reject) => {
+          activeSignal = options?.signal;
+          activeSignal?.addEventListener(
+            "abort",
+            () => reject(activeSignal?.reason),
+            { once: true },
+          );
+        }),
+    );
+
+    const interrupted = repository.refresh();
+    await vi.waitFor(() => expect(activeSignal).toBeDefined());
+    repository.suspend();
+
+    await expect(interrupted).resolves.toMatchObject({ scanned: 1 });
+    expect(activeSignal?.aborted).toBe(true);
+    expect(await repository.connectionStatus()).toMatchObject({
+      state: "unavailable",
+    });
+
+    repository.resume();
+    await expect(repository.refresh()).resolves.toMatchObject({ scanned: 1 });
+    expect(await repository.connectionStatus()).toMatchObject({
+      state: "connected",
+    });
+  });
+
+  it("restarts initialization after a lifecycle remount cancels the first attempt", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("existing", "Visible after remount", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    let firstSignal: AbortSignal | undefined;
+    fixture.describe.mockImplementationOnce(
+      (options?: { signal?: AbortSignal }) =>
+        new Promise((_, reject) => {
+          firstSignal = options?.signal;
+          firstSignal?.addEventListener(
+            "abort",
+            () => reject(firstSignal?.reason),
+            {
+              once: true,
+            },
+          );
+        }),
+    );
+
+    const interrupted = repository.initialize();
+    await vi.waitFor(() => expect(firstSignal).toBeDefined());
+    repository.dispose();
+    repository.resume();
+
+    await expect(interrupted).rejects.toMatchObject({ name: "AbortError" });
+    await expect(repository.initialize()).resolves.toBeUndefined();
+    await expect(repository.list()).resolves.toMatchObject([
+      { id: "existing", title: "Visible after remount" },
+    ]);
+    expect(fixture.describe).toHaveBeenCalledTimes(2);
   });
 
   it("round-trips time sessions through revision-guarded relay writes", async () => {
@@ -457,7 +541,7 @@ describe("mdbase task repository", () => {
       [],
     );
     expect(
-      fixture.update.mock.calls.map(([input]) => input.if_revision),
+      fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2", "r3", "r4"]);
   });
 
@@ -533,12 +617,15 @@ describe("mdbase task repository", () => {
     expect(
       await repository.list({ status: "all", archived: "only" }),
     ).toHaveLength(1);
-    expect(fixture.rename).toHaveBeenLastCalledWith({
-      from: "tasks/archived.md",
-      to: "TaskNotes/Archive/archived.md",
-      if_revision: "r2",
-      update_refs: true,
-    });
+    expect(fixture.rename).toHaveBeenLastCalledWith(
+      {
+        from: "tasks/archived.md",
+        to: "TaskNotes/Archive/archived.md",
+        ifRevision: "r2",
+        update_refs: true,
+      },
+      expect.objectContaining({ signal: expect.anything() }),
+    );
 
     const restored = await repository.setArchived("archived", false);
     expect(restored).toMatchObject({
@@ -573,6 +660,7 @@ describe("mdbase task repository", () => {
         view: "kanban",
         render: false,
       }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -663,14 +751,18 @@ describe("mdbase task repository", () => {
     });
     expect(updated).toMatchObject({ revision: "view-r3" });
     expect(fixture.updateViewSource).toHaveBeenCalledWith(
-      expect.objectContaining({ if_revision: "view-r2" }),
+      expect.objectContaining({ ifRevision: "view-r2" }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
 
     await repository.deleteViewSource(updated.path, updated.revision);
-    expect(fixture.deleteViewSource).toHaveBeenCalledWith({
-      path: updated.path,
-      if_revision: "view-r3",
-    });
+    expect(fixture.deleteViewSource).toHaveBeenCalledWith(
+      {
+        path: updated.path,
+        ifRevision: "view-r3",
+      },
+      expect.objectContaining({ signal: expect.anything() }),
+    );
     await expect(repository.readViewSource(updated.path)).rejects.toThrow(
       "View source not found",
     );
@@ -702,7 +794,10 @@ describe("mdbase task repository", () => {
     expect(task.body).toMatch(
       /^Relay body for Relay template on \d{4}-\d{2}-\d{2}$/,
     );
-    expect(fixture.read).toHaveBeenCalledWith({ path: "Templates/Task.md" });
+    expect(fixture.read).toHaveBeenCalledWith(
+      { path: "Templates/Task.md" },
+      expect.objectContaining({ signal: expect.anything() }),
+    );
   });
 
   it("uses one provider-neutral repository for every mdbase connection", () => {

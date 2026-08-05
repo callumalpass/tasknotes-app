@@ -9,8 +9,6 @@ import {
   SunMoon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { unwrapConnectOutcome } from "@mdbase-dev/connect";
-
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
 import {
@@ -18,6 +16,7 @@ import {
   type MdbaseNotificationStatus,
 } from "../native/mdbase-notifications";
 import { cloudSession } from "../cloud/connect";
+import { requireConnectOutcome } from "../cloud/outcome";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -194,7 +193,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
             onClick={() =>
               void cloudSession
                 .authorize("selected")
-                .then(unwrapConnectOutcome)
+                .then(requireConnectOutcome)
                 .catch((reason: unknown) =>
                   setChangeNotificationsError(
                     reason instanceof Error ? reason.message : String(reason),

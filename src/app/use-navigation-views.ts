@@ -196,6 +196,13 @@ export function resolveNavigationViewCatalog(
       writeNavigationViewKeys(storage, scope, stored);
     }
   }
+  if (stored) {
+    const upgraded = stored.map((key) => upgradeDefaultViewKey(key, available));
+    if (upgraded.some((key, index) => key !== stored![index])) {
+      stored = upgraded;
+      writeNavigationViewKeys(storage, scope, stored);
+    }
+  }
   if (requireStoredViews && stored?.[0] && !available.has(stored[0]))
     return null;
   const requested =
@@ -222,6 +229,16 @@ export function resolveNavigationViewCatalog(
     scope,
     navigationKeys,
   };
+}
+
+function upgradeDefaultViewKey(
+  key: string,
+  available: ReadonlySet<string>,
+): string {
+  const match = /^views\/tasknotes-app\.base#([a-z0-9-]+)$/i.exec(key);
+  if (!match) return key;
+  const upgraded = `views/tasknotes/${match[1].toLowerCase()}.base#${match[1].toLowerCase()}`;
+  return available.has(upgraded) ? upgraded : key;
 }
 
 function withDefaultScratchpad(keys: readonly string[]): string[] {

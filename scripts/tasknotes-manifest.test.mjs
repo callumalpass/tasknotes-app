@@ -49,6 +49,25 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.capabilities.required).not.toContain(
       "sync.offline-replica",
     );
+    expect(manifest.requirements.capabilities.required).toContain(
+      "collection.setup.apply",
+    );
+    expect(manifest.requirements.configuration).toEqual([
+      {
+        id: "tasknotes-base-sources",
+        path: "/x-obsidian/bases/include",
+        predicate: "contains",
+        value: "views/tasknotes/**/*.base",
+      },
+    ]);
+    expect(manifest.provisions.configuration).toEqual([
+      {
+        requirement: "tasknotes-base-sources",
+        operation: "set_add",
+        path: "/x-obsidian/bases/include",
+        value: "views/tasknotes/**/*.base",
+      },
+    ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
     );

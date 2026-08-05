@@ -1,24 +1,55 @@
 import {
-  connectError,
-  MdbaseConnectError,
+  type ConnectRequestOptions,
   type JsonObject,
   type MdbaseConnection,
 } from "@mdbase-dev/connect";
+import {
+  connectProblemFromError,
+  noPendingMutationError,
+  pendingRecoveryError,
+  requireConnectOutcome,
+} from "../cloud/outcome";
 
 type MutationOperation<Result> = () => Promise<Result>;
 
+export interface MdbaseMutationOptions<Result, Recovered> {
+  /** Stable application intent identity, distinct from the SDK request ID. */
+  key: string;
+  /** Reapply repository-side cache effects after an authority receipt recovers. */
+  mapRecovered(value: Recovered): Result;
+  /** Persisted SDK request identity associated with a durable app command. */
+  requestId?: string;
+  request?: ConnectRequestOptions;
+}
+
 interface PendingMutation {
-  operation: MutationOperation<unknown>;
+  key: string;
+  requestId: string;
+  mapRecovered(value: unknown): unknown;
+}
+
+interface RecoveredMatch<Result> {
+  matched: true;
+  value: Result;
+}
+
+interface NoRecoveredMatch {
+  matched: false;
 }
 
 class MdbaseMutationCoordinator {
   private tail: Promise<void> = Promise.resolve();
-  private pending: PendingMutation | null = null;
+  private readonly pending = new Map<string, PendingMutation>();
 
-  run<Result>(operation: MutationOperation<Result>): Promise<Result> {
+  constructor(private readonly connection: MdbaseConnection<JsonObject>) {}
+
+  run<Result, Recovered>(
+    operation: MutationOperation<Result>,
+    options: MdbaseMutationOptions<Result, Recovered>,
+  ): Promise<Result> {
     const result = this.tail.then(
-      () => this.execute(operation),
-      () => this.execute(operation),
+      () => this.execute(operation, options),
+      () => this.execute(operation, options),
     );
     this.tail = result.then(
       () => undefined,
@@ -27,40 +58,90 @@ class MdbaseMutationCoordinator {
     return result;
   }
 
-  private async execute<Result>(
+  reconcile(options: ConnectRequestOptions = {}): Promise<void> {
+    const result = this.tail.then(
+      () => this.recoverOutstanding(undefined, options).then(() => undefined),
+      () => this.recoverOutstanding(undefined, options).then(() => undefined),
+    );
+    this.tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
+
+  private async execute<Result, Recovered>(
     operation: MutationOperation<Result>,
+    options: MdbaseMutationOptions<Result, Recovered>,
   ): Promise<Result> {
-    await this.recoverPending();
+    const recovered = await this.recoverOutstanding(options, options.request);
+    if (recovered.matched) return recovered.value;
     try {
       return await operation();
     } catch (reason) {
-      if (!isRetryableUnknownOutcome(reason)) throw reason;
-      return this.retryUnknownOperation(operation);
+      const requestId = unknownOutcomeRequestId(reason);
+      if (!requestId) throw reason;
+      const pending: PendingMutation = {
+        key: options.key,
+        requestId,
+        mapRecovered: (value) => options.mapRecovered(value as Recovered),
+      };
+      this.pending.set(requestId, pending);
+      return (await this.recoverOne(pending, options.request)) as Result;
     }
   }
 
-  private async recoverPending(): Promise<void> {
-    const pending = this.pending;
-    if (!pending) return;
-    try {
-      await pending.operation();
-      if (this.pending === pending) this.pending = null;
-    } catch (reason) {
-      if (!isRetryableUnknownOutcome(reason)) {
-        if (this.pending === pending) this.pending = null;
+  private async recoverOutstanding<Result, Recovered>(
+    current?: MdbaseMutationOptions<Result, Recovered>,
+    request: ConnectRequestOptions = {},
+  ): Promise<RecoveredMatch<Result> | NoRecoveredMatch> {
+    const requested = current?.requestId;
+    if (requested) {
+      const handle = this.connection.pendingMutation<Recovered>(requested);
+      if (handle) {
+        const value = requireConnectOutcome(await handle.recover(request));
+        this.pending.delete(requested);
+        return { matched: true, value: current.mapRecovered(value) };
+      }
+    }
+
+    for (const handle of this.connection.pendingMutations<unknown>()) {
+      if (handle.requestId === requested) continue;
+      const pending = this.pending.get(handle.requestId);
+      if (pending && current && pending.key === current.key) {
+        const value = await this.recoverOne(pending, request);
+        return { matched: true, value: value as Result };
+      }
+      try {
+        const value = requireConnectOutcome(await handle.recover(request));
+        this.pending.delete(handle.requestId);
+        pending?.mapRecovered(value);
+      } catch (reason) {
+        if (unknownOutcomeRequestId(reason))
+          throw pendingRecoveryError(handle.requestId, reason);
+        this.pending.delete(handle.requestId);
         throw reason;
       }
-      throw pendingRecoveryError(reason);
     }
+    return { matched: false };
   }
 
-  private async retryUnknownOperation<Result>(
-    operation: MutationOperation<Result>,
-  ): Promise<Result> {
+  private async recoverOne(
+    pending: PendingMutation,
+    request: ConnectRequestOptions = {},
+  ): Promise<unknown> {
+    const handle = this.connection.pendingMutation<unknown>(pending.requestId);
+    if (!handle) {
+      this.pending.delete(pending.requestId);
+      throw noPendingMutationError();
+    }
     try {
-      return await operation();
+      const value = requireConnectOutcome(await handle.recover(request));
+      this.pending.delete(pending.requestId);
+      return pending.mapRecovered(value);
     } catch (reason) {
-      if (isRetryableUnknownOutcome(reason)) this.pending = { operation };
+      if (unknownOutcomeRequestId(reason)) throw reason;
+      this.pending.delete(pending.requestId);
       throw reason;
     }
   }
@@ -71,30 +152,48 @@ const coordinators = new WeakMap<
   MdbaseMutationCoordinator
 >();
 
-export function runMdbaseMutation<Result>(
+export function runMdbaseMutation<Result, Recovered>(
   connection: MdbaseConnection<JsonObject>,
   operation: MutationOperation<Result>,
+  options: MdbaseMutationOptions<Result, Recovered>,
 ): Promise<Result> {
+  return coordinatorFor(connection).run(operation, options);
+}
+
+/** Recover durable SDK receipts before reading canonical collection state. */
+export function reconcileMdbaseMutations(
+  connection: MdbaseConnection<JsonObject>,
+  options: ConnectRequestOptions = {},
+): Promise<void> {
+  return coordinatorFor(connection).reconcile(options);
+}
+
+export function mdbaseMutationKey(operation: string, input: unknown): string {
+  return `${operation}:${JSON.stringify(input)}`;
+}
+
+export function unknownOutcomeRequestId(reason: unknown): string | null {
+  const problem = connectProblemFromError(reason);
+  if (!problem || problem.operation_outcome !== "unknown") return null;
+  const details = problem.details;
+  if (
+    !details ||
+    typeof details !== "object" ||
+    !("request_id" in details) ||
+    typeof details.request_id !== "string" ||
+    !details.request_id
+  )
+    return null;
+  return details.request_id;
+}
+
+function coordinatorFor(
+  connection: MdbaseConnection<JsonObject>,
+): MdbaseMutationCoordinator {
   let coordinator = coordinators.get(connection);
   if (!coordinator) {
-    coordinator = new MdbaseMutationCoordinator();
+    coordinator = new MdbaseMutationCoordinator(connection);
     coordinators.set(connection, coordinator);
   }
-  return coordinator.run(operation);
-}
-
-function isRetryableUnknownOutcome(reason: unknown): boolean {
-  return (
-    reason instanceof MdbaseConnectError &&
-    reason.outcomeUnknown &&
-    reason.code !== "pending_mutation_unresolved"
-  );
-}
-
-function pendingRecoveryError(reason: unknown): MdbaseConnectError {
-  return connectError(
-    "operation_outcome_unknown",
-    "TaskNotes is still confirming an earlier change. This change was not sent. Keep the collection connected and retry.",
-    { operationOutcome: "unknown", cause: reason },
-  );
+  return coordinator;
 }

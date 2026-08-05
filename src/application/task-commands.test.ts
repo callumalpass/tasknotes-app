@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { connectError } from "@mdbase-dev/connect-testing";
 
 import { TaskCommandService } from "./task-commands";
 
@@ -104,6 +105,41 @@ describe("TaskCommandService", () => {
     expect(service.snapshot().pendingDeletion).toBeNull();
     expect(journal.commands).toEqual([]);
     service.dispose();
+  });
+
+  it("persists the authority request mapping and resumes it after restart", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.delete.mockRejectedValueOnce(
+      connectError(
+        "operation_outcome_unknown",
+        "The deletion may have completed.",
+        {
+          operationOutcome: "unknown",
+          details: { request_id: "delete-request-1" },
+        },
+      ),
+    );
+    const first = new TaskCommandService({ repository, journal });
+    await first.initialize();
+    await first.requestDeletion("task-1");
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(journal.commands[0]).toMatchObject({
+      operationId: expect.any(String),
+      authorityRequestId: "delete-request-1",
+    });
+    first.dispose();
+
+    const reopened = new TaskCommandService({ repository, journal });
+    await reopened.initialize();
+
+    expect(repository.delete).toHaveBeenLastCalledWith("task-1", {
+      authorityRequestId: "delete-request-1",
+    });
+    expect(journal.commands).toEqual([]);
+    reopened.dispose();
   });
 
   it("sends task batches directly to the repository without journaling them", async () => {
