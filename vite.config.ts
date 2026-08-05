@@ -1,10 +1,11 @@
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? "/",
-  plugins: [react()],
+  plugins: [androidNotificationSmokeEntry(), react()],
   build: {
     // Collection and cloud runtimes load after the small location gate. Keep
     // warnings focused on unexpectedly large individual chunks.
@@ -27,8 +28,16 @@ export default defineConfig({
     },
   },
   server: {
-    host: "127.0.0.1",
-    port: 4173,
+    host: process.env.TASKNOTES_DEV_HOST ?? "127.0.0.1",
+    port: Number(process.env.TASKNOTES_DEV_PORT ?? 4173),
+    strictPort: true,
+    https:
+      process.env.TASKNOTES_HTTPS_KEY && process.env.TASKNOTES_HTTPS_CERT
+        ? {
+            key: readFileSync(process.env.TASKNOTES_HTTPS_KEY),
+            cert: readFileSync(process.env.TASKNOTES_HTTPS_CERT),
+          }
+        : undefined,
     headers: {
       "Service-Worker-Allowed": process.env.VITE_BASE_PATH ?? "/",
     },
@@ -53,3 +62,20 @@ export default defineConfig({
     restoreMocks: true,
   },
 });
+
+function androidNotificationSmokeEntry() {
+  return {
+    name: "tasknotes-android-notification-smoke-entry",
+    transformIndexHtml: {
+      order: "pre" as const,
+      handler(html: string): string {
+        return process.env.VITE_TASKNOTES_ANDROID_NOTIFICATION_TEST === "1"
+          ? html.replace(
+              "/src/main.tsx",
+              "/src/native/android-notification-smoke-main.tsx",
+            )
+          : html;
+      },
+    },
+  };
+}

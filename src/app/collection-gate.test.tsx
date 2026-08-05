@@ -88,6 +88,12 @@ it("offers mdbase without a device-folder storage path", async () => {
   ).toBeVisible();
   expect(screen.getByText(/reads and writes it directly/)).toBeVisible();
   expect(screen.queryByText(/folder for your tasks/i)).not.toBeInTheDocument();
+  expect(connect.start).toHaveBeenCalledWith(
+    expect.objectContaining({
+      signal: expect.anything(),
+      timeoutMs: 60_000,
+    }),
+  );
 });
 
 it("deduplicates a native callback delivered as launch and open events", async () => {
@@ -101,7 +107,13 @@ it("deduplicates a native callback delivered as launch and open events", async (
     expect(connect.handleAuthorizationCallback).toHaveBeenCalledTimes(1),
   );
   await waitFor(() => expect(native.close).toHaveBeenCalledTimes(1));
-  expect(connect.handleAuthorizationCallback).toHaveBeenCalledWith(callback);
+  expect(connect.handleAuthorizationCallback).toHaveBeenCalledWith(
+    callback,
+    expect.objectContaining({
+      signal: expect.anything(),
+      timeoutMs: 60_000,
+    }),
+  );
 });
 
 it("completes a web callback without closing a native browser", async () => {

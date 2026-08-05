@@ -19,7 +19,11 @@ export const TASKNOTES_FILE_ACTIONS = [
 
 /** Application-facing adapter over the mdbase file capability. */
 export class MdbaseCollectionFileStore implements CollectionFileStore {
-  constructor(private readonly connection: MdbaseConnection) {}
+  constructor(
+    private readonly connection: MdbaseConnection,
+    private readonly operationSignal: () => AbortSignal | undefined = () =>
+      undefined,
+  ) {}
 
   authorizedActions(): ReadonlySet<CollectionFileAction> {
     return new Set(
@@ -32,7 +36,9 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
 
   async list(options: { folder?: string; signal?: AbortSignal } = {}) {
     const files: CollectionFile[] = [];
-    for await (const file of this.connection.files.list(options))
+    for await (const file of this.connection.files.list(
+      withOperationSignal(options, this.operationSignal()),
+    ))
       files.push(fromMdbaseFile(file));
     return files;
   }
@@ -49,7 +55,11 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     } = {},
   ): Promise<CollectionFile> {
     return fromMdbaseFile(
-      await this.connection.files.upload(path, source, options),
+      await this.connection.files.upload(
+        path,
+        source,
+        withOperationSignal(options, this.operationSignal()),
+      ),
     );
   }
 
@@ -57,14 +67,20 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     file: CollectionFile,
     options: Parameters<MdbaseConnection["files"]["download"]>[1] = {},
   ): Promise<Blob> {
-    return this.connection.files.download(toMdbaseFile(file), options);
+    return this.connection.files.download(
+      toMdbaseFile(file),
+      withOperationSignal(options, this.operationSignal()),
+    );
   }
 
   downloadStream(
     file: CollectionFile,
     options: Parameters<MdbaseConnection["files"]["downloadStream"]>[1] = {},
   ): Promise<ReadableStream<Uint8Array>> {
-    return this.connection.files.downloadStream(toMdbaseFile(file), options);
+    return this.connection.files.downloadStream(
+      toMdbaseFile(file),
+      withOperationSignal(options, this.operationSignal()),
+    );
   }
 
   async move(
@@ -75,7 +91,7 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
     return fromMdbaseFile(
       await this.connection.files.move(toMdbaseFile(file), path, {
         ifRevision: file.revision,
-        ...options,
+        ...withOperationSignal(options, this.operationSignal()),
       }),
     );
   }
@@ -86,9 +102,24 @@ export class MdbaseCollectionFileStore implements CollectionFileStore {
   ): Promise<void> {
     await this.connection.files.delete(toMdbaseFile(file), {
       ifRevision: file.revision,
-      ...options,
+      ...withOperationSignal(options, this.operationSignal()),
     });
   }
+}
+
+function withOperationSignal<Options extends { signal?: AbortSignal }>(
+  options: Options,
+  operationSignal: AbortSignal | undefined,
+): Options {
+  const signals = [options.signal, operationSignal].filter(
+    (signal): signal is AbortSignal => signal !== undefined,
+  );
+  return {
+    ...options,
+    ...(signals.length
+      ? { signal: signals.length === 1 ? signals[0] : AbortSignal.any(signals) }
+      : {}),
+  };
 }
 
 function fromMdbaseFile(file: CollectionFileDescriptor): CollectionFile {

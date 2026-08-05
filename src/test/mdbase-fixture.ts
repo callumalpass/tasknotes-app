@@ -2,9 +2,11 @@ import {
   connectError,
   MdbaseConnectError,
   type CollectionDescription,
+  type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
   type MdbaseOperationEnvelope,
+  type PendingMutation,
   type QueryRecord,
   type QueryResult,
 } from "@mdbase-dev/connect";
@@ -35,9 +37,13 @@ export function mdbaseFixture(
   collectionId = crypto.randomUUID(),
 ) {
   const records = new Map(initial.map((record) => [record.path, record]));
+  const pendingMutations = new Map<string, PendingMutation<unknown>>();
   let revision = initial.length + 1;
-  const describeCollection = vi.fn(async () =>
-    description(templating, archive, collectionId),
+  const describeCollection = vi.fn(
+    async (options?: { signal?: AbortSignal }) => {
+      void options;
+      return description(templating, archive, collectionId);
+    },
   );
   const query = vi.fn(async (input?: Record<string, unknown>) => {
     const requestedTypes = Array.isArray(input?.types)
@@ -263,6 +269,9 @@ export function mdbaseFixture(
   const connect = {
     sync: () => null,
     connection: () => ({ route: "relay" }),
+    pendingMutation: (requestId: string) =>
+      pendingMutations.get(requestId) ?? null,
+    pendingMutations: () => [...pendingMutations.values()],
     describe: describeCollection,
     query,
     read,
@@ -277,6 +286,26 @@ export function mdbaseFixture(
     updateViewSource,
     deleteViewSource,
   } as unknown as MdbaseConnection<JsonObject>;
+  const stagePendingMutation = <Result>(
+    requestId: string,
+    recover: () => Promise<ConnectOutcome<Result>>,
+  ) => {
+    const handle: PendingMutation<Result> = {
+      requestId,
+      operation: "update",
+      fingerprint: `fixture:${requestId}`,
+      status: "outcome_unknown",
+      createdAt: "2026-08-05T00:00:00.000Z",
+      recover: vi.fn(async () => {
+        const outcome = await recover();
+        if (outcome.ok || outcome.problem.operation_outcome !== "unknown")
+          pendingMutations.delete(requestId);
+        return outcome;
+      }),
+    };
+    pendingMutations.set(requestId, handle as PendingMutation<unknown>);
+    return handle;
+  };
   return {
     connect,
     records,
@@ -293,6 +322,7 @@ export function mdbaseFixture(
     createViewSource,
     updateViewSource,
     deleteViewSource,
+    stagePendingMutation,
   };
 }
 
@@ -349,7 +379,10 @@ export function unknownOutcome(): MdbaseConnectError {
   return connectError(
     "operation_outcome_unknown",
     "The direct write may have completed.",
-    { operationOutcome: "unknown" },
+    {
+      operationOutcome: "unknown",
+      details: { request_id: "fixture-request" },
+    },
   );
 }
 

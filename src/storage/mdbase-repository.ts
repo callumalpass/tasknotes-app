@@ -28,7 +28,11 @@ import {
   readOnlyTaskModelSettingsAccess,
   readOnlyTaskModelSettingsError,
 } from "./connected-task-cache";
-import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
+import {
+  mdbaseMutationKey,
+  reconcileMdbaseMutations,
+  runMdbaseMutation,
+} from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
 import {
   activeScratchpad,
@@ -110,6 +114,7 @@ const PAGE_SIZE = 1_000;
  */
 export class MdbaseTaskRepository implements TaskRepository {
   readonly files: MdbaseCollectionFileStore;
+  private operationController = new AbortController();
   private model = new TaskNotesTaskModel();
   private taskTypeName = "task";
   private taskProviders = new Map<string, TaskNotesTaskModel>([
@@ -148,7 +153,33 @@ export class MdbaseTaskRepository implements TaskRepository {
   };
 
   constructor(private readonly connect: MdbaseConnection<JsonObject>) {
-    this.files = new MdbaseCollectionFileStore(connect);
+    this.files = new MdbaseCollectionFileStore(
+      connect,
+      () => this.operationController.signal,
+    );
+  }
+
+  suspend(): void {
+    this.operationController.abort(
+      new DOMException("TaskNotes moved to the background.", "AbortError"),
+    );
+  }
+
+  resume(): void {
+    if (this.operationController.signal.aborted) {
+      this.operationController = new AbortController();
+      // A lifecycle interruption can abort the first initialization attempt
+      // (including React Strict Mode's development remount). Do not retain that
+      // rejected promise: the resumed owner must be able to open the same
+      // repository with the fresh lifecycle signal.
+      this.initialization = null;
+    }
+  }
+
+  dispose(): void {
+    this.operationController.abort(
+      new DOMException("The TaskNotes collection changed.", "AbortError"),
+    );
   }
 
   initialize(): Promise<void> {
@@ -157,7 +188,10 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    const description = validResult(await this.connect.describe());
+    await reconcileMdbaseMutations(this.connect, this.requestOptions());
+    const description = validResult(
+      await this.connect.describe(this.requestOptions()),
+    );
     this.configureDescription(description);
     this.collectionId = description.collection_id;
     await this.reloadCache();
@@ -183,7 +217,9 @@ export class MdbaseTaskRepository implements TaskRepository {
     this.status = { ...this.status, state: "connecting", message: undefined };
     this.emit();
     try {
-      this.configureDescription(validResult(await this.connect.describe()));
+      this.configureDescription(
+        validResult(await this.connect.describe(this.requestOptions())),
+      );
       await this.reloadCache();
       this.setConnected();
       await this.maintainRollingOccurrencesUnlocked();
@@ -260,23 +296,26 @@ export class MdbaseTaskRepository implements TaskRepository {
     request: FieldCompletionRequest,
   ): Promise<FieldCompletion[]> {
     const query = request.query?.trim().toLocaleLowerCase() ?? "";
-    const response = await this.connect.query({
-      ...(request.targetTypes?.length
-        ? { types: [...request.targetTypes] }
-        : {}),
-      ...(query
-        ? {
-            where: [
-              `file.path.lower().contains(${JSON.stringify(query)})`,
-              `file.basename.lower().contains(${JSON.stringify(query)})`,
-              `note.title.lower().contains(${JSON.stringify(query)})`,
-            ].join(" || "),
-          }
-        : {}),
-      order_by: [{ field: "file.path", direction: "asc" }],
-      limit: Math.max(completionLimit(request) * 4, 48),
-      frontmatter_mode: "effective",
-    });
+    const response = await this.connect.query(
+      {
+        ...(request.targetTypes?.length
+          ? { types: [...request.targetTypes] }
+          : {}),
+        ...(query
+          ? {
+              where: [
+                `file.path.lower().contains(${JSON.stringify(query)})`,
+                `file.basename.lower().contains(${JSON.stringify(query)})`,
+                `note.title.lower().contains(${JSON.stringify(query)})`,
+              ].join(" || "),
+            }
+          : {}),
+        order_by: [{ field: "file.path", direction: "asc" }],
+        limit: Math.max(completionLimit(request) * 4, 48),
+        frontmatter_mode: "effective",
+      },
+      this.requestOptions(),
+    );
     const result = validResult(response);
     const records: CollectionRecord[] = result.results.map((record) => {
       const frontmatter = mdbaseFrontmatter(record);
@@ -306,7 +345,9 @@ export class MdbaseTaskRepository implements TaskRepository {
         input,
         { id, now: new Date().toISOString() },
         async (path) => {
-          const template = validResult(await this.connect.read({ path }));
+          const template = validResult(
+            await this.connect.read({ path }, this.requestOptions()),
+          );
           return serializeMarkdownDocument(template.frontmatter, template.body);
         },
       );
@@ -318,10 +359,23 @@ export class MdbaseTaskRepository implements TaskRepository {
         body: task.body,
       };
       try {
-        const saved = await runMdbaseMutation(this.connect, async () =>
-          this.storeResult(
-            validResult(await this.connect.create(operationInput)),
-          ),
+        const saved = await runMdbaseMutation(
+          this.connect,
+          async () =>
+            this.storeResult(
+              validResult(
+                await this.connect.create(
+                  operationInput,
+                  this.requestOptions(),
+                ),
+              ),
+            ),
+          {
+            key: mdbaseMutationKey("record:create", operationInput),
+            request: this.requestOptions(),
+            mapRecovered: (result: RecordDocument<JsonObject>) =>
+              this.storeResult(result),
+          },
         );
         return this.withRollingWarnings(saved);
       } catch (reason) {
@@ -466,10 +520,23 @@ export class MdbaseTaskRepository implements TaskRepository {
         update_refs: true,
       };
       try {
-        return await runMdbaseMutation(this.connect, async () =>
-          this.storeResult(
-            validResult(await this.connect.rename(operationInput)),
-          ),
+        return await runMdbaseMutation(
+          this.connect,
+          async () =>
+            this.storeResult(
+              validResult(
+                await this.connect.rename(
+                  operationInput,
+                  this.requestOptions(),
+                ),
+              ),
+            ),
+          {
+            key: mdbaseMutationKey("record:rename", operationInput),
+            request: this.requestOptions(),
+            mapRecovered: (result: RecordDocument<JsonObject>) =>
+              this.storeResult(result),
+          },
         );
       } catch (reason) {
         this.noteOperationFailure(reason);
@@ -489,7 +556,10 @@ export class MdbaseTaskRepository implements TaskRepository {
     });
   }
 
-  delete(id: string): Promise<void> {
+  delete(
+    id: string,
+    options: { authorityRequestId?: string } = {},
+  ): Promise<void> {
     return this.serializeWrite(id, async () => {
       const existing = this.cache.get(id);
       if (!existing) return;
@@ -500,12 +570,28 @@ export class MdbaseTaskRepository implements TaskRepository {
         check_backlinks: true,
       };
       try {
-        await runMdbaseMutation(this.connect, async () => {
-          validResult(await this.connect.delete(operationInput));
+        const applyDeleted = () => {
           this.cache.delete(id);
           this.setConnected();
           this.emit();
-        });
+        };
+        await runMdbaseMutation(
+          this.connect,
+          async () => {
+            validResult(
+              await this.connect.delete(operationInput, this.requestOptions()),
+            );
+            applyDeleted();
+          },
+          {
+            key: mdbaseMutationKey("record:delete", operationInput),
+            request: this.requestOptions(),
+            mapRecovered: applyDeleted,
+            ...(options.authorityRequestId
+              ? { requestId: options.authorityRequestId }
+              : {}),
+          },
+        );
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
@@ -532,7 +618,9 @@ export class MdbaseTaskRepository implements TaskRepository {
   async listViews(): Promise<TaskViewDocument[]> {
     try {
       this.viewCache = normalizeViewDocuments(
-        validResult(await this.connect.listViews()) as ProviderViewList,
+        validResult(
+          await this.connect.listViews(this.requestOptions()),
+        ) as ProviderViewList,
       );
       return structuredClone(this.viewCache);
     } catch (reason) {
@@ -571,12 +659,15 @@ export class MdbaseTaskRepository implements TaskRepository {
   ): Promise<TaskViewExecution> {
     try {
       const result = validResult(
-        await this.connect.executeView({
-          path: view.source.path,
-          view: view.id,
-          limit: 2_000,
-          render: false,
-        }),
+        await this.connect.executeView(
+          {
+            path: view.source.path,
+            view: view.id,
+            limit: 2_000,
+            render: false,
+          },
+          this.requestOptions(),
+        ),
       ) as ProviderViewExecution;
       const execution = normalizeViewExecution(
         view,
@@ -595,7 +686,9 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   async readViewSource(path: string): Promise<TaskViewSourceDocument> {
     try {
-      return validResult(await this.connect.readViewSource({ path }));
+      return validResult(
+        await this.connect.readViewSource({ path }, this.requestOptions()),
+      );
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -606,13 +699,28 @@ export class MdbaseTaskRepository implements TaskRepository {
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
     try {
-      return await runMdbaseMutation(this.connect, async () => {
-        const created = validResult(
-          await this.connect.createViewSource({ ...input }),
-        );
+      const operationInput = { ...input };
+      const applyCreated = (created: TaskViewSourceDocument) => {
         this.invalidateViewsAfterMutation();
         return created;
-      });
+      };
+      return await runMdbaseMutation(
+        this.connect,
+        async () =>
+          applyCreated(
+            validResult(
+              await this.connect.createViewSource(
+                operationInput,
+                this.requestOptions(),
+              ),
+            ),
+          ),
+        {
+          key: mdbaseMutationKey("view-source:create", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: applyCreated,
+        },
+      );
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -628,13 +736,27 @@ export class MdbaseTaskRepository implements TaskRepository {
       if_revision: input.ifRevision,
     };
     try {
-      return await runMdbaseMutation(this.connect, async () => {
-        const updated = validResult(
-          await this.connect.updateViewSource(operationInput),
-        );
+      const applyUpdated = (updated: TaskViewSourceDocument) => {
         this.invalidateViewsAfterMutation();
         return updated;
-      });
+      };
+      return await runMdbaseMutation(
+        this.connect,
+        async () =>
+          applyUpdated(
+            validResult(
+              await this.connect.updateViewSource(
+                operationInput,
+                this.requestOptions(),
+              ),
+            ),
+          ),
+        {
+          key: mdbaseMutationKey("view-source:update", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: applyUpdated,
+        },
+      );
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -644,10 +766,26 @@ export class MdbaseTaskRepository implements TaskRepository {
   async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
     const operationInput = { path, if_revision: ifRevision };
     try {
-      await runMdbaseMutation(this.connect, async () => {
-        validResult(await this.connect.deleteViewSource(operationInput));
+      const applyDeleted = () => {
         this.invalidateViewsAfterMutation();
-      });
+      };
+      await runMdbaseMutation(
+        this.connect,
+        async () => {
+          validResult(
+            await this.connect.deleteViewSource(
+              operationInput,
+              this.requestOptions(),
+            ),
+          );
+          applyDeleted();
+        },
+        {
+          key: mdbaseMutationKey("view-source:delete", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: applyDeleted,
+        },
+      );
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
@@ -668,17 +806,19 @@ export class MdbaseTaskRepository implements TaskRepository {
       const record = await this.requireScratchpadRecord(input.id);
       const current = scratchpadFromRecord(record);
       assertScratchpadRevision(current, input);
-      const updated = validResult(
-        await this.connect.update({
-          path: current.path,
-          if_revision: current.revision,
-          patch: asJson(
-            scratchpadFrontmatter(current, {
-              dateModified: new Date().toISOString(),
-            }),
-          ),
-          body: input.body,
-        }),
+      const operationInput = {
+        path: current.path,
+        if_revision: current.revision,
+        patch: asJson(
+          scratchpadFrontmatter(current, {
+            dateModified: new Date().toISOString(),
+          }),
+        ),
+        body: input.body,
+      };
+      const updated = await this.mutateRecord(
+        "scratchpad:save",
+        operationInput,
       );
       this.setConnected();
       this.emit();
@@ -692,31 +832,43 @@ export class MdbaseTaskRepository implements TaskRepository {
       const current = scratchpadFromRecord(record);
       assertScratchpadRevision(current, input);
       const now = new Date().toISOString();
-      const updated = validResult(
-        await this.connect.update({
-          path: current.path,
-          if_revision: current.revision,
-          patch: asJson(
-            scratchpadFrontmatter(current, {
-              state: "converted",
-              title: input.title?.trim() || "Scratchpad",
-              dateModified: now,
-              dateConverted: now,
-            }),
-          ),
-          body: input.body,
-        }),
+      const updateInput = {
+        path: current.path,
+        if_revision: current.revision,
+        patch: asJson(
+          scratchpadFrontmatter(current, {
+            state: "converted",
+            title: input.title?.trim() || "Scratchpad",
+            dateModified: now,
+            dateConverted: now,
+          }),
+        ),
+        body: input.body,
+      };
+      const updated = await this.mutateRecord(
+        "scratchpad:convert",
+        updateInput,
       );
       const path = await this.availableScratchpadPath(
         scratchpadArchivePath(input.title, new Date(now)),
       );
-      const archived = validResult(
-        await this.connect.rename({
-          from: updated.path,
-          to: path,
-          if_revision: updated.revision,
-          update_refs: false,
-        }),
+      const renameInput = {
+        from: updated.path,
+        to: path,
+        if_revision: updated.revision,
+        update_refs: false,
+      };
+      const archived = await runMdbaseMutation(
+        this.connect,
+        async () =>
+          validResult(
+            await this.connect.rename(renameInput, this.requestOptions()),
+          ),
+        {
+          key: mdbaseMutationKey("scratchpad:archive", renameInput),
+          mapRecovered: (result: RecordDocument<JsonObject>) => result,
+          request: this.requestOptions(),
+        },
       );
       const active = await this.createActiveScratchpad();
       this.setConnected();
@@ -727,16 +879,21 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async scratchpadRecords(): Promise<RecordDocument<JsonObject>[]> {
     const result = validResult(
-      await this.connect.query({
-        types: [SCRATCHPAD_TYPE],
-        include_body: true,
-        frontmatter_mode: "persisted",
-        limit: 1_000,
-      }),
+      await this.connect.query(
+        {
+          types: [SCRATCHPAD_TYPE],
+          include_body: true,
+          frontmatter_mode: "persisted",
+          limit: 1_000,
+        },
+        this.requestOptions(),
+      ),
     );
     return Promise.all(
       result.results.map(async (record) =>
-        validResult(await this.connect.read({ path: record.path })),
+        validResult(
+          await this.connect.read({ path: record.path }, this.requestOptions()),
+        ),
       ),
     );
   }
@@ -753,15 +910,41 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async createActiveScratchpad() {
     const values = newScratchpadValues();
-    const created = validResult(
-      await this.connect.create({
-        path: values.path,
-        type: SCRATCHPAD_TYPE,
-        frontmatter: asJson(values.frontmatter),
-        body: values.body,
-      }),
+    const operationInput = {
+      path: values.path,
+      type: SCRATCHPAD_TYPE,
+      frontmatter: asJson(values.frontmatter),
+      body: values.body,
+    };
+    const created = await runMdbaseMutation(
+      this.connect,
+      async () =>
+        validResult(
+          await this.connect.create(operationInput, this.requestOptions()),
+        ),
+      {
+        key: mdbaseMutationKey("scratchpad:create", operationInput),
+        mapRecovered: (result: RecordDocument<JsonObject>) => result,
+        request: this.requestOptions(),
+      },
     );
     return scratchpadFromRecord(created);
+  }
+
+  private mutateRecord(
+    operation: string,
+    input: Parameters<MdbaseConnection<JsonObject>["update"]>[0],
+  ): Promise<RecordDocument<JsonObject>> {
+    return runMdbaseMutation(
+      this.connect,
+      async () =>
+        validResult(await this.connect.update(input, this.requestOptions())),
+      {
+        key: mdbaseMutationKey(operation, input),
+        mapRecovered: (result: RecordDocument<JsonObject>) => result,
+        request: this.requestOptions(),
+      },
+    );
   }
 
   private async availableScratchpadPath(path: string): Promise<string> {
@@ -800,20 +983,27 @@ export class MdbaseTaskRepository implements TaskRepository {
     return () => this.listeners.delete(listener);
   }
 
+  private requestOptions(): { signal: AbortSignal } {
+    return { signal: this.operationController.signal };
+  }
+
   private async reloadCache(): Promise<void> {
     const next = new Map<string, CachedMdbaseTask>();
     let offset = 0;
     let snapshot: string | undefined;
     let hasMore = true;
     while (hasMore) {
-      const response = await this.connect.query({
-        types: [...this.taskProviders.keys()],
-        include_body: true,
-        frontmatter_mode: "effective",
-        limit: PAGE_SIZE,
-        offset,
-        ...(snapshot ? { snapshot } : {}),
-      });
+      const response = await this.connect.query(
+        {
+          types: [...this.taskProviders.keys()],
+          include_body: true,
+          frontmatter_mode: "effective",
+          limit: PAGE_SIZE,
+          offset,
+          ...(snapshot ? { snapshot } : {}),
+        },
+        this.requestOptions(),
+      );
       const page = validResult(response);
       if (!snapshot && typeof page.meta?.snapshot === "string")
         snapshot = page.meta.snapshot;
@@ -858,7 +1048,10 @@ export class MdbaseTaskRepository implements TaskRepository {
   ): Promise<Required<CachedMdbaseTask>> {
     try {
       const result = validResult(
-        await this.connect.read({ path: cached.task.path }),
+        await this.connect.read(
+          { path: cached.task.path },
+          this.requestOptions(),
+        ),
       );
       const decoded = this.readRecord(result);
       if (!decoded) throw new Error("The task is no longer readable.");
@@ -895,10 +1088,20 @@ export class MdbaseTaskRepository implements TaskRepository {
       if_revision: current.revision,
     };
     try {
-      return await runMdbaseMutation(this.connect, async () =>
-        this.storeResult(
-          validResult(await this.connect.update(operationInput)),
-        ),
+      return await runMdbaseMutation(
+        this.connect,
+        async () =>
+          this.storeResult(
+            validResult(
+              await this.connect.update(operationInput, this.requestOptions()),
+            ),
+          ),
+        {
+          key: mdbaseMutationKey("record:update", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: (result: RecordDocument<JsonObject>) =>
+            this.storeResult(result),
+        },
       );
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -995,7 +1198,9 @@ export class MdbaseTaskRepository implements TaskRepository {
         now: new Date().toISOString(),
       },
       async (path) => {
-        const template = validResult(await this.connect.read({ path }));
+        const template = validResult(
+          await this.connect.read({ path }, this.requestOptions()),
+        );
         return serializeMarkdownDocument(template.frontmatter, template.body);
       },
     );
@@ -1008,10 +1213,20 @@ export class MdbaseTaskRepository implements TaskRepository {
       body: created.body,
     };
     try {
-      const saved = await runMdbaseMutation(this.connect, async () =>
-        this.storeResult(
-          validResult(await this.connect.create(operationInput)),
-        ),
+      const saved = await runMdbaseMutation(
+        this.connect,
+        async () =>
+          this.storeResult(
+            validResult(
+              await this.connect.create(operationInput, this.requestOptions()),
+            ),
+          ),
+        {
+          key: mdbaseMutationKey("record:create", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: (record: RecordDocument<JsonObject>) =>
+            this.storeResult(record),
+        },
       );
       const task = result.warnings.length
         ? { ...saved, operationWarnings: result.warnings }
@@ -1022,7 +1237,10 @@ export class MdbaseTaskRepository implements TaskRepository {
     } catch (reason) {
       try {
         const existing = validResult(
-          await this.connect.read({ path: created.path }),
+          await this.connect.read(
+            { path: created.path },
+            this.requestOptions(),
+          ),
         );
         const task = this.storeResult(existing);
         if (

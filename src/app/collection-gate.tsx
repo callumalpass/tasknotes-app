@@ -9,6 +9,7 @@ import {
 
 import { unwrapConnectOutcome } from "@mdbase-dev/connect";
 import { cloudSession, isCloudCallback } from "../cloud/connect";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { appPlatform } from "../native/app-platform";
 import { CollectionPicker } from "./collection-picker";
@@ -21,25 +22,40 @@ export function CollectionGate() {
     null,
   );
   const handledCallbackUrls = useRef(new Set<string>());
+  const lifecycleController = useRef(new AbortController());
   const session = useCloudSessionSnapshot();
 
-  const complete = useCallback(async (url: string) => {
-    if (!isCloudCallback(url) || handledCallbackUrls.current.has(url)) return;
-    handledCallbackUrls.current.add(url);
-    try {
-      unwrapConnectOutcome(await cloudSession.handleAuthorizationCallback(url));
-      setAuthorizationError(null);
-      setPickerOpen(false);
-    } catch (reason) {
-      setAuthorizationError(message(reason));
-    } finally {
-      await appPlatform.closeAuthorizationBrowser();
-    }
+  const requestOptions = useCallback(() => {
+    if (lifecycleController.current.signal.aborted)
+      lifecycleController.current = new AbortController();
+    return {
+      signal: lifecycleController.current.signal,
+      timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
+    };
   }, []);
+
+  const complete = useCallback(
+    async (url: string) => {
+      if (!isCloudCallback(url) || handledCallbackUrls.current.has(url)) return;
+      handledCallbackUrls.current.add(url);
+      try {
+        unwrapConnectOutcome(
+          await cloudSession.handleAuthorizationCallback(url, requestOptions()),
+        );
+        setAuthorizationError(null);
+        setPickerOpen(false);
+      } catch (reason) {
+        setAuthorizationError(message(reason));
+      } finally {
+        await appPlatform.closeAuthorizationBrowser();
+      }
+    },
+    [requestOptions],
+  );
 
   useEffect(() => {
     const initialize = async () => {
-      unwrapConnectOutcome(await cloudSession.start());
+      unwrapConnectOutcome(await cloudSession.start(requestOptions()));
       if (isCloudCallback(location.href)) await complete(location.href);
     };
     queueMicrotask(() => {
@@ -54,27 +70,30 @@ export function CollectionGate() {
       if (url) void complete(url);
     });
     return () => {
+      lifecycleController.current.abort(
+        new DOMException("TaskNotes connection flow closed.", "AbortError"),
+      );
       void listener.then((handle) => handle?.remove());
     };
-  }, [complete]);
+  }, [complete, requestOptions]);
 
   const authorizeAnotherCollection = useCallback(() => {
     setPickerOpen(false);
     setAuthorizationError(null);
     void cloudSession
-      .authorize("choose")
+      .authorize("choose", requestOptions())
       .then(unwrapConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
-  }, []);
+  }, [requestOptions]);
 
   const reauthorizeCurrentCollection = useCallback(() => {
     setPickerOpen(false);
     setAuthorizationError(null);
     void cloudSession
-      .authorize("selected")
+      .authorize("selected", requestOptions())
       .then(unwrapConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
-  }, []);
+  }, [requestOptions]);
 
   const selectCollection = useCallback((collectionId: string) => {
     try {

@@ -23,6 +23,8 @@
     "test:coverage:layers": "pnpm test:coverage:application && pnpm test:coverage:domain",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:connect": "playwright test --config playwright.dogfood.config.ts",
+    "test:android-smoke": "node scripts/android-smoke.mjs",
     "test:production-smoke": "node scripts/production-smoke.mjs",
     "test:conformance:tasknotes": "node scripts/run-tasknotes-conformance.mjs",
     "test:conformance:mdbase": "node scripts/verify-mdbase-collection.mjs",
@@ -48,8 +50,8 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz",
-    "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz",
+    "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.32-d5560b792b8f.tgz",
+    "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.32-d5560b792b8f.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.9.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
@@ -66,8 +68,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.4-4f28ea27a15a.tgz",
-    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.29-4371c96eaa70.tgz",
-    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.29-4371c96eaa70.tgz",
+    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.32-d5560b792b8f.tgz",
+    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.32-d5560b792b8f.tgz",
     "@capacitor/android": "8.4.2",
     "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",
@@ -96,8 +98,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.29-4371c96eaa70.tgz",
-      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.29-4371c96eaa70.tgz"
+      "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.32-d5560b792b8f.tgz",
+      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.32-d5560b792b8f.tgz"
     }
   }
 }

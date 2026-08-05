@@ -9,7 +9,7 @@ const DEFAULT_UNDO_WINDOW_MS = 30_000;
 
 export interface TaskCommandRepository {
   get(id: string): Promise<Task | null>;
-  delete(id: string): Promise<void>;
+  delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
   updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],
@@ -185,13 +185,27 @@ export class TaskCommandService {
   private async commitDeletionNow(command: PendingTaskDeletion): Promise<void> {
     this.clearTimer();
     try {
-      await this.options.repository.delete(command.taskId);
+      if (command.authorityRequestId)
+        await this.options.repository.delete(command.taskId, {
+          authorityRequestId: command.authorityRequestId,
+        });
+      else await this.options.repository.delete(command.taskId);
       await this.options.onDeleted?.(command.taskId);
       await this.options.journal.remove(command.operationId);
       if (this.pendingDeletion?.operationId === command.operationId)
         this.pendingDeletion = null;
       this.deletionError = null;
     } catch (reason) {
+      const authorityRequestId = durableRequestId(reason);
+      if (
+        authorityRequestId &&
+        command.authorityRequestId !== authorityRequestId
+      ) {
+        command = { ...command, authorityRequestId };
+        await this.options.journal.put(command);
+        if (this.pendingDeletion?.operationId === command.operationId)
+          this.pendingDeletion = command;
+      }
       const failure = toOperationalError(reason, "delete-task");
       if (this.pendingDeletion?.operationId !== command.operationId)
         this.pendingDeletion = command;
@@ -225,6 +239,19 @@ export class TaskCommandService {
   private get clock(): TaskCommandClock {
     return this.options.clock ?? systemClock;
   }
+}
+
+function durableRequestId(reason: unknown): string | null {
+  if (!reason || typeof reason !== "object") return null;
+  const carrier = reason as {
+    details?: unknown;
+    problem?: { details?: unknown };
+  };
+  const details = carrier.details ?? carrier.problem?.details;
+  if (!details || typeof details !== "object" || !("request_id" in details))
+    return null;
+  const requestId = details.request_id;
+  return typeof requestId === "string" && requestId ? requestId : null;
 }
 
 function collectionIdentity(info: CollectionInfo): string {

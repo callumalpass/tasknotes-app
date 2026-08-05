@@ -79,6 +79,42 @@ describe("TaskNotes mdbase files", () => {
     await store.delete(replaced);
     expect(await store.list()).toEqual([]);
   });
+
+  it("combines caller and collection lifecycle cancellation for file work", async () => {
+    const lifecycle = new AbortController();
+    const caller = new AbortController();
+    let started!: () => void;
+    const didStart = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const connection = {
+      files: {
+        list: async function* (options: { signal?: AbortSignal }) {
+          started();
+          await new Promise((_, reject) => {
+            options.signal?.addEventListener(
+              "abort",
+              () => reject(options.signal?.reason),
+              { once: true },
+            );
+          });
+          yield* [];
+        },
+      },
+      fileCapability: null,
+    } as unknown as MdbaseConnection;
+    const store = new MdbaseCollectionFileStore(
+      connection,
+      () => lifecycle.signal,
+    );
+
+    const listing = store.list({ signal: caller.signal });
+    await didStart;
+    lifecycle.abort(new DOMException("Collection closed.", "AbortError"));
+
+    await expect(listing).rejects.toMatchObject({ name: "AbortError" });
+    expect(caller.signal.aborted).toBe(false);
+  });
 });
 
 interface PendingTransfer {

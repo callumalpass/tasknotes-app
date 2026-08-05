@@ -106,5 +106,7 @@ it("lists remembered collections and authorizes another with choose intent", () 
     screen.getByRole("button", { name: "Connect another collection" }),
   );
 
-  expect(connect.authorize).toHaveBeenCalledWith("choose");
+  expect(connect.authorize).toHaveBeenCalledWith("choose", {
+    timeoutMs: 60_000,
+  });
 });
