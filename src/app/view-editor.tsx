@@ -18,6 +18,7 @@ import {
   updateViewDocument,
   type EditableViewDraft,
 } from "../domain/view-document";
+import { taskNotesViewSourcePath } from "../domain/default-view-source";
 import { loadViewEditorForm } from "./view-editor-loader";
 import { useRepository } from "./repository-context";
 
@@ -177,6 +178,9 @@ export function ViewEditor({
         persisted = await repository.createViewSource({
           format,
           name: draft.name,
+          ...(format === "obsidian.base"
+            ? { path: taskNotesViewSourcePath(draft.name) }
+            : {}),
           document: createViewDocument(format, draft),
         });
       }

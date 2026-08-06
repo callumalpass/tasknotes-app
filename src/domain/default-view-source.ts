@@ -5,6 +5,7 @@ import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { TaskViewDocument } from "./view";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
+export const TASKNOTES_VIEW_SOURCE_FOLDER = "TaskNotes/Views";
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Today",
   "Upcoming",
@@ -15,9 +16,20 @@ export const TASKNOTES_DEFAULT_VIEW_NAMES = [
 export const TASKNOTES_DEFAULT_VIEW_SOURCES = TASKNOTES_DEFAULT_VIEW_NAMES.map(
   (name) => ({
     name,
-    path: `views/tasknotes/${name.toLowerCase()}.base`,
+    path: taskNotesViewSourcePath(name),
   }),
 );
+
+export function taskNotesViewSourcePath(name: string): string {
+  const slug = name
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKD")
+    .replace(/\p{Mark}+/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${TASKNOTES_VIEW_SOURCE_FOLDER}/${slug || "view"}.base`;
+}
 
 export interface TaskNotesDefaultViewSource {
   name: (typeof TASKNOTES_DEFAULT_VIEW_NAMES)[number];
@@ -285,7 +297,7 @@ export function isTaskNotesDefaultViewDocument(
   const filename = document.source.path.split("/").at(-1)?.toLowerCase() ?? "";
   return (
     TASKNOTES_DEFAULT_VIEW_SOURCES.some(
-      ({ path }) => path === document.source.path.toLowerCase(),
+      ({ path }) => path.toLowerCase() === document.source.path.toLowerCase(),
     ) ||
     filename === `${TASKNOTES_DEFAULT_VIEW_SOURCE_NAME}.base` ||
     filename === `${TASKNOTES_DEFAULT_VIEW_SOURCE_NAME}.md` ||
@@ -300,7 +312,7 @@ export function defaultNavigationViewKeys(
   return TASKNOTES_DEFAULT_VIEW_SOURCES.flatMap(({ name, path }) => {
     const source =
       defaults.find(
-        (document) => document.source.path.toLowerCase() === path,
+        (document) => document.source.path.toLowerCase() === path.toLowerCase(),
       ) ??
       defaults.find((document) =>
         document.views.some((candidate) => candidate.name === name),

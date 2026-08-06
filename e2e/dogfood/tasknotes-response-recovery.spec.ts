@@ -73,9 +73,9 @@ test("recovers one exact task after authority responses are lost", async ({
     `${collectionDir}/mdbase.yaml`,
     "utf8",
   );
-  expect(collectionConfig).toContain("views/tasknotes/**/*.base");
+  expect(collectionConfig).toContain("TaskNotes/Views/**/*.base");
   const todayView = await readFile(
-    `${collectionDir}/views/tasknotes/today.base`,
+    `${collectionDir}/TaskNotes/Views/today.base`,
     "utf8",
   );
   expect(todayView).toContain("formula.taskDay <= today()");

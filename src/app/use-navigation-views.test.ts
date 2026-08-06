@@ -5,7 +5,10 @@ import {
   writeNavigationViewKeys,
 } from "./navigation-views";
 import { resolveNavigationViewCatalog } from "./use-navigation-views";
-import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
+import {
+  SCRATCHPAD_NAVIGATION_KEY,
+  SEARCH_NAVIGATION_KEY,
+} from "./navigation-views";
 
 import type { TaskViewDocument } from "../domain/view";
 
@@ -18,7 +21,7 @@ const info = {
 };
 
 describe("home view restoration", () => {
-  it("pins Scratchpad second for a new collection", () => {
+  it("pins working tools after the home view for a new collection", () => {
     const resolved = resolveNavigationViewCatalog(
       info,
       starterViews(),
@@ -26,17 +29,20 @@ describe("home view restoration", () => {
       memoryStorage(),
     );
 
-    expect(resolved?.navigationKeys.slice(0, 3)).toEqual([
-      "views/tasknotes/today.base#today",
+    expect(resolved?.navigationKeys.slice(0, 4)).toEqual([
+      "TaskNotes/Views/today.base#today",
       SCRATCHPAD_NAVIGATION_KEY,
-      "views/tasknotes/upcoming.base#upcoming",
+      SEARCH_NAVIGATION_KEY,
+      "TaskNotes/Views/upcoming.base#upcoming",
     ]);
   });
 
   it.each([
+    ["tasknotes:navigation-views:v3", ["views/tasknotes-app.base#today"]],
     ["tasknotes:navigation-views:v2", ["views/tasknotes-app.base#today"]],
     ["tasknotes:primary-views:v1", "views/tasknotes-app.base#today"],
-  ])("inserts Scratchpad when migrating %s preferences", (key, value) => {
+    ["tasknotes:navigation-views:v2", ["views/tasknotes/today.base#today"]],
+  ])("inserts working tools when migrating %s preferences", (key, value) => {
     const storage = memoryStorage({
       [key]: JSON.stringify({ "connect:collection-home": value }),
     });
@@ -49,12 +55,31 @@ describe("home view restoration", () => {
     );
 
     expect(resolved?.navigationKeys).toEqual([
-      "views/tasknotes/today.base#today",
+      "TaskNotes/Views/today.base#today",
       SCRATCHPAD_NAVIGATION_KEY,
+      SEARCH_NAVIGATION_KEY,
     ]);
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
       resolved?.navigationKeys,
     );
+  });
+
+  it("keeps Search unpinned after v4 preferences are saved", () => {
+    const home = "TaskNotes/Views/today.base#today";
+    const storage = memoryStorage({
+      "tasknotes:navigation-views:v4": JSON.stringify({
+        "connect:collection-home": [home, SCRATCHPAD_NAVIGATION_KEY],
+      }),
+    });
+
+    const resolved = resolveNavigationViewCatalog(
+      info,
+      starterViews(),
+      false,
+      storage,
+    );
+
+    expect(resolved?.navigationKeys).toEqual([home, SCRATCHPAD_NAVIGATION_KEY]);
   });
 
   it("keeps startup unresolved instead of briefly selecting Today", () => {
@@ -88,12 +113,19 @@ describe("home view restoration", () => {
       false,
       storage,
     );
-    expect(resolved?.navigationKeys).toEqual(
-      starter.flatMap((document) => document.views.map((view) => view.key)),
+    const defaults = starter.flatMap((document) =>
+      document.views.map((view) => view.key),
     );
-    expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual([
-      ...starter.flatMap((document) => document.views.map((view) => view.key)),
-    ]);
+    const expected = [
+      defaults[0],
+      SCRATCHPAD_NAVIGATION_KEY,
+      SEARCH_NAVIGATION_KEY,
+      ...defaults.slice(1),
+    ];
+    expect(resolved?.navigationKeys).toEqual(expected);
+    expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
+      expected,
+    );
   });
 
   it("migrates preferences written before collection ids were available", () => {
@@ -165,7 +197,7 @@ function workViews(): TaskViewDocument {
 function starterViews(): TaskViewDocument[] {
   return ["today", "upcoming", "calendar"].map((id) => {
     const source = {
-      path: `views/tasknotes/${id}.base`,
+      path: `TaskNotes/Views/${id}.base`,
       format: "obsidian.base",
       revision: "view-r1",
       writable: true,

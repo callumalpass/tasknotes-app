@@ -3,10 +3,11 @@ import {
   ChevronDown,
   ChevronUp,
   Columns3,
-  FilePenLine,
   FolderKanban,
   List,
 } from "lucide-react";
+
+import type { LucideIcon } from "lucide-react";
 
 import type { TaskView } from "../../domain/view";
 
@@ -17,12 +18,12 @@ export function NavigationViewOrder({
   onMove,
 }: {
   keys: string[];
-  specialViews?: Array<{ key: string; name: string }>;
+  specialViews?: Array<{ key: string; name: string; icon: LucideIcon }>;
   views: TaskView[];
   onMove(key: string, direction: -1 | 1): void;
 }) {
   const ordered: Array<
-    | { key: string; name: string; special: true }
+    | { key: string; name: string; icon: LucideIcon; special: true }
     | (TaskView & { special: false })
   > = [];
   for (const key of keys) {
@@ -46,36 +47,39 @@ export function NavigationViewOrder({
         </div>
       </header>
       <ol>
-        {ordered.map((view, index) => (
-          <li key={view.key}>
-            {view.special ? (
-              <FilePenLine aria-hidden="true" size={21} strokeWidth={1.55} />
-            ) : (
-              <ViewIcon view={view} />
-            )}
-            <span>{view.name}</span>
-            <div className="navigation-order-actions">
-              <button
-                aria-label={`Move ${view.name} earlier`}
-                disabled={index === 0 || (view.special && index === 1)}
-                type="button"
-                onClick={() => onMove(view.key, -1)}
-              >
-                <ChevronUp aria-hidden="true" size={17} />
-              </button>
-              <button
-                aria-label={`Move ${view.name} later`}
-                disabled={
-                  index === ordered.length - 1 || ordered[index + 1]?.special
-                }
-                type="button"
-                onClick={() => onMove(view.key, 1)}
-              >
-                <ChevronDown aria-hidden="true" size={17} />
-              </button>
-            </div>
-          </li>
-        ))}
+        {ordered.map((view, index) => {
+          const SpecialIcon = view.special ? view.icon : null;
+          return (
+            <li key={view.key}>
+              {SpecialIcon ? (
+                <SpecialIcon aria-hidden="true" size={21} strokeWidth={1.55} />
+              ) : (
+                <ViewIcon view={view as TaskView} />
+              )}
+              <span>{view.name}</span>
+              <div className="navigation-order-actions">
+                <button
+                  aria-label={`Move ${view.name} earlier`}
+                  disabled={index === 0 || (view.special && index === 1)}
+                  type="button"
+                  onClick={() => onMove(view.key, -1)}
+                >
+                  <ChevronUp aria-hidden="true" size={17} />
+                </button>
+                <button
+                  aria-label={`Move ${view.name} later`}
+                  disabled={
+                    index === ordered.length - 1 || ordered[index + 1]?.special
+                  }
+                  type="button"
+                  onClick={() => onMove(view.key, 1)}
+                >
+                  <ChevronDown aria-hidden="true" size={17} />
+                </button>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

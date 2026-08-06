@@ -221,12 +221,15 @@ export function mdbaseFixture(
   });
   const createViewSource = vi.fn(
     async (input: {
+      path?: string;
       format: "obsidian.base" | "mdbase.view";
       name: string;
       document: string;
     }) => {
       const extension = input.format === "obsidian.base" ? "base" : "md";
-      const path = `views/${input.name.toLowerCase().replaceAll(" ", "-")}.${extension}`;
+      const path =
+        input.path ??
+        `views/${input.name.toLowerCase().replaceAll(" ", "-")}.${extension}`;
       const source = {
         path,
         format: input.format,

@@ -45,6 +45,12 @@ export interface ScratchNode {
   taskId?: string;
 }
 
+export interface VisibleScratchNode {
+  node: ScratchNode;
+  index: number;
+  descendantCount: number;
+}
+
 export type ScratchDropPlacement = "before" | "after" | "inside";
 
 export function parseScratchBody(body: string): ScratchNode[] {
@@ -113,6 +119,26 @@ export function scratchSubtreeEnd(
   let end = index + 1;
   while (end < nodes.length && nodes[end]!.depth > depth) end += 1;
   return end;
+}
+
+export function visibleScratchNodes(
+  nodes: readonly ScratchNode[],
+  collapsedIds: ReadonlySet<string>,
+): VisibleScratchNode[] {
+  const visible: VisibleScratchNode[] = [];
+  let collapsedDepth: number | undefined;
+  for (let index = 0; index < nodes.length; index += 1) {
+    const node = nodes[index]!;
+    if (collapsedDepth !== undefined) {
+      if (node.depth > collapsedDepth) continue;
+      collapsedDepth = undefined;
+    }
+    const descendantCount = scratchSubtreeEnd(nodes, index) - index - 1;
+    visible.push({ node, index, descendantCount });
+    if (descendantCount && collapsedIds.has(node.id))
+      collapsedDepth = node.depth;
+  }
+  return visible;
 }
 
 export function moveScratchSubtree(

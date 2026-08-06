@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { StorageErrorScreen } from "./app-shell";
+import { Navigation, StorageErrorScreen } from "./app-shell";
+import {
+  SCRATCHPAD_NAVIGATION_KEY,
+  SEARCH_NAVIGATION_KEY,
+} from "./navigation-views";
+
+import type { TaskView } from "../domain/view";
 
 it("lets a user escape an unavailable remembered collection", () => {
   const authorizeAnotherCollection = vi.fn();
@@ -58,3 +64,58 @@ it("separates reauthorizing the current collection from choosing another", () =>
   );
   expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
 });
+
+it("renders Search at its configured mobile navigation position", () => {
+  const onNavigate = vi.fn();
+  const today = navigationView("today", "Today");
+  const upcoming = navigationView("upcoming", "Upcoming");
+
+  render(
+    <Navigation
+      active="search"
+      homeViewKey={today.key}
+      mode="mobile"
+      navigationKeys={[
+        today.key,
+        SCRATCHPAD_NAVIGATION_KEY,
+        SEARCH_NAVIGATION_KEY,
+        upcoming.key,
+      ]}
+      views={[today, upcoming]}
+      onNavigate={onNavigate}
+    />,
+  );
+
+  expect(
+    screen.getAllByRole("button").map((button) => button.textContent),
+  ).toEqual(["Today", "Scratchpad", "Search", "Views", "Settings"]);
+  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  expect(onNavigate).toHaveBeenCalledWith({ page: "search" });
+});
+
+function navigationView(id: string, name: string): TaskView {
+  return {
+    key: `TaskNotes/Views/${id}.base#${id}`,
+    documentId: id,
+    documentName: id,
+    id,
+    name,
+    properties: [],
+    source: {
+      path: `TaskNotes/Views/${id}.base`,
+      format: "obsidian.base",
+      revision: "one",
+      writable: true,
+    },
+    presentation: {
+      type: "tasknotes.task-list",
+      mappings: {},
+      options: {},
+    },
+  };
+}

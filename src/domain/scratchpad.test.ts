@@ -7,6 +7,7 @@ import {
   parseScratchBody,
   removeScratchNode,
   serializeScratchNodes,
+  visibleScratchNodes,
   type ScratchNode,
 } from "./scratchpad";
 
@@ -72,6 +73,29 @@ describe("scratchpad Markdown outline", () => {
       node("draft", 2, "draft"),
     ];
     expect(nearestTaskAncestor(nodes, 2)?.id).toBe("linked");
+  });
+
+  it("hides only descendants of collapsed outline items", () => {
+    const nodes = [
+      node("parent", 0),
+      node("child", 1),
+      node("grandchild", 2),
+      node("sibling", 0),
+    ];
+
+    expect(
+      visibleScratchNodes(nodes, new Set(["parent"])).map(
+        ({ node: visible, descendantCount }) => [visible.id, descendantCount],
+      ),
+    ).toEqual([
+      ["parent", 2],
+      ["sibling", 0],
+    ]);
+    expect(
+      visibleScratchNodes(nodes, new Set(["child"])).map(
+        ({ node: visible }) => visible.id,
+      ),
+    ).toEqual(["parent", "child", "sibling"]);
   });
 });
 
