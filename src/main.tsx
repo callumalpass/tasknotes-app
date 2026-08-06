@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 
 import { CollectionGate } from "./app/collection-gate";
 import { AppErrorBoundary } from "./components/app-error-boundary";
+import { DemoApp } from "./demo/demo-app";
 import {
   clearTaskNotesServiceWorkerForDevelopment,
   registerTaskNotesServiceWorker,
@@ -13,10 +14,12 @@ import {
 import "./styles.css";
 import "./accessibility.css";
 
+const demoCount = Number(new URL(location.href).searchParams.get("demo") ?? 0);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
-      <CollectionGate />
+      {demoCount > 0 ? <DemoApp count={demoCount} /> : <CollectionGate />}
     </AppErrorBoundary>
   </StrictMode>,
 );

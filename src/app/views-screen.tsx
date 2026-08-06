@@ -875,81 +875,95 @@ export function ViewsScreen({
                   onOpenSearch={onSearch}
                   onToggleNavigation={onToggleNavigationView}
                 />
-                {documents.map((document) => (
-                  <section
-                    className="view-document"
-                    key={document.source.path}
-                    aria-labelledby={`view-document-${safeId(document.id)}`}
-                  >
-                    <header className="view-document-heading">
-                      <h2 id={`view-document-${safeId(document.id)}`}>
-                        {document.name}
-                      </h2>
-                    </header>
-                    <div className="saved-view-list">
-                      {document.views.map((view) => {
-                        const inNavigation = navigationViewKeys.includes(
-                          view.key,
-                        );
-                        const lastNavigationView =
-                          inNavigation &&
-                          navigationViewKeys.filter(
-                            (key) => !isSpecialNavigationKey(key),
-                          ).length === 1;
-                        return (
-                          <div className="saved-view-row" key={view.key}>
-                            <button
-                              className="saved-view-open"
-                              type="button"
-                              onClick={() => onOpenView(view)}
-                            >
-                              <ViewIcon view={view} />
-                              <span>
-                                <strong>{view.name}</strong>
-                              </span>
-                              <ChevronRight aria-hidden="true" size={18} />
-                            </button>
-                            {view.source.writable ? (
+                {documents.map((document) => {
+                  const showDocumentHeading =
+                    document.views.length !== 1 ||
+                    document.views[0]?.name !== document.name;
+                  return (
+                    <section
+                      className={`view-document${showDocumentHeading ? "" : " is-single-view"}`}
+                      key={document.source.path}
+                      aria-label={
+                        showDocumentHeading ? undefined : document.name
+                      }
+                      aria-labelledby={
+                        showDocumentHeading
+                          ? `view-document-${safeId(document.id)}`
+                          : undefined
+                      }
+                    >
+                      {showDocumentHeading ? (
+                        <header className="view-document-heading">
+                          <h2 id={`view-document-${safeId(document.id)}`}>
+                            {document.name}
+                          </h2>
+                        </header>
+                      ) : null}
+                      <div className="saved-view-list">
+                        {document.views.map((view) => {
+                          const inNavigation = navigationViewKeys.includes(
+                            view.key,
+                          );
+                          const lastNavigationView =
+                            inNavigation &&
+                            navigationViewKeys.filter(
+                              (key) => !isSpecialNavigationKey(key),
+                            ).length === 1;
+                          return (
+                            <div className="saved-view-row" key={view.key}>
                               <button
-                                aria-label={`Edit ${view.name}`}
-                                className="saved-view-edit"
+                                className="saved-view-open"
                                 type="button"
-                                onFocus={preloadViewEditor}
-                                onClick={() => setEditing(view)}
-                                onPointerEnter={preloadViewEditor}
+                                onClick={() => onOpenView(view)}
                               >
-                                <Pencil aria-hidden="true" size={16} />
+                                <ViewIcon view={view} />
+                                <span>
+                                  <strong>{view.name}</strong>
+                                </span>
+                                <ChevronRight aria-hidden="true" size={18} />
                               </button>
-                            ) : null}
-                            <button
-                              aria-label={
-                                lastNavigationView
-                                  ? `${view.name} must remain in navigation until another view is added`
-                                  : inNavigation
-                                    ? `Remove ${view.name} from navigation`
-                                    : `Add ${view.name} to navigation`
-                              }
-                              aria-pressed={inNavigation}
-                              className="saved-view-pin"
-                              disabled={lastNavigationView}
-                              type="button"
-                              onClick={() => {
-                                selectionFeedback();
-                                onToggleNavigationView(view.key);
-                              }}
-                            >
-                              <Pin
-                                aria-hidden="true"
-                                fill={inNavigation ? "currentColor" : "none"}
-                                size={17}
-                              />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
+                              {view.source.writable ? (
+                                <button
+                                  aria-label={`Edit ${view.name}`}
+                                  className="saved-view-edit"
+                                  type="button"
+                                  onFocus={preloadViewEditor}
+                                  onClick={() => setEditing(view)}
+                                  onPointerEnter={preloadViewEditor}
+                                >
+                                  <Pencil aria-hidden="true" size={16} />
+                                </button>
+                              ) : null}
+                              <button
+                                aria-label={
+                                  lastNavigationView
+                                    ? `${view.name} must remain in navigation until another view is added`
+                                    : inNavigation
+                                      ? `Remove ${view.name} from navigation`
+                                      : `Add ${view.name} to navigation`
+                                }
+                                aria-pressed={inNavigation}
+                                className="saved-view-pin"
+                                disabled={lastNavigationView}
+                                type="button"
+                                onClick={() => {
+                                  selectionFeedback();
+                                  onToggleNavigationView(view.key);
+                                }}
+                              >
+                                <Pin
+                                  aria-hidden="true"
+                                  fill={inNavigation ? "currentColor" : "none"}
+                                  size={17}
+                                />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </div>
           ) : (

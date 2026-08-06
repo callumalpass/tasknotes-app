@@ -109,12 +109,10 @@ collection names, and Markdown paths. Preserve platform text scaling and avoid
 text smaller than 11 points.
 
 The semantic type scale is intentionally small: 32px page titles, 20px section
-headings, 17px body and control text, 14px supporting copy, and 11px mono labels.
-The mature stylesheet also contains fine-grained optical adjustments between
-0.62rem and 2.35rem for dense task, calendar, metadata, and responsive
-hierarchies. Those literals are explicit legacy exceptions until the stylesheet
-is extracted into tokens; new UI should use the nearest semantic role rather
-than add another value.
+headings, 17px controls, 16px body text, 14px supporting copy, and 12px mono
+labels. Operational text never falls below the label role. Context-specific
+display sizes above body text are reserved for task titles, modal headings, and
+the capture plus; ordinary component text uses the nearest semantic token.
 
 ## Layout
 
@@ -177,11 +175,11 @@ Today             Search       More
   surface.
 
 The radius scale is 0 for page structure and fields with bottom rules, 6px for
-ordinary controls and notices, and 12px for modal sheets. The 26px mobile Add
-task control is the only capsule exception: its silhouette and visible label
-make the persistent primary action easy to identify in the thumb zone. Existing
-calendar, select, and drag surfaces retain optical radii from 2px through 14px
-as documented legacy exceptions; new components should use 0, 6px, or 12px.
+ordinary controls, menus, notices, calendar events, and drag surfaces, and 12px
+for modal sheets. Circular icon and completion controls remain circular. The
+26px mobile Add task control is the only capsule exception: its silhouette and
+visible label make the persistent primary action easy to identify in the thumb
+zone.
 
 ## Signature detail
 

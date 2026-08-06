@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TaskNotesTaskModel } from "./tasknotes-model";
 
@@ -324,28 +324,34 @@ describe("TaskNotes task model app boundary", () => {
   });
 
   it("completes and skips individual recurring occurrences", () => {
-    const created = model.create(
-      {
-        title: "Standup",
-        scheduled: "2026-08-05T09:00",
-        recurrence: "FREQ=DAILY;INTERVAL=1",
-      },
-      { id: "standup", now: "2026-08-01T00:00:00.000Z" },
-    );
-    const completed = model.toggle(created, {
-      now: "2026-08-05T10:00:00.000Z",
-      currentDate: "2026-08-05",
-    });
-    expect(completed.completeInstances).toEqual(["2026-08-05"]);
-    expect(completed.scheduled).toBe(canonicalLocal("2026-08-06T09:00"));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-05T00:00:00.000Z"));
+    try {
+      const created = model.create(
+        {
+          title: "Standup",
+          scheduled: "2026-08-05T09:00",
+          recurrence: "FREQ=DAILY;INTERVAL=1",
+        },
+        { id: "standup", now: "2026-08-01T00:00:00.000Z" },
+      );
+      const completed = model.toggle(created, {
+        now: "2026-08-05T10:00:00.000Z",
+        currentDate: "2026-08-05",
+      });
+      expect(completed.completeInstances).toEqual(["2026-08-05"]);
+      expect(completed.scheduled).toBe(canonicalLocal("2026-08-06T09:00"));
 
-    const skipped = model.skip(completed, {
-      now: "2026-08-06T10:00:00.000Z",
-      currentDate: "2026-08-06",
-    });
-    expect(skipped.completeInstances).toEqual(["2026-08-05"]);
-    expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
-    expect(skipped.scheduled).toBe(canonicalLocal("2026-08-07T09:00"));
+      const skipped = model.skip(completed, {
+        now: "2026-08-06T10:00:00.000Z",
+        currentDate: "2026-08-06",
+      });
+      expect(skipped.completeInstances).toEqual(["2026-08-05"]);
+      expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
+      expect(skipped.scheduled).toBe(canonicalLocal("2026-08-07T09:00"));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("manages canonical time sessions without losing unknown frontmatter", () => {
