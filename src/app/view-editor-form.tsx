@@ -38,6 +38,7 @@ interface ViewEditorFormProps {
   draft: EditableViewDraft;
   configuration: TaskCollectionConfiguration;
   repository: TaskRepository;
+  sourcePath?: string;
   onChange(draft: EditableViewDraft): void;
   onFilterValidityChange(valid: boolean): void;
   onComputedValidityChange(valid: boolean): void;
@@ -48,12 +49,14 @@ export function ViewEditorForm({
   draft,
   configuration,
   repository,
+  sourcePath,
   onChange,
   onFilterValidityChange,
   onComputedValidityChange,
 }: ViewEditorFormProps) {
   const [propertyInput, setPropertyInput] = useState("");
   const [sortPropertyInput, setSortPropertyInput] = useState("");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const fields = useMemo(
     () =>
       viewFields(configuration, [
@@ -95,11 +98,12 @@ export function ViewEditorForm({
       />
 
       <EditorSection
-        defaultOpen={autoFocusName}
         description="Choose which tasks belong in this view."
         id="view-filter"
+        open={openSection === "view-filter"}
         summary={draft.filter ? "Custom filter" : "All tasks"}
         title="Filter"
+        onOpenChange={(open) => setOpenSection(open ? "view-filter" : null)}
       >
         <ExpressionBuilder
           dialect={draft.dialect}
@@ -111,10 +115,12 @@ export function ViewEditorForm({
       </EditorSection>
 
       <EditorSection
-        description="Control grouping, order, and the information shown on each item."
-        id="view-arrange"
-        summary={arrangeSummary(draft)}
-        title="Arrange"
+        description="Choose how tasks are grouped and ordered."
+        id="view-group-sort"
+        open={openSection === "view-group-sort"}
+        summary={groupSortSummary(draft)}
+        title="Group & sort"
+        onOpenChange={(open) => setOpenSection(open ? "view-group-sort" : null)}
       >
         <div className="view-editor-grid">
           {supportsGrouping(draft.renderer) ? (
@@ -164,7 +170,7 @@ export function ViewEditorForm({
           ) : null}
         </div>
 
-        <div className="view-editor-subsection">
+        <div className="view-editor-subsection view-editor-subsection-first">
           <div className="view-editor-subsection-heading">
             <div>
               <h3>Sort</h3>
@@ -231,8 +237,17 @@ export function ViewEditorForm({
             </button>
           </div>
         </div>
+      </EditorSection>
 
-        <div className="view-editor-subsection">
+      <EditorSection
+        description="Choose the information shown beneath each task."
+        id="view-fields"
+        open={openSection === "view-fields"}
+        summary={fieldsSummary(draft)}
+        title="Fields shown"
+        onOpenChange={(open) => setOpenSection(open ? "view-fields" : null)}
+      >
+        <div className="view-editor-subsection view-editor-subsection-first">
           <div className="view-editor-subsection-heading">
             <div>
               <h3>Displayed properties</h3>
@@ -281,20 +296,30 @@ export function ViewEditorForm({
       </EditorSection>
 
       {isCalendar(draft.renderer) ? (
-        <CalendarOptionsSection draft={draft} onChange={onChange} />
+        <CalendarOptionsSection
+          draft={draft}
+          open={openSection === "view-calendar"}
+          onChange={onChange}
+          onOpenChange={(open) => setOpenSection(open ? "view-calendar" : null)}
+        />
       ) : null}
 
       <NewTaskSection
         configuration={configuration}
         draft={draft}
+        open={openSection === "view-new-tasks"}
         repository={repository}
         onChange={onChange}
+        onOpenChange={(open) => setOpenSection(open ? "view-new-tasks" : null)}
       />
 
       <ComputedPropertiesSection
         draft={draft}
         error={computedError}
+        open={openSection === "view-advanced"}
+        sourcePath={sourcePath}
         onChange={onChange}
+        onOpenChange={(open) => setOpenSection(open ? "view-advanced" : null)}
       />
     </div>
   );
@@ -303,25 +328,47 @@ export function ViewEditorForm({
 function ComputedPropertiesSection({
   draft,
   error,
+  open,
+  sourcePath,
   onChange,
+  onOpenChange,
 }: {
   draft: EditableViewDraft;
   error: string;
+  open: boolean;
+  sourcePath?: string;
   onChange(draft: EditableViewDraft): void;
+  onOpenChange(open: boolean): void;
 }) {
   const noun = draft.dialect === "obsidian-bases" ? "formula" : "projection";
 
   return (
     <EditorSection
-      description="Define values for filters, sorting, grouping, and displayed properties."
-      id="view-computed"
-      summary={
+      description="Formulas and source details for this saved view."
+      id="view-advanced"
+      open={open}
+      summary={[
         draft.computedProperties.length
           ? `${draft.computedProperties.length} ${draft.computedProperties.length === 1 ? noun : `${noun}s`}`
-          : `No ${noun}s`
-      }
-      title="Computed properties"
+          : `No ${noun}s`,
+        sourcePath ? "Source file" : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+      title="Advanced"
+      onOpenChange={onOpenChange}
     >
+      <div className="view-editor-subsection-heading">
+        <div>
+          <h3>
+            {draft.dialect === "obsidian-bases" ? "Formulas" : "Projections"}
+          </h3>
+          <p>Reusable values for filters, grouping, sorting, and fields.</p>
+        </div>
+        <span className="view-editor-count">
+          {draft.computedProperties.length}
+        </span>
+      </div>
       {draft.computedProperties.length ? (
         <div className="view-computed-properties">
           {draft.computedProperties.map((property, index) => {
@@ -442,7 +489,9 @@ function ComputedPropertiesSection({
           <Plus aria-hidden="true" size={15} /> Add {noun}
         </button>
         {draft.dialect === "obsidian-bases" ? (
-          <small>Formulas are shared by every view in this Base file.</small>
+          <small>
+            These formulas are shared by views in the same source file.
+          </small>
         ) : null}
       </div>
       <p
@@ -454,6 +503,12 @@ function ComputedPropertiesSection({
             ? "Computed properties are valid"
             : "")}
       </p>
+      {sourcePath ? (
+        <div className="view-source-details">
+          <span>Source file</span>
+          <code>{sourcePath}</code>
+        </div>
+      ) : null}
     </EditorSection>
   );
 }
@@ -468,16 +523,15 @@ function ViewIdentitySection({
   onChange(draft: EditableViewDraft): void;
 }) {
   return (
-    <EditorSection
-      defaultOpen
-      description="Name the view and choose how its results are presented."
-      id="view-identity"
-      summary={`${humanizeRenderer(draft.renderer)} layout`}
-      title="View"
-    >
+    <section className="view-identity" aria-labelledby="view-identity-title">
+      <div className="view-identity-heading">
+        <h2 id="view-identity-title">View details</h2>
+        <p>Name this view and choose its layout.</p>
+      </div>
       <label className="view-name-field">
-        <span>Name</span>
+        <span>View name</span>
         <input
+          aria-label="View name"
           autoFocus={autoFocusName}
           value={draft.name}
           onChange={(event) => onChange({ ...draft, name: event.target.value })}
@@ -505,16 +559,20 @@ function ViewIdentitySection({
           ))}
         </div>
       </fieldset>
-    </EditorSection>
+    </section>
   );
 }
 
 function CalendarOptionsSection({
   draft,
+  open,
   onChange,
+  onOpenChange,
 }: {
   draft: EditableViewDraft;
+  open: boolean;
   onChange(draft: EditableViewDraft): void;
+  onOpenChange(open: boolean): void;
 }) {
   function option(key: string, value: unknown) {
     onChange({
@@ -527,8 +585,10 @@ function CalendarOptionsSection({
     <EditorSection
       description="Choose the calendar mode and which task dates become events."
       id="view-calendar"
+      open={open}
       summary={calendarSummary(draft)}
       title="Calendar"
+      onOpenChange={onOpenChange}
     >
       {draft.renderer === "tasknotes.calendar" ? (
         <div className="view-editor-control-field">
@@ -595,13 +655,17 @@ function CalendarOptionsSection({
 function NewTaskSection({
   draft,
   configuration,
+  open,
   repository,
   onChange,
+  onOpenChange,
 }: {
   draft: EditableViewDraft;
   configuration: TaskCollectionConfiguration;
+  open: boolean;
   repository: TaskRepository;
   onChange(draft: EditableViewDraft): void;
+  onOpenChange(open: boolean): void;
 }) {
   const enabled = draft.options.create !== false;
   const defaults = createDefaults(draft);
@@ -610,8 +674,10 @@ function NewTaskSection({
     <EditorSection
       description="Set what happens when a task is added from this view."
       id="view-new-tasks"
+      open={open}
       summary={newTaskSummary(enabled, defaults)}
       title="New tasks"
+      onOpenChange={onOpenChange}
     >
       <ViewToggle
         checked={enabled}
@@ -686,8 +752,8 @@ function NewTaskSection({
             />
           ))}
           <p className="view-editor-hint">
-            Simple filter conditions are also applied when TaskNotes can infer
-            them safely.
+            Defaults inferred from simple filter conditions are added when the
+            task is created.
           </p>
         </div>
       ) : null}
@@ -780,7 +846,6 @@ function PropertyOrder({
         <div key={`${selected.key}:${index}`}>
           <span>
             <strong>{selected.label}</strong>
-            <small>{selected.key}</small>
           </span>
           <OrderButtons
             count={fields.length}
@@ -838,33 +903,57 @@ function EditorSection({
   title,
   description,
   summary = description,
-  defaultOpen = false,
+  open,
   children,
+  onOpenChange,
 }: {
   id: string;
   title: string;
   description: string;
   summary?: string;
-  defaultOpen?: boolean;
+  open: boolean;
   children: React.ReactNode;
+  onOpenChange(open: boolean): void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   return (
-    <details
+    <section
       aria-labelledby={`${id}-title`}
-      className="view-editor-section"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className={`view-editor-section${open ? " is-open" : ""}`}
     >
-      <summary className="view-editor-section-heading">
+      <button
+        aria-controls={`${id}-content`}
+        aria-expanded={open}
+        className="view-editor-section-heading"
+        type="button"
+        onClick={(event) => {
+          const section = event.currentTarget.closest<HTMLElement>(
+            ".view-editor-section",
+          );
+          onOpenChange(!open);
+          if (!open && section && typeof section.scrollIntoView === "function")
+            requestAnimationFrame(() =>
+              section.scrollIntoView({
+                behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+                  .matches
+                  ? "auto"
+                  : "smooth",
+                block: "start",
+              }),
+            );
+        }}
+      >
         <div>
           <h2 id={`${id}-title`}>{title}</h2>
           <p>{summary}</p>
         </div>
         <ChevronDown aria-hidden="true" size={18} strokeWidth={1.7} />
-      </summary>
-      <div className="view-editor-section-content">{children}</div>
-    </details>
+      </button>
+      {open ? (
+        <div className="view-editor-section-content" id={`${id}-content`}>
+          {children}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -926,19 +1015,20 @@ const layouts: Array<{
   },
 ];
 
-function humanizeRenderer(renderer: ViewRenderer): string {
-  return layouts.find(({ value }) => value === renderer)?.label ?? "List";
-}
-
-function arrangeSummary(draft: EditableViewDraft): string {
+function groupSortSummary(draft: EditableViewDraft): string {
   const parts = [
     draft.groupProperty ? `Grouped by ${humanize(draft.groupProperty)}` : "",
     draft.sort.length
       ? `${draft.sort.length} ${draft.sort.length === 1 ? "sort" : "sorts"}`
-      : "",
-    `${draft.properties.length} ${draft.properties.length === 1 ? "property" : "properties"}`,
+      : "Collection order",
   ].filter(Boolean);
   return parts.join(" · ");
+}
+
+function fieldsSummary(draft: EditableViewDraft): string {
+  return draft.properties.length
+    ? `${draft.properties.length} ${draft.properties.length === 1 ? "field" : "fields"}`
+    : "Title only";
 }
 
 function calendarSummary(draft: EditableViewDraft): string {
@@ -1154,6 +1244,8 @@ function string(value: unknown): string {
 }
 
 function humanize(value: string): string {
+  if (value.toLocaleLowerCase() === "tasknotes_manual_order")
+    return "Manual order";
   const bracket = value.match(
     /^(?:note|file|formula|projection)\[["'](.+)["']\]$/,
   );
