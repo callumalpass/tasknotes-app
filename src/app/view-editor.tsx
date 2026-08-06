@@ -3,12 +3,14 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
   useState,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   createViewDocument,
@@ -19,10 +21,15 @@ import {
   type EditableViewDraft,
 } from "../domain/view-document";
 import { taskNotesViewSourcePath } from "../domain/default-view-source";
+import {
+  previewViewDraft,
+  type ViewDraftPreview,
+} from "../domain/view-preview";
 import { loadViewEditorForm } from "./view-editor-loader";
 import { useRepository } from "./repository-context";
 
 import type { TaskView, TaskViewSourceDocument } from "../domain/view";
+import type { Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
 const ViewEditorForm = lazy(async () => ({
@@ -44,6 +51,10 @@ export function ViewEditor({
   const [initialFingerprint, setInitialFingerprint] = useState("");
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration | null>(null);
+  const [tasks, setTasks] = useState<Task[] | null>(null);
+  const [currentPreview, setCurrentPreview] = useState<ViewDraftPreview | null>(
+    null,
+  );
   const [filterValid, setFilterValid] = useState(true);
   const [computedValid, setComputedValid] = useState(true);
   const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(
@@ -57,6 +68,16 @@ export function ViewEditor({
   const confirmationRef = useRef<HTMLElement>(null);
   const focusedInitialEditor = useRef(false);
   const fingerprint = useMemo(() => draftFingerprint(draft), [draft]);
+  const deferredDraft = useDeferredValue(draft);
+  const livePreview = useMemo(
+    () =>
+      deferredDraft && tasks
+        ? previewViewDraft(deferredDraft, tasks)
+        : ({ kind: "unavailable", tasks: [] } as ViewDraftPreview),
+    [deferredDraft, tasks],
+  );
+  const preview =
+    livePreview.kind === "live" ? livePreview : (currentPreview ?? livePreview);
   const dirty =
     draft !== null && (source === null || fingerprint !== initialFingerprint);
 
@@ -83,6 +104,31 @@ export function ViewEditor({
         setStatus("ready");
       },
     );
+    return () => {
+      active = false;
+    };
+  }, [repository, view]);
+
+  useEffect(() => {
+    let active = true;
+    void repository
+      .list({ status: "all", archived: "include", limit: 50_000 })
+      .then((loadedTasks) => {
+        if (active) setTasks(loadedTasks);
+      })
+      .catch(() => undefined);
+    if (view && typeof repository.executeView === "function")
+      void repository.executeView(view).then(
+        (execution) => {
+          if (!active) return;
+          setCurrentPreview({
+            kind: "current",
+            count: execution.totalCount,
+            tasks: execution.rows.slice(0, 3).map(({ task }) => task),
+          });
+        },
+        () => undefined,
+      );
     return () => {
       active = false;
     };
@@ -123,8 +169,20 @@ export function ViewEditor({
         : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const appRoot = document.getElementById("root");
+    const previousInert = appRoot?.inert ?? false;
+    const previousAriaHidden = appRoot?.getAttribute("aria-hidden");
+    if (appRoot) {
+      appRoot.inert = true;
+      appRoot.setAttribute("aria-hidden", "true");
+    }
     return () => {
       document.body.style.overflow = previousOverflow;
+      if (appRoot) {
+        appRoot.inert = previousInert;
+        if (previousAriaHidden == null) appRoot.removeAttribute("aria-hidden");
+        else appRoot.setAttribute("aria-hidden", previousAriaHidden);
+      }
       previousFocus?.focus();
     };
   }, []);
@@ -218,7 +276,7 @@ export function ViewEditor({
     }
   }
 
-  const title = view ? "Edit view" : "Create a view";
+  const title = draft?.name.trim() || (view ? view.name : "New view");
   const canSave =
     Boolean(draft?.name.trim()) &&
     filterValid &&
@@ -226,7 +284,7 @@ export function ViewEditor({
     status === "ready" &&
     dirty;
 
-  return (
+  return createPortal(
     <div className="view-editor-layer">
       <button
         aria-label="Close view editor"
@@ -246,8 +304,11 @@ export function ViewEditor({
       >
         <header className="view-editor-header">
           <div>
-            <p className="eyebrow">{view ? "Saved view" : "New saved view"}</p>
+            <p className="eyebrow">
+              {view ? "Edit saved view" : "Create saved view"}
+            </p>
             <h1 id="view-editor-title">{title}</h1>
+            <small>{previewLabel(preview)}</small>
           </div>
           <button
             aria-label="Close view editor"
@@ -270,21 +331,17 @@ export function ViewEditor({
             <ViewEditorLoading />
           ) : (
             <Suspense fallback={<ViewEditorLoading />}>
+              <ViewPreview preview={preview} />
               <ViewEditorForm
                 autoFocusName={!view}
                 configuration={configuration}
                 draft={draft}
                 repository={repository}
+                sourcePath={source?.path}
                 onChange={setDraft}
                 onComputedValidityChange={setComputedValid}
                 onFilterValidityChange={setFilterValid}
               />
-              {source?.path ? (
-                <details className="view-source-details">
-                  <summary>View file</summary>
-                  <code>{source.path}</code>
-                </details>
-              ) : null}
             </Suspense>
           )}
         </div>
@@ -334,8 +391,40 @@ export function ViewEditor({
           />
         ) : null}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
+}
+
+function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
+  return (
+    <section
+      className="view-draft-preview"
+      aria-labelledby="view-preview-title"
+    >
+      <div>
+        <h2 id="view-preview-title">Preview</h2>
+        <p>{previewLabel(preview)}</p>
+      </div>
+      {preview.tasks.length ? (
+        <ol aria-label="Preview tasks">
+          {preview.tasks.map((task) => (
+            <li key={task.id}>{task.title}</li>
+          ))}
+        </ol>
+      ) : preview.kind === "live" ? (
+        <p className="view-preview-empty">No tasks match this draft.</p>
+      ) : null}
+    </section>
+  );
+}
+
+function previewLabel(preview: ViewDraftPreview): string {
+  if (preview.kind === "unavailable") return "Preview updates after saving";
+  const count = preview.count ?? 0;
+  return `${count} ${count === 1 ? "task" : "tasks"} ${
+    preview.kind === "live" ? "match this draft" : "currently in this view"
+  }`;
 }
 
 function ViewEditorConfirmation({
@@ -367,11 +456,11 @@ function ViewEditorConfirmation({
         role="alertdialog"
       >
         <h2 id="view-editor-confirmation-title">
-          {deleting ? "Delete view?" : "Discard changes?"}
+          {deleting ? `Delete “${name}”?` : "Discard changes?"}
         </h2>
         <p>
           {deleting
-            ? `“${name}” will be removed from its view file.`
+            ? "This removes the saved view only. Your tasks won’t be deleted."
             : "Your changes to this view have not been saved."}
         </p>
         <div>

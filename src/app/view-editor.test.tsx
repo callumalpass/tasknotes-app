@@ -46,32 +46,31 @@ describe("ViewEditor", () => {
       onChanged,
     });
 
-    const dialog = await screen.findByRole("dialog", { name: "Edit view" });
+    const dialog = await screen.findByRole("dialog", { name: "Work" });
     expect(dialog).toBeVisible();
     await waitFor(() => expect(dialog).toHaveFocus());
-    await screen.findByRole("heading", { name: "View" });
+    await screen.findByRole("heading", { name: "View details" });
     for (const name of [
-      "View",
-      "Computed properties",
+      "View details",
+      "Advanced",
       "Filter",
-      "Arrange",
+      "Group & sort",
+      "Fields shown",
       "New tasks",
     ])
       expect(screen.getByRole("heading", { name })).toBeVisible();
-    expect(
-      screen.queryByRole("heading", { name: "Preview" }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("heading", { name: "Arrange" }));
+    expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
+    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
     expect(screen.getByRole("combobox", { name: "Group by" })).toHaveValue(
-      "status",
+      "Status",
     );
     expect(
       screen.getByRole("combobox", { name: "Sort property 1" }),
-    ).toHaveValue("priority");
+    ).toHaveValue("Priority");
 
     fireEvent.click(screen.getByRole("radio", { name: "Board" }));
     expect(screen.getByRole("combobox", { name: "Board column" })).toHaveValue(
-      "status",
+      "Status",
     );
     fireEvent.change(
       screen.getByRole("combobox", { name: "Sort property 1" }),
@@ -106,8 +105,8 @@ describe("ViewEditor", () => {
       repository: repository({ createViewSource }),
     });
 
-    await screen.findByRole("dialog", { name: "Create a view" });
-    fireEvent.change(await screen.findByLabelText("Name"), {
+    await screen.findByRole("dialog", { name: "New view" });
+    fireEvent.change(await screen.findByLabelText("View name"), {
       target: { value: "Schedule" },
     });
     fireEvent.click(screen.getByRole("radio", { name: "Calendar" }));
@@ -117,9 +116,7 @@ describe("ViewEditor", () => {
     expect(screen.getByRole("combobox", { name: "Opens as" })).toBeVisible();
     expect(screen.getByText("Scheduled dates")).toBeVisible();
     expect(screen.getByText("Upcoming recurring instances")).toBeVisible();
-    fireEvent.click(
-      screen.getByRole("heading", { name: "Computed properties" }),
-    );
+    fireEvent.click(screen.getByRole("heading", { name: "Advanced" }));
     expect(screen.getByText("No computed properties.")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
@@ -144,11 +141,11 @@ describe("ViewEditor", () => {
     );
     renderEditor({ repository: repository({ createViewSource }) });
 
-    await screen.findByRole("dialog", { name: "Create a view" });
-    fireEvent.change(screen.getByLabelText("Name"), {
+    await screen.findByRole("dialog", { name: "New view" });
+    fireEvent.change(screen.getByLabelText("View name"), {
       target: { value: "Manual" },
     });
-    fireEvent.click(screen.getByRole("heading", { name: "Arrange" }));
+    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
     const property = screen.getByRole("combobox", {
       name: "Property to sort",
     });
@@ -168,7 +165,7 @@ describe("ViewEditor", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("combobox", { name: "Sort property 1" }),
-    ).toHaveValue("tasknotes_manual_order");
+    ).toHaveValue("Manual order");
     expect(
       screen.getByRole("combobox", { name: "Sort direction 1" }),
     ).toHaveAttribute("data-value", "desc");
@@ -196,7 +193,7 @@ describe("ViewEditor", () => {
       view: savedView(),
       onClose,
     });
-    await screen.findByRole("dialog", { name: "Edit view" });
+    await screen.findByRole("dialog", { name: "Work" });
 
     fireEvent.click(
       screen.getAllByRole("button", { name: "Close view editor" }).at(-1)!,
@@ -211,8 +208,8 @@ describe("ViewEditor", () => {
       view: savedView(),
       onClose,
     });
-    await screen.findByRole("dialog", { name: "Edit view" });
-    fireEvent.change(await screen.findByLabelText("Name"), {
+    await screen.findByRole("dialog", { name: "Work" });
+    fireEvent.change(await screen.findByLabelText("View name"), {
       target: { value: "Changed" },
     });
     fireEvent.click(
@@ -232,8 +229,8 @@ describe("ViewEditor", () => {
   it("keeps the active field focused while editing an existing view", async () => {
     renderEditor({ repository: repository(), view: savedView() });
 
-    await screen.findByRole("dialog", { name: "Edit view" });
-    const name = await screen.findByLabelText("Name");
+    await screen.findByRole("dialog", { name: "Work" });
+    const name = await screen.findByLabelText("View name");
     name.focus();
     fireEvent.change(name, { target: { value: "W" } });
 
@@ -266,8 +263,8 @@ describe("ViewEditor", () => {
       onClose,
       onChanged,
     });
-    await screen.findByRole("dialog", { name: "Edit view" });
-    fireEvent.change(await screen.findByLabelText("Name"), {
+    await screen.findByRole("dialog", { name: "Work" });
+    fireEvent.change(await screen.findByLabelText("View name"), {
       target: { value: "Saved work" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
@@ -297,10 +294,8 @@ views:
       view: savedView(),
     });
 
-    await screen.findByRole("dialog", { name: "Edit view" });
-    fireEvent.click(
-      screen.getByRole("heading", { name: "Computed properties" }),
-    );
+    await screen.findByRole("dialog", { name: "Work" });
+    fireEvent.click(screen.getByRole("heading", { name: "Advanced" }));
     expect(screen.getByLabelText("Computed property name 1")).toHaveValue(
       "score",
     );
@@ -332,6 +327,38 @@ views:
       score: 'if(priority == "high", 3, 1)',
       label: 'if(formula.score > 1, "urgent", "normal")',
     });
+  });
+
+  it("keeps only one editing section open at a time", async () => {
+    renderEditor({ repository: repository(), view: savedView() });
+    await screen.findByRole("dialog", { name: "Work" });
+
+    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
+    expect(screen.getByRole("combobox", { name: "Group by" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("heading", { name: "Fields shown" }));
+    expect(
+      screen.queryByRole("combobox", { name: "Group by" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Property to display" }),
+    ).toBeVisible();
+  });
+
+  it("explains that deleting a view leaves tasks alone", async () => {
+    renderEditor({ repository: repository(), view: savedView() });
+    await screen.findByRole("dialog", { name: "Work" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete view" }));
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Delete “Work”?" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "This removes the saved view only. Your tasks won’t be deleted.",
+      ),
+    ).toBeVisible();
   });
 });
 

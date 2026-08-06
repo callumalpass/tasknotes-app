@@ -77,6 +77,13 @@ export function ExpressionBuilder({
     [dialect, state],
   );
   const error = useMemo(() => validate(encoded, dialect), [dialect, encoded]);
+  const visualDraft = useMemo(
+    () =>
+      state.mode === "visual"
+        ? state.root
+        : decodeFilter(rawFilter(state.raw, dialect)),
+    [dialect, state],
+  );
   useEffect(() => {
     onValidityChange?.(!error);
   }, [error, onValidityChange]);
@@ -100,14 +107,17 @@ export function ExpressionBuilder({
         {dialect === "obsidian-bases" ? (
           <button
             aria-pressed={state.mode === "visual"}
-            type="button"
-            onClick={() =>
-              change({
-                ...state,
-                mode: "visual",
-                root: decodeFilter(rawFilter(state.raw, dialect)) ?? state.root,
-              })
+            disabled={!visualDraft}
+            title={
+              visualDraft
+                ? undefined
+                : "This filter uses syntax that the builder cannot safely edit."
             }
+            type="button"
+            onClick={() => {
+              if (visualDraft)
+                setState({ ...state, mode: "visual", root: visualDraft });
+            }}
           >
             Builder
           </button>
@@ -116,7 +126,7 @@ export function ExpressionBuilder({
           aria-pressed={state.mode === "raw"}
           type="button"
           onClick={() =>
-            change({
+            setState({
               ...state,
               mode: "raw",
               raw:
@@ -126,9 +136,14 @@ export function ExpressionBuilder({
             })
           }
         >
-          Expression
+          Advanced
         </button>
       </div>
+      {state.mode === "raw" && dialect === "obsidian-bases" && !visualDraft ? (
+        <p className="expression-mode-note">
+          This filter uses advanced syntax. Edit it here to preserve it exactly.
+        </p>
+      ) : null}
       {state.mode === "visual" ? (
         <FilterGroupEditor
           fields={fields}
@@ -224,7 +239,9 @@ function FilterGroupEditor({
       <div className="filter-add-actions">
         <button
           type="button"
-          onClick={() => onChange(addChild(group, emptyRule(fields[0]?.key)))}
+          onClick={() =>
+            onChange(addChild(group, emptyRule(defaultField(fields))))
+          }
         >
           <Plus aria-hidden="true" size={15} /> Condition
         </button>
@@ -394,6 +411,7 @@ function encodeRule(value: FilterRule): string | undefined {
   if (!value.field.trim()) return undefined;
   if (value.operator === "empty") return `${value.field}.isEmpty()`;
   if (value.operator === "not-empty") return `!${value.field}.isEmpty()`;
+  if (!value.value.trim()) return undefined;
   const literal = encodeLiteral(value.value);
   if (value.operator === "contains")
     return `${value.field}.contains(${literal})`;
@@ -454,7 +472,23 @@ function validate(value: unknown, dialect: ViewDialect): string {
 }
 
 function emptyRule(field = "status"): FilterRule {
-  return rule(field, "equals", "open");
+  return rule(field, "equals", "");
+}
+
+function defaultField(fields: ExpressionField[]): string {
+  return (
+    fields.find(({ key }) => {
+      const normalized = key.toLocaleLowerCase();
+      return (
+        normalized === "status" ||
+        normalized.endsWith(".status") ||
+        normalized.includes('["status"]') ||
+        normalized.includes("['status']")
+      );
+    })?.key ??
+    fields[0]?.key ??
+    "status"
+  );
 }
 
 function emptyGroup(field?: string): FilterGroup {

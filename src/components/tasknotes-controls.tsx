@@ -219,6 +219,10 @@ export function TaskNotesCombobox({
       `${option.label}\n${option.value}`.toLocaleLowerCase().includes(query),
     );
   }, [options, value]);
+  const displayValue =
+    !open && value
+      ? (options.find((option) => option.value === value)?.label ?? value)
+      : value;
   const [activeIndex, setActiveIndex] = useState(0);
 
   function choose(index: number) {
@@ -243,7 +247,7 @@ export function TaskNotesCombobox({
         placeholder={placeholder}
         ref={inputRef}
         role="combobox"
-        value={value}
+        value={displayValue}
         onChange={(event) => {
           onChange(event.target.value);
           setActiveIndex(0);
