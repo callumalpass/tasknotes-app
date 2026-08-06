@@ -43,7 +43,6 @@ export function NavigationViewOrder({
       <header>
         <div>
           <h2 id="navigation-view-order-title">Navigation</h2>
-          <p>The first view opens when TaskNotes starts.</p>
         </div>
       </header>
       <ol>

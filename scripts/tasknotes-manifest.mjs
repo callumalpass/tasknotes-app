@@ -8,6 +8,14 @@ export async function buildTaskNotesManifest({
   firebaseProjectId,
   resources,
 }) {
+  // mdbase requires a public identity URL for the application declaration.
+  // Keep the callback on the actual app origin so local builds, Playwright,
+  // and artifact smoke tests all exercise the same callback route. External
+  // local authorization should use a public tunnel and TASKNOTES_APP_URL.
+  const identityUrl = appUrl.startsWith("http://")
+    ? "https://app.tasknotes.dev"
+    : appUrl;
+  const callbackUrl = appUrl;
   const typePack = await buildTaskNotesMdbaseTypePack(resources);
   const taskContract = typePack.provides.find(
     (contract) => contract.id === "tasknotes.task",
@@ -18,10 +26,10 @@ export async function buildTaskNotesManifest({
     manifest_version: 1,
     id: "dev.tasknotes.app",
     name: "TaskNotes",
-    homepage: `${appUrl}/`,
-    icon: `${appUrl}/icon.png`,
+    homepage: `${identityUrl}/`,
+    icon: `${identityUrl}/icon.png`,
     redirect_uris: [
-      `${appUrl}/auth/mdbase/callback`,
+      `${callbackUrl}/auth/mdbase/callback`,
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
     requirements: {

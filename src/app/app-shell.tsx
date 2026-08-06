@@ -314,7 +314,7 @@ export function AppShell() {
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation items-${Math.min(navigationKeys.length, 3) + 2}`}
+          className={`bottom-navigation items-${Math.min(navigationKeys.length, 2) + 2}`}
           aria-label="Primary"
         >
           <Navigation
@@ -526,10 +526,8 @@ export function Navigation({
             : { page: "views", key: view.key },
       });
   }
-  const visibleViews =
-    mode === "mobile" ? navigationEntries.slice(0, 3) : navigationEntries;
-  const additionalViews =
-    mode === "mobile" ? navigationEntries.slice(visibleViews.length) : [];
+  const visibleViews = navigationEntries.slice(0, mode === "mobile" ? 2 : 3);
+  const additionalViews = navigationEntries.slice(visibleViews.length);
   const hiddenNavigationViewActive = additionalViews.some(
     (view) => active === view.key,
   );

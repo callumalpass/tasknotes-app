@@ -40,10 +40,14 @@
   --font-mono: "Azeret Mono", ui-monospace, monospace;
   --type-supporting: 0.875rem;
   --type-label: 0.6875rem;
+  --type-page: 2rem;
+  --type-section: 1.125rem;
+  --type-body: 1rem;
+  --type-small: 0.875rem;
   --control-min-size: 44px;
   --page-inset: 20px;
   --nav-height: 70px;
-  --content-width: 720px;
+  --content-width: 760px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -120,6 +124,15 @@ select {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  transition:
+    color 150ms var(--ease-out),
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    transform 150ms var(--ease-out);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 button:focus-visible,
@@ -187,23 +200,29 @@ button:disabled {
   width: min(100%, var(--content-width));
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(24px + env(safe-area-inset-top)) var(--page-inset) 52px;
+  padding: calc(20px + env(safe-area-inset-top)) var(--page-inset) 52px;
 }
 
 .screen-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  min-height: 88px;
-  margin-bottom: 22px;
+  min-height: 72px;
+  margin-bottom: 16px;
 }
 
 .screen-header h1 {
   margin: 1px 0 0;
-  font-size: 2.15rem;
+  font-size: var(--type-page);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.08;
+}
+
+.scratchpad-header h1,
+.view-header h1 {
+  font-size: var(--type-page);
+  letter-spacing: -0.035em;
 }
 
 .compact-header {
@@ -577,12 +596,12 @@ button:disabled {
 
 .task-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 44px;
-  min-height: 64px;
+  grid-template-columns: 48px minmax(0, 1fr) 44px;
+  min-height: 60px;
   background: transparent;
   border-bottom: 1px solid var(--line);
   content-visibility: auto;
-  contain-intrinsic-size: auto 64px;
+  contain-intrinsic-size: auto 60px;
   transition:
     opacity 180ms var(--ease-out),
     background-color 180ms var(--ease-out);
@@ -928,13 +947,13 @@ button:disabled {
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  min-height: 63px;
-  padding: 9px 8px 9px 0;
+  min-height: 59px;
+  padding: 8px 8px 8px 0;
 }
 
 .task-row-title {
   overflow: hidden;
-  font-size: 1.06rem;
+  font-size: var(--type-body);
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -952,7 +971,7 @@ button:disabled {
   gap: 5px 10px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   line-height: 1.3;
   text-transform: capitalize;
 }
@@ -1162,7 +1181,7 @@ button:disabled {
 }
 
 .settings-section {
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 .help-topic {
@@ -1257,7 +1276,7 @@ button:disabled {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  min-height: 56px;
+  min-height: 52px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1266,7 +1285,7 @@ button:disabled {
 }
 
 .setting-row > span {
-  font-size: 1.04rem;
+  font-size: var(--type-body);
 }
 
 .setting-row small {
@@ -1503,7 +1522,7 @@ button:disabled {
   padding: 25px 0 18px;
   resize: none;
   overflow: hidden;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.15;
@@ -2836,25 +2855,22 @@ button:disabled {
 
 .notes-field-heading > div {
   display: flex;
-  padding: 2px;
-  background: var(--paper-soft);
-  border-radius: 7px;
+  border-bottom: 1px solid var(--line);
 }
 
 .notes-field-heading button {
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 9px;
   color: var(--ink-muted);
   background: transparent;
   border: 0;
-  border-radius: 5px;
+  border-bottom: 2px solid transparent;
   cursor: pointer;
 }
 
 .notes-field-heading button[aria-pressed="true"] {
-  color: var(--ink);
-  background: var(--paper-raised);
-  box-shadow: 0 1px 4px var(--color-shadow-soft);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .notes-field textarea {
@@ -3229,7 +3245,7 @@ button:disabled {
 }
 
 .task-form-section > summary strong {
-  font-size: 0.96rem;
+  font-size: var(--type-body);
   font-weight: 600;
 }
 
@@ -3643,7 +3659,7 @@ button:disabled {
 
 .scratchpad-header {
   display: flex;
-  min-height: 88px;
+  min-height: 72px;
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
@@ -3652,7 +3668,7 @@ button:disabled {
 
 .scratchpad-header h1 {
   margin: 1px 0 0;
-  font-size: 2.15rem;
+  font-size: var(--type-page);
   letter-spacing: -0.035em;
   line-height: 1.08;
 }
@@ -3688,8 +3704,8 @@ button:disabled {
 
 .scratchpad-review-action {
   width: auto;
-  min-height: 40px;
-  padding: 0 12px;
+  min-height: 44px;
+  padding: 0 4px;
 }
 
 .scratchpad-header-menu-wrap {
@@ -3749,7 +3765,7 @@ button:disabled {
 
 .scratchpad-introduction {
   max-width: 42rem;
-  margin: 0 0 28px;
+  margin: 0 0 20px;
   color: var(--ink-soft);
   font-size: 0.9rem;
   line-height: 1.45;
@@ -3804,8 +3820,8 @@ button:disabled {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 36px 36px 66px minmax(0, 1fr) 44px 44px;
-  min-height: 52px;
+  grid-template-columns: 32px 32px 54px minmax(0, 1fr) 40px 40px;
+  min-height: 50px;
   align-items: center;
   border-bottom: 1px solid var(--line);
   transition: background 150ms ease;
@@ -3894,7 +3910,7 @@ button:disabled {
   padding: 0 4px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.6rem;
+  font-size: var(--type-label);
   letter-spacing: 0.02em;
   text-transform: uppercase;
   background: transparent;
@@ -3910,7 +3926,7 @@ button:disabled {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 9px 8px 8px 3px;
+  padding: 8px 7px 7px 3px;
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -4031,8 +4047,8 @@ button:disabled {
 
 .scratchpad-add-actions {
   display: flex;
-  gap: 18px;
-  padding: 14px 0 10px 88px;
+  gap: 14px;
+  padding: 12px 0 8px 74px;
 }
 
 .scratchpad-add-actions button {
@@ -4289,7 +4305,7 @@ button:disabled {
   }
 
   .scratchpad-header h1 {
-    font-size: 1.9rem;
+    font-size: var(--type-page);
   }
 
   .scratchpad-save-state {
@@ -4305,7 +4321,7 @@ button:disabled {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 32px 32px 60px minmax(0, 1fr) 44px 44px;
+    grid-template-columns: 32px 32px 54px minmax(0, 1fr) 40px 40px;
   }
 
   .scratchpad-convert-line {
@@ -4750,68 +4766,34 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: min(100% - 40px, 520px);
+  width: min(100% - 40px, 560px);
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: calc(40px + env(safe-area-inset-top)) 0
+  padding: calc(32px + env(safe-area-inset-top)) 0
     calc(32px + env(safe-area-inset-bottom));
 }
 
 .welcome-copy img {
   width: 48px;
   height: 48px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .welcome-copy h1 {
-  max-width: 430px;
-  margin: 5px 0 12px;
-  font-size: 2.35rem;
+  max-width: 480px;
+  margin: 0 0 12px;
+  font-size: 2.5rem;
   letter-spacing: -0.04em;
   line-height: 1.04;
 }
 
-.welcome-copy > p:last-child {
-  max-width: 430px;
+.welcome-copy > p {
+  max-width: 480px;
   margin: 0;
   color: var(--ink-soft);
   font-size: 1.06rem;
   line-height: 1.5;
-}
-
-.connection-comparison {
-  margin-top: 32px;
-}
-.connection-comparison strong {
-  color: var(--ink);
-}
-
-.connection-comparison {
-  border-top: 1px solid var(--line-strong);
-}
-
-.connection-comparison > div {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  min-height: 74px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.connection-comparison > div > svg {
-  color: var(--accent);
-}
-
-.connection-comparison span {
-  display: grid;
-  gap: 2px;
-}
-
-.connection-comparison small {
-  color: var(--ink-muted);
-  line-height: 1.4;
 }
 
 .cloud-welcome .inline-error {
@@ -4822,18 +4804,18 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  margin-top: 38px;
+  gap: 10px;
+  margin-top: 30px;
 }
 
 .outline-action {
-  min-height: 46px;
-  padding: 0 16px;
+  min-height: 48px;
+  padding: 0 18px;
   color: var(--accent);
   font-weight: 700;
   background: transparent;
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: 7px;
   cursor: pointer;
 }
 
@@ -5004,7 +4986,7 @@ button:disabled {
 }
 
 .navigation-view-order > header {
-  padding: 18px 0 12px;
+  padding: 14px 0 8px;
 }
 
 .navigation-view-order h2,
@@ -5014,7 +4996,14 @@ button:disabled {
 
 .navigation-view-order h2,
 .view-document-heading h2 {
-  font-size: 0.98rem;
+  font-size: var(--type-section);
+}
+
+.views-create-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
 }
 
 .navigation-view-order p {
@@ -5077,6 +5066,7 @@ button:disabled {
 
 .view-document-heading h2 {
   margin: 0;
+  text-transform: capitalize;
 }
 
 .view-document-heading small {
@@ -5147,7 +5137,7 @@ button:disabled {
 }
 
 .saved-view-open strong {
-  font-size: 1.04rem;
+  font-size: var(--type-body);
 }
 
 .saved-view-open small {
@@ -6870,6 +6860,15 @@ button:disabled {
     color: var(--accent);
     background: transparent;
     border: 1px solid var(--line-strong);
+  }
+
+  .task-row .task-actions-trigger {
+    opacity: 0;
+  }
+
+  .task-row:hover .task-actions-trigger,
+  .task-row:focus-within .task-actions-trigger {
+    opacity: 1;
   }
 
   .navigation-rail > .global-capture-navigation kbd {

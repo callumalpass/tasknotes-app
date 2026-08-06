@@ -88,6 +88,18 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.getByRole("button", { name: "Views", exact: true }).click();
   await page.getByRole("menuitem", { name: "Manage views" }).click();
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await page.getByRole("button", { name: "Create view" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Create a view" }),
+  ).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Create a view" })
+    .getByRole("button", { name: "Close view editor" })
+    .click();
+  await page
+    .getByRole("alertdialog", { name: "Discard changes?" })
+    .getByRole("button", { name: "Discard changes" })
+    .click();
   await expect(
     page.getByRole("button", { name: "Remove Search from navigation" }),
   ).toBeVisible();
@@ -114,7 +126,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();
-  await expect(page.getByText(/mdbase keeps reminders running/)).toBeVisible();
+  await expect(page.getByText(/mdbase delivers reminders/)).toBeVisible();
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await page.getByRole("button", { name: "Change collection" }).click();
   await expect(

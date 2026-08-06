@@ -248,11 +248,6 @@ export function ViewEditor({
           <div>
             <p className="eyebrow">{view ? "Saved view" : "New saved view"}</p>
             <h1 id="view-editor-title">{title}</h1>
-            <small>
-              {view
-                ? "Choose what this view shows and how it is arranged."
-                : "Create a focused place for the tasks you need."}
-            </small>
           </div>
           <button
             aria-label="Close view editor"

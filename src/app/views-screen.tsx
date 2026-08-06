@@ -825,12 +825,11 @@ export function ViewsScreen({
         <section className="screen views-screen" aria-labelledby="views-title">
           <header className="screen-header compact-header views-catalog-header">
             <div>
-              <p className="eyebrow">Your collection</p>
               <h1 id="views-title">Views</h1>
             </div>
             <div className="views-header-actions">
               <button
-                className="outline-action views-create-action"
+                className="text-action views-create-action"
                 type="button"
                 onFocus={preloadViewEditor}
                 onClick={() => setEditing("new")}
@@ -956,9 +955,6 @@ export function ViewsScreen({
           ) : (
             <div className="plain-empty">
               <h2>No saved views yet</h2>
-              <p>
-                Create a focused list, board, or calendar for this collection.
-              </p>
               <button
                 className="outline-action"
                 type="button"
@@ -967,7 +963,7 @@ export function ViewsScreen({
                 onPointerEnter={preloadViewEditor}
               >
                 <Plus aria-hidden="true" size={17} />
-                Create your first view
+                Create view
               </button>
             </div>
           )}
