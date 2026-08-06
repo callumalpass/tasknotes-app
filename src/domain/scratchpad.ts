@@ -1,3 +1,5 @@
+import { todayString } from "./task";
+
 export const SCRATCHPAD_TYPE = "tasknotes-scratch";
 export const SCRATCHPAD_FOLDER = "scratchpads";
 export const ACTIVE_SCRATCHPAD_PATH = `${SCRATCHPAD_FOLDER}/Scratchpad.md`;
@@ -233,7 +235,7 @@ export function scratchpadArchivePath(
   title: string | undefined,
   now = new Date(),
 ): string {
-  const date = now.toISOString().slice(0, 10);
+  const date = todayString(now);
   const slug = (title?.trim() || "Scratchpad")
     .replace(/[\\/:*?"<>|#^[\]]+/g, " ")
     .replace(/\s+/g, " ")

@@ -3,6 +3,7 @@ import { connectFailure, connectSuccess } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
+import { runtimeTimezone } from "../domain/runtime-timezone";
 import { createConnectTaskRepository } from "./connect-repository";
 import { MdbaseTaskRepository } from "./mdbase-repository";
 import { resolveTaskCollection } from "./tasknotes-collection";
@@ -89,7 +90,10 @@ describe("mdbase task repository", () => {
       { id: "canonical", title: "Visible canonical task" },
     ]);
     expect(fixture.query).toHaveBeenCalledWith(
-      expect.objectContaining({ frontmatterMode: "effective" }),
+      expect.objectContaining({
+        frontmatterMode: "effective",
+        timezone: runtimeTimezone(),
+      }),
       expect.objectContaining({ signal: expect.anything() }),
     );
   });
@@ -659,6 +663,7 @@ describe("mdbase task repository", () => {
         path: "views/tasks.base",
         view: "kanban",
         render: false,
+        timezone: runtimeTimezone(),
       }),
       expect.objectContaining({ signal: expect.anything() }),
     );

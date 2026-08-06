@@ -4,6 +4,7 @@ import {
   sectionTaskViewRows,
   taskListSectionMoveInput,
 } from "./task-list-sections";
+import { taskDatePart, taskTimePart } from "./task";
 
 import type { Task } from "./task";
 import type { TaskViewRow } from "./view";
@@ -86,14 +87,16 @@ describe("sectionTaskViewRows", () => {
     ).toEqual({ scheduled: null, due: null });
   });
 
-  it("preserves the full time and offset when changing a day", () => {
+  it("uses the active local wall time when changing an instant's day", () => {
     const task = row("offset", {
       scheduled: "2026-07-20T23:30:00+10:00",
     }).task;
 
-    expect(
-      taskListSectionMoveInput(task, "day", "today", "2026-07-26"),
-    ).toEqual({ scheduled: "2026-07-26T23:30:00+10:00" });
+    const update = taskListSectionMoveInput(task, "day", "today", "2026-07-26");
+    expect(taskDatePart(update?.scheduled ?? undefined)).toBe("2026-07-26");
+    expect(taskTimePart(update?.scheduled ?? undefined)).toBe(
+      taskTimePart(task.scheduled),
+    );
   });
 
   it("sections 10,000 rows within the list interaction budget", () => {

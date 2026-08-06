@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/callumalpass/mdbase",
-  "revision": "4f28ea27a15a61a1f925fa5b0814ac1ae04307b2",
+  "revision": "3c9c89b8000b925d6e584cce4e06c610ce42fd5d",
   "artifact": {
-    "file": "callumalpass-mdbase-0.3.0-rc.4-4f28ea27a15a.tgz",
-    "bytes": 253904,
-    "sha512": "OulWXSTmB9A0JtUnJhAculVKBWbef4zNPmH9TmE/sPdCPuJfb8VoKAO0ktxvmchhaCP2LfNJKjLG6cX5sCoxYw=="
+    "file": "callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz",
+    "bytes": 255592,
+    "sha512": "aeQAJjnE/DySJft03g7JQs48OWlJPOZdWl19hs6Aq+UnSnzQzFnsbKRJ9y4xPbbZBBfyg58c+cXdBHdAgoYmrQ=="
   }
 }

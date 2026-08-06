@@ -1,4 +1,4 @@
-import { shiftTaskDate } from "./task-date-actions";
+import { setTaskDate, shiftTaskDate } from "./task-date-actions";
 import { taskDatePart, todayString } from "./task";
 
 import type { Task, UpdateTaskInput } from "./task";
@@ -68,12 +68,7 @@ export function taskListSectionMoveInput(
       : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
   const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
   const current = task[field];
-  return { [field]: replaceDatePart(current, targetDate) };
-}
-
-function replaceDatePart(current: string | undefined, targetDate: string) {
-  const match = current?.match(/^\d{4}-\d{2}-\d{2}(.*)$/);
-  return `${targetDate}${match?.[1] ?? ""}`;
+  return { [field]: setTaskDate(current, targetDate) };
 }
 
 function isSectionKey(value: string): value is TaskListSectionKey {
