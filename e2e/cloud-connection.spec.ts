@@ -89,11 +89,9 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.getByRole("menuitem", { name: "Manage views" }).click();
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await page.getByRole("button", { name: "Create view" }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Create a view" }),
-  ).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();
   await page
-    .getByRole("dialog", { name: "Create a view" })
+    .getByRole("dialog", { name: "New view" })
     .getByRole("button", { name: "Close view editor" })
     .click();
   await page
