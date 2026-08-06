@@ -1,4 +1,3 @@
-import { BellRing, MonitorUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cloudSession } from "../cloud/connect";
 import { requireConnectOutcome } from "../cloud/outcome";
@@ -105,33 +104,8 @@ export function CloudConnection({ error }: { error: string | null }) {
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Open TaskNotes with mdbase.</h1>
-        <p>
-          Choose where your Markdown collection lives. TaskNotes reads and
-          writes it directly through mdbase.
-        </p>
-      </div>
-      <div className="connection-comparison" aria-label="Connection options">
-        <div>
-          <BellRing aria-hidden="true" size={19} />
-          <span>
-            <strong>Hosted mdbase</strong>
-            <small>
-              Recommended. Available anywhere with a connection and able to
-              deliver reminders while TaskNotes is closed.
-            </small>
-          </span>
-        </div>
-        <div>
-          <MonitorUp aria-hidden="true" size={19} />
-          <span>
-            <strong>Connect to a computer</strong>
-            <small>
-              Keep the collection on your computer and use it while that
-              computer is reachable.
-            </small>
-          </span>
-        </div>
+        <h1>Open TaskNotes</h1>
+        <p>Continue in mdbase to choose a collection.</p>
       </div>
       {error || startError ? (
         <p className="inline-error" role="alert">

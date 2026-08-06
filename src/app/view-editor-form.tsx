@@ -88,11 +88,6 @@ export function ViewEditorForm({
 
   return (
     <div className="view-editor-form">
-      {autoFocusName ? (
-        <p className="view-editor-intro">
-          Start with a name and layout. Everything else is optional.
-        </p>
-      ) : null}
       <ViewIdentitySection
         autoFocusName={autoFocusName}
         draft={draft}

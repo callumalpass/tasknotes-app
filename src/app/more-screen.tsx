@@ -166,8 +166,8 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
           <small>{changeNotificationLabel(changeNotifications)}</small>
         </div>
         <p className="section-copy">
-          mdbase keeps reminders running when TaskNotes is closed. Notification
-          text never includes task content.
+          mdbase delivers reminders while TaskNotes is closed. Notifications
+          never include task content.
         </p>
         {changeNotifications.state === "off" ||
         changeNotifications.state === "enabled" ||
@@ -225,10 +225,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
           <span>Portable Markdown</span>
           <small>mdbase v0.3</small>
         </div>
-        <p className="section-copy">
-          Tasks are ordinary Markdown records. Field mappings and TaskNotes
-          settings travel with the collection.
-        </p>
+        <p className="section-copy">Tasks remain portable Markdown records.</p>
         <div className="setting-row">
           <Info aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>TaskNotes</span>

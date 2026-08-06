@@ -65,7 +65,7 @@ it("separates reauthorizing the current collection from choosing another", () =>
   expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
 });
 
-it("renders Search at its configured mobile navigation position", () => {
+it("keeps additional views behind the mobile Views menu", () => {
   const onNavigate = vi.fn();
   const today = navigationView("today", "Today");
   const upcoming = navigationView("upcoming", "Upcoming");
@@ -88,13 +88,14 @@ it("renders Search at its configured mobile navigation position", () => {
 
   expect(
     screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual(["Today", "Scratchpad", "Search", "Views", "Settings"]);
-  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
+  ).toEqual(["Today", "Scratchpad", "Views", "Settings"]);
+  expect(screen.getByRole("button", { name: "Views" })).toHaveAttribute(
     "aria-current",
     "page",
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  fireEvent.click(screen.getByRole("button", { name: "Views" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Search" }));
   expect(onNavigate).toHaveBeenCalledWith({ page: "search" });
 });
 

@@ -1,3 +1,3 @@
 export function storageExplanation(): string {
-  return "The mdbase collection is the source of truth. TaskNotes reads and writes it directly; changes require a connection.";
+  return "mdbase is the source of truth. Changes require a connection.";
 }

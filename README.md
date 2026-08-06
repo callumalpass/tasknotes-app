@@ -56,6 +56,17 @@ pnpm dev
 
 The application runs at <http://127.0.0.1:4173>.
 
+### Demo collection
+
+Append `?demo=N` to open a disposable in-memory TaskNotes collection with `N`
+generated tasks—for example, <http://127.0.0.1:4173/?demo=50>. The demo uses the
+same `TaskRepository` application boundary as an mdbase collection and supports
+capture, editing, views, search, completion, time tracking, and Scratchpad. It
+resets when the page reloads and is capped at 5,000 tasks.
+
+Demo URLs are available in development and production builds. Demo data stays
+in memory and never connects to or modifies a real collection.
+
 ### Native projects
 
 ```sh

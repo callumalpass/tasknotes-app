@@ -819,7 +819,7 @@ export function ScratchpadScreen({
                 : "Saved"}
           </span>
           <button
-            className="outline-action scratchpad-review-action"
+            className="text-action scratchpad-review-action"
             disabled={!drafts}
             type="button"
             onClick={openReview}
@@ -859,10 +859,7 @@ export function ScratchpadScreen({
           </div>
         </div>
       </header>
-      <p className="scratchpad-introduction">
-        Write first. Use Tab to nest an item, or drag its handle to reshape the
-        outline.
-      </p>
+      <p className="scratchpad-introduction">Write first. Tab nests an item.</p>
       {error ? (
         <div className="scratchpad-error" role="alert">
           <span>{error}</span>
