@@ -1,3 +1,5 @@
+import { taskDatePart, taskTimePart } from "./task";
+
 export type RecurrenceFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 export type RecurrenceEnd = "never" | "until" | "count";
 export type RecurrencePattern = "date" | "weekday";
@@ -333,13 +335,12 @@ export function recurrenceStartStorageValue(
 }
 
 export function recurrenceDtstartValue(value?: string): string | undefined {
-  const match =
-    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::\d{2})?)?/.exec(
-      value ?? "",
-    );
+  const date = taskDatePart(value);
+  const time = taskTimePart(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) return undefined;
-  const date = `${match[1]}${match[2]}${match[3]}`;
-  return match[4] ? `${date}T${match[4]}${match[5]}00Z` : date;
+  const result = `${match[1]}${match[2]}${match[3]}`;
+  return time ? `${result}T${time.replace(":", "")}00Z` : result;
 }
 
 export function weekdayName(value: RecurrenceWeekday): string {

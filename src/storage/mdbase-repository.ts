@@ -13,6 +13,7 @@ import {
 import { requireConnectOutcome } from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
+import { runtimeTimezone } from "../domain/runtime-timezone";
 import {
   findOccurrenceParent,
   findMaterializedOccurrenceTask,
@@ -298,6 +299,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     const query = request.query?.trim().toLocaleLowerCase() ?? "";
     const response = await this.connect.query(
       {
+        timezone: runtimeTimezone(),
         ...(request.targetTypes?.length
           ? { types: [...request.targetTypes] }
           : {}),
@@ -635,7 +637,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
-    const key = viewExecutionKey(view);
+    const key = this.viewExecutionKey(view, runtimeTimezone());
     const cached = this.viewExecutionCache.get(key);
     if (!cached) return null;
     this.viewExecutionCache.set(key, cached);
@@ -643,19 +645,24 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
-    const key = viewExecutionKey(view);
+    const timezone = runtimeTimezone();
+    const key = this.viewExecutionKey(view, timezone);
     const pending = this.viewExecutionInFlight.get(key);
     if (pending) return pending;
-    const execution = this.executeViewUnlocked(view).finally(() => {
-      if (this.viewExecutionInFlight.get(key) === execution)
-        this.viewExecutionInFlight.delete(key);
-    });
+    const execution = this.executeViewUnlocked(view, timezone, key).finally(
+      () => {
+        if (this.viewExecutionInFlight.get(key) === execution)
+          this.viewExecutionInFlight.delete(key);
+      },
+    );
     this.viewExecutionInFlight.set(key, execution);
     return execution;
   }
 
   private async executeViewUnlocked(
     view: TaskView,
+    timezone: string,
+    cacheKey: string,
   ): Promise<TaskViewExecution> {
     try {
       const result = validResult(
@@ -663,6 +670,7 @@ export class MdbaseTaskRepository implements TaskRepository {
           {
             path: view.source.path,
             view: view.id,
+            timezone,
             limit: 2_000,
             render: false,
           },
@@ -674,12 +682,12 @@ export class MdbaseTaskRepository implements TaskRepository {
         result,
         (record) => this.readRecord(record)?.task ?? null,
       );
-      this.viewExecutionCache.set(viewExecutionKey(view), execution);
+      this.viewExecutionCache.set(cacheKey, execution);
       return execution;
     } catch (reason) {
       this.noteOperationFailure(reason);
-      const cached = await this.cachedViewExecution(view);
-      if (cached) return { ...cached, stale: true };
+      const cached = this.viewExecutionCache.get(cacheKey);
+      if (cached) return { ...structuredClone(cached), stale: true };
       throw reason;
     }
   }
@@ -881,6 +889,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     const result = validResult(
       await this.connect.query(
         {
+          timezone: runtimeTimezone(),
           types: [SCRATCHPAD_TYPE],
           includeBody: true,
           frontmatterMode: "persisted",
@@ -987,14 +996,20 @@ export class MdbaseTaskRepository implements TaskRepository {
     return { signal: this.operationController.signal };
   }
 
+  private viewExecutionKey(view: TaskView, timezone: string): string {
+    return `${timezone}\u0000${viewExecutionKey(view)}`;
+  }
+
   private async reloadCache(): Promise<void> {
     const next = new Map<string, CachedMdbaseTask>();
     let offset = 0;
     let snapshot: string | undefined;
     let hasMore = true;
+    const timezone = runtimeTimezone();
     while (hasMore) {
       const response = await this.connect.query(
         {
+          timezone,
           types: [...this.taskProviders.keys()],
           includeBody: true,
           frontmatterMode: "effective",

@@ -1,17 +1,26 @@
 import { describe, expect, it } from "vitest";
 
+import { todayString } from "./task";
+
 import {
   changeScratchDepth,
   moveScratchSubtree,
   nearestTaskAncestor,
   parseScratchBody,
   removeScratchNode,
+  scratchpadArchivePath,
   serializeScratchNodes,
   visibleScratchNodes,
   type ScratchNode,
 } from "./scratchpad";
 
 describe("scratchpad Markdown outline", () => {
+  it("names archives for the device's calendar day", () => {
+    const now = new Date("2026-08-06T06:30:00Z");
+    expect(scratchpadArchivePath("Late notes", now)).toBe(
+      `scratchpads/${todayString(now)} – Late notes.md`,
+    );
+  });
   it("round-trips draft tasks, notes, links, and hierarchy", () => {
     const source = `- [ ] Plan launch tomorrow 9am
   - Keep the announcement concise

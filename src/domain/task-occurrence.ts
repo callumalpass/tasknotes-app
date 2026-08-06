@@ -85,13 +85,21 @@ function recurringDatesBetween(
     startDate,
     endDate,
   )
-    .map((date) => todayString(date))
+    .map(utcCalendarDate)
     .filter((date) => date >= start && date <= end);
   recurrenceDateCache.set(key, dates);
   if (recurrenceDateCache.size > RECURRENCE_CACHE_LIMIT) {
     recurrenceDateCache.delete(recurrenceDateCache.keys().next().value!);
   }
   return dates;
+}
+
+function utcCalendarDate(date: Date): string {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 export function occurrenceTask(value: TaskOccurrence): Task {
