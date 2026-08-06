@@ -5,7 +5,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await page.goto("?demo=50");
 
   await expect(
-    page.getByRole("heading", { name: "Today", exact: true }),
+    page.getByRole("heading", { level: 1, name: "Today", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("Prepare quarterly planning session"),
