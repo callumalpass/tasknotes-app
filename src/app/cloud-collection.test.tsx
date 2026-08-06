@@ -102,7 +102,7 @@ it("shows and applies the exact reviewed collection setup", async () => {
         {
           requirement: "tasknotes-base-sources",
           path: "/x-obsidian/bases/include",
-          value: "views/tasknotes/**/*.base",
+          value: "TaskNotes/Views/**/*.base",
           action: "add",
         },
       ],
@@ -113,7 +113,7 @@ it("shows and applies the exact reviewed collection setup", async () => {
   render(<CloudConnection error={null} />);
 
   expect(screen.getByText("Review TaskNotes setup")).toBeVisible();
-  expect(screen.getByText(/views\/tasknotes\/\*\*\/\*\.base/)).toBeVisible();
+  expect(screen.getByText(/TaskNotes\/Views\/\*\*\/\*\.base/)).toBeVisible();
   expect(connect.applyCollectionSetup).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Apply reviewed setup" }));
   await waitFor(() =>
@@ -138,7 +138,7 @@ it("explains a setup conflict without mutating the collection", () => {
         {
           requirement: "tasknotes-base-sources",
           path: "/x-obsidian/bases/include",
-          value: "views/tasknotes/**/*.base",
+          value: "TaskNotes/Views/**/*.base",
           action: "conflict",
           conflict: {
             message:

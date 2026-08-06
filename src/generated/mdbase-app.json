@@ -2,10 +2,10 @@
   "manifest_version": 1,
   "id": "dev.tasknotes.app",
   "name": "TaskNotes",
-  "homepage": "https://app.tasknotes.dev/",
-  "icon": "https://app.tasknotes.dev/icon.png",
+  "homepage": "http://127.0.0.1:4173/",
+  "icon": "http://127.0.0.1:4173/icon.png",
   "redirect_uris": [
-    "https://app.tasknotes.dev/auth/mdbase/callback",
+    "http://127.0.0.1:4173/auth/mdbase/callback",
     "dev.tasknotes.app://auth/mdbase/callback"
   ],
   "requirements": {
@@ -55,7 +55,7 @@
         "id": "tasknotes-base-sources",
         "path": "/x-obsidian/bases/include",
         "predicate": "contains",
-        "value": "views/tasknotes/**/*.base"
+        "value": "TaskNotes/Views/**/*.base"
       }
     ]
   },
@@ -156,7 +156,7 @@
         "requirement": "tasknotes-base-sources",
         "operation": "set_add",
         "path": "/x-obsidian/bases/include",
-        "value": "views/tasknotes/**/*.base"
+        "value": "TaskNotes/Views/**/*.base"
       }
     ]
   },

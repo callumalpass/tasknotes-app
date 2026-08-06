@@ -123,16 +123,12 @@ button {
 }
 
 button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
 a:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent), transparent 25%);
   outline-offset: 2px;
-}
-
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 0;
-  box-shadow: inset 0 -2px var(--ink-muted);
 }
 
 button:disabled {
@@ -3690,10 +3686,65 @@ button:disabled {
   color: var(--danger);
 }
 
-.scratchpad-finish {
+.scratchpad-review-action {
   width: auto;
   min-height: 40px;
   padding: 0 12px;
+}
+
+.scratchpad-header-menu-wrap {
+  position: relative;
+}
+
+.scratchpad-header-menu-trigger {
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.scratchpad-header-menu-trigger:hover,
+.scratchpad-header-menu-trigger[aria-expanded="true"] {
+  background: var(--paper-soft);
+  border-color: var(--line);
+}
+
+.scratchpad-header-menu {
+  position: absolute;
+  z-index: 24;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 230px;
+  padding: 5px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 12px 30px var(--color-shadow);
+}
+
+.scratchpad-header-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.scratchpad-header-menu button:hover {
+  background: var(--accent-soft);
 }
 
 .scratchpad-introduction {
@@ -3753,7 +3804,7 @@ button:disabled {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 36px 36px 66px minmax(0, 1fr) 44px 44px;
   min-height: 52px;
   align-items: center;
   border-bottom: 1px solid var(--line);
@@ -3794,11 +3845,26 @@ button:disabled {
 }
 
 .scratchpad-drag-handle,
+.scratchpad-collapse,
 .scratchpad-kind-toggle,
 .scratchpad-row-menu-trigger,
 .scratchpad-convert-line {
   display: inline-flex;
   min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+}
+
+.scratchpad-collapse,
+.scratchpad-collapse-spacer {
+  display: inline-flex;
+  width: 36px;
+  min-width: 36px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -3818,19 +3884,24 @@ button:disabled {
   cursor: grabbing;
 }
 
-.scratchpad-kind-toggle {
-  min-width: 44px;
+.scratchpad-kind-label {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0 4px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
 }
 
-.scratchpad-draft-mark {
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.scratchpad-kind-icon {
-  justify-self: center;
+.scratchpad-kind-label.is-linked {
   color: var(--accent);
 }
 
@@ -3869,13 +3940,17 @@ button:disabled {
 
 .scratchpad-convert-line {
   color: var(--accent);
-  opacity: 0;
+  opacity: 0.34;
   transition: opacity 150ms ease;
 }
 
 .scratchpad-row:focus-within .scratchpad-convert-line,
 .scratchpad-row:hover .scratchpad-convert-line {
   opacity: 1;
+}
+
+.scratchpad-mobile-depth-actions {
+  display: none;
 }
 
 .scratchpad-nlp-preview {
@@ -4016,6 +4091,10 @@ button:disabled {
   box-shadow: 0 20px 50px var(--color-shadow);
 }
 
+.scratchpad-review-dialog {
+  width: min(100%, 620px);
+}
+
 .scratchpad-dialog header {
   display: flex;
   align-items: flex-start;
@@ -4045,6 +4124,91 @@ button:disabled {
   margin: 20px 0;
   color: var(--ink-soft);
   line-height: 1.5;
+}
+
+.scratchpad-review-toolbar {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 8px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.scratchpad-review-toolbar button,
+.scratchpad-review-branch {
+  min-height: 36px;
+  padding: 0 8px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+}
+
+.scratchpad-review-list {
+  max-height: min(44vh, 390px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.scratchpad-review-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 52px;
+  align-items: center;
+  gap: 0 10px;
+  padding: 6px 4px 6px min(calc(var(--review-depth) * 20px + 4px), 34%);
+  border-bottom: 1px solid var(--line);
+}
+
+.scratchpad-review-item label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.35;
+}
+
+.scratchpad-review-item label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scratchpad-review-item input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.scratchpad-review-item.is-created label span {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+}
+
+.scratchpad-review-status,
+.scratchpad-review-error {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0 2px 27px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: 0.64rem;
+}
+
+.scratchpad-review-status.is-success {
+  color: var(--accent);
+}
+
+.scratchpad-review-error {
+  color: var(--danger);
 }
 
 .scratchpad-dialog dl {
@@ -4103,6 +4267,15 @@ button:disabled {
   color: inherit;
 }
 
+.scratchpad-notice .scratchpad-notice-action {
+  width: auto;
+  min-width: auto;
+  padding: 0 9px;
+  color: var(--paper-raised);
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--paper-raised), transparent 62%);
+}
+
 @media (max-width: 560px) {
   .scratchpad-screen {
     --scratch-indent: 17px;
@@ -4132,11 +4305,37 @@ button:disabled {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px;
+    grid-template-columns: 32px 32px 60px minmax(0, 1fr) 44px 44px;
   }
 
   .scratchpad-convert-line {
     opacity: 1;
+  }
+
+  .scratchpad-collapse,
+  .scratchpad-collapse-spacer {
+    width: 32px;
+    min-width: 32px;
+  }
+
+  .scratchpad-mobile-depth-actions {
+    display: flex;
+    gap: 4px;
+    padding: 5px 44px 7px 64px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .scratchpad-mobile-depth-actions button {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 4px;
+    padding: 0 7px;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    background: var(--paper-soft);
+    border: 1px solid var(--line);
+    border-radius: 5px;
   }
 
   .scratchpad-nlp-preview {
@@ -4161,6 +4360,10 @@ button:disabled {
     border-bottom: 0;
     border-left: 0;
     border-radius: 12px 12px 0 0;
+  }
+
+  .scratchpad-review-list {
+    max-height: 42vh;
   }
 
   .scratchpad-dialog-actions {
@@ -7215,18 +7418,34 @@ button:disabled {
   }
 }
 
-:is(button, summary, [role="gridcell"]):focus-visible {
+:is(
+  button,
+  summary,
+  input,
+  textarea,
+  select,
+  [role="combobox"],
+  [role="gridcell"]
+):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent), transparent 24%) !important;
   outline-offset: 2px;
 }
 
-:is(input, textarea, select, [role="combobox"]):focus-visible {
+.scratchpad-row input:focus-visible {
   outline: 0 !important;
   box-shadow: inset 0 -2px var(--ink-muted);
 }
 
+.capture-composer .quick-capture input:focus-visible {
+  outline: 0 !important;
+}
+
 .capture-composer .quick-capture:focus-within {
-  border-bottom-color: var(--ink-muted);
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--accent),
+    var(--line-strong) 78%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

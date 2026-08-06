@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { defaultNavigationViewKeys } from "../domain/default-view-source";
+import {
+  defaultNavigationViewKeys,
+  taskNotesViewSourcePath,
+} from "../domain/default-view-source";
 import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 import { flattenViewDocuments } from "../domain/view";
 import { useRepository } from "./repository-context";
 import {
+  isSpecialNavigationKey,
   moveNavigationViewKey,
   navigationViewScope,
   readLegacyPrimaryViewKey,
   readPreviousNavigationViewKeys,
   readNavigationViewKeys,
   SCRATCHPAD_NAVIGATION_KEY,
+  SEARCH_NAVIGATION_KEY,
   writeNavigationViewKeys,
 } from "./navigation-views";
 
@@ -124,10 +129,9 @@ export function useNavigationViews(): {
       setNavigationKeys((keys) => {
         if (!keys.includes(key)) return [...keys, key];
         const taskViewCount = keys.filter(
-          (candidate) => candidate !== SCRATCHPAD_NAVIGATION_KEY,
+          (candidate) => !isSpecialNavigationKey(candidate),
         ).length;
-        if (key !== SCRATCHPAD_NAVIGATION_KEY && taskViewCount === 1)
-          return keys;
+        if (!isSpecialNavigationKey(key) && taskViewCount === 1) return keys;
         return keys.filter((candidate) => candidate !== key);
       }),
     [setNavigationKeys],
@@ -136,7 +140,7 @@ export function useNavigationViews(): {
     (key: string, direction: -1 | 1) =>
       setNavigationKeys((keys) => {
         const next = moveNavigationViewKey(keys, key, direction);
-        return next[0] === SCRATCHPAD_NAVIGATION_KEY ? keys : next;
+        return isSpecialNavigationKey(next[0]) ? keys : next;
       }),
     [setNavigationKeys],
   );
@@ -166,6 +170,7 @@ export function resolveNavigationViewCatalog(
     flattenViewDocuments(documents).map((view) => view.key),
   );
   available.add(SCRATCHPAD_NAVIGATION_KEY);
+  available.add(SEARCH_NAVIGATION_KEY);
   let stored = readNavigationViewKeys(storage, scope);
   if (!stored && info.id) {
     stored = readNavigationViewKeys(storage, `${info.kind}:${info.location}`);
@@ -181,7 +186,7 @@ export function resolveNavigationViewCatalog(
           )
         : undefined);
     if (previous) {
-      stored = withDefaultScratchpad(previous);
+      stored = withDefaultTools(previous);
       writeNavigationViewKeys(storage, scope, stored);
     }
   }
@@ -192,7 +197,7 @@ export function resolveNavigationViewCatalog(
         ? readLegacyPrimaryViewKey(storage, `${info.kind}:${info.location}`)
         : undefined);
     if (legacy) {
-      stored = withDefaultScratchpad([legacy]);
+      stored = withDefaultTools([legacy]);
       writeNavigationViewKeys(storage, scope, stored);
     }
   }
@@ -206,11 +211,11 @@ export function resolveNavigationViewCatalog(
   if (requireStoredViews && stored?.[0] && !available.has(stored[0]))
     return null;
   const requested =
-    stored ?? withDefaultScratchpad(defaultNavigationViewKeys(documents));
+    stored ?? withDefaultTools(defaultNavigationViewKeys(documents));
   const navigationKeys = requested.filter((key) => available.has(key));
   if (!navigationKeys.length) {
     const defaults = defaultNavigationViewKeys(documents);
-    if (defaults.length) navigationKeys.push(...defaults);
+    if (defaults.length) navigationKeys.push(...withDefaultTools(defaults));
     else {
       const first = flattenViewDocuments(documents)[0];
       if (first) navigationKeys.push(first.key);
@@ -235,13 +240,21 @@ function upgradeDefaultViewKey(
   key: string,
   available: ReadonlySet<string>,
 ): string {
-  const match = /^views\/tasknotes-app\.base#([a-z0-9-]+)$/i.exec(key);
+  const match =
+    /^(?:views\/tasknotes-app\.base|views\/tasknotes\/[a-z0-9-]+\.base)#([a-z0-9-]+)$/i.exec(
+      key,
+    );
   if (!match) return key;
-  const upgraded = `views/tasknotes/${match[1].toLowerCase()}.base#${match[1].toLowerCase()}`;
+  const id = match[1].toLowerCase();
+  const upgraded = `${taskNotesViewSourcePath(id)}#${id}`;
   return available.has(upgraded) ? upgraded : key;
 }
 
-function withDefaultScratchpad(keys: readonly string[]): string[] {
-  if (keys.includes(SCRATCHPAD_NAVIGATION_KEY)) return [...keys];
-  return [...keys.slice(0, 1), SCRATCHPAD_NAVIGATION_KEY, ...keys.slice(1)];
+function withDefaultTools(keys: readonly string[]): string[] {
+  const next = [...keys];
+  if (!next.includes(SCRATCHPAD_NAVIGATION_KEY))
+    next.splice(Math.min(1, next.length), 0, SCRATCHPAD_NAVIGATION_KEY);
+  if (!next.includes(SEARCH_NAVIGATION_KEY))
+    next.splice(Math.min(2, next.length), 0, SEARCH_NAVIGATION_KEY);
+  return next;
 }

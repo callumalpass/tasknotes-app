@@ -25,7 +25,10 @@ import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { SearchScreen } from "./search-screen";
 import { ScratchpadScreen } from "./scratchpad-screen";
-import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
+import {
+  SCRATCHPAD_NAVIGATION_KEY,
+  SEARCH_NAVIGATION_KEY,
+} from "./navigation-views";
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
@@ -311,7 +314,7 @@ export function AppShell() {
         !workspaceViewKey ||
         workspaceIsNavigationView) ? (
         <nav
-          className={`bottom-navigation items-${Math.min(navigationKeys.length, 2) + 3}`}
+          className={`bottom-navigation items-${Math.min(navigationKeys.length, 3) + 2}`}
           aria-label="Primary"
         >
           <Navigation
@@ -471,7 +474,7 @@ function HomeViewLoading() {
   );
 }
 
-function Navigation({
+export function Navigation({
   active,
   homeViewKey,
   mode,
@@ -502,6 +505,15 @@ function Navigation({
       });
       continue;
     }
+    if (key === SEARCH_NAVIGATION_KEY) {
+      navigationEntries.push({
+        key: "search",
+        label: "Search",
+        icon: Search,
+        route: { page: "search" },
+      });
+      continue;
+    }
     const view = views.find((candidate) => candidate.key === key);
     if (view)
       navigationEntries.push({
@@ -515,7 +527,7 @@ function Navigation({
       });
   }
   const visibleViews =
-    mode === "mobile" ? navigationEntries.slice(0, 2) : navigationEntries;
+    mode === "mobile" ? navigationEntries.slice(0, 3) : navigationEntries;
   const additionalViews =
     mode === "mobile" ? navigationEntries.slice(visibleViews.length) : [];
   const hiddenNavigationViewActive = additionalViews.some(
@@ -635,15 +647,6 @@ function Navigation({
           <span>{label}</span>
         </button>
       ))}
-      <button
-        aria-current={active === "search" ? "page" : undefined}
-        className={active === "search" ? "is-active" : undefined}
-        type="button"
-        onClick={() => onNavigate({ page: "search" })}
-      >
-        <Search aria-hidden="true" size={22} strokeWidth={1.7} />
-        <span>Search</span>
-      </button>
       <button
         aria-controls={menuPosition ? menuId : undefined}
         aria-current={

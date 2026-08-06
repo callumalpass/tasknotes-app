@@ -738,11 +738,12 @@ describe("mdbase task repository", () => {
     });
 
     const created = await repository.createViewSource({
+      path: "TaskNotes/Views/focused-work.base",
       format: "obsidian.base",
       name: "Focused work",
       document: "views:\n  - name: Focused work\n    type: tasknotesTaskList\n",
     });
-    expect(created.path).toBe("views/focused-work.base");
+    expect(created.path).toBe("TaskNotes/Views/focused-work.base");
 
     const updated = await repository.updateViewSource({
       path: created.path,

@@ -128,6 +128,7 @@ describe("ViewEditor", () => {
       expect.objectContaining({
         format: "obsidian.base",
         name: "Schedule",
+        path: "TaskNotes/Views/schedule.base",
       }),
     );
   });

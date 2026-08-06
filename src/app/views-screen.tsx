@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  FilePenLine,
   GripVertical,
   Pencil,
   Pin,
@@ -76,8 +77,12 @@ import {
   type OptimisticListMove,
   type OptimisticManualRank,
 } from "./optimistic-view-reconciliation";
-import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
-import { ScratchpadCatalogEntry } from "./views/scratchpad-catalog-entry";
+import {
+  isSpecialNavigationKey,
+  SCRATCHPAD_NAVIGATION_KEY,
+  SEARCH_NAVIGATION_KEY,
+} from "./navigation-views";
+import { TaskNotesCatalogEntries } from "./views/scratchpad-catalog-entry";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -850,15 +855,25 @@ export function ViewsScreen({
               <NavigationViewOrder
                 keys={navigationViewKeys}
                 specialViews={[
-                  { key: SCRATCHPAD_NAVIGATION_KEY, name: "Scratchpad" },
+                  {
+                    key: SCRATCHPAD_NAVIGATION_KEY,
+                    name: "Scratchpad",
+                    icon: FilePenLine,
+                  },
+                  {
+                    key: SEARCH_NAVIGATION_KEY,
+                    name: "Search",
+                    icon: Search,
+                  },
                 ]}
                 views={views}
                 onMove={onMoveNavigationView}
               />
               <div className="view-document-list">
-                <ScratchpadCatalogEntry
+                <TaskNotesCatalogEntries
                   navigationKeys={navigationViewKeys}
-                  onOpen={onOpenScratchpad}
+                  onOpenScratchpad={onOpenScratchpad}
+                  onOpenSearch={onSearch}
                   onToggleNavigation={onToggleNavigationView}
                 />
                 {documents.map((document) => (
@@ -880,7 +895,7 @@ export function ViewsScreen({
                         const lastNavigationView =
                           inNavigation &&
                           navigationViewKeys.filter(
-                            (key) => key !== SCRATCHPAD_NAVIGATION_KEY,
+                            (key) => !isSpecialNavigationKey(key),
                           ).length === 1;
                         return (
                           <div className="saved-view-row" key={view.key}>

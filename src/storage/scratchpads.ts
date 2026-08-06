@@ -112,7 +112,7 @@ function assertScratchpadIdentity(
   if (current.id !== input.id)
     throw new Error("The active scratchpad changed. Reload it before saving.");
   if (current.state !== "active")
-    throw new Error("A converted scratchpad cannot be changed here.");
+    throw new Error("An archived scratchpad cannot be changed here.");
 }
 
 /**

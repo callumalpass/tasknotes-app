@@ -8,6 +8,7 @@ import {
   taskNotesDefaultBaseDocument,
   taskNotesDefaultBaseSources,
   taskNotesDefaultCanonicalDocument,
+  taskNotesViewSourcePath,
 } from "./default-view-source";
 import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 
@@ -15,6 +16,15 @@ import type { TaskViewDocument } from "./view";
 import type { TaskRepository } from "../application/ports/task-repository";
 
 describe("TaskNotes starter views", () => {
+  it("places created Base sources inside the configured TaskNotes folder", () => {
+    expect(taskNotesViewSourcePath("Quarterly Review!")).toBe(
+      "TaskNotes/Views/quarterly-review.base",
+    );
+    expect(taskNotesViewSourcePath("Résumé 📌")).toBe(
+      "TaskNotes/Views/resume.base",
+    );
+  });
+
   it("writes every starter screen as an ordinary editable view", () => {
     const parsed = parse(
       taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
@@ -215,11 +225,11 @@ describe("TaskNotes starter views", () => {
 
   it("uses the starter view order for first-run navigation", () => {
     expect(defaultNavigationViewKeys(starterDocuments())).toEqual([
-      "views/tasknotes/today.base#today",
-      "views/tasknotes/upcoming.base#upcoming",
-      "views/tasknotes/calendar.base#calendar",
-      "views/tasknotes/projects.base#projects",
-      "views/tasknotes/archive.base#archive",
+      "TaskNotes/Views/today.base#today",
+      "TaskNotes/Views/upcoming.base#upcoming",
+      "TaskNotes/Views/calendar.base#calendar",
+      "TaskNotes/Views/projects.base#projects",
+      "TaskNotes/Views/archive.base#archive",
     ]);
   });
 
@@ -329,7 +339,7 @@ function starterDocuments(): TaskViewDocument[] {
 
 function starterDocument(id: string): TaskViewDocument {
   const source = {
-    path: `views/tasknotes/${id}.base`,
+    path: `TaskNotes/Views/${id}.base`,
     format: "obsidian.base",
     revision: "1",
     writable: true,

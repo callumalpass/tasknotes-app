@@ -57,7 +57,7 @@ describe("TaskNotes mdbase manifest", () => {
         id: "tasknotes-base-sources",
         path: "/x-obsidian/bases/include",
         predicate: "contains",
-        value: "views/tasknotes/**/*.base",
+        value: "TaskNotes/Views/**/*.base",
       },
     ]);
     expect(manifest.provisions.configuration).toEqual([
@@ -65,7 +65,7 @@ describe("TaskNotes mdbase manifest", () => {
         requirement: "tasknotes-base-sources",
         operation: "set_add",
         path: "/x-obsidian/bases/include",
-        value: "views/tasknotes/**/*.base",
+        value: "TaskNotes/Views/**/*.base",
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(

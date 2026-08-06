@@ -1,9 +1,17 @@
 import type { CollectionInfo } from "../application/ports/task-repository";
 
-const STORAGE_KEY = "tasknotes:navigation-views:v3";
-const PREVIOUS_STORAGE_KEY = "tasknotes:navigation-views:v2";
+const STORAGE_KEY = "tasknotes:navigation-views:v4";
+const PREVIOUS_STORAGE_KEYS = [
+  "tasknotes:navigation-views:v3",
+  "tasknotes:navigation-views:v2",
+];
 const LEGACY_STORAGE_KEY = "tasknotes:primary-views:v1";
 export const SCRATCHPAD_NAVIGATION_KEY = "tasknotes:scratchpad";
+export const SEARCH_NAVIGATION_KEY = "tasknotes:search";
+
+export function isSpecialNavigationKey(key: string): boolean {
+  return key === SCRATCHPAD_NAVIGATION_KEY || key === SEARCH_NAVIGATION_KEY;
+}
 
 export function navigationViewScope(info: CollectionInfo): string {
   return `${info.kind}:${info.id ?? info.location}`;
@@ -20,7 +28,11 @@ export function readPreviousNavigationViewKeys(
   storage: Pick<Storage, "getItem">,
   scope: string,
 ): string[] | undefined {
-  return readScopedKeys(storage, PREVIOUS_STORAGE_KEY, scope);
+  for (const key of PREVIOUS_STORAGE_KEYS) {
+    const stored = readScopedKeys(storage, key, scope);
+    if (stored) return stored;
+  }
+  return;
 }
 
 export function readLegacyPrimaryViewKey(

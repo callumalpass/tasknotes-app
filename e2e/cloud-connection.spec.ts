@@ -11,7 +11,7 @@ import {
   TASKNOTES_CONTRACT_DIGEST,
 } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
-import { expect, test, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
@@ -85,6 +85,31 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(operations).toContain("describe");
   expect(operations).toContain("query");
 
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Manage views" }).click();
+  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Remove Search from navigation" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Move Search earlier" }).click();
+  await expect
+    .poll(() => navigationPreference(page))
+    .toEqual([
+      "TaskNotes/Views/today.base#today",
+      "tasknotes:search",
+      "tasknotes:scratchpad",
+      "TaskNotes/Views/upcoming.base#upcoming",
+      "TaskNotes/Views/calendar.base#calendar",
+      "TaskNotes/Views/projects.base#projects",
+      "TaskNotes/Views/archive.base#archive",
+    ]);
+  await page
+    .getByRole("button", { name: "Remove Search from navigation" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Add Search to navigation" }),
+  ).toBeVisible();
+
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
@@ -107,6 +132,129 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await page.getByRole("button", { name: "Today" }).click();
   await expect(page.getByText("Task from the relay")).toBeVisible();
 });
+
+test("reviews a scratchpad selectively and collapses outline branches", async ({
+  page,
+}) => {
+  // eslint-disable-next-line prefer-const -- assigned after route registration
+  let authorization!: MdbaseBrowserFixtureController;
+  const scratchpad = {
+    path: "scratchpads/Scratchpad.md",
+    frontmatter: {
+      type: "tasknotes-scratch",
+      id: "scratchpad-e2e",
+      state: "active",
+      dateCreated: "2026-08-06T00:00:00.000Z",
+      dateModified: "2026-08-06T00:00:00.000Z",
+    },
+    body: [
+      "- [ ] Parent task",
+      "  - [ ] Child task",
+      "- [ ] Independent task",
+      "- Context that should stay a note",
+      "",
+    ].join("\n"),
+    types: ["tasknotes-scratch"],
+    revision: "scratchpad-revision-1",
+  };
+
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
+    async (route) => {
+      const request = await operationRequest(route, authorization);
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1)!;
+      let result: unknown;
+      if (operation === "describe") result = collectionDescription();
+      else if (operation === "query") {
+        const input = request.input as { types?: string[] };
+        const records = input.types?.includes("tasknotes-scratch")
+          ? [scratchpad]
+          : [];
+        result = {
+          results: records,
+          meta: { total_count: records.length, has_more: false },
+        };
+      } else if (operation === "list_views") {
+        result = defaultViewDocuments();
+      } else if (operation === "execute_view") {
+        result = defaultViewExecution([]);
+      } else if (operation === "read") {
+        result = scratchpad;
+      } else result = {};
+      await fulfillOperation(
+        route,
+        request.request_id,
+        operation === "describe"
+          ? result
+          : { valid: true, diagnostics: [], result },
+      );
+    },
+  );
+
+  authorization = await installRelayAuthorization(page);
+  await page.reload();
+  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
+
+  await expect(
+    page.getByRole("textbox", { name: "Draft task: Parent task" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Keep as note" })).toHaveCount(
+    3,
+  );
+  await expect(page.getByRole("button", { name: "Make a task" })).toHaveCount(
+    1,
+  );
+
+  await page
+    .getByRole("button", { name: "Collapse Parent task, 1 nested item" })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Draft task: Child task" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Expand Parent task, 1 nested item" })
+    .click();
+
+  const child = page.getByRole("textbox", { name: "Draft task: Child task" });
+  await child.focus();
+  if ((page.viewportSize()?.width ?? 1_000) <= 560) {
+    await expect(page.getByRole("button", { name: "Outdent" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Child", exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: "Review tasks" }).click();
+  const review = page.getByRole("dialog", { name: "Review task drafts" });
+  await expect(review).toContainText("3 of 3 selected");
+  await page.getByRole("checkbox", { name: "Child task" }).uncheck();
+  await expect(review).toContainText("2 of 3 selected");
+  await page.getByRole("button", { name: "Select all" }).click();
+  await page.getByRole("button", { name: "Clear selection" }).click();
+  await page
+    .getByRole("button", { name: "Select branch", exact: true })
+    .click();
+  await expect(review).toContainText("2 of 3 selected");
+  await page.getByRole("button", { name: "Keep writing" }).click();
+  await page.getByRole("button", { name: "More scratchpad actions" }).click();
+  await page.getByRole("menuitem", { name: "Archive and start new" }).click();
+  const archive = page.getByRole("dialog", { name: "Archive and start new?" });
+  await expect(archive).toContainText(
+    "3 draft items will remain only in the archived outline",
+  );
+  await expect(archive).toContainText("No tasks will be created");
+});
+
+async function navigationPreference(page: Page) {
+  return page.evaluate(() => {
+    const stored = JSON.parse(
+      localStorage.getItem("tasknotes:navigation-views:v4") ?? "{}",
+    ) as Record<string, string[]>;
+    return stored["connect:01922222-2222-7222-8222-222222222222"] ?? [];
+  });
+}
 
 test("acknowledges slow relay creates and prefetches revisions before delete", async ({
   page,
@@ -673,7 +821,7 @@ function defaultViewDocuments() {
         id,
         name: id,
         source: {
-          path: `views/tasknotes/${id}.base`,
+          path: `TaskNotes/Views/${id}.base`,
           format: "obsidian.base",
           revision: "view-r1",
           writable: false,
@@ -714,7 +862,7 @@ function defaultViewExecution(
     meta: {
       total_count: records.length,
       has_more: false,
-      view: { path: "views/tasknotes/today.base", id: "today" },
+      view: { path: "TaskNotes/Views/today.base", id: "today" },
       groups: [],
     },
   };
@@ -734,7 +882,7 @@ function currentCollectionSetup(input: JsonObject) {
       {
         requirement: "tasknotes-base-sources",
         path: "/x-obsidian/bases/include",
-        value: "views/tasknotes/**/*.base",
+        value: "TaskNotes/Views/**/*.base",
         action: "current",
       },
     ],

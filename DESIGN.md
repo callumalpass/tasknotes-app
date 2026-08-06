@@ -148,8 +148,15 @@ Today             Search       More
   for keyboard focus.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
-- Mobile bottom navigation prioritizes pinned work views and a More
-  destination. More separates Search, the complete Views catalog, and Settings.
+- Mobile bottom navigation shows the first three configured destinations beside
+  Views and Settings. The Views catalog pins and orders Search, Scratchpad, and
+  saved views through the same navigation model.
+- Scratchpad separates task creation from outline lifecycle. Review tasks opens
+  a selective checklist and converts only chosen drafts in place; Archive and
+  start new preserves the exact outline without creating tasks.
+- Scratchpad rows name their state as Task, Note, or Linked. Nested branches can
+  collapse, and focused mobile rows expose outdent, indent, and add-child
+  controls without dismissing the keyboard.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
