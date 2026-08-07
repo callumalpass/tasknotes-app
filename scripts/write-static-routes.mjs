@@ -4,12 +4,17 @@ import { resolve } from "node:path";
 const dist = resolve(import.meta.dirname, "..", "dist");
 const index = resolve(dist, "index.html");
 const callbackDirectory = resolve(dist, "auth", "mdbase", "callback");
+const embedDirectory = resolve(dist, "embed");
 
-await mkdir(callbackDirectory, { recursive: true });
+await Promise.all([
+  mkdir(callbackDirectory, { recursive: true }),
+  mkdir(embedDirectory, { recursive: true }),
+]);
 await Promise.all([
   copyFile(index, resolve(dist, "404.html")),
   copyFile(index, resolve(dist, "auth", "mdbase", "callback.html")),
   copyFile(index, resolve(callbackDirectory, "index.html")),
+  copyFile(index, resolve(embedDirectory, "index.html")),
 ]);
 
 const offlineAssets = (await listFiles(dist))
