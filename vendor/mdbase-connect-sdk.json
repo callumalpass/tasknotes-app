@@ -1,37 +1,37 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/mdbase-dev/mdbase-connect",
-  "revision": "f5282b7eefc0d7144e4da3607997d0ed00d6bc00",
+  "revision": "9959ec90e23e6aff21a22f6f478402a127d9b738",
   "artifacts": [
     {
       "package": "connect",
-      "file": "mdbase-dev-connect-0.1.0-beta.37-f5282b7eefc0.tgz",
+      "file": "mdbase-dev-connect-0.1.0-beta.43-9959ec90e23e.tgz",
       "bytes": 148504,
-      "sha512": "9UjdBnnaFCDlcIMJA1cS6u158lwk79T2rPffbhcKjcr2cAGsaH8olPGNLWNBmnpRZQ55VCtzEs0q8WwiHNZD+Q=="
+      "sha512": "br0yqKR0M4L47K8qHrBsktW7yfH67xZ6LdFsBfWFdQZNhTu2/f1igORerhDplNENnAXZqdiB7YvEDIsNlbp5dg=="
     },
     {
       "package": "devkit",
-      "file": "mdbase-dev-connect-dev-0.1.0-beta.37-f5282b7eefc0.tgz",
+      "file": "mdbase-dev-connect-dev-0.1.0-beta.43-9959ec90e23e.tgz",
       "bytes": 9242,
-      "sha512": "9rMOeXKCrSl/1YydmASHu9HeIpT8B1Wet2c7szACR5FERiYE9eV+PMiM8mplVgDVdS+LSTRg8TECrhCdVyc2Ag=="
+      "sha512": "gE2YYIW8YYBumcfPb5Q9vIhU/weKbA5ehuaGeB9mFYRKSE/L44YCD7GkPt8evSMothlbTytmZahQvDt0zt8dKQ=="
     },
     {
       "package": "protocol",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.37-f5282b7eefc0.tgz",
-      "bytes": 54372,
-      "sha512": "ST5XeS9NtnUPpb1fa0MlKY/Jf5so9rvNJ39gppgYW1gEIGTUI9QV94uuMGsxxp4EZPcJS35O4jRabXqX5R8Irg=="
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.43-9959ec90e23e.tgz",
+      "bytes": 54600,
+      "sha512": "lXarFb7jDACZyr8/BHZJIfpIgn7qOoYt9O8iO7uUaQ/vEqaXDQHNIbwrd0Iuqes63eMAe8jp7Fwa+MQrIhQY1Q=="
     },
     {
       "package": "sync",
-      "file": "mdbase-dev-connect-sync-0.1.0-beta.37-f5282b7eefc0.tgz",
-      "bytes": 81384,
-      "sha512": "Beci6v50RiekNrlsTmcvXYlK4Rz4BdyJUwbGyYnyooFpOYKotMinxgUo0CPiqAphefsryoIk6qcbspLLv8/8Sg=="
+      "file": "mdbase-dev-connect-sync-0.1.0-beta.43-9959ec90e23e.tgz",
+      "bytes": 97203,
+      "sha512": "zWp3d2fqciVB06aEL/R+OHDEG9ZCwicdJsdH8KnyDF7FSLYOhKPSjqYQKeSixYReUtjRjW6h0L1rvvOZnZHjQg=="
     },
     {
       "package": "testing",
-      "file": "mdbase-dev-connect-testing-0.1.0-beta.37-f5282b7eefc0.tgz",
+      "file": "mdbase-dev-connect-testing-0.1.0-beta.43-9959ec90e23e.tgz",
       "bytes": 6801,
-      "sha512": "EF8sTJoTcsLosASnJAxxpPAd6XUhY9m7/txaJ5bQ3ryuUuGdekuwAtL/9XZi8rm/lE/iOxV3ge4fpP5kXC+meQ=="
+      "sha512": "vSGpFVFeRVkrseQoqh9UehoJYyya/XghLSc655pbPLBCCkJKucaTIaDNWirLZVqJw6xZphjKOpGoWi9MqDyqSA=="
     }
   ]
 }
