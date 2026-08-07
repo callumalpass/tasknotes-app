@@ -11,7 +11,7 @@ import type { MdbaseNativeNotificationData } from "@mdbase-dev/connect";
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const MESSAGE_TYPE = "tasknotes:mdbase-notification";
 const CACHE_PREFIX = "tasknotes-app-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 
 worker.addEventListener("install", (event) => {
   event.waitUntil(installAppShell().then(() => worker.skipWaiting()));
@@ -28,11 +28,7 @@ worker.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== worker.location.origin) return;
-  event.respondWith(
-    event.request.mode === "navigate"
-      ? navigationResponse(event.request)
-      : cachedResponse(event.request),
-  );
+  event.respondWith(fetchResponse(event.request));
 });
 
 worker.addEventListener("push", (event) => {
@@ -61,20 +57,12 @@ async function installAppShell(): Promise<void> {
 }
 
 async function navigationResponse(request: Request): Promise<Response> {
-  try {
-    const response = await fetch(request);
-    if (cacheable(response)) {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.put(
-        new URL("./", worker.registration.scope),
-        response.clone(),
-      );
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(new URL("./", worker.registration.scope));
-    return cached ?? Response.error();
+  const response = await fetch(request);
+  if (cacheable(response)) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(new URL("./", worker.registration.scope), response.clone());
   }
+  return response;
 }
 
 async function cachedResponse(request: Request): Promise<Response> {
@@ -86,6 +74,29 @@ async function cachedResponse(request: Request): Promise<Response> {
     await cache.put(request, response.clone());
   }
   return response;
+}
+
+async function fetchResponse(request: Request): Promise<Response> {
+  try {
+    return request.mode === "navigate"
+      ? await navigationResponse(request)
+      : await cachedResponse(request);
+  } catch {
+    if (request.mode !== "navigate") return Response.error();
+    try {
+      const cached = await caches.match(
+        new URL("./", worker.registration.scope),
+      );
+      if (cached) return cached;
+    } catch {
+      // Fall through to an explicit response. A rejected FetchEvent turns a
+      // recoverable navigation outage into a browser-level network failure.
+    }
+    return new Response("TaskNotes is temporarily unavailable. Try again.", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
 }
 
 function cacheable(response: Response): boolean {
