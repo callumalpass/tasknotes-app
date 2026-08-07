@@ -91,7 +91,7 @@ describe("saved-view values", () => {
     );
   });
 
-  it("can suppress routine defaults in everyday task rows", () => {
+  it("renders configured defaults and false values rather than treating them as empty", () => {
     expect(
       viewPropertyDetails(
         {
@@ -108,7 +108,51 @@ describe("saved-view values", () => {
           { key: 'note["archived"]', label: "Archived" },
           { key: 'note["due"]', label: "Due", format: "date" },
         ],
-        { suppressRoutineDefaults: true },
+      ),
+    ).toEqual([
+      {
+        key: 'note["status"]',
+        label: "Status",
+        value: "open",
+        rawValue: "open",
+      },
+      {
+        key: 'note["priority"]',
+        label: "Priority",
+        value: "normal",
+        rawValue: "normal",
+      },
+      {
+        key: 'note["archived"]',
+        label: "Archived",
+        value: "No",
+        rawValue: false,
+      },
+      {
+        key: 'note["due"]',
+        label: "Due",
+        value: formatPropertyValue("2026-07-24", "date"),
+        rawValue: "2026-07-24",
+      },
+    ]);
+  });
+
+  it("omits explicit none status and priority values", () => {
+    expect(
+      viewPropertyDetails(
+        {
+          ...row,
+          values: {
+            ...row.values,
+            'note["status"]': "none",
+            'note["priority"]': "none",
+          },
+        },
+        [
+          { key: 'note["status"]', label: "Status" },
+          { key: 'note["priority"]', label: "Priority" },
+          { key: 'note["due"]', label: "Due", format: "date" },
+        ],
       ),
     ).toEqual([
       {

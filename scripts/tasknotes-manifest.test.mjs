@@ -171,4 +171,39 @@ describe("TaskNotes mdbase manifest", () => {
       JSON.parse(generated.taskSchemaDocument).properties.scheduled,
     ).toEqual(taskDateSchema);
   });
+
+  it("provisions useful status and priority colors", () => {
+    const generated = buildAppTaskNotesResources();
+    const implementation = generated.type.implements.find(
+      (candidate) => candidate.contract === "tasknotes.task",
+    );
+
+    expect(
+      Object.fromEntries(
+        implementation.binding.status.definitions.map(({ value, color }) => [
+          value,
+          color,
+        ]),
+      ),
+    ).toEqual({
+      none: "#94a3b8",
+      open: "#64748b",
+      "in-progress": "#3b82f6",
+      done: "#22c55e",
+      cancelled: "#94a3b8",
+    });
+    expect(
+      Object.fromEntries(
+        implementation.binding.priority.definitions.map(({ value, color }) => [
+          value,
+          color,
+        ]),
+      ),
+    ).toEqual({
+      none: "#94a3b8",
+      low: "#3b82f6",
+      normal: "#f59e0b",
+      high: "#ef4444",
+    });
+  });
 });

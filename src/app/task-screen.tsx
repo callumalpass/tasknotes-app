@@ -663,6 +663,7 @@ function TaskEditor({
           <Fieldset legend="Priority">
             {configuration.priorities.map((priority) => (
               <Choice
+                color={priority.color}
                 key={priority.value}
                 selected={draft.priority === priority.value}
                 onClick={() => change({ priority: priority.value })}

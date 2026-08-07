@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { activeTimeEntry, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
+import { useRepository } from "../app/repository-context";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
 
@@ -23,12 +24,20 @@ export function TaskRow({
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
 }) {
+  const { configuration } = useRepository();
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
+  const statusColor = configuration.statuses.find(
+    (status) => status.value === displayedTask.status,
+  )?.color;
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
-  const [editing, setEditing] = useState<TaskRowDetail | null>(null);
+  const [editing, setEditing] = useState<{
+    detail: TaskRowDetail;
+    anchor: TaskPropertyEditorAnchor;
+  } | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
-  const shownDetails = details ?? defaultTaskDetails(displayedTask, metadata);
+  const shownDetails =
+    details ?? defaultTaskDetails(displayedTask, metadata, configuration);
   return (
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
@@ -55,6 +64,7 @@ export function TaskRow({
         type="button"
         aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
         aria-pressed={displayedTask.completed}
+        style={statusColor ? { color: statusColor } : undefined}
         onClick={() => {
           actionFeedback();
           onToggle(task, occurrence?.date);
@@ -77,17 +87,30 @@ export function TaskRow({
               {tracking ? <TrackingIndicator /> : null}
               {shownDetails.map((detail) => (
                 <button
-                  className="task-row-property"
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}`}
                   key={detail.key}
                   title={detail.description}
                   type="button"
                   onClick={(event) => {
                     editorTrigger.current = event.currentTarget;
-                    setEditing(detail);
+                    setEditing({
+                      detail,
+                      anchor: editorAnchor(event.currentTarget),
+                    });
                   }}
                 >
                   <span>{detail.label}</span>
-                  <strong>{detail.value}</strong>
+                  <strong
+                    style={
+                      detailPriorityColor(detail, configuration)
+                        ? {
+                            color: detailPriorityColor(detail, configuration),
+                          }
+                        : undefined
+                    }
+                  >
+                    {detail.value}
+                  </strong>
                 </button>
               ))}
             </span>
@@ -99,10 +122,18 @@ export function TaskRow({
               <button
                 className={detail.overdue ? "is-overdue" : undefined}
                 key={detail.key}
+                style={
+                  detailPriorityColor(detail, configuration)
+                    ? { color: detailPriorityColor(detail, configuration) }
+                    : undefined
+                }
                 type="button"
                 onClick={(event) => {
                   editorTrigger.current = event.currentTarget;
-                  setEditing(detail);
+                  setEditing({
+                    detail,
+                    anchor: editorAnchor(event.currentTarget),
+                  });
                 }}
               >
                 {detail.value}
@@ -119,7 +150,8 @@ export function TaskRow({
       />
       {editing ? (
         <TaskPropertyEditor
-          detail={editing}
+          anchor={editing.anchor}
+          detail={editing.detail}
           occurrenceDate={occurrence?.date}
           task={task}
           onClose={() => {
@@ -130,6 +162,25 @@ export function TaskRow({
       ) : null}
     </div>
   );
+}
+
+export interface TaskPropertyEditorAnchor {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+}
+
+function editorAnchor(element: HTMLElement): TaskPropertyEditorAnchor {
+  const bounds = element.getBoundingClientRect();
+  return {
+    top: bounds.top,
+    right: bounds.right,
+    bottom: bounds.bottom,
+    left: bounds.left,
+    width: bounds.width,
+  };
 }
 
 function TrackingIndicator() {
@@ -150,9 +201,42 @@ export interface TaskRowDetail {
   overdue?: boolean;
 }
 
+function detailPriorityColor(
+  detail: TaskRowDetail,
+  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
+): string | undefined {
+  if (typeof detail.rawValue !== "string") return undefined;
+  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
+  const key = bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+  if (key !== configuration.fieldMapping.priority && key !== "priority")
+    return undefined;
+  return configuration.priorities.find(
+    (option) => option.value === detail.rawValue,
+  )?.color;
+}
+
+function isCompactDetail(
+  detail: TaskRowDetail,
+  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
+): boolean {
+  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
+  const key = bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+  return [
+    configuration.fieldMapping.status,
+    configuration.fieldMapping.priority,
+    configuration.fieldMapping.scheduled,
+    configuration.fieldMapping.due,
+    "status",
+    "priority",
+    "scheduled",
+    "due",
+  ].includes(key);
+}
+
 function defaultTaskDetails(
   task: Task,
   metadata: ReturnType<typeof taskMeta>,
+  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
 ): TaskRowDetail[] {
   let index = 0;
   const details: TaskRowDetail[] = [];
@@ -172,19 +256,21 @@ function defaultTaskDetails(
       rawValue: task.due,
       overdue: metadata[index - 1]?.overdue,
     });
-  if (task.priority !== "none" && task.priority !== "normal")
+  const priority = configuration.priorities.find(
+    (option) => option.value === task.priority,
+  );
+  const defaultPriority = configuration.priorities.find(
+    (option) => option.value === configuration.defaults.priority,
+  );
+  if (
+    task.priority !== "none" &&
+    (priority?.weight ?? 0) > (defaultPriority?.weight ?? 0)
+  )
     details.push({
       key: "priority",
       label: "Priority",
-      value: metadata[index++]?.label ?? task.priority,
+      value: metadata[index]?.label ?? task.priority,
       rawValue: task.priority,
-    });
-  if (task.recurrence)
-    details.push({
-      key: "recurrence",
-      label: "Repeat",
-      value: metadata[index]?.label ?? task.recurrence,
-      rawValue: task.recurrence,
     });
   return details;
 }

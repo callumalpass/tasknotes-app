@@ -95,7 +95,12 @@ describe("TaskActions", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "high" }));
-    expect(screen.getByRole("dialog", { name: "Edit Priority" })).toBeVisible();
+    const editor = screen.getByRole("dialog", { name: "Edit Priority" });
+    expect(editor).toBeVisible();
+    expect(editor).not.toHaveAttribute("aria-modal");
+    expect(editor.style.getPropertyValue("--task-property-editor-top")).toBe(
+      "12px",
+    );
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Close property editor" }),
@@ -103,12 +108,33 @@ describe("TaskActions", () => {
     );
     fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
     fireEvent.click(screen.getByRole("option", { name: "Low" }));
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({ priority: "low" }),
     );
+    expect(
+      screen.queryByRole("dialog", { name: "Edit Priority" }),
+    ).not.toBeInTheDocument();
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("persists date choices without an apply step", async () => {
+    task = await repository.update(task.id, { due: "2030-08-05" });
+    renderRow();
+
+    fireEvent.click(screen.getByRole("button", { name: /Due .*Aug 5/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Due date" }));
+    fireEvent.click(screen.getByRole("gridcell", { name: /August 6, 2030/ }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({
+        due: "2030-08-06",
+      }),
+    );
+    expect(screen.getByRole("dialog", { name: "Edit Due" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Apply|Cancel/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("creates a subtask using the configured portable record link", async () => {
@@ -132,15 +158,38 @@ describe("TaskActions", () => {
     });
   });
 
+  it("edits organization fields directly from the menu", async () => {
+    renderRow();
+
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
+    expect(screen.getByRole("menuitem", { name: "Projects" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Contexts" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Tags" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Projects" }));
+    const projects = screen.getByRole("combobox", { name: "Projects" });
+    fireEvent.change(projects, { target: { value: "Roadmap" } });
+    fireEvent.keyDown(projects, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Save projects" }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({
+        projects: ["Roadmap"],
+      }),
+    );
+  });
+
   it("supports arrow-key traversal and drill-in back navigation", async () => {
     renderRow();
     await openMenu();
     const menu = screen.getByRole("menu", { name: "Actions for Menu parent" });
     await waitFor(() =>
-      expect(screen.getByRole("menuitem", { name: "Edit" })).toHaveFocus(),
+      expect(screen.getByRole("menuitem", { name: "Complete" })).toHaveFocus(),
     );
 
     expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
+    expect(screen.getByRole("menuitem", { name: "Dates" })).toHaveFocus();
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });

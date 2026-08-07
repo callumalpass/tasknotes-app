@@ -26,7 +26,6 @@ export function ViewTaskRow({
     identityProperty: titleProperty,
     omittedProperties,
     occurrence,
-    suppressRoutineDefaults: true,
   });
   return (
     <TaskRow

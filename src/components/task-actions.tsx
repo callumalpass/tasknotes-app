@@ -1,6 +1,7 @@
 import {
   Archive,
   ArchiveRestore,
+  AtSign,
   CalendarClock,
   Check,
   ChevronLeft,
@@ -20,17 +21,19 @@ import {
   SkipForward,
   Square,
   Star,
+  Tags,
   Trash2,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useRepository } from "../app/repository-context";
-import { recordCompletion } from "../domain/completion";
+import { linkLabel, linkTarget, recordCompletion } from "../domain/completion";
 import { activeTimeEntry, todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { OperationErrorNotice } from "./operation-error-notice";
+import { MultiValueField } from "./multi-value-field";
 
 import type { Task } from "../domain/task";
 
@@ -46,6 +49,9 @@ type MenuPanel =
   | "priority"
   | "dates"
   | "organize"
+  | "projects"
+  | "contexts"
+  | "tags"
   | "subtask"
   | "copy"
   | "delete";
@@ -86,11 +92,17 @@ export function TaskActions({
   const [position, setPosition] = useState<MenuPosition | null>(null);
   const [panels, setPanels] = useState<MenuPanel[]>(["actions"]);
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [organizeDraft, setOrganizeDraft] = useState({
+    projects: task.projects,
+    contexts: task.contexts,
+    tags: task.tags,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mobile, setMobile] = useState(false);
   const menuId = useId();
   const headingId = `${menuId}-heading`;
+  const panelHeadingId = `${menuId}-panel-heading`;
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panel = panels.at(-1) ?? "actions";
@@ -154,7 +166,9 @@ export function TaskActions({
       const selector =
         panel === "delete"
           ? "[data-safe-action]"
-          : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)";
+          : isOrganizeEditor(panel)
+            ? "[data-panel-back]"
+            : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
     });
   }, [panel, position]);
@@ -194,6 +208,11 @@ export function TaskActions({
     setError("");
     setPanels(["actions"]);
     setSubtaskTitle("");
+    setOrganizeDraft({
+      projects: task.projects,
+      contexts: task.contexts,
+      tags: task.tags,
+    });
     // Relay query results do not carry a revision. Warm it while the person is
     // choosing so guarded writes do not add a later network round trip.
     void repository.get(task.id).catch(() => undefined);
@@ -266,10 +285,14 @@ export function TaskActions({
   const rootRole =
     panel === "delete"
       ? "alertdialog"
-      : mobile || panel === "subtask"
+      : mobile || panel === "subtask" || isOrganizeEditor(panel)
         ? "dialog"
         : "menu";
-  const actionMenuRole = mobile && panel !== "subtask" && panel !== "delete";
+  const actionMenuRole =
+    mobile &&
+    panel !== "subtask" &&
+    panel !== "delete" &&
+    !isOrganizeEditor(panel);
 
   return (
     <>
@@ -312,13 +335,26 @@ export function TaskActions({
                 aria-label={
                   rootRole === "menu" ? `Actions for ${task.title}` : undefined
                 }
-                aria-labelledby={rootRole !== "menu" ? headingId : undefined}
+                aria-labelledby={
+                  rootRole !== "menu"
+                    ? isOrganizeEditor(panel)
+                      ? panelHeadingId
+                      : headingId
+                    : undefined
+                }
                 aria-modal={rootRole !== "menu" ? true : undefined}
-                className="task-actions-menu"
+                className={`task-actions-menu${
+                  isOrganizeEditor(panel) ? " is-organize-editor" : ""
+                }`}
                 id={menuId}
                 ref={menuRef}
                 role={rootRole}
-                style={{ left: position.x, top: position.y }}
+                style={{
+                  left: isOrganizeEditor(panel)
+                    ? Math.max(8, Math.min(position.x, innerWidth - 428))
+                    : position.x,
+                  top: position.y,
+                }}
                 onKeyDown={handleMenuKeys}
               >
                 <div className="task-actions-heading">
@@ -331,12 +367,13 @@ export function TaskActions({
                   <div className="task-actions-subheading">
                     <button
                       aria-label="Back to previous actions"
+                      data-panel-back
                       type="button"
                       onClick={goBack}
                     >
                       <ChevronLeft aria-hidden="true" size={18} />
                     </button>
-                    <strong>{panelTitle(panel)}</strong>
+                    <strong id={panelHeadingId}>{panelTitle(panel)}</strong>
                   </div>
                 ) : null}
                 <div
@@ -404,6 +441,7 @@ export function TaskActions({
                           icon={option.value === task.status ? Check : Circle}
                           key={option.value}
                           label={option.label}
+                          iconColor={option.color}
                           radio
                           onClick={() =>
                             void run(() =>
@@ -421,6 +459,7 @@ export function TaskActions({
                           icon={option.value === task.priority ? Check : Star}
                           key={option.value}
                           label={option.label}
+                          labelColor={option.color}
                           radio
                           onClick={() =>
                             void run(() =>
@@ -522,11 +561,30 @@ export function TaskActions({
                   {panel === "organize" ? (
                     <>
                       <MenuAction
-                        detail={
-                          projectLink
-                            ? "Linked to this task"
-                            : "Available after sync"
-                        }
+                        detail={valueSummary(
+                          task.projects.map(organizeValueLabel),
+                        )}
+                        icon={FolderTree}
+                        label="Projects"
+                        next
+                        onClick={() => navigate("projects")}
+                      />
+                      <MenuAction
+                        detail={valueSummary(task.contexts)}
+                        icon={AtSign}
+                        label="Contexts"
+                        next
+                        onClick={() => navigate("contexts")}
+                      />
+                      <MenuAction
+                        detail={valueSummary(task.tags)}
+                        icon={Tags}
+                        label="Tags"
+                        next
+                        onClick={() => navigate("tags")}
+                      />
+                      <MenuSeparator />
+                      <MenuAction
                         disabled={!projectLink}
                         icon={Plus}
                         label="Create subtask"
@@ -534,13 +592,20 @@ export function TaskActions({
                       />
                       {onOpen ? (
                         <MenuAction
-                          detail="Projects and dependencies"
+                          detail={
+                            task.blockedBy.length
+                              ? `${task.blockedBy.length} ${task.blockedBy.length === 1 ? "dependency" : "dependencies"}`
+                              : "Dependencies"
+                          }
                           icon={Link2}
-                          label="Edit relationships"
+                          label="Relationships"
                           onClick={openEditor}
                         />
                       ) : null}
                     </>
+                  ) : null}
+                  {isOrganizeEditor(panel) ? (
+                    <OrganizeFieldEditor field={panel} />
                   ) : null}
                   {panel === "subtask" ? (
                     <form
@@ -653,25 +718,11 @@ export function TaskActions({
   function TaskActionList({ series = false }: { series?: boolean }) {
     return (
       <>
-        {context === "row" && onOpen ? (
-          <MenuAction
-            icon={Pencil}
-            label={series ? "Edit repeating task" : "Edit"}
-            onClick={openEditor}
-          />
-        ) : null}
         <MenuAction
           disabled={busy}
           icon={task.completed ? Circle : Check}
           label={task.completed ? "Mark open" : "Complete"}
           onClick={() => void run(toggle)}
-        />
-        <MenuAction
-          detail={status}
-          icon={Circle}
-          label="Status"
-          next
-          onClick={() => navigate("status")}
         />
         <MenuAction
           detail={dateSummary(task)}
@@ -681,13 +732,26 @@ export function TaskActions({
           onClick={() => navigate("dates")}
         />
         <MenuAction
-          detail={priority}
+          detail={task.priority === "none" ? undefined : priority}
           icon={Star}
           label="Priority"
           next
           onClick={() => navigate("priority")}
         />
+        <MenuAction
+          detail={task.status === "none" ? undefined : status}
+          icon={Circle}
+          label="Status"
+          next
+          onClick={() => navigate("status")}
+        />
         <MenuSeparator />
+        <MenuAction
+          icon={FolderTree}
+          label="Organize"
+          next
+          onClick={() => navigate("organize")}
+        />
         <MenuAction
           disabled={busy}
           icon={tracking ? Square : Play}
@@ -698,12 +762,13 @@ export function TaskActions({
             )
           }
         />
-        <MenuAction
-          icon={FolderTree}
-          label="Organize"
-          next
-          onClick={() => navigate("organize")}
-        />
+        {context === "row" && onOpen ? (
+          <MenuAction
+            icon={Pencil}
+            label={series ? "Edit repeating task" : "Edit details"}
+            onClick={openEditor}
+          />
+        ) : null}
         <MenuAction
           icon={Copy}
           label="Copy"
@@ -730,6 +795,50 @@ export function TaskActions({
           onClick={() => navigate("delete")}
         />
       </>
+    );
+  }
+
+  function OrganizeFieldEditor({
+    field,
+  }: {
+    field: "projects" | "contexts" | "tags";
+  }) {
+    const label = panelTitle(field);
+    const completionField =
+      field === "projects"
+        ? configuration.fieldMapping.projects
+        : field === "contexts"
+          ? configuration.fieldMapping.contexts
+          : "tags";
+    return (
+      <form
+        className="task-actions-organize-editor"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(() =>
+            updateTask(task.id, { [field]: organizeDraft[field] }),
+          );
+        }}
+      >
+        <MultiValueField
+          completion={
+            configuration.fieldCompletions[completionField] ?? {
+              kind: field === "projects" ? "records" : "values",
+            }
+          }
+          completeField={(request) => repository.completeField(request)}
+          field={completionField}
+          label={label}
+          placeholder={`Add ${label.toLocaleLowerCase()}`}
+          values={organizeDraft[field]}
+          onChange={(values) =>
+            setOrganizeDraft((current) => ({ ...current, [field]: values }))
+          }
+        />
+        <button className="primary" disabled={busy} type="submit">
+          {busy ? "Saving…" : `Save ${label.toLocaleLowerCase()}`}
+        </button>
+      </form>
     );
   }
 
@@ -795,6 +904,8 @@ function MenuAction({
   icon: Icon,
   label,
   next = false,
+  iconColor,
+  labelColor,
   radio = false,
   onClick,
 }: {
@@ -805,6 +916,8 @@ function MenuAction({
   icon: typeof Circle;
   label: string;
   next?: boolean;
+  iconColor?: string;
+  labelColor?: string;
   radio?: boolean;
   onClick(): void;
 }) {
@@ -818,8 +931,14 @@ function MenuAction({
       type="button"
       onClick={onClick}
     >
-      <Icon aria-hidden="true" size={18} />
-      <span>{label}</span>
+      <Icon
+        aria-hidden="true"
+        size={18}
+        style={iconColor ? { color: iconColor } : undefined}
+      />
+      <span style={labelColor ? { color: labelColor } : undefined}>
+        {label}
+      </span>
       {detail ? <small>{detail}</small> : null}
       {next ? (
         <ChevronRight
@@ -842,16 +961,38 @@ function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
   if (panel === "priority") return "Priority";
   if (panel === "dates") return "Dates";
   if (panel === "organize") return "Organize";
+  if (panel === "projects") return "Projects";
+  if (panel === "contexts") return "Contexts";
+  if (panel === "tags") return "Tags";
   if (panel === "subtask") return "New subtask";
   if (panel === "copy") return "Copy";
   return "Delete task";
+}
+
+function isOrganizeEditor(
+  panel: MenuPanel,
+): panel is "projects" | "contexts" | "tags" {
+  return panel === "projects" || panel === "contexts" || panel === "tags";
+}
+
+function valueSummary(values: readonly string[]): string {
+  if (!values.length) return "None";
+  if (values.length === 1) return values[0]!;
+  return `${values[0]} +${values.length - 1}`;
+}
+
+function organizeValueLabel(value: string): string {
+  const label = linkLabel(value);
+  if (label) return label;
+  const target = linkTarget(value);
+  return target.split("/").at(-1) || value;
 }
 
 function dateSummary(task: Task): string {
   if (task.due && task.scheduled) return "Due and scheduled";
   if (task.due) return "Due set";
   if (task.scheduled) return "Scheduled";
-  return "Not set";
+  return "";
 }
 
 async function writeClipboard(value: string): Promise<void> {
