@@ -1,9 +1,11 @@
 import { Square } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { activeTimeEntry, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { TaskActions } from "./task-actions";
+import { TaskPropertyEditor } from "./task-property-editor";
 
 import type { Task } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -24,6 +26,9 @@ export function TaskRow({
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
+  const [editing, setEditing] = useState<TaskRowDetail | null>(null);
+  const editorTrigger = useRef<HTMLButtonElement | null>(null);
+  const shownDetails = details ?? defaultTaskDetails(displayedTask, metadata);
   return (
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
@@ -57,50 +62,72 @@ export function TaskRow({
       >
         <span aria-hidden="true" />
       </button>
-      <button
-        className="task-row-content"
-        type="button"
-        onClick={() => onOpen(task, occurrence?.date)}
-      >
-        <span className="task-row-title" title={task.title}>
+      <div className="task-row-content">
+        <button
+          className="task-row-title"
+          title={task.title}
+          type="button"
+          onClick={() => onOpen(task, occurrence?.date)}
+        >
           {task.title}
-        </span>
+        </button>
         {details ? (
-          tracking || details.length ? (
+          tracking || shownDetails.length ? (
             <span className="task-row-properties">
               {tracking ? <TrackingIndicator /> : null}
-              {details.map((detail) => (
-                <span
+              {shownDetails.map((detail) => (
+                <button
                   className="task-row-property"
                   key={detail.key}
                   title={detail.description}
+                  type="button"
+                  onClick={(event) => {
+                    editorTrigger.current = event.currentTarget;
+                    setEditing(detail);
+                  }}
                 >
                   <span>{detail.label}</span>
                   <strong>{detail.value}</strong>
-                </span>
+                </button>
               ))}
             </span>
           ) : null
-        ) : tracking || metadata.length ? (
+        ) : tracking || shownDetails.length ? (
           <span className="task-row-meta">
             {tracking ? <TrackingIndicator /> : null}
-            {metadata.map((item) => (
-              <span
-                className={item.overdue ? "is-overdue" : undefined}
-                key={item.label}
+            {shownDetails.map((detail) => (
+              <button
+                className={detail.overdue ? "is-overdue" : undefined}
+                key={detail.key}
+                type="button"
+                onClick={(event) => {
+                  editorTrigger.current = event.currentTarget;
+                  setEditing(detail);
+                }}
               >
-                {item.label}
-              </span>
+                {detail.value}
+              </button>
             ))}
           </span>
         ) : null}
-      </button>
+      </div>
       <TaskActions
         task={task}
         occurrenceDate={occurrence?.date}
         onOpen={onOpen}
         onToggle={onToggle}
       />
+      {editing ? (
+        <TaskPropertyEditor
+          detail={editing}
+          occurrenceDate={occurrence?.date}
+          task={task}
+          onClose={() => {
+            setEditing(null);
+            window.requestAnimationFrame(() => editorTrigger.current?.focus());
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -118,5 +145,46 @@ export interface TaskRowDetail {
   key: string;
   label: string;
   value: string;
+  rawValue?: unknown;
   description?: string;
+  overdue?: boolean;
+}
+
+function defaultTaskDetails(
+  task: Task,
+  metadata: ReturnType<typeof taskMeta>,
+): TaskRowDetail[] {
+  let index = 0;
+  const details: TaskRowDetail[] = [];
+  if (task.scheduled)
+    details.push({
+      key: "scheduled",
+      label: "Scheduled",
+      value: metadata[index++]?.label ?? task.scheduled,
+      rawValue: task.scheduled,
+      overdue: metadata[index - 1]?.overdue,
+    });
+  else if (task.due)
+    details.push({
+      key: "due",
+      label: "Due",
+      value: metadata[index++]?.label ?? task.due,
+      rawValue: task.due,
+      overdue: metadata[index - 1]?.overdue,
+    });
+  if (task.priority !== "none" && task.priority !== "normal")
+    details.push({
+      key: "priority",
+      label: "Priority",
+      value: metadata[index++]?.label ?? task.priority,
+      rawValue: task.priority,
+    });
+  if (task.recurrence)
+    details.push({
+      key: "recurrence",
+      label: "Repeat",
+      value: metadata[index]?.label ?? task.recurrence,
+      rawValue: task.recurrence,
+    });
+  return details;
 }

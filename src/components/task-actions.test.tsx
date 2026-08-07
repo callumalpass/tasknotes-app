@@ -82,6 +82,35 @@ describe("TaskActions", () => {
     );
   });
 
+  it("edits a displayed property without opening the task", async () => {
+    task = await repository.update(task.id, { priority: "high" });
+    const onOpen = vi.fn();
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskRow onOpen={onOpen} onToggle={vi.fn()} task={task} />
+      </RepositoryProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "high" }));
+    expect(screen.getByRole("dialog", { name: "Edit Priority" })).toBeVisible();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Close property editor" }),
+      ).toHaveFocus(),
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
+    fireEvent.click(screen.getByRole("option", { name: "Low" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({ priority: "low" }),
+    );
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
   it("creates a subtask using the configured portable record link", async () => {
     renderRow();
 

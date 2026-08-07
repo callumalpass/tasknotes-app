@@ -9,6 +9,7 @@ export interface ViewPropertyDetail {
   key: string;
   label: string;
   value: string;
+  rawValue: unknown;
   description?: string;
 }
 
@@ -46,6 +47,7 @@ export function viewPropertyDetails(
             key: property.key,
             label: property.label ?? propertyLabel(property.key),
             value: formatted,
+            rawValue: value,
             ...(property.description
               ? { description: property.description }
               : {}),

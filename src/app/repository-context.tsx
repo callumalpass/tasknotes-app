@@ -354,6 +354,7 @@ export function RepositoryProvider({
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
       const task = await repository.update(id, input);
+      invalidation.invalidateTasks([id]);
       if (taskUpdateAffectsAutoArchive(input))
         await autoArchiveRef.current?.observe(task);
       if (
@@ -365,7 +366,7 @@ export function RepositoryProvider({
         );
       return task;
     },
-    [reminderAuthority, repository],
+    [invalidation, reminderAuthority, repository],
   );
   const updateTasks = useCallback(
     async (updates: readonly { id: string; input: UpdateTaskInput }[]) => {
