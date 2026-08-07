@@ -54,6 +54,70 @@ test("keeps an embedded demo inside its frameable route", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("supports project capture and saved-view editing in the demo", async ({
+  page,
+}) => {
+  await page.goto("embed/?demo=24");
+  await page
+    .getByRole("heading", { level: 1, name: "Today", exact: true })
+    .waitFor();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Projects", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Add task to Field research" })
+    .click();
+  const projectCapture = page.getByRole("combobox", {
+    name: "New task title",
+  });
+  await projectCapture.fill("Draft the interview guide");
+  await projectCapture.press("Enter");
+  await expect(page.getByText("Draft the interview guide")).toBeVisible();
+
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Manage views" }).click();
+  await page.getByRole("button", { name: "Edit Today" }).click();
+  const viewName = page.getByRole("textbox", { name: "View name" });
+  await viewName.fill("Daily focus");
+  await page.getByRole("button", { name: "Save view" }).click();
+  await expect(
+    page.getByRole("button", { name: "Daily focus", exact: true }),
+  ).toBeVisible();
+});
+
+test("supports demo attachments and collection settings", async ({ page }) => {
+  await page.goto("embed/?demo=24");
+  await page
+    .getByRole("button", {
+      name: "Prepare quarterly planning session",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Attachments" }),
+  ).toBeVisible();
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles({
+      name: "demo-pixel.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  await expect(page.getByText("demo-pixel.png")).toBeVisible();
+
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByText("Advanced", { exact: true }).click();
+  await page.getByRole("combobox", { name: "Default priority" }).click();
+  await page.getByRole("option", { name: "High", exact: true }).click();
+  await page.getByRole("button", { name: "Save task settings" }).click();
+  await expect(page.getByText("Saved with the collection.")).toBeVisible();
+});
+
 test("demo work screen has no serious accessibility violations", async ({
   page,
 }) => {

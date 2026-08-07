@@ -1,3 +1,6 @@
+import { parseFrontmatter } from "@tasknotes/model/frontmatter";
+import { parse } from "yaml";
+
 import { completeTaskValues } from "../storage/completions";
 import { taskRelationships } from "../domain/task-relationships";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -6,6 +9,9 @@ import {
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
 import { todayString } from "../domain/task";
+import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
+import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
+import { DemoFileStore } from "./demo-file-store";
 
 import type {
   CollectionInfo,
@@ -49,7 +55,8 @@ import type {
 const MAX_DEMO_TASKS = 5_000;
 
 export class DemoTaskRepository implements TaskRepository {
-  private readonly model = new TaskNotesTaskModel();
+  readonly files = new DemoFileStore();
+  private model = new TaskNotesTaskModel();
   private readonly listeners = new Set<() => void>();
   private readonly tasks = new Map<string, Task>();
   private readonly viewExecutions = new Map<string, TaskViewExecution>();
@@ -308,24 +315,20 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
-    const tasks = tasksForView(view, [...this.tasks.values()]);
+    const draft = this.viewDraft(view);
+    const tasks = this.tasksForView(view, draft);
     const rows = tasks.map((task) => ({
       task,
       values: {
-        title: task.title,
-        status: task.status,
-        priority: task.priority,
-        scheduled: task.scheduled ?? null,
-        due: task.due ?? null,
-        projects: task.projects,
-        sortOrder: task.sortOrder ?? null,
+        ...taskViewValues(task),
+        ...(draft ? computedViewValues(draft, task) : {}),
       },
     }));
     const groupProperty =
       view.presentation?.type === "tasknotes.kanban"
         ? (view.presentation.mappings.column ?? "status")
-        : view.id === "projects"
-          ? "projects"
+        : view.presentation?.type === "tasknotes.projects"
+          ? this.model.configuration().fieldMapping.projects
           : null;
     const groupValues = groupProperty
       ? uniqueValues(
@@ -370,6 +373,7 @@ export class DemoTaskRepository implements TaskRepository {
       path,
       input.format ?? "obsidian.base",
       input.document,
+      input.name,
     );
     return clone(source);
   }
@@ -386,7 +390,13 @@ export class DemoTaskRepository implements TaskRepository {
     return clone(this.storeSource(input.path, current.format, input.document));
   }
 
-  async deleteViewSource(path: string): Promise<void> {
+  async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    const current = this.sources.get(path);
+    if (!current) throw new Error(`Demo view source not found: ${path}`);
+    if (ifRevision && current.revision !== ifRevision)
+      throw new Error(
+        "This view changed after it was opened. Reload it and try again.",
+      );
     this.sources.delete(path);
     this.documents = this.documents.filter(
       (document) => document.source.path !== path,
@@ -447,17 +457,51 @@ export class DemoTaskRepository implements TaskRepository {
 
   async taskModelSettingsAccess() {
     return {
-      writable: false,
-      source: "Demo task definition",
-      reason: "The demo resets when the page reloads.",
+      writable: true,
+      source: "Demo collection settings",
     };
   }
 
   async updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration> {
-    void patch;
-    throw new Error("Task definition settings are read-only in the demo.");
+    const current = this.model.configuration();
+    const configuration: TaskCollectionConfiguration = {
+      ...current,
+      defaults: {
+        ...current.defaults,
+        status: patch.defaultStatus ?? current.defaults.status,
+        priority: patch.defaultPriority ?? current.defaults.priority,
+      },
+      recurrence: {
+        ...current.recurrence,
+        ...(patch.recurrence ?? {}),
+      },
+      occurrences: {
+        ...current.occurrences,
+        ...(patch.occurrences ?? {}),
+      },
+      timeTracking: {
+        ...current.timeTracking,
+        ...(patch.timeTracking ?? {}),
+      },
+      archive: {
+        ...current.archive,
+        ...(patch.archive ?? {}),
+      },
+      templating: {
+        ...current.templating,
+        ...(patch.templating ?? {}),
+      },
+      linkWriteFormat: patch.links?.writeFormat ?? current.linkWriteFormat,
+      statuses: current.statuses.map((status) => ({
+        ...status,
+        ...(patch.statusAutomation?.[status.value] ?? {}),
+      })),
+    };
+    this.model = new TaskNotesTaskModel(configuration);
+    this.changed();
+    return this.model.configuration();
   }
 
   async collectionInfo(): Promise<CollectionInfo> {
@@ -491,7 +535,12 @@ export class DemoTaskRepository implements TaskRepository {
     return clone(task);
   }
 
-  private storeSource(path: string, format: string, document: string) {
+  private storeSource(
+    path: string,
+    format: string,
+    document: string,
+    name?: string,
+  ) {
     const source = {
       path,
       format,
@@ -499,20 +548,90 @@ export class DemoTaskRepository implements TaskRepository {
       document,
     };
     this.sources.set(path, source);
-    this.documents = this.documents.map((entry) =>
-      entry.source.path === path
-        ? {
-            ...entry,
-            source: { ...entry.source, revision: source.revision },
-            views: entry.views.map((view) => ({
-              ...view,
-              source: { ...view.source, revision: source.revision },
-            })),
-          }
-        : entry,
-    );
+    this.syncViewDocument(source, name);
     this.changed();
     return source;
+  }
+
+  private syncViewDocument(
+    source: TaskViewSourceDocument,
+    requestedName?: string,
+  ): void {
+    const current = this.documents.find(
+      (document) => document.source.path === source.path,
+    );
+    const identities = sourceViewIdentities(source, requestedName);
+    const sourceReference = {
+      path: source.path,
+      format: source.format,
+      revision: source.revision,
+      writable: true,
+    };
+    const views = identities.map(({ id, name }) => {
+      const previous =
+        current?.views.find((candidate) => candidate.id === id) ??
+        (identities.length === 1 ? current?.views[0] : undefined);
+      const draft = readViewDraft(source, id);
+      const presentationType =
+        previous?.presentation?.type === "tasknotes.projects" &&
+        draft.renderer === "tasknotes.task-list"
+          ? "tasknotes.projects"
+          : draft.renderer;
+      const mappings: Record<string, string> =
+        presentationType === "tasknotes.kanban" && draft.groupProperty
+          ? { column: draft.groupProperty }
+          : {};
+      return {
+        key: `${source.path}#${id}`,
+        documentId: current?.id ?? viewIdentifier(requestedName ?? name),
+        documentName: requestedName ?? name,
+        id,
+        name: draft.name,
+        properties: draft.properties.map((key) => ({ key })),
+        sort: draft.sort,
+        source: sourceReference,
+        presentation: {
+          type: presentationType,
+          mappings,
+          options: structuredClone(draft.options),
+        },
+      };
+    });
+    const document: TaskViewDocument = {
+      id:
+        current?.id ??
+        viewIdentifier(requestedName ?? views[0]?.name ?? "View"),
+      name:
+        requestedName ??
+        (views.length === 1 ? views[0]!.name : (current?.name ?? "Views")),
+      source: sourceReference,
+      views,
+    };
+    this.documents = current
+      ? this.documents.map((entry) =>
+          entry.source.path === source.path ? document : entry,
+        )
+      : [...this.documents, document];
+  }
+
+  private viewDraft(view: TaskView): EditableViewDraft | null {
+    const source = this.sources.get(view.source.path);
+    if (!source) return null;
+    try {
+      return readViewDraft(source, view.id);
+    } catch {
+      return null;
+    }
+  }
+
+  private tasksForView(
+    view: TaskView,
+    draft: EditableViewDraft | null,
+  ): Task[] {
+    const tasks = [...this.tasks.values()];
+    const evaluated = draft ? tasksForViewDraft(draft, tasks) : null;
+    if (evaluated) return evaluated;
+    return fallbackTasksForView(view, tasks);
   }
 
   private changed(): void {
@@ -561,7 +680,7 @@ function demoViewDocuments(
       id: "projects",
       name: "Projects",
       type: "tasknotes.projects",
-      options: { create: false },
+      options: {},
     },
     {
       id: "archive",
@@ -741,7 +860,7 @@ function demoTasks(model: TaskNotesTaskModel, count: number): Task[] {
   });
 }
 
-function tasksForView(view: TaskView, tasks: Task[]): Task[] {
+function fallbackTasksForView(view: TaskView, tasks: Task[]): Task[] {
   const active = tasks.filter((task) => !task.archived && !task.completed);
   if (view.id === "archive") return tasks.filter((task) => task.archived);
   if (view.id === "projects")
@@ -755,6 +874,74 @@ function tasksForView(view: TaskView, tasks: Task[]): Task[] {
     });
   }
   return active;
+}
+
+function sourceViewIdentities(
+  source: TaskViewSourceDocument,
+  requestedName?: string,
+): Array<{ id: string; name: string }> {
+  if (source.format === "obsidian.base") {
+    const value = parse(source.document) as { views?: unknown };
+    const names = Array.isArray(value?.views)
+      ? value.views.map((candidate) =>
+          candidate && typeof candidate === "object" && "name" in candidate
+            ? String(candidate.name)
+            : "View",
+        )
+      : [];
+    const seen = new Map<string, number>();
+    return names.map((name) => {
+      const base = viewIdentifier(name);
+      const count = (seen.get(base) ?? 0) + 1;
+      seen.set(base, count);
+      return { id: count === 1 ? base : `${base}-${count}`, name };
+    });
+  }
+  const frontmatter = parseFrontmatter(source.document).frontmatter as {
+    views?: unknown;
+  };
+  return Array.isArray(frontmatter.views)
+    ? frontmatter.views.flatMap((candidate) => {
+        if (!candidate || typeof candidate !== "object") return [];
+        const record = candidate as Record<string, unknown>;
+        const name =
+          typeof record.name === "string"
+            ? record.name
+            : (requestedName ?? "View");
+        const id =
+          typeof record.id === "string" ? record.id : viewIdentifier(name);
+        return [{ id, name }];
+      })
+    : [];
+}
+
+function viewIdentifier(value: string): string {
+  const normalized = value
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9_.:]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return /^[a-z]/.test(normalized) ? normalized : `view-${normalized}`;
+}
+
+function taskViewValues(task: Task): Record<string, unknown> {
+  const values: Record<string, unknown> = {
+    ...structuredClone(task.frontmatter),
+    ...structuredClone(task.customProperties),
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    scheduled: task.scheduled ?? null,
+    due: task.due ?? null,
+    projects: [...task.projects],
+    contexts: [...task.contexts],
+    tags: [...task.tags],
+    archived: task.archived,
+    completed: task.completed,
+    sortOrder: task.sortOrder ?? null,
+  };
+  for (const [key, value] of Object.entries(values))
+    values[`note.${key}`] = structuredClone(value);
+  return values;
 }
 
 function dateOffset(date: Date, days: number, hour?: number): string {
