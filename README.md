@@ -85,8 +85,7 @@ pnpm test:e2e
 pnpm test:production-smoke
 ```
 
-To update the native projects, run `pnpm cap:sync`. Android builds require Java
-21. On macOS, open the iOS project with `pnpm exec cap open ios`.
+To update the native projects, run `pnpm cap:sync`. Android builds require Java 21. On macOS, open the iOS project with `pnpm exec cap open ios`.
 
 Contributor documentation:
 
