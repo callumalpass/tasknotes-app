@@ -40,6 +40,20 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await expect(page).toHaveURL(/\/more\?demo=50/);
 });
 
+test("keeps an embedded demo inside its frameable route", async ({ page }) => {
+  await page.goto("embed/?demo=12");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Today", exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
+  await expect(page).toHaveURL(/\/embed\/scratchpad\?demo=12/);
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", exact: true }),
+  ).toBeVisible();
+});
+
 test("demo work screen has no serious accessibility violations", async ({
   page,
 }) => {

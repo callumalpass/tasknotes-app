@@ -5,6 +5,11 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()
 
+/embed*
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors https://tasknotes.dev https://www.tasknotes.dev
+  X-Robots-Tag: noindex, nofollow
+
 /.well-known/mdbase-app.json
   Cache-Control: no-store
 

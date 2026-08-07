@@ -14,12 +14,20 @@ import {
 import "./styles.css";
 import "./accessibility.css";
 
-const demoCount = Number(new URL(location.href).searchParams.get("demo") ?? 0);
+const currentUrl = new URL(location.href);
+const embeddedDemo = /\/embed(?:\/|$)/.test(currentUrl.pathname);
+const requestedDemoCount = Number(currentUrl.searchParams.get("demo") ?? 0);
+const demoCount =
+  embeddedDemo && requestedDemoCount <= 0 ? 24 : requestedDemoCount;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
-      {demoCount > 0 ? <DemoApp count={demoCount} /> : <CollectionGate />}
+      {demoCount > 0 ? (
+        <DemoApp count={demoCount} embedded={embeddedDemo} />
+      ) : (
+        <CollectionGate />
+      )}
     </AppErrorBoundary>
   </StrictMode>,
 );

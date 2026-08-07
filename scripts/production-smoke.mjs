@@ -88,6 +88,25 @@ const checks = [
         "The deployed authorization callback cannot load the app.",
       );
   },
+  async () => {
+    if (new URL(appOrigin).hostname !== "app.tasknotes.dev") return;
+    const appHeaders = await responseHeaders(`${appOrigin}/`);
+    const embedHeaders = await responseHeaders(`${appOrigin}/embed/?demo=12`);
+    if (appHeaders.get("x-frame-options")?.toUpperCase() !== "DENY")
+      throw new Error(
+        "The ordinary TaskNotes app can be embedded unexpectedly.",
+      );
+    if (embedHeaders.has("x-frame-options"))
+      throw new Error("The dedicated TaskNotes demo route cannot be embedded.");
+    const frameAncestors = embedHeaders.get("content-security-policy") ?? "";
+    if (
+      !frameAncestors.includes("frame-ancestors") ||
+      !frameAncestors.includes("https://tasknotes.dev")
+    )
+      throw new Error(
+        "The embedded TaskNotes demo does not restrict its parent origin.",
+      );
+  },
 ];
 
 for (const [index, check] of checks.entries()) {
@@ -147,4 +166,13 @@ async function text(url) {
   });
   if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}.`);
   return response.text();
+}
+
+async function responseHeaders(url) {
+  const response = await fetch(url, {
+    headers: { "user-agent": "tasknotes-production-smoke/1" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}.`);
+  return response.headers;
 }
