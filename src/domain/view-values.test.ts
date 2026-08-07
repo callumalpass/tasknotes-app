@@ -63,16 +63,23 @@ describe("saved-view values", () => {
         { identityProperty: "name" },
       ),
     ).toEqual([
-      { key: 'note["status"]', label: "State", value: "open" },
+      {
+        key: 'note["status"]',
+        label: "State",
+        value: "open",
+        rawValue: "open",
+      },
       {
         key: "formula.progress",
         label: "Progress",
         value: "Active",
+        rawValue: "Active",
       },
       {
         key: 'note["due"]',
         label: "Due",
         value: formatPropertyValue("2026-07-24", "date"),
+        rawValue: "2026-07-24",
       },
     ]);
   });
@@ -108,6 +115,7 @@ describe("saved-view values", () => {
         key: 'note["due"]',
         label: "Due",
         value: formatPropertyValue("2026-07-24", "date"),
+        rawValue: "2026-07-24",
       },
     ]);
   });
