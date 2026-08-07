@@ -165,17 +165,24 @@ export function CloudConnection({ error }: { error: string | null }) {
         </section>
       ) : null}
       <div className="welcome-actions">
-        {connections.map((connection) => (
-          <button
-            key={connection.collectionId}
-            className="outline-action"
-            disabled={opening !== null}
-            type="button"
-            onClick={() => open(connection.collectionId)}
-          >
-            Open {connection.displayName}
-          </button>
-        ))}
+        {connections
+          .filter(
+            (connection) =>
+              session.status !== "setup_review_required" ||
+              connection.collectionId !== selectedCollectionId,
+          )
+          .map((connection) => (
+            <button
+              key={connection.collectionId}
+              className="outline-action"
+              disabled={opening !== null}
+              type="button"
+              onClick={() => open(connection.collectionId)}
+            >
+              {session.status === "setup_review_required" ? "Use " : "Open "}
+              {connection.displayName}
+            </button>
+          ))}
         <button
           className="outline-action"
           disabled={opening !== null}
@@ -184,11 +191,13 @@ export function CloudConnection({ error }: { error: string | null }) {
         >
           {opening === "another"
             ? "Opening mdbase…"
-            : connections.length
-              ? "Connect another collection"
-              : "Continue to mdbase"}
+            : session.status === "setup_review_required"
+              ? "Choose a different collection in mdbase"
+              : connections.length
+                ? "Connect another collection"
+                : "Continue to mdbase"}
         </button>
-        {selectedCollectionId ? (
+        {selectedCollectionId && session.status !== "setup_review_required" ? (
           <button
             className="text-action"
             disabled={opening !== null}
