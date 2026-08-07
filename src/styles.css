@@ -5643,7 +5643,7 @@ button:disabled {
 
 .expression-mode button,
 .filter-add-actions button,
-.add-view-property button {
+.add-view-property > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;

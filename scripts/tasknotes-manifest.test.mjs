@@ -108,6 +108,19 @@ describe("TaskNotes mdbase manifest", () => {
     );
   });
 
+  it("keeps local identity and callback URLs on the same origin", async () => {
+    const manifest = await buildTaskNotesManifest({
+      appUrl: "http://127.0.0.1:4173/tasknotes-app",
+      webOnly: true,
+      resources,
+    });
+    expect(manifest.homepage).toBe("http://127.0.0.1:4173/tasknotes-app/");
+    expect(manifest.icon).toBe("http://127.0.0.1:4173/tasknotes-app/icon.png");
+    expect(manifest.redirect_uris).toEqual([
+      "http://127.0.0.1:4173/tasknotes-app/auth/mdbase/callback",
+    ]);
+  });
+
   it("provisions TaskNotes-compatible string ranks for manual order", () => {
     const generated = buildAppTaskNotesResources();
     const implementation = generated.type.implements.find(
