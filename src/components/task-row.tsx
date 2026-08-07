@@ -26,7 +26,10 @@ export function TaskRow({
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
-  const [editing, setEditing] = useState<TaskRowDetail | null>(null);
+  const [editing, setEditing] = useState<{
+    detail: TaskRowDetail;
+    anchor: TaskPropertyEditorAnchor;
+  } | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const shownDetails = details ?? defaultTaskDetails(displayedTask, metadata);
   return (
@@ -83,7 +86,10 @@ export function TaskRow({
                   type="button"
                   onClick={(event) => {
                     editorTrigger.current = event.currentTarget;
-                    setEditing(detail);
+                    setEditing({
+                      detail,
+                      anchor: editorAnchor(event.currentTarget),
+                    });
                   }}
                 >
                   <span>{detail.label}</span>
@@ -102,7 +108,10 @@ export function TaskRow({
                 type="button"
                 onClick={(event) => {
                   editorTrigger.current = event.currentTarget;
-                  setEditing(detail);
+                  setEditing({
+                    detail,
+                    anchor: editorAnchor(event.currentTarget),
+                  });
                 }}
               >
                 {detail.value}
@@ -119,7 +128,8 @@ export function TaskRow({
       />
       {editing ? (
         <TaskPropertyEditor
-          detail={editing}
+          anchor={editing.anchor}
+          detail={editing.detail}
           occurrenceDate={occurrence?.date}
           task={task}
           onClose={() => {
@@ -130,6 +140,25 @@ export function TaskRow({
       ) : null}
     </div>
   );
+}
+
+export interface TaskPropertyEditorAnchor {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+}
+
+function editorAnchor(element: HTMLElement): TaskPropertyEditorAnchor {
+  const bounds = element.getBoundingClientRect();
+  return {
+    top: bounds.top,
+    right: bounds.right,
+    bottom: bounds.bottom,
+    left: bounds.left,
+    width: bounds.width,
+  };
 }
 
 function TrackingIndicator() {

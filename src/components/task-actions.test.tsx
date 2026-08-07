@@ -95,7 +95,12 @@ describe("TaskActions", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "high" }));
-    expect(screen.getByRole("dialog", { name: "Edit Priority" })).toBeVisible();
+    const editor = screen.getByRole("dialog", { name: "Edit Priority" });
+    expect(editor).toBeVisible();
+    expect(editor).not.toHaveAttribute("aria-modal");
+    expect(editor.style.getPropertyValue("--task-property-editor-top")).toBe(
+      "12px",
+    );
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Close property editor" }),
@@ -103,12 +108,33 @@ describe("TaskActions", () => {
     );
     fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
     fireEvent.click(screen.getByRole("option", { name: "Low" }));
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({ priority: "low" }),
     );
+    expect(
+      screen.queryByRole("dialog", { name: "Edit Priority" }),
+    ).not.toBeInTheDocument();
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("persists date choices without an apply step", async () => {
+    task = await repository.update(task.id, { due: "2030-08-05" });
+    renderRow();
+
+    fireEvent.click(screen.getByRole("button", { name: /Due .*Aug 5/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Due date" }));
+    fireEvent.click(screen.getByRole("gridcell", { name: /August 6, 2030/ }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({
+        due: "2030-08-06",
+      }),
+    );
+    expect(screen.getByRole("dialog", { name: "Edit Due" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Apply|Cancel/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("creates a subtask using the configured portable record link", async () => {

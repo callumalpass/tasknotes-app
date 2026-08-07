@@ -1,5 +1,12 @@
 import { X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { useRepository } from "../app/repository-context";
@@ -20,7 +27,7 @@ import type {
   TaskCollectionConfiguration,
   TaskUserMappedField,
 } from "../domain/task-configuration";
-import type { TaskRowDetail } from "./task-row";
+import type { TaskPropertyEditorAnchor, TaskRowDetail } from "./task-row";
 
 type EditableProperty =
   | {
@@ -32,11 +39,13 @@ type EditableProperty =
 export function TaskPropertyEditor({
   task,
   detail,
+  anchor: triggerAnchor,
   occurrenceDate,
   onClose,
 }: {
   task: Task;
   detail: TaskRowDetail;
+  anchor: TaskPropertyEditorAnchor;
   occurrenceDate?: string;
   onClose(): void;
 }) {
@@ -51,16 +60,57 @@ export function TaskPropertyEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
+  const [desktopPosition, setDesktopPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const position = () => {
+      if (window.innerWidth <= 600) {
+        setDesktopPosition(null);
+        return;
+      }
+      const gutter = 12;
+      const width = editor.offsetWidth;
+      const expandedHeight =
+        property?.kind === "scheduled" ||
+        property?.kind === "due" ||
+        property?.kind === "recurrence"
+          ? Math.min(540, window.innerHeight - gutter * 2)
+          : editor.offsetHeight;
+      setDesktopPosition({
+        top: Math.max(
+          gutter,
+          Math.min(
+            triggerAnchor.bottom + 6,
+            window.innerHeight - expandedHeight - gutter,
+          ),
+        ),
+        left: Math.max(
+          gutter,
+          Math.min(triggerAnchor.left, window.innerWidth - width - gutter),
+        ),
+      });
+    };
+    position();
+    window.addEventListener("resize", position);
+    return () => window.removeEventListener("resize", position);
+  }, [property?.kind, triggerAnchor]);
 
   useEffect(() => closeRef.current?.focus(), []);
 
-  async function save(next: unknown = value) {
+  async function save(next: unknown = value, closeAfter = true) {
     if (!property || saving) return;
     setSaving(true);
     setError(null);
     try {
       await updateTask(task.id, updateFor(task, property, next, anchor));
-      onClose();
+      if (closeAfter) onClose();
+      else setSaving(false);
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -81,9 +131,18 @@ export function TaskPropertyEditor({
     >
       <section
         aria-label={`Edit ${detail.label}`}
-        aria-modal="true"
+        aria-modal={desktopPosition ? undefined : "true"}
         className="task-property-editor"
+        ref={editorRef}
         role="dialog"
+        style={
+          desktopPosition
+            ? ({
+                "--task-property-editor-top": `${desktopPosition.top}px`,
+                "--task-property-editor-left": `${desktopPosition.left}px`,
+              } as CSSProperties)
+            : undefined
+        }
         onKeyDown={(event) => {
           if (event.key === "Escape") onClose();
         }}
@@ -117,6 +176,8 @@ export function TaskPropertyEditor({
             disabled={saving}
             onAnchorChange={setAnchor}
             onChange={setValue}
+            onCommit={(next) => void save(next)}
+            onPersist={(next) => void save(next, false)}
           />
         ) : (
           <p className="task-property-editor-note">
@@ -128,40 +189,29 @@ export function TaskPropertyEditor({
             {error}
           </p>
         ) : null}
-        {property ? (
+        {property && canClear(property) ? (
+          <button
+            className="task-property-editor-clear text-action"
+            disabled={saving}
+            type="button"
+            onClick={() => void save(undefined)}
+          >
+            Clear value
+          </button>
+        ) : null}
+        {property?.kind === "recurrence" ? (
           <footer>
-            {canClear(property) ? (
-              <button
-                className="text-action"
-                disabled={saving}
-                type="button"
-                onClick={() => void save(undefined)}
-              >
-                Clear value
-              </button>
-            ) : (
-              <span />
-            )}
-            <div>
-              <button
-                className="secondary-action"
-                disabled={saving}
-                type="button"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button
-                className="primary-action"
-                disabled={saving}
-                type="button"
-                onClick={() => void save()}
-              >
-                {saving ? "Saving…" : "Apply"}
-              </button>
-            </div>
+            <span />
+            <button
+              className="primary-action"
+              disabled={saving}
+              type="button"
+              onClick={() => void save()}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
           </footer>
-        ) : (
+        ) : !property ? (
           <footer>
             <span />
             <button
@@ -172,7 +222,7 @@ export function TaskPropertyEditor({
               Close
             </button>
           </footer>
-        )}
+        ) : null}
       </section>
     </div>,
     document.body,
@@ -187,6 +237,8 @@ function PropertyControl({
   anchor,
   disabled,
   onChange,
+  onCommit,
+  onPersist,
   onAnchorChange,
 }: {
   configuration: TaskCollectionConfiguration;
@@ -196,6 +248,8 @@ function PropertyControl({
   anchor?: "scheduled" | "completion";
   disabled: boolean;
   onChange(value: unknown): void;
+  onCommit(value: unknown): void;
+  onPersist(value: unknown): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
   if (property.kind === "status" || property.kind === "priority") {
@@ -212,7 +266,10 @@ function PropertyControl({
           label: option.label,
         }))}
         value={typeof value === "string" ? value : ""}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onCommit(next);
+        }}
       />
     );
   }
@@ -227,7 +284,10 @@ function PropertyControl({
           time: taskTimePart(current) || undefined,
         })}
         combineValue={combineTaskDateTime}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onPersist(next);
+        }}
       />
     );
   if (property.kind === "recurrence")
@@ -237,7 +297,10 @@ function PropertyControl({
         scheduled={scheduled}
         value={typeof value === "string" ? value : undefined}
         onAnchorChange={onAnchorChange}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onCommit(next);
+        }}
       />
     );
 
@@ -255,7 +318,10 @@ function PropertyControl({
         }))}
         placeholder="No value"
         value={typeof value === "string" ? value : ""}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onPersist(next);
+        }}
       />
     );
   if (field.inputKind === "datetime")
@@ -264,7 +330,10 @@ function PropertyControl({
         disabled={disabled}
         label={label}
         value={typeof value === "string" ? value : undefined}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onPersist(next);
+        }}
       />
     );
   if (field.type === "date")
@@ -284,7 +353,10 @@ function PropertyControl({
           checked={value === true}
           disabled={disabled}
           type="checkbox"
-          onChange={(event) => onChange(event.target.checked)}
+          onChange={(event) => {
+            onChange(event.target.checked);
+            onCommit(event.target.checked);
+          }}
         />
       </label>
     );
@@ -303,22 +375,32 @@ function PropertyControl({
               : ""
         }
         onChange={(event) =>
-          onChange(
-            field.type === "number"
-              ? event.target.value === ""
-                ? undefined
-                : Number(event.target.value)
-              : field.type === "list"
-                ? event.target.value
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter(Boolean)
-                : event.target.value,
-          )
+          onChange(customInputValue(field.type, event.target.value))
         }
+        onBlur={(event) =>
+          onCommit(customInputValue(field.type, event.currentTarget.value))
+        }
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          onCommit(customInputValue(field.type, event.currentTarget.value));
+        }}
       />
     </label>
   );
+}
+
+function customInputValue(
+  type: TaskUserMappedField["type"],
+  value: string,
+): unknown {
+  if (type === "number") return value === "" ? undefined : Number(value);
+  if (type === "list")
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  return value;
 }
 
 function editableProperty(
