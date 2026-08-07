@@ -1,111 +1,103 @@
-# TaskNotes app
+# TaskNotes
 
-TaskNotes is a web-first task client packaged for Android and iOS with
-Capacitor. Every runtime opens a Markdown collection through mdbase: either a
-hosted collection or a collection exposed by a connected computer.
+TaskNotes is a task manager for the web, iPhone, iPad, and Android. It lets you
+capture and organise work while keeping your tasks as structured Markdown
+records in an mdbase collection.
 
-This repository is the candidate successor to `tasknotes-mobile`. It uses the
-separate application ID `dev.tasknotes.app`, so both Android builds can remain
-installed while the new application is tested.
+[Open TaskNotes](https://app.tasknotes.dev/) ·
+[Try a disposable demo](https://app.tasknotes.dev/?demo=30)
 
-## Current scope
+## What you can do
 
-- One collection picker for hosted mdbase and connected-computer collections
-- Ordered view navigation with saved lists, boards, calendars, and Scratchpad
-- Capture, editing, completion, search, recurrence, reminders, and time tracking
-- First-class image attachments with optional inline Markdown embeds
-- Authority-backed, content-free reminders
-- Android and iOS packaging through Capacitor
-- Shared validation and mapping from `@tasknotes/model`
+- Capture, edit, complete, search, and reorder tasks
+- Organise work with saved lists, boards, and calendars
+- Set due and scheduled dates, priorities, recurrence, and reminders
+- Track time and attach images
+- Use Scratchpad to turn a rough outline into selected tasks
+- Switch between system, light, and dark appearance
+- Inspect the Markdown path behind a task whenever you want it
 
-## Data model
+## What is mdbase?
 
-mdbase is the only durable data boundary. TaskNotes does not open device folders
-or maintain an IndexedDB record replica. The application calls the selected
-mdbase authority through one provider-neutral `TaskRepository`; a small
-in-memory cache keeps the current session coherent. Hosted use requires a
-network connection, and a connected-computer collection requires that computer
-to remain reachable.
+[mdbase](https://mdbase.dev/) is an open specification for treating folders of
+Markdown files as typed, queryable collections. Records remain ordinary
+Markdown documents, while their frontmatter gives applications a shared way to
+understand fields such as a task's status, priority, and due date.
 
-Tasks remain portable Markdown records. A task's frontmatter `attachments` list
-owns attachment membership, an optional image embed in the Markdown body owns
-presentation, and the mdbase file descriptor owns binary metadata.
+TaskNotes uses [mdbase Connect](https://mdbase.dev/connect/) to request access
+to a collection. You choose the collection and approve what the app may do,
+whether its files are hosted online or kept on a connected computer. Access can
+be changed or revoked later.
 
-```yaml
-attachments:
-  - "[[Attachments/receipt.jpg]]"
-```
+See the [mdbase overview](https://mdbase.dev/) for an introduction or the
+[mdbase specification](https://mdbase.dev/spec/) for the technical details.
 
-Detaching an image removes task membership but does not delete its bytes.
-Permanent deletion remains unavailable until the authority can atomically prove
-that the file is unreferenced.
+## Your tasks remain portable
 
-See [docs/architecture.md](docs/architecture.md) for the architectural
-invariants and [docs/conformance.md](docs/conformance.md) for contract claims.
+TaskNotes works with mdbase collections. You can choose a hosted collection or
+one made available by a connected computer; the same TaskNotes features and
+terminology apply to both.
 
-## Development
+Your collection—not the browser or app—is the durable home of your tasks.
+TaskNotes does not create a separate IndexedDB copy or open folders directly on
+your device. Each task remains a Markdown record that can be used beyond the
+app.
 
-The repository contains versioned package snapshots under `vendor/`, so clean
-checkouts and deployment workflows do not depend on sibling repositories. See
-[`vendor/README.md`](vendor/README.md) before refreshing them.
+This also means TaskNotes is not an offline-first app:
+
+- A hosted collection needs an internet connection.
+- A connected-computer collection needs that computer to remain reachable.
+- A change is saved once the selected collection has accepted it.
+
+Task reminders are delivered by mdbase, so TaskNotes does not need to remain
+open. Reminder notifications contain no task titles, descriptions, paths, or
+record content.
+
+## Trying the demo
+
+The [demo](https://app.tasknotes.dev/?demo=30) opens an in-memory collection
+with generated tasks. It supports the main capture, editing, views, search,
+completion, time-tracking, and Scratchpad flows without connecting to or
+changing a real collection.
+
+Demo data is disposable and resets when you reload the page. Change the number
+in `?demo=30` to generate a different number of tasks, up to 5,000.
+
+## For contributors
+
+TaskNotes is a web-first application packaged for Android and iOS with
+Capacitor. It requires Node.js, pnpm, and the package snapshots committed under
+`vendor/`.
 
 ```sh
 pnpm install
 pnpm dev
 ```
 
-The application runs at <http://127.0.0.1:4173>.
+The development server runs at <http://127.0.0.1:4173>. For a local demo, open
+<http://127.0.0.1:4173/?demo=30>.
 
-### Demo collection
-
-Append `?demo=N` to open a disposable in-memory TaskNotes collection with `N`
-generated tasks—for example, <http://127.0.0.1:4173/?demo=50>. The demo uses the
-same `TaskRepository` application boundary as an mdbase collection and supports
-capture, editing, views, search, completion, time tracking, and Scratchpad. It
-resets when the page reloads and is capped at 5,000 tasks.
-
-Demo URLs are available in development and production builds. Demo data stays
-in memory and never connects to or modifies a real collection.
-
-### Native projects
-
-```sh
-pnpm cap:sync
-```
-
-Android requires Java 21. To install a debug build with Android Studio's JBR:
-
-```sh
-cd android
-JAVA_HOME=/opt/android-studio/jbr ./gradlew :app:installDebug
-```
-
-On macOS, open the iOS project with `pnpm exec cap open ios`. See
-[docs/ios-release.md](docs/ios-release.md) for signing and TestFlight setup and
-[docs/notifications.md](docs/notifications.md) for native notification setup.
-
-## Verification
+Run the main verification suite with:
 
 ```sh
 pnpm verify
 pnpm test:e2e
 pnpm test:production-smoke
-pnpm cap:sync
 ```
 
-`pnpm verify` runs formatting, TypeScript, ESLint, unit and coverage gates,
-TaskNotes conformance, a real mdbase collection oracle, and the production
-build. Playwright uses the mdbase Connect browser fixture to exercise the same
-direct repository path at desktop and phone viewports, including connected
-computer authorization, create/edit/delete operations, and accessibility.
+To update the native projects, run `pnpm cap:sync`. Android builds require Java
+21. On macOS, open the iOS project with `pnpm exec cap open ios`.
 
-## Web deployment
+Contributor documentation:
 
-The production web application is <https://app.tasknotes.dev/> on Cloudflare
-Pages. Pushes to `main` run verification and browser tests, build the dedicated
-web origin, and deploy `dist` with Wrangler when the repository's Cloudflare
-secrets and `CLOUDFLARE_PAGES_ENABLED=1` are configured.
+- [Architecture and data invariants](docs/architecture.md)
+- [Contract and conformance claims](docs/conformance.md)
+- [Notification behaviour and setup](docs/notifications.md)
+- [iOS signing and TestFlight](docs/ios-release.md)
+- [Vendored package snapshots](vendor/README.md)
 
-The legacy <https://callumalpass.github.io/tasknotes-app/> deployment remains a
-rollback target. Native builds use the generated TaskNotes manifest and the
-private-use OAuth callback.
+## Project status
+
+TaskNotes is under active development. Its native app identifier is
+`dev.tasknotes.app`; it can be installed alongside the earlier
+`tasknotes-mobile` build during testing.
