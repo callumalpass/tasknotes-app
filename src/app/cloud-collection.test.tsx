@@ -114,6 +114,9 @@ it("shows and applies the exact reviewed collection setup", async () => {
 
   expect(screen.getByText("Review TaskNotes setup")).toBeVisible();
   expect(screen.getByText(/TaskNotes\/Views\/\*\*\/\*\.base/)).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: /Reconnect/ }),
+  ).not.toBeInTheDocument();
   expect(connect.applyCollectionSetup).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Apply reviewed setup" }));
   await waitFor(() =>

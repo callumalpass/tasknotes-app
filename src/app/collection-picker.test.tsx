@@ -37,6 +37,12 @@ it("presents only mdbase collections and their authoritative location", () => {
   expect(screen.getByText("Studio computer").parentElement).toHaveTextContent(
     "Connected computer",
   );
+  expect(
+    screen.getByRole("heading", { name: "Choose where to work" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: /Hosted tasks/ }),
+  ).toHaveTextContent("Current");
   expect(screen.queryByText("On this device")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Hosted tasks/ })).toHaveAttribute(
     "aria-current",
@@ -55,9 +61,7 @@ it("contains focus and restores it when the picker closes", async () => {
 
   const rendered = renderPicker({ connections });
   await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Close collection picker" }),
-    ).toHaveFocus(),
+    expect(screen.getByRole("button", { name: /Hosted tasks/ })).toHaveFocus(),
   );
 
   const buttons = screen.getByRole("dialog").querySelectorAll("button");

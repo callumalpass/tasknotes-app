@@ -1,5 +1,5 @@
 import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
-import { Check, Cloud, Plus, X } from "lucide-react";
+import { ArrowRight, Check, Cloud, Monitor, Plus, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -19,6 +19,8 @@ export function CollectionPicker({
   onSelect(collectionId: string): void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const firstCollectionRef = useRef<HTMLButtonElement>(null);
+  const selectedCollectionRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
@@ -36,7 +38,13 @@ export function CollectionPicker({
       appRoot.inert = true;
       appRoot.setAttribute("aria-hidden", "true");
     }
-    queueMicrotask(() => closeRef.current?.focus());
+    queueMicrotask(() =>
+      (
+        selectedCollectionRef.current ??
+        firstCollectionRef.current ??
+        closeRef.current
+      )?.focus(),
+    );
     const containFocus = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -89,7 +97,11 @@ export function CollectionPicker({
         tabIndex={-1}
       >
         <header className="collection-picker-header">
-          <h2 id="collection-picker-title">Collections</h2>
+          <div>
+            <p className="eyebrow">TaskNotes collection</p>
+            <h2 id="collection-picker-title">Choose where to work</h2>
+            <p>TaskNotes opens the collection at its authoritative location.</p>
+          </div>
           <button
             aria-label="Close collection picker"
             className="icon-action"
@@ -103,45 +115,67 @@ export function CollectionPicker({
         </header>
         <div className="collection-picker-content">
           <div className="collection-picker-group">
-            <span className="collection-picker-group-label">mdbase</span>
-            {connections.map((connection) => {
-              const active = connection.collectionId === selectedCollectionId;
-              return (
-                <button
-                  aria-current={active ? "true" : undefined}
-                  className={`collection-picker-row${active ? " is-active" : ""}`}
-                  key={connection.collectionId}
-                  onClick={() => onSelect(connection.collectionId)}
-                  type="button"
-                >
-                  <Cloud aria-hidden="true" size={20} />
-                  <span>
-                    <strong>{connection.displayName}</strong>
-                    <small>
-                      {isHostedCloudConnection(connection)
-                        ? "Hosted by mdbase"
-                        : "Connected computer"}
-                    </small>
-                  </span>
-                  {active ? <Check aria-hidden="true" size={18} /> : null}
-                </button>
-              );
-            })}
-            {!connections.length ? (
-              <p className="collection-picker-empty">
-                No mdbase collections have been opened on this device.
-              </p>
-            ) : null}
-            <button
-              className="collection-picker-action"
-              onClick={onAuthorize}
-              type="button"
-            >
-              <Plus aria-hidden="true" size={19} />
-              <span>Connect another collection</span>
-            </button>
+            <h3>Available collections</h3>
+            <div>
+              {connections.map((connection, index) => {
+                const active = connection.collectionId === selectedCollectionId;
+                const hosted = isHostedCloudConnection(connection);
+                return (
+                  <button
+                    aria-current={active ? "true" : undefined}
+                    className={`collection-picker-row${active ? " current" : ""}`}
+                    key={connection.collectionId}
+                    onClick={() => onSelect(connection.collectionId)}
+                    ref={(element) => {
+                      if (index === 0) firstCollectionRef.current = element;
+                      if (active) selectedCollectionRef.current = element;
+                    }}
+                    type="button"
+                  >
+                    <span className="collection-picker-row-icon">
+                      {hosted ? (
+                        <Cloud aria-hidden="true" size={19} />
+                      ) : (
+                        <Monitor aria-hidden="true" size={19} />
+                      )}
+                    </span>
+                    <span>
+                      <strong>{connection.displayName}</strong>
+                      <small>
+                        {hosted ? "Hosted by mdbase" : "Connected computer"}
+                      </small>
+                    </span>
+                    <span className="collection-picker-row-state">
+                      {active ? <Check aria-hidden="true" size={16} /> : null}
+                      {active ? "Current" : "Open"}
+                    </span>
+                  </button>
+                );
+              })}
+              {!connections.length ? (
+                <p className="collection-picker-empty">
+                  No collections are connected to TaskNotes on this device yet.
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
+        <footer className="collection-picker-footer">
+          <button
+            className="collection-picker-action"
+            onClick={onAuthorize}
+            type="button"
+          >
+            <span className="collection-picker-row-icon">
+              <Plus aria-hidden="true" size={19} />
+            </span>
+            <span>
+              <strong>Connect another collection</strong>
+              <small>Open mdbase to choose and approve access.</small>
+            </span>
+            <ArrowRight aria-hidden="true" size={18} />
+          </button>
+        </footer>
       </section>
     </div>,
     document.body,
