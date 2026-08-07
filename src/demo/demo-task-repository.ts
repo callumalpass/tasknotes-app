@@ -526,10 +526,8 @@ function demoViewDocuments(
 ): TaskViewDocument[] {
   const properties = [
     { key: configuration.fieldMapping.title, label: "Task" },
-    { key: configuration.fieldMapping.status, label: "Status" },
     { key: configuration.fieldMapping.scheduled, label: "Scheduled" },
     { key: configuration.fieldMapping.due, label: "Due" },
-    { key: configuration.fieldMapping.priority, label: "Priority" },
   ];
   const definitions = [
     {

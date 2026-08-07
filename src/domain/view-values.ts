@@ -20,12 +20,10 @@ export function viewPropertyDetails(
     identityProperty,
     omittedProperties = [],
     occurrence,
-    suppressRoutineDefaults = false,
   }: {
     identityProperty?: string;
     omittedProperties?: readonly string[];
     occurrence?: TaskOccurrence;
-    suppressRoutineDefaults?: boolean;
   } = {},
 ): ViewPropertyDetail[] | undefined {
   if (!properties.length) return undefined;
@@ -37,9 +35,8 @@ export function viewPropertyDetails(
     )
       return [];
     const value = viewPropertyValue(row, property.key, occurrence);
+    if (isNullTaskOption(property.key, value)) return [];
     const formatted = formatPropertyValue(value, property.format);
-    if (suppressRoutineDefaults && isRoutineTaskDefault(property.key, value))
-      return [];
     return formatted === null
       ? []
       : [
@@ -56,12 +53,10 @@ export function viewPropertyDetails(
   });
 }
 
-function isRoutineTaskDefault(key: string, value: unknown): boolean {
+function isNullTaskOption(key: string, value: unknown): boolean {
+  if (value !== "none") return false;
   const field = notePropertyName(key) ?? key;
-  if (field === "status") return value === "open" || value === "none";
-  if (field === "priority") return value === "normal" || value === "none";
-  if (field === "completed" || field === "archived") return value === false;
-  return false;
+  return field === "status" || field === "priority";
 }
 
 export function viewPropertyValue(

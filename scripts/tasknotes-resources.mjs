@@ -5,11 +5,31 @@ import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 
 export function buildAppTaskNotesResources() {
   const modelConfig = cloneDefaultModelConfig();
+  const statusColors = {
+    none: "#94a3b8",
+    open: "#64748b",
+    "in-progress": "#3b82f6",
+    done: "#22c55e",
+  };
+  const priorityColors = {
+    none: "#94a3b8",
+    low: "#3b82f6",
+    normal: "#f59e0b",
+    high: "#ef4444",
+  };
+  modelConfig.statuses = modelConfig.statuses.map((status) => ({
+    ...status,
+    color: statusColors[status.value] ?? status.color,
+  }));
+  modelConfig.priorities = modelConfig.priorities.map((priority) => ({
+    ...priority,
+    color: priorityColors[priority.value] ?? priority.color,
+  }));
   modelConfig.statuses.push({
     id: "cancelled",
     value: "cancelled",
     label: "Cancelled",
-    color: "#808080",
+    color: "#94a3b8",
     isCompleted: false,
     isSkipped: true,
     excludeFromCycle: true,

@@ -1161,10 +1161,10 @@ export function ViewsScreen({
             }
             statusColumns={[...configuration.statuses]
               .sort((left, right) => left.order - right.order)
-              .map(({ value, label }) => ({ value, label }))}
+              .map(({ value, label, color }) => ({ value, label, color }))}
             priorityColumns={[...configuration.priorities]
               .sort((left, right) => left.weight - right.weight)
-              .map(({ value, label }) => ({ value, label }))}
+              .map(({ value, label, color }) => ({ value, label, color }))}
             onMove={(row, property, value, order) =>
               void moveBoardTask(row, property, value, order)
             }
@@ -1284,8 +1284,8 @@ function KanbanView({
       sequence: number;
     }
   >;
-  priorityColumns: Array<{ value: string; label: string }>;
-  statusColumns: Array<{ value: string; label: string }>;
+  priorityColumns: Array<{ value: string; label: string; color?: string }>;
+  statusColumns: Array<{ value: string; label: string; color?: string }>;
   onMove(
     row: TaskViewRow,
     property: string,
@@ -1302,7 +1302,12 @@ function KanbanView({
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<
     string,
-    { value: unknown; label?: string; rows: typeof execution.rows }
+    {
+      value: unknown;
+      label?: string;
+      color?: string;
+      rows: typeof execution.rows;
+    }
   >();
   const propertyName = kanbanPropertyRole(property, fieldMapping);
   const configuredColumns =
@@ -1315,6 +1320,7 @@ function KanbanView({
     columns.set(valueKey(configured.value), {
       value: configured.value,
       label: configured.label,
+      color: configured.color,
       rows: [],
     });
   if (propertyName === "completed" || propertyName === "archived") {
@@ -1800,8 +1806,22 @@ function KanbanView({
               data-kanban-column-key={key}
               key={key}
             >
-              <header>
-                <h2>{label}</h2>
+              <header
+                style={
+                  propertyName === "status" && column.color
+                    ? { borderBottomColor: column.color }
+                    : undefined
+                }
+              >
+                <h2
+                  style={
+                    propertyName === "priority" && column.color
+                      ? { color: column.color }
+                      : undefined
+                  }
+                >
+                  {label}
+                </h2>
                 <div>
                   <span>{column.rows.length}</span>
                   {writable && canCreateInColumn(property, column.value) ? (

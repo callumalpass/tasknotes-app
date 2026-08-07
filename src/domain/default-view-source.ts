@@ -116,7 +116,7 @@ export function taskNotesDefaultBaseDocument(
               },
             ],
           },
-          order: [title, status, scheduled, due, priority],
+          order: [title, scheduled, due],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: "formula.taskDay", direction: "ASC" },
@@ -167,7 +167,7 @@ export function taskNotesDefaultBaseDocument(
               `${projects}.isEmpty() == false`,
             ],
           },
-          order: [title, status, scheduled, due, priority],
+          order: [title, scheduled, due],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: title, direction: "ASC" },
@@ -179,7 +179,7 @@ export function taskNotesDefaultBaseDocument(
           type: "tasknotesTaskList",
           name: "Archive",
           filters: { and: [archivedTaskFilter(configuration)] },
-          order: [title, status, scheduled, due, priority],
+          order: [title, scheduled, due],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: title, direction: "ASC" },
@@ -200,13 +200,7 @@ export function taskNotesDefaultCanonicalDocument(
   const taskDay =
     "if(projection.task_date.isEmpty(), null, date(projection.task_date))";
   const sharedWhere = activeTaskFilters(configuration).join(" && ");
-  const selection = [
-    fields.title,
-    fields.status,
-    fields.scheduled,
-    fields.due,
-    fields.priority,
-  ];
+  const selection = [fields.title, fields.scheduled, fields.due];
 
   return serializeMarkdownDocument(
     {

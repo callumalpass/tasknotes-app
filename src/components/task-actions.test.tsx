@@ -158,15 +158,38 @@ describe("TaskActions", () => {
     });
   });
 
+  it("edits organization fields directly from the menu", async () => {
+    renderRow();
+
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
+    expect(screen.getByRole("menuitem", { name: "Projects" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Contexts" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Tags" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Projects" }));
+    const projects = screen.getByRole("combobox", { name: "Projects" });
+    fireEvent.change(projects, { target: { value: "Roadmap" } });
+    fireEvent.keyDown(projects, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Save projects" }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({
+        projects: ["Roadmap"],
+      }),
+    );
+  });
+
   it("supports arrow-key traversal and drill-in back navigation", async () => {
     renderRow();
     await openMenu();
     const menu = screen.getByRole("menu", { name: "Actions for Menu parent" });
     await waitFor(() =>
-      expect(screen.getByRole("menuitem", { name: "Edit" })).toHaveFocus(),
+      expect(screen.getByRole("menuitem", { name: "Complete" })).toHaveFocus(),
     );
 
     expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
+    expect(screen.getByRole("menuitem", { name: "Dates" })).toHaveFocus();
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });

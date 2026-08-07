@@ -55,11 +55,13 @@ export function Fieldset({
 export function Choice({
   selected,
   disabled = false,
+  color,
   children,
   onClick,
 }: {
   selected: boolean;
   disabled?: boolean;
+  color?: string;
   children: ReactNode;
   onClick(): void;
 }) {
@@ -68,6 +70,7 @@ export function Choice({
       aria-pressed={selected}
       className={selected ? "is-selected" : undefined}
       disabled={disabled}
+      style={color ? { color } : undefined}
       type="button"
       onClick={onClick}
     >

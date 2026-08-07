@@ -11,6 +11,7 @@ import {
   GripVertical,
   Link2,
   ListChecks,
+  ListTodo,
   MoreHorizontal,
   Plus,
   RotateCcw,
@@ -941,7 +942,7 @@ export function ScratchpadScreen({
                     }
                   >
                     {node.kind === "draft" ? (
-                      <FilePenLine aria-hidden="true" size={14} />
+                      <ListTodo aria-hidden="true" size={14} />
                     ) : (
                       <StickyNote aria-hidden="true" size={14} />
                     )}
@@ -1120,7 +1121,7 @@ export function ScratchpadScreen({
                       {node.kind === "draft" ? (
                         <StickyNote aria-hidden="true" size={17} />
                       ) : (
-                        <FilePenLine aria-hidden="true" size={17} />
+                        <ListTodo aria-hidden="true" size={17} />
                       )}
                       {node.kind === "draft" ? "Keep as note" : "Make a task"}
                     </button>
