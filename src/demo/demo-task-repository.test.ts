@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  createViewDocument,
+  emptyViewDraft,
+  readViewDraft,
+  updateViewDocument,
+} from "../domain/view-document";
 import { DemoTaskRepository } from "./demo-task-repository";
 
 describe("DemoTaskRepository", () => {
@@ -63,5 +69,77 @@ describe("DemoTaskRepository", () => {
       title: "Design notes",
     });
     expect(result.active.body).toBe("");
+  });
+
+  it("applies saved-view edits to the live demo catalogue", async () => {
+    const repository = new DemoTaskRepository(12);
+    const today = (await repository.listViews())
+      .flatMap(({ views }) => views)
+      .find(({ id }) => id === "today")!;
+    const source = await repository.readViewSource(today.source.path);
+    const draft = readViewDraft(source, today.id);
+
+    await repository.updateViewSource({
+      path: source.path,
+      ifRevision: source.revision,
+      document: updateViewDocument(source, {
+        ...draft,
+        name: "Daily focus",
+        sort: [{ property: "note.title", direction: "asc" }],
+      }),
+    });
+
+    const updated = (await repository.listViews())
+      .flatMap(({ views }) => views)
+      .find(({ name }) => name === "Daily focus")!;
+    expect(updated.id).toBe("daily-focus");
+    expect(updated.sort).toEqual([
+      { property: "note.title", direction: "asc" },
+    ]);
+    expect((await repository.executeView(updated)).rows.length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("keeps advanced task settings writable for the session", async () => {
+    const repository = new DemoTaskRepository(2);
+
+    expect(await repository.taskModelSettingsAccess()).toMatchObject({
+      writable: true,
+    });
+    await repository.updateTaskModelSettings({ defaultPriority: "high" });
+
+    expect(
+      (await repository.create({ title: "Uses the new default" })).priority,
+    ).toBe("high");
+  });
+
+  it("creates and deletes session-only saved views", async () => {
+    const repository = new DemoTaskRepository(8);
+    const draft = {
+      ...emptyViewDraft("obsidian-bases"),
+      name: "Review queue",
+    };
+    const source = await repository.createViewSource({
+      name: draft.name,
+      path: "TaskNotes/Views/review-queue.base",
+      format: "obsidian.base",
+      document: createViewDocument("obsidian.base", draft),
+    });
+
+    expect(
+      (await repository.listViews()).flatMap(({ views }) => views),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "review-queue", name: "Review queue" }),
+      ]),
+    );
+
+    await repository.deleteViewSource(source.path, source.revision);
+    expect(
+      (await repository.listViews())
+        .flatMap(({ views }) => views)
+        .some(({ id }) => id === "review-queue"),
+    ).toBe(false);
   });
 });
