@@ -7613,6 +7613,10 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .manual-order-list {
+    margin-left: 16px;
+  }
+
   .task-row {
     min-height: 56px;
     contain-intrinsic-size: auto 56px;
