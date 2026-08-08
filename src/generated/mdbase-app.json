@@ -65,7 +65,7 @@
         "manifest": {
           "kind": "mdbase.type-pack",
           "id": "tasknotes.task",
-          "version": "0.3.0-rc.10",
+          "version": "0.3.0-rc.11",
           "name": "TaskNotes task",
           "description": "TaskNotes task contract, implementation, and referenced JSON Schemas.",
           "resources": [
