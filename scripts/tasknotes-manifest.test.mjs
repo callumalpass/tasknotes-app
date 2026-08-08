@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
+import {
+  buildTaskNotesManifest,
+  TASKNOTES_APP_TYPE_PACK_VERSION,
+} from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const resources = buildAppTaskNotesResources();
@@ -71,6 +74,10 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
       4,
     );
+    expect(manifest.provisions.type_packs[0].manifest.version).toBe(
+      TASKNOTES_APP_TYPE_PACK_VERSION,
+    );
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.11");
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
