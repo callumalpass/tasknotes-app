@@ -34,6 +34,7 @@ import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
 
 import type { TaskView } from "../domain/view";
+import type { OperationalError } from "../application/operational-error";
 
 type Route =
   | { page: "home" | "search" | "scratchpad" | "more" }
@@ -205,6 +206,12 @@ export function AppShell() {
     (workspace.page === "search" ||
       workspace.page === "home" ||
       Boolean(workspace.page === "views" && workspaceViewKey));
+  const showBottomNavigation =
+    route.page !== "task" &&
+    !(workspace.page === "home" && viewsLoading) &&
+    (workspace.page !== "views" ||
+      !workspaceViewKey ||
+      workspaceIsNavigationView);
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
@@ -308,11 +315,7 @@ export function AppShell() {
           />
         </aside>
       ) : null}
-      {route.page !== "task" &&
-      !(workspace.page === "home" && viewsLoading) &&
-      (workspace.page !== "views" ||
-        !workspaceViewKey ||
-        workspaceIsNavigationView) ? (
+      {showBottomNavigation ? (
         <nav
           className={`bottom-navigation items-${Math.min(navigationKeys.length, 2) + 2}`}
           aria-label="Primary"
@@ -344,40 +347,142 @@ export function AppShell() {
         onClose={closeCapture}
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
       />
-      {pendingDeletion ? (
-        <div
-          className={`undo-toast${deletionError ? " deletion-error-toast" : ""}`}
-          role={deletionError ? "alert" : "status"}
+      <DeletionFeedback
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
+        error={deletionError}
+        pendingDeletion={pendingDeletion}
+        onRetry={retryTaskDeletion}
+        onUndo={undoTaskDeletion}
+      />
+    </div>
+  );
+}
+
+export function DeletionFeedback({
+  aboveMobileControls = false,
+  error,
+  pendingDeletion,
+  onRetry,
+  onUndo,
+}: {
+  aboveMobileControls?: boolean;
+  error: OperationalError | null;
+  pendingDeletion: { id: string; title: string } | null;
+  onRetry(): Promise<void>;
+  onUndo(): Promise<void>;
+}) {
+  useEffect(() => {
+    if (!pendingDeletion) return;
+    const undoShortcut = (event: KeyboardEvent) => {
+      if (
+        event.key.toLocaleLowerCase() !== "z" ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.shiftKey ||
+        isEditableTarget(event.target)
+      )
+        return;
+      event.preventDefault();
+      void onUndo().catch(() => undefined);
+    };
+    window.addEventListener("keydown", undoShortcut);
+    return () => window.removeEventListener("keydown", undoShortcut);
+  }, [onUndo, pendingDeletion]);
+
+  if (error)
+    return (
+      <DeletionRecoveryNotice
+        aboveMobileControls={aboveMobileControls}
+        error={error}
+        title={pendingDeletion?.title}
+        onRetry={pendingDeletion ? onRetry : undefined}
+        onUndo={pendingDeletion ? onUndo : undefined}
+      />
+    );
+  if (!pendingDeletion) return null;
+  const positionClass = aboveMobileControls ? " is-above-mobile-controls" : "";
+  return (
+    <>
+      <p aria-atomic="true" className="visually-hidden" role="status">
+        Deleted “{pendingDeletion.title}”. Undo is available for 30 seconds.
+      </p>
+      <div className={`undo-toast${positionClass}`}>
+        <span>Deleted “{pendingDeletion.title}”</span>
+        <button
+          aria-keyshortcuts="Control+Z Meta+Z"
+          type="button"
+          onClick={() => void onUndo().catch(() => undefined)}
         >
-          <span>
-            {deletionError ? "Deletion waiting" : "Deleted"} “
-            {pendingDeletion.title}”
-          </span>
-          {deletionError ? (
-            <button
-              type="button"
-              onClick={() => void retryTaskDeletion().catch(() => undefined)}
-            >
-              Retry
-            </button>
-          ) : null}
+          Undo
+        </button>
+      </div>
+    </>
+  );
+}
+
+function DeletionRecoveryNotice({
+  aboveMobileControls,
+  error,
+  title,
+  onRetry,
+  onUndo,
+}: {
+  aboveMobileControls: boolean;
+  error: OperationalError;
+  title?: string;
+  onRetry?: () => Promise<void>;
+  onUndo?: () => Promise<void>;
+}) {
+  const headingId = useId();
+  const positionClass = aboveMobileControls ? " is-above-mobile-controls" : "";
+  return (
+    <section
+      aria-labelledby={headingId}
+      className={`deletion-recovery-notice${positionClass}`}
+    >
+      <header>
+        <h2 id={headingId}>Deletion waiting</h2>
+        {title ? <p>“{title}” is still in the collection.</p> : null}
+      </header>
+      <OperationErrorNotice
+        action="The deletion"
+        message={error}
+        recovery={
+          onRetry
+            ? "Retry, or undo to restore the task here."
+            : "The task remains in the collection. Try again."
+        }
+      />
+      {onRetry && onUndo ? (
+        <div className="deletion-recovery-actions">
           <button
+            className="retry-deletion-action"
             type="button"
-            onClick={() => void undoTaskDeletion().catch(() => undefined)}
+            onClick={() => void onRetry().catch(() => undefined)}
+          >
+            Retry
+          </button>
+          <button
+            aria-keyshortcuts="Control+Z Meta+Z"
+            type="button"
+            onClick={() => void onUndo().catch(() => undefined)}
           >
             Undo
           </button>
         </div>
-      ) : deletionError ? (
-        <div className="undo-toast deletion-error-toast">
-          <OperationErrorNotice
-            action="The deletion"
-            message={deletionError}
-            recovery="The task is still in the collection. Try again."
-          />
-        </div>
       ) : null}
-    </div>
+    </section>
+  );
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.matches("input, textarea, select, [role='textbox']"))
   );
 }
 
