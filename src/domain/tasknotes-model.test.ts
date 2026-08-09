@@ -53,6 +53,28 @@ describe("TaskNotes task model app boundary", () => {
     expect(updated.frontmatter.status).toBe("doing");
   });
 
+  it("removes the completion date when a completed task is reopened", () => {
+    const created = model.create(
+      { title: "Reopen me", status: "todo" },
+      { id: "reopen", now: "2026-08-10T01:00:00.000Z" },
+    );
+    const completed = model.update(
+      created,
+      { status: "done" },
+      { now: "2026-08-10T01:01:00.000Z" },
+    );
+    const reopened = model.update(
+      completed,
+      { status: "todo" },
+      { now: "2026-08-10T01:02:00.000Z" },
+    );
+
+    expect(completed.completedDate).toBe("2026-08-10");
+    expect(completed.frontmatter.completedDate).toBe("2026-08-10");
+    expect(reopened.completedDate).toBeUndefined();
+    expect(reopened.frontmatter).not.toHaveProperty("completedDate");
+  });
+
   it("applies custom defaults and removes cleared custom properties", () => {
     const created = model.create(
       { title: "Configured", customProperties: { client: "Acme" } },

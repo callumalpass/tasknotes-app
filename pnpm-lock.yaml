@@ -8,6 +8,11 @@ overrides:
   '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz
   '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz
 
+patchedDependencies:
+  '@tasknotes/model@0.3.0-rc.10':
+    hash: 2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704
+    path: patches/@tasknotes__model@0.3.0-rc.10.patch
+
 importers:
 
   .:
@@ -62,7 +67,7 @@ importers:
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz
       '@tasknotes/model':
         specifier: file:vendor/tasknotes-model-0.3.0-rc.10.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.10.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.10.tgz(patch_hash=2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704)
       dexie:
         specifier: 4.4.4
         version: 4.4.4
@@ -4679,7 +4684,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.10.tgz':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.10.tgz(patch_hash=2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704)':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0

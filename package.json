@@ -69,13 +69,13 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz",
-    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.45-66d87bc4bfaf.tgz",
-    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.45-66d87bc4bfaf.tgz",
     "@capacitor/android": "8.4.2",
     "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",
     "@capacitor/ios": "8.4.2",
     "@eslint/js": "10.0.1",
+    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.45-66d87bc4bfaf.tgz",
+    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.45-66d87bc4bfaf.tgz",
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
@@ -101,6 +101,9 @@
     "overrides": {
       "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz",
       "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz"
+    },
+    "patchedDependencies": {
+      "@tasknotes/model@0.3.0-rc.10": "patches/@tasknotes__model@0.3.0-rc.10.patch"
     }
   }
 }
