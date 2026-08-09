@@ -16,7 +16,7 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
       TASKNOTES_WEB_ONLY: "1",
       TASKNOTES_FIREBASE_PROJECT_ID: "",
-      VITE_MDBASE_CONNECT_URL: "https://mdbase-connect-staging.onrender.com",
+      VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
     });
   });

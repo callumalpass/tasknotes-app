@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 export const developmentDeployment = Object.freeze({
   appOrigin: "https://staging.tasknotes-app.pages.dev",
-  connectOrigin: "https://mdbase-connect-staging.onrender.com",
+  connectOrigin: "https://connect-staging.mdbase.dev",
   loopbackOrigin: "http://127.0.0.1:28486",
   project: "tasknotes-app",
   branch: "staging",
