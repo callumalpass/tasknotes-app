@@ -3878,25 +3878,42 @@ button:disabled {
 .undo-toast {
   position: fixed;
   z-index: 25;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 82px);
-  display: flex;
-  max-width: min(28rem, calc(100vw - 36px));
-  min-height: 48px;
+  right: max(var(--page-inset), env(safe-area-inset-right));
+  bottom: max(var(--page-inset), env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(26rem, calc(100vw - (var(--page-inset) * 2)));
+  min-height: 56px;
   align-items: center;
-  gap: 18px;
-  padding: 10px 12px 10px 16px;
-  color: var(--paper-raised);
-  background: var(--ink);
-  border: 1px solid color-mix(in srgb, var(--paper), transparent 75%);
+  gap: var(--space-md);
+  padding: 8px 8px 8px var(--space-lg);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow: 0 10px 28px var(--color-shadow);
+  animation: deletion-feedback-enter 180ms var(--ease-out);
+}
+
+.undo-toast.is-above-mobile-controls,
+.deletion-recovery-notice.is-above-mobile-controls {
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 82px);
 }
 
 .undo-toast > span {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@keyframes deletion-feedback-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 /* Scratchpad: the Markdown outline is the surface, not a stack of cards. */
@@ -4684,26 +4701,102 @@ button:disabled {
   .scratchpad-convert-line {
     transition: none;
   }
+
+  .undo-toast,
+  .deletion-recovery-notice {
+    animation: none;
+  }
 }
 
 .undo-toast > button {
-  min-width: 54px;
+  min-width: 64px;
   min-height: var(--control-min-size);
-  color: var(--paper-raised);
+  padding: 0 4px 0 12px;
+  color: var(--accent);
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.deletion-recovery-notice {
+  position: fixed;
+  z-index: 25;
+  right: max(var(--page-inset), env(safe-area-inset-right));
+  bottom: max(var(--page-inset), env(safe-area-inset-bottom));
+  display: grid;
+  width: min(28rem, calc(100vw - (var(--page-inset) * 2)));
+  max-height: calc(100dvh - (var(--page-inset) * 2));
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 10px 28px var(--color-shadow);
+  animation: deletion-feedback-enter 180ms var(--ease-out);
+}
+
+.deletion-recovery-notice header,
+.deletion-recovery-notice header > :is(h2, p),
+.deletion-recovery-notice .inline-error {
+  margin: 0;
+}
+
+.deletion-recovery-notice header {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.deletion-recovery-notice h2 {
+  font-size: var(--type-control);
+}
+
+.deletion-recovery-notice header p {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+}
+
+.deletion-recovery-notice .operation-error-details {
+  margin-bottom: 0;
+}
+
+.deletion-recovery-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--line);
+}
+
+.deletion-recovery-actions button {
+  min-width: 64px;
+  min-height: var(--control-min-size);
+  padding: 0 var(--space-md);
+  color: var(--accent);
   font-weight: 700;
   background: transparent;
   border: 0;
   cursor: pointer;
 }
 
-.deletion-error-toast {
-  display: block;
-  color: var(--ink);
-  background: var(--paper-raised);
+.deletion-recovery-actions .retry-deletion-action {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
 }
 
-.deletion-error-toast .operation-error-details {
-  margin-bottom: 0;
+@media (min-width: 840px) {
+  .undo-toast,
+  .undo-toast.is-above-mobile-controls,
+  .deletion-recovery-notice,
+  .deletion-recovery-notice.is-above-mobile-controls {
+    right: 24px;
+    bottom: 24px;
+  }
 }
 
 .global-capture-scrim {

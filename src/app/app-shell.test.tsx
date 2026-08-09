@@ -1,10 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { Navigation, StorageErrorScreen } from "./app-shell";
+import { DeletionFeedback, Navigation, StorageErrorScreen } from "./app-shell";
 import {
   SCRATCHPAD_NAVIGATION_KEY,
   SEARCH_NAVIGATION_KEY,
 } from "./navigation-views";
+import { OperationalError } from "../application/operational-error";
 
 import type { TaskView } from "../domain/view";
 
@@ -97,6 +98,86 @@ it("keeps additional views behind the mobile Views menu", () => {
   fireEvent.click(screen.getByRole("button", { name: "Views" }));
   fireEvent.click(screen.getByRole("menuitem", { name: "Search" }));
   expect(onNavigate).toHaveBeenCalledWith({ page: "search" });
+});
+
+it("announces a pending deletion without putting Undo inside the live region", () => {
+  render(
+    <DeletionFeedback
+      error={null}
+      pendingDeletion={{ id: "one", title: "Prepare the planning session" }}
+      onRetry={vi.fn(async () => undefined)}
+      onUndo={vi.fn(async () => undefined)}
+    />,
+  );
+
+  const status = screen.getByRole("status");
+  const undo = screen.getByRole("button", { name: "Undo" });
+  expect(status).toHaveTextContent(
+    "Deleted “Prepare the planning session”. Undo is available for 30 seconds.",
+  );
+  expect(status.contains(undo)).toBe(false);
+  expect(undo).toHaveAttribute("aria-keyshortcuts", "Control+Z Meta+Z");
+});
+
+it("supports the deletion undo shortcut without overriding text editing", () => {
+  const onUndo = vi.fn(async () => undefined);
+  render(
+    <>
+      <input aria-label="Task title" />
+      <DeletionFeedback
+        error={null}
+        pendingDeletion={{ id: "one", title: "Prepare the planning session" }}
+        onRetry={vi.fn(async () => undefined)}
+        onUndo={onUndo}
+      />
+    </>,
+  );
+
+  fireEvent.keyDown(screen.getByRole("textbox", { name: "Task title" }), {
+    key: "z",
+    ctrlKey: true,
+  });
+  expect(onUndo).not.toHaveBeenCalled();
+
+  fireEvent.keyDown(window, { key: "z", metaKey: true });
+  expect(onUndo).toHaveBeenCalledOnce();
+});
+
+it("presents deletion failures as a persistent recovery notice", () => {
+  const onRetry = vi.fn(async () => undefined);
+  const onUndo = vi.fn(async () => undefined);
+  render(
+    <DeletionFeedback
+      error={
+        new OperationalError(
+          "unavailable",
+          "delete-task",
+          true,
+          "The collection is offline.",
+        )
+      }
+      pendingDeletion={{ id: "one", title: "Prepare the planning session" }}
+      onRetry={onRetry}
+      onUndo={onUndo}
+    />,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Deletion waiting" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(
+      "“Prepare the planning session” is still in the collection.",
+    ),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "The deletion could not finish while the collection was unavailable. Retry, or undo to restore the task here.",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(onRetry).toHaveBeenCalledOnce();
+  expect(onUndo).toHaveBeenCalledOnce();
 });
 
 function navigationView(id: string, name: string): TaskView {
