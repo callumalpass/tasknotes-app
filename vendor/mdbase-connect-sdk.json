@@ -1,37 +1,31 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/mdbase-dev/mdbase-connect",
-  "revision": "66d87bc4bfafe148f7cfb510f6aac1376471045b",
+  "revision": "1f6eb87153cb143e645dcf453d17a0b0948e2bc8",
   "artifacts": [
     {
       "package": "connect",
-      "file": "mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 149077,
-      "sha512": "NY9rfZFWJShMWxXaf9pIcfyHAy7l3HWuYoHl2CENxY8gebNLxUouniOTFBTY1OcKnZvuXgHzP5H9uxFqnUu8fA=="
+      "file": "mdbase-dev-connect-0.1.0-beta.61-1f6eb87153cb.tgz",
+      "bytes": 154845,
+      "sha512": "GOHFMAelXMgGqSYPbj+O/sb4pUkxC0yOjYqqNgkniySwlY34P7Nvz0Zg06Wtnwy0pM9E8pkv2vpO0d5uFiaYUQ=="
     },
     {
       "package": "devkit",
-      "file": "mdbase-dev-connect-dev-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 9242,
-      "sha512": "RmbNbPyQz9goFGew4ooz26Juco2vfcfQCxYM+uvL5WX9yimMDXGG6UjG3H4YYqT8nje5VR7JytKO7D60HfYZcw=="
+      "file": "mdbase-dev-connect-dev-0.1.0-beta.61-1f6eb87153cb.tgz",
+      "bytes": 9243,
+      "sha512": "5sa0dTlqEFHzwZ1ACAuLou/BHAEifLzKEj2E7kNOHNjGfVsGjD3SaBBO5ByATxW4gNbRz/yjd74j52mDOEMLxA=="
     },
     {
       "package": "protocol",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 54673,
-      "sha512": "AeDvKoYN1h2DCMD4E1xOJrbjWccM4K2ZTNHAczEiJRdeF3jRr4EWX878WYZ1yq4zqBL+fEih0ufQo4kDRuYeww=="
-    },
-    {
-      "package": "sync",
-      "file": "mdbase-dev-connect-sync-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 97204,
-      "sha512": "1NxvZ9UfoAE4QLpqPMufRU8MiO47Tr9Lpb9KTNPEA4sYIr3fgReXNnUPchW4qdltJ8ilGG32ex02NcC+X/rpPw=="
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.61-1f6eb87153cb.tgz",
+      "bytes": 55793,
+      "sha512": "bKXYGjb6UShQm1MBFLJ4ZYgLHfAH1kU5UAuh+bvx70G4wrKIz1MraB6fSCpGzn0kBoJubQAHR8gJGgODhdA/Jw=="
     },
     {
       "package": "testing",
-      "file": "mdbase-dev-connect-testing-0.1.0-beta.45-66d87bc4bfaf.tgz",
+      "file": "mdbase-dev-connect-testing-0.1.0-beta.61-1f6eb87153cb.tgz",
       "bytes": 6801,
-      "sha512": "kWr5TTWmeAlROB8YuvursiwwB5epYCa20ZeZQMmGsQX7fKDsbR6w+kvVFLZIGmTPETFCZZcdKTA8RlsaBJVk7Q=="
+      "sha512": "eZGMVHnIB/mISlnUIMqc7c7su0964n2uq0CC2EW+MdEdWwPN6nJkvd5IiHfYQUvrPSf1ZqJZykHzE8REMdhWuQ=="
     }
   ]
 }
