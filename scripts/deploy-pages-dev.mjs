@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,7 +41,14 @@ export async function deployDevelopmentTaskNotes(
 ) {
   const deploymentEnvironment = developmentDeploymentEnvironment(environment);
   const previousManifests = await Promise.all(
-    manifestTargets.map((target) => readFile(target)),
+    manifestTargets.map(async (target) => {
+      try {
+        return await readFile(target);
+      } catch (error) {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      }
+    }),
   );
 
   try {
@@ -50,7 +57,11 @@ export async function deployDevelopmentTaskNotes(
   } finally {
     await Promise.all(
       manifestTargets.map((target, index) =>
-        writeFile(target, previousManifests[index]),
+        previousManifests[index] === null
+          ? unlink(target).catch((error) => {
+              if (error.code !== "ENOENT") throw error;
+            })
+          : writeFile(target, previousManifests[index]),
       ),
     );
   }
