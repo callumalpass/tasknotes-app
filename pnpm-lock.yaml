@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
-  '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz
+  '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
+  '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz
 
 importers:
 
@@ -55,11 +55,11 @@ importers:
         specifier: 6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)
       '@mdbase-dev/connect':
-        specifier: file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz
-        version: file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz
+        specifier: file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz
+        version: file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz
       '@mdbase-dev/connect-protocol':
-        specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
-        version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
+        specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
+        version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
       '@tasknotes/model':
         specifier: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
         version: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
@@ -119,11 +119,11 @@ importers:
         specifier: 10.0.1
         version: 10.0.1(eslint@10.7.0)
       '@mdbase-dev/connect-dev':
-        specifier: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.57-cac3316f6599.tgz
-        version: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.57-cac3316f6599.tgz
+        specifier: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.58-557a548bb90d.tgz
+        version: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.58-557a548bb90d.tgz
       '@mdbase-dev/connect-testing':
-        specifier: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.57-cac3316f6599.tgz
-        version: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.57-cac3316f6599.tgz
+        specifier: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.58-557a548bb90d.tgz
+        version: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.58-557a548bb90d.tgz
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1
@@ -814,22 +814,22 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.57-cac3316f6599.tgz':
-    resolution: {integrity: sha512-TgTwjHZVG+HxTVkH6AU0jcXT/hbgXSjPkU6Ky0/5WtTIP0Rp3aeMyPvxg3b/LzsoDwuM2W3v8KRM7a/BorRaeQ==, tarball: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.57-cac3316f6599.tgz}
-    version: 0.1.0-beta.57
+  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.58-557a548bb90d.tgz':
+    resolution: {integrity: sha512-TcAbSeM50afVDALV5BC9YaQfvDVgAuWMiGrkIKNzTzmadz4iMM/flnoMZDBKR3nSl2Z0NJ4u8qD0PCs/gtmB7Q==, tarball: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.58-557a548bb90d.tgz}
+    version: 0.1.0-beta.58
     hasBin: true
 
-  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz':
-    resolution: {integrity: sha512-YM8W6T8hYj4OQ9Bmkta7ke7Njq3IHE552rqqIfjA+Ni8TRxf1xELyAQ+U0jPq8UvF+GzPPVyYD7FVg/sMhoXyw==, tarball: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz}
-    version: 0.1.0-beta.57
+  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz':
+    resolution: {integrity: sha512-ou9ut8Ze6+OwXBCJ1AHvwKgnrzRL6In2jLqiK8gCcjUVPfImWIxwm7hEjtu3kOzVQ+6u1z/ZfZ8FHruSjAf4yQ==, tarball: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz}
+    version: 0.1.0-beta.58
 
-  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.57-cac3316f6599.tgz':
-    resolution: {integrity: sha512-ouL0ktPPNFGUu6w5BsWu2ic0yZVl5DFIQXHRDkFWskLAhKomVo4UIvRfcXlU5jfiXBp3w+/rJk1llddX/VJmtw==, tarball: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.57-cac3316f6599.tgz}
-    version: 0.1.0-beta.57
+  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.58-557a548bb90d.tgz':
+    resolution: {integrity: sha512-ED8286Ykt/wBBGqLkOjH7KySFDQCj0mAktcXyYip4vXHdC0tj6zY+jW+MR8RAuzbeqTeHQXP1DMBjURx2hHqfg==, tarball: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.58-557a548bb90d.tgz}
+    version: 0.1.0-beta.58
 
-  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz':
-    resolution: {integrity: sha512-gjoaB8RH3aMh/VMQ1Ux+sJ+2PIHAJqzOz5ckcLZxXirbhsF48qNSySrAzeSBTNRwSvHZRl7KKquQhQ4PannZWw==, tarball: file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz}
-    version: 0.1.0-beta.57
+  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz':
+    resolution: {integrity: sha512-pVdAmCyyF9VWFLXQ3YOoyhJxBFBK5sbGBifBjDzXTwlN8+Oakn/VpDZrJt8vZjXVA4KPRAZGLjfWOcQ76sXDfg==, tarball: file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz}
+    version: 0.1.0-beta.58
 
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
@@ -4564,26 +4564,26 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.57-cac3316f6599.tgz':
+  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.58-557a548bb90d.tgz':
     dependencies:
-      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
+      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz
+      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
       ajv: 8.20.0
       yaml: 2.9.0
 
-  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz':
+  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz':
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
 
-  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.57-cac3316f6599.tgz':
+  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.58-557a548bb90d.tgz':
     dependencies:
-      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
+      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz
+      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
 
-  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.57-cac3316f6599.tgz':
+  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.58-557a548bb90d.tgz':
     dependencies:
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.57-cac3316f6599.tgz
+      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.58-557a548bb90d.tgz
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
