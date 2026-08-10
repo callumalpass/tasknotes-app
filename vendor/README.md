@@ -8,7 +8,7 @@ their source commit, byte size, and SHA-512 digest.
 Current snapshots were packed from sibling checkouts after their full test
 suites passed:
 
-- `../tasknotes-model` (`0.3.0-rc.10`)
+- `../tasknotes-model` (`0.3.0-rc.11`)
 - `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
 - `../tasknotes-spec`
 - `../mdbase`

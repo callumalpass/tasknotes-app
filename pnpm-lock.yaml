@@ -8,11 +8,6 @@ overrides:
   '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz
   '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz
 
-patchedDependencies:
-  '@tasknotes/model@0.3.0-rc.10':
-    hash: 2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704
-    path: patches/@tasknotes__model@0.3.0-rc.10.patch
-
 importers:
 
   .:
@@ -66,8 +61,8 @@ importers:
         specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.10.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.10.tgz(patch_hash=2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704)
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
       dexie:
         specifier: 4.4.4
         version: 4.4.4
@@ -979,9 +974,9 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.10.tgz':
-    resolution: {integrity: sha512-R/InZeouGfpRFMZlbd2+rD9tyLi/BB+q4Jjgg+GoEVXPEmIcHLo+zMxkYF0cY4M3TUlhYO5QBLeTUB1usa8xbA==, tarball: file:vendor/tasknotes-model-0.3.0-rc.10.tgz}
-    version: 0.3.0-rc.10
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.11.tgz':
+    resolution: {integrity: sha512-67Sb9vqmhfXf2wXo7956w4JijzUyMYNngQ8xjjpHl6m02hVnv8H2N9iICaHS4191Ym6pEARuOUO9LYa4NKcB8w==, tarball: file:vendor/tasknotes-model-0.3.0-rc.11.tgz}
+    version: 0.3.0-rc.11
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -4684,7 +4679,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.10.tgz(patch_hash=2cb657ef5df874d9f9707be93517f7d318aa3d1838d0a7faf1516d698df0c704)':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.11.tgz':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0
