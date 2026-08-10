@@ -51,8 +51,8 @@
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
-    "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz",
-    "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz",
+    "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.56-8ab2995dcae2.tgz",
+    "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.56-8ab2995dcae2.tgz",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.11.tgz",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
@@ -74,8 +74,8 @@
     "@capacitor/cli": "8.4.2",
     "@capacitor/ios": "8.4.2",
     "@eslint/js": "10.0.1",
-    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.45-66d87bc4bfaf.tgz",
-    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.45-66d87bc4bfaf.tgz",
+    "@mdbase-dev/connect-dev": "file:vendor/mdbase-dev-connect-dev-0.1.0-beta.56-8ab2995dcae2.tgz",
+    "@mdbase-dev/connect-testing": "file:vendor/mdbase-dev-connect-testing-0.1.0-beta.56-8ab2995dcae2.tgz",
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
@@ -99,8 +99,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz"
+      "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.56-8ab2995dcae2.tgz",
+      "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.56-8ab2995dcae2.tgz"
     },
     "patchedDependencies": {}
   }
