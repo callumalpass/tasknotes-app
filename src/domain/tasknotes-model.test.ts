@@ -61,12 +61,18 @@ describe("TaskNotes task model app boundary", () => {
     const completed = model.update(
       created,
       { status: "done" },
-      { now: "2026-08-10T01:01:00.000Z" },
+      {
+        now: "2026-08-10T01:01:00.000Z",
+        currentDate: "2026-08-10",
+      },
     );
     const reopened = model.update(
       completed,
       { status: "todo" },
-      { now: "2026-08-10T01:02:00.000Z" },
+      {
+        now: "2026-08-10T01:02:00.000Z",
+        currentDate: "2026-08-10",
+      },
     );
 
     expect(completed.completedDate).toBe("2026-08-10");

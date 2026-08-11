@@ -1,37 +1,31 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/mdbase-dev/mdbase-connect",
-  "revision": "66d87bc4bfafe148f7cfb510f6aac1376471045b",
+  "revision": "b1ba9e676c4064f6291426bade3fb7c7850716ca",
   "artifacts": [
     {
       "package": "connect",
-      "file": "mdbase-dev-connect-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 149077,
-      "sha512": "NY9rfZFWJShMWxXaf9pIcfyHAy7l3HWuYoHl2CENxY8gebNLxUouniOTFBTY1OcKnZvuXgHzP5H9uxFqnUu8fA=="
+      "file": "mdbase-dev-connect-0.1.0-beta.63-b1ba9e676c40.tgz",
+      "bytes": 155902,
+      "sha512": "caqXx0iKayYn3FdeseIeP72vwyYer0FfA7BCtqq7qKI8qeKSOW3LiojoPyEx2W8PWR0OsL3dpjK/4p6s26uxrg=="
     },
     {
       "package": "devkit",
-      "file": "mdbase-dev-connect-dev-0.1.0-beta.45-66d87bc4bfaf.tgz",
+      "file": "mdbase-dev-connect-dev-0.1.0-beta.63-b1ba9e676c40.tgz",
       "bytes": 9242,
-      "sha512": "RmbNbPyQz9goFGew4ooz26Juco2vfcfQCxYM+uvL5WX9yimMDXGG6UjG3H4YYqT8nje5VR7JytKO7D60HfYZcw=="
+      "sha512": "Rb6x9913gTN477r2sRHdg0G/LA17vN5+X+EY4/eFnRD4DmUiw6fTF6DuS1MW7sRUjj79TtioBFmePQCePvTFdg=="
     },
     {
       "package": "protocol",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 54673,
-      "sha512": "AeDvKoYN1h2DCMD4E1xOJrbjWccM4K2ZTNHAczEiJRdeF3jRr4EWX878WYZ1yq4zqBL+fEih0ufQo4kDRuYeww=="
-    },
-    {
-      "package": "sync",
-      "file": "mdbase-dev-connect-sync-0.1.0-beta.45-66d87bc4bfaf.tgz",
-      "bytes": 97204,
-      "sha512": "1NxvZ9UfoAE4QLpqPMufRU8MiO47Tr9Lpb9KTNPEA4sYIr3fgReXNnUPchW4qdltJ8ilGG32ex02NcC+X/rpPw=="
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.63-b1ba9e676c40.tgz",
+      "bytes": 55852,
+      "sha512": "gFtGSjZfSxbch3O+pIZ/fDyCy1r4oLePuNsogh8i7PJjFubjP2RvA7PWJst+kPZFQ2ySHExXpQgXmZhosxXARA=="
     },
     {
       "package": "testing",
-      "file": "mdbase-dev-connect-testing-0.1.0-beta.45-66d87bc4bfaf.tgz",
+      "file": "mdbase-dev-connect-testing-0.1.0-beta.63-b1ba9e676c40.tgz",
       "bytes": 6801,
-      "sha512": "kWr5TTWmeAlROB8YuvursiwwB5epYCa20ZeZQMmGsQX7fKDsbR6w+kvVFLZIGmTPETFCZZcdKTA8RlsaBJVk7Q=="
+      "sha512": "je+DbSSoE884b+BdBeioyfufRlaJxHlQUstLu0nwMZkE7ISzCZsr0oFAI9z+Wuhctt6E0RezAvv8snTmbP071Q=="
     }
   ]
 }
