@@ -87,6 +87,17 @@ beforeEach(() => {
   connect.select.mockClear();
 });
 
+it("opens the disposable demo without contacting mdbase", () => {
+  const onTryDemo = vi.fn();
+
+  render(<CloudConnection error={null} onTryDemo={onTryDemo} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Try demo" }));
+
+  expect(onTryDemo).toHaveBeenCalledOnce();
+  expect(connect.authorize).not.toHaveBeenCalled();
+});
+
 it("shows and applies the exact reviewed collection setup", async () => {
   connect.setSnapshot({
     status: "setup_review_required",

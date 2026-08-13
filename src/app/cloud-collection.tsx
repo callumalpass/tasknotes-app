@@ -12,11 +12,13 @@ export default function CloudCollection({
   authorizeAnotherCollection,
   openCollectionPicker,
   reauthorizeCurrentCollection,
+  onTryDemo,
 }: {
   authorizationError: string | null;
   authorizeAnotherCollection(): void;
   openCollectionPicker(): void;
   reauthorizeCurrentCollection(): void;
+  onTryDemo?(): void;
 }) {
   const session = useCloudSessionSnapshot();
   const connection =
@@ -32,7 +34,8 @@ export default function CloudCollection({
     [connection, session],
   );
 
-  if (!opened) return <CloudConnection error={authorizationError} />;
+  if (!opened)
+    return <CloudConnection error={authorizationError} onTryDemo={onTryDemo} />;
 
   return (
     <OpenedCollection
@@ -45,7 +48,13 @@ export default function CloudCollection({
   );
 }
 
-export function CloudConnection({ error }: { error: string | null }) {
+export function CloudConnection({
+  error,
+  onTryDemo,
+}: {
+  error: string | null;
+  onTryDemo?(): void;
+}) {
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const session = useCloudSessionSnapshot();
@@ -165,6 +174,16 @@ export function CloudConnection({ error }: { error: string | null }) {
         </section>
       ) : null}
       <div className="welcome-actions">
+        {onTryDemo ? (
+          <button
+            className="outline-action"
+            disabled={opening !== null}
+            onClick={onTryDemo}
+            type="button"
+          >
+            Try demo
+          </button>
+        ) : null}
         {connections
           .filter(
             (connection) =>

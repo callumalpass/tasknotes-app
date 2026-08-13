@@ -16,7 +16,7 @@ import { CollectionPicker } from "./collection-picker";
 
 const CloudCollection = lazy(() => import("./cloud-collection"));
 
-export function CollectionGate() {
+export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [authorizationError, setAuthorizationError] = useState<string | null>(
     null,
@@ -118,6 +118,7 @@ export function CollectionGate() {
           authorizeAnotherCollection={authorizeAnotherCollection}
           openCollectionPicker={() => setPickerOpen(true)}
           reauthorizeCurrentCollection={reauthorizeCurrentCollection}
+          onTryDemo={onTryDemo}
         />
       </Suspense>
       {pickerOpen ? (
