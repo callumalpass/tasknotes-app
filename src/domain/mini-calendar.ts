@@ -10,3 +10,16 @@ export function calendarDateDefaults(
   if (options.showDue !== false) return { due: selectedDate };
   return {};
 }
+
+export function calendarSelectionDefaults(
+  view: TaskView,
+  selectedValue: string,
+  timeEstimate?: number,
+): Partial<CreateTaskInput> {
+  return {
+    ...calendarDateDefaults(view, selectedValue),
+    ...(selectedValue.includes("T") && timeEstimate && timeEstimate > 0
+      ? { timeEstimate: Math.round(timeEstimate) }
+      : {}),
+  };
+}

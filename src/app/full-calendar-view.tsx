@@ -6,9 +6,10 @@ import interactionPlugin, {
 } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
+import { TaskActions } from "../components/task-actions";
 import { TaskRow } from "../components/task-row";
 import { calendarEvents, type CalendarEntry } from "../domain/calendar-events";
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
@@ -29,6 +30,7 @@ import type {
   EventContentArg,
   EventDropArg,
   EventInput,
+  DateSelectArg,
 } from "@fullcalendar/core";
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
@@ -51,8 +53,10 @@ export function FullCalendarView({
   preferences,
   identityTasks,
   selected,
+  selectedCreateValue,
   titleProperty,
   onSelect,
+  onCreate,
   onOpen,
   onToggle,
   onUpdate,
@@ -61,8 +65,10 @@ export function FullCalendarView({
   preferences: CalendarPreferences;
   identityTasks: readonly Task[];
   selected: string;
+  selectedCreateValue: string;
   titleProperty: string;
   onSelect(date: string, createValue?: string): void;
+  onCreate(date: string, createValue?: string, timeEstimate?: number): void;
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
   onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
@@ -75,6 +81,12 @@ export function FullCalendarView({
   const [title, setTitle] = useState("");
   const [range, setRange] = useState(() => initialRange(selected, initialMode));
   const [mutationError, setMutationError] = useState("");
+  const [contextAction, setContextAction] = useState<{
+    id: number;
+    metadata: CalendarEventMetadata;
+    x: number;
+    y: number;
+  } | null>(null);
   const entries = useMemo(
     () => calendarEvents(execution, range.start, range.end, identityTasks),
     [execution, identityTasks, range],
@@ -141,6 +153,20 @@ export function FullCalendarView({
     }
   }
 
+  function createFromSelection(info: DateSelectArg) {
+    const date = info.startStr.slice(0, 10);
+    const value = calendarStorageValue(info.start, info.allDay);
+    const timeEstimate = info.allDay
+      ? undefined
+      : Math.max(
+          1,
+          Math.round((info.end.getTime() - info.start.getTime()) / 60_000),
+        );
+    onSelect(date, value);
+    onCreate(date, value, timeEstimate);
+    info.view.calendar.unselect();
+  }
+
   return (
     <div className={`full-calendar-view${listMode ? " is-agenda" : ""}`}>
       <div className="full-calendar-commandbar">
@@ -151,6 +177,14 @@ export function FullCalendarView({
             onClick={() => api()?.prev()}
           >
             <ChevronLeft aria-hidden="true" size={19} />
+          </button>
+          <button
+            className="full-calendar-create"
+            type="button"
+            onClick={() => onCreate(selected, selectedCreateValue)}
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add task
           </button>
           <button type="button" onClick={() => api()?.today()}>
             Today
@@ -194,7 +228,16 @@ export function FullCalendarView({
             }
             editable
             eventClick={(info) => openEvent(info, onOpen)}
-            eventContent={(info) => calendarEventContent(info, onOpen)}
+            eventContent={(info) =>
+              calendarEventContent(info, onOpen, (metadata, x, y) =>
+                setContextAction({
+                  id: Date.now(),
+                  metadata,
+                  x,
+                  y,
+                }),
+              )
+            }
             eventDrop={(info) => void moveEvent(info)}
             eventResizableFromStart
             eventResize={(info) => void resizeEvent(info)}
@@ -215,6 +258,8 @@ export function FullCalendarView({
             ]}
             ref={calendarRef}
             selectable
+            select={(info) => createFromSelection(info)}
+            selectMirror
             slotDuration={preferences.slotDuration}
             slotMaxTime={preferences.slotMaxTime}
             slotMinTime={preferences.slotMinTime}
@@ -291,6 +336,17 @@ export function FullCalendarView({
           </aside>
         ) : null}
       </div>
+      {contextAction ? (
+        <TaskActions
+          contextMenuRequest={contextAction}
+          occurrenceDate={contextAction.metadata.occurrence?.date}
+          task={contextAction.metadata.entry.task}
+          onArchived={() => setContextAction(null)}
+          onDeleted={() => setContextAction(null)}
+          onOpen={onOpen}
+          onToggle={onToggle}
+        />
+      ) : null}
     </div>
   );
 }
@@ -369,6 +425,11 @@ function fullCalendarEvents(
 function calendarEventContent(
   info: EventContentArg,
   onOpen: (task: Task, occurrenceDate?: string) => void,
+  onContextAction: (
+    metadata: CalendarEventMetadata,
+    x: number,
+    y: number,
+  ) => void,
 ) {
   const tone = String(info.event.extendedProps.tone ?? "var(--accent)");
   const details = eventDetails(info.event.extendedProps.details);
@@ -380,7 +441,23 @@ function calendarEventContent(
       role="button"
       style={{ "--event-tone": tone } as React.CSSProperties}
       tabIndex={0}
+      onContextMenu={(event) => {
+        if (!metadata) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onContextAction(metadata, event.clientX, event.clientY);
+      }}
       onKeyDown={(event) => {
+        if (
+          metadata &&
+          (event.key === "ContextMenu" ||
+            (event.key === "F10" && event.shiftKey))
+        ) {
+          event.preventDefault();
+          const bounds = event.currentTarget.getBoundingClientRect();
+          onContextAction(metadata, bounds.left + 16, bounds.top + 16);
+          return;
+        }
         if (metadata && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           onOpen(metadata.entry.task, metadata.occurrence?.date);

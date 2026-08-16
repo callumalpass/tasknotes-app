@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { calendarEvents } from "../../domain/calendar-events";
@@ -20,6 +20,7 @@ export function MiniCalendarView({
   selected,
   titleProperty,
   onSelect,
+  onCreate,
   onOpen,
   onToggle,
 }: {
@@ -29,6 +30,7 @@ export function MiniCalendarView({
   selected: string;
   titleProperty: string;
   onSelect(date: string): void;
+  onCreate(date: string): void;
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
 }) {
@@ -100,6 +102,14 @@ export function MiniCalendarView({
           onClick={() => changeMonth(1)}
         >
           <ChevronRight aria-hidden="true" size={20} />
+        </button>
+        <button
+          aria-label={`Add task on ${agendaLabel(selected)}`}
+          className="mini-calendar-create"
+          type="button"
+          onClick={() => onCreate(selected)}
+        >
+          <Plus aria-hidden="true" size={18} />
         </button>
       </div>
       <div className="mini-calendar-weekdays" aria-hidden="true">

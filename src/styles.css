@@ -6914,7 +6914,7 @@ button:disabled {
 
 .mini-calendar-toolbar {
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
   align-items: center;
   margin-bottom: 10px;
 }
@@ -7051,6 +7051,14 @@ button:disabled {
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.full-calendar-navigation .full-calendar-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .full-calendar-navigation button:first-child,
