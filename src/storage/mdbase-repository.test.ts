@@ -101,6 +101,30 @@ describe("mdbase task repository", () => {
     );
   });
 
+  it("recovers an unknown task model type update without sending it twice", async () => {
+    const fixture = mdbaseFixture([]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const persist = fixture.updateType.getMockImplementation()!;
+    let recovery: ReturnType<typeof fixture.stagePendingMutation> | undefined;
+    fixture.updateType.mockImplementationOnce(async (input) => {
+      recovery = fixture.stagePendingMutation("fixture-request", async () => {
+        const envelope = await persist(input);
+        if (!envelope.valid)
+          throw new Error("Fixture type update was invalid.");
+        return connectSuccess(envelope.result);
+      });
+      throw unknownOutcome();
+    });
+
+    await expect(
+      repository.updateTaskModelSettings({ defaultPriority: "high" }),
+    ).resolves.toMatchObject({ defaults: { priority: "high" } });
+
+    expect(fixture.updateType).toHaveBeenCalledOnce();
+    expect(recovery?.recover).toHaveBeenCalledOnce();
+  });
+
   it("unions multiple providers and preserves each provider's field mapping on update", async () => {
     const collection = multipleProviderDescription();
     const workId = "11111111-1111-4111-8111-111111111111";

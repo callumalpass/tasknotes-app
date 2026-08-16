@@ -653,25 +653,44 @@ export class MdbaseTaskRepository implements TaskRepository {
       parsed.frontmatter,
       patch,
     );
-    const updated = validResult(
-      await this.connect.updateType(
+    const operationInput = {
+      path: current.path,
+      document: serializeMarkdownDocument(definition, parsed.body),
+      ifRevision: current.revision,
+    };
+    const applyUpdated = (updated: typeof current) => {
+      const updatedDefinition = parseFrontmatter(updated.document).frontmatter;
+      const provider = resolveTaskTypeDefinition(updatedDefinition, {
+        typeName: this.taskTypeName,
+      });
+      this.model = provider.model;
+      this.taskProviders.set(this.taskTypeName, provider.model);
+      this.setConnected();
+      this.emit();
+      return this.model.configuration();
+    };
+    try {
+      return await runMdbaseMutation(
+        this.connect,
+        async () =>
+          applyUpdated(
+            validResult(
+              await this.connect.updateType(
+                operationInput,
+                this.requestOptions(),
+              ),
+            ),
+          ),
         {
-          path: current.path,
-          document: serializeMarkdownDocument(definition, parsed.body),
-          ifRevision: current.revision,
+          key: mdbaseMutationKey("type:update-task-model", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: applyUpdated,
         },
-        this.requestOptions(),
-      ),
-    );
-    const updatedDefinition = parseFrontmatter(updated.document).frontmatter;
-    const provider = resolveTaskTypeDefinition(updatedDefinition, {
-      typeName: this.taskTypeName,
-    });
-    this.model = provider.model;
-    this.taskProviders.set(this.taskTypeName, provider.model);
-    this.setConnected();
-    this.emit();
-    return this.model.configuration();
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
   }
 
   async listViews(): Promise<TaskViewDocument[]> {
