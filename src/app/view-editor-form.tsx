@@ -3,6 +3,7 @@ import {
   ArrowUp,
   CalendarDays,
   CalendarRange,
+  ChartNoAxesGantt,
   ChevronDown,
   Columns3,
   List,
@@ -1012,6 +1013,12 @@ const layouts: Array<{
     label: "Mini calendar",
     description: "Date and agenda",
     icon: CalendarRange,
+  },
+  {
+    value: "tasknotes.planner",
+    label: "Planner",
+    description: "Timeline handoff",
+    icon: ChartNoAxesGantt,
   },
 ];
 

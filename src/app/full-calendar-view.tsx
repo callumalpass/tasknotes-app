@@ -6,17 +6,31 @@ import interactionPlugin, {
 } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
+import { TaskActions } from "../components/task-actions";
 import { TaskRow } from "../components/task-row";
-import { calendarEvents, type CalendarEntry } from "../domain/calendar-events";
+import {
+  calendarEntryKey,
+  calendarEvents,
+  type CalendarEntry,
+} from "../domain/calendar-events";
+import type { RecurringCalendarDrop } from "../domain/calendar-recurrence-drag";
+import {
+  moveCalendarTimeEntry,
+  resizeCalendarTimeEntry,
+} from "../domain/calendar-time-entries";
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
 import {
   viewPropertyDetails,
   type ViewPropertyDetail,
 } from "../domain/view-values";
+import {
+  calendarEventTimeFormat,
+  type CalendarPreferences,
+} from "./calendar-preferences";
 
 import type {
   CalendarApi,
@@ -25,8 +39,9 @@ import type {
   EventContentArg,
   EventDropArg,
   EventInput,
+  DateSelectArg,
 } from "@fullcalendar/core";
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
 type CalendarMode =
@@ -38,28 +53,39 @@ type CalendarMode =
 
 interface CalendarEventMetadata {
   entry: CalendarEntry;
-  dateField: "scheduled" | "due";
+  dateField?: "scheduled" | "due";
   occurrence?: TaskOccurrence;
+  timeEntryIndex?: number;
 }
 
 export function FullCalendarView({
   execution,
+  preferences,
   identityTasks,
   selected,
+  selectedCreateValue,
   titleProperty,
   onSelect,
+  onCreate,
   onOpen,
   onToggle,
   onUpdate,
+  onUpdateOccurrence,
+  onReplaceTimeEntries,
 }: {
   execution: TaskViewExecution;
+  preferences: CalendarPreferences;
   identityTasks: readonly Task[];
   selected: string;
+  selectedCreateValue: string;
   titleProperty: string;
   onSelect(date: string, createValue?: string): void;
+  onCreate(date: string, createValue?: string, timeEstimate?: number): void;
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
   onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
+  onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
+  onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
 }) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const initialMode = calendarMode(
@@ -69,15 +95,26 @@ export function FullCalendarView({
   const [title, setTitle] = useState("");
   const [range, setRange] = useState(() => initialRange(selected, initialMode));
   const [mutationError, setMutationError] = useState("");
+  const [contextAction, setContextAction] = useState<{
+    id: number;
+    metadata: CalendarEventMetadata;
+    x: number;
+    y: number;
+  } | null>(null);
   const entries = useMemo(
-    () => calendarEvents(execution, range.start, range.end, identityTasks),
-    [execution, identityTasks, range],
+    () =>
+      calendarEvents(execution, range.start, range.end, identityTasks, {
+        showTimeEntries: preferences.showTimeEntries,
+      }),
+    [execution, identityTasks, preferences.showTimeEntries, range],
   );
   const events = useMemo(
     () => fullCalendarEvents(entries, execution, titleProperty),
     [entries, execution, titleProperty],
   );
-  const selectedEntries = entries.get(selected) ?? [];
+  const selectedEntries = (entries.get(selected) ?? []).filter(
+    (entry) => !entry.timeEntry,
+  );
   const listMode = mode === "listWeek";
 
   function api(): CalendarApi | undefined {
@@ -91,18 +128,40 @@ export function FullCalendarView({
 
   async function moveEvent(info: EventDropArg) {
     const metadata = eventMetadata(info.event.extendedProps);
-    if (!metadata || metadata.occurrence || !info.event.start) {
+    if (!metadata || !info.event.start) {
       info.revert();
       return;
     }
     setMutationError("");
     try {
-      await onUpdate(metadata.entry.task, {
+      if (metadata.timeEntryIndex !== undefined) {
+        await onReplaceTimeEntries(
+          metadata.entry.task,
+          moveCalendarTimeEntry(
+            metadata.entry.task.timeEntries,
+            metadata.timeEntryIndex,
+            info.event.start,
+            info.event.end,
+          ),
+        );
+        return;
+      }
+      if (!metadata.dateField) throw new Error("The task date is unavailable.");
+      const input: UpdateTaskInput = {
         [metadata.dateField]: calendarStorageValue(
           info.event.start,
           info.event.allDay,
         ),
-      });
+      };
+      if (metadata.occurrence)
+        await onUpdateOccurrence(metadata.entry.task, {
+          occurrenceDate: metadata.occurrence.date,
+          recurringKind: metadata.entry.recurringKind ?? "pattern",
+          dateField: metadata.dateField,
+          start: info.event.start,
+          allDay: info.event.allDay,
+        });
+      else await onUpdate(metadata.entry.task, input);
     } catch (reason) {
       info.revert();
       setMutationError(message(reason));
@@ -111,12 +170,7 @@ export function FullCalendarView({
 
   async function resizeEvent(info: EventResizeDoneArg) {
     const metadata = eventMetadata(info.event.extendedProps);
-    if (
-      !metadata ||
-      metadata.occurrence ||
-      !info.event.start ||
-      !info.event.end
-    ) {
+    if (!metadata || !info.event.start || !info.event.end) {
       info.revert();
       return;
     }
@@ -128,11 +182,40 @@ export function FullCalendarView({
     );
     setMutationError("");
     try {
+      if (metadata.timeEntryIndex !== undefined) {
+        await onReplaceTimeEntries(
+          metadata.entry.task,
+          resizeCalendarTimeEntry(
+            metadata.entry.task.timeEntries,
+            metadata.timeEntryIndex,
+            info.event.end,
+          ),
+        );
+        return;
+      }
+      if (metadata.occurrence) {
+        info.revert();
+        return;
+      }
       await onUpdate(metadata.entry.task, { timeEstimate: minutes });
     } catch (reason) {
       info.revert();
       setMutationError(message(reason));
     }
+  }
+
+  function createFromSelection(info: DateSelectArg) {
+    const date = info.startStr.slice(0, 10);
+    const value = calendarStorageValue(info.start, info.allDay);
+    const timeEstimate = info.allDay
+      ? undefined
+      : Math.max(
+          1,
+          Math.round((info.end.getTime() - info.start.getTime()) / 60_000),
+        );
+    onSelect(date, value);
+    onCreate(date, value, timeEstimate);
+    info.view.calendar.unselect();
   }
 
   return (
@@ -145,6 +228,14 @@ export function FullCalendarView({
             onClick={() => api()?.prev()}
           >
             <ChevronLeft aria-hidden="true" size={19} />
+          </button>
+          <button
+            className="full-calendar-create"
+            type="button"
+            onClick={() => onCreate(selected, selectedCreateValue)}
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add task
           </button>
           <button type="button" onClick={() => api()?.today()}>
             Today
@@ -180,6 +271,7 @@ export function FullCalendarView({
       <div className="full-calendar-workspace">
         <div className="full-calendar-surface">
           <FullCalendar
+            allDaySlot={preferences.allDaySlot}
             allDayText="All day"
             dayMaxEvents={3}
             dayCellClassNames={(info) =>
@@ -187,17 +279,27 @@ export function FullCalendarView({
             }
             editable
             eventClick={(info) => openEvent(info, onOpen)}
-            eventContent={(info) => calendarEventContent(info, onOpen)}
+            eventContent={(info) =>
+              calendarEventContent(info, onOpen, (metadata, x, y) =>
+                setContextAction({
+                  id: Date.now(),
+                  metadata,
+                  x,
+                  y,
+                }),
+              )
+            }
             eventDrop={(info) => void moveEvent(info)}
             eventResizableFromStart
             eventResize={(info) => void resizeEvent(info)}
             events={events}
-            firstDay={1}
+            eventTimeFormat={calendarEventTimeFormat(preferences.hourFormat)}
+            firstDay={preferences.firstDay}
             headerToolbar={false}
             height="auto"
             initialDate={selected}
             initialView={initialMode}
-            nowIndicator
+            nowIndicator={preferences.nowIndicator}
             noEventsText="No tasks in this period."
             plugins={[
               dayGridPlugin,
@@ -207,9 +309,13 @@ export function FullCalendarView({
             ]}
             ref={calendarRef}
             selectable
-            slotDuration="00:30:00"
-            slotMaxTime="22:00:00"
-            slotMinTime="06:00:00"
+            select={(info) => createFromSelection(info)}
+            selectMirror
+            slotDuration={preferences.slotDuration}
+            slotMaxTime={preferences.slotMaxTime}
+            slotMinTime={preferences.slotMinTime}
+            slotLabelFormat={calendarEventTimeFormat(preferences.hourFormat)}
+            weekends={preferences.weekends}
             views={{
               timeGridThreeDay: {
                 type: "timeGrid",
@@ -259,7 +365,7 @@ export function FullCalendarView({
               <div className="full-calendar-day-tasks">
                 {selectedEntries.map((entry) => (
                   <TaskRow
-                    key={entry.occurrence?.key ?? entry.task.id}
+                    key={calendarEntryKey(entry)}
                     details={viewPropertyDetails(
                       entry.row,
                       execution.view.properties,
@@ -281,6 +387,17 @@ export function FullCalendarView({
           </aside>
         ) : null}
       </div>
+      {contextAction ? (
+        <TaskActions
+          contextMenuRequest={contextAction}
+          occurrenceDate={contextAction.metadata.occurrence?.date}
+          task={contextAction.metadata.entry.task}
+          onArchived={() => setContextAction(null)}
+          onDeleted={() => setContextAction(null)}
+          onOpen={onOpen}
+          onToggle={onToggle}
+        />
+      ) : null}
     </div>
   );
 }
@@ -305,6 +422,41 @@ function fullCalendarEvents(
   const result: EventInput[] = [];
   for (const [date, values] of entries) {
     for (const entry of values) {
+      if (entry.timeEntry && entry.timeEntryIndex !== undefined) {
+        const start = new Date(entry.timeEntry.startTime);
+        const recordedEnd = entry.timeEntry.endTime
+          ? new Date(entry.timeEntry.endTime)
+          : null;
+        const liveEnd = new Date();
+        const end =
+          recordedEnd && recordedEnd > start
+            ? recordedEnd
+            : liveEnd > start
+              ? liveEnd
+              : new Date(start.getTime() + 60_000);
+        result.push({
+          id: calendarEntryKey(entry),
+          title: entry.timeEntry.description
+            ? `${entry.task.title}: ${entry.timeEntry.description}`
+            : `${entry.task.title}: tracked time`,
+          start: entry.timeEntry.startTime,
+          end: end.toISOString(),
+          allDay: false,
+          editable: true,
+          startEditable: true,
+          durationEditable: Boolean(entry.timeEntry.endTime),
+          classNames: ["task-calendar-event", "is-time-entry"],
+          extendedProps: {
+            metadata: {
+              entry,
+              timeEntryIndex: entry.timeEntryIndex,
+            } satisfies CalendarEventMetadata,
+            tone: "var(--success)",
+            details: [],
+          },
+        });
+        continue;
+      }
       const displayed = entry.occurrence
         ? occurrenceTask(entry.occurrence)
         : entry.task;
@@ -319,14 +471,16 @@ function fullCalendarEvents(
       const start = scheduled ?? due ?? date;
       const dateField = scheduled ? "scheduled" : "due";
       const allDay = !start.includes("T");
-      const editable = !entry.occurrence && !entry.task.recurrence;
+      const editable = entry.occurrence
+        ? !entry.occurrence.completed && !entry.occurrence.skipped
+        : !entry.task.recurrence;
       const details =
         viewPropertyDetails(entry.row, execution.view.properties, {
           identityProperty: titleProperty,
           occurrence: entry.occurrence,
         }) ?? [];
       result.push({
-        id: [entry.occurrence?.key ?? entry.task.id, dateField, date].join(":"),
+        id: [calendarEntryKey(entry), dateField, date].join(":"),
         title: entry.task.title,
         start,
         ...(allDay || !displayed.timeEstimate
@@ -335,11 +489,13 @@ function fullCalendarEvents(
         allDay,
         editable,
         startEditable: editable,
-        durationEditable: editable && !allDay,
+        durationEditable: editable && !entry.occurrence && !allDay,
         classNames: [
           "task-calendar-event",
           displayed.completed ? "is-complete" : "",
           entry.occurrence ? "is-recurring" : "",
+          entry.recurringKind === "next-scheduled" ? "is-recurring-next" : "",
+          entry.recurringKind === "pattern" ? "is-recurring-pattern" : "",
         ].filter(Boolean),
         extendedProps: {
           metadata: {
@@ -359,6 +515,11 @@ function fullCalendarEvents(
 function calendarEventContent(
   info: EventContentArg,
   onOpen: (task: Task, occurrenceDate?: string) => void,
+  onContextAction: (
+    metadata: CalendarEventMetadata,
+    x: number,
+    y: number,
+  ) => void,
 ) {
   const tone = String(info.event.extendedProps.tone ?? "var(--accent)");
   const details = eventDetails(info.event.extendedProps.details);
@@ -370,7 +531,23 @@ function calendarEventContent(
       role="button"
       style={{ "--event-tone": tone } as React.CSSProperties}
       tabIndex={0}
+      onContextMenu={(event) => {
+        if (!metadata) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onContextAction(metadata, event.clientX, event.clientY);
+      }}
       onKeyDown={(event) => {
+        if (
+          metadata &&
+          (event.key === "ContextMenu" ||
+            (event.key === "F10" && event.shiftKey))
+        ) {
+          event.preventDefault();
+          const bounds = event.currentTarget.getBoundingClientRect();
+          onContextAction(metadata, bounds.left + 16, bounds.top + 16);
+          return;
+        }
         if (metadata && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           onOpen(metadata.entry.task, metadata.occurrence?.date);

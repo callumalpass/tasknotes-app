@@ -111,7 +111,7 @@ test("supports demo attachments and collection settings", async ({ page }) => {
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByText("Advanced", { exact: true }).click();
+  await page.getByText("Task model", { exact: true }).click();
   await page.getByRole("combobox", { name: "Default priority" }).click();
   await page.getByRole("option", { name: "High", exact: true }).click();
   await page.getByRole("button", { name: "Save task settings" }).click();

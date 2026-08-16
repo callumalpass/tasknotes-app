@@ -9,11 +9,15 @@ import {
   type QueryRecord,
   type QueryResult,
 } from "@mdbase-dev/connect";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
 } from "@tasknotes/model/mdbase";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
 import { vi } from "vitest";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -39,10 +43,24 @@ export function mdbaseFixture(
   const records = new Map(initial.map((record) => [record.path, record]));
   const pendingMutations = new Map<string, PendingMutation<unknown>>();
   let revision = initial.length + 1;
+  const described = description(templating, archive, collectionId);
+  const initialDefinition = structuredClone(
+    described.types[0]?.definition ?? {},
+  );
+  let typeRevision = 1;
+  let typeDocument = {
+    name: "task",
+    path: "_types/task.md",
+    revision: `type-r${typeRevision}`,
+    document: serializeMarkdownDocument(
+      initialDefinition as Record<string, unknown>,
+      "# Task\n\nTask records live under `tasks/`.",
+    ),
+  };
   const describeCollection = vi.fn(
     async (options?: { signal?: AbortSignal }) => {
       void options;
-      return description(templating, archive, collectionId);
+      return structuredClone(described);
     },
   );
   const query = vi.fn(async (input?: Record<string, unknown>) => {
@@ -69,6 +87,21 @@ export function mdbaseFixture(
       },
     });
   });
+  const queryPages = vi.fn((input?: Record<string, unknown>) =>
+    (async function* () {
+      const outcome = await query(input);
+      yield connectSuccess(
+        {
+          ...outcome.result,
+          page: 0,
+          offset: 0,
+          loaded: outcome.result.results.length,
+          complete: true,
+        },
+        outcome.diagnostics,
+      );
+    })(),
+  );
   const read = vi.fn(async ({ path }: { path: string }) => {
     const record = records.get(path);
     if (!record) throw new Error("Task not found.");
@@ -177,8 +210,9 @@ export function mdbaseFixture(
       meta: { totalCount: 1 },
     }),
   );
-  const executeView = vi.fn(async () =>
-    valid({
+  const executeView = vi.fn(async (...args: unknown[]) => {
+    void args;
+    return valid({
       results: [...records.values()].map((record) => ({
         path: record.path,
         effectiveFrontmatter: record.effectiveFrontmatter ?? record.frontmatter,
@@ -192,7 +226,22 @@ export function mdbaseFixture(
         view: { path: "views/tasks.base", id: "kanban" },
         groups: [],
       },
-    }),
+    });
+  });
+  const executeViewPages = vi.fn((input?: unknown, options?: unknown) =>
+    (async function* () {
+      const outcome = await executeView(input, options);
+      yield connectSuccess(
+        {
+          ...outcome.result,
+          page: 0,
+          offset: 0,
+          loaded: outcome.result.results.length,
+          complete: true,
+        },
+        outcome.diagnostics,
+      );
+    })(),
   );
   const viewSources = new Map<
     string,
@@ -265,6 +314,57 @@ export function mdbaseFixture(
       return valid({ path: input.path, deleted: true });
     },
   );
+  const readType = vi.fn(
+    async ({ name, path }: { name?: string; path?: string }) => {
+      if (name !== typeDocument.name && path !== typeDocument.path)
+        throw new Error("Type not found.");
+      return valid(structuredClone(typeDocument));
+    },
+  );
+  const updateType = vi.fn(
+    async (input: { path?: string; document: string; ifRevision: string }) => {
+      if (input.path !== typeDocument.path) throw new Error("Type not found.");
+      if (input.ifRevision !== typeDocument.revision)
+        throw new Error("Revision conflict.");
+      const definition = parseFrontmatter(input.document).frontmatter;
+      typeRevision += 1;
+      typeDocument = {
+        ...typeDocument,
+        revision: `type-r${typeRevision}`,
+        document: input.document,
+      };
+      const descriptor = described.types[0];
+      if (descriptor) {
+        descriptor.definition = structuredClone(definition) as JsonObject;
+        descriptor.schema = structuredClone(
+          (definition.schema as { value?: JsonObject } | undefined)?.value ??
+            descriptor.schema,
+        );
+        descriptor.collection = structuredClone(
+          (definition.collection as JsonObject | undefined) ??
+            descriptor.collection,
+        );
+      }
+      const implementation = Array.isArray(definition.implements)
+        ? definition.implements.find(
+            (candidate) =>
+              candidate &&
+              typeof candidate === "object" &&
+              (candidate as Record<string, unknown>).contract ===
+                "tasknotes.task",
+          )
+        : undefined;
+      const binding =
+        implementation && typeof implementation === "object"
+          ? (implementation as Record<string, unknown>).binding
+          : undefined;
+      if (binding && typeof binding === "object" && !Array.isArray(binding))
+        described.contracts[0]!.implementations[0]!.binding = structuredClone(
+          binding,
+        ) as JsonObject;
+      return valid(structuredClone(typeDocument));
+    },
+  );
   const connect = {
     sync: () => null,
     connection: () => ({ route: "relay" }),
@@ -273,6 +373,7 @@ export function mdbaseFixture(
     pendingMutations: () => [...pendingMutations.values()],
     describe: describeCollection,
     query,
+    queryPages,
     read,
     create,
     update,
@@ -280,10 +381,13 @@ export function mdbaseFixture(
     rename,
     listViews,
     executeView,
+    executeViewPages,
     readViewSource,
     createViewSource,
     updateViewSource,
     deleteViewSource,
+    readType,
+    updateType,
   } as unknown as MdbaseConnection<JsonObject>;
   const stagePendingMutation = <Result>(
     requestId: string,
@@ -310,6 +414,7 @@ export function mdbaseFixture(
     records,
     describe: describeCollection,
     query,
+    queryPages,
     read,
     create,
     update,
@@ -317,10 +422,13 @@ export function mdbaseFixture(
     rename,
     listViews,
     executeView,
+    executeViewPages,
     readViewSource,
     createViewSource,
     updateViewSource,
     deleteViewSource,
+    readType,
+    updateType,
     stagePendingMutation,
   };
 }
@@ -353,7 +461,7 @@ export interface TestRecord {
   file?: QueryRecord<JsonObject>["file"];
 }
 
-function testQueryFile(path: string): QueryRecord<JsonObject>["file"] {
+export function testQueryFile(path: string): QueryRecord<JsonObject>["file"] {
   const segments = path.split("/");
   return {
     path,

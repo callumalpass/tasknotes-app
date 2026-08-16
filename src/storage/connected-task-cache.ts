@@ -76,18 +76,3 @@ export function connectedTaskSignature(task: Task): string {
 export function connectedViewExecutionKey(view: TaskView): string {
   return `${view.key}:${view.source.revision}`;
 }
-
-export function readOnlyTaskModelSettingsAccess(typeName: string) {
-  return {
-    writable: false as const,
-    source: `${typeName} type contract`,
-    reason:
-      "Connected collection type settings are managed by the collection owner.",
-  };
-}
-
-export function readOnlyTaskModelSettingsError(): Error {
-  return new Error(
-    "Connected collection type settings are managed by the collection owner.",
-  );
-}

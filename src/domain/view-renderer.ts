@@ -3,7 +3,8 @@ export type ViewRenderer =
   | "tasknotes.kanban"
   | "tasknotes.calendar"
   | "tasknotes.mini-calendar"
-  | "tasknotes.projects";
+  | "tasknotes.projects"
+  | "tasknotes.planner";
 
 const OBSIDIAN_RENDERERS: Record<string, ViewRenderer> = {
   tasknotesTaskList: "tasknotes.task-list",
@@ -11,6 +12,7 @@ const OBSIDIAN_RENDERERS: Record<string, ViewRenderer> = {
   tasknotesCalendar: "tasknotes.calendar",
   tasknotesMiniCalendar: "tasknotes.mini-calendar",
   tasknotesProjects: "tasknotes.projects",
+  tasknotesPlanner: "tasknotes.planner",
 };
 
 export function normalizePresentationType(value: string): string {
@@ -22,7 +24,8 @@ export function editableRenderer(value: string): ViewRenderer {
   if (
     normalized === "tasknotes.kanban" ||
     normalized === "tasknotes.calendar" ||
-    normalized === "tasknotes.mini-calendar"
+    normalized === "tasknotes.mini-calendar" ||
+    normalized === "tasknotes.planner"
   )
     return normalized;
   return "tasknotes.task-list";
@@ -32,6 +35,7 @@ export function obsidianRenderer(value: ViewRenderer): string {
   if (value === "tasknotes.kanban") return "tasknotesKanban";
   if (value === "tasknotes.calendar") return "tasknotesCalendar";
   if (value === "tasknotes.mini-calendar") return "tasknotesMiniCalendar";
+  if (value === "tasknotes.planner") return "tasknotesPlanner";
   return "tasknotesTaskList";
 }
 

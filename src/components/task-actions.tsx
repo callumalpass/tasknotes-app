@@ -65,6 +65,7 @@ interface TaskActionsProps {
   onToggle(task: Task, occurrenceDate?: string): void | Promise<void>;
   onArchived?(): void;
   onDeleted?(): void;
+  contextMenuRequest?: { id: number; x: number; y: number };
 }
 
 export function TaskActions({
@@ -76,6 +77,7 @@ export function TaskActions({
   onToggle,
   onArchived,
   onDeleted,
+  contextMenuRequest,
 }: TaskActionsProps) {
   const {
     configuration,
@@ -125,6 +127,31 @@ export function TaskActions({
   const priority =
     configuration.priorities.find((option) => option.value === task.priority)
       ?.label ?? task.priority;
+
+  useEffect(() => {
+    if (!contextMenuRequest) return;
+    const width = 304;
+    const estimatedHeight = 640;
+    setError("");
+    setPanels(["actions"]);
+    setSubtaskTitle("");
+    setOrganizeDraft({
+      projects: task.projects,
+      contexts: task.contexts,
+      tags: task.tags,
+    });
+    void repository.get(task.id).catch(() => undefined);
+    setPosition({
+      x: Math.max(8, Math.min(contextMenuRequest.x, innerWidth - width - 8)),
+      y: Math.max(
+        8,
+        Math.min(
+          contextMenuRequest.y + 4,
+          innerHeight - Math.min(estimatedHeight, innerHeight - 16),
+        ),
+      ),
+    });
+  }, [contextMenuRequest, repository, task]);
 
   useEffect(() => {
     const query = window.matchMedia?.("(max-width: 839px)");
@@ -296,29 +323,31 @@ export function TaskActions({
 
   return (
     <>
-      <button
-        aria-controls={position ? menuId : undefined}
-        aria-expanded={Boolean(position)}
-        aria-haspopup={mobile ? "dialog" : "menu"}
-        aria-label={
-          context === "detail"
-            ? "More task actions"
-            : `Task actions for ${task.title}`
-        }
-        className={
-          context === "detail" ? "icon-action" : "task-actions-trigger"
-        }
-        ref={triggerRef}
-        title={`Actions for ${task.title}`}
-        type="button"
-        onClick={openFromTrigger}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          openFromPointer(event.clientX, event.clientY);
-        }}
-      >
-        <MoreHorizontal aria-hidden="true" size={20} strokeWidth={1.7} />
-      </button>
+      {!contextMenuRequest ? (
+        <button
+          aria-controls={position ? menuId : undefined}
+          aria-expanded={Boolean(position)}
+          aria-haspopup={mobile ? "dialog" : "menu"}
+          aria-label={
+            context === "detail"
+              ? "More task actions"
+              : `Task actions for ${task.title}`
+          }
+          className={
+            context === "detail" ? "icon-action" : "task-actions-trigger"
+          }
+          ref={triggerRef}
+          title={`Actions for ${task.title}`}
+          type="button"
+          onClick={openFromTrigger}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            openFromPointer(event.clientX, event.clientY);
+          }}
+        >
+          <MoreHorizontal aria-hidden="true" size={20} strokeWidth={1.7} />
+        </button>
+      ) : null}
       {position
         ? createPortal(
             <div className="task-actions-layer">

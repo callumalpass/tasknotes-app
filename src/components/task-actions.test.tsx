@@ -10,6 +10,7 @@ import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
+import { TaskActions } from "./task-actions";
 
 import type { Task } from "../domain/task";
 
@@ -80,6 +81,28 @@ describe("TaskActions", () => {
         due: shiftTaskDate(todayString(), 1),
       }),
     );
+  });
+
+  it("opens from a calendar context-menu request without a visible trigger", async () => {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskActions
+          contextMenuRequest={{ id: 1, x: 120, y: 80 }}
+          task={task}
+          onToggle={vi.fn()}
+        />
+      </RepositoryProvider>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Task actions for Menu parent" }),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("menu", { name: "Actions for Menu parent" }),
+    ).toBeVisible();
   });
 
   it("edits a displayed property without opening the task", async () => {

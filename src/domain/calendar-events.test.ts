@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calendarEvents } from "./calendar-events";
+import { calendarEntryKey, calendarEvents } from "./calendar-events";
 
 import type { Task } from "./task";
 import type { TaskViewExecution } from "./view";
@@ -63,6 +63,54 @@ describe("calendar task projection", () => {
       "2026-08-10",
       "2026-08-12",
     ]);
+    expect(open.get("2026-08-03")?.[0]?.recurringKind).toBe("next-scheduled");
+    expect(open.get("2026-08-12")?.[0]?.recurringKind).toBe("pattern");
+  });
+
+  it("shows an off-pattern concrete next date separately from pattern previews", () => {
+    const task = {
+      ...recurring(),
+      scheduled: "2026-08-04T13:30",
+      recurrence: "DTSTART:20260803T090000Z;FREQ=WEEKLY;BYDAY=MO,WE",
+      completeInstances: [],
+      skippedInstances: [],
+    };
+    const events = calendarEvents(
+      execution(task, { showScheduled: true, showDue: false }),
+      new Date(2026, 7, 3),
+      new Date(2026, 7, 6),
+      [task],
+    );
+
+    expect([...events.keys()].sort()).toEqual([
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+    ]);
+    expect(events.get("2026-08-04")?.[0]?.recurringKind).toBe("next-scheduled");
+  });
+
+  it("projects tracked time as distinct calendar entries when enabled", () => {
+    const task = {
+      ...oneOff(),
+      timeEntries: [
+        {
+          startTime: "2026-07-23T23:30:00.000Z",
+          endTime: "2026-07-24T00:15:00.000Z",
+          description: "Focused work",
+        },
+      ],
+    };
+    const events = calendarEvents(
+      execution(task, { showScheduled: false, showDue: false }),
+      new Date("2026-07-20T00:00:00.000Z"),
+      new Date("2026-07-31T23:59:59.000Z"),
+      [task],
+      { showTimeEntries: true },
+    );
+    const entry = [...events.values()].flat()[0];
+    expect(entry?.timeEntry?.description).toBe("Focused work");
+    expect(entry && calendarEntryKey(entry)).toBe("one:time:0");
   });
 });
 

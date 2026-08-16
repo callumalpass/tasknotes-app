@@ -345,9 +345,17 @@ export class TaskNotesTaskModel {
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
+    const plannedTask =
+      input.preserveRecurrenceSchedule && input.recurrence !== undefined
+        ? {
+            ...plan.updatedTask,
+            scheduled: original.scheduled,
+            due: original.due,
+          }
+        : plan.updatedTask;
     const updatedTask = this.autoStopAfterCompletion(
       original,
-      plan.updatedTask,
+      plannedTask,
       now,
     );
     this.assertValid(updatedTask);

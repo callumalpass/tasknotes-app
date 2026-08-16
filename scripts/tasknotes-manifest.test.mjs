@@ -55,6 +55,9 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.capabilities.required).toContain(
       "collection.setup.apply",
     );
+    expect(manifest.requirements.capabilities.required).toEqual(
+      expect.arrayContaining(["definitions.read", "definitions.update"]),
+    );
     expect(manifest.requirements.configuration).toEqual([
       {
         id: "tasknotes-base-sources",

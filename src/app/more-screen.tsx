@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
+import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import {
   mdbaseNotifications,
   type MdbaseNotificationStatus,
@@ -27,8 +28,17 @@ import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
 import { storageExplanation } from "./storage-trust";
+import type { CalendarPreferences } from "./calendar-preferences";
 
-export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
+export function MoreScreen({
+  calendarPreferences,
+  onCalendarPreferencesChange,
+  onNewTask,
+}: {
+  calendarPreferences: CalendarPreferences;
+  onCalendarPreferencesChange(value: CalendarPreferences): void;
+  onNewTask(): void;
+}) {
   const { info, stats, loading } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
   const { changeCollection } = useCollectionGate();
@@ -219,6 +229,13 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         </div>
       </SettingsSection>
 
+      <SettingsSection label="Calendar">
+        <CalendarPreferencesEditor
+          value={calendarPreferences}
+          onChange={onCalendarPreferencesChange}
+        />
+      </SettingsSection>
+
       <SettingsSection label="About & portability">
         <div className="setting-row">
           <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
@@ -233,7 +250,7 @@ export function MoreScreen({ onNewTask }: { onNewTask(): void }) {
         </div>
       </SettingsSection>
 
-      <SettingsSection collapsible label="Advanced">
+      <SettingsSection collapsible label="Task model">
         <TaskModelSettingsEditor />
       </SettingsSection>
 

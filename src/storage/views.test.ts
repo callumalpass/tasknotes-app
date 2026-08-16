@@ -59,6 +59,11 @@ describe("provider view documents", () => {
               presentation: { type: "tasknotesKanban" },
             },
             {
+              id: "planner",
+              name: "Planner",
+              presentation: { type: "tasknotesPlanner" },
+            },
+            {
               id: "custom",
               name: "Custom",
               presentation: { type: "exampleCustomRenderer" },
@@ -69,7 +74,8 @@ describe("provider view documents", () => {
     });
 
     expect(document.views[0].presentation?.type).toBe("tasknotes.kanban");
-    expect(document.views[1].presentation?.type).toBe("exampleCustomRenderer");
+    expect(document.views[1].presentation?.type).toBe("tasknotes.planner");
+    expect(document.views[2].presentation?.type).toBe("exampleCustomRenderer");
   });
 
   it("normalizes provider manual sort metadata from canonical fields", () => {

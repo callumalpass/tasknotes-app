@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
@@ -9,7 +9,7 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskModelSettingsEditor } from "./task-model-settings";
 
 describe("TaskModelSettingsEditor", () => {
-  it("shows authoritative mdbase type settings as read-only", async () => {
+  it("updates authoritative mdbase type settings", async () => {
     const repository = createTestMdbaseRepository();
     await repository.initialize();
 
@@ -22,13 +22,19 @@ describe("TaskModelSettingsEditor", () => {
       </RepositoryProvider>,
     );
 
-    expect(
-      await screen.findByText(
-        "Connected collection type settings are managed by the collection owner.",
+    const priority = await screen.findByRole("combobox", {
+      name: "Default priority",
+    });
+    expect(priority).toBeEnabled();
+    fireEvent.click(priority);
+    fireEvent.click(screen.getByRole("option", { name: "High" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save task settings" }));
+
+    await waitFor(async () =>
+      expect((await repository.taskConfiguration()).defaults.priority).toBe(
+        "high",
       ),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("group", { name: "Task model settings" }),
-    ).toBeDisabled();
+    );
+    expect(await screen.findByText("Saved with the collection.")).toBeVisible();
   });
 });

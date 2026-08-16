@@ -2,10 +2,11 @@ import { taskDatePart, todayString } from "./task";
 import {
   materializedOccurrenceKeys,
   occurrenceTask,
+  taskOccurrenceForDate,
   taskOccurrencesBetween,
 } from "./task-occurrence";
 
-import type { Task } from "./task";
+import type { Task, TaskTimeEntry } from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
 import type { TaskViewExecution, TaskViewRow } from "./view";
 
@@ -13,6 +14,9 @@ export interface CalendarEntry {
   task: Task;
   row: TaskViewRow;
   occurrence?: TaskOccurrence;
+  recurringKind?: "next-scheduled" | "pattern";
+  timeEntry?: TaskTimeEntry;
+  timeEntryIndex?: number;
 }
 
 export function calendarEvents(
@@ -20,6 +24,7 @@ export function calendarEvents(
   rangeStart: Date,
   rangeEnd: Date,
   identityTasks: readonly Task[],
+  display: { showTimeEntries?: boolean } = {},
 ): Map<string, CalendarEntry[]> {
   const events = new Map<string, CalendarEntry[]>();
   const options = execution.view.presentation?.options ?? {};
@@ -32,14 +37,40 @@ export function calendarEvents(
   const materialized = materializedOccurrenceKeys(identityTasks);
   for (const row of execution.rows) {
     const { task } = row;
+    if (display.showTimeEntries)
+      task.timeEntries.forEach((timeEntry, timeEntryIndex) => {
+        const start = new Date(timeEntry.startTime);
+        if (
+          Number.isNaN(start.getTime()) ||
+          start > rangeEnd ||
+          (timeEntry.endTime && new Date(timeEntry.endTime) < rangeStart)
+        )
+          return;
+        append(events, todayString(start), {
+          task,
+          row,
+          timeEntry,
+          timeEntryIndex,
+        });
+      });
     if (task.recurrence) {
       if (!showRecurring && !showCompletedRecurring && !showSkippedRecurring)
         continue;
-      for (const occurrence of taskOccurrencesBetween(
+      const rangeStartDate = todayString(rangeStart);
+      const rangeEndDate = todayString(rangeEnd);
+      const nextScheduledDate = taskDatePart(task.scheduled);
+      const occurrences = taskOccurrencesBetween(
         task,
-        todayString(rangeStart),
-        todayString(rangeEnd),
-      )) {
+        rangeStartDate,
+        rangeEndDate,
+      );
+      if (
+        nextScheduledDate >= rangeStartDate &&
+        nextScheduledDate <= rangeEndDate &&
+        !occurrences.some(({ date }) => date === nextScheduledDate)
+      )
+        occurrences.push(taskOccurrenceForDate(task, nextScheduledDate));
+      for (const occurrence of occurrences) {
         if (materialized.has(occurrence.key)) continue;
         if (
           (occurrence.completed && !showCompletedRecurring) ||
@@ -48,6 +79,8 @@ export function calendarEvents(
         )
           continue;
         const projected = occurrenceTask(occurrence);
+        const recurringKind =
+          occurrence.date === nextScheduledDate ? "next-scheduled" : "pattern";
         const dates = new Set([
           ...(showScheduled && projected.scheduled
             ? [taskDatePart(projected.scheduled)]
@@ -55,7 +88,7 @@ export function calendarEvents(
           ...(showDue && projected.due ? [taskDatePart(projected.due)] : []),
         ]);
         for (const date of dates)
-          append(events, date, { task, row, occurrence });
+          append(events, date, { task, row, occurrence, recurringKind });
       }
       continue;
     }
@@ -66,6 +99,12 @@ export function calendarEvents(
       append(events, taskDatePart(value), { task, row });
   }
   return events;
+}
+
+export function calendarEntryKey(entry: CalendarEntry): string {
+  if (entry.timeEntryIndex !== undefined)
+    return `${entry.task.id}:time:${entry.timeEntryIndex}`;
+  return entry.occurrence?.key ?? entry.task.id;
 }
 
 function append(

@@ -8,15 +8,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   KeyboardEvent as ReactKeyboardEvent,
@@ -65,8 +57,10 @@ import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
 import { readViewDraft, updateViewDocument } from "../domain/view-document";
 import { ViewTaskRow } from "./views/view-task-row";
-import { MiniCalendarView } from "./views/mini-calendar-view";
-import { calendarDateDefaults } from "../domain/mini-calendar";
+import {
+  calendarDateDefaults,
+  calendarSelectionDefaults,
+} from "../domain/mini-calendar";
 import { NavigationViewOrder, ViewIcon } from "./views/navigation-view-order";
 import { ProjectsView } from "./views/projects-view";
 import {
@@ -83,9 +77,15 @@ import {
   SEARCH_NAVIGATION_KEY,
 } from "./navigation-views";
 import { TaskNotesCatalogEntries } from "./views/scratchpad-catalog-entry";
+import { PlannerViewHandoff } from "./views/planner-view-handoff";
+import { usePlannerViewLink } from "./use-planner-view-link";
+import { CalendarViewPresentation } from "./views/calendar-view-presentation";
+import { useCalendarMutations } from "./use-calendar-mutations";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { CalendarPreferences } from "./calendar-preferences";
+import { defaultCalendarPreferences } from "./calendar-preferences";
 import type {
   TaskView,
   TaskViewDocument,
@@ -94,11 +94,8 @@ import type {
   TaskViewRow,
 } from "../domain/view";
 
-const FullCalendarView = lazy(async () => ({
-  default: (await import("./full-calendar-view")).FullCalendarView,
-}));
-
 export function ViewsScreen({
+  calendarPreferences = defaultCalendarPreferences(),
   viewKey,
   documents,
   views,
@@ -114,6 +111,7 @@ export function ViewsScreen({
   onMoveNavigationView,
   onViewsChanged,
 }: {
+  calendarPreferences?: CalendarPreferences;
   viewKey?: string;
   documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
@@ -176,6 +174,8 @@ export function ViewsScreen({
     key: string;
     date: string;
     createValue: string;
+    defaults?: Partial<CreateTaskInput>;
+    focusRequest?: number;
   } | null>(null);
   const [sourceSort, setSourceSort] = useState<{
     key: string;
@@ -207,6 +207,7 @@ export function ViewsScreen({
   }, [hasWritableViews]);
 
   const selected = views?.find((view) => view.key === viewKey);
+  const plannerHref = usePlannerViewLink(repository, selected);
   const needsIdentityTasks =
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar";
@@ -219,6 +220,18 @@ export function ViewsScreen({
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
+  const calendarMutations = useCalendarMutations(
+    selected,
+    (refreshed) => {
+      if (selectedKeyRef.current !== refreshed.view.key) return;
+      setExecution(refreshed);
+      setExecutionError(null);
+    },
+    (view, reason) => {
+      if (selectedKeyRef.current === view.key)
+        setExecutionError({ key: view.key, message: message(reason) });
+    },
+  );
   const reconcileOptimisticExecution = useCallback(
     (nextExecution: TaskViewExecution, nextViewKey: string) => {
       const rows = new Map(
@@ -389,6 +402,10 @@ export function ViewsScreen({
     selected?.presentation?.type === "tasknotes.mini-calendar"
       ? calendarDateDefaults(selected, currentCalendarCreateValue)
       : {};
+  const calendarRangeDefaults =
+    calendarSelection && calendarSelection.key === selected?.key
+      ? (calendarSelection.defaults ?? {})
+      : {};
   const manualCreateRank =
     manualOrder && presentedExecution
       ? appendManualOrderRank(
@@ -397,6 +414,7 @@ export function ViewsScreen({
         )
       : undefined;
   const captureDefaults =
+    selected?.presentation?.type === "tasknotes.planner" ||
     selected?.presentation?.options.create === false
       ? null
       : selected?.presentation?.type === "tasknotes.projects" &&
@@ -410,12 +428,16 @@ export function ViewsScreen({
               },
               mergeTaskCreationDefaults(
                 calendarCreateDefaults,
-                currentCreationContext?.defaults ?? {},
+                mergeTaskCreationDefaults(
+                  calendarRangeDefaults,
+                  currentCreationContext?.defaults ?? {},
+                ),
               ),
             )
           : null;
   const presentationClass =
-    selected?.presentation?.type === "tasknotes.task-list"
+    selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.planner"
       ? " is-task-list-view"
       : selected?.presentation?.type === "tasknotes.kanban"
         ? " is-kanban-view"
@@ -778,22 +800,6 @@ export function ViewsScreen({
         };
   }
 
-  async function updateCalendarTask(task: Task, input: UpdateTaskInput) {
-    await updateTask(task.id, input);
-    if (!selected) return;
-    void repository.executeView(selected).then(
-      (refreshed) => {
-        if (selectedKeyRef.current !== selected.key) return;
-        setExecution(refreshed);
-        setExecutionError(null);
-      },
-      (reason) => {
-        if (selectedKeyRef.current !== selected.key) return;
-        setExecutionError({ key: selected.key, message: message(reason) });
-      },
-    );
-  }
-
   function createInBoardColumn(
     property: string,
     value: unknown,
@@ -1096,6 +1102,12 @@ export function ViewsScreen({
             onChanged={onViewsChanged}
           />
         ) : null}
+        {plannerHref ? (
+          <PlannerViewHandoff
+            href={plannerHref}
+            taskCount={presentedExecution?.totalCount}
+          />
+        ) : null}
         {captureDefaults ? (
           <TaskCapture
             key={selected?.key}
@@ -1103,7 +1115,12 @@ export function ViewsScreen({
             createTask={createTask}
             completeField={completeField}
             defaults={captureDefaults}
-            focusRequest={currentCreationContext?.focusRequest}
+            focusRequest={
+              currentCreationContext?.focusRequest ??
+              (calendarSelection && calendarSelection.key === selected?.key
+                ? calendarSelection.focusRequest
+                : undefined)
+            }
             retainFocusAfterCreate
             placeholder={
               currentCreationContext
@@ -1176,49 +1193,46 @@ export function ViewsScreen({
             }
           />
         ) : presentedExecution.view.presentation?.type ===
-          "tasknotes.calendar" ? (
-          <Suspense fallback={<LoadingRows count={6} />}>
-            <FullCalendarView
-              key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
-              execution={presentedExecution}
-              identityTasks={identityTasks}
-              selected={currentCalendarSelection}
-              titleProperty={configuration.fieldMapping.title}
-              onSelect={(date, createValue = date) =>
-                selected &&
-                setCalendarSelection({
-                  key: selected.key,
-                  date,
-                  createValue,
-                })
-              }
-              onOpen={onOpenTask}
-              onToggle={(task, occurrenceDate) =>
-                void toggleTask(task.id, occurrenceDate)
-              }
-              onUpdate={updateCalendarTask}
-            />
-          </Suspense>
-        ) : presentedExecution.view.presentation?.type ===
-          "tasknotes.mini-calendar" ? (
-          <MiniCalendarView
+            "tasknotes.calendar" ||
+          presentedExecution.view.presentation?.type ===
+            "tasknotes.mini-calendar" ? (
+          <CalendarViewPresentation
             key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
             execution={presentedExecution}
+            preferences={calendarPreferences}
             identityTasks={identityTasks}
             selected={currentCalendarSelection}
+            selectedCreateValue={currentCalendarCreateValue}
             titleProperty={configuration.fieldMapping.title}
-            onSelect={(date) =>
+            onSelect={(date, createValue = date) =>
               selected &&
               setCalendarSelection({
                 key: selected.key,
                 date,
-                createValue: date,
+                createValue,
+              })
+            }
+            onCreate={(date, createValue = date, timeEstimate) =>
+              selected &&
+              setCalendarSelection({
+                key: selected.key,
+                date,
+                createValue,
+                defaults: calendarSelectionDefaults(
+                  selected,
+                  createValue,
+                  timeEstimate,
+                ),
+                focusRequest: Date.now(),
               })
             }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
             }
+            onUpdate={calendarMutations.updateTask}
+            onUpdateOccurrence={calendarMutations.updateOccurrence}
+            onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
           />
         ) : (
           <TaskListView

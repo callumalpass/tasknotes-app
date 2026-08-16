@@ -1,5 +1,9 @@
 import { Capacitor } from "@capacitor/core";
-import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
+import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
   MdbaseConnectError,
   type CollectionDescription,
@@ -26,8 +30,6 @@ import {
   connectedTaskStats,
   connectedViewExecutionKey as viewExecutionKey,
   listConnectedTasks,
-  readOnlyTaskModelSettingsAccess,
-  readOnlyTaskModelSettingsError,
 } from "./connected-task-cache";
 import {
   mdbaseMutationKey,
@@ -48,7 +50,10 @@ import {
   type ArchiveScratchpadInput,
   type SaveScratchpadInput,
 } from "../domain/scratchpad";
-import { resolveTaskCollection } from "./tasknotes-collection";
+import {
+  resolveTaskCollection,
+  resolveTaskTypeDefinition,
+} from "./tasknotes-collection";
 import {
   completeRecords,
   completeTaskValues,
@@ -70,7 +75,10 @@ import type {
   TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
-import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  TaskCollectionConfiguration,
+  TaskModelSettingsPatch,
+} from "../domain/task-configuration";
 import type {
   CollectionRecord,
   FieldCompletion,
@@ -610,11 +618,79 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async taskModelSettingsAccess() {
-    return readOnlyTaskModelSettingsAccess(this.taskTypeName);
+    try {
+      validResult(
+        await this.connect.readType(
+          { name: this.taskTypeName },
+          this.requestOptions(),
+        ),
+      );
+      return {
+        writable: true as const,
+        source: `${this.taskTypeName} type definition`,
+      };
+    } catch {
+      return {
+        writable: false as const,
+        source: `${this.taskTypeName} type definition`,
+        reason:
+          "Task model settings need definition read and update access. Reauthorize this collection if it was connected before these settings were added.",
+      };
+    }
   }
 
-  async updateTaskModelSettings(): Promise<TaskCollectionConfiguration> {
-    throw readOnlyTaskModelSettingsError();
+  async updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration> {
+    const current = validResult(
+      await this.connect.readType(
+        { name: this.taskTypeName },
+        this.requestOptions(),
+      ),
+    );
+    const parsed = parseFrontmatter(current.document);
+    const definition = patchTaskNotesMdbaseTypeSettings(
+      parsed.frontmatter,
+      patch,
+    );
+    const operationInput = {
+      path: current.path,
+      document: serializeMarkdownDocument(definition, parsed.body),
+      ifRevision: current.revision,
+    };
+    const applyUpdated = (updated: typeof current) => {
+      const updatedDefinition = parseFrontmatter(updated.document).frontmatter;
+      const provider = resolveTaskTypeDefinition(updatedDefinition, {
+        typeName: this.taskTypeName,
+      });
+      this.model = provider.model;
+      this.taskProviders.set(this.taskTypeName, provider.model);
+      this.setConnected();
+      this.emit();
+      return this.model.configuration();
+    };
+    try {
+      return await runMdbaseMutation(
+        this.connect,
+        async () =>
+          applyUpdated(
+            validResult(
+              await this.connect.updateType(
+                operationInput,
+                this.requestOptions(),
+              ),
+            ),
+          ),
+        {
+          key: mdbaseMutationKey("type:update-task-model", operationInput),
+          request: this.requestOptions(),
+          mapRecovered: applyUpdated,
+        },
+      );
+    } catch (reason) {
+      this.noteOperationFailure(reason);
+      throw reason;
+    }
   }
 
   async listViews(): Promise<TaskViewDocument[]> {
@@ -665,18 +741,34 @@ export class MdbaseTaskRepository implements TaskRepository {
     cacheKey: string,
   ): Promise<TaskViewExecution> {
     try {
-      const result = validResult(
-        await this.connect.executeView(
-          {
-            path: view.source.path,
-            view: view.id,
-            timezone,
-            limit: 2_000,
-            render: false,
-          },
-          this.requestOptions(),
-        ),
-      ) as ProviderViewExecution;
+      let result: ProviderViewExecution | undefined;
+      for await (const outcome of this.connect.executeViewPages(
+        {
+          path: view.source.path,
+          view: view.id,
+          timezone,
+          render: false,
+        },
+        {
+          firstPageSize: PAGE_SIZE,
+          pageSize: PAGE_SIZE,
+          signal: this.operationController.signal,
+        },
+      )) {
+        const page = validResult(outcome) as ProviderViewExecution & {
+          page: number;
+        };
+        result ??= { results: [], meta: page.meta };
+        result.results.push(...page.results);
+        result.meta = {
+          ...page.meta,
+          ...(page.meta.groups === undefined && result.meta.groups
+            ? { groups: result.meta.groups }
+            : {}),
+        };
+      }
+      if (!result)
+        throw new Error("Saved view execution completed without a page.");
       const execution = normalizeViewExecution(
         view,
         result,
@@ -1002,26 +1094,21 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async reloadCache(): Promise<void> {
     const next = new Map<string, CachedMdbaseTask>();
-    let offset = 0;
-    let snapshot: string | undefined;
-    let hasMore = true;
     const timezone = runtimeTimezone();
-    while (hasMore) {
-      const response = await this.connect.query(
-        {
-          timezone,
-          types: [...this.taskProviders.keys()],
-          includeBody: true,
-          frontmatterMode: "effective",
-          limit: PAGE_SIZE,
-          offset,
-          ...(snapshot ? { snapshot } : {}),
-        },
-        this.requestOptions(),
-      );
+    for await (const response of this.connect.queryPages(
+      {
+        timezone,
+        types: [...this.taskProviders.keys()],
+        includeBody: true,
+        frontmatterMode: "effective",
+      },
+      {
+        firstPageSize: PAGE_SIZE,
+        pageSize: PAGE_SIZE,
+        signal: this.operationController.signal,
+      },
+    )) {
       const page = validResult(response);
-      if (!snapshot && typeof page.meta?.snapshot === "string")
-        snapshot = page.meta.snapshot;
       for (const record of page.results) {
         const decoded = this.readRecord(record);
         if (!decoded) continue;
@@ -1034,8 +1121,6 @@ export class MdbaseTaskRepository implements TaskRepository {
               : undefined,
         });
       }
-      offset += page.results.length;
-      hasMore = Boolean(page.meta?.hasMore && page.results.length > 0);
     }
 
     this.cache.clear();
