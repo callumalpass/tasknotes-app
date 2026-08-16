@@ -7255,6 +7255,11 @@ button:disabled {
   text-decoration: line-through;
 }
 
+.full-calendar-view .task-calendar-event.is-time-entry {
+  background: color-mix(in srgb, var(--success), transparent 90%);
+  border-color: color-mix(in srgb, var(--success), var(--line) 72%);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .task-actions-trigger,
   .manual-order-handle {

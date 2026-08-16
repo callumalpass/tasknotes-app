@@ -8,6 +8,7 @@ export interface CalendarPreferences {
   weekends: boolean;
   allDaySlot: boolean;
   nowIndicator: boolean;
+  showTimeEntries: boolean;
   hourFormat: CalendarHourFormat;
   slotMinTime: string;
   slotMaxTime: string;
@@ -24,6 +25,7 @@ export function defaultCalendarPreferences(
     weekends: true,
     allDaySlot: true,
     nowIndicator: true,
+    showTimeEntries: true,
     hourFormat: "locale",
     slotMinTime: "06:00:00",
     slotMaxTime: "22:00:00",
@@ -46,6 +48,8 @@ export function loadCalendarPreferences(
       weekends: boolean(stored.weekends) ?? fallback.weekends,
       allDaySlot: boolean(stored.allDaySlot) ?? fallback.allDaySlot,
       nowIndicator: boolean(stored.nowIndicator) ?? fallback.nowIndicator,
+      showTimeEntries:
+        boolean(stored.showTimeEntries) ?? fallback.showTimeEntries,
       hourFormat:
         stored.hourFormat === "12" ||
         stored.hourFormat === "24" ||

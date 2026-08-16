@@ -80,6 +80,7 @@ import { TaskNotesCatalogEntries } from "./views/scratchpad-catalog-entry";
 import { PlannerViewHandoff } from "./views/planner-view-handoff";
 import { usePlannerViewLink } from "./use-planner-view-link";
 import { CalendarViewPresentation } from "./views/calendar-view-presentation";
+import { useCalendarMutations } from "./use-calendar-mutations";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -219,6 +220,18 @@ export function ViewsScreen({
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
+  const calendarMutations = useCalendarMutations(
+    selected,
+    (refreshed) => {
+      if (selectedKeyRef.current !== refreshed.view.key) return;
+      setExecution(refreshed);
+      setExecutionError(null);
+    },
+    (view, reason) => {
+      if (selectedKeyRef.current === view.key)
+        setExecutionError({ key: view.key, message: message(reason) });
+    },
+  );
   const reconcileOptimisticExecution = useCallback(
     (nextExecution: TaskViewExecution, nextViewKey: string) => {
       const rows = new Map(
@@ -787,22 +800,6 @@ export function ViewsScreen({
         };
   }
 
-  async function updateCalendarTask(task: Task, input: UpdateTaskInput) {
-    await updateTask(task.id, input);
-    if (!selected) return;
-    void repository.executeView(selected).then(
-      (refreshed) => {
-        if (selectedKeyRef.current !== selected.key) return;
-        setExecution(refreshed);
-        setExecutionError(null);
-      },
-      (reason) => {
-        if (selectedKeyRef.current !== selected.key) return;
-        setExecutionError({ key: selected.key, message: message(reason) });
-      },
-    );
-  }
-
   function createInBoardColumn(
     property: string,
     value: unknown,
@@ -1233,7 +1230,9 @@ export function ViewsScreen({
             onToggle={(task, occurrenceDate) =>
               void toggleTask(task.id, occurrenceDate)
             }
-            onUpdate={updateCalendarTask}
+            onUpdate={calendarMutations.updateTask}
+            onUpdateOccurrence={calendarMutations.updateOccurrence}
+            onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
           />
         ) : (
           <TaskListView

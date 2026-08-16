@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { calendarEvents } from "../../domain/calendar-events";
+import { calendarEntryKey, calendarEvents } from "../../domain/calendar-events";
 import { dateFromStorage, todayString } from "../../domain/task";
 import { ViewTaskRow } from "./view-task-row";
 import {
@@ -177,7 +177,7 @@ export function MiniCalendarView({
                     >
                       {entries.slice(0, 3).map((entry) => (
                         <span
-                          key={entry.occurrence?.key ?? entry.task.id}
+                          key={calendarEntryKey(entry)}
                           className={entry.task.completed ? "is-complete" : ""}
                         >
                           {entry.task.title}
@@ -198,7 +198,7 @@ export function MiniCalendarView({
         {selectedTasks.length ? (
           selectedTasks.map((entry) => (
             <ViewTaskRow
-              key={entry.occurrence?.key ?? entry.task.id}
+              key={calendarEntryKey(entry)}
               row={entry.row}
               properties={execution.view.properties}
               titleProperty={titleProperty}

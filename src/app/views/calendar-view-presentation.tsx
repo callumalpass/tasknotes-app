@@ -4,7 +4,7 @@ import { LoadingRows } from "../../components/loading";
 import { MiniCalendarView } from "./mini-calendar-view";
 
 import type { CalendarPreferences } from "../calendar-preferences";
-import type { Task, UpdateTaskInput } from "../../domain/task";
+import type { Task, TaskTimeEntry, UpdateTaskInput } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
 const FullCalendarView = lazy(async () => ({
@@ -23,6 +23,8 @@ export function CalendarViewPresentation({
   onOpen,
   onToggle,
   onUpdate,
+  onUpdateOccurrence,
+  onReplaceTimeEntries,
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
@@ -35,6 +37,12 @@ export function CalendarViewPresentation({
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
   onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
+  onUpdateOccurrence(
+    task: Task,
+    occurrenceDate: string,
+    input: UpdateTaskInput,
+  ): Promise<unknown>;
+  onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
     <Suspense fallback={<LoadingRows count={6} />}>
@@ -50,6 +58,8 @@ export function CalendarViewPresentation({
         onOpen={onOpen}
         onToggle={onToggle}
         onUpdate={onUpdate}
+        onUpdateOccurrence={onUpdateOccurrence}
+        onReplaceTimeEntries={onReplaceTimeEntries}
       />
     </Suspense>
   ) : (

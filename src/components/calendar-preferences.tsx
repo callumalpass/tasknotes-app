@@ -93,6 +93,11 @@ export function CalendarPreferencesEditor({
           label="Show current time"
           onChange={(nowIndicator) => change({ nowIndicator })}
         />
+        <Toggle
+          checked={value.showTimeEntries}
+          label="Show tracked time"
+          onChange={(showTimeEntries) => change({ showTimeEntries })}
+        />
       </div>
     </div>
   );

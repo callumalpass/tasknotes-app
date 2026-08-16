@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calendarEvents } from "./calendar-events";
+import { calendarEntryKey, calendarEvents } from "./calendar-events";
 
 import type { Task } from "./task";
 import type { TaskViewExecution } from "./view";
@@ -63,6 +63,29 @@ describe("calendar task projection", () => {
       "2026-08-10",
       "2026-08-12",
     ]);
+  });
+
+  it("projects tracked time as distinct calendar entries when enabled", () => {
+    const task = {
+      ...oneOff(),
+      timeEntries: [
+        {
+          startTime: "2026-07-23T23:30:00.000Z",
+          endTime: "2026-07-24T00:15:00.000Z",
+          description: "Focused work",
+        },
+      ],
+    };
+    const events = calendarEvents(
+      execution(task, { showScheduled: false, showDue: false }),
+      new Date("2026-07-20T00:00:00.000Z"),
+      new Date("2026-07-31T23:59:59.000Z"),
+      [task],
+      { showTimeEntries: true },
+    );
+    const entry = [...events.values()].flat()[0];
+    expect(entry?.timeEntry?.description).toBe("Focused work");
+    expect(entry && calendarEntryKey(entry)).toBe("one:time:0");
   });
 });
 
