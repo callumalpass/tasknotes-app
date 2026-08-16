@@ -1,29 +1,29 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/mdbase-dev/mdbase-connect",
-  "revision": "1b68b29461b5e86f99a9db2fa5a0f98023e4d4dd",
+  "revision": "4eee6f32ba033d7a52bd03769c187ec5ad7c1f77",
   "artifacts": [
     {
       "package": "connect",
-      "file": "mdbase-dev-connect-0.1.0-beta.71-1b68b29461b5.tgz",
+      "file": "mdbase-dev-connect-0.1.0-beta.71-4eee6f32ba03.tgz",
       "bytes": 162608,
       "sha512": "ugVjanfnvuOq28fGcb/q8t6xOzuOZMi1Sa41DsBS5YKO7fhlKtIl2CJqRN0FZ+P2zfGtyrHFGH3Wm4f7F/uGZQ=="
     },
     {
       "package": "devkit",
-      "file": "mdbase-dev-connect-dev-0.1.0-beta.71-1b68b29461b5.tgz",
+      "file": "mdbase-dev-connect-dev-0.1.0-beta.71-4eee6f32ba03.tgz",
       "bytes": 9243,
       "sha512": "TCyVxRYcfRCvSVps5zHdRHievF0FfxMAxwc9bMNH3LN2FZ02yakfbGTrWS27IA8soDgWbZCiyaLWxTfmieGS7Q=="
     },
     {
       "package": "protocol",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.71-1b68b29461b5.tgz",
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.71-4eee6f32ba03.tgz",
       "bytes": 56148,
       "sha512": "KWPJmApLXZI8OKi32fZXMyEiV7C/glCOtKEsNwjq7GMdWmmSoG8T1+8X8kp8OOVn1jhWtmVkfb6wQRA03Wkv9A=="
     },
     {
       "package": "testing",
-      "file": "mdbase-dev-connect-testing-0.1.0-beta.71-1b68b29461b5.tgz",
+      "file": "mdbase-dev-connect-testing-0.1.0-beta.71-4eee6f32ba03.tgz",
       "bytes": 6801,
       "sha512": "ZDuhqgIgmYBbvwwHNnpZv2kr0zCislMUB5YWGhNQf8Q2yJW5j/RgedXuzepV1LNU8Saw6cxaMblYGmDxKZGuyA=="
     }
