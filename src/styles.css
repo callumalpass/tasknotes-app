@@ -5408,6 +5408,58 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.planner-view-handoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  min-height: 72px;
+  margin-bottom: var(--space-lg);
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.planner-view-handoff > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.planner-view-handoff strong {
+  font-size: var(--type-body);
+}
+
+.planner-view-handoff span {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.planner-view-handoff a {
+  min-height: var(--control-min-size);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .planner-view-handoff {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planner-view-handoff a {
+    justify-content: center;
+  }
+}
+
 .back-action {
   display: inline-flex;
   align-items: center;

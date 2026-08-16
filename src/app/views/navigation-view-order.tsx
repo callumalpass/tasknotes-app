@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ChartNoAxesGantt,
   ChevronDown,
   ChevronUp,
   Columns3,
@@ -89,10 +90,12 @@ export function ViewIcon({ view }: { view: TaskView }) {
   const Icon =
     type === "tasknotes.projects"
       ? FolderKanban
-      : type === "tasknotes.kanban"
-        ? Columns3
-        : type === "tasknotes.calendar" || type === "tasknotes.mini-calendar"
-          ? CalendarDays
-          : List;
+      : type === "tasknotes.planner"
+        ? ChartNoAxesGantt
+        : type === "tasknotes.kanban"
+          ? Columns3
+          : type === "tasknotes.calendar" || type === "tasknotes.mini-calendar"
+            ? CalendarDays
+            : List;
   return <Icon aria-hidden="true" size={21} strokeWidth={1.55} />;
 }

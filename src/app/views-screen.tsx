@@ -83,6 +83,8 @@ import {
   SEARCH_NAVIGATION_KEY,
 } from "./navigation-views";
 import { TaskNotesCatalogEntries } from "./views/scratchpad-catalog-entry";
+import { PlannerViewHandoff } from "./views/planner-view-handoff";
+import { usePlannerViewLink } from "./use-planner-view-link";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -207,6 +209,7 @@ export function ViewsScreen({
   }, [hasWritableViews]);
 
   const selected = views?.find((view) => view.key === viewKey);
+  const plannerHref = usePlannerViewLink(repository, selected);
   const needsIdentityTasks =
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar";
@@ -397,6 +400,7 @@ export function ViewsScreen({
         )
       : undefined;
   const captureDefaults =
+    selected?.presentation?.type === "tasknotes.planner" ||
     selected?.presentation?.options.create === false
       ? null
       : selected?.presentation?.type === "tasknotes.projects" &&
@@ -415,7 +419,8 @@ export function ViewsScreen({
             )
           : null;
   const presentationClass =
-    selected?.presentation?.type === "tasknotes.task-list"
+    selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.planner"
       ? " is-task-list-view"
       : selected?.presentation?.type === "tasknotes.kanban"
         ? " is-kanban-view"
@@ -1094,6 +1099,12 @@ export function ViewsScreen({
             view={editing}
             onClose={() => setEditing(null)}
             onChanged={onViewsChanged}
+          />
+        ) : null}
+        {plannerHref ? (
+          <PlannerViewHandoff
+            href={plannerHref}
+            taskCount={presentedExecution?.totalCount}
           />
         ) : null}
         {captureDefaults ? (

@@ -2,6 +2,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import {
   CalendarDays,
+  ChartNoAxesGantt,
   CheckCircle2,
   Columns3,
   FilePenLine,
@@ -821,6 +822,7 @@ export function Navigation({
 }
 
 function navigationViewIcon(view: TaskView): typeof CheckCircle2 {
+  if (view.presentation?.type === "tasknotes.planner") return ChartNoAxesGantt;
   if (view.presentation?.type === "tasknotes.kanban") return Columns3;
   if (
     view.presentation?.type === "tasknotes.calendar" ||

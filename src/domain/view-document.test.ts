@@ -12,6 +12,26 @@ import {
 import type { TaskViewSourceDocument } from "./view";
 
 describe("saved view documents", () => {
+  it("round-trips the TaskNotes Planner Base renderer", () => {
+    const source = baseSource(`views:
+  - type: tasknotesPlanner
+    name: Launch plan
+    options: { zoom: 4, showCompleted: false }
+`);
+    const draft = readViewDraft(source, "launch-plan");
+    expect(draft.renderer).toBe("tasknotes.planner");
+    const document = updateViewDocument(source, {
+      ...draft,
+      options: { ...draft.options, zoom: 5 },
+    });
+    expect(
+      (parse(document) as { views: Array<Record<string, unknown>> }).views[0],
+    ).toMatchObject({
+      type: "tasknotesPlanner",
+      options: { zoom: 5, showCompleted: false },
+    });
+  });
+
   it("edits one Obsidian view while preserving source extensions and comments", () => {
     const source = baseSource(`# keep this note
 x-plugin:
