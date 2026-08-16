@@ -4,12 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { calendarEvents } from "../../domain/calendar-events";
 import { dateFromStorage, todayString } from "../../domain/task";
 import { ViewTaskRow } from "./view-task-row";
+import {
+  calendarMonthGrid,
+  orderedWeekdays,
+  startOfCalendarWeek,
+} from "../calendar-preferences";
 
 import type { Task } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
 export function MiniCalendarView({
   execution,
+  firstDay,
   identityTasks,
   selected,
   titleProperty,
@@ -18,6 +24,7 @@ export function MiniCalendarView({
   onToggle,
 }: {
   execution: TaskViewExecution;
+  firstDay: number;
   identityTasks: readonly Task[];
   selected: string;
   titleProperty: string;
@@ -34,7 +41,10 @@ export function MiniCalendarView({
   );
   const dateRefs = useRef(new Map<string, HTMLButtonElement>());
   const focusRequested = useRef(false);
-  const days = useMemo(() => calendarGrid(month), [month]);
+  const days = useMemo(
+    () => calendarMonthGrid(month, firstDay),
+    [firstDay, month],
+  );
   const events = useMemo(
     () =>
       calendarEvents(execution, days[0], days.at(-1) ?? days[0], identityTasks),
@@ -93,7 +103,7 @@ export function MiniCalendarView({
         </button>
       </div>
       <div className="mini-calendar-weekdays" aria-hidden="true">
-        {weekdays().map((day, index) => (
+        {orderedWeekdays(firstDay).map((day, index) => (
           <span key={`${day}:${index}`}>{day}</span>
         ))}
       </div>
@@ -132,10 +142,12 @@ export function MiniCalendarView({
                       moveFocus(addCalendarDays(day, movement));
                     } else if (event.key === "Home") {
                       event.preventDefault();
-                      moveFocus(addCalendarDays(day, -day.getDay()));
+                      moveFocus(startOfCalendarWeek(day, firstDay));
                     } else if (event.key === "End") {
                       event.preventDefault();
-                      moveFocus(addCalendarDays(day, 6 - day.getDay()));
+                      moveFocus(
+                        addCalendarDays(startOfCalendarWeek(day, firstDay), 6),
+                      );
                     } else if (event.key === "PageUp") {
                       event.preventDefault();
                       moveFocus(addCalendarMonths(day, -1));
@@ -211,27 +223,6 @@ function addCalendarMonths(date: Date, amount: number): Date {
   ).getDate();
   target.setDate(Math.min(date.getDate(), lastDay));
   return target;
-}
-
-function calendarGrid(month: Date): Date[] {
-  const start = new Date(month.getFullYear(), month.getMonth(), 1);
-  start.setDate(start.getDate() - start.getDay());
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return date;
-  });
-}
-
-function weekdays(): string[] {
-  const sunday = new Date(2024, 0, 7);
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(sunday);
-    day.setDate(sunday.getDate() + index);
-    return new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(
-      day,
-    );
-  });
 }
 
 function storageDate(date: Date): string {

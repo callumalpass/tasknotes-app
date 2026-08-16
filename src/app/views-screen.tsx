@@ -88,6 +88,8 @@ import { usePlannerViewLink } from "./use-planner-view-link";
 
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { CalendarPreferences } from "./calendar-preferences";
+import { defaultCalendarPreferences } from "./calendar-preferences";
 import type {
   TaskView,
   TaskViewDocument,
@@ -101,6 +103,7 @@ const FullCalendarView = lazy(async () => ({
 }));
 
 export function ViewsScreen({
+  calendarPreferences = defaultCalendarPreferences(),
   viewKey,
   documents,
   views,
@@ -116,6 +119,7 @@ export function ViewsScreen({
   onMoveNavigationView,
   onViewsChanged,
 }: {
+  calendarPreferences?: CalendarPreferences;
   viewKey?: string;
   documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
@@ -1192,6 +1196,7 @@ export function ViewsScreen({
             <FullCalendarView
               key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
               execution={presentedExecution}
+              preferences={calendarPreferences}
               identityTasks={identityTasks}
               selected={currentCalendarSelection}
               titleProperty={configuration.fieldMapping.title}
@@ -1215,6 +1220,7 @@ export function ViewsScreen({
           <MiniCalendarView
             key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
             execution={presentedExecution}
+            firstDay={calendarPreferences.firstDay}
             identityTasks={identityTasks}
             selected={currentCalendarSelection}
             titleProperty={configuration.fieldMapping.title}

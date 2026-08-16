@@ -17,6 +17,10 @@ import {
   viewPropertyDetails,
   type ViewPropertyDetail,
 } from "../domain/view-values";
+import {
+  calendarEventTimeFormat,
+  type CalendarPreferences,
+} from "./calendar-preferences";
 
 import type {
   CalendarApi,
@@ -44,6 +48,7 @@ interface CalendarEventMetadata {
 
 export function FullCalendarView({
   execution,
+  preferences,
   identityTasks,
   selected,
   titleProperty,
@@ -53,6 +58,7 @@ export function FullCalendarView({
   onUpdate,
 }: {
   execution: TaskViewExecution;
+  preferences: CalendarPreferences;
   identityTasks: readonly Task[];
   selected: string;
   titleProperty: string;
@@ -180,6 +186,7 @@ export function FullCalendarView({
       <div className="full-calendar-workspace">
         <div className="full-calendar-surface">
           <FullCalendar
+            allDaySlot={preferences.allDaySlot}
             allDayText="All day"
             dayMaxEvents={3}
             dayCellClassNames={(info) =>
@@ -192,12 +199,13 @@ export function FullCalendarView({
             eventResizableFromStart
             eventResize={(info) => void resizeEvent(info)}
             events={events}
-            firstDay={1}
+            eventTimeFormat={calendarEventTimeFormat(preferences.hourFormat)}
+            firstDay={preferences.firstDay}
             headerToolbar={false}
             height="auto"
             initialDate={selected}
             initialView={initialMode}
-            nowIndicator
+            nowIndicator={preferences.nowIndicator}
             noEventsText="No tasks in this period."
             plugins={[
               dayGridPlugin,
@@ -207,9 +215,11 @@ export function FullCalendarView({
             ]}
             ref={calendarRef}
             selectable
-            slotDuration="00:30:00"
-            slotMaxTime="22:00:00"
-            slotMinTime="06:00:00"
+            slotDuration={preferences.slotDuration}
+            slotMaxTime={preferences.slotMaxTime}
+            slotMinTime={preferences.slotMinTime}
+            slotLabelFormat={calendarEventTimeFormat(preferences.hourFormat)}
+            weekends={preferences.weekends}
             views={{
               timeGridThreeDay: {
                 type: "timeGrid",

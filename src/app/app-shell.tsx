@@ -33,6 +33,11 @@ import {
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
+import {
+  loadCalendarPreferences,
+  saveCalendarPreferences,
+  type CalendarPreferences,
+} from "./calendar-preferences";
 
 import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
@@ -72,6 +77,12 @@ export function AppShell() {
   } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [calendarPreferences, setCalendarPreferences] =
+    useState<CalendarPreferences>(loadCalendarPreferences);
+  const updateCalendarPreferences = useCallback((next: CalendarPreferences) => {
+    saveCalendarPreferences(next);
+    setCalendarPreferences(next);
+  }, []);
   const closeCapture = useCallback(() => setCaptureOpen(false), []);
   const [workspaceRoute, setWorkspaceRoute] = useState<WorkspaceRoute>(() => {
     const initial = parseRoute();
@@ -266,11 +277,16 @@ export function AppShell() {
             onOpenTask={(task) => navigate({ page: "task", id: task.id })}
           />
         ) : workspace.page === "more" ? (
-          <MoreScreen onNewTask={() => setCaptureOpen(true)} />
+          <MoreScreen
+            calendarPreferences={calendarPreferences}
+            onCalendarPreferencesChange={updateCalendarPreferences}
+            onNewTask={() => setCaptureOpen(true)}
+          />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
         ) : workspace.page === "views" || workspace.page === "home" ? (
           <ViewsScreen
+            calendarPreferences={calendarPreferences}
             documents={documents}
             error={viewsError}
             navigationViewKeys={navigationKeys}
