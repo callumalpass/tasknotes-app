@@ -13,6 +13,7 @@ import {
   mdbaseFixture,
   multipleProviderDescription,
   taskRecord,
+  testQueryFile,
   unknownOutcome,
   type TestRecord,
 } from "../test/mdbase-fixture";
@@ -23,6 +24,57 @@ taskRepositoryContract("direct mdbase", async () => ({
 }));
 
 describe("mdbase task repository", () => {
+  it("loads more than ten thousand tasks through bounded opaque pages", async () => {
+    const records = Array.from({ length: 10_005 }, (_, index) =>
+      taskRecord(`paged-${index}`, `Paged task ${index}`, `r${index + 1}`),
+    );
+    const fixture = mdbaseFixture(records);
+    fixture.query.mockRejectedValue(
+      new Error("legacy offset query must not be used for cache reload"),
+    );
+    fixture.queryPages.mockImplementation(() =>
+      (async function* () {
+        for (let offset = 0, page = 0; offset < records.length; page += 1) {
+          const batch = records.slice(offset, offset + 1_000);
+          offset += batch.length;
+          yield connectSuccess({
+            results: batch.map((record) => ({
+              path: record.path,
+              effectiveFrontmatter:
+                record.effectiveFrontmatter ?? record.frontmatter,
+              body: record.body,
+              types: record.types,
+              file: record.file ?? testQueryFile(record.path),
+            })),
+            meta: {
+              totalCount: records.length,
+              hasMore: offset < records.length,
+              ...(offset < records.length
+                ? { cursor: `opaque-page-${page + 1}` }
+                : {}),
+            },
+            page,
+            offset: offset - batch.length,
+            loaded: offset,
+            complete: offset >= records.length,
+          });
+        }
+      })(),
+    );
+
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    expect(await repository.get("paged-10004")).toMatchObject({
+      title: "Paged task 10004",
+    });
+    expect(fixture.query).not.toHaveBeenCalled();
+    expect(fixture.queryPages).toHaveBeenCalledWith(
+      expect.objectContaining({ includeBody: true }),
+      expect.objectContaining({ firstPageSize: 1_000, pageSize: 1_000 }),
+    );
+  });
+
   it("patches task model settings through revision-guarded type operations", async () => {
     const fixture = mdbaseFixture([]);
     const repository = new MdbaseTaskRepository(fixture.connect);
@@ -115,12 +167,16 @@ describe("mdbase task repository", () => {
     expect(await repository.list()).toMatchObject([
       { id: "canonical", title: "Visible canonical task" },
     ]);
-    expect(fixture.query).toHaveBeenCalledWith(
+    expect(fixture.queryPages).toHaveBeenCalledWith(
       expect.objectContaining({
         frontmatterMode: "effective",
         timezone: runtimeTimezone(),
       }),
-      expect.objectContaining({ signal: expect.anything() }),
+      expect.objectContaining({
+        signal: expect.anything(),
+        firstPageSize: 1_000,
+        pageSize: 1_000,
+      }),
     );
   });
 
@@ -692,6 +748,10 @@ describe("mdbase task repository", () => {
         timezone: runtimeTimezone(),
       }),
       expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(fixture.executeViewPages).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "views/tasks.base", view: "kanban" }),
+      expect.objectContaining({ firstPageSize: 1_000, pageSize: 1_000 }),
     );
   });
 

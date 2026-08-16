@@ -722,18 +722,34 @@ export class MdbaseTaskRepository implements TaskRepository {
     cacheKey: string,
   ): Promise<TaskViewExecution> {
     try {
-      const result = validResult(
-        await this.connect.executeView(
-          {
-            path: view.source.path,
-            view: view.id,
-            timezone,
-            limit: 2_000,
-            render: false,
-          },
-          this.requestOptions(),
-        ),
-      ) as ProviderViewExecution;
+      let result: ProviderViewExecution | undefined;
+      for await (const outcome of this.connect.executeViewPages(
+        {
+          path: view.source.path,
+          view: view.id,
+          timezone,
+          render: false,
+        },
+        {
+          firstPageSize: PAGE_SIZE,
+          pageSize: PAGE_SIZE,
+          signal: this.operationController.signal,
+        },
+      )) {
+        const page = validResult(outcome) as ProviderViewExecution & {
+          page: number;
+        };
+        result ??= { results: [], meta: page.meta };
+        result.results.push(...page.results);
+        result.meta = {
+          ...page.meta,
+          ...(page.meta.groups === undefined && result.meta.groups
+            ? { groups: result.meta.groups }
+            : {}),
+        };
+      }
+      if (!result)
+        throw new Error("Saved view execution completed without a page.");
       const execution = normalizeViewExecution(
         view,
         result,
@@ -1059,26 +1075,21 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async reloadCache(): Promise<void> {
     const next = new Map<string, CachedMdbaseTask>();
-    let offset = 0;
-    let snapshot: string | undefined;
-    let hasMore = true;
     const timezone = runtimeTimezone();
-    while (hasMore) {
-      const response = await this.connect.query(
-        {
-          timezone,
-          types: [...this.taskProviders.keys()],
-          includeBody: true,
-          frontmatterMode: "effective",
-          limit: PAGE_SIZE,
-          offset,
-          ...(snapshot ? { snapshot } : {}),
-        },
-        this.requestOptions(),
-      );
+    for await (const response of this.connect.queryPages(
+      {
+        timezone,
+        types: [...this.taskProviders.keys()],
+        includeBody: true,
+        frontmatterMode: "effective",
+      },
+      {
+        firstPageSize: PAGE_SIZE,
+        pageSize: PAGE_SIZE,
+        signal: this.operationController.signal,
+      },
+    )) {
       const page = validResult(response);
-      if (!snapshot && typeof page.meta?.snapshot === "string")
-        snapshot = page.meta.snapshot;
       for (const record of page.results) {
         const decoded = this.readRecord(record);
         if (!decoded) continue;
@@ -1091,8 +1102,6 @@ export class MdbaseTaskRepository implements TaskRepository {
               : undefined,
         });
       }
-      offset += page.results.length;
-      hasMore = Boolean(page.meta?.hasMore && page.results.length > 0);
     }
 
     this.cache.clear();
