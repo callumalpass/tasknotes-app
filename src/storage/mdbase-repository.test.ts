@@ -23,6 +23,32 @@ taskRepositoryContract("direct mdbase", async () => ({
 }));
 
 describe("mdbase task repository", () => {
+  it("patches task model settings through revision-guarded type operations", async () => {
+    const fixture = mdbaseFixture([]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    expect(await repository.taskModelSettingsAccess()).toMatchObject({
+      writable: true,
+      source: "task type definition",
+    });
+    const configuration = await repository.updateTaskModelSettings({
+      defaultPriority: "high",
+      recurrence: { maintainDueDateOffset: false },
+    });
+
+    expect(configuration.defaults.priority).toBe("high");
+    expect(configuration.recurrence.maintainDueDateOffset).toBe(false);
+    expect(fixture.updateType).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "_types/task.md",
+        ifRevision: "type-r1",
+        document: expect.stringContaining("default: high"),
+      }),
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
   it("unions multiple providers and preserves each provider's field mapping on update", async () => {
     const collection = multipleProviderDescription();
     const workId = "11111111-1111-4111-8111-111111111111";

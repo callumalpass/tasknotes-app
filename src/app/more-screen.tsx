@@ -250,7 +250,7 @@ export function MoreScreen({
         </div>
       </SettingsSection>
 
-      <SettingsSection collapsible label="Advanced">
+      <SettingsSection collapsible label="Task model">
         <TaskModelSettingsEditor />
       </SettingsSection>
 

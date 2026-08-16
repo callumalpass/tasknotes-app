@@ -1,5 +1,9 @@
 import { Capacitor } from "@capacitor/core";
-import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
+import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
   MdbaseConnectError,
   type CollectionDescription,
@@ -26,8 +30,6 @@ import {
   connectedTaskStats,
   connectedViewExecutionKey as viewExecutionKey,
   listConnectedTasks,
-  readOnlyTaskModelSettingsAccess,
-  readOnlyTaskModelSettingsError,
 } from "./connected-task-cache";
 import {
   mdbaseMutationKey,
@@ -48,7 +50,10 @@ import {
   type ArchiveScratchpadInput,
   type SaveScratchpadInput,
 } from "../domain/scratchpad";
-import { resolveTaskCollection } from "./tasknotes-collection";
+import {
+  resolveTaskCollection,
+  resolveTaskTypeDefinition,
+} from "./tasknotes-collection";
 import {
   completeRecords,
   completeTaskValues,
@@ -70,7 +75,10 @@ import type {
   TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
-import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  TaskCollectionConfiguration,
+  TaskModelSettingsPatch,
+} from "../domain/task-configuration";
 import type {
   CollectionRecord,
   FieldCompletion,
@@ -610,11 +618,60 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async taskModelSettingsAccess() {
-    return readOnlyTaskModelSettingsAccess(this.taskTypeName);
+    try {
+      validResult(
+        await this.connect.readType(
+          { name: this.taskTypeName },
+          this.requestOptions(),
+        ),
+      );
+      return {
+        writable: true as const,
+        source: `${this.taskTypeName} type definition`,
+      };
+    } catch {
+      return {
+        writable: false as const,
+        source: `${this.taskTypeName} type definition`,
+        reason:
+          "Task model settings need definition read and update access. Reauthorize this collection if it was connected before these settings were added.",
+      };
+    }
   }
 
-  async updateTaskModelSettings(): Promise<TaskCollectionConfiguration> {
-    throw readOnlyTaskModelSettingsError();
+  async updateTaskModelSettings(
+    patch: TaskModelSettingsPatch,
+  ): Promise<TaskCollectionConfiguration> {
+    const current = validResult(
+      await this.connect.readType(
+        { name: this.taskTypeName },
+        this.requestOptions(),
+      ),
+    );
+    const parsed = parseFrontmatter(current.document);
+    const definition = patchTaskNotesMdbaseTypeSettings(
+      parsed.frontmatter,
+      patch,
+    );
+    const updated = validResult(
+      await this.connect.updateType(
+        {
+          path: current.path,
+          document: serializeMarkdownDocument(definition, parsed.body),
+          ifRevision: current.revision,
+        },
+        this.requestOptions(),
+      ),
+    );
+    const updatedDefinition = parseFrontmatter(updated.document).frontmatter;
+    const provider = resolveTaskTypeDefinition(updatedDefinition, {
+      typeName: this.taskTypeName,
+    });
+    this.model = provider.model;
+    this.taskProviders.set(this.taskTypeName, provider.model);
+    this.setConnected();
+    this.emit();
+    return this.model.configuration();
   }
 
   async listViews(): Promise<TaskViewDocument[]> {

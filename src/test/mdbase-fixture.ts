@@ -14,6 +14,10 @@ import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
 } from "@tasknotes/model/mdbase";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
 import { vi } from "vitest";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -39,10 +43,24 @@ export function mdbaseFixture(
   const records = new Map(initial.map((record) => [record.path, record]));
   const pendingMutations = new Map<string, PendingMutation<unknown>>();
   let revision = initial.length + 1;
+  const described = description(templating, archive, collectionId);
+  const initialDefinition = structuredClone(
+    described.types[0]?.definition ?? {},
+  );
+  let typeRevision = 1;
+  let typeDocument = {
+    name: "task",
+    path: "_types/task.md",
+    revision: `type-r${typeRevision}`,
+    document: serializeMarkdownDocument(
+      initialDefinition as Record<string, unknown>,
+      "# Task\n\nTask records live under `tasks/`.",
+    ),
+  };
   const describeCollection = vi.fn(
     async (options?: { signal?: AbortSignal }) => {
       void options;
-      return description(templating, archive, collectionId);
+      return structuredClone(described);
     },
   );
   const query = vi.fn(async (input?: Record<string, unknown>) => {
@@ -265,6 +283,57 @@ export function mdbaseFixture(
       return valid({ path: input.path, deleted: true });
     },
   );
+  const readType = vi.fn(
+    async ({ name, path }: { name?: string; path?: string }) => {
+      if (name !== typeDocument.name && path !== typeDocument.path)
+        throw new Error("Type not found.");
+      return valid(structuredClone(typeDocument));
+    },
+  );
+  const updateType = vi.fn(
+    async (input: { path?: string; document: string; ifRevision: string }) => {
+      if (input.path !== typeDocument.path) throw new Error("Type not found.");
+      if (input.ifRevision !== typeDocument.revision)
+        throw new Error("Revision conflict.");
+      const definition = parseFrontmatter(input.document).frontmatter;
+      typeRevision += 1;
+      typeDocument = {
+        ...typeDocument,
+        revision: `type-r${typeRevision}`,
+        document: input.document,
+      };
+      const descriptor = described.types[0];
+      if (descriptor) {
+        descriptor.definition = structuredClone(definition) as JsonObject;
+        descriptor.schema = structuredClone(
+          (definition.schema as { value?: JsonObject } | undefined)?.value ??
+            descriptor.schema,
+        );
+        descriptor.collection = structuredClone(
+          (definition.collection as JsonObject | undefined) ??
+            descriptor.collection,
+        );
+      }
+      const implementation = Array.isArray(definition.implements)
+        ? definition.implements.find(
+            (candidate) =>
+              candidate &&
+              typeof candidate === "object" &&
+              (candidate as Record<string, unknown>).contract ===
+                "tasknotes.task",
+          )
+        : undefined;
+      const binding =
+        implementation && typeof implementation === "object"
+          ? (implementation as Record<string, unknown>).binding
+          : undefined;
+      if (binding && typeof binding === "object" && !Array.isArray(binding))
+        described.contracts[0]!.implementations[0]!.binding = structuredClone(
+          binding,
+        ) as JsonObject;
+      return valid(structuredClone(typeDocument));
+    },
+  );
   const connect = {
     sync: () => null,
     connection: () => ({ route: "relay" }),
@@ -284,6 +353,8 @@ export function mdbaseFixture(
     createViewSource,
     updateViewSource,
     deleteViewSource,
+    readType,
+    updateType,
   } as unknown as MdbaseConnection<JsonObject>;
   const stagePendingMutation = <Result>(
     requestId: string,
@@ -321,6 +392,8 @@ export function mdbaseFixture(
     createViewSource,
     updateViewSource,
     deleteViewSource,
+    readType,
+    updateType,
     stagePendingMutation,
   };
 }

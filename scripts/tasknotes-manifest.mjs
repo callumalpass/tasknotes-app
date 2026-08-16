@@ -53,6 +53,8 @@ export async function buildTaskNotesManifest({
           "views.source.create",
           "views.source.update",
           "views.source.delete",
+          "definitions.read",
+          "definitions.update",
           "definitions.type-pack.apply",
           "collection.setup.apply",
           "timers.reconcile",
