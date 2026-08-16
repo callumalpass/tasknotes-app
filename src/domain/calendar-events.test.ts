@@ -63,6 +63,31 @@ describe("calendar task projection", () => {
       "2026-08-10",
       "2026-08-12",
     ]);
+    expect(open.get("2026-08-03")?.[0]?.recurringKind).toBe("next-scheduled");
+    expect(open.get("2026-08-12")?.[0]?.recurringKind).toBe("pattern");
+  });
+
+  it("shows an off-pattern concrete next date separately from pattern previews", () => {
+    const task = {
+      ...recurring(),
+      scheduled: "2026-08-04T13:30",
+      recurrence: "DTSTART:20260803T090000Z;FREQ=WEEKLY;BYDAY=MO,WE",
+      completeInstances: [],
+      skippedInstances: [],
+    };
+    const events = calendarEvents(
+      execution(task, { showScheduled: true, showDue: false }),
+      new Date(2026, 7, 3),
+      new Date(2026, 7, 6),
+      [task],
+    );
+
+    expect([...events.keys()].sort()).toEqual([
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+    ]);
+    expect(events.get("2026-08-04")?.[0]?.recurringKind).toBe("next-scheduled");
   });
 
   it("projects tracked time as distinct calendar entries when enabled", () => {

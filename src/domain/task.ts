@@ -118,6 +118,8 @@ export interface UpdateTaskInput {
   sortOrder?: string | null;
   timeEntries?: TaskTimeEntry[];
   customProperties?: Record<string, unknown>;
+  /** Keep concrete execution dates unchanged during a pattern-only RRULE edit. */
+  preserveRecurrenceSchedule?: boolean;
 }
 
 export interface TaskTimeTotals {

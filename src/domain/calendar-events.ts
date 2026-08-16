@@ -2,6 +2,7 @@ import { taskDatePart, todayString } from "./task";
 import {
   materializedOccurrenceKeys,
   occurrenceTask,
+  taskOccurrenceForDate,
   taskOccurrencesBetween,
 } from "./task-occurrence";
 
@@ -13,6 +14,7 @@ export interface CalendarEntry {
   task: Task;
   row: TaskViewRow;
   occurrence?: TaskOccurrence;
+  recurringKind?: "next-scheduled" | "pattern";
   timeEntry?: TaskTimeEntry;
   timeEntryIndex?: number;
 }
@@ -54,11 +56,21 @@ export function calendarEvents(
     if (task.recurrence) {
       if (!showRecurring && !showCompletedRecurring && !showSkippedRecurring)
         continue;
-      for (const occurrence of taskOccurrencesBetween(
+      const rangeStartDate = todayString(rangeStart);
+      const rangeEndDate = todayString(rangeEnd);
+      const nextScheduledDate = taskDatePart(task.scheduled);
+      const occurrences = taskOccurrencesBetween(
         task,
-        todayString(rangeStart),
-        todayString(rangeEnd),
-      )) {
+        rangeStartDate,
+        rangeEndDate,
+      );
+      if (
+        nextScheduledDate >= rangeStartDate &&
+        nextScheduledDate <= rangeEndDate &&
+        !occurrences.some(({ date }) => date === nextScheduledDate)
+      )
+        occurrences.push(taskOccurrenceForDate(task, nextScheduledDate));
+      for (const occurrence of occurrences) {
         if (materialized.has(occurrence.key)) continue;
         if (
           (occurrence.completed && !showCompletedRecurring) ||
@@ -67,6 +79,8 @@ export function calendarEvents(
         )
           continue;
         const projected = occurrenceTask(occurrence);
+        const recurringKind =
+          occurrence.date === nextScheduledDate ? "next-scheduled" : "pattern";
         const dates = new Set([
           ...(showScheduled && projected.scheduled
             ? [taskDatePart(projected.scheduled)]
@@ -74,7 +88,7 @@ export function calendarEvents(
           ...(showDue && projected.due ? [taskDatePart(projected.due)] : []),
         ]);
         for (const date of dates)
-          append(events, date, { task, row, occurrence });
+          append(events, date, { task, row, occurrence, recurringKind });
       }
       continue;
     }

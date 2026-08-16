@@ -1,6 +1,8 @@
 import { useRepository } from "./repository-context";
+import { planRecurringCalendarDrop } from "../domain/calendar-recurrence-drag";
 
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
+import type { RecurringCalendarDrop } from "../domain/calendar-recurrence-drag";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 
 export function useCalendarMutations(
@@ -8,8 +10,7 @@ export function useCalendarMutations(
   onRefresh: (execution: TaskViewExecution) => void,
   onRefreshError: (view: TaskView, reason: unknown) => void,
 ) {
-  const { repository, materializeOccurrence, replaceTimeEntries, updateTask } =
-    useRepository();
+  const { repository, replaceTimeEntries, updateTask } = useRepository();
 
   function refresh() {
     if (view)
@@ -25,14 +26,8 @@ export function useCalendarMutations(
 
   return {
     updateTask: updateCalendarTask,
-    async updateOccurrence(
-      task: Task,
-      occurrenceDate: string,
-      input: UpdateTaskInput,
-    ) {
-      const materialized = await materializeOccurrence(task.id, occurrenceDate);
-      await updateCalendarTask(materialized.task, input);
-      return materialized.task;
+    async updateOccurrence(task: Task, drop: RecurringCalendarDrop) {
+      await updateCalendarTask(task, planRecurringCalendarDrop(task, drop));
     },
     async replaceTimeEntries(task: Task, entries: TaskTimeEntry[]) {
       await replaceTimeEntries(task.id, entries);

@@ -16,6 +16,7 @@ import {
   calendarEvents,
   type CalendarEntry,
 } from "../domain/calendar-events";
+import type { RecurringCalendarDrop } from "../domain/calendar-recurrence-drag";
 import {
   moveCalendarTimeEntry,
   resizeCalendarTimeEntry,
@@ -83,11 +84,7 @@ export function FullCalendarView({
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
   onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
-  onUpdateOccurrence(
-    task: Task,
-    occurrenceDate: string,
-    input: UpdateTaskInput,
-  ): Promise<unknown>;
+  onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
   onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
 }) {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -150,18 +147,20 @@ export function FullCalendarView({
         return;
       }
       if (!metadata.dateField) throw new Error("The task date is unavailable.");
-      const input = {
+      const input: UpdateTaskInput = {
         [metadata.dateField]: calendarStorageValue(
           info.event.start,
           info.event.allDay,
         ),
       };
       if (metadata.occurrence)
-        await onUpdateOccurrence(
-          metadata.entry.task,
-          metadata.occurrence.date,
-          input,
-        );
+        await onUpdateOccurrence(metadata.entry.task, {
+          occurrenceDate: metadata.occurrence.date,
+          recurringKind: metadata.entry.recurringKind ?? "pattern",
+          dateField: metadata.dateField,
+          start: info.event.start,
+          allDay: info.event.allDay,
+        });
       else await onUpdate(metadata.entry.task, input);
     } catch (reason) {
       info.revert();
@@ -495,6 +494,8 @@ function fullCalendarEvents(
           "task-calendar-event",
           displayed.completed ? "is-complete" : "",
           entry.occurrence ? "is-recurring" : "",
+          entry.recurringKind === "next-scheduled" ? "is-recurring-next" : "",
+          entry.recurringKind === "pattern" ? "is-recurring-pattern" : "",
         ].filter(Boolean),
         extendedProps: {
           metadata: {

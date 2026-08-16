@@ -49,8 +49,21 @@ export function taskOccurrencesBetween(
 ): TaskOccurrence[] {
   if (!task.recurrence) return [];
   return recurringDatesBetween(task, start, end).map((date) =>
-    occurrence(task, date),
+    taskOccurrenceForDate(task, date),
   );
+}
+
+export function taskOccurrenceForDate(
+  task: Task,
+  date: string,
+): TaskOccurrence {
+  return {
+    key: `${task.id}:${date}`,
+    task,
+    date,
+    completed: task.completeInstances.includes(date),
+    skipped: task.skippedInstances.includes(date),
+  };
 }
 
 function recurringDatesBetween(
@@ -391,16 +404,6 @@ function shiftByIsoDuration(
       direction * (Number(match[3] ?? 0) * 7 + Number(match[4] ?? 0)),
   );
   return todayString(date);
-}
-
-function occurrence(task: Task, date: string): TaskOccurrence {
-  return {
-    key: `${task.id}:${date}`,
-    task,
-    date,
-    completed: task.completeInstances.includes(date),
-    skipped: task.skippedInstances.includes(date),
-  };
 }
 
 function dueOffsetDays(task: Task): number {

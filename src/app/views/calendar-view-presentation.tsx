@@ -4,6 +4,7 @@ import { LoadingRows } from "../../components/loading";
 import { MiniCalendarView } from "./mini-calendar-view";
 
 import type { CalendarPreferences } from "../calendar-preferences";
+import type { RecurringCalendarDrop } from "../../domain/calendar-recurrence-drag";
 import type { Task, TaskTimeEntry, UpdateTaskInput } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
@@ -37,11 +38,7 @@ export function CalendarViewPresentation({
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
   onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
-  onUpdateOccurrence(
-    task: Task,
-    occurrenceDate: string,
-    input: UpdateTaskInput,
-  ): Promise<unknown>;
+  onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
   onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
