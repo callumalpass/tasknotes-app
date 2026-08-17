@@ -5,6 +5,7 @@ const tasknotesOrigin = "https://candidate-b.tasknotes-app.pages.dev";
 const pickleOrigin = "https://candidate-b.pickle-9zb.pages.dev";
 const readerOrigin = "https://candidate-b.mdbase-reader-staging.pages.dev";
 const editorOrigin = "https://candidate-b.mdbase-editor.pages.dev";
+const workoutsOrigin = "https://mdbase-workouts-staging.pages.dev";
 const collectionName = "Candidate B Live Missions";
 
 const sessionToken = requiredEnvironment("MDBASE_CANDIDATE_B_SESSION_TOKEN");
@@ -213,5 +214,50 @@ test("mdbase editor creates and reloads an exact hosted Markdown note", async ({
   await expect(page.getByLabel("Note body")).toContainText(
     "Candidate B relationship",
   );
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("mdbase Workouts authorizes, writes a quick log, and reconnects", async ({
+  context,
+  page,
+}) => {
+  await installSession(context);
+  await openRegisteredApplication(page, workoutsOrigin);
+  await expect(
+    page.getByRole("heading", { name: "Open your training record." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Choose workout collection" }).click();
+  await approveApplication(page, "MDBase Workouts");
+
+  await expect(page).toHaveURL(
+    new RegExp(`^${workoutsOrigin.replaceAll(".", "\\.")}/`),
+  );
+  const today = page.getByRole("heading", { name: "Today" });
+  const setup = page.getByRole("button", {
+    name: "Apply workout definitions",
+  });
+  await expect(today.or(setup)).toBeVisible({ timeout: 60_000 });
+  if (await setup.isVisible()) await setup.click();
+  await expect(today).toBeVisible({ timeout: 60_000 });
+
+  await page.getByRole("button", { name: /quick log/i }).click();
+  await expect(
+    page.getByRole("heading", { name: "Quick Log", exact: true }),
+  ).toBeVisible();
+  await page.getByPlaceholder("Search exercises...").fill("Bench Press");
+  await page.getByRole("button", { name: /^Bench Press\b/i }).click();
+  const numericInputs = page.locator('input[type="number"]');
+  await numericInputs.nth(0).fill("42.5");
+  await numericInputs.nth(1).fill("7");
+  await page.getByRole("button", { name: "Log", exact: true }).click();
+  await expect(page.getByText("42.5kg × 7").first()).toBeVisible({
+    timeout: 60_000,
+  });
+
+  await page.reload();
+  await expect(today).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("42.5kg × 7").first()).toBeVisible({
+    timeout: 60_000,
+  });
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
