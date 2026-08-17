@@ -12,6 +12,13 @@ export const developmentDeployment = Object.freeze({
   wranglerVersion: "4.114.0",
 });
 
+export const candidateBDevelopmentDeployment = Object.freeze({
+  ...developmentDeployment,
+  appOrigin: "https://candidate-b.tasknotes-app.pages.dev",
+  connectOrigin: "https://mdbase-connect-candidate-b.onrender.com",
+  branch: "candidate-b",
+});
+
 const projectRoot = resolve(import.meta.dirname, "..");
 const manifestTargets = [
   resolve(projectRoot, "public", ".well-known", "mdbase-app.json"),
@@ -23,15 +30,29 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   await deployDevelopmentTaskNotes(process.env);
 }
 
-export function developmentDeploymentEnvironment(environment) {
+export function developmentDeploymentFor(environment) {
+  const requested = environment.MDBASE_CANDIDATE_B_CONNECT_URL;
+  if (requested === undefined || requested === "") return developmentDeployment;
+  if (requested !== candidateBDevelopmentDeployment.connectOrigin) {
+    throw new Error(
+      `Candidate B TaskNotes requires ${candidateBDevelopmentDeployment.connectOrigin}.`,
+    );
+  }
+  return candidateBDevelopmentDeployment;
+}
+
+export function developmentDeploymentEnvironment(
+  environment,
+  deployment = developmentDeploymentFor(environment),
+) {
   return {
     ...environment,
     VITE_BASE_PATH: "/",
-    TASKNOTES_APP_URL: developmentDeployment.appOrigin,
+    TASKNOTES_APP_URL: deployment.appOrigin,
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",
-    VITE_MDBASE_CONNECT_URL: developmentDeployment.connectOrigin,
-    VITE_MDBASE_CONNECT_LOOPBACK_URL: developmentDeployment.loopbackOrigin,
+    VITE_MDBASE_CONNECT_URL: deployment.connectOrigin,
+    VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin,
   };
 }
 
@@ -39,7 +60,11 @@ export async function deployDevelopmentTaskNotes(
   environment,
   dependencies = { run: runCommand, verifyBuild: verifyDevelopmentBuild },
 ) {
-  const deploymentEnvironment = developmentDeploymentEnvironment(environment);
+  const deployment = developmentDeploymentFor(environment);
+  const deploymentEnvironment = developmentDeploymentEnvironment(
+    environment,
+    deployment,
+  );
   const previousManifests = await Promise.all(
     manifestTargets.map(async (target) => {
       try {
@@ -53,7 +78,7 @@ export async function deployDevelopmentTaskNotes(
 
   try {
     await dependencies.run(pnpm, ["build"], deploymentEnvironment);
-    await dependencies.verifyBuild();
+    await dependencies.verifyBuild(deployment);
   } finally {
     await Promise.all(
       manifestTargets.map((target, index) =>
@@ -70,28 +95,26 @@ export async function deployDevelopmentTaskNotes(
     pnpm,
     [
       "dlx",
-      `wrangler@${developmentDeployment.wranglerVersion}`,
+      `wrangler@${deployment.wranglerVersion}`,
       "pages",
       "deploy",
       "dist",
-      `--project-name=${developmentDeployment.project}`,
-      `--branch=${developmentDeployment.branch}`,
+      `--project-name=${deployment.project}`,
+      `--branch=${deployment.branch}`,
       "--commit-dirty=true",
     ],
     deploymentEnvironment,
   );
   await dependencies.run("node", ["scripts/production-smoke.mjs"], {
     ...deploymentEnvironment,
-    TASKNOTES_PRODUCTION_URL: developmentDeployment.appOrigin,
-    MDBASE_CONNECT_ORIGIN: developmentDeployment.connectOrigin,
+    TASKNOTES_PRODUCTION_URL: deployment.appOrigin,
+    MDBASE_CONNECT_ORIGIN: deployment.connectOrigin,
   });
 
-  console.log(
-    `Development TaskNotes deployed: ${developmentDeployment.appOrigin}/`,
-  );
+  console.log(`Development TaskNotes deployed: ${deployment.appOrigin}/`);
 }
 
-async function verifyDevelopmentBuild() {
+async function verifyDevelopmentBuild(deployment = developmentDeployment) {
   const manifestPath = resolve(
     projectRoot,
     "dist",
@@ -99,15 +122,15 @@ async function verifyDevelopmentBuild() {
     "mdbase-app.json",
   );
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  const callback = `${developmentDeployment.appOrigin}/auth/mdbase/callback`;
+  const callback = `${deployment.appOrigin}/auth/mdbase/callback`;
   if (
-    manifest.homepage !== `${developmentDeployment.appOrigin}/` ||
-    manifest.icon !== `${developmentDeployment.appOrigin}/icon.png` ||
+    manifest.homepage !== `${deployment.appOrigin}/` ||
+    manifest.icon !== `${deployment.appOrigin}/icon.png` ||
     manifest.redirect_uris?.length !== 1 ||
     manifest.redirect_uris[0] !== callback
   ) {
     throw new Error(
-      `TaskNotes deployment manifest does not declare ${developmentDeployment.appOrigin}.`,
+      `TaskNotes deployment manifest does not declare ${deployment.appOrigin}.`,
     );
   }
 
@@ -119,8 +142,8 @@ async function verifyDevelopmentBuild() {
     scripts.map((script) => readFile(script, "utf8")),
   );
   for (const expected of [
-    developmentDeployment.connectOrigin,
-    developmentDeployment.loopbackOrigin,
+    deployment.connectOrigin,
+    deployment.loopbackOrigin,
   ]) {
     if (!sources.some((source) => source.includes(expected))) {
       throw new Error(

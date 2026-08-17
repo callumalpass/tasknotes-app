@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  candidateBDevelopmentDeployment,
   deployDevelopmentTaskNotes,
   developmentDeployment,
+  developmentDeploymentFor,
   developmentDeploymentEnvironment,
 } from "./deploy-pages-dev.mjs";
 
@@ -19,6 +21,40 @@ describe("TaskNotes development deployment", () => {
       VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
     });
+  });
+
+  it("deploys Candidate B only to its isolated branch and authority", async () => {
+    const environment = {
+      MDBASE_CANDIDATE_B_CONNECT_URL:
+        "https://mdbase-connect-candidate-b.onrender.com",
+    };
+    expect(developmentDeploymentFor(environment)).toBe(
+      candidateBDevelopmentDeployment,
+    );
+    expect(developmentDeploymentEnvironment(environment)).toMatchObject({
+      TASKNOTES_APP_URL: "https://candidate-b.tasknotes-app.pages.dev",
+      VITE_MDBASE_CONNECT_URL:
+        "https://mdbase-connect-candidate-b.onrender.com",
+    });
+
+    const run = vi.fn(async () => undefined);
+    const verifyBuild = vi.fn(async () => undefined);
+    await deployDevelopmentTaskNotes(environment, { run, verifyBuild });
+    expect(run.mock.calls[1][1]).toEqual(
+      expect.arrayContaining(["--branch=candidate-b"]),
+    );
+    expect(run.mock.calls[2][2]).toMatchObject({
+      TASKNOTES_PRODUCTION_URL: "https://candidate-b.tasknotes-app.pages.dev",
+      MDBASE_CONNECT_ORIGIN: "https://mdbase-connect-candidate-b.onrender.com",
+    });
+  });
+
+  it("rejects an arbitrary Candidate B authority override", () => {
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_CANDIDATE_B_CONNECT_URL: "https://connect.mdbase.dev",
+      }),
+    ).toThrow("Candidate B TaskNotes requires");
   });
 
   it("deploys only the staging branch and smokes the same origins", async () => {
