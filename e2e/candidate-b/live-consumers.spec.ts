@@ -45,6 +45,14 @@ async function openRegisteredApplication(
   );
 }
 
+async function reviewAndAllowApplication(page: Page): Promise<void> {
+  const reviewAccess = page.getByRole("button", { name: "Review access" });
+  if (await reviewAccess.isVisible()) await reviewAccess.click();
+  const allow = page.getByRole("button", { name: /allow /i });
+  await expect(allow).toHaveCount(1);
+  await allow.click();
+}
+
 async function authorizeTaskNotes(page: Page): Promise<void> {
   await openRegisteredApplication(page, tasknotesOrigin);
   await expect(
@@ -63,7 +71,7 @@ async function authorizeTaskNotes(page: Page): Promise<void> {
   );
   if (await radio.count()) await radio.check();
   else await collection.click();
-  await page.getByRole("button", { name: /allow TaskNotes$/i }).click();
+  await reviewAndAllowApplication(page);
 
   await expect(page).toHaveURL(
     new RegExp(`^${tasknotesOrigin.replaceAll(".", "\\.")}/`),
@@ -89,9 +97,7 @@ async function approveApplication(page: Page, appName: string): Promise<void> {
   );
   if (await radio.count()) await radio.check();
   else await collection.click();
-  await page
-    .getByRole("button", { name: new RegExp(`allow ${appName}$`, "i") })
-    .click();
+  await reviewAndAllowApplication(page);
 }
 
 test("TaskNotes completes a live hosted create, reconnect, and exact read", async ({
@@ -192,16 +198,22 @@ test("mdbase editor creates and reloads an exact hosted Markdown note", async ({
       timeout: 60_000,
     },
   );
+  await expect(page.getByLabel("Loading note")).not.toBeVisible({
+    timeout: 60_000,
+  });
   await page.getByRole("button", { name: "New note" }).click();
+  const composer = page.getByRole("main", { name: "Create note" });
+  await expect(composer).toBeVisible();
   const title = `Candidate B Editor ${Date.now()}`;
-  await page.getByLabel("Title").fill(title);
-  await page
+  await composer.getByLabel("Title").fill(title);
+  await composer
     .getByLabel("Note body")
     .fill("Exact encrypted body with [[Candidate B relationship]].");
-  const create = page.getByRole("button", { name: "Create note" });
+  const create = composer.getByRole("button", { name: "Create note" });
+  await expect(create).toBeEnabled();
+  await create.click();
+  await expect(composer).not.toBeVisible();
   const openedTitle = page.getByLabel("Note title");
-  await expect(create.or(openedTitle)).toBeVisible();
-  if (await create.isVisible()) await create.click();
   await expect(openedTitle).toHaveValue(title, { timeout: 60_000 });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({
     timeout: 60_000,
