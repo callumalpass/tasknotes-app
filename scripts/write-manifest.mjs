@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import { format } from "prettier";
 
 import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
-import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const development = process.argv.includes("--development");
 const webOnly = process.env.TASKNOTES_WEB_ONLY === "1";
@@ -11,7 +10,6 @@ const appUrl = (
   process.env.TASKNOTES_APP_URL ??
   (development ? "http://127.0.0.1:4173" : "https://app.tasknotes.dev")
 ).replace(/\/$/, "");
-const resources = buildAppTaskNotesResources();
 const firebaseProjectId =
   process.env.TASKNOTES_FIREBASE_PROJECT_ID?.trim() || undefined;
 const targets = [
@@ -29,7 +27,6 @@ const manifest = await buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,
-  resources,
 });
 
 const serialized = await format(JSON.stringify(manifest), { parser: "json" });

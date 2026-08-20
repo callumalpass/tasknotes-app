@@ -1,24 +1,22 @@
-import { buildTaskNotesMdbaseTypePack } from "@tasknotes/model/mdbase";
 import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
+import {
+  loadCanonicalTaskNotesTypePack,
+  TASKNOTES_APP_TYPE_PACK_VERSION,
+} from "./canonical-task-pack.mjs";
 import { buildScratchpadTypePack } from "./scratchpad-type.mjs";
 
-// This pack contains TaskNotes-specific presentation defaults in addition to
-// the shared model resources. Its version must change whenever those resources
-// change because mdbase type-pack versions are immutable once installed.
-export const TASKNOTES_APP_TYPE_PACK_VERSION = "0.3.0-rc.11";
+export { TASKNOTES_APP_TYPE_PACK_VERSION } from "./canonical-task-pack.mjs";
 
 export async function buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,
-  resources,
 }) {
   // Keep the application identity and callback on the same origin. Local
   // manifests are accepted only by development validation; external local
   // authorization should use a public tunnel and TASKNOTES_APP_URL.
   const identityUrl = appUrl;
-  const typePack = await buildTaskNotesMdbaseTypePack(resources);
-  typePack.manifest.version = TASKNOTES_APP_TYPE_PACK_VERSION;
+  const typePack = await loadCanonicalTaskNotesTypePack();
   const taskContract = typePack.provides.find(
     (contract) => contract.id === "tasknotes.task",
   );

@@ -13,7 +13,6 @@ describe("TaskNotes mdbase manifest", () => {
     const manifest = await buildTaskNotesManifest({
       appUrl: "https://tasks.example",
       webOnly: true,
-      resources,
     });
     expect(manifest.manifest_version).toBe(1);
     expect(manifest.id).toBe("dev.tasknotes.app");
@@ -80,7 +79,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.11");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.12");
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
@@ -107,7 +106,6 @@ describe("TaskNotes mdbase manifest", () => {
       appUrl: "https://tasks.example",
       webOnly: false,
       firebaseProjectId: "tasknotes-production",
-      resources,
     });
     expect(manifest.notifications.native_delivery).toEqual({
       mode: "managed_fcm",
@@ -122,7 +120,6 @@ describe("TaskNotes mdbase manifest", () => {
     const manifest = await buildTaskNotesManifest({
       appUrl: "http://127.0.0.1:4173/tasknotes-app",
       webOnly: true,
-      resources,
     });
     expect(manifest.homepage).toBe("http://127.0.0.1:4173/tasknotes-app/");
     expect(manifest.icon).toBe("http://127.0.0.1:4173/tasknotes-app/icon.png");
