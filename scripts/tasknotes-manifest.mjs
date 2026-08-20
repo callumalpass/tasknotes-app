@@ -1,8 +1,5 @@
 import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
-import {
-  loadCanonicalTaskNotesTypePack,
-  TASKNOTES_APP_TYPE_PACK_VERSION,
-} from "./canonical-task-pack.mjs";
+import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
 import { buildScratchpadTypePack } from "./scratchpad-type.mjs";
 
 export { TASKNOTES_APP_TYPE_PACK_VERSION } from "./canonical-task-pack.mjs";

@@ -6,8 +6,6 @@ import {
 } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
-const resources = buildAppTaskNotesResources();
-
 describe("TaskNotes mdbase manifest", () => {
   it("declares content-free runtime criteria without requiring Firebase", async () => {
     const manifest = await buildTaskNotesManifest({
