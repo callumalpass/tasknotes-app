@@ -66,6 +66,7 @@ export interface TaskViewExecution {
   totalCount: number;
   hasMore: boolean;
   groups: TaskViewGroup[];
+  hasSkippedRecords?: boolean;
   stale?: boolean;
 }
 

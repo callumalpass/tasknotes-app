@@ -505,6 +505,17 @@ button:disabled {
   line-height: 1.45;
 }
 
+.view-record-warning {
+  margin: 0 var(--page-inset) var(--space-md);
+  padding: 10px var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  background: var(--paper-soft);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+}
+
 .capture-warning {
   margin: 12px 0;
   color: var(--ink-muted);

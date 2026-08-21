@@ -54,6 +54,12 @@ export interface ProviderViewExecution {
     hasMore: boolean;
     groups?: TaskViewGroup[];
   };
+  diagnostics?: Array<{
+    severity: string;
+    code: string;
+    message: string;
+    path?: string;
+  }>;
 }
 
 export function normalizeViewDocuments(
@@ -145,6 +151,9 @@ export function normalizeViewExecution(
     totalCount: result.meta.totalCount,
     hasMore: result.meta.hasMore,
     groups: structuredClone(result.meta.groups ?? []),
+    hasSkippedRecords: (result.diagnostics ?? []).some(
+      ({ code }) => code === "hosted_base_record_skipped",
+    ),
   };
 }
 

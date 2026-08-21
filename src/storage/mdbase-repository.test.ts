@@ -779,6 +779,31 @@ describe("mdbase task repository", () => {
     );
   });
 
+  it("preserves successful saved-view diagnostics across page outcomes", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("visible", "Visible task", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    const response = await fixture.executeView();
+    fixture.executeView.mockResolvedValueOnce({
+      ...response,
+      diagnostics: [
+        {
+          severity: "warning",
+          code: "hosted_base_record_skipped",
+          message: "A record was omitted.",
+        },
+      ],
+    });
+
+    const execution = await repository.executeView(document.views[0]);
+
+    expect(execution.hasSkippedRecords).toBe(true);
+    expect(execution.rows[0].task.title).toBe("Visible task");
+  });
+
   it("coalesces concurrent executions of the same saved view", async () => {
     const fixture = mdbaseFixture([
       taskRecord("board", "Visible on the board", "r1"),
