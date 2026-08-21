@@ -190,6 +190,32 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   expect(screen.getByText(/Could not move/)).toBeInTheDocument();
 });
 
+it("keeps readable tasks visible when the provider omitted an unreadable record", async () => {
+  const view = manualListView("partial");
+  const task = listTask("readable", "Readable task");
+  const execution: TaskViewExecution = {
+    view,
+    rows: [{ task, values: {} }],
+    totalCount: 1,
+    hasMore: false,
+    groups: [],
+    hasSkippedRecords: true,
+  };
+  const repository = manualListRepository(
+    view,
+    [task],
+    vi.fn(),
+    () => execution,
+  );
+
+  renderListView(repository, view);
+
+  expect(await screen.findByText("Readable task")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Some files could not be read and were omitted from this view.",
+  );
+});
+
 it("recovers an uncertain manual board write before sending the queued move", async () => {
   const pending = deferred<void>();
   const execution = boardExecution();

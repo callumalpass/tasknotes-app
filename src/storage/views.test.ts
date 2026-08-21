@@ -193,6 +193,41 @@ describe("provider view documents", () => {
     });
   });
 
+  it("preserves a nonfatal skipped-record signal from provider diagnostics", () => {
+    const view: TaskView = {
+      key: "views/work.base#list",
+      documentId: "work",
+      documentName: "Work",
+      id: "list",
+      name: "List",
+      properties: [],
+      source: {
+        path: "views/work.base",
+        format: "obsidian.base",
+        revision: "one",
+        writable: true,
+      },
+    };
+
+    const execution = normalizeViewExecution(
+      view,
+      {
+        results: [],
+        meta: { totalCount: 0, hasMore: false },
+        diagnostics: [
+          {
+            severity: "warning",
+            code: "hosted_base_record_skipped",
+            message: "A record was omitted.",
+          },
+        ],
+      },
+      () => null,
+    );
+
+    expect(execution.hasSkippedRecords).toBe(true);
+  });
+
   it("keeps body-only saved-view records with empty effective frontmatter", () => {
     const view: TaskView = {
       key: "views/work.base#all",

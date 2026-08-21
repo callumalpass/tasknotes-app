@@ -1088,6 +1088,11 @@ export function ViewsScreen({
             recovery="Refresh the collection or choose another view."
           />
         ) : null}
+        {!error && presentedExecution?.hasSkippedRecords ? (
+          <p className="view-record-warning" role="status">
+            Some files could not be read and were omitted from this view.
+          </p>
+        ) : null}
         {currentViewActionError ? (
           <OperationErrorNotice
             action="The view change"

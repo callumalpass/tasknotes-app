@@ -10,6 +10,7 @@ import {
   type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
+  type MdbaseDiagnostic,
   type MdbaseOperationEnvelope,
   type RecordDocument,
 } from "@mdbase-dev/connect";
@@ -758,8 +759,9 @@ export class MdbaseTaskRepository implements TaskRepository {
         const page = validResult(outcome) as ProviderViewExecution & {
           page: number;
         };
-        result ??= { results: [], meta: page.meta };
+        result ??= { results: [], meta: page.meta, diagnostics: [] };
         result.results.push(...page.results);
+        result.diagnostics?.push(...operationDiagnostics(outcome));
         result.meta = {
           ...page.meta,
           ...(page.meta.groups === undefined && result.meta.groups
@@ -1586,6 +1588,13 @@ function validResult<Result>(
         "The collection rejected this change.",
     );
   return envelope.result;
+}
+
+function operationDiagnostics<Result>(
+  envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
+): MdbaseDiagnostic[] {
+  if ("ok" in envelope) return envelope.ok ? envelope.diagnostics : [];
+  return envelope.diagnostics;
 }
 
 function frontmatterPatch(
