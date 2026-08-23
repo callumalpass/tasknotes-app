@@ -689,7 +689,9 @@ async function installRelayAuthorization(
 ) {
   const manifestUrl = new URL(
     ".well-known/mdbase-app.json",
-    `${TASKNOTES_E2E_ORIGIN}/`,
+    TASKNOTES_E2E_ORIGIN.endsWith("/")
+      ? TASKNOTES_E2E_ORIGIN
+      : `${TASKNOTES_E2E_ORIGIN}/`,
   ).href;
   await page.route(
     "https://connect.mdbase.dev/v1/apps/register",
