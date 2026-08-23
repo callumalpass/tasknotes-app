@@ -1,9 +1,7 @@
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { CollectionInfo } from "./ports/task-repository";
 import type { MutationJournal, PendingTaskDeletion } from "./mutation-journal";
-import { toOperationalError } from "./operational-error";
-
-import type { OperationalError } from "./operational-error";
+import { OperationalError, toOperationalError } from "./operational-error";
 
 const DEFAULT_UNDO_WINDOW_MS = 30_000;
 
@@ -54,6 +52,7 @@ export class TaskCommandService {
     private readonly options: {
       repository: TaskCommandRepository;
       journal: MutationJournal;
+      discardPendingRequest?(requestId: string): Promise<void>;
       onDeleted?(taskId: string): Promise<void>;
       onTasksUpdated?(
         tasks: readonly Task[],
@@ -73,6 +72,21 @@ export class TaskCommandService {
     const deletions = commands.sort(
       (left, right) => left.requestedAt - right.requestedAt,
     );
+
+    const outcomeUnknown = deletions.find(
+      (deletion) => deletion.authorityRequestId,
+    );
+    if (outcomeUnknown) {
+      this.pendingDeletion = outcomeUnknown;
+      this.deletionError = new OperationalError(
+        "unknown",
+        "delete-task",
+        true,
+        "TaskNotes retained the exact mdbase request because the earlier deletion outcome is unknown.",
+      );
+      this.publish();
+      return;
+    }
 
     // The UI currently presents one undo operation. Any older accepted command
     // is completed before the newest command is restored.
@@ -150,6 +164,16 @@ export class TaskCommandService {
     return this.enqueue(async () => {
       const pending = this.pendingDeletion;
       if (!pending) return;
+      if (pending.authorityRequestId) {
+        if (!this.options.discardPendingRequest)
+          throw new OperationalError(
+            "unknown",
+            "discard-pending-deletion",
+            false,
+            "Saved mdbase recovery cannot be discarded safely in this session.",
+          );
+        await this.options.discardPendingRequest(pending.authorityRequestId);
+      }
       await this.options.journal.remove(pending.operationId);
       this.clearTimer();
       this.pendingDeletion = null;

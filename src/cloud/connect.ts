@@ -3,11 +3,13 @@ import { Capacitor } from "@capacitor/core";
 import {
   MdbaseBrowserSelection,
   MdbaseConnect,
+  type ConnectRequestOptions,
   type JsonObject,
   type MdbaseAppManifest,
   type MdbaseConnectionInfo,
 } from "@mdbase-dev/connect";
 import bundledManifest from "../generated/mdbase-app.json";
+import { requireConnectOutcome } from "./outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "./request-budgets";
 
 const serverUrl =
@@ -16,7 +18,9 @@ const loopbackUrl =
   import.meta.env.VITE_MDBASE_CONNECT_LOOPBACK_URL ?? "http://127.0.0.1:28485";
 const manifest =
   import.meta.env.VITE_MDBASE_MANIFEST_URL ??
-  (bundledManifest as MdbaseAppManifest);
+  (import.meta.env.MODE === "e2e"
+    ? `${location.origin}${joinBase(".well-known/mdbase-app.json")}`
+    : (bundledManifest as MdbaseAppManifest));
 const redirectUri = Capacitor.isNativePlatform()
   ? "dev.tasknotes.app://auth/mdbase/callback"
   : `${location.origin}${joinBase("auth/mdbase/callback")}`;
@@ -50,6 +54,12 @@ export const cloudSession = cloudConnect.application({
   selection: cloudSelection,
   autoSelect: "never",
 });
+
+export async function startCloudSession(
+  options?: ConnectRequestOptions,
+): Promise<void> {
+  requireConnectOutcome(await cloudSession.start(options));
+}
 
 export function cloudControlUrl(): string {
   return serverUrl;

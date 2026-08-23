@@ -34,7 +34,6 @@ import {
 } from "./connected-task-cache";
 import {
   mdbaseMutationKey,
-  reconcileMdbaseMutations,
   runMdbaseMutation,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
@@ -198,7 +197,6 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    await reconcileMdbaseMutations(this.connect, this.requestOptions());
     const description = validResult(
       await this.connect.describe(this.requestOptions()),
     );

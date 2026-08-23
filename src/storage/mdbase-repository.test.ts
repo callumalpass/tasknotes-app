@@ -371,6 +371,20 @@ describe("mdbase task repository", () => {
     expect(recovery?.recover).toHaveBeenCalledOnce();
   });
 
+  it("does not replay a durable pending mutation while opening a collection", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("existing", "Original title", "r1"),
+    ]);
+    const pending = fixture.stagePendingMutation(
+      "pending-before-open",
+      async () => connectSuccess({}),
+    );
+
+    await new MdbaseTaskRepository(fixture.connect).initialize();
+
+    expect(pending.recover).not.toHaveBeenCalled();
+  });
+
   it("recovers a pending live write before sending a later task change", async () => {
     const fixture = mdbaseFixture([
       taskRecord("first", "First task", "r1"),

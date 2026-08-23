@@ -71,11 +71,13 @@ describe("TaskNotes mdbase session", () => {
 
     await cloudSession.authorize("choose");
 
-    expect(authorize).toHaveBeenCalledWith({
-      operations: expectedOperations,
-      target: { kind: "choose" },
-      returnTo: "/",
-    });
+    expect(authorize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operations: expectedOperations,
+        target: { kind: "choose" },
+        returnTo: "/",
+      }),
+    );
   });
 
   it("authorizes an exact newly adopted collection", async () => {
@@ -85,13 +87,15 @@ describe("TaskNotes mdbase session", () => {
 
     await cloudSession.authorize({ collectionId: "hosted-after-adoption" });
 
-    expect(authorize).toHaveBeenCalledWith({
-      operations: expectedOperations,
-      target: {
-        kind: "collection",
-        collectionId: "hosted-after-adoption",
-      },
-      returnTo: "/",
-    });
+    expect(authorize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operations: expectedOperations,
+        target: {
+          kind: "collection",
+          collectionId: "hosted-after-adoption",
+        },
+        returnTo: "/",
+      }),
+    );
   });
 });

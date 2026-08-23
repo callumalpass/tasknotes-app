@@ -107,7 +107,7 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
-  it("persists the authority request mapping and resumes it after restart", async () => {
+  it("preserves an unknown authority request for explicit review after restart", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
     repository.delete.mockRejectedValueOnce(
@@ -135,11 +135,67 @@ describe("TaskCommandService", () => {
     const reopened = new TaskCommandService({ repository, journal });
     await reopened.initialize();
 
+    expect(repository.delete).toHaveBeenCalledTimes(1);
+    expect(reopened.snapshot()).toMatchObject({
+      pendingDeletion: {
+        taskId: "task-1",
+        authorityRequestId: "delete-request-1",
+      },
+      deletionError: {
+        code: "unknown",
+        retryable: true,
+        detail: expect.stringContaining("exact mdbase request"),
+      },
+    });
+    expect(journal.commands[0]).toMatchObject({
+      authorityRequestId: "delete-request-1",
+    });
+
+    await reopened.retryDeletion();
+
     expect(repository.delete).toHaveBeenLastCalledWith("task-1", {
       authorityRequestId: "delete-request-1",
     });
     expect(journal.commands).toEqual([]);
     reopened.dispose();
+  });
+
+  it("removes an unknown deletion mapping only after SDK discard succeeds", async () => {
+    const journal = new MemoryMutationJournal();
+    journal.commands = [unknownDeletionCommand()];
+    const discardPendingRequest = vi.fn(async () => undefined);
+    const service = new TaskCommandService({
+      repository: taskRepository(),
+      journal,
+      discardPendingRequest,
+    });
+    await service.initialize();
+
+    await service.undoDeletion();
+
+    expect(discardPendingRequest).toHaveBeenCalledWith("delete-request-1");
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("retains an unknown deletion mapping when SDK discard fails", async () => {
+    const journal = new MemoryMutationJournal();
+    journal.commands = [unknownDeletionCommand()];
+    const service = new TaskCommandService({
+      repository: taskRepository(),
+      journal,
+      discardPendingRequest: vi.fn(async () => {
+        throw new Error("SDK recovery cleanup failed.");
+      }),
+    });
+    await service.initialize();
+
+    await expect(service.undoDeletion()).rejects.toThrow(
+      "SDK recovery cleanup failed.",
+    );
+
+    expect(journal.commands).toEqual([unknownDeletionCommand()]);
+    service.dispose();
   });
 
   it("sends task batches directly to the repository without journaling them", async () => {
@@ -216,5 +272,18 @@ function taskRepository() {
         return tasks;
       },
     ),
+  };
+}
+
+function unknownDeletionCommand(): DurableTaskCommand {
+  return {
+    kind: "delete-task",
+    operationId: "delete-operation-1",
+    collectionId: "connect:test-collection",
+    taskId: "task-1",
+    title: "Durable task",
+    authorityRequestId: "delete-request-1",
+    requestedAt: Date.now() - 60_000,
+    commitAfter: Date.now() - 30_000,
   };
 }

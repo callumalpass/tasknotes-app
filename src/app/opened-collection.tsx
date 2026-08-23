@@ -11,11 +11,13 @@ import type { TaskRepository } from "../application/ports/task-repository";
 export function OpenedCollection({
   authorizeAnotherCollection,
   changeCollection,
+  discardPendingRecovery,
   reauthorizeCurrentCollection,
   repository,
 }: {
   authorizeAnotherCollection(): void;
   changeCollection(): void;
+  discardPendingRecovery(): Promise<void>;
   reauthorizeCurrentCollection(): void;
   repository: TaskRepository;
 }) {
@@ -42,6 +44,7 @@ export function OpenedCollection({
     <CollectionGateContext.Provider value={value}>
       <RepositoryProvider
         mutationJournal={mutationJournal}
+        discardPendingRecovery={discardPendingRecovery}
         reminderAuthority="connect"
         repository={repository}
       >

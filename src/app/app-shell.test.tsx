@@ -180,6 +180,50 @@ it("presents deletion failures as a persistent recovery notice", () => {
   expect(onUndo).toHaveBeenCalledOnce();
 });
 
+it("explains restart-time unknown deletions without claiming the task remains", () => {
+  render(
+    <DeletionFeedback
+      error={
+        new OperationalError(
+          "unknown",
+          "delete-task",
+          true,
+          "The exact mdbase request is retained.",
+        )
+      }
+      pendingDeletion={{
+        id: "one",
+        title: "Prepare the planning session",
+        outcomeUnknown: true,
+      }}
+      onRetry={vi.fn(async () => undefined)}
+      onUndo={vi.fn(async () => undefined)}
+    />,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Deletion needs review" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(
+      "TaskNotes could not confirm whether “Prepare the planning session” was deleted.",
+    ),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection.",
+  );
+  expect(
+    screen.getByRole("button", { name: "Discard recovery" }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Discard recovery" }));
+  expect(
+    screen.getByRole("button", { name: "Confirm discard and disconnect" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByText("is still in the collection"),
+  ).not.toBeInTheDocument();
+});
+
 function navigationView(id: string, name: string): TaskView {
   return {
     key: `TaskNotes/Views/${id}.base#${id}`,

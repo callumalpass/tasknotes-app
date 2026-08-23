@@ -46,3 +46,33 @@ export class IndexedDbMutationJournal implements MutationJournal {
     this.database.close();
   }
 }
+
+export async function pendingRecoveryRequestIds(
+  collectionId: string,
+): Promise<Set<string>> {
+  const journal = new IndexedDbMutationJournal();
+  try {
+    const commands = await journal.list(`connect:${collectionId}`);
+    return new Set(
+      commands.flatMap((command) =>
+        command.authorityRequestId ? [command.authorityRequestId] : [],
+      ),
+    );
+  } finally {
+    journal.close();
+  }
+}
+
+export async function removePendingRecoveryCommands(
+  collectionId: string,
+): Promise<void> {
+  const journal = new IndexedDbMutationJournal();
+  try {
+    const commands = await journal.list(`connect:${collectionId}`);
+    for (const command of commands) {
+      if (command.authorityRequestId) await journal.remove(command.operationId);
+    }
+  } finally {
+    journal.close();
+  }
+}
