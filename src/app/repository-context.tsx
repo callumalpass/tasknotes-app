@@ -62,7 +62,11 @@ interface RepositoryContextValue {
   connection: RepositoryConnectionStatus;
   invalidation: QueryInvalidationStore;
   configuration: TaskCollectionConfiguration;
-  pendingDeletion: { id: string; title: string } | null;
+  pendingDeletion: {
+    id: string;
+    title: string;
+    outcomeUnknown: boolean;
+  } | null;
   deletionError: OperationalError | null;
   createTask(input: CreateTaskInput): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
@@ -96,11 +100,13 @@ export function RepositoryProvider({
   repository: supplied,
   reminderAuthority = "none",
   mutationJournal: suppliedMutationJournal,
+  discardPendingRecovery,
 }: {
   children: ReactNode;
   repository: TaskRepository;
   reminderAuthority?: ReminderAuthority;
   mutationJournal: MutationJournal;
+  discardPendingRecovery?(): Promise<void>;
 }) {
   const [repository] = useState<TaskRepository>(() => supplied);
   const [mutationJournal] = useState<MutationJournal>(
@@ -117,6 +123,7 @@ export function RepositoryProvider({
   const [pendingDeletion, setPendingDeletion] = useState<{
     id: string;
     title: string;
+    outcomeUnknown: boolean;
   } | null>(null);
   const [deletionError, setDeletionError] = useState<OperationalError | null>(
     null,
@@ -202,6 +209,11 @@ export function RepositoryProvider({
         const taskCommands = new TaskCommandService({
           repository,
           journal: mutationJournal,
+          ...(discardPendingRecovery
+            ? {
+                discardPendingRequest: async () => discardPendingRecovery(),
+              }
+            : {}),
           onDeleted: async (id) => {
             await autoArchive.forget(id);
             invalidation.invalidateTasks([id]);
@@ -239,6 +251,9 @@ export function RepositoryProvider({
               ? {
                   id: snapshot.pendingDeletion.taskId,
                   title: snapshot.pendingDeletion.title,
+                  outcomeUnknown: Boolean(
+                    snapshot.pendingDeletion.authorityRequestId,
+                  ),
                 }
               : null,
           );
@@ -284,6 +299,7 @@ export function RepositoryProvider({
     invalidation,
     loadConnection,
     mutationJournal,
+    discardPendingRecovery,
     refresh,
     reminderAuthority,
     repository,

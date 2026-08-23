@@ -60,8 +60,10 @@ class MdbaseMutationCoordinator {
 
   reconcile(options: ConnectRequestOptions = {}): Promise<void> {
     const result = this.tail.then(
-      () => this.recoverOutstanding(undefined, options).then(() => undefined),
-      () => this.recoverOutstanding(undefined, options).then(() => undefined),
+      () =>
+        this.recoverOutstanding(undefined, options, true).then(() => undefined),
+      () =>
+        this.recoverOutstanding(undefined, options, true).then(() => undefined),
     );
     this.tail = result.then(
       () => undefined,
@@ -94,15 +96,17 @@ class MdbaseMutationCoordinator {
   private async recoverOutstanding<Result, Recovered>(
     current?: MdbaseMutationOptions<Result, Recovered>,
     request: ConnectRequestOptions = {},
+    recoverUntracked = false,
   ): Promise<RecoveredMatch<Result> | NoRecoveredMatch> {
     const requested = current?.requestId;
-    if (requested) {
+    if (current && requested !== undefined) {
       const handle = this.connection.pendingMutation<Recovered>(requested);
       if (handle) {
         const value = requireConnectOutcome(await handle.recover(request));
         this.pending.delete(requested);
         return { matched: true, value: current.mapRecovered(value) };
       }
+      throw noPendingMutationError();
     }
 
     for (const handle of this.connection.pendingMutations<unknown>()) {
@@ -112,6 +116,7 @@ class MdbaseMutationCoordinator {
         const value = await this.recoverOne(pending, request);
         return { matched: true, value: value as Result };
       }
+      if (!pending && !recoverUntracked) continue;
       try {
         const value = requireConnectOutcome(await handle.recover(request));
         this.pending.delete(handle.requestId);

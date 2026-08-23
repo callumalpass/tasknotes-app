@@ -11,12 +11,21 @@ import {
   TASKNOTES_CONTRACT_DIGEST,
 } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Route,
+} from "@playwright/test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
 
 const TASKNOTES_COLLECTION_ID = "01922222-2222-7222-8222-222222222222";
+const TASKNOTES_APPLICATION_ID = "01922222-2222-7222-8222-222222222221";
+const TASKNOTES_E2E_ORIGIN =
+  process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
 
 test("opens an ordinary relay collection without requiring hosted sync", async ({
   page,
@@ -139,7 +148,9 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(await authorization.isInstalled(page)).toBe(true);
 
   await page.reload();
-  await page.getByRole("button", { name: "Today" }).click();
+  const today = page.getByRole("button", { name: "Today" });
+  await recoverPendingChangesBefore(page, today);
+  await today.click();
   await expect(page.getByText("Task from the relay")).toBeVisible();
 });
 
@@ -676,6 +687,12 @@ function tasknotesGrantContract() {
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
 ) {
+  const manifestUrl = new URL(
+    ".well-known/mdbase-app.json",
+    TASKNOTES_E2E_ORIGIN.endsWith("/")
+      ? TASKNOTES_E2E_ORIGIN
+      : `${TASKNOTES_E2E_ORIGIN}/`,
+  ).href;
   await page.route(
     "https://connect.mdbase.dev/v1/apps/register",
     async (route) => {
@@ -690,7 +707,7 @@ async function installRelayAuthorization(
         contentType: "application/json",
         body: JSON.stringify({
           application: {
-            id: "01922222-2222-7222-8222-222222222221",
+            id: TASKNOTES_APPLICATION_ID,
             family_identity: `bundle:${bundledManifest.id}`,
             manifest_digest: "0".repeat(64),
             name: bundledManifest.name,
@@ -705,7 +722,13 @@ async function installRelayAuthorization(
   await page.goto("./");
   const fixture = await installMdbaseBrowserFixture(page, {
     serverUrl: "https://connect.mdbase.dev",
-    application: { manifest: bundledManifest as MdbaseAppManifest },
+    application: {
+      manifestUrl,
+      manifest: {
+        ...bundledManifest,
+        id: TASKNOTES_APPLICATION_ID,
+      } as MdbaseAppManifest,
+    },
     collection: {
       id: TASKNOTES_COLLECTION_ID,
       name: "TaskNotes E2E",
@@ -908,4 +931,16 @@ function deferred() {
     resolve = nextResolve;
   });
   return { promise, resolve };
+}
+
+async function recoverPendingChangesBefore(page: Page, destination: Locator) {
+  const review = page.getByRole("heading", {
+    name: "Review unconfirmed changes",
+  });
+  await expect(destination.or(review)).toBeVisible();
+  if (!(await review.isVisible())) return;
+
+  await page.getByRole("button", { name: "Recover saved changes" }).click();
+  await page.getByRole("button", { name: "Confirm recovery" }).click();
+  await expect(destination).toBeVisible();
 }

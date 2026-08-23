@@ -21,6 +21,13 @@ const connect = vi.hoisted(() => {
   ];
   const listeners = new Set<() => void>();
   const state = {
+    connection: null as null | {
+      collectionId: string;
+      pendingMutations(): Array<{
+        recover: ReturnType<typeof vi.fn>;
+        requestId: string;
+      }>;
+    },
     snapshot: {
       status: "unavailable",
       collectionId: "collection-stale",
@@ -47,14 +54,20 @@ const connect = vi.hoisted(() => {
       connections,
     };
     for (const listener of listeners) listener();
+    return { ok: true, value: { collectionId } };
   });
   return {
     applyCollectionSetup: vi.fn(() =>
       Promise.resolve({ ok: true, value: state.snapshot }),
     ),
-    authorize: vi.fn(() => Promise.resolve({ kind: "redirecting" })),
+    authorize: vi.fn(() =>
+      Promise.resolve({ ok: true, value: { kind: "redirecting" } }),
+    ),
+    connection: () => state.connection,
+    forget: vi.fn(() => ({ ok: true, value: undefined })),
     getSnapshot: () => state.snapshot,
     reset: () => {
+      state.connection = null;
       state.snapshot = {
         status: "unavailable",
         collectionId: "collection-stale",
@@ -65,6 +78,9 @@ const connect = vi.hoisted(() => {
     setSnapshot: (snapshot: Record<string, unknown>) => {
       state.snapshot = snapshot;
     },
+    setConnection: (connection: typeof state.connection) => {
+      state.connection = connection;
+    },
     select,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
@@ -73,18 +89,32 @@ const connect = vi.hoisted(() => {
   };
 });
 
-vi.mock("../cloud/connect", () => ({
-  cloudSession: connect,
+const recoveryStorage = vi.hoisted(() => ({
+  pendingRecoveryRequestIds: vi.fn(() => Promise.resolve(new Set<string>())),
+  removePendingRecoveryCommands: vi.fn(() => Promise.resolve()),
 }));
 
-import { CloudConnection } from "./cloud-collection";
+vi.mock("../cloud/connect", () => ({
+  cloudSession: connect,
+  startCloudSession: vi.fn(() => Promise.resolve()),
+}));
+vi.mock("../storage/application-journal", () => recoveryStorage);
+vi.mock("./opened-collection", () => ({
+  OpenedCollection: () => <div>Opened collection</div>,
+}));
+
+import CloudCollection, { CloudConnection } from "./cloud-collection";
 
 beforeEach(() => {
   history.replaceState(null, "", "/?collection=collection-stale");
   connect.reset();
   connect.authorize.mockClear();
   connect.applyCollectionSetup.mockClear();
+  connect.forget.mockClear();
   connect.select.mockClear();
+  recoveryStorage.pendingRecoveryRequestIds.mockReset();
+  recoveryStorage.pendingRecoveryRequestIds.mockResolvedValue(new Set());
+  recoveryStorage.removePendingRecoveryCommands.mockClear();
 });
 
 it("opens the disposable demo without contacting mdbase", () => {
@@ -96,6 +126,239 @@ it("opens the disposable demo without contacting mdbase", () => {
 
   expect(onTryDemo).toHaveBeenCalledOnce();
   expect(connect.authorize).not.toHaveBeenCalled();
+});
+
+it("offers an explicit retry after session startup fails", () => {
+  connect.setSnapshot({
+    status: "start_failed",
+    connections: [],
+    problem: {
+      code: "temporarily_unavailable",
+      message: "Mdbase is temporarily unavailable.",
+    },
+  });
+  const retryStartup = vi.fn();
+
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={retryStartup}
+    />,
+  );
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Mdbase is temporarily unavailable.",
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Retry opening TaskNotes" }),
+  );
+  expect(retryStartup).toHaveBeenCalledOnce();
+});
+
+it("shows a retry when startup cancellation returns to not started", () => {
+  connect.setSnapshot({ status: "not_started", connections: [] });
+  const retryStartup = vi.fn();
+
+  render(
+    <CloudCollection
+      authorizationError="Application session startup was cancelled."
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={retryStartup}
+    />,
+  );
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Application session startup was cancelled.",
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Retry opening TaskNotes" }),
+  );
+  expect(retryStartup).toHaveBeenCalledOnce();
+});
+
+it("recovers restart-time pending mutations only after confirmation", async () => {
+  const recover = vi.fn(() => Promise.resolve({ ok: true, value: {} }));
+  connect.setConnection({
+    collectionId: "collection-online",
+    pendingMutations: () => [{ recover, requestId: "request-recover" }],
+  });
+  connect.setSnapshot({
+    status: "ready",
+    verification: "verified",
+    collectionId: "collection-online",
+    connections: [],
+    capabilities: {},
+    info: {},
+  });
+
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Review unconfirmed changes" }),
+  ).toBeVisible();
+  expect(screen.getByText(/will not replay it automatically/)).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Recover saved changes" }),
+  ).toBeVisible();
+  expect(recover).not.toHaveBeenCalled();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Recover saved changes" }),
+  );
+  expect(recover).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Confirm recovery" }));
+
+  await waitFor(() =>
+    expect(recover).toHaveBeenCalledWith({ timeoutMs: 60_000 }),
+  );
+});
+
+it("discards generic pending handles through confirmed session forget", async () => {
+  connect.setConnection({
+    collectionId: "collection-online",
+    pendingMutations: () => [
+      { recover: vi.fn(), requestId: "request-discard" },
+    ],
+  });
+  connect.setSnapshot({
+    status: "ready",
+    verification: "verified",
+    collectionId: "collection-online",
+    connections: [],
+    capabilities: {},
+    info: {},
+  });
+
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Discard recovery and disconnect",
+    }),
+  );
+  expect(connect.forget).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Confirm discard and disconnect" }),
+  );
+  expect(recoveryStorage.removePendingRecoveryCommands).toHaveBeenCalledWith(
+    "collection-online",
+  );
+  expect(connect.forget).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(connect.forget).toHaveBeenCalledWith("collection-online"),
+  );
+});
+
+it("does not forget SDK recovery when durable journal cleanup fails", async () => {
+  recoveryStorage.removePendingRecoveryCommands.mockRejectedValueOnce(
+    new Error("Journal cleanup failed."),
+  );
+  connect.setConnection({
+    collectionId: "collection-online",
+    pendingMutations: () => [
+      { recover: vi.fn(), requestId: "request-discard" },
+    ],
+  });
+  connect.setSnapshot({
+    status: "ready",
+    verification: "verified",
+    collectionId: "collection-online",
+    connections: [],
+    capabilities: {},
+    info: {},
+  });
+
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Discard recovery and disconnect",
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Confirm discard and disconnect" }),
+  );
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Journal cleanup failed.",
+  );
+  expect(connect.forget).not.toHaveBeenCalled();
+});
+
+it("leaves journal-mapped handles for exact in-app recovery", async () => {
+  const recover = vi.fn();
+  recoveryStorage.pendingRecoveryRequestIds.mockResolvedValue(
+    new Set(["request-delete"]),
+  );
+  connect.setConnection({
+    collectionId: "collection-online",
+    pendingMutations: () => [{ recover, requestId: "request-delete" }],
+  });
+  connect.setSnapshot({
+    status: "ready",
+    verification: "verified",
+    collectionId: "collection-online",
+    connections: [],
+    capabilities: {},
+    info: {},
+  });
+
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+
+  expect(await screen.findByText("Opened collection")).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "Review unconfirmed changes" }),
+  ).not.toBeInTheDocument();
+  expect(recover).not.toHaveBeenCalled();
 });
 
 it("shows and applies the exact reviewed collection setup", async () => {
@@ -177,20 +440,22 @@ it("explains a setup conflict without mutating the collection", () => {
   expect(connect.applyCollectionSetup).not.toHaveBeenCalled();
 });
 
-it("switches from a stale bookmark to a remembered collection without reloading", () => {
+it("switches from a stale bookmark to a remembered collection without reloading", async () => {
   render(<CloudConnection error={null} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Open Work tasks" }));
 
-  expect(connect.select).toHaveBeenCalledWith("collection-online", {
-    history: "replace",
-  });
+  await waitFor(() =>
+    expect(connect.select).toHaveBeenCalledWith("collection-online", {
+      history: "replace",
+    }),
+  );
   expect(new URL(location.href).searchParams.get("collection")).toBe(
     "collection-online",
   );
 });
 
-it("lists remembered collections and authorizes another with choose intent", () => {
+it("lists remembered collections and authorizes another with choose intent", async () => {
   render(<CloudConnection error={null} />);
 
   expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
@@ -200,7 +465,38 @@ it("lists remembered collections and authorizes another with choose intent", () 
     screen.getByRole("button", { name: "Connect another collection" }),
   );
 
-  expect(connect.authorize).toHaveBeenCalledWith("choose", {
-    timeoutMs: 60_000,
+  await waitFor(() =>
+    expect(connect.authorize).toHaveBeenCalledWith("choose", {
+      timeoutMs: 60_000,
+    }),
+  );
+});
+
+it("reviews declaration changes explicitly without offering the unusable selection", async () => {
+  connect.setSnapshot({
+    status: "authorization_required",
+    collectionId: "collection-online",
+    connections: connect.getSnapshot().connections,
+    info: {},
+    capabilities: {},
   });
+
+  render(<CloudConnection error={null} />);
+
+  expect(
+    screen.getByRole("heading", { name: "Review updated access" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Open Work tasks" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review updated access" }),
+  );
+  await waitFor(() =>
+    expect(connect.authorize).toHaveBeenCalledWith("selected", {
+      timeoutMs: 60_000,
+    }),
+  );
 });

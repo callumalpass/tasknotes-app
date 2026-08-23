@@ -134,6 +134,22 @@ it("reconciles durable SDK requests after restart before canonical reads", async
   expect(pending.recover).toHaveBeenCalledOnce();
 });
 
+it("does not replay an unrelated durable request during a new mutation", async () => {
+  const pending = scriptedPending("earlier-request", [
+    connectSuccess("earlier result"),
+  ]);
+  pending.activate();
+  const connection = pendingConnection(pending);
+  const operation = vi.fn(async () => "new result");
+
+  await expect(
+    runMdbaseMutation(connection, operation, identityRecovery("new-command")),
+  ).resolves.toBe("new result");
+
+  expect(operation).toHaveBeenCalledOnce();
+  expect(pending.recover).not.toHaveBeenCalled();
+});
+
 it("uses a persisted app-command request mapping to resume an exact deletion", async () => {
   const pending = scriptedPending("delete-request", [
     connectSuccess({
@@ -154,6 +170,28 @@ it("uses a persisted app-command request mapping to resume an exact deletion", a
 
   expect(operation).not.toHaveBeenCalled();
   expect(pending.recover).toHaveBeenCalledOnce();
+});
+
+it("fails closed when a persisted request has no exact SDK handle", async () => {
+  const unrelated = scriptedPending("unrelated-request", [
+    connectSuccess("unrelated result"),
+  ]);
+  unrelated.activate();
+  const connection = pendingConnection(unrelated);
+  const operation = vi.fn(async () => "duplicate delete");
+
+  await expect(
+    runMdbaseMutation(connection, operation, {
+      key: "delete:task-a",
+      requestId: "missing-delete-request",
+      mapRecovered: () => "deleted",
+    }),
+  ).rejects.toMatchObject({
+    problem: { code: "no_pending_mutation" },
+  });
+
+  expect(operation).not.toHaveBeenCalled();
+  expect(unrelated.recover).not.toHaveBeenCalled();
 });
 
 it("does not send a later mutation while receipt recovery remains uncertain", async () => {

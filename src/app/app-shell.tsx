@@ -387,12 +387,16 @@ export function DeletionFeedback({
 }: {
   aboveMobileControls?: boolean;
   error: OperationalError | null;
-  pendingDeletion: { id: string; title: string } | null;
+  pendingDeletion: {
+    id: string;
+    title: string;
+    outcomeUnknown?: boolean;
+  } | null;
   onRetry(): Promise<void>;
   onUndo(): Promise<void>;
 }) {
   useEffect(() => {
-    if (!pendingDeletion) return;
+    if (!pendingDeletion || pendingDeletion.outcomeUnknown) return;
     const undoShortcut = (event: KeyboardEvent) => {
       if (
         event.key.toLocaleLowerCase() !== "z" ||
@@ -414,6 +418,7 @@ export function DeletionFeedback({
       <DeletionRecoveryNotice
         aboveMobileControls={aboveMobileControls}
         error={error}
+        outcomeUnknown={pendingDeletion?.outcomeUnknown ?? false}
         title={pendingDeletion?.title}
         onRetry={pendingDeletion ? onRetry : undefined}
         onUndo={pendingDeletion ? onUndo : undefined}
@@ -443,17 +448,20 @@ export function DeletionFeedback({
 function DeletionRecoveryNotice({
   aboveMobileControls,
   error,
+  outcomeUnknown,
   title,
   onRetry,
   onUndo,
 }: {
   aboveMobileControls: boolean;
   error: OperationalError;
+  outcomeUnknown: boolean;
   title?: string;
   onRetry?: () => Promise<void>;
   onUndo?: () => Promise<void>;
 }) {
   const headingId = useId();
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const positionClass = aboveMobileControls ? " is-above-mobile-controls" : "";
   return (
     <section
@@ -461,15 +469,25 @@ function DeletionRecoveryNotice({
       className={`deletion-recovery-notice${positionClass}`}
     >
       <header>
-        <h2 id={headingId}>Deletion waiting</h2>
-        {title ? <p>“{title}” is still in the collection.</p> : null}
+        <h2 id={headingId}>
+          {outcomeUnknown ? "Deletion needs review" : "Deletion waiting"}
+        </h2>
+        {title ? (
+          <p>
+            {outcomeUnknown
+              ? `TaskNotes could not confirm whether “${title}” was deleted.`
+              : `“${title}” is still in the collection.`}
+          </p>
+        ) : null}
       </header>
       <OperationErrorNotice
         action="The deletion"
         message={error}
         recovery={
           onRetry
-            ? "Retry, or undo to restore the task here."
+            ? outcomeUnknown
+              ? "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
+              : "Retry, or undo to restore the task here."
             : "The task remains in the collection. Try again."
         }
       />
@@ -482,13 +500,38 @@ function DeletionRecoveryNotice({
           >
             Retry
           </button>
-          <button
-            aria-keyshortcuts="Control+Z Meta+Z"
-            type="button"
-            onClick={() => void onUndo().catch(() => undefined)}
-          >
-            Undo
-          </button>
+          {outcomeUnknown && confirmDiscard ? (
+            <>
+              <p>
+                Discarding removes all saved recovery and disconnects this
+                collection. It does not reverse a deletion that may have
+                completed.
+              </p>
+              <button
+                type="button"
+                onClick={() => void onUndo().catch(() => undefined)}
+              >
+                Confirm discard and disconnect
+              </button>
+              <button type="button" onClick={() => setConfirmDiscard(false)}>
+                Keep saved recovery
+              </button>
+            </>
+          ) : (
+            <button
+              aria-keyshortcuts={
+                outcomeUnknown ? undefined : "Control+Z Meta+Z"
+              }
+              type="button"
+              onClick={() =>
+                outcomeUnknown
+                  ? setConfirmDiscard(true)
+                  : void onUndo().catch(() => undefined)
+              }
+            >
+              {outcomeUnknown ? "Discard recovery" : "Undo"}
+            </button>
+          )}
         </div>
       ) : null}
     </section>
