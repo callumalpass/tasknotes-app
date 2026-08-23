@@ -835,9 +835,130 @@ describe("mdbase task repository", () => {
     const second = repository.executeView(view);
 
     expect(fixture.executeView).toHaveBeenCalledTimes(1);
+    expect(fixture.executeViewPages).toHaveBeenCalledTimes(1);
     pending.resolve(response);
     await expect(Promise.all([first, second])).resolves.toHaveLength(2);
     expect(fixture.executeView).toHaveBeenCalledTimes(1);
+    expect(fixture.executeViewPages).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not dispatch saved-view pagination while suspended", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("board", "Visible on the board", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    fixture.executeViewPages.mockClear();
+
+    repository.suspend();
+
+    await expect(
+      repository.executeView(document.views[0]),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(fixture.executeViewPages).not.toHaveBeenCalled();
+  });
+
+  it("returns a cached saved-view execution as stale while suspended", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("cached", "Cached mdbase task", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    const view = document.views[0];
+    const execution = await repository.executeView(view);
+    fixture.executeViewPages.mockClear();
+
+    repository.suspend();
+
+    await expect(repository.executeView(view)).resolves.toEqual({
+      ...execution,
+      stale: true,
+    });
+    expect(fixture.executeViewPages).not.toHaveBeenCalled();
+  });
+
+  it("starts a fresh saved-view execution after resuming an aborted lifecycle", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("board", "Visible on the board", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    const view = document.views[0];
+    const response = await fixture.executeView();
+    const firstStarted = deferred<void>();
+    const releaseFirst = deferred<void>();
+    let firstSignal: AbortSignal | undefined;
+    let secondSignal: AbortSignal | undefined;
+    let calls = 0;
+    fixture.executeViewPages.mockImplementation((_input, options) => {
+      const invocation = ++calls;
+      const signal = (options as { signal?: AbortSignal } | undefined)?.signal;
+      return (async function* () {
+        if (invocation === 1) {
+          firstSignal = signal;
+          firstStarted.resolve();
+          await releaseFirst.promise;
+        } else {
+          secondSignal = signal;
+        }
+        const generation = invocation === 1 ? "old" : "fresh";
+        const results = response.result.results.map((record) => ({
+          ...record,
+          values: { ...record.values, generation },
+        }));
+        yield connectSuccess(
+          {
+            ...response.result,
+            results,
+            page: 0,
+            offset: 0,
+            loaded: results.length,
+            complete: true,
+          },
+          response.diagnostics,
+        );
+      })();
+    });
+
+    const interrupted = repository.executeView(view);
+    await firstStarted.promise;
+    repository.suspend();
+    repository.resume();
+
+    const resumed = await repository.executeView(view);
+    expect(fixture.executeViewPages).toHaveBeenCalledTimes(2);
+    expect(firstSignal?.aborted).toBe(true);
+    expect(secondSignal).not.toBe(firstSignal);
+    expect(secondSignal?.aborted).toBe(false);
+    expect(resumed.rows[0].values.generation).toBe("fresh");
+
+    releaseFirst.resolve();
+    await expect(interrupted).resolves.toMatchObject({
+      stale: true,
+      rows: [{ values: expect.objectContaining({ generation: "fresh" }) }],
+    });
+    await expect(repository.cachedViewExecution(view)).resolves.toMatchObject({
+      rows: [{ values: expect.objectContaining({ generation: "fresh" }) }],
+    });
+  });
+
+  it("preserves the no-page diagnostic for an active empty paginator", async () => {
+    const fixture = mdbaseFixture([]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    fixture.executeViewPages.mockImplementation(() =>
+      (async function* () {
+        yield* [];
+      })(),
+    );
+
+    await expect(repository.executeView(document.views[0])).rejects.toThrow(
+      "Saved view execution completed without a page.",
+    );
   });
 
   it("keeps the last view result in memory during a transient failure", async () => {

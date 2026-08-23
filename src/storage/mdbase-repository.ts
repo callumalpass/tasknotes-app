@@ -135,7 +135,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private readonly viewExecutionInFlight = new Map<
     string,
-    Promise<TaskViewExecution>
+    { signal: AbortSignal; promise: Promise<TaskViewExecution> }
   >();
   private collectionId = "";
   private readonly listeners = new Set<() => void>();
@@ -722,15 +722,19 @@ export class MdbaseTaskRepository implements TaskRepository {
   async executeView(view: TaskView): Promise<TaskViewExecution> {
     const timezone = runtimeTimezone();
     const key = this.viewExecutionKey(view, timezone);
+    const signal = this.operationController.signal;
     const pending = this.viewExecutionInFlight.get(key);
-    if (pending) return pending;
-    const execution = this.executeViewUnlocked(view, timezone, key).finally(
-      () => {
-        if (this.viewExecutionInFlight.get(key) === execution)
-          this.viewExecutionInFlight.delete(key);
-      },
-    );
-    this.viewExecutionInFlight.set(key, execution);
+    if (pending?.signal === signal) return pending.promise;
+    const execution = this.executeViewUnlocked(
+      view,
+      timezone,
+      key,
+      signal,
+    ).finally(() => {
+      if (this.viewExecutionInFlight.get(key)?.promise === execution)
+        this.viewExecutionInFlight.delete(key);
+    });
+    this.viewExecutionInFlight.set(key, { signal, promise: execution });
     return execution;
   }
 
@@ -738,8 +742,10 @@ export class MdbaseTaskRepository implements TaskRepository {
     view: TaskView,
     timezone: string,
     cacheKey: string,
+    signal: AbortSignal,
   ): Promise<TaskViewExecution> {
     try {
+      signal.throwIfAborted();
       let result: ProviderViewExecution | undefined;
       for await (const outcome of this.connect.executeViewPages(
         {
@@ -751,9 +757,10 @@ export class MdbaseTaskRepository implements TaskRepository {
         {
           firstPageSize: PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          signal: this.operationController.signal,
+          signal,
         },
       )) {
+        signal.throwIfAborted();
         const page = validResult(outcome) as ProviderViewExecution & {
           page: number;
         };
@@ -767,6 +774,7 @@ export class MdbaseTaskRepository implements TaskRepository {
             : {}),
         };
       }
+      signal.throwIfAborted();
       if (!result)
         throw new Error("Saved view execution completed without a page.");
       const execution = normalizeViewExecution(
@@ -774,6 +782,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         result,
         (record) => this.readRecord(record)?.task ?? null,
       );
+      signal.throwIfAborted();
       this.viewExecutionCache.set(cacheKey, execution);
       return execution;
     } catch (reason) {
