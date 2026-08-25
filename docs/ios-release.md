@@ -80,4 +80,7 @@ dispatch for the first release so the upload remains deliberate.
 The workflow requires Xcode with the iOS 26 SDK or newer and stops before
 building if the selected runner image does not meet Apple's current upload
 requirement. Signing material is installed into a temporary keychain and
-removed after the job. GitHub-hosted runners are discarded after the job.
+removed after the job. Before export, the workflow also verifies that the
+Firebase configuration is present in the archived app and belongs to
+`dev.tasknotes.app`; a Firebase-enabled archive cannot be uploaded without it.
+GitHub-hosted runners are discarded after the job.

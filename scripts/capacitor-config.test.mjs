@@ -52,4 +52,26 @@ describe("native Capacitor configuration", () => {
       expect(source).not.toMatch(/FolderAccess/);
     }
   });
+
+  it("packages the optional iOS Firebase configuration before signing", async () => {
+    const [xcodeProject, releaseWorkflow] = await Promise.all([
+      readFile(
+        resolve(process.cwd(), "ios/App/App.xcodeproj/project.pbxproj"),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), ".github/workflows/ios-release.yml"),
+        "utf8",
+      ),
+    ]);
+
+    expect(xcodeProject).toMatch(/Copy Firebase configuration/);
+    expect(xcodeProject).toMatch(
+      /TARGET_BUILD_DIR.*UNLOCALIZED_RESOURCES_FOLDER_PATH.*GoogleService-Info\.plist/,
+    );
+    expect(releaseWorkflow).toMatch(
+      /TaskNotes\.xcarchive\/Products\/Applications\/App\.app\/GoogleService-Info\.plist/,
+    );
+    expect(releaseWorkflow).toMatch(/configured_bundle_id/);
+  });
 });

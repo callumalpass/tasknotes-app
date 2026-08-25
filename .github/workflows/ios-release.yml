@@ -152,6 +152,11 @@ jobs:
             CURRENT_PROJECT_VERSION="$TASKNOTES_IOS_BUILD" \
             clean archive
 
+          archived_firebase_plist="$RUNNER_TEMP/TaskNotes.xcarchive/Products/Applications/App.app/GoogleService-Info.plist"
+          test -f "$archived_firebase_plist"
+          configured_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :BUNDLE_ID' "$archived_firebase_plist")"
+          test "$configured_bundle_id" = "dev.tasknotes.app"
+
       - name: Export signed IPA
         run: |
           export_options="$RUNNER_TEMP/TaskNotesExportOptions.plist"

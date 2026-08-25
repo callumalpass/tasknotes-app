@@ -64,8 +64,9 @@ Use one Firebase project per environment.
 2. Add an Android app with package name `dev.tasknotes.app`. Download
    `google-services.json` to `android/app/google-services.json`.
 3. Add an iOS app with bundle ID `dev.tasknotes.app`. Download
-   `GoogleService-Info.plist` to `ios/App/App/GoogleService-Info.plist` and add
-   it to the App target in Xcode.
+   `GoogleService-Info.plist` to `ios/App/App/GoogleService-Info.plist`. The App
+   target's conditional copy phase packages it when present, while keeping
+   unconfigured local builds valid.
 4. In Apple Developer, enable Push Notifications for the application
    identifier. Create an APNs authentication key and upload it directly to
    Firebase under Project settings → Cloud Messaging. Do not give the APNs key
