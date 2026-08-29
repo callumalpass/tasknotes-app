@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test("opens and navigates the disposable demo repository", async ({ page }) => {
   await page.goto("?demo=50");
@@ -18,15 +18,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   ).toBeVisible();
   await expect(page).toHaveURL(/\/scratchpad\?demo=50/);
 
-  const searchButton = page.getByRole("button", {
-    name: "Search",
-    exact: true,
-  });
-  if (await searchButton.isVisible()) await searchButton.click();
-  else {
-    await page.getByRole("button", { name: "Views", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Search", exact: true }).click();
-  }
+  await openNavigationItem(page, "Search");
   const search = page.getByRole("searchbox", { name: "Search tasks" });
   await search.fill("planning");
   await expect(
@@ -62,8 +54,7 @@ test("supports project capture and saved-view editing in the demo", async ({
     .getByRole("heading", { level: 1, name: "Today", exact: true })
     .waitFor();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Projects", exact: true }).click();
+  await openNavigationItem(page, "Projects");
   await page
     .getByRole("button", { name: "Add task to Field research" })
     .click();
@@ -74,8 +65,7 @@ test("supports project capture and saved-view editing in the demo", async ({
   await projectCapture.press("Enter");
   await expect(page.getByText("Draft the interview guide")).toBeVisible();
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Manage views" }).click();
+  await openNavigationItem(page, "Manage views");
   await page.getByRole("button", { name: "Edit Today" }).click();
   const viewName = page.getByRole("textbox", { name: "View name" });
   await viewName.fill("Daily focus");
@@ -84,6 +74,16 @@ test("supports project capture and saved-view editing in the demo", async ({
     page.getByRole("button", { name: "Daily focus", exact: true }),
   ).toBeVisible();
 });
+
+async function openNavigationItem(page: Page, name: string): Promise<void> {
+  const direct = page.getByRole("button", { name, exact: true });
+  if (await direct.isVisible()) {
+    await direct.click();
+    return;
+  }
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name, exact: true }).click();
+}
 
 test("supports demo attachments and collection settings", async ({ page }) => {
   await page.goto("embed/?demo=24");
