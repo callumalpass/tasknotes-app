@@ -3,21 +3,36 @@ import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const developmentDeployment = Object.freeze({
-  appOrigin: "https://staging.tasknotes-app.pages.dev",
-  connectOrigin: "https://connect-staging.mdbase.dev",
-  loopbackOrigin: "http://127.0.0.1:28486",
-  project: "tasknotes-app",
-  branch: "staging",
-  wranglerVersion: "4.114.0",
+export const developmentDeployments = Object.freeze({
+  lab: Object.freeze({
+    appOrigin: "https://lab.tasknotes-app.pages.dev",
+    connectOrigin: "https://connect-lab.mdbase.dev",
+    loopbackOrigin: "http://127.0.0.1:28487",
+    project: "tasknotes-app",
+    branch: "lab",
+    wranglerVersion: "4.114.0",
+  }),
+  staging: Object.freeze({
+    appOrigin: "https://staging.tasknotes-app.pages.dev",
+    connectOrigin: "https://connect-staging.mdbase.dev",
+    loopbackOrigin: "http://127.0.0.1:28486",
+    project: "tasknotes-app",
+    branch: "staging",
+    wranglerVersion: "4.114.0",
+  }),
+  "candidate-b": Object.freeze({
+    appOrigin: "https://candidate-b.tasknotes-app.pages.dev",
+    connectOrigin: "https://mdbase-connect-candidate-b.onrender.com",
+    loopbackOrigin: "http://127.0.0.1:28486",
+    project: "tasknotes-app",
+    branch: "candidate-b",
+    wranglerVersion: "4.114.0",
+  }),
 });
 
-export const candidateBDevelopmentDeployment = Object.freeze({
-  ...developmentDeployment,
-  appOrigin: "https://candidate-b.tasknotes-app.pages.dev",
-  connectOrigin: "https://mdbase-connect-candidate-b.onrender.com",
-  branch: "candidate-b",
-});
+export const developmentDeployment = developmentDeployments.lab;
+export const candidateBDevelopmentDeployment =
+  developmentDeployments["candidate-b"];
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const manifestTargets = [
@@ -31,14 +46,62 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 }
 
 export function developmentDeploymentFor(environment) {
-  const requested = environment.MDBASE_CANDIDATE_B_CONNECT_URL;
-  if (requested === undefined || requested === "") return developmentDeployment;
-  if (requested !== candidateBDevelopmentDeployment.connectOrigin) {
+  const candidateBConnectUrl = environment.MDBASE_CANDIDATE_B_CONNECT_URL;
+  const explicitTarget =
+    environment.MDBASE_ENV ?? environment.TASKNOTES_DEPLOY_TARGET;
+  if (
+    candidateBConnectUrl &&
+    explicitTarget &&
+    explicitTarget !== "candidate-b"
+  ) {
+    throw new Error(
+      "MDBASE_CANDIDATE_B_CONNECT_URL cannot be combined with another TaskNotes deployment target.",
+    );
+  }
+
+  const target = candidateBConnectUrl
+    ? "candidate-b"
+    : (explicitTarget ?? "lab");
+  const deployment = developmentDeployments[target];
+  if (!deployment) {
+    throw new Error(
+      `Unsupported TaskNotes development deployment target: ${target}.`,
+    );
+  }
+  if (
+    candidateBConnectUrl &&
+    candidateBConnectUrl !== candidateBDevelopmentDeployment.connectOrigin
+  ) {
     throw new Error(
       `Candidate B TaskNotes requires ${candidateBDevelopmentDeployment.connectOrigin}.`,
     );
   }
-  return candidateBDevelopmentDeployment;
+
+  requireMatchingOverride(
+    environment.MDBASE_CONNECT_URL,
+    deployment.connectOrigin,
+    target,
+    "MDBASE_CONNECT_URL",
+  );
+  requireMatchingOverride(
+    environment.VITE_MDBASE_CONNECT_URL,
+    deployment.connectOrigin,
+    target,
+    "VITE_MDBASE_CONNECT_URL",
+  );
+  requireMatchingOverride(
+    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
+    deployment.loopbackOrigin,
+    target,
+    "VITE_MDBASE_CONNECT_LOOPBACK_URL",
+  );
+  requireMatchingOverride(
+    environment.TASKNOTES_APP_URL,
+    deployment.appOrigin,
+    target,
+    "TASKNOTES_APP_URL",
+  );
+  return deployment;
 }
 
 export function developmentDeploymentEnvironment(
@@ -150,6 +213,14 @@ async function verifyDevelopmentBuild(deployment = developmentDeployment) {
         `TaskNotes deployment bundle does not contain ${expected}.`,
       );
     }
+  }
+}
+
+function requireMatchingOverride(value, expected, target, variable) {
+  if (value !== undefined && value !== "" && value !== expected) {
+    throw new Error(
+      `${target} TaskNotes requires ${variable}=${expected}, received ${value}.`,
+    );
   }
 }
 

@@ -122,20 +122,28 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
   const authorizeAnotherCollection = useCallback(() => {
     setPickerOpen(false);
     setAuthorizationError(null);
-    void startSession()
-      .then(() => cloudSession.authorize("choose", requestOptions()))
+    void cloudSession
+      .authorize("choose", {
+        ...requestOptions(),
+        presentation: "popup",
+        timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationPopupMs,
+      })
       .then(requireConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
-  }, [requestOptions, startSession]);
+  }, [requestOptions]);
 
   const reauthorizeCurrentCollection = useCallback(() => {
     setPickerOpen(false);
     setAuthorizationError(null);
-    void startSession()
-      .then(() => cloudSession.authorize("selected", requestOptions()))
+    void cloudSession
+      .authorize("selected", {
+        ...requestOptions(),
+        presentation: "popup",
+        timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationPopupMs,
+      })
       .then(requireConnectOutcome)
       .catch((reason) => setAuthorizationError(message(reason)));
-  }, [requestOptions, startSession]);
+  }, [requestOptions]);
 
   const selectCollection = useCallback(
     (collectionId: string) => {

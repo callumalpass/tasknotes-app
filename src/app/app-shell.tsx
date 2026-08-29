@@ -803,6 +803,7 @@ export function Navigation({
           aria-current={active === key ? "page" : undefined}
           className={active === key ? "is-active" : undefined}
           key={key}
+          title={mode === "desktop" ? label : undefined}
           type="button"
           onClick={() => onNavigate(route)}
         >
@@ -810,63 +811,101 @@ export function Navigation({
           <span>{label}</span>
         </button>
       ))}
-      <button
-        aria-controls={menuPosition ? menuId : undefined}
-        aria-current={
-          active === "views" || hiddenNavigationViewActive ? "page" : undefined
-        }
-        aria-expanded={Boolean(menuPosition)}
-        aria-haspopup="menu"
-        className={
-          active === "views" || hiddenNavigationViewActive
-            ? "is-active"
-            : undefined
-        }
-        ref={triggerRef}
-        type="button"
-        onClick={openMenu}
-      >
-        <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
-        <span>Views</span>
-      </button>
-      {menuPosition
-        ? createPortal(
-            <div
-              aria-label="Views"
-              className="navigation-views-menu"
-              id={menuId}
-              ref={menuRef}
-              role="menu"
-              style={menuPosition}
-            >
-              {additionalViews.map((view) => {
-                const Icon = view.icon;
-                return (
+      {mode === "desktop" ? (
+        <div
+          aria-label="Views"
+          className="navigation-view-section"
+          role="group"
+        >
+          {additionalViews.map((view) => {
+            const Icon = view.icon;
+            return (
+              <button
+                aria-current={active === view.key ? "page" : undefined}
+                className={active === view.key ? "is-active" : undefined}
+                key={view.key}
+                title={view.label}
+                type="button"
+                onClick={() => onNavigate(view.route)}
+              >
+                <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
+                <span>{view.label}</span>
+              </button>
+            );
+          })}
+          <button
+            aria-current={active === "views" ? "page" : undefined}
+            className={active === "views" ? "is-active" : undefined}
+            type="button"
+            onClick={() => onNavigate({ page: "views" })}
+          >
+            <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
+            <span>Manage views</span>
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            aria-controls={menuPosition ? menuId : undefined}
+            aria-current={
+              active === "views" || hiddenNavigationViewActive
+                ? "page"
+                : undefined
+            }
+            aria-expanded={Boolean(menuPosition)}
+            aria-haspopup="menu"
+            className={
+              active === "views" || hiddenNavigationViewActive
+                ? "is-active"
+                : undefined
+            }
+            ref={triggerRef}
+            type="button"
+            onClick={openMenu}
+          >
+            <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
+            <span>Views</span>
+          </button>
+          {menuPosition
+            ? createPortal(
+                <div
+                  aria-label="Views"
+                  className="navigation-views-menu"
+                  id={menuId}
+                  ref={menuRef}
+                  role="menu"
+                  style={menuPosition}
+                >
+                  {additionalViews.map((view) => {
+                    const Icon = view.icon;
+                    return (
+                      <button
+                        aria-current={active === view.key ? "page" : undefined}
+                        key={view.key}
+                        role="menuitem"
+                        type="button"
+                        onClick={() => choose(view.route)}
+                      >
+                        <Icon aria-hidden="true" size={19} strokeWidth={1.7} />
+                        <span>{view.label}</span>
+                      </button>
+                    );
+                  })}
+                  {additionalViews.length ? <hr /> : null}
                   <button
-                    aria-current={active === view.key ? "page" : undefined}
-                    key={view.key}
                     role="menuitem"
                     type="button"
-                    onClick={() => choose(view.route)}
+                    onClick={() => choose({ page: "views" })}
                   >
-                    <Icon aria-hidden="true" size={19} strokeWidth={1.7} />
-                    <span>{view.label}</span>
+                    <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
+                    <span>Manage views</span>
                   </button>
-                );
-              })}
-              {additionalViews.length ? <hr /> : null}
-              <button
-                role="menuitem"
-                type="button"
-                onClick={() => choose({ page: "views" })}
-              >
-                <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
-                <span>Manage views</span>
-              </button>
-            </div>,
-            document.body,
-          )
-        : null}
+                </div>,
+                document.body,
+              )
+            : null}
+        </>
+      )}
       <button
         aria-current={active === "more" ? "page" : undefined}
         className={active === "more" ? "is-active" : undefined}

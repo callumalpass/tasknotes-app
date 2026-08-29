@@ -94,8 +94,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(operations).toContain("describe");
   expect(operations).toContain("query");
 
-  await page.getByRole("button", { name: "Views", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Manage views" }).click();
+  await openNavigationItem(page, "Manage views");
   await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
   await page.getByRole("button", { name: "Create view" }).click();
   await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();
@@ -267,6 +266,16 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
   );
   await expect(archive).toContainText("No tasks will be created");
 });
+
+async function openNavigationItem(page: Page, name: string): Promise<void> {
+  const direct = page.getByRole("button", { name, exact: true });
+  if (await direct.isVisible()) {
+    await direct.click();
+    return;
+  }
+  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("menuitem", { name, exact: true }).click();
+}
 
 async function navigationPreference(page: Page) {
   return page.evaluate(() => {

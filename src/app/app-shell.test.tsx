@@ -66,6 +66,69 @@ it("separates reauthorizing the current collection from choosing another", () =>
   expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
 });
 
+it("expands configured views directly in the desktop sidebar", () => {
+  const onNavigate = vi.fn();
+  const today = navigationView("today", "Today");
+  const upcoming = navigationView("upcoming", "Upcoming");
+  const longView = navigationView(
+    "long",
+    "Projects waiting for a response from someone else",
+  );
+
+  render(
+    <Navigation
+      active={`view:${upcoming.key}`}
+      homeViewKey={today.key}
+      mode="desktop"
+      navigationKeys={[
+        today.key,
+        SCRATCHPAD_NAVIGATION_KEY,
+        SEARCH_NAVIGATION_KEY,
+        upcoming.key,
+        longView.key,
+      ]}
+      views={[today, upcoming, longView]}
+      onNavigate={onNavigate}
+    />,
+  );
+
+  expect(
+    screen.getAllByRole("button").map((button) => button.textContent),
+  ).toEqual([
+    "Today",
+    "Scratchpad",
+    "Search",
+    "Upcoming",
+    "Projects waiting for a response from someone else",
+    "Manage views",
+    "Settings",
+  ]);
+  expect(
+    screen.queryByRole("button", { name: "Views" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Views" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Upcoming" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(
+    screen.getByRole("button", {
+      name: "Projects waiting for a response from someone else",
+    }),
+  ).toHaveAttribute(
+    "title",
+    "Projects waiting for a response from someone else",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Upcoming" }));
+  expect(onNavigate).toHaveBeenLastCalledWith({
+    page: "views",
+    key: upcoming.key,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Manage views" }));
+  expect(onNavigate).toHaveBeenLastCalledWith({ page: "views" });
+});
+
 it("keeps additional views behind the mobile Views menu", () => {
   const onNavigate = vi.fn();
   const today = navigationView("today", "Today");
