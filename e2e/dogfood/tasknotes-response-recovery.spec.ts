@@ -26,9 +26,9 @@ async function markdownFiles(): Promise<string[]> {
 async function authorize(page: Page): Promise<void> {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Open TaskNotes" }),
+    page.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Continue to mdbase" }).click();
+  await page.getByRole("button", { name: "Choose a collection" }).click();
   await expect(
     page.getByRole("heading", { name: "Open your account" }),
   ).toBeVisible();

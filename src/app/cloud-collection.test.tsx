@@ -5,6 +5,7 @@ const connect = vi.hoisted(() => {
     {
       collectionId: "collection-offline",
       displayName: "Home tasks",
+      authority: { kind: "connector", durability: "computer" },
       operations: [],
       scope: { contracts: [], access: "full_collection" },
       route: "relay",
@@ -13,6 +14,7 @@ const connect = vi.hoisted(() => {
     {
       collectionId: "collection-online",
       displayName: "Work tasks",
+      authority: { kind: "hosted", durability: "provider" },
       operations: [],
       scope: { contracts: [], access: "full_collection" },
       route: "remote",
@@ -60,9 +62,10 @@ const connect = vi.hoisted(() => {
     applyCollectionSetup: vi.fn(() =>
       Promise.resolve({ ok: true, value: state.snapshot }),
     ),
-    authorize: vi.fn(() =>
-      Promise.resolve({ ok: true, value: { kind: "redirecting" } }),
-    ),
+    authorize: vi.fn((...arguments_: unknown[]) => {
+      void arguments_;
+      return Promise.resolve({ ok: true, value: { kind: "redirecting" } });
+    }),
     connection: () => state.connection,
     forget: vi.fn(() => ({ ok: true, value: undefined })),
     getSnapshot: () => state.snapshot,
@@ -96,6 +99,8 @@ const recoveryStorage = vi.hoisted(() => ({
 
 vi.mock("../cloud/connect", () => ({
   cloudSession: connect,
+  isHostedCloudConnection: (connection: { authority: { kind: string } }) =>
+    connection.authority.kind === "hosted",
   startCloudSession: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../storage/application-journal", () => recoveryStorage);
@@ -108,7 +113,11 @@ import CloudCollection, { CloudConnection } from "./cloud-collection";
 beforeEach(() => {
   history.replaceState(null, "", "/?collection=collection-stale");
   connect.reset();
-  connect.authorize.mockClear();
+  connect.authorize.mockReset();
+  connect.authorize.mockResolvedValue({
+    ok: true,
+    value: { kind: "redirecting" },
+  });
   connect.applyCollectionSetup.mockClear();
   connect.forget.mockClear();
   connect.select.mockClear();
@@ -122,10 +131,34 @@ it("opens the disposable demo without contacting mdbase", () => {
 
   render(<CloudConnection error={null} onTryDemo={onTryDemo} />);
 
-  fireEvent.click(screen.getByRole("button", { name: "Try demo" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Try a disposable demo" }),
+  );
 
   expect(onTryDemo).toHaveBeenCalledOnce();
   expect(connect.authorize).not.toHaveBeenCalled();
+});
+
+it("explains mdbase progressively on the first visit", () => {
+  connect.setSnapshot({ status: "unavailable", connections: [] });
+
+  render(<CloudConnection error={null} />);
+
+  expect(
+    screen.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Choose a collection" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(/mdbase keeps your tasks as portable Markdown files/),
+  ).not.toBeVisible();
+
+  fireEvent.click(screen.getByText("What is mdbase?"));
+
+  expect(
+    screen.getByText(/mdbase keeps your tasks as portable Markdown files/),
+  ).toBeVisible();
 });
 
 it("offers an explicit retry after session startup fails", () => {
@@ -443,7 +476,11 @@ it("explains a setup conflict without mutating the collection", () => {
 it("switches from a stale bookmark to a remembered collection without reloading", async () => {
   render(<CloudConnection error={null} />);
 
-  fireEvent.click(screen.getByRole("button", { name: "Open Work tasks" }));
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Open Work tasks, Hosted by mdbase",
+    }),
+  );
 
   await waitFor(() =>
     expect(connect.select).toHaveBeenCalledWith("collection-online", {
@@ -458,18 +495,71 @@ it("switches from a stale bookmark to a remembered collection without reloading"
 it("lists remembered collections and authorizes another with choose intent", async () => {
   render(<CloudConnection error={null} />);
 
-  expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Open Work tasks" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Recent collections" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", {
+      name: "Open Home tasks, Connected computer",
+    }),
+  ).toHaveTextContent("Connected computer");
+  expect(
+    screen.getByRole("button", {
+      name: "Open Work tasks, Hosted by mdbase",
+    }),
+  ).toHaveTextContent("Hosted by mdbase");
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Connect another collection" }),
+    screen.getByRole("button", {
+      name: "Choose another collection in mdbase",
+    }),
   );
 
   await waitFor(() =>
     expect(connect.authorize).toHaveBeenCalledWith("choose", {
-      timeoutMs: 60_000,
+      presentation: "popup",
+      signal: expect.any(AbortSignal),
+      timeoutMs: 600_000,
     }),
   );
+});
+
+it("lets the user cancel a pending popup authorization", async () => {
+  let authorizationSignal: AbortSignal | undefined;
+  connect.authorize.mockImplementationOnce((...arguments_: unknown[]) => {
+    const options = arguments_[1] as { signal: AbortSignal } | undefined;
+    if (!options) throw new Error("Authorization options are required.");
+    authorizationSignal = options.signal;
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener(
+        "abort",
+        () => reject(options.signal.reason),
+        { once: true },
+      );
+    });
+  });
+
+  render(<CloudConnection error={null} />);
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Choose another collection in mdbase",
+    }),
+  );
+
+  expect(await screen.findByRole("button", { name: "Cancel" })).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Complete your selection in the mdbase window.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(authorizationSignal?.aborted).toBe(true);
+  expect(
+    screen.getByRole("button", {
+      name: "Choose another collection in mdbase",
+    }),
+  ).toBeEnabled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
 it("reviews declaration changes explicitly without offering the unusable selection", async () => {
@@ -487,16 +577,24 @@ it("reviews declaration changes explicitly without offering the unusable selecti
     screen.getByRole("heading", { name: "Review updated access" }),
   ).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: "Open Work tasks" }),
+    screen.queryByRole("button", {
+      name: "Open Work tasks, Hosted by mdbase",
+    }),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Open Home tasks" })).toBeVisible();
+  expect(
+    screen.getByRole("button", {
+      name: "Open Home tasks, Connected computer",
+    }),
+  ).toBeVisible();
 
   fireEvent.click(
     screen.getByRole("button", { name: "Review updated access" }),
   );
   await waitFor(() =>
     expect(connect.authorize).toHaveBeenCalledWith("selected", {
-      timeoutMs: 60_000,
+      presentation: "popup",
+      signal: expect.any(AbortSignal),
+      timeoutMs: 600_000,
     }),
   );
 });

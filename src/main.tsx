@@ -6,12 +6,15 @@ import { createRoot } from "react-dom/client";
 
 import { TaskNotesApp } from "./app/tasknotes-app";
 import { AppErrorBoundary } from "./components/app-error-boundary";
+import { initializePwaInstall } from "./pwa/install";
 import {
   clearTaskNotesServiceWorkerForDevelopment,
   registerTaskNotesServiceWorker,
 } from "./service-worker-registration";
 import "./styles.css";
 import "./accessibility.css";
+
+initializePwaInstall();
 
 const currentUrl = new URL(location.href);
 const embeddedDemo = /\/embed(?:\/|$)/.test(currentUrl.pathname);

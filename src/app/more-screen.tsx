@@ -2,12 +2,14 @@ import {
   ChevronDown,
   ChevronUp,
   Cloud,
+  Download,
   FileText,
   Info,
   Bell,
   Plus,
   SunMoon,
 } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
@@ -18,6 +20,7 @@ import {
 } from "../native/mdbase-notifications";
 import { cloudSession } from "../cloud/connect";
 import { requireConnectOutcome } from "../cloud/outcome";
+import { requestPwaInstall, usePwaInstall } from "../pwa/install";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -52,6 +55,13 @@ export function MoreScreen({
   const [changeNotificationsError, setChangeNotificationsError] = useState<
     string | null
   >(null);
+  const installState = usePwaInstall();
+  const [installBusy, setInstallBusy] = useState(false);
+  const [installError, setInstallError] = useState<string | null>(null);
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const installAvailable =
+    !Capacitor.isNativePlatform() &&
+    (installState === "available" || installState === "ios-instructions");
   useEffect(() => {
     let active = true;
     void mdbaseNotifications
@@ -71,6 +81,26 @@ export function MoreScreen({
       active = false;
     };
   }, []);
+
+  async function installTaskNotes() {
+    if (installState === "ios-instructions") {
+      setShowInstallInstructions((visible) => !visible);
+      return;
+    }
+    setInstallBusy(true);
+    setInstallError(null);
+    try {
+      await requestPwaInstall();
+    } catch (reason) {
+      setInstallError(
+        reason instanceof Error
+          ? reason.message
+          : "TaskNotes could not open the install prompt.",
+      );
+    } finally {
+      setInstallBusy(false);
+    }
+  }
 
   async function toggleChangeNotifications() {
     setChangeNotificationsBusy(true);
@@ -202,7 +232,7 @@ export function MoreScreen({
             type="button"
             onClick={() =>
               void cloudSession
-                .authorize("selected")
+                .authorize("selected", { presentation: "popup" })
                 .then(requireConnectOutcome)
                 .catch((reason: unknown) =>
                   setChangeNotificationsError(
@@ -237,6 +267,39 @@ export function MoreScreen({
       </SettingsSection>
 
       <SettingsSection label="About & portability">
+        {installAvailable ? (
+          <>
+            <div className="setting-row">
+              <Download aria-hidden="true" size={20} strokeWidth={1.6} />
+              <span>Install TaskNotes</span>
+              <small>Open it from your home screen</small>
+            </div>
+            <button
+              className="text-action"
+              disabled={installBusy}
+              type="button"
+              onClick={() => void installTaskNotes()}
+            >
+              {installBusy
+                ? "Opening install prompt…"
+                : installState === "ios-instructions"
+                  ? showInstallInstructions
+                    ? "Hide installation steps"
+                    : "How to install"
+                  : "Install app"}
+            </button>
+            {showInstallInstructions ? (
+              <p className="section-copy" role="status">
+                Open your browser’s Share menu, then choose Add to Home Screen.
+              </p>
+            ) : null}
+            {installError ? (
+              <p className="inline-error" role="alert">
+                {installError}
+              </p>
+            ) : null}
+          </>
+        ) : null}
         <div className="setting-row">
           <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Portable Markdown</span>

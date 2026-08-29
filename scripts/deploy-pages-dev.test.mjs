@@ -5,19 +5,35 @@ import {
   deployDevelopmentTaskNotes,
   developmentDeployment,
   developmentDeploymentFor,
+  developmentDeployments,
   developmentDeploymentEnvironment,
 } from "./deploy-pages-dev.mjs";
 
 describe("TaskNotes development deployment", () => {
-  it("builds the staging Pages origin against staging Connect and its daemon", () => {
+  it("defaults to the isolated LAB application and Connect authority", () => {
+    expect(developmentDeploymentFor({})).toBe(developmentDeployments.lab);
+
     const environment = developmentDeploymentEnvironment({ EXISTING: "kept" });
 
     expect(environment).toMatchObject({
       EXISTING: "kept",
       VITE_BASE_PATH: "/",
-      TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
+      TASKNOTES_APP_URL: "https://lab.tasknotes-app.pages.dev",
       TASKNOTES_WEB_ONLY: "1",
       TASKNOTES_FIREBASE_PROJECT_ID: "",
+      VITE_MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
+      VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487",
+    });
+  });
+
+  it("selects staging only when explicitly requested", () => {
+    const environment = { MDBASE_ENV: "staging" };
+
+    expect(developmentDeploymentFor(environment)).toBe(
+      developmentDeployments.staging,
+    );
+    expect(developmentDeploymentEnvironment(environment)).toMatchObject({
+      TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
     });
@@ -49,6 +65,26 @@ describe("TaskNotes development deployment", () => {
     });
   });
 
+  it("rejects unknown targets and cross-environment URL overrides", () => {
+    expect(() =>
+      developmentDeploymentFor({ MDBASE_ENV: "production" }),
+    ).toThrow(
+      "Unsupported TaskNotes development deployment target: production",
+    );
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "lab",
+        MDBASE_CONNECT_URL: "https://connect.mdbase.dev",
+      }),
+    ).toThrow("lab TaskNotes requires MDBASE_CONNECT_URL");
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "lab",
+        TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
+      }),
+    ).toThrow("lab TaskNotes requires TASKNOTES_APP_URL");
+  });
+
   it("rejects an arbitrary Candidate B authority override", () => {
     expect(() =>
       developmentDeploymentFor({
@@ -57,7 +93,7 @@ describe("TaskNotes development deployment", () => {
     ).toThrow("Candidate B TaskNotes requires");
   });
 
-  it("deploys only the staging branch and smokes the same origins", async () => {
+  it("deploys only the LAB branch and smokes the same origins by default", async () => {
     const run = vi.fn(async () => undefined);
     const verifyBuild = vi.fn(async () => undefined);
 
@@ -73,7 +109,7 @@ describe("TaskNotes development deployment", () => {
         "deploy",
         "dist",
         "--project-name=tasknotes-app",
-        "--branch=staging",
+        "--branch=lab",
       ]),
     );
     expect(run.mock.calls[2]).toEqual([

@@ -85,21 +85,29 @@ pnpm test:e2e
 pnpm test:production-smoke
 ```
 
-Publish the current working tree to the permanent Cloudflare Pages development
-surface with:
+Publish the current working tree to the isolated TaskNotes LAB surface with:
 
 ```sh
 pnpm dlx wrangler@4.114.0 login # first use only
 pnpm deploy:dev
 ```
 
-This builds a web-only manifest for
-<https://staging.tasknotes-app.pages.dev>, connects it to the hosted staging
-Connect service and the isolated connector on `127.0.0.1:28486`, deploys only
-the Cloudflare `staging` branch, and verifies the live application. It does not
-change the production `app.tasknotes.dev` deployment. Start the matching local
-connector from the sibling `mdbase-connect` checkout with
-`pnpm dev:desktop:staging`.
+LAB is the fail-closed default. The command builds a web-only manifest for
+<https://lab.tasknotes-app.pages.dev>, connects it only to
+<https://connect-lab.mdbase.dev> and the isolated connector on
+`127.0.0.1:28487`, deploys only the Cloudflare `lab` branch, then verifies the
+built artifacts and live application. Unknown targets and URL overrides from a
+different environment are rejected. It does not change staging or the
+production `app.tasknotes.dev` deployment.
+
+Deploying the separate staging surface remains explicit:
+
+```sh
+MDBASE_ENV=staging pnpm deploy:dev
+```
+
+That command targets <https://staging.tasknotes-app.pages.dev>, staging Connect,
+and the Cloudflare `staging` branch.
 
 To update the native projects, run `pnpm cap:sync`. Android builds require Java 21. On macOS, open the iOS project with `pnpm exec cap open ios`.
 

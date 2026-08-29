@@ -9,7 +9,7 @@ test("mdbase onboarding has no serious accessibility violations", async ({
   await page.reload();
 
   await expect(
-    page.getByRole("heading", { name: "Open TaskNotes" }),
+    page.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page })

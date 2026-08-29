@@ -56,9 +56,9 @@ async function reviewAndAllowApplication(page: Page): Promise<void> {
 async function authorizeTaskNotes(page: Page): Promise<void> {
   await openRegisteredApplication(page, tasknotesOrigin);
   await expect(
-    page.getByRole("heading", { name: "Open TaskNotes" }),
+    page.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Continue to mdbase" }).click();
+  await page.getByRole("button", { name: "Choose a collection" }).click();
 
   await expect(page).toHaveURL(
     new RegExp(`^${connectOrigin.replaceAll(".", "\\.")}/`),

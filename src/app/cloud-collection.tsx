@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
-import { cloudSession, startCloudSession } from "../cloud/connect";
+import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  cloudSession,
+  isHostedCloudConnection,
+  startCloudSession,
+} from "../cloud/connect";
 import { requireConnectOutcome } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
@@ -326,7 +331,12 @@ export function CloudConnection({
   retryAuthorization?(): void;
 }) {
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
+  const [openingCollectionId, setOpeningCollectionId] = useState<string | null>(
+    null,
+  );
+  const [authorizationPending, setAuthorizationPending] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const authorizationController = useRef<AbortController | null>(null);
   const session = useCloudSessionSnapshot();
   const connections = session.connections;
   const selectedCollectionId =
@@ -336,24 +346,57 @@ export function CloudConnection({
   );
 
   async function connect(kind: "another" | "reconnect") {
+    const controller = new AbortController();
+    authorizationController.current?.abort();
+    authorizationController.current = controller;
+    setAuthorizationPending(true);
     setOpening(kind);
     setStartError(null);
     try {
-      await ensureStarted();
+      if (session.status === "not_started" || session.status === "starting") {
+        await ensureStarted();
+      }
       requireConnectOutcome(
         await cloudSession.authorize(
           kind === "another" ? "choose" : "selected",
-          { timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs },
+          {
+            presentation: "popup",
+            signal: controller.signal,
+            timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationPopupMs,
+          },
         ),
       );
     } catch (reason) {
-      setStartError(message(reason));
+      if (!controller.signal.aborted) setStartError(message(reason));
     } finally {
-      setOpening(null);
+      if (authorizationController.current === controller) {
+        authorizationController.current = null;
+        setAuthorizationPending(false);
+        setOpening(null);
+      }
     }
   }
 
+  function cancelAuthorization() {
+    authorizationController.current?.abort(
+      new DOMException("Authorization cancelled.", "AbortError"),
+    );
+    authorizationController.current = null;
+    setAuthorizationPending(false);
+    setOpening(null);
+  }
+
+  useEffect(
+    () => () => {
+      authorizationController.current?.abort(
+        new DOMException("TaskNotes connection screen closed.", "AbortError"),
+      );
+    },
+    [],
+  );
+
   async function open(collectionId: string) {
+    setOpeningCollectionId(collectionId);
     setStartError(null);
     try {
       await ensureStarted();
@@ -362,6 +405,8 @@ export function CloudConnection({
       );
     } catch (reason) {
       setStartError(message(reason));
+    } finally {
+      setOpeningCollectionId(null);
     }
   }
 
@@ -382,12 +427,45 @@ export function CloudConnection({
     }
   }
 
+  const reviewingCollection =
+    session.status === "setup_review_required" ||
+    session.status === "authorization_required";
+  const firstVisit = connections.length === 0 && !reviewingCollection;
+  const busy = opening !== null || openingCollectionId !== null;
+  const availableConnections = connections.filter(
+    (connection) => connection.collectionId !== selectedCollectionId,
+  );
+
   return (
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Open TaskNotes</h1>
-        <p>Continue in mdbase to choose a collection.</p>
+        <h1>
+          {reviewingCollection
+            ? "Finish opening TaskNotes"
+            : firstVisit
+              ? "Connect TaskNotes to your tasks"
+              : "Welcome back"}
+        </h1>
+        <p>
+          {reviewingCollection
+            ? "Complete this collection’s setup, or choose a different collection."
+            : firstVisit
+              ? "TaskNotes works with collections managed by mdbase."
+              : "Choose a collection to open your tasks."}
+        </p>
+        <details className="mdbase-explainer">
+          <summary>
+            <span>What is mdbase?</span>
+            <ChevronDown aria-hidden="true" size={16} />
+          </summary>
+          <p>
+            mdbase keeps your tasks as portable Markdown files while giving
+            compatible apps a shared way to understand them. mdbase Connect lets
+            you choose a collection and approve TaskNotes’ access—whether it’s
+            hosted by mdbase or available from a connected computer.
+          </p>
+        </details>
       </div>
       {error || startError ? (
         <>
@@ -480,58 +558,119 @@ export function CloudConnection({
         </section>
       ) : null}
       <div className="welcome-actions">
-        {onTryDemo ? (
-          <button
-            className="outline-action"
-            disabled={opening !== null}
-            onClick={onTryDemo}
-            type="button"
+        {availableConnections.length ? (
+          <section
+            aria-labelledby="recent-collections-title"
+            className="welcome-collections"
           >
-            Try demo
-          </button>
+            <h2 id="recent-collections-title">
+              {reviewingCollection ? "Other collections" : "Recent collections"}
+            </h2>
+            <div className="welcome-collection-list">
+              {availableConnections.map((connection) => {
+                const hosted = isHostedCloudConnection(connection);
+                const authorityLabel = hosted
+                  ? "Hosted by mdbase"
+                  : "Connected computer";
+                const action =
+                  session.status === "setup_review_required" ? "Use" : "Open";
+                return (
+                  <button
+                    aria-label={`${action} ${connection.displayName}, ${authorityLabel}`}
+                    className="welcome-collection-row"
+                    disabled={busy}
+                    key={connection.collectionId}
+                    onClick={() => void open(connection.collectionId)}
+                    type="button"
+                  >
+                    <span className="welcome-collection-icon">
+                      {hosted ? (
+                        <Cloud aria-hidden="true" size={19} />
+                      ) : (
+                        <Monitor aria-hidden="true" size={19} />
+                      )}
+                    </span>
+                    <span className="welcome-collection-copy">
+                      <strong>{connection.displayName}</strong>
+                      <small>{authorityLabel}</small>
+                    </span>
+                    <span className="welcome-collection-open">
+                      {openingCollectionId === connection.collectionId ? (
+                        "Opening…"
+                      ) : (
+                        <ArrowRight aria-hidden="true" size={18} />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         ) : null}
-        {connections
-          .filter(
-            (connection) => connection.collectionId !== selectedCollectionId,
-          )
-          .map((connection) => (
-            <button
-              key={connection.collectionId}
-              className="outline-action"
-              disabled={opening !== null}
-              type="button"
-              onClick={() => void open(connection.collectionId)}
-            >
-              {session.status === "setup_review_required" ? "Use " : "Open "}
-              {connection.displayName}
-            </button>
-          ))}
-        <button
-          className="outline-action"
-          disabled={opening !== null}
-          type="button"
-          onClick={() => void connect("another")}
-        >
-          {opening === "another"
-            ? "Opening mdbase…"
-            : session.status === "setup_review_required"
-              ? "Choose a different collection in mdbase"
-              : connections.length
-                ? "Connect another collection"
-                : "Continue to mdbase"}
-        </button>
+        <div className="welcome-connect-action">
+          <button
+            className={
+              firstVisit
+                ? "welcome-primary-action"
+                : "outline-action welcome-secondary-action"
+            }
+            disabled={busy}
+            type="button"
+            onClick={() => void connect("another")}
+          >
+            {opening === "another" ? (
+              <span className="welcome-opening-label">Opening mdbase…</span>
+            ) : (
+              <>
+                <Plus aria-hidden="true" size={18} />
+                <span>
+                  {reviewingCollection
+                    ? "Choose a different collection in mdbase"
+                    : firstVisit
+                      ? "Choose a collection"
+                      : "Choose another collection in mdbase"}
+                </span>
+                <ArrowRight aria-hidden="true" size={18} />
+              </>
+            )}
+          </button>
+          <p role={authorizationPending ? "status" : undefined}>
+            {authorizationPending
+              ? "Complete your selection in the mdbase window."
+              : "mdbase will open so you can choose a collection and approve access."}
+          </p>
+        </div>
         {selectedCollectionId &&
         session.status !== "setup_review_required" &&
         session.status !== "authorization_required" ? (
           <button
             className="text-action"
-            disabled={opening !== null}
+            disabled={busy}
             type="button"
             onClick={() => void connect("reconnect")}
           >
             {opening === "reconnect"
               ? "Opening mdbase…"
               : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
+          </button>
+        ) : null}
+        {authorizationPending ? (
+          <button
+            className="welcome-cancel-action"
+            onClick={cancelAuthorization}
+            type="button"
+          >
+            Cancel
+          </button>
+        ) : null}
+        {onTryDemo ? (
+          <button
+            className="welcome-demo-action"
+            disabled={busy}
+            onClick={onTryDemo}
+            type="button"
+          >
+            Try a disposable demo
           </button>
         ) : null}
       </div>

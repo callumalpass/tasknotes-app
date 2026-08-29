@@ -102,7 +102,9 @@ it("offers mdbase without a device-folder storage path", async () => {
   render(<CollectionGate />);
 
   expect(
-    await screen.findByRole("heading", { name: "Open TaskNotes" }),
+    await screen.findByRole("heading", {
+      name: "Connect TaskNotes to your tasks",
+    }),
   ).toBeVisible();
   expect(screen.queryByText(/folder for your tasks/i)).not.toBeInTheDocument();
   expect(connect.start).toHaveBeenCalledWith(
