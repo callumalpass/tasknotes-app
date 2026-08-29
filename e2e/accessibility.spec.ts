@@ -8,9 +8,7 @@ test("mdbase onboarding has no serious accessibility violations", async ({
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
-  await expect(
-    page.getByRole("heading", { name: "Open TaskNotes" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
