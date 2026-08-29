@@ -29,7 +29,7 @@ describe("TaskNotes starter views", () => {
     const parsed = parse(
       taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
     ) as {
-      formulas: Record<string, string>;
+      formulas?: Record<string, string>;
       views: Array<{
         name: string;
         type: string;
@@ -54,12 +54,26 @@ describe("TaskNotes starter views", () => {
       calendarView: "dayGridMonth",
       showRecurring: true,
     });
-    expect(parsed.formulas).toMatchObject({
-      taskDay: "if(formula.taskDate.isEmpty(), null, date(formula.taskDate))",
-    });
+    expect(parsed.formulas).toBeUndefined();
     expect(parsed.views[0].filters?.and?.at(-1)).toEqual({
-      or: ["formula.taskDay.isEmpty()", "formula.taskDay <= today()"],
+      or: [
+        {
+          and: [
+            'note["scheduled"].isEmpty() == false',
+            'date(note["scheduled"]) <= today()',
+          ],
+        },
+        {
+          and: [
+            'note["scheduled"].isEmpty()',
+            {
+              or: ['note["due"].isEmpty()', 'date(note["due"]) <= today()'],
+            },
+          ],
+        },
+      ],
     });
+    expect(JSON.stringify(parsed)).not.toContain("formula.");
     expect(parsed.views[3].options).toEqual({ create: false });
     expect(parsed.views[4].options).toEqual({ create: false });
     for (const view of parsed.views)
@@ -147,7 +161,7 @@ describe("TaskNotes starter views", () => {
     expect(deleteViewSource).not.toHaveBeenCalled();
   });
 
-  it("generates canonical projections and ordinary project grouping", () => {
+  it("keeps canonical filters and sorts projection-free", () => {
     const { frontmatter } = parseFrontmatter(
       taskNotesDefaultCanonicalDocument(defaultTaskCollectionConfiguration()),
     );
@@ -169,15 +183,9 @@ describe("TaskNotes starter views", () => {
           };
         }
       | undefined;
-    const query = frontmatter.query as {
-      projections: Record<string, { expr: string }>;
-    };
-
     expect(archive?.where).toContain('file.hasTag("archived") == true');
     expect(archive?.presentation.options).toEqual({ create: false });
-    expect(query.projections.task_date.expr).toContain("scheduled");
-    expect(query.projections.task_day.expr).toContain("projection.task_date");
-    expect(query.projections.task_day.expr).not.toContain(".format(");
+    expect(frontmatter.query).toEqual({});
     expect(projects?.where).toContain('note["projects"].isEmpty() == false');
     expect(projects?.select).not.toContain("projects");
     expect(projects?.group_by).toEqual([
@@ -191,9 +199,10 @@ describe("TaskNotes starter views", () => {
     expect(
       views.find(({ id }) => id === "today")?.presentation.options,
     ).toEqual({ sections: "day" });
-    expect(views.find(({ id }) => id === "today")?.where).toContain(
-      "projection.task_day <= today()",
-    );
+    const today = views.find(({ id }) => id === "today");
+    expect(today?.where).toContain('date(note["scheduled"]) <= today()');
+    expect(today?.where).toContain('date(note["due"]) <= today()');
+    expect(JSON.stringify(frontmatter)).not.toContain("projection.");
     for (const view of views)
       expect(view.order_by?.[0]).toEqual({
         field: "tasknotes_manual_order",

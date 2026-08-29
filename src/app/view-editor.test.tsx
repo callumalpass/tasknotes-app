@@ -9,6 +9,7 @@ import { parse } from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { suggestedFilterAndSortFields } from "../domain/view-document";
 import { RepositoryProvider } from "./repository-context";
 import { ViewEditor } from "./view-editor";
 
@@ -329,6 +330,68 @@ views:
     });
   });
 
+  it("does not suggest canonical projections for filters or sorts", async () => {
+    const source = canonicalSource(`---
+type: view
+id: ranked
+version: 1
+name: Ranked
+query:
+  projections:
+    score: { expr: 'priority == "high" ? 2 : 1' }
+views:
+  - id: ranked
+    name: Ranked
+    select: [title, projection.score]
+    presentation: { type: tasknotes.task-list }
+---
+`);
+    renderEditor({
+      repository: repository({ source }),
+      view: canonicalSavedView(),
+    });
+
+    expect(
+      suggestedFilterAndSortFields("mdbase-cel", [
+        { key: "priority", label: "Priority" },
+        { key: "projection.score", label: "Score" },
+        { key: 'projection["display score"]', label: "Display score" },
+      ]).map(({ key }) => key),
+    ).toEqual(["priority"]);
+
+    await screen.findByRole("dialog", { name: "Ranked" });
+    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
+    const sortProperty = screen.getByRole("combobox", {
+      name: "Property to sort",
+    });
+    fireEvent.focus(sortProperty);
+    expect(
+      within(
+        screen.getByRole("listbox", {
+          name: "Property to sort suggestions",
+        }),
+      ).queryByRole("option", { name: /projection\.score/ }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("heading", { name: "Fields shown" }));
+    const displayedProperty = screen.getByRole("combobox", {
+      name: "Property to display",
+    });
+    fireEvent.focus(displayedProperty);
+    expect(
+      within(
+        screen.getByRole("listbox", {
+          name: "Property to display suggestions",
+        }),
+      ).getByRole("option", { name: /projection\.score/ }),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("heading", { name: "Advanced" }));
+    expect(
+      screen.getByText("Reusable values for grouping and displayed fields."),
+    ).toBeVisible();
+  });
+
   it("keeps only one editing section open at a time", async () => {
     renderEditor({ repository: repository(), view: savedView() });
     await screen.findByRole("dialog", { name: "Work" });
@@ -428,6 +491,33 @@ function savedView(): TaskView {
       mappings: {},
       options: {},
     },
+  };
+}
+
+function canonicalSavedView(): TaskView {
+  return {
+    ...savedView(),
+    key: "views/ranked.md#ranked",
+    documentId: "ranked",
+    documentName: "Ranked",
+    id: "ranked",
+    name: "Ranked",
+    properties: [{ key: "title" }, { key: "projection.score" }],
+    source: {
+      path: "views/ranked.md",
+      format: "mdbase.view",
+      revision: "one",
+      writable: true,
+    },
+  };
+}
+
+function canonicalSource(document: string): TaskViewSourceDocument {
+  return {
+    path: "views/ranked.md",
+    format: "mdbase.view",
+    revision: "one",
+    document,
   };
 }
 

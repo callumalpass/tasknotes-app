@@ -462,6 +462,15 @@ function supportsGrouping(renderer: ViewRenderer): boolean {
   return !isCalendarRenderer(renderer);
 }
 
+export function suggestedFilterAndSortFields<T extends { key: string }>(
+  dialect: ViewDialect,
+  fields: T[],
+): T[] {
+  return dialect === "mdbase-cel"
+    ? fields.filter(({ key }) => !/^projection(?:\.|\[)/.test(key.trim()))
+    : fields;
+}
+
 export function computedPropertyReference(
   dialect: ViewDialect,
   name: string,

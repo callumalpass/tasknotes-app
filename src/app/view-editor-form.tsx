@@ -22,7 +22,10 @@ import {
   TaskNotesSelect,
 } from "../components/tasknotes-controls";
 import { validateComputedProperties } from "../domain/view-computed-properties";
-import { computedPropertyReference } from "../domain/view-document";
+import {
+  computedPropertyReference,
+  suggestedFilterAndSortFields,
+} from "../domain/view-document";
 import { isManualOrderProperty } from "../domain/manual-order";
 
 import type { LucideIcon } from "lucide-react";
@@ -73,6 +76,10 @@ export function ViewEditorForm({
       draft.dialect,
     ],
   );
+  const filterAndSortFields = useMemo(
+    () => suggestedFilterAndSortFields(draft.dialect, fields),
+    [draft.dialect, fields],
+  );
   const computedError = useMemo(
     () => validateComputedProperties(draft.dialect, draft.computedProperties),
     [draft.computedProperties, draft.dialect],
@@ -108,7 +115,7 @@ export function ViewEditorForm({
       >
         <ExpressionBuilder
           dialect={draft.dialect}
-          fields={fields}
+          fields={filterAndSortFields}
           value={draft.filter}
           onChange={(filter) => patch({ filter })}
           onValidityChange={onFilterValidityChange}
@@ -180,7 +187,7 @@ export function ViewEditorForm({
             <span className="view-editor-count">{draft.sort.length}</span>
           </div>
           <SortRules
-            fields={fields}
+            fields={filterAndSortFields}
             rules={draft.sort}
             onChange={(sort) => patch({ sort })}
           />
@@ -203,7 +210,7 @@ export function ViewEditorForm({
           <div className="add-view-property">
             <TaskNotesCombobox
               ariaLabel="Property to sort"
-              options={fieldOptions(fields)}
+              options={fieldOptions(filterAndSortFields)}
               placeholder="Add a sort rule"
               value={sortPropertyInput}
               onChange={setSortPropertyInput}
@@ -364,7 +371,11 @@ function ComputedPropertiesSection({
           <h3>
             {draft.dialect === "obsidian-bases" ? "Formulas" : "Projections"}
           </h3>
-          <p>Reusable values for filters, grouping, sorting, and fields.</p>
+          <p>
+            {draft.dialect === "obsidian-bases"
+              ? "Reusable values for filters, grouping, sorting, and fields."
+              : "Reusable values for grouping and displayed fields."}
+          </p>
         </div>
         <span className="view-editor-count">
           {draft.computedProperties.length}

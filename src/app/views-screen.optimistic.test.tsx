@@ -216,6 +216,66 @@ it("keeps readable tasks visible when the provider omitted an unreadable record"
   );
 });
 
+it("offers edit and retry actions for an incompatible saved view", async () => {
+  const view = manualListView("computed-view");
+  const task = listTask("compatible-task", "Compatible task");
+  const execution: TaskViewExecution = {
+    view,
+    rows: [{ task, values: {} }],
+    totalCount: 1,
+    hasMore: false,
+    groups: [],
+  };
+  const failure = Object.assign(
+    new Error("Hosted ordering cannot use projection.task_day."),
+    {
+      problem: {
+        problem_version: 1,
+        code: "unknown",
+        category: "unknown",
+        recovery: "none",
+        message: "Hosted ordering cannot use projection.task_day.",
+        server_code: "unsupported_hosted_order",
+      },
+    },
+  );
+  const executeView = vi
+    .fn<() => Promise<TaskViewExecution>>()
+    .mockRejectedValueOnce(failure)
+    .mockResolvedValue(execution);
+  const repository = manualListRepository(
+    view,
+    [task],
+    vi.fn(),
+    () => execution,
+  );
+  repository.executeView = executeView;
+
+  renderListView(repository, view);
+
+  const summary = await screen.findByText(
+    "This view uses an unavailable sort.",
+  );
+  expect(screen.getByRole("alert")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Edit view" })).not.toBeVisible();
+  expect(screen.getByRole("button", { name: "Try again" })).not.toBeVisible();
+
+  fireEvent.click(summary);
+  fireEvent.click(screen.getByRole("button", { name: "Edit view" }));
+  const editor = await screen.findByRole("dialog", { name: "computed-view" });
+  fireEvent.click(
+    within(editor).getByRole("button", { name: "Close view editor" }),
+  );
+
+  const callsBeforeRetry = executeView.mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByText("Compatible task")).toBeVisible();
+  expect(executeView.mock.calls.length).toBeGreaterThan(callsBeforeRetry);
+  expect(
+    screen.queryByText("This view uses an unavailable sort."),
+  ).not.toBeInTheDocument();
+});
+
 it("recovers an uncertain manual board write before sending the queued move", async () => {
   const pending = deferred<void>();
   const execution = boardExecution();

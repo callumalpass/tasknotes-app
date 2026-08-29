@@ -18,6 +18,7 @@ import type {
 
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
+import { ViewExecutionErrorNotice } from "../components/view-execution-error-notice";
 import { TaskCapture } from "../components/task-capture";
 import { kanbanPropertyRole, type KanbanFieldMapping } from "../domain/kanban";
 import { todayString } from "../domain/task";
@@ -94,6 +95,8 @@ import type {
   TaskViewRow,
 } from "../domain/view";
 
+type ViewExecutionFailure = { key: string; reason: unknown };
+
 export function ViewsScreen({
   calendarPreferences = defaultCalendarPreferences(),
   viewKey,
@@ -138,10 +141,9 @@ export function ViewsScreen({
   } = useRepository();
   const viewRevision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
-  const [executionError, setExecutionError] = useState<{
-    key: string;
-    message: string;
-  } | null>(null);
+  const [executionError, setExecutionError] =
+    useState<ViewExecutionFailure | null>(null);
+  const [executionRetry, setExecutionRetry] = useState(0);
   const [refreshingExecution, setRefreshingExecution] = useState<string | null>(
     null,
   );
@@ -229,7 +231,7 @@ export function ViewsScreen({
     },
     (view, reason) => {
       if (selectedKeyRef.current === view.key)
-        setExecutionError({ key: view.key, message: message(reason) });
+        setExecutionError({ key: view.key, reason });
     },
   );
   const reconcileOptimisticExecution = useCallback(
@@ -281,7 +283,7 @@ export function ViewsScreen({
       (reason) => {
         if (!active) return;
         refreshed = true;
-        setExecutionError({ key: selected.key, message: message(reason) });
+        setExecutionError({ key: selected.key, reason });
         setRefreshingExecution(null);
       },
     );
@@ -294,6 +296,7 @@ export function ViewsScreen({
     selected,
     viewKey,
     viewRevision,
+    executionRetry,
   ]);
   useEffect(() => {
     if (!viewKey || !selected) return;
@@ -372,11 +375,8 @@ export function ViewsScreen({
   const currentExecutionRefreshing =
     refreshingExecution ===
     (selected ? `${selected.key}:${selected.source.revision}` : null);
-  const currentExecutionError =
-    executionError && executionError.key === selected?.key
-      ? executionError.message
-      : "";
-  const error = viewKey ? currentExecutionError || viewsError : viewsError;
+  const error =
+    executionError?.key === selected?.key ? executionError?.reason : viewsError;
   const currentViewActionError =
     viewActionError && viewActionError.viewKey === selected?.key
       ? viewActionError.message
@@ -561,9 +561,7 @@ export function ViewsScreen({
             .then((refreshed) => {
               if (selectedKeyRef.current === view.key) setExecution(refreshed);
             })
-            .catch(() => {
-              // The original mutation error is more useful than a refresh error.
-            });
+            .catch(() => undefined);
         }
         setManualRanks((current) => {
           const next = new Map(current);
@@ -846,10 +844,10 @@ export function ViewsScreen({
               </button>
             </div>
           </header>
-          {error ? (
+          {viewsError ? (
             <OperationErrorNotice
               action="Views"
-              message={error}
+              message={viewsError}
               recovery="Retry by reopening Views or refreshing the collection."
             />
           ) : null}
@@ -1082,10 +1080,11 @@ export function ViewsScreen({
           ) : null}
         </header>
         {error ? (
-          <OperationErrorNotice
-            action="This view"
-            message={error}
-            recovery="Refresh the collection or choose another view."
+          <ViewExecutionErrorNotice
+            canEdit={Boolean(selected?.source.writable)}
+            reason={error}
+            onEdit={() => selected && setEditing(selected)}
+            onRetry={() => setExecutionRetry((attempt) => attempt + 1)}
           />
         ) : null}
         {!error && presentedExecution?.hasSkippedRecords ? (

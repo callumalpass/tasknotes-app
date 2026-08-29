@@ -505,6 +505,48 @@ button:disabled {
   line-height: 1.45;
 }
 
+.view-execution-error {
+  margin: 0 var(--page-inset) var(--space-md);
+  color: var(--danger);
+  font-size: var(--type-supporting);
+}
+
+.view-execution-error summary {
+  width: fit-content;
+  min-height: 44px;
+  padding: 6px 0;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.view-execution-error-body {
+  max-width: 68ch;
+  padding: 2px 0 var(--space-sm) 18px;
+  color: var(--ink-soft);
+}
+
+.view-execution-error-body > p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.view-execution-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.view-execution-error-technical {
+  display: grid;
+  gap: 3px;
+  margin-top: var(--space-md) !important;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+  overflow-wrap: anywhere;
+}
+
 .view-record-warning {
   margin: 0 var(--page-inset) var(--space-md);
   padding: 10px var(--space-md);

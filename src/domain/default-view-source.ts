@@ -76,26 +76,11 @@ export function taskNotesDefaultBaseDocument(
   const projects = note(fields.projects);
   const title = note(fields.title);
   const manualOrder = basesProperty(fields.sortOrder);
-  const taskDate = `if(${scheduled}.isEmpty() == false, ${scheduled}, ${due})`;
-  const taskDay =
-    "if(formula.taskDate.isEmpty(), null, date(formula.taskDate))";
-  const today = "today()";
+  const todayFilter = effectiveTaskDayFilter(scheduled, due);
 
   return stringify(
     {
-      formulas: {
-        taskDate,
-        taskDay,
-      },
       properties: {
-        "formula.taskDate": {
-          displayName: "Task date",
-          hidden: true,
-        },
-        "formula.taskDay": {
-          displayName: "Task day",
-          hidden: true,
-        },
         [manualOrder]: {
           displayName: "Manual order",
           hidden: true,
@@ -106,20 +91,11 @@ export function taskNotesDefaultBaseDocument(
           type: "tasknotesTaskList",
           name: "Today",
           filters: {
-            and: [
-              ...activeTaskFilters(configuration),
-              {
-                or: [
-                  "formula.taskDay.isEmpty()",
-                  `formula.taskDay <= ${today}`,
-                ],
-              },
-            ],
+            and: [...activeTaskFilters(configuration), todayFilter],
           },
           order: [title, scheduled, due],
           sort: [
             { property: manualOrder, direction: "DESC" },
-            { property: "formula.taskDay", direction: "ASC" },
             { property: priority, direction: "ASC" },
             { property: title, direction: "ASC" },
           ],
@@ -196,10 +172,10 @@ export function taskNotesDefaultCanonicalDocument(
   configuration: TaskCollectionConfiguration,
 ): string {
   const fields = configuration.fieldMapping;
-  const taskDate = `if(${fields.scheduled}.isEmpty() == false, ${fields.scheduled}, ${fields.due})`;
-  const taskDay =
-    "if(projection.task_date.isEmpty(), null, date(projection.task_date))";
+  const scheduled = note(fields.scheduled);
+  const due = note(fields.due);
   const sharedWhere = activeTaskFilters(configuration).join(" && ");
+  const todayWhere = canonicalFilter(effectiveTaskDayFilter(scheduled, due));
   const selection = [fields.title, fields.scheduled, fields.due];
 
   return serializeMarkdownDocument(
@@ -208,21 +184,15 @@ export function taskNotesDefaultCanonicalDocument(
       id: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
       version: 1,
       name: "TaskNotes",
-      query: {
-        projections: {
-          task_date: { expr: taskDate },
-          task_day: { expr: taskDay },
-        },
-      },
+      query: {},
       views: [
         {
           id: "today",
           name: "Today",
-          where: `(${sharedWhere}) && (projection.task_day.isEmpty() || projection.task_day <= today())`,
+          where: `(${sharedWhere}) && (${todayWhere})`,
           select: selection,
           order_by: [
             { field: fields.sortOrder, direction: "desc" },
-            { field: "projection.task_day", direction: "asc" },
             { field: fields.priority, direction: "asc" },
             { field: fields.title, direction: "asc" },
           ],
@@ -345,6 +315,38 @@ function calendarCanonicalView(
       },
     },
   };
+}
+
+function effectiveTaskDayFilter(
+  scheduled: string,
+  due: string,
+): Record<string, unknown> {
+  return {
+    or: [
+      {
+        and: [
+          `${scheduled}.isEmpty() == false`,
+          `date(${scheduled}) <= today()`,
+        ],
+      },
+      {
+        and: [
+          `${scheduled}.isEmpty()`,
+          {
+            or: [`${due}.isEmpty()`, `date(${due}) <= today()`],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function canonicalFilter(value: unknown): string {
+  if (typeof value === "string") return value;
+  const group = value as { and?: unknown[]; or?: unknown[] };
+  const entries = group.and ?? group.or ?? [];
+  const operator = group.and ? " && " : " || ";
+  return entries.map((entry) => `(${canonicalFilter(entry)})`).join(operator);
 }
 
 function activeTaskFilters(
