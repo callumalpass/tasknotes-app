@@ -513,7 +513,7 @@ describe("ScratchpadScreen", () => {
     expect(scroller.scrollTop).toBe(420);
   });
 
-  it("keeps the current note at the bottom of the feed scroller and leaves text paste untouched", async () => {
+  it("keeps the current note as the final feed item before its rest space and leaves text paste untouched", async () => {
     renderScratchpad();
     const input = await screen.findByRole(
       "textbox",
@@ -523,7 +523,10 @@ describe("ScratchpadScreen", () => {
     const history = document.querySelector(".scratchpad-history-scroll")!;
     const current = document.querySelector(".scratchpad-current-document")!;
     expect(history.contains(current)).toBe(true);
-    expect(history.lastElementChild).toBe(current);
+    expect(current.nextElementSibling).toHaveClass(
+      "scratchpad-current-rest-space",
+    );
+    expect(history.lastElementChild).toBe(current.nextElementSibling);
     const event = new Event("paste", { bubbles: true, cancelable: true });
     Object.defineProperty(event, "clipboardData", {
       value: { items: [{ kind: "string", type: "text/plain" }] },

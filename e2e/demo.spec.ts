@@ -102,19 +102,25 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
       ),
     )
     .toBeLessThanOrEqual(2);
-  const currentBottomGap = () =>
+  const currentCenterOffset = () =>
     feed.evaluate((element) => {
       const currentDocument = element.querySelector(
         ".scratchpad-current-document",
       );
       if (!currentDocument) return Number.POSITIVE_INFINITY;
-      return (
-        element.getBoundingClientRect().bottom -
-        currentDocument.getBoundingClientRect().bottom
+      const scrollerBounds = element.getBoundingClientRect();
+      const cardBounds = currentDocument.getBoundingClientRect();
+      const bottomGutter = Number.parseFloat(
+        getComputedStyle(element).paddingBottom,
       );
+      const expectedGap = Math.max(
+        bottomGutter,
+        (element.clientHeight - cardBounds.height) / 2,
+      );
+      const actualGap = scrollerBounds.bottom - cardBounds.bottom;
+      return Math.abs(actualGap - expectedGap);
     });
-  await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
-  await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+  await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
   await current
     .getByRole("button", { name: "Actions for empty item" })
     .last()
@@ -127,22 +133,40 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   await expect(
     current.getByRole("textbox", { name: "Scratchpad Markdown" }),
   ).toBeFocused();
-  await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
-  await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+  await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
   for (let index = 0; index < 3; index += 1) {
     await current.getByRole("button", { name: "Outline" }).click();
     await expect(
       current.getByRole("tree", { name: "Scratchpad outline" }),
     ).toBeVisible();
-    await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
-    await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+    await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
     await current.getByRole("button", { name: "Markdown" }).click();
     await expect(
       current.getByRole("textbox", { name: "Scratchpad Markdown" }),
     ).toBeFocused();
-    await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
-    await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+    await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
   }
+});
+
+test("moves the centered current Scratchpad down after an intentional upward scroll", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const feed = page.locator(".scratchpad-history-scroll");
+  const current = page.locator(".scratchpad-current-document");
+  await expect(current).toBeVisible();
+  const initialTop = await current.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  );
+
+  await feed.hover();
+  await page.mouse.wheel(0, -160);
+
+  await expect
+    .poll(() =>
+      current.evaluate((element) => element.getBoundingClientRect().top),
+    )
+    .toBeGreaterThan(initialTop + 80);
 });
 
 test("suggests wikilinks in Scratchpad Outline and Markdown", async ({

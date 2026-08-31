@@ -151,6 +151,7 @@ export function ScratchpadScreen({
   const flushers = useRef(new Map<string, () => Promise<unknown>>());
   const imageActionRef = useRef<HTMLButtonElement | null>(null);
   const historyRef = useRef<HTMLDivElement | null>(null);
+  const currentCardRef = useRef<HTMLElement | null>(null);
   const prependAnchor = useRef<
     { height: number; top: number; wasAtBottom: boolean } | undefined
   >(undefined);
@@ -354,6 +355,42 @@ export function ScratchpadScreen({
   }
 
   const historicalItems = [...historyItems].reverse();
+
+  useLayoutEffect(() => {
+    const scroller = historyRef.current;
+    const card = currentCardRef.current;
+    if (!scroller || !card) return;
+
+    const updateRestSpace = () => {
+      const bottomGutter = Number.parseFloat(
+        getComputedStyle(scroller).paddingBottom,
+      );
+      const centeredGap = Math.max(
+        0,
+        (scroller.clientHeight - card.getBoundingClientRect().height) / 2,
+      );
+      const restSpace = Math.max(0, centeredGap - bottomGutter);
+      const next = `${restSpace}px`;
+      if (scroller.style.getPropertyValue("--scratch-current-rest") !== next)
+        scroller.style.setProperty("--scratch-current-rest", next);
+    };
+
+    let frame = 0;
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateRestSpace);
+    };
+    updateRestSpace();
+    window.addEventListener("resize", scheduleUpdate);
+    const observer = new MutationObserver(scheduleUpdate);
+    observer.observe(card, { childList: true, subtree: true });
+    void document.fonts?.ready.then(scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", scheduleUpdate);
+      observer.disconnect();
+    };
+  }, [currentDocument]);
 
   useLayoutEffect(() => {
     const element = historyRef.current;
@@ -846,9 +883,18 @@ export function ScratchpadScreen({
             </section>
           ) : null}
           {currentDocument ? (
-            <article className="scratchpad-current-document">
-              {editor(currentDocument, true)}
-            </article>
+            <>
+              <article
+                className="scratchpad-current-document"
+                ref={currentCardRef}
+              >
+                {editor(currentDocument, true)}
+              </article>
+              <div
+                aria-hidden="true"
+                className="scratchpad-current-rest-space"
+              />
+            </>
           ) : null}
         </div>
       </div>
