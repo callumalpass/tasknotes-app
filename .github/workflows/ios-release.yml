@@ -190,12 +190,21 @@ jobs:
           ipa_path="$(find "$RUNNER_TEMP/TaskNotesExport" -maxdepth 1 -name '*.ipa' -print -quit)"
           test -n "$ipa_path"
           cd "$RUNNER_TEMP"
+          upload_log="$RUNNER_TEMP/testflight-upload.log"
+          set +e
           xcrun altool \
             --upload-app \
             --type ios \
             --file "$ipa_path" \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            2>&1 | tee "$upload_log"
+          upload_status="${PIPESTATUS[0]}"
+          set -e
+          if [ "$upload_status" -ne 0 ] || ! grep -q "No errors uploading" "$upload_log"; then
+            echo "TestFlight did not confirm a successful upload." >&2
+            exit 1
+          fi
 
       - name: Remove temporary signing material
         if: always()
