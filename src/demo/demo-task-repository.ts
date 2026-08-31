@@ -42,7 +42,22 @@ import type {
   SaveScratchpadInput,
   ScratchpadArchiveResult,
   ScratchpadDocument,
+  ScratchpadPage,
+  ScratchpadPageRequest,
+  StartNewScratchpadInput,
+  StartNewScratchpadResult,
 } from "../domain/scratchpad";
+import type {
+  CreateScratchImageInput,
+  ScratchImage,
+} from "../domain/scratch-image";
+import type {
+  ScratchFeedPage,
+  ScratchFeedPageRequest,
+} from "../domain/scratch-feed";
+import { scratchFeedPage, scratchpadFeedItem } from "../domain/scratch-feed";
+import { scratchpadDocumentPath, scratchpadPage } from "../domain/scratchpad";
+
 import type {
   CreateTaskViewSourceInput,
   TaskView,
@@ -62,7 +77,8 @@ export class DemoTaskRepository implements TaskRepository {
   private readonly viewExecutions = new Map<string, TaskViewExecution>();
   private readonly sources = new Map<string, TaskViewSourceDocument>();
   private documents: TaskViewDocument[];
-  private scratchpad: ScratchpadDocument;
+  private readonly scratchpads = new Map<string, ScratchpadDocument>();
+  private readonly scratchImages = new Map<string, ScratchImage>();
   private sourceRevision = 1;
 
   constructor(requestedCount = 50) {
@@ -94,9 +110,9 @@ export class DemoTaskRepository implements TaskRepository {
       this.tasks.set(task.id, task);
 
     const now = new Date().toISOString();
-    this.scratchpad = {
+    const current: ScratchpadDocument = {
       id: "demo-scratchpad",
-      path: "scratchpads/Scratchpad.md",
+      path: scratchpadDocumentPath(new Date(now), "demo-scratchpad"),
       revision: "scratch-1",
       state: "active",
       dateCreated: now,
@@ -110,6 +126,41 @@ export class DemoTaskRepository implements TaskRepository {
         "",
       ].join("\n"),
     };
+    this.scratchpads.set(current.id, current);
+    this.scratchImages.set("demo-scratch-image", {
+      kind: "image",
+      id: "demo-scratch-image",
+      path: "TaskNotes/Scratchpad/Image Metadata/demo-scratch-image.md",
+      revision: "scratch-image-1",
+      dateCreated: new Date(
+        Date.parse(now) - 2 * 24 * 60 * 60 * 1_000,
+      ).toISOString(),
+      dateModified: new Date(
+        Date.parse(now) - 2 * 24 * 60 * 60 * 1_000,
+      ).toISOString(),
+      file: "TaskNotes/Scratchpad/Images/demo-reference.png",
+      digest: `sha256:${"0".repeat(64)}`,
+      size: 0,
+      mediaType: "image/png",
+      width: 4,
+      height: 3,
+      caption: "Demo image reference",
+    });
+    for (const historical of [
+      demoScratchpad(
+        "demo-scratchpad-planning",
+        new Date(Date.parse(now) - 24 * 60 * 60 * 1_000).toISOString(),
+        "Planning notes",
+        "- Agree launch owners\n- [ ] Confirm the review date\n",
+      ),
+      demoScratchpad(
+        "demo-scratchpad-research",
+        new Date(Date.parse(now) - 5 * 24 * 60 * 60 * 1_000).toISOString(),
+        "Research follow-up",
+        "- Three examples stood out\n- [ ] Send Rowan the summary\n",
+      ),
+    ])
+      this.scratchpads.set(historical.id, historical);
   }
 
   async initialize(): Promise<void> {}
@@ -404,51 +455,145 @@ export class DemoTaskRepository implements TaskRepository {
     this.changed();
   }
 
+  async listScratchFeed(
+    request: ScratchFeedPageRequest = {},
+  ): Promise<ScratchFeedPage> {
+    const current = await this.getActiveScratchpad();
+    return clone(
+      scratchFeedPage(
+        current,
+        [
+          ...[...this.scratchpads.values()]
+            .filter((item) => item.id !== current.id)
+            .map(scratchpadFeedItem),
+          ...this.scratchImages.values(),
+        ],
+        request,
+      ),
+    );
+  }
+
+  async createScratchImage(
+    input: CreateScratchImageInput,
+  ): Promise<ScratchImage> {
+    const image: ScratchImage = {
+      kind: "image",
+      ...input,
+      revision: `scratch-image-${this.scratchImages.size + 1}`,
+      dateModified: input.dateCreated,
+    };
+    this.scratchImages.set(image.id, image);
+    this.changed();
+    return clone(image);
+  }
+
+  async getScratchImage(
+    id: string,
+    path?: string,
+  ): Promise<ScratchImage | null> {
+    const image = this.scratchImages.get(id);
+    return clone(image && (!path || image.path === path) ? image : null);
+  }
+
+  async removeScratchImage(
+    image: Pick<ScratchImage, "id" | "path" | "revision">,
+  ): Promise<void> {
+    const current = this.scratchImages.get(image.id);
+    if (
+      !current ||
+      current.path !== image.path ||
+      current.revision !== image.revision
+    )
+      throw new Error(
+        "The image feed record changed. Reload it before removing.",
+      );
+    this.scratchImages.delete(image.id);
+    this.changed();
+  }
+
+  async listScratchpads(
+    request: ScratchpadPageRequest = {},
+  ): Promise<ScratchpadPage> {
+    return clone(scratchpadPage([...this.scratchpads.values()], request));
+  }
+
+  async getScratchpad(id: string): Promise<ScratchpadDocument | null> {
+    return clone(this.scratchpads.get(id) ?? null);
+  }
+
   async getActiveScratchpad(): Promise<ScratchpadDocument> {
-    return clone(this.scratchpad);
+    const current = [...this.scratchpads.values()].find(
+      (document) => document.state === "active",
+    );
+    if (!current) throw new Error("The current scratchpad is unavailable.");
+    return clone(current);
   }
 
   async saveScratchpad(
     input: SaveScratchpadInput,
   ): Promise<ScratchpadDocument> {
-    if (input.id !== this.scratchpad.id)
+    const current = this.scratchpads.get(input.id);
+    if (!current || current.path !== input.path)
+      throw new Error("This scratchpad changed. Reload it before saving.");
+    if (current.revision !== input.revision && current.body !== input.baseBody)
       throw new Error(
-        "The active scratchpad changed. Reload it before saving.",
+        "This scratchpad changed after it was opened. Reload it before saving.",
       );
-    this.scratchpad = {
-      ...this.scratchpad,
+    const title =
+      input.title === undefined ? current.title : input.title.trim();
+    const saved = {
+      ...current,
+      ...(title !== undefined ? { title } : {}),
       body: input.body,
-      revision: `scratch-${Number(this.scratchpad.revision.split("-").at(-1) ?? 1) + 1}`,
+      revision: `scratch-${Number(current.revision.split("-").at(-1) ?? 1) + 1}`,
       dateModified: new Date().toISOString(),
     };
+    this.scratchpads.set(saved.id, saved);
     this.changed();
-    return clone(this.scratchpad);
+    return clone(saved);
   }
 
-  async archiveScratchpad(
-    input: ArchiveScratchpadInput,
-  ): Promise<ScratchpadArchiveResult> {
+  async startNewScratchpad(
+    input: StartNewScratchpadInput,
+  ): Promise<StartNewScratchpadResult> {
+    const current = await this.getActiveScratchpad();
+    if (input.id !== current.id || input.revision !== current.revision)
+      throw new Error(
+        "The current scratchpad changed. Reload it before saving.",
+      );
     const now = new Date().toISOString();
-    const archived: ScratchpadDocument = {
-      ...this.scratchpad,
+    const title =
+      input.title === undefined ? current.title : input.title.trim();
+    const previous: ScratchpadDocument = {
+      ...current,
       state: "converted",
-      title: input.title?.trim() || "Scratchpad",
+      ...(title !== undefined ? { title } : {}),
       body: input.body,
       dateModified: now,
       dateConverted: now,
-      revision: "scratch-archived",
+      revision: "scratch-2",
     };
-    this.scratchpad = {
-      id: crypto.randomUUID(),
-      path: "scratchpads/Scratchpad.md",
+    const nextId = crypto.randomUUID();
+    const next: ScratchpadDocument = {
+      id: nextId,
+      path: scratchpadDocumentPath(new Date(now), nextId),
       revision: "scratch-1",
       state: "active",
       dateCreated: now,
       dateModified: now,
       body: "",
     };
+    this.scratchpads.set(previous.id, previous);
+    this.scratchpads.set(next.id, next);
     this.changed();
-    return clone({ archived, active: this.scratchpad });
+    return clone({ previous, current: next });
+  }
+
+  async archiveScratchpad(
+    input: ArchiveScratchpadInput,
+  ): Promise<ScratchpadArchiveResult> {
+    const result = await this.startNewScratchpad(input);
+    return clone({ archived: result.previous, active: result.current });
   }
 
   async taskConfiguration(): Promise<TaskCollectionConfiguration> {
@@ -966,6 +1111,25 @@ function uniqueValues(values: unknown[]): unknown[] {
 
 function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+}
+
+function demoScratchpad(
+  id: string,
+  dateCreated: string,
+  title: string,
+  body: string,
+): ScratchpadDocument {
+  return {
+    id,
+    path: scratchpadDocumentPath(new Date(dateCreated), id),
+    revision: "scratch-1",
+    state: "converted",
+    dateCreated,
+    dateModified: dateCreated,
+    dateConverted: dateCreated,
+    title,
+    body,
+  };
 }
 
 function clone<T>(value: T): T {

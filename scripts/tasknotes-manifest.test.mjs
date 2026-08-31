@@ -81,11 +81,27 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
+        version: "1.1.0",
         resources: [
           {
             kind: "type",
             mode: "seed",
             target: "_types/tasknotes-scratch.md",
+            digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          },
+        ],
+      },
+      provides: [],
+    });
+    expect(manifest.provisions.type_packs[2]).toMatchObject({
+      manifest: {
+        id: "tasknotes.scratch-image",
+        version: "1.1.0",
+        resources: [
+          {
+            kind: "type",
+            mode: "seed",
+            target: "_types/tasknotes-scratch-image.md",
             digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
           },
         ],

@@ -1,6 +1,7 @@
 import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
 import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
 import { buildScratchpadTypePack } from "./scratchpad-type.mjs";
+import { buildScratchImageTypePack } from "./scratch-image-type.mjs";
 
 export { TASKNOTES_APP_TYPE_PACK_VERSION } from "./canonical-task-pack.mjs";
 
@@ -77,7 +78,11 @@ export async function buildTaskNotesManifest({
       ],
     },
     provisions: {
-      type_packs: [typePack, buildScratchpadTypePack()],
+      type_packs: [
+        typePack,
+        buildScratchpadTypePack(),
+        buildScratchImageTypePack(),
+      ],
       configuration: [
         {
           requirement: "tasknotes-base-sources",

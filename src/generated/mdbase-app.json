@@ -2,10 +2,10 @@
   "manifest_version": 1,
   "id": "dev.tasknotes.app",
   "name": "TaskNotes",
-  "homepage": "https://app.tasknotes.dev/",
-  "icon": "https://app.tasknotes.dev/icon.png",
+  "homepage": "http://127.0.0.1:4173/",
+  "icon": "http://127.0.0.1:4173/icon.png",
   "redirect_uris": [
-    "https://app.tasknotes.dev/auth/mdbase/callback",
+    "http://127.0.0.1:4173/auth/mdbase/callback",
     "dev.tasknotes.app://auth/mdbase/callback"
   ],
   "requirements": {
@@ -131,7 +131,7 @@
         "manifest": {
           "kind": "mdbase.type-pack",
           "id": "tasknotes.scratch",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "name": "TaskNotes scratchpad",
           "description": "Typed working outlines managed by TaskNotes.",
           "resources": [
@@ -140,14 +140,39 @@
               "mode": "seed",
               "source": "types/tasknotes-scratch.md",
               "target": "_types/tasknotes-scratch.md",
-              "digest": "sha256:b61fc82720c19c26db2911d2ced0d7ca91123f355ccc821c690eeb5fb7fbdb0d"
+              "digest": "sha256:b640939a526443b9a622cd3cbf5f20d8ba3b193bd5133ef30030ad41f634ec46"
             }
           ]
         },
         "resources": [
           {
             "source": "types/tasknotes-scratch.md",
-            "document": "---\nkind: mdbase.type\nname: tasknotes-scratch\nversion: 1\ndescription: A working outline managed by TaskNotes.\nmatch:\n  where:\n    type:\n      eq: tasknotes-scratch\nschema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    type: object\n    additionalProperties: true\n    required: [type, id, state, dateCreated, dateModified]\n    properties:\n      type:\n        const: tasknotes-scratch\n      id:\n        type: string\n        minLength: 1\n      state:\n        enum: [active, converted]\n      title:\n        type: string\n      dateCreated:\n        type: string\n        format: date-time\n      dateModified:\n        type: string\n        format: date-time\n      dateConverted:\n        type: string\n        format: date-time\ncollection:\n  path:\n    folder: scratchpads\n    template: \"{{title}}\"\n  display:\n    name_field: title\n  unique:\n    - field: id\n      scope: type\nlifecycle:\n  on_create:\n    set:\n      id:\n        uuid: true\n      dateCreated:\n        now: true\n      dateModified:\n        now: true\n  on_update:\n    set:\n      dateModified:\n        now: true\n---\n# TaskNotes scratchpad\n\nScratchpads are Markdown outlines. Checkbox items are draft tasks, plain\nbullets are notes, and links point to TaskNotes created from the outline.\n"
+            "document": "---\nkind: mdbase.type\nname: tasknotes-scratch\nversion: 1\ndescription: A working outline managed by TaskNotes.\nmatch:\n  where:\n    type:\n      eq: tasknotes-scratch\nschema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    type: object\n    additionalProperties: true\n    required: [type, id, state, dateCreated, dateModified]\n    properties:\n      type:\n        const: tasknotes-scratch\n      id:\n        type: string\n        minLength: 1\n      state:\n        enum: [active, converted]\n      title:\n        type: string\n      dateCreated:\n        type: string\n        format: date-time\n      dateModified:\n        type: string\n        format: date-time\n      dateConverted:\n        type: string\n        format: date-time\ncollection:\n  path:\n    folder: TaskNotes/Scratchpad\n    template: \"{{id}}\"\n  display:\n    name_field: title\n  unique:\n    - field: id\n      scope: type\nlifecycle:\n  on_create:\n    set:\n      id:\n        uuid: true\n      dateCreated:\n        now: true\n      dateModified:\n        now: true\n  on_update:\n    set:\n      dateModified:\n        now: true\n---\n# TaskNotes scratchpad\n\nScratchpads are Markdown outlines. Checkbox items are draft tasks, plain\nbullets are notes, and links point to TaskNotes created from the outline.\n"
+          }
+        ],
+        "provides": []
+      },
+      {
+        "manifest": {
+          "kind": "mdbase.type-pack",
+          "id": "tasknotes.scratch-image",
+          "version": "1.1.0",
+          "name": "TaskNotes Scratchpad image",
+          "description": "Typed independent image feed records managed by TaskNotes.",
+          "resources": [
+            {
+              "kind": "type",
+              "mode": "seed",
+              "source": "types/tasknotes-scratch-image.md",
+              "target": "_types/tasknotes-scratch-image.md",
+              "digest": "sha256:04bad33ac509a4d54c688c37dfe3a55af7f6d6f22fd470af0486febf74158262"
+            }
+          ]
+        },
+        "resources": [
+          {
+            "source": "types/tasknotes-scratch-image.md",
+            "document": "---\nkind: mdbase.type\nname: tasknotes-scratch-image\nversion: 1\ndescription: An independent image card in the TaskNotes Scratchpad feed.\nmatch:\n  where:\n    type:\n      eq: tasknotes-scratch-image\nschema:\n  dialect: json-schema-2020-12\n  value:\n    $schema: https://json-schema.org/draft/2020-12/schema\n    type: object\n    additionalProperties: true\n    required: [type, id, dateCreated, dateModified, file, digest, size, mediaType]\n    properties:\n      type: { const: tasknotes-scratch-image }\n      id: { type: string, minLength: 1 }\n      dateCreated: { type: string, format: date-time }\n      dateModified: { type: string, format: date-time }\n      file: { type: string, minLength: 1 }\n      digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }\n      size: { type: integer, minimum: 0 }\n      mediaType: { type: string, pattern: '^image/' }\n      width: { type: integer, minimum: 1 }\n      height: { type: integer, minimum: 1 }\n      caption: { type: string }\ncollection:\n  path:\n    folder: TaskNotes/Scratchpad/Image Metadata\n    template: \"{{id}}\"\n  unique:\n    - field: id\n      scope: type\n---\n# TaskNotes Scratchpad image\n\nThis metadata record places one independently stored collection image in the\nScratchpad feed. Removing this record does not remove the referenced file.\n"
           }
         ],
         "provides": []

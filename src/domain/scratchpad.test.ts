@@ -1,31 +1,79 @@
 import { describe, expect, it } from "vitest";
 
-import { todayString } from "./task";
-
 import {
   changeScratchDepth,
   moveScratchSubtree,
   nearestTaskAncestor,
   parseScratchBody,
   removeScratchNode,
-  scratchpadArchivePath,
+  scratchpadPage,
+  scratchpadPreview,
+  scratchpadDocumentPath,
   serializeScratchNodes,
   visibleScratchNodes,
   type ScratchNode,
 } from "./scratchpad";
 
 describe("scratchpad Markdown outline", () => {
-  it("names archives for the device's calendar day", () => {
-    const now = new Date("2026-08-06T06:30:00Z");
-    expect(scratchpadArchivePath("Late notes", now)).toBe(
-      `scratchpads/${todayString(now)} – Late notes.md`,
-    );
+  it("gives every document a stable timestamped path", () => {
+    expect(
+      scratchpadDocumentPath(
+        new Date("2026-08-06T06:30:12.345Z"),
+        "12345678-abcd-efgh",
+      ),
+    ).toBe("TaskNotes/Scratchpad/2026-08-06T06-30-12.345Z – 12345678.md");
   });
+  it("pages documents by immutable creation date and id, never modification date", () => {
+    const documents = [
+      scratchpad("a", "2026-08-01T10:00:00Z", "2026-09-01T10:00:00Z"),
+      scratchpad("b", "2026-08-02T10:00:00Z", "2026-08-02T10:00:00Z"),
+      scratchpad("c", "2026-08-02T10:00:00Z", "2026-08-03T10:00:00Z"),
+    ];
+    const first = scratchpadPage(documents, { limit: 2 });
+    expect(first.documents.map(({ id }) => id)).toEqual(["c", "b"]);
+    expect(
+      scratchpadPage(documents, {
+        limit: 2,
+        cursor: first.nextCursor,
+      }).documents.map(({ id }) => id),
+    ).toEqual(["a"]);
+  });
+
+  it("orders RFC3339 dates by their instant and pins the current target", () => {
+    const current = {
+      ...scratchpad("current", "2026-07-01T00:00:00Z", "2026-07-01T00:00:00Z"),
+      state: "active" as const,
+    };
+    const page = scratchpadPage([
+      scratchpad(
+        "later-offset",
+        "2026-08-02T00:00:00-10:00",
+        "2026-08-02T00:00:00-10:00",
+      ),
+      scratchpad("earlier-z", "2026-08-02T09:00:00Z", "2026-08-02T09:00:00Z"),
+      current,
+    ]);
+    expect(page.documents.map(({ id }) => id)).toEqual([
+      "current",
+      "later-offset",
+      "earlier-z",
+    ]);
+  });
+
+  it("builds a compact plain-outline preview", () => {
+    expect(
+      scratchpadPreview({
+        ...scratchpad("a", "2026-08-01T10:00:00Z", "2026-08-01T10:00:00Z"),
+        body: "- [ ] First\n  - Context\n- [ ] Third\n- Fourth\n",
+      }),
+    ).toBe("First · Context · Third");
+  });
+
   it("round-trips draft tasks, notes, links, and hierarchy", () => {
     const source = `- [ ] Plan launch tomorrow 9am
   - Keep the announcement concise
   - [[tasks/brief|Write the brief]]
-- [ ] Book the venue
+- [x] Book the venue
 `;
 
     const nodes = parseScratchBody(source);
@@ -107,6 +155,18 @@ describe("scratchpad Markdown outline", () => {
     ).toEqual(["parent", "child", "sibling"]);
   });
 });
+
+function scratchpad(id: string, dateCreated: string, dateModified: string) {
+  return {
+    id,
+    path: `scratchpads/${id}.md`,
+    revision: "r1",
+    state: "converted" as const,
+    dateCreated,
+    dateModified,
+    body: "",
+  };
+}
 
 function outline(): ScratchNode[] {
   return [

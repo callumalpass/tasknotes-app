@@ -1,9 +1,5 @@
-import { todayString } from "./task";
-
 export const SCRATCHPAD_TYPE = "tasknotes-scratch";
-export const SCRATCHPAD_FOLDER = "scratchpads";
-export const ACTIVE_SCRATCHPAD_PATH = `${SCRATCHPAD_FOLDER}/Scratchpad.md`;
-
+export const SCRATCHPAD_FOLDER = "TaskNotes/Scratchpad";
 export type ScratchpadState = "active" | "converted";
 export type ScratchNodeKind = "draft" | "note" | "task";
 
@@ -19,6 +15,19 @@ export interface ScratchpadDocument {
   body: string;
 }
 
+export const SCRATCHPAD_PAGE_SIZE = 20;
+
+export interface ScratchpadPageRequest {
+  limit?: number;
+  /** Opaque continuation returned by the preceding page. */
+  cursor?: string;
+}
+
+export interface ScratchpadPage {
+  documents: ScratchpadDocument[];
+  nextCursor?: string;
+}
+
 export interface SaveScratchpadInput {
   id: string;
   path: string;
@@ -26,15 +35,104 @@ export interface SaveScratchpadInput {
   /** Exact body the editor loaded or received from its preceding save. */
   baseBody: string;
   body: string;
-}
-
-export interface ArchiveScratchpadInput extends SaveScratchpadInput {
+  /** Omit to preserve the title; pass an empty string to clear it. */
   title?: string;
 }
 
+export interface StartNewScratchpadInput extends SaveScratchpadInput {
+  title?: string;
+}
+
+export interface StartNewScratchpadResult {
+  previous: ScratchpadDocument;
+  current: ScratchpadDocument;
+}
+
+/** @deprecated Use StartNewScratchpadInput. */
+export type ArchiveScratchpadInput = StartNewScratchpadInput;
+/** @deprecated Use StartNewScratchpadResult. */
 export interface ScratchpadArchiveResult {
   archived: ScratchpadDocument;
   active: ScratchpadDocument;
+}
+
+export function compareScratchpadsNewestFirst(
+  left: ScratchpadDocument,
+  right: ScratchpadDocument,
+): number {
+  if (left.state !== right.state) return left.state === "active" ? -1 : 1;
+  const leftTime = Date.parse(left.dateCreated);
+  const rightTime = Date.parse(right.dateCreated);
+  const byCreated =
+    Number.isFinite(leftTime) && Number.isFinite(rightTime)
+      ? rightTime - leftTime
+      : right.dateCreated.localeCompare(left.dateCreated);
+  return byCreated || right.id.localeCompare(left.id);
+}
+
+export function orderScratchpadsNewestFirst(
+  documents: readonly ScratchpadDocument[],
+): ScratchpadDocument[] {
+  return [...documents].sort(compareScratchpadsNewestFirst);
+}
+
+export function scratchpadPreview(document: ScratchpadDocument): string {
+  const text = parseScratchBody(document.body)
+    .map((node) => node.text.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(" · ");
+  return text || "Empty scratchpad";
+}
+
+export function scratchpadPage(
+  documents: readonly ScratchpadDocument[],
+  request: ScratchpadPageRequest = {},
+): ScratchpadPage {
+  const ordered = orderScratchpadsNewestFirst(documents);
+  const limit = Math.max(
+    1,
+    Math.min(Math.floor(request.limit ?? SCRATCHPAD_PAGE_SIZE), 100),
+  );
+  let start = 0;
+  if (request.cursor) {
+    const [dateCreated, id] = decodeScratchpadCursor(request.cursor);
+    start = ordered.findIndex(
+      (document) => document.dateCreated === dateCreated && document.id === id,
+    );
+    if (start < 0)
+      throw new Error("The scratchpad page has expired. Reload it.");
+    start += 1;
+  }
+  const documentsPage = ordered.slice(start, start + limit);
+  const last = documentsPage.at(-1);
+  return {
+    documents: documentsPage,
+    ...(last && start + documentsPage.length < ordered.length
+      ? { nextCursor: encodeScratchpadCursor(last) }
+      : {}),
+  };
+}
+
+function encodeScratchpadCursor(document: ScratchpadDocument): string {
+  return encodeURIComponent(
+    JSON.stringify([document.dateCreated, document.id]),
+  );
+}
+
+function decodeScratchpadCursor(cursor: string): [string, string] {
+  try {
+    const parsed: unknown = JSON.parse(decodeURIComponent(cursor));
+    if (
+      Array.isArray(parsed) &&
+      parsed.length === 2 &&
+      parsed.every((value) => typeof value === "string")
+    )
+      return parsed as [string, string];
+  } catch {
+    // Report one stable domain error below.
+  }
+  throw new Error("The scratchpad page is invalid. Reload it.");
 }
 
 export interface ScratchNode {
@@ -42,6 +140,8 @@ export interface ScratchNode {
   kind: ScratchNodeKind;
   depth: number;
   text: string;
+  /** Portable Markdown checkbox state for an unconverted draft task. */
+  completed?: boolean;
   /** Exact wikilink or Markdown link for a converted TaskNote. */
   link?: string;
   taskId?: string;
@@ -63,10 +163,10 @@ export function parseScratchBody(body: string): ScratchNode[] {
     if (!match) return [];
     const indentation = match[1].replaceAll("\t", "  ").length;
     const source = match[2].trim();
-    const checkbox = /^\[[ xX]\]\s*(.*)$/.exec(source);
-    const linked = linkedScratchValue(checkbox ? checkbox[1] : source);
+    const checkbox = /^\[([ xX])\]\s*(.*)$/.exec(source);
+    const linked = linkedScratchValue(checkbox ? checkbox[2] : source);
     const kind: ScratchNodeKind = linked ? "task" : checkbox ? "draft" : "note";
-    const text = linked?.label ?? checkbox?.[1].trim() ?? source;
+    const text = linked?.label ?? checkbox?.[2].trim() ?? source;
     const fingerprint = `${kind}:${Math.floor(indentation / 2)}:${text}:${linked?.link ?? ""}`;
     const occurrence = (duplicates.get(fingerprint) ?? 0) + 1;
     duplicates.set(fingerprint, occurrence);
@@ -76,6 +176,7 @@ export function parseScratchBody(body: string): ScratchNode[] {
         kind,
         depth: Math.floor(indentation / 2),
         text,
+        ...(kind === "draft" ? { completed: checkbox?.[1] !== " " } : {}),
         ...(linked ? { link: linked.link } : {}),
       },
     ];
@@ -88,7 +189,7 @@ export function serializeScratchNodes(nodes: readonly ScratchNode[]): string {
     .map((node) => {
       const marker =
         node.kind === "draft"
-          ? `[ ] ${node.text.trim()}`
+          ? `[${node.completed ? "x" : " "}] ${node.text.trim()}`
           : node.kind === "task"
             ? (node.link ?? node.text.trim())
             : node.text.trim();
@@ -231,24 +332,9 @@ export function nearestTaskAncestor(
   }
 }
 
-export function scratchpadArchivePath(
-  title: string | undefined,
-  now = new Date(),
-): string {
-  const date = todayString(now);
-  const slug = (title?.trim() || "Scratchpad")
-    .replace(/[\\/:*?"<>|#^[\]]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 80);
-  return `${SCRATCHPAD_FOLDER}/${date} – ${slug || "Scratchpad"}.md`;
-}
-
-export function scratchpadTitle(nodes: readonly ScratchNode[]): string {
-  return (
-    nodes.find((node) => node.depth === 0 && node.text.trim())?.text.trim() ||
-    "Scratchpad"
-  );
+export function scratchpadDocumentPath(now: Date, id: string): string {
+  const timestamp = now.toISOString().replaceAll(":", "-");
+  return `${SCRATCHPAD_FOLDER}/${timestamp} – ${id.slice(0, 8)}.md`;
 }
 
 export const SCRATCHPAD_TYPE_DOCUMENT = `---
@@ -288,8 +374,8 @@ schema:
         format: date-time
 collection:
   path:
-    folder: scratchpads
-    template: "{{title}}"
+    folder: TaskNotes/Scratchpad
+    template: "{{id}}"
   display:
     name_field: title
   unique:

@@ -37,8 +37,8 @@ schema:
         format: date-time
 collection:
   path:
-    folder: scratchpads
-    template: "{{title}}"
+    folder: TaskNotes/Scratchpad
+    template: "{{id}}"
   display:
     name_field: title
   unique:
@@ -70,7 +70,7 @@ export function buildScratchpadTypePack() {
     manifest: {
       kind: "mdbase.type-pack",
       id: "tasknotes.scratch",
-      version: "1.0.0",
+      version: "1.1.0",
       name: "TaskNotes scratchpad",
       description: "Typed working outlines managed by TaskNotes.",
       resources: [
