@@ -2,7 +2,7 @@
   "id": "./",
   "name": "TaskNotes",
   "short_name": "TaskNotes",
-  "description": "A calm task manager built on portable Markdown records.",
+  "description": "A dependable task manager built on portable Markdown records.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
