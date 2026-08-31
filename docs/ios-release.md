@@ -64,8 +64,9 @@ private values into an issue, pull request, commit, or chat.
 
 ## Build and upload
 
-Run **iOS release** from GitHub Actions. Enter an App Store marketing version,
-such as `1.0.0`.
+Run **iOS release** from GitHub Actions. Leave the marketing version blank to
+use the application version from `package.json`. Enter a version only when the
+iOS release intentionally needs to override that shared version.
 
 - Leave **Upload the signed build to TestFlight** disabled for the first run.
   The workflow verifies the web application, restores the Firebase plugin,

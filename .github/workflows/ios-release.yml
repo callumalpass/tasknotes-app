@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: App Store marketing version, for example 1.0.0
-        required: true
-        default: 1.0.0
+        description: App Store marketing version; leave blank to use package.json
+        required: false
+        default: ""
         type: string
       upload:
         description: Upload the signed build to TestFlight
@@ -61,7 +61,7 @@ jobs:
             version="${GITHUB_REF_NAME#ios-v}"
             upload=true
           else
-            version="$REQUESTED_VERSION"
+            version="${REQUESTED_VERSION:-$(node -p "require('./package.json').version")}"
             upload="$REQUESTED_UPLOAD"
           fi
           if [[ ! "$version" =~ ^[0-9]+([.][0-9]+){1,2}$ ]]; then

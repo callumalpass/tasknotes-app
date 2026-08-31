@@ -1983,57 +1983,56 @@ function ScratchpadDocumentEditor({
                       <Link2 aria-hidden="true" size={14} />
                       <span>Linked</span>
                     </span>
-                  ) : node.kind === "draft" ? (
-                    <div className="scratchpad-task-kind-controls">
+                  ) : (
+                    <div className="scratchpad-kind-controls">
+                      {node.kind === "draft" ? (
+                        <button
+                          aria-label={`${node.completed ? "Mark incomplete" : "Mark complete"} ${node.text || "empty task"}`}
+                          aria-pressed={Boolean(node.completed)}
+                          className="scratchpad-draft-completion"
+                          title={
+                            node.completed ? "Completed draft" : "Task draft"
+                          }
+                          type="button"
+                          onClick={() =>
+                            changeNode(node.id, { completed: !node.completed })
+                          }
+                        >
+                          {node.completed ? (
+                            <SquareCheckBig aria-hidden="true" size={19} />
+                          ) : (
+                            <Square aria-hidden="true" size={19} />
+                          )}
+                        </button>
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className="scratchpad-note-kind-icon"
+                        >
+                          <StickyNote size={19} />
+                        </span>
+                      )}
                       <button
-                        aria-label={`${node.completed ? "Mark incomplete" : "Mark complete"} ${node.text || "empty task"}`}
-                        aria-pressed={Boolean(node.completed)}
-                        className="scratchpad-draft-completion"
+                        aria-label={
+                          node.kind === "draft"
+                            ? `Convert ${node.text || "empty task"} to note`
+                            : "Make a task"
+                        }
+                        className="scratchpad-kind-toggle"
                         title={
-                          node.completed ? "Completed draft" : "Task draft"
+                          node.kind === "draft" ? "Convert to note" : "Note"
                         }
-                        type="button"
-                        onClick={() =>
-                          changeNode(node.id, { completed: !node.completed })
-                        }
-                      >
-                        {node.completed ? (
-                          <SquareCheckBig aria-hidden="true" size={19} />
-                        ) : (
-                          <Square aria-hidden="true" size={19} />
-                        )}
-                      </button>
-                      <button
-                        aria-label={`Convert ${node.text || "empty task"} to note`}
-                        className="scratchpad-make-note"
-                        title="Convert to note"
                         type="button"
                         onClick={() =>
                           changeNode(node.id, {
-                            kind: "note",
+                            kind: node.kind === "draft" ? "note" : "draft",
                             completed: false,
                           })
                         }
                       >
-                        Task
+                        {node.kind === "draft" ? "Task" : "Note"}
                       </button>
                     </div>
-                  ) : (
-                    <button
-                      aria-label="Make a task"
-                      className="scratchpad-kind-label scratchpad-kind-toggle"
-                      title="Note"
-                      type="button"
-                      onClick={() =>
-                        changeNode(node.id, {
-                          kind: "draft",
-                          completed: false,
-                        })
-                      }
-                    >
-                      <StickyNote aria-hidden="true" size={14} />
-                      <span>Note</span>
-                    </button>
                   )}
                   {node.kind === "task" ? (
                     <button
