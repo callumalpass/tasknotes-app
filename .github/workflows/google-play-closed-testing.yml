@@ -96,9 +96,11 @@ jobs:
 
       - name: Verify release artifacts
         run: |
-          test -s android-release/app-release.aab
-          test -s android-release/app-release.apk
-          sha256sum android-release/app-release.aab android-release/app-release.apk
+          test -s android-release/bundle/release/app-release.aab
+          test -s android-release/apk/release/app-release.apk
+          sha256sum \
+            android-release/bundle/release/app-release.aab \
+            android-release/apk/release/app-release.apk
 
   publish-play-closed-testing:
     needs: verify-release
@@ -132,7 +134,7 @@ jobs:
         run: |
           test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64"
           node scripts/publish-google-play.mjs \
-            android-release/app-release.aab \
+            android-release/bundle/release/app-release.aab \
             "$TASKNOTES_ANDROID_VERSION_CODE" \
             "$TASKNOTES_ANDROID_VERSION_NAME"
 
@@ -161,15 +163,15 @@ jobs:
         run: |
           if gh release view "$RELEASE_REF" >/dev/null 2>&1; then
             gh release upload "$RELEASE_REF" \
-              android-release/app-release.apk \
-              android-release/app-release.aab \
+              android-release/apk/release/app-release.apk \
+              android-release/bundle/release/app-release.aab \
               --clobber
             gh release edit "$RELEASE_REF" \
               --title "TaskNotes $TASKNOTES_ANDROID_VERSION_NAME"
           else
             gh release create "$RELEASE_REF" \
-              android-release/app-release.apk \
-              android-release/app-release.aab \
+              android-release/apk/release/app-release.apk \
+              android-release/bundle/release/app-release.aab \
               --generate-notes \
               --title "TaskNotes $TASKNOTES_ANDROID_VERSION_NAME"
           fi
