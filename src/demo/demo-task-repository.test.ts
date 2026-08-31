@@ -46,6 +46,14 @@ describe("DemoTaskRepository", () => {
 
   it("supports the scratchpad lifecycle without external storage", async () => {
     const repository = new DemoTaskRepository(2);
+    const firstPage = await repository.listScratchpads({ limit: 2 });
+    expect(firstPage.documents).toHaveLength(2);
+    expect(firstPage.documents[0]?.state).toBe("active");
+    expect(firstPage.nextCursor).toBeTruthy();
+    expect(
+      (await repository.listScratchpads({ cursor: firstPage.nextCursor }))
+        .documents,
+    ).toHaveLength(1);
     const current = await repository.getActiveScratchpad();
 
     const saved = await repository.saveScratchpad({
@@ -69,6 +77,9 @@ describe("DemoTaskRepository", () => {
       title: "Design notes",
     });
     expect(result.active.body).toBe("");
+    expect((await repository.getScratchpad(result.archived.id))?.body).toBe(
+      "- [ ] A fresh thought\n",
+    );
   });
 
   it("applies saved-view edits to the live demo catalogue", async () => {

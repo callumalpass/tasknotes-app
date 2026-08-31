@@ -4,17 +4,28 @@ import { resolve } from "node:path";
 const dist = resolve(import.meta.dirname, "..", "dist");
 const index = resolve(dist, "index.html");
 const callbackDirectory = resolve(dist, "auth", "mdbase", "callback");
-const embedDirectory = resolve(dist, "embed");
+const staticRouteDirectories = [
+  "embed",
+  "more",
+  "scratchpad",
+  "search",
+  "views",
+].map((route) => resolve(dist, route));
 
 await Promise.all([
   mkdir(callbackDirectory, { recursive: true }),
-  mkdir(embedDirectory, { recursive: true }),
+  ...staticRouteDirectories.map((directory) =>
+    mkdir(directory, { recursive: true }),
+  ),
 ]);
 await Promise.all([
   copyFile(index, resolve(dist, "404.html")),
   copyFile(index, resolve(dist, "auth", "mdbase", "callback.html")),
   copyFile(index, resolve(callbackDirectory, "index.html")),
-  copyFile(index, resolve(embedDirectory, "index.html")),
+  ...staticRouteDirectories.map((directory) =>
+    copyFile(index, resolve(directory, "index.html")),
+  ),
+  writeFile(resolve(dist, "_redirects"), "/* /index.html 200\n"),
 ]);
 
 const offlineAssets = (await listFiles(dist))

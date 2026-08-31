@@ -18,7 +18,19 @@ import type {
   SaveScratchpadInput,
   ScratchpadArchiveResult,
   ScratchpadDocument,
+  ScratchpadPage,
+  ScratchpadPageRequest,
+  StartNewScratchpadInput,
+  StartNewScratchpadResult,
 } from "../../domain/scratchpad";
+import type {
+  ScratchFeedPage,
+  ScratchFeedPageRequest,
+} from "../../domain/scratch-feed";
+import type {
+  CreateScratchImageInput,
+  ScratchImage,
+} from "../../domain/scratch-image";
 import type {
   FieldCompletion,
   FieldCompletionRequest,
@@ -76,9 +88,23 @@ export interface TaskRepository {
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument>;
   deleteViewSource(path: string, ifRevision?: string): Promise<void>;
-  /** Typed collection document used by the first-class Scratchpad view. */
+  /** Mixed Scratchpad history; the sole current note is returned separately. */
+  listScratchFeed?(request?: ScratchFeedPageRequest): Promise<ScratchFeedPage>;
+  createScratchImage?(input: CreateScratchImageInput): Promise<ScratchImage>;
+  getScratchImage?(id: string, path?: string): Promise<ScratchImage | null>;
+  /** Removes metadata membership only. Binary bytes are deliberately retained. */
+  removeScratchImage?(
+    image: Pick<ScratchImage, "id" | "path" | "revision">,
+  ): Promise<void>;
+  /** @deprecated Compatibility projection used by older clients. */
+  listScratchpads?(request?: ScratchpadPageRequest): Promise<ScratchpadPage>;
+  getScratchpad?(id: string): Promise<ScratchpadDocument | null>;
   getActiveScratchpad?(): Promise<ScratchpadDocument>;
   saveScratchpad?(input: SaveScratchpadInput): Promise<ScratchpadDocument>;
+  startNewScratchpad?(
+    input: StartNewScratchpadInput,
+  ): Promise<StartNewScratchpadResult>;
+  /** @deprecated Compatibility alias for startNewScratchpad. */
   archiveScratchpad?(
     input: ArchiveScratchpadInput,
   ): Promise<ScratchpadArchiveResult>;

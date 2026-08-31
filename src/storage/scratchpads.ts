@@ -1,6 +1,6 @@
 import {
-  ACTIVE_SCRATCHPAD_PATH,
   SCRATCHPAD_TYPE,
+  scratchpadDocumentPath,
   type ScratchpadDocument,
   type ScratchpadState,
 } from "../domain/scratchpad";
@@ -47,11 +47,12 @@ export function newScratchpadValues(now = new Date().toISOString()): {
   frontmatter: Record<string, unknown>;
   body: string;
 } {
+  const id = crypto.randomUUID();
   return {
-    path: ACTIVE_SCRATCHPAD_PATH,
+    path: scratchpadDocumentPath(new Date(now), id),
     frontmatter: {
       type: SCRATCHPAD_TYPE,
-      id: crypto.randomUUID(),
+      id,
       state: "active",
       dateCreated: now,
       dateModified: now,
@@ -70,11 +71,13 @@ export function scratchpadFrontmatter(
   },
 ): Record<string, unknown> {
   const state = input.state ?? current.state;
+  const title =
+    input.title === undefined ? current.title?.trim() : input.title.trim();
   return {
     type: SCRATCHPAD_TYPE,
     id: current.id,
     state,
-    ...(input.title?.trim() ? { title: input.title.trim() } : {}),
+    ...(title !== undefined ? { title } : {}),
     dateCreated: current.dateCreated,
     dateModified: input.dateModified,
     ...(input.dateConverted ? { dateConverted: input.dateConverted } : {}),
@@ -96,7 +99,7 @@ export function activeScratchpad(
 
 export function assertScratchpadRevision(
   current: ScratchpadDocument,
-  input: { id: string; revision: string },
+  input: { id: string; path?: string; revision: string },
 ): void {
   assertScratchpadIdentity(current, input);
   if (input.revision !== current.revision)
@@ -107,12 +110,15 @@ export function assertScratchpadRevision(
 
 function assertScratchpadIdentity(
   current: ScratchpadDocument,
-  input: { id: string },
+  input: { id: string; path?: string },
 ): void {
-  if (current.id !== input.id)
-    throw new Error("The active scratchpad changed. Reload it before saving.");
+  if (current.id !== input.id || (input.path && current.path !== input.path))
+    throw new Error("This scratchpad changed. Reload it before saving.");
+}
+
+export function assertActiveScratchpad(current: ScratchpadDocument): void {
   if (current.state !== "active")
-    throw new Error("An archived scratchpad cannot be changed here.");
+    throw new Error("Only the current scratchpad can start a new one.");
 }
 
 /**

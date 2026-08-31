@@ -220,9 +220,9 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
   await expect(
     page.getByRole("textbox", { name: "Draft task: Parent task" }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Keep as note" })).toHaveCount(
-    3,
-  );
+  await expect(
+    page.getByRole("button", { name: /Convert .* to note/ }),
+  ).toHaveCount(4);
   await expect(page.getByRole("button", { name: "Make a task" })).toHaveCount(
     1,
   );
@@ -246,8 +246,8 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
     ).toBeVisible();
   }
 
-  await page.getByRole("button", { name: "Review tasks" }).click();
-  const review = page.getByRole("dialog", { name: "Review task drafts" });
+  await page.getByRole("button", { name: "Create task notes" }).click();
+  const review = page.getByRole("dialog", { name: "Create task notes" });
   await expect(review).toContainText("3 of 3 selected");
   await page.getByRole("checkbox", { name: "Child task" }).uncheck();
   await expect(review).toContainText("2 of 3 selected");
@@ -258,13 +258,10 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
     .click();
   await expect(review).toContainText("2 of 3 selected");
   await page.getByRole("button", { name: "Keep writing" }).click();
-  await page.getByRole("button", { name: "More scratchpad actions" }).click();
-  await page.getByRole("menuitem", { name: "Archive and start new" }).click();
-  const archive = page.getByRole("dialog", { name: "Archive and start new?" });
-  await expect(archive).toContainText(
-    "3 draft items will remain only in the archived outline",
-  );
-  await expect(archive).toContainText("No tasks will be created");
+  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "More scratchpad actions" }),
+  ).toHaveCount(0);
 });
 
 async function openNavigationItem(page: Page, name: string): Promise<void> {

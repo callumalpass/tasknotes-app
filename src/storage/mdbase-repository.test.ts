@@ -3,6 +3,10 @@ import { connectFailure, connectSuccess } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "../domain/task";
+import {
+  moveCalendarTimeEntry,
+  resizeCalendarTimeEntry,
+} from "../domain/calendar-time-entries";
 import { runtimeTimezone } from "../domain/runtime-timezone";
 import { createConnectTaskRepository } from "./connect-repository";
 import { MdbaseTaskRepository } from "./mdbase-repository";
@@ -667,6 +671,177 @@ describe("mdbase task repository", () => {
     expect(
       fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2", "r3", "r4"]);
+  });
+
+  it("TEMP-QA-calendar-time-entry-stale-snapshot-concurrency-20260824", async () => {
+    const a = {
+      startTime: "2026-08-24T08:00:00Z",
+      endTime: "2026-08-24T09:00:00Z",
+      description: "A",
+    };
+    const b = {
+      startTime: "2026-08-24T10:00:00Z",
+      endTime: "2026-08-24T11:00:00Z",
+      description: "B",
+    };
+    const c = {
+      startTime: "2026-08-24T12:00:00Z",
+      endTime: "2026-08-24T13:00:00Z",
+      description: "C",
+    };
+    const movedB = {
+      ...b,
+      startTime: "2026-08-24T14:00:00Z",
+      endTime: "2026-08-24T15:00:00Z",
+    };
+    async function scenario() {
+      const record = taskRecord(
+        "calendar-concurrency",
+        "Calendar concurrency",
+        "r1",
+      );
+      record.frontmatter.time_entries = structuredClone([
+        a,
+        b,
+      ]) as JsonObject["x"];
+      const fixture = mdbaseFixture([record]);
+      const repository = new MdbaseTaskRepository(fixture.connect);
+      await repository.initialize();
+      return {
+        fixture,
+        repository,
+        snapshot: (await repository.get("calendar-concurrency"))!,
+      };
+    }
+    async function canonical(repository: MdbaseTaskRepository) {
+      await repository.refresh();
+      return (await repository.get("calendar-concurrency"))!.timeEntries;
+    }
+
+    // No concurrency: the requested session alone moves exactly.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.replaceTimeEntries(
+        snapshot.id,
+        moveCalendarTimeEntry(
+          snapshot.timeEntries,
+          1,
+          new Date(movedB.startTime),
+          new Date(movedB.endTime),
+        ),
+      );
+      expect(await canonical(repository)).toEqual([a, movedB]);
+    }
+
+    // A same-repository concurrent append advances the cached revision; the stale full array still wins.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.replaceTimeEntries(snapshot.id, [
+        ...snapshot.timeEntries,
+        c,
+      ]);
+      await repository.replaceTimeEntries(
+        snapshot.id,
+        moveCalendarTimeEntry(
+          snapshot.timeEntries,
+          1,
+          new Date(movedB.startTime),
+          new Date(movedB.endTime),
+        ),
+      );
+      expect(await canonical(repository)).toEqual([a, movedB]);
+    }
+
+    // Removing the entry before the calendar's index is silently undone by the stale replacement.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.removeTimeEntry(snapshot.id, 0);
+      await repository.replaceTimeEntries(
+        snapshot.id,
+        resizeCalendarTimeEntry(
+          snapshot.timeEntries,
+          1,
+          new Date("2026-08-24T11:30:00Z"),
+        ),
+      );
+      expect(await canonical(repository)).toEqual([
+        a,
+        { ...b, endTime: "2026-08-24T11:30:00Z" },
+      ]);
+    }
+
+    // Unrelated frontmatter survives because persistence emits a patch against the current task.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.update(snapshot.id, { priority: "high" });
+      await repository.replaceTimeEntries(
+        snapshot.id,
+        moveCalendarTimeEntry(
+          snapshot.timeEntries,
+          1,
+          new Date(movedB.startTime),
+          new Date(movedB.endTime),
+        ),
+      );
+      expect((await repository.get(snapshot.id))?.priority).toBe("high");
+    }
+
+    // A concurrent edit to the target is neither merged nor rejected; it is overwritten.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.replaceTimeEntries(snapshot.id, [
+        a,
+        { ...b, description: "B concurrently edited" },
+      ]);
+      await repository.replaceTimeEntries(
+        snapshot.id,
+        moveCalendarTimeEntry(
+          snapshot.timeEntries,
+          1,
+          new Date(movedB.startTime),
+          new Date(movedB.endTime),
+        ),
+      );
+      expect(await canonical(repository)).toEqual([a, movedB]);
+    }
+
+    // A truly stale authority revision, unlike stale calendar data with a fresh cache revision, is rejected.
+    {
+      const { fixture, repository, snapshot } = await scenario();
+      await fixture.connect.update({
+        path: snapshot.path,
+        patch: { priority: "high" },
+        ifRevision: "r1",
+      });
+      await expect(
+        repository.replaceTimeEntries(snapshot.id, [a, movedB]),
+      ).rejects.toThrow(/Revision conflict/);
+      expect(
+        fixture.records.get(snapshot.path)?.frontmatter.time_entries,
+      ).toEqual([a, b]);
+    }
+
+    // A refreshed calendar snapshot preserves the concurrent append and edits only B.
+    {
+      const { repository, snapshot } = await scenario();
+      await repository.replaceTimeEntries(snapshot.id, [
+        ...snapshot.timeEntries,
+        c,
+      ]);
+      const refreshed = (await repository.get(snapshot.id))!;
+      await repository.replaceTimeEntries(
+        refreshed.id,
+        moveCalendarTimeEntry(
+          refreshed.timeEntries,
+          1,
+          new Date(movedB.startTime),
+          new Date(movedB.endTime),
+        ),
+      );
+      const final = await canonical(repository);
+      expect(final).toEqual([a, movedB, c]);
+      expect(final.filter(({ endTime }) => !endTime)).toHaveLength(0);
+    }
   });
 
   it("creates one durable relay occurrence and reconciles its parent", async () => {
