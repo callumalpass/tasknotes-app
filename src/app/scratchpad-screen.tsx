@@ -1460,35 +1460,48 @@ function ScratchpadDocumentEditor({
       if (!next || !link) return;
       const isExactLink = next.text.trim() === link;
       const taskId = isExactLink ? value.taskId : undefined;
-      changeNode(node.id, {
-        text: taskId ? value.label : next.text,
-        ...(isExactLink
-          ? taskId
-            ? {
-                kind: "task",
-                completed: false,
-                link,
-                taskId,
-              }
-            : {
-                kind: "note",
-                completed: false,
-                link: undefined,
-                taskId: undefined,
-              }
-          : {}),
-      });
-      if (taskId)
+      if (taskId) {
+        const created = createScratchNode("draft", node.depth);
+        const current = nodesRef.current;
+        const index = current.findIndex(
+          (candidate) => candidate.id === node.id,
+        );
+        updateNodes([
+          ...current.slice(0, index),
+          {
+            ...node,
+            kind: "task",
+            text: value.label,
+            completed: false,
+            link,
+            taskId,
+          },
+          created,
+          ...current.slice(index + 1),
+        ]);
+        focusAfterRender.current = { id: created.id, cursor: 0 };
         void repository.get(taskId).then((task) => {
           if (!task) return;
           setLinkedTasks((currentTasks) =>
             new Map(currentTasks).set(task.id, task),
           );
         });
-      setCursor(next.cursor);
-      setSuggestionState({ key: "", values: [] });
-      if (!taskId)
+      } else {
+        changeNode(node.id, {
+          text: next.text,
+          ...(isExactLink
+            ? {
+                kind: "note",
+                completed: false,
+                link: undefined,
+                taskId: undefined,
+              }
+            : {}),
+        });
         focusAfterRender.current = { id: node.id, cursor: next.cursor };
+      }
+      setCursor(taskId ? 0 : next.cursor);
+      setSuggestionState({ key: "", values: [] });
       return;
     }
     if (!activeCaptureSuggestionToken) return;

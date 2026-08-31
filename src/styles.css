@@ -4484,14 +4484,16 @@ html.scratchpad-route .page-surface {
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--paper-raised);
   color: var(--ink);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+  box-shadow: 0 10px 28px var(--color-shadow);
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul {
   max-height: min(320px, 42vh);
+  background: transparent;
   font-family: "Atkinson Hyperlegible", sans-serif;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li {
@@ -4500,6 +4502,11 @@ html.scratchpad-route .page-surface {
   align-content: center;
   gap: 2px;
   padding: 7px 12px;
+  color: var(--ink);
+}
+
+.markdown-source-editor .cm-tooltip-autocomplete > ul > li + li {
+  border-top: 1px solid var(--line);
 }
 
 .markdown-source-editor .cm-completionIcon {
@@ -4528,7 +4535,7 @@ html.scratchpad-route .page-surface {
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
-  background: color-mix(in srgb, var(--accent) 12%, var(--paper));
+  background: var(--accent-soft);
   color: var(--ink);
 }
 

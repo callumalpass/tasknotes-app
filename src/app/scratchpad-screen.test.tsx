@@ -341,6 +341,9 @@ describe("ScratchpadScreen", () => {
     expect(
       screen.queryByRole("textbox", { name: /Draft task: \[\[/ }),
     ).toBeNull();
+    expect(
+      screen.getByRole("textbox", { name: "Draft task: empty" }),
+    ).toHaveFocus();
     await waitFor(async () => {
       const body = (await repository.getActiveScratchpad()).body;
       expect(body).toMatch(/^- \[\[tasks\/.+\|Suggested task\]\]\n$/);

@@ -199,6 +199,9 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
       exact: true,
     }),
   ).toBeVisible();
+  await expect(
+    current.getByRole("textbox", { name: "Draft task: empty" }).last(),
+  ).toBeFocused();
 
   await current.getByRole("button", { name: "Markdown" }).click();
   const source = current.getByRole("textbox", {
@@ -337,6 +340,41 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
     punctuationUsesMutedInk: true,
     activeLineUsesSoftAccent: true,
     focusIsVisible: true,
+  });
+
+  await editor.fill("[[quarterly");
+  const option = current.getByRole("option", {
+    name: /Prepare quarterly planning session/,
+  });
+  await expect(option).toBeVisible();
+  const pickerTheme = await option.evaluate((item) => {
+    const tooltip = item.closest<HTMLElement>(".cm-tooltip-autocomplete")!;
+    const detail = item.querySelector<HTMLElement>(".cm-completionDetail")!;
+    const probe = document.createElement("div");
+    probe.style.backgroundColor = "var(--paper-raised)";
+    probe.style.borderColor = "var(--line-strong)";
+    probe.style.color = "var(--ink-muted)";
+    document.body.append(probe);
+    const expected = getComputedStyle(probe);
+    const values = {
+      raisedSurface:
+        getComputedStyle(tooltip).backgroundColor === expected.backgroundColor,
+      strongBorder:
+        getComputedStyle(tooltip).borderColor === expected.borderColor,
+      mutedPath: getComputedStyle(detail).color === expected.color,
+      selectedUsesAccent:
+        getComputedStyle(item).backgroundColor !== "rgba(0, 0, 0, 0)",
+      elevated: getComputedStyle(tooltip).boxShadow !== "none",
+    };
+    probe.remove();
+    return values;
+  });
+  expect(pickerTheme).toEqual({
+    raisedSurface: true,
+    strongBorder: true,
+    mutedPath: true,
+    selectedUsesAccent: true,
+    elevated: true,
   });
 });
 
