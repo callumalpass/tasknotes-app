@@ -1,3 +1,4 @@
+import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
 import { Compartment, EditorState } from "@codemirror/state";
@@ -5,6 +6,11 @@ import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup } from "codemirror";
 import { useEffect, useRef } from "react";
+
+import {
+  recordWikilinkCompletionSource,
+  type CompleteRecords,
+} from "./markdown-wikilink-completion";
 
 const scratchpadHighlightStyle = HighlightStyle.define([
   { tag: tags.heading, color: "var(--ink)", fontWeight: "700" },
@@ -101,11 +107,13 @@ function scratchpadEditorTheme(dark: boolean) {
 export function MarkdownSourceEditor({
   value,
   onChange,
+  completeRecords,
   ariaLabel,
   autoFocus = false,
 }: {
   value: string;
   onChange(value: string): void;
+  completeRecords?: CompleteRecords;
   ariaLabel: string;
   autoFocus?: boolean;
 }) {
@@ -113,13 +121,21 @@ export function MarkdownSourceEditor({
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
   const onChangeRef = useRef(onChange);
+  const completeRecordsRef = useRef(completeRecords);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
   useEffect(() => {
+    completeRecordsRef.current = completeRecords;
+  }, [completeRecords]);
+
+  useEffect(() => {
     if (!hostRef.current) return;
+    const completionSource = recordWikilinkCompletionSource(
+      () => completeRecordsRef.current,
+    );
     const theme = new Compartment();
     let dark = isDarkAppearance();
     const view = new EditorView({
@@ -129,6 +145,10 @@ export function MarkdownSourceEditor({
         extensions: [
           basicSetup,
           markdown(),
+          autocompletion({
+            activateOnTyping: true,
+            override: [completionSource],
+          }),
           syntaxHighlighting(scratchpadHighlightStyle),
           theme.of(scratchpadEditorTheme(dark)),
           EditorView.lineWrapping,

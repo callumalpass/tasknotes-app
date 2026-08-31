@@ -47,7 +47,16 @@ import {
   captureTriggers,
   configuredCaptureSuggestions,
 } from "../domain/capture-autosuggest";
-import { recordCompletion, recordMatchesLink } from "../domain/completion";
+import {
+  linkTarget,
+  recordCompletion,
+  recordMatchesLink,
+} from "../domain/completion";
+import {
+  activeRecordWikilink,
+  applyRecordWikilinkCompletion,
+  recordWikilinkCompletionRequest,
+} from "../domain/record-wikilink-completion";
 import {
   changeScratchDepth,
   createScratchNode,
@@ -73,7 +82,10 @@ import {
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
 
-import type { FieldCompletion } from "../domain/completion";
+import type {
+  FieldCompletion,
+  FieldCompletionRequest,
+} from "../domain/completion";
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
 import type { ScratchFeedItem } from "../domain/scratch-feed";
@@ -1038,6 +1050,7 @@ function ScratchpadDocumentEditor({
   const documentRef = useRef<ScratchpadDocument | null>(null);
   const nodesRef = useRef<ScratchNode[]>([]);
   const sourceRef = useRef(initialDocument.body);
+  const sourceEditVersion = useRef(0);
   const titleRef = useRef(initialDocument.title ?? "");
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const editorModeRef = useRef<"outline" | "markdown">(editorMode);
@@ -1058,18 +1071,14 @@ function ScratchpadDocumentEditor({
     try {
       const next = initialDocumentRef.current;
       const parsed = parseScratchBody(next.body);
-      const tasks = parsed.some((node) => node.kind === "task")
+      const tasks = parsed.some((node) => node.link)
         ? await repository.list({
             status: "all",
             archived: "include",
             limit: 50_000,
           })
         : [];
-      const hydrated = hydrateLinkedNodes(
-        parsed,
-        tasks,
-        configuration.linkWriteFormat,
-      );
+      const hydrated = hydrateLinkedNodes(parsed, tasks);
       const visible = [...hydrated];
       const last = visible.at(-1);
       if (!last || last.kind === "task" || last.text.trim())
@@ -1092,7 +1101,7 @@ function ScratchpadDocumentEditor({
     } finally {
       setLoading(false);
     }
-  }, [configuration.linkWriteFormat, repository]);
+  }, [repository]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void load(), 0);
@@ -1153,6 +1162,15 @@ function ScratchpadDocumentEditor({
     (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
     [persistBody],
   );
+  const completeRecords = useCallback(
+    (request: FieldCompletionRequest) => repository.completeField(request),
+    [repository],
+  );
+  const changeSource = useCallback((nextSource: string) => {
+    sourceEditVersion.current += 1;
+    sourceRef.current = nextSource;
+    setSource(nextSource);
+  }, []);
 
   const flush = useCallback(
     () =>
@@ -1276,30 +1294,44 @@ function ScratchpadDocumentEditor({
   }, [nodes]);
 
   const activeNode = nodes.find((node) => node.id === activeId);
+  const recordWikilinkToken = useMemo(
+    () =>
+      activeNode && activeNode.kind !== "task"
+        ? activeRecordWikilink(activeNode.text, cursor)
+        : undefined,
+    [activeNode, cursor],
+  );
   const triggers = useMemo(
     () => captureTriggers(configuration),
     [configuration],
   );
-  const activeToken = useMemo(
+  const activeCaptureSuggestionToken = useMemo(
     () =>
-      activeNode?.kind === "draft"
+      !recordWikilinkToken && activeNode?.kind === "draft"
         ? activeCaptureToken(activeNode.text, cursor, triggers)
         : undefined,
-    [activeNode, cursor, triggers],
+    [activeNode, cursor, recordWikilinkToken, triggers],
   );
   const suggestionRequest = useMemo(
     () =>
-      activeToken
-        ? captureSuggestionRequest(activeToken, configuration)
-        : undefined,
-    [activeToken, configuration],
+      recordWikilinkToken
+        ? recordWikilinkCompletionRequest(recordWikilinkToken)
+        : activeCaptureSuggestionToken
+          ? captureSuggestionRequest(
+              activeCaptureSuggestionToken,
+              configuration,
+            )
+          : undefined,
+    [activeCaptureSuggestionToken, configuration, recordWikilinkToken],
   );
   const suggestionKey = suggestionRequest
     ? [
         activeId,
         suggestionRequest.field,
         suggestionRequest.query ?? "",
-        activeToken?.start ?? 0,
+        recordWikilinkToken
+          ? `wikilink:${recordWikilinkToken.from}`
+          : `capture:${activeCaptureSuggestionToken?.start ?? 0}`,
       ].join("\0")
     : "";
   const suggestions =
@@ -1308,7 +1340,9 @@ function ScratchpadDocumentEditor({
   useEffect(() => {
     if (!suggestionRequest || !suggestionKey) return;
     let active = true;
-    const fallback = configuredCaptureSuggestions(suggestionRequest);
+    const fallback = recordWikilinkToken
+      ? []
+      : configuredCaptureSuggestions(suggestionRequest);
     void repository.completeField(suggestionRequest).then(
       (values) => {
         if (!active) return;
@@ -1326,7 +1360,7 @@ function ScratchpadDocumentEditor({
     return () => {
       active = false;
     };
-  }, [repository, suggestionKey, suggestionRequest]);
+  }, [recordWikilinkToken, repository, suggestionKey, suggestionRequest]);
 
   useEffect(() => {
     if (!activeNode || activeNode.kind !== "draft" || !activeNode.text.trim())
@@ -1368,8 +1402,17 @@ function ScratchpadDocumentEditor({
     const node = nodesRef.current.find(
       (candidate) => candidate.id === activeId,
     );
-    if (!node || !activeToken) return;
-    const next = applyCaptureSuggestion(node.text, activeToken, value.value);
+    if (!node) return;
+    const next = recordWikilinkToken
+      ? applyRecordWikilinkCompletion(node.text, recordWikilinkToken, value)
+      : activeCaptureSuggestionToken
+        ? applyCaptureSuggestion(
+            node.text,
+            activeCaptureSuggestionToken,
+            value.value,
+          )
+        : undefined;
+    if (!next) return;
     changeNode(node.id, { text: next.text });
     setCursor(next.cursor);
     setSuggestionState({ key: "", values: [] });
@@ -1735,7 +1778,9 @@ function ScratchpadDocumentEditor({
         return;
       }
 
-      const latest = await persistBody(sourceRef.current);
+      const transitionSource = sourceRef.current;
+      const transitionVersion = sourceEditVersion.current;
+      const latest = await persistBody(transitionSource);
       if (!isOutlineCompatible(latest.body)) {
         setError(
           "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown.",
@@ -1743,12 +1788,24 @@ function ScratchpadDocumentEditor({
         return;
       }
       const parsed = parseScratchBody(latest.body);
-      const last = parsed.at(-1);
+      const tasks = parsed.some((node) => node.link)
+        ? await repository.list({
+            status: "all",
+            archived: "include",
+            limit: 50_000,
+          })
+        : [];
+      const hydrated = hydrateLinkedNodes(parsed, tasks);
+      // Completion lookup may be remote. Keep Markdown mode if the user typed
+      // while it was in flight rather than replacing newer text with this snapshot.
+      if (sourceEditVersion.current !== transitionVersion) return;
+      const last = hydrated.at(-1);
       if (!last || last.kind === "task" || last.text.trim())
-        parsed.push(createScratchNode());
-      nodesRef.current = parsed;
+        hydrated.push(createScratchNode());
+      nodesRef.current = hydrated;
       editorModeRef.current = "outline";
-      setNodes(parsed);
+      setLinkedTasks(new Map(tasks.map((task) => [task.id, task])));
+      setNodes(hydrated);
       setEditorMode("outline");
     } catch (reason) {
       setError(message(reason));
@@ -1916,8 +1973,9 @@ function ScratchpadDocumentEditor({
           <MarkdownSourceEditor
             ariaLabel="Scratchpad Markdown"
             autoFocus={isCurrent}
+            completeRecords={completeRecords}
             value={source}
-            onChange={setSource}
+            onChange={changeSource}
           />
         </Suspense>
       ) : (
@@ -1936,6 +1994,9 @@ function ScratchpadDocumentEditor({
                 : [];
             const dropTarget =
               drag?.targetId === node.id ? drag.placement : undefined;
+            const suggestionListId = `scratchpad-suggestions-${document?.id ?? initialDocument.id}-${node.id}`;
+            const suggestionsOpen =
+              activeId === node.id && suggestions.length > 0;
             return (
               <div
                 className={`scratchpad-row kind-${node.kind}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
@@ -2044,6 +2105,16 @@ function ScratchpadDocumentEditor({
                     </button>
                   ) : (
                     <input
+                      aria-activedescendant={
+                        suggestionsOpen
+                          ? `${suggestionListId}-${selectedSuggestion}`
+                          : undefined
+                      }
+                      aria-autocomplete="list"
+                      aria-controls={
+                        suggestionsOpen ? suggestionListId : undefined
+                      }
+                      aria-expanded={suggestionsOpen}
                       aria-label={`${node.kind === "draft" ? "Draft task" : "Note"}: ${node.text || "empty"}`}
                       autoComplete="off"
                       data-scratch-input={`${document?.id ?? initialDocument.id}:${node.id}`}
@@ -2172,9 +2243,10 @@ function ScratchpadDocumentEditor({
                     </button>
                   </div>
                 ) : null}
-                {activeId === node.id && suggestions.length ? (
+                {suggestionsOpen ? (
                   <div
                     className="scratchpad-suggestions"
+                    id={suggestionListId}
                     role="listbox"
                     aria-label="Suggestions"
                   >
@@ -2186,6 +2258,7 @@ function ScratchpadDocumentEditor({
                             ? "is-selected"
                             : undefined
                         }
+                        id={`${suggestionListId}-${index}`}
                         key={`${suggestion.kind}:${suggestion.value}`}
                         role="option"
                         type="button"
@@ -2519,27 +2592,29 @@ function scratchBody(nodes: readonly ScratchNode[]): string {
 function hydrateLinkedNodes(
   nodes: readonly ScratchNode[],
   tasks: readonly Task[],
-  linkWriteFormat: "wikilink" | "markdown",
 ): ScratchNode[] {
   return nodes.map((node) => {
-    if (node.kind !== "task" || !node.link) return node;
-    const task = tasks.find((candidate) =>
-      recordMatchesLink(candidate.path, node.link!),
+    if (!node.link) return node;
+    const target = linkTarget(node.link).toLocaleLowerCase();
+    const task = tasks.find(
+      (candidate) => linkTarget(candidate.path).toLocaleLowerCase() === target,
     );
-    if (!task) return node;
+    if (!task)
+      return {
+        ...node,
+        kind: "note" as const,
+        text: node.link,
+        link: undefined,
+        taskId: undefined,
+      };
     return {
       ...node,
+      kind: "task" as const,
       text: task.title,
       taskId: task.id,
-      link: recordCompletion(
-        {
-          path: task.path,
-          label: task.title,
-          frontmatter: task.frontmatter,
-          types: ["task"],
-        },
-        linkWriteFormat,
-      ).value,
+      // Preserve exact syntax, alias, and fragment. The resolved path only
+      // controls whether this outline row receives linked-task behavior.
+      link: node.link,
     };
   });
 }

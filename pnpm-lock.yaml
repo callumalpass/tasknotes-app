@@ -30,6 +30,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.4.2)
+      '@codemirror/autocomplete':
+        specifier: 6.20.3
+        version: 6.20.3
       '@codemirror/lang-markdown':
         specifier: ^6.5.2
         version: 6.5.2

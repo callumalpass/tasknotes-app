@@ -83,7 +83,11 @@ describe("scratchpad Markdown outline", () => {
     ).toEqual([
       { kind: "draft", depth: 0, text: "Plan launch tomorrow 9am" },
       { kind: "note", depth: 1, text: "Keep the announcement concise" },
-      { kind: "task", depth: 1, text: "Write the brief" },
+      {
+        kind: "note",
+        depth: 1,
+        text: "[[tasks/brief|Write the brief]]",
+      },
       { kind: "draft", depth: 0, text: "Book the venue" },
     ]);
     expect(serializeScratchNodes(nodes)).toBe(source);
