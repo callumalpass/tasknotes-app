@@ -36,6 +36,9 @@ importers:
       '@codemirror/lang-markdown':
         specifier: ^6.5.2
         version: 6.5.2
+      '@codemirror/language':
+        specifier: ^6.12.4
+        version: 6.12.4
       '@codemirror/state':
         specifier: ^6.7.1
         version: 6.7.1
@@ -66,6 +69,9 @@ importers:
       '@fullcalendar/timegrid':
         specifier: 6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)
+      '@lezer/highlight':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@mdbase-dev/connect':
         specifier: file:vendor/mdbase-dev-connect-0.1.0-beta.85-61daa25dfbb6.tgz
         version: file:vendor/mdbase-dev-connect-0.1.0-beta.85-61daa25dfbb6.tgz
