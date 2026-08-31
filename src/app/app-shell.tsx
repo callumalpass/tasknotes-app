@@ -975,6 +975,7 @@ function appPathname(): string {
   let path = window.location.pathname;
   if (base && path.startsWith(base)) path = path.slice(base.length) || "/";
   if (isEmbeddedDemoPath(path)) path = path.slice("/embed".length) || "/";
+  if (path.length > 1) path = path.replace(/\/+$/u, "");
   return path;
 }
 
