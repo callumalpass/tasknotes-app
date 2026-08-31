@@ -158,20 +158,40 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
     name: /Prepare quarterly planning session/,
   });
   await expect(outlineOption).toBeVisible();
+  const outlineLabel = await outlineOption.locator("span").boundingBox();
+  const outlinePath = await outlineOption.locator("small").boundingBox();
+  expect(outlinePath?.y).toBeGreaterThan(outlineLabel?.y ?? Infinity);
   await outlineOption.click();
-  await expect(outlineInput).toHaveValue(
-    /\[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
-  );
+  await expect(
+    current.getByRole("button", {
+      name: "Prepare quarterly planning session",
+      exact: true,
+    }),
+  ).toBeVisible();
 
   await current.getByRole("button", { name: "Markdown" }).click();
   const source = current.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
+  await expect(source).toContainText(
+    /- \[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
+  );
+  await expect(source).not.toContainText(
+    /\[ \] \[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
+  );
   await source.fill("[[quarterly");
   const markdownOption = current.getByRole("option", {
     name: /Prepare quarterly planning session/,
   });
   await expect(markdownOption).toBeVisible();
+  await expect(markdownOption.locator(".cm-completionIcon")).toBeHidden();
+  const markdownLabel = await markdownOption
+    .locator(".cm-completionLabel")
+    .boundingBox();
+  const markdownPath = await markdownOption
+    .locator(".cm-completionDetail")
+    .boundingBox();
+  expect(markdownPath?.y).toBeGreaterThan(markdownLabel?.y ?? Infinity);
   await markdownOption.click();
   await expect(source).toHaveText(
     /\[\[tasks\/.*\|Prepare quarterly planning session\]\]/,

@@ -4489,10 +4489,36 @@ html.scratchpad-route .page-surface {
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  padding: 8px 12px;
+  display: grid;
+  min-height: 54px;
+  align-content: center;
+  gap: 2px;
+  padding: 7px 12px;
+}
+
+.markdown-source-editor .cm-completionIcon {
+  display: none;
+}
+
+.markdown-source-editor .cm-completionLabel,
+.markdown-source-editor .cm-completionDetail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown-source-editor .cm-completionLabel {
+  color: var(--ink);
+  font-size: var(--type-body);
+}
+
+.markdown-source-editor .cm-completionDetail {
+  margin-left: 0;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+  font-style: normal;
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
@@ -4965,8 +4991,31 @@ html.scratchpad-route .page-surface {
   border-radius: var(--radius-control);
 }
 
+.scratchpad-suggestions {
+  right: 0;
+  width: min(360px, calc(100vw - 40px));
+}
+
 .scratchpad-suggestions button {
-  justify-content: space-between;
+  min-height: 54px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.scratchpad-suggestions button > span,
+.scratchpad-suggestions button > small {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scratchpad-suggestions button > span {
+  font-size: var(--type-body);
+  line-height: 1.25;
 }
 
 .scratchpad-suggestions button.is-selected,
