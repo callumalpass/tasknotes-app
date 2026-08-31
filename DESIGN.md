@@ -149,10 +149,33 @@ Today             Search       More
 - Mobile bottom navigation shows the first three configured destinations beside
   Views and Settings. The Views catalog pins and orders Search, Scratchpad, and
   saved views through the same navigation model.
-- Scratchpad separates task creation from outline lifecycle. Review tasks opens
-  a selective checklist and converts only chosen drafts in place; Archive and
-  start new preserves the exact outline without creating tasks.
-- Scratchpad rows name their state as Task, Note, or Linked. Nested branches can
+- Scratchpad separates task creation from outline lifecycle. A compact contextual
+  header leaves most of the viewport to the notes. The current capture target is
+  the final card in the same fixed-height scrolling feed as older items. The
+  wide feed keeps its scrollbar at the page edge while centering spacious note
+  cards. It opens at the bottom; scrolling up reveals history, and loading older
+  items preserves the visible position. Each file is a lightweight note card;
+  this boundary stays stronger than the rules between rows inside it. Explanatory
+  chrome and separate Add task/Add note buttons are omitted: the trailing outline
+  row is the capture affordance. Every card can switch between the structured
+  Outline editor and its exact Markdown source through compact named icon
+  controls. Older documents load explicitly, expand into the full editor, and
+  may remain open together. Create task notes converts only chosen drafts in
+  place; New note preserves the exact current outline without creating tasks.
+  Safe raster images added through the compact capture panel, feed-wide drop
+  target, file picker, mobile camera picker, or clipboard become independent
+  feed cards even when an editor is focused. Image cards resolve lazily, can
+  collapse to a dated summary, and removing one keeps its collection file.
+  Collection-scoped local UI preferences retain expanded historical notes and
+  collapsed images across reloads and New note transitions. Opening Scratchpad
+  or starting a new note focuses its trailing current capture row. Expanded
+  images are centered without enlarging small source images. Outline menus may
+  escape card borders instead of being clipped and open upward when the lower
+  feed or viewport edge leaves insufficient room.
+- Scratchpad draft-task rows use toggleable portable Markdown checkboxes and
+  reveal a direct task-to-note control with the row actions; checked drafts
+  convert into the collection's first completed status. Linked rows expose the
+  same task-actions menu used by task lists. Nested branches can
   collapse, and focused mobile rows expose outdent, indent, and add-child
   controls without dismissing the keyboard.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
