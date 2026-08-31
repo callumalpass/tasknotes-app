@@ -178,6 +178,52 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
   );
 });
 
+test("presents recognized outline details as quiet aligned metadata", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current
+    .getByRole("textbox", { name: "Draft task: empty" })
+    .last();
+  await input.fill("Call Alex tomorrow at 3pm !high please");
+
+  const preview = current.getByLabel("Recognized task details");
+  await expect(preview).toHaveAttribute("aria-live", "polite");
+  await expect(preview.locator("span")).toHaveCount(2);
+  const presentation = await preview.evaluate((element) => {
+    const details = element.firstElementChild as HTMLElement;
+    const firstItem = details.firstElementChild as HTMLElement;
+    const input = element.previousElementSibling?.querySelector("input");
+    const detailBounds = details.getBoundingClientRect();
+    const inputBounds = input?.getBoundingClientRect();
+    const itemStyle = getComputedStyle(firstItem);
+    const rootStyle = getComputedStyle(document.documentElement);
+    const probe = document.createElement("span");
+    probe.style.color = rootStyle.getPropertyValue("--ink-muted");
+    document.body.append(probe);
+    const mutedColor = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      alignedWithInput:
+        Boolean(inputBounds) &&
+        Math.abs(detailBounds.left - inputBounds!.left) <= 1,
+      transparentItems: itemStyle.backgroundColor === "rgba(0, 0, 0, 0)",
+      borderlessItems: itemStyle.borderTopWidth === "0px",
+      usesMutedInk: itemStyle.color === mutedColor,
+    };
+  });
+  expect(presentation).toEqual({
+    alignedWithInput: true,
+    transparentItems: true,
+    borderlessItems: true,
+    usesMutedInk: true,
+  });
+});
+
 test("uses dark theme tokens throughout the Scratchpad editor", async ({
   page,
 }) => {
