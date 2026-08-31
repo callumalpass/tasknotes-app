@@ -14,7 +14,7 @@ matters today, and update its state without understanding storage architecture.
 
 ## Product Purpose
 
-TaskNotes provides one calm interface over hosted mdbase collections and
+TaskNotes provides one dependable interface over hosted mdbase collections and
 collections exposed by a connected computer. Tasks remain structured Markdown
 records. Web and native clients use the same direct, provider-neutral mdbase
 path.

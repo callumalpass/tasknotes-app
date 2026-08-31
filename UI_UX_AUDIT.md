@@ -2,7 +2,7 @@
 
 ## Product target
 
-TaskNotes already has a calm visual foundation, strong portable-Markdown
+TaskNotes already has a restrained visual foundation, strong portable-Markdown
 behavior, and unusually complete loading, error, sync, and empty states. The
 remaining gap to a Todoist-level experience is mostly hierarchy, trust, and
 interaction consistency rather than a new visual language.
@@ -204,7 +204,7 @@ the token system.
 
 ## Strengths to preserve
 
-- Calm, restrained typography and color with no decorative excess.
+- Restrained, legible typography and color with no decorative excess.
 - Fast inline capture with useful progressive disclosure.
 - Portable Markdown explained without dominating normal task work.
 - Strong loading, indexing, sync, conflict, save, error, and retry states.
