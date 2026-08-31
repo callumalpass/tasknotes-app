@@ -1,30 +1,40 @@
 import {
-  Archive,
+  Camera,
   Check,
+  FileCode2,
+  FileImage,
+  ImagePlus,
   ChevronDown,
   ChevronRight,
   CircleAlert,
   CornerDownRight,
   CornerUpLeft,
   FileCheck2,
-  FilePenLine,
   GripVertical,
   Link2,
   ListChecks,
   ListTodo,
+  ListTree,
   MoreHorizontal,
   Plus,
   RotateCcw,
+  Square,
+  SquareCheckBig,
   StickyNote,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
   useRef,
+  useLayoutEffect,
   useState,
+  type DragEvent as ReactDragEvent,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type CSSProperties,
@@ -46,12 +56,14 @@ import {
   parseScratchBody,
   removeScratchNode,
   scratchSubtreeEnd,
-  scratchpadTitle,
+  scratchpadPreview,
   serializeScratchNodes,
   visibleScratchNodes,
   type ScratchDropPlacement,
   type ScratchNode,
   type ScratchpadDocument,
+  type StartNewScratchpadInput,
+  type StartNewScratchpadResult,
 } from "../domain/scratchpad";
 import {
   parseTaskCapture,
@@ -63,6 +75,17 @@ import { useRepository } from "./repository-context";
 
 import type { FieldCompletion } from "../domain/completion";
 import type { Task } from "../domain/task";
+import type { TaskRepository } from "../application/ports/task-repository";
+import type { ScratchFeedItem } from "../domain/scratch-feed";
+import type { ScratchImage } from "../domain/scratch-image";
+import { scratchFeedKey } from "../domain/scratch-feed";
+import { ScratchImageService } from "../application/scratch-images/scratch-image-service";
+import { TaskActions } from "../components/task-actions";
+
+const MarkdownSourceEditor = lazy(async () => ({
+  default: (await import("../components/markdown-source-editor"))
+    .MarkdownSourceEditor,
+}));
 
 interface DragState {
   sourceId: string;
@@ -92,9 +115,894 @@ export function ScratchpadScreen({
 }: {
   onOpenTask(task: Task): void;
 }) {
+  const { repository } = useRepository();
+  const [currentDocument, setCurrentDocument] = useState<ScratchpadDocument>();
+  const [historyItems, setHistoryItems] = useState<ScratchFeedItem[]>([]);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [collapsedImageIds, setCollapsedImageIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [collapseStorageKey, setCollapseStorageKey] = useState<string>();
+  const [collapseStateLoaded, setCollapseStateLoaded] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string>();
+  const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [startingNew, setStartingNew] = useState(false);
+  const [imageCaptureOpen, setImageCaptureOpen] = useState(false);
+  const [addingImages, setAddingImages] = useState(false);
+  const [draggingImages, setDraggingImages] = useState(false);
+  const [error, setError] = useState("");
+  const [streamNotice, setStreamNotice] = useState("");
+  const flushers = useRef(new Map<string, () => Promise<unknown>>());
+  const imageActionRef = useRef<HTMLButtonElement | null>(null);
+  const historyRef = useRef<HTMLDivElement | null>(null);
+  const prependAnchor = useRef<
+    { height: number; top: number; wasAtBottom: boolean } | undefined
+  >(undefined);
+  const revealBottom = useRef(true);
+  const stickToBottom = useRef(true);
+  const touchY = useRef<number | undefined>(undefined);
+  const dragDepth = useRef(0);
+  const imageService = useMemo(
+    () => new ScratchImageService(repository),
+    [repository],
+  );
+
+  const loadHistory = useCallback(async () => {
+    if (!repository.listScratchFeed && !repository.listScratchpads) {
+      setHistoryLoaded(true);
+      return;
+    }
+    setLoadingHistory(true);
+    try {
+      let items: ScratchFeedItem[];
+      let cursor: string | undefined;
+      if (repository.listScratchFeed) {
+        const page = await repository.listScratchFeed();
+        items = page.items;
+        cursor = page.nextCursor;
+      } else {
+        const page = await repository.listScratchpads!();
+        const current = page.documents.find(
+          (document) => document.state === "active",
+        );
+        if (!current) throw new Error("The current scratchpad is unavailable.");
+        items = page.documents
+          .filter((document) => document.id !== current.id)
+          .map((document) => ({ kind: "scratchpad", ...document }));
+        cursor = undefined;
+      }
+      const history = historyRef.current;
+      if (history)
+        prependAnchor.current = {
+          height: history.scrollHeight,
+          top: history.scrollTop,
+          wasAtBottom:
+            history.scrollHeight - history.clientHeight - history.scrollTop <=
+            2,
+        };
+      setHistoryItems(items);
+      setNextCursor(cursor);
+      setHistoryLoaded(true);
+    } catch (reason) {
+      setError(`Previous notes could not be loaded. ${message(reason)}`);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [repository]);
+
+  const loadStream = useCallback(async () => {
+    if (
+      !repository.getActiveScratchpad &&
+      !repository.listScratchFeed &&
+      !repository.listScratchpads
+    ) {
+      setError("Scratchpad storage is not available for this collection.");
+      setLoading(false);
+      return;
+    }
+    try {
+      if (repository.getActiveScratchpad) {
+        const current = await repository.getActiveScratchpad();
+        setCurrentDocument(current);
+        setError("");
+        setLoading(false);
+        window.setTimeout(() => void loadHistory(), 0);
+        return;
+      }
+      if (repository.listScratchFeed) {
+        const page = await repository.listScratchFeed();
+        setCurrentDocument(page.current);
+        setHistoryItems(page.items);
+        setNextCursor(page.nextCursor);
+      } else {
+        const page = await repository.listScratchpads!();
+        const current = page.documents.find(
+          (document) => document.state === "active",
+        );
+        if (!current) throw new Error("The current scratchpad is unavailable.");
+        setCurrentDocument(current);
+        setHistoryItems(
+          page.documents
+            .filter((document) => document.id !== current.id)
+            .map((document) => ({ kind: "scratchpad", ...document })),
+        );
+        setNextCursor(undefined);
+      }
+      setHistoryLoaded(true);
+      setError("");
+    } catch (reason) {
+      setError(message(reason));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadHistory, repository]);
+
+  useEffect(() => {
+    globalThis.document.documentElement.classList.add("scratchpad-route");
+    return () =>
+      globalThis.document.documentElement.classList.remove("scratchpad-route");
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void repository
+      .collectionInfo()
+      .then((info) => {
+        if (!active) return;
+        const identity = info.id || info.location || info.name;
+        const key = `tasknotes:scratchpad-collapse:${identity}`;
+        const stored = readScratchpadCollapseState(key);
+        setExpandedIds(new Set(stored.expandedDocuments));
+        setCollapsedImageIds(new Set(stored.collapsedImages));
+        setCollapseStorageKey(key);
+        setCollapseStateLoaded(true);
+      })
+      .catch(() => {
+        if (active) setCollapseStateLoaded(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [repository]);
+
+  useEffect(() => {
+    if (!collapseStateLoaded || !collapseStorageKey) return;
+    try {
+      localStorage.setItem(
+        collapseStorageKey,
+        JSON.stringify({
+          expandedDocuments: [...expandedIds],
+          collapsedImages: [...collapsedImageIds],
+        }),
+      );
+    } catch {
+      // Collapse preferences are optional local UI state.
+    }
+  }, [collapseStateLoaded, collapseStorageKey, collapsedImageIds, expandedIds]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void loadStream(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadStream]);
+
+  async function toggleDocument(document: ScratchpadDocument) {
+    if (expandedIds.has(document.id)) {
+      try {
+        await flushers.current.get(document.id)?.();
+      } catch (reason) {
+        setError(message(reason));
+        return;
+      }
+      setExpandedIds((current) => {
+        const next = new Set(current);
+        next.delete(document.id);
+        return next;
+      });
+    } else {
+      setExpandedIds((current) => new Set(current).add(document.id));
+    }
+  }
+
+  async function startNew() {
+    const current = currentDocument;
+    if (
+      !current ||
+      startingNew ||
+      (!repository.startNewScratchpad && !repository.archiveScratchpad)
+    )
+      return;
+    setStartingNew(true);
+    setError("");
+    try {
+      const flushed = (await flushers.current.get(current.id)?.()) as
+        ScratchpadDocument | undefined;
+      const latest = flushed ?? current;
+      const result = await transitionToNewScratchpad(repository, {
+        id: latest.id,
+        path: latest.path,
+        revision: latest.revision,
+        baseBody: latest.body,
+        body: latest.body,
+      });
+      revealBottom.current = true;
+      setCurrentDocument(result.current);
+      setHistoryItems((existing) => [
+        { kind: "scratchpad", ...result.previous },
+        ...existing.filter((item) => item.id !== current.id),
+      ]);
+    } catch (reason) {
+      setError(message(reason));
+    } finally {
+      setStartingNew(false);
+    }
+  }
+
+  const historicalItems = [...historyItems].reverse();
+
+  useLayoutEffect(() => {
+    const element = historyRef.current;
+    if (!element) return;
+    const pending = prependAnchor.current;
+    if (pending) {
+      stickToBottom.current = pending.wasAtBottom;
+      element.scrollTop = pending.wasAtBottom
+        ? element.scrollHeight
+        : pending.top + element.scrollHeight - pending.height;
+      prependAnchor.current = undefined;
+      return;
+    }
+    if (revealBottom.current) {
+      stickToBottom.current = true;
+      element.scrollTop = element.scrollHeight;
+      revealBottom.current = false;
+    }
+  }, [currentDocument, historyItems]);
+
+  useLayoutEffect(() => {
+    const element = historyRef.current;
+    if (!element || loading) return;
+    const pinToBottom = () => {
+      if (stickToBottom.current) element.scrollTop = element.scrollHeight;
+    };
+    pinToBottom();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observed = new Set<Element>();
+    const resizeObserver = new ResizeObserver(pinToBottom);
+    resizeObserver.observe(element);
+    const observeChildren = () => {
+      for (const child of element.children) {
+        if (observed.has(child)) continue;
+        observed.add(child);
+        resizeObserver.observe(child);
+      }
+    };
+    observeChildren();
+    const mutationObserver = new MutationObserver(() => {
+      observeChildren();
+      pinToBottom();
+    });
+    mutationObserver.observe(element, { childList: true });
+    return () => {
+      mutationObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, [loading]);
+
+  const addImages = useCallback(
+    async (files: readonly File[]) => {
+      if (!files.length || addingImages) return;
+      setAddingImages(true);
+      setError("");
+      setStreamNotice(
+        files.length === 1 ? "Adding image…" : `Adding ${files.length} images…`,
+      );
+      const results = await Promise.allSettled(
+        files.map((file) => imageService.add(file)),
+      );
+      const created = results
+        .flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
+        )
+        .filter(
+          (image, index, images) =>
+            images.findIndex((candidate) => candidate.id === image.id) ===
+            index,
+        );
+      const failures = results.flatMap((result) =>
+        result.status === "rejected" ? [result.reason] : [],
+      );
+      if (created.length) {
+        revealBottom.current = true;
+        setHistoryItems((items) => [
+          ...created,
+          ...items.filter(
+            (item) => !created.some((image) => image.id === item.id),
+          ),
+        ]);
+      }
+      setStreamNotice(
+        created.length
+          ? created.length === 1
+            ? "Image added"
+            : `${created.length} images added`
+          : "",
+      );
+      if (failures.length) {
+        setImageCaptureOpen(true);
+        setError(
+          `${message(failures[0])}${created.length ? ` ${created.length} ${created.length === 1 ? "image was" : "images were"} added.` : ""}`,
+        );
+      } else if (created.length) {
+        setImageCaptureOpen(false);
+      }
+      setAddingImages(false);
+    },
+    [addingImages, imageService],
+  );
+
+  useEffect(() => {
+    if (!imageCaptureOpen) return;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setImageCaptureOpen(false);
+      imageActionRef.current?.focus();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [imageCaptureOpen]);
+
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      const images = [...(event.clipboardData?.items ?? [])]
+        .filter(
+          (item) => item.kind === "file" && item.type.startsWith("image/"),
+        )
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+      if (!images.length) return;
+      event.preventDefault();
+      void addImages(images);
+    };
+    const surface = historyRef.current?.closest(".scratchpad-screen");
+    surface?.addEventListener("paste", handlePaste as EventListener);
+    return () =>
+      surface?.removeEventListener("paste", handlePaste as EventListener);
+  }, [addImages, loading]);
+
+  function hasDraggedFiles(event: ReactDragEvent<HTMLElement>) {
+    return (
+      [...event.dataTransfer.items].some((item) => item.kind === "file") ||
+      [...event.dataTransfer.types].includes("Files")
+    );
+  }
+
+  function handleDragEnter(event: ReactDragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setDraggingImages(true);
+  }
+
+  function handleDragOver(event: ReactDragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(event: ReactDragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (!dragDepth.current) setDraggingImages(false);
+  }
+
+  function handleDrop(event: ReactDragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current = 0;
+    setDraggingImages(false);
+    void addImages([...event.dataTransfer.files]);
+  }
+
+  if (loading)
+    return (
+      <section className="screen scratchpad-screen" aria-busy="true">
+        <span className="visually-hidden" role="status">
+          Opening current note…
+        </span>
+      </section>
+    );
+
+  const editor = (document: ScratchpadDocument, isCurrent = false) => (
+    <ScratchpadDocumentEditor
+      key={document.id}
+      initialDocument={document}
+      isCurrent={isCurrent}
+      onOpenTask={onOpenTask}
+      onDocumentUpdated={(updated) => {
+        if (updated.id === currentDocument?.id) setCurrentDocument(updated);
+        else
+          setHistoryItems((items) =>
+            items.map((item) =>
+              item.kind === "scratchpad" && item.id === updated.id
+                ? { kind: "scratchpad", ...updated }
+                : item,
+            ),
+          );
+      }}
+      registerFlusher={(flush) => {
+        if (flush) flushers.current.set(document.id, flush);
+        else flushers.current.delete(document.id);
+      }}
+    />
+  );
+
+  return (
+    <section
+      className="screen scratchpad-screen"
+      aria-labelledby="scratchpad-stream-title"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {draggingImages ? (
+        <div className="scratchpad-drop-overlay" role="status">
+          <ImagePlus aria-hidden="true" size={30} />
+          <strong>Drop images to add them</strong>
+        </div>
+      ) : null}
+      {streamNotice ? (
+        <div className="scratchpad-notice" role="status">
+          <span>{streamNotice}</span>
+          <button
+            aria-label="Dismiss"
+            type="button"
+            onClick={() => setStreamNotice("")}
+          >
+            <X aria-hidden="true" size={16} />
+          </button>
+        </div>
+      ) : null}
+      {error ? (
+        <div className="scratchpad-error" role="alert">
+          {error}
+          <button type="button" onClick={() => void loadStream()}>
+            Reload
+          </button>
+        </div>
+      ) : null}
+      <div className="scratchpad-document-stream">
+        <div
+          className="scratchpad-history-scroll"
+          ref={historyRef}
+          onPointerDown={(event) => {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX >= bounds.right - 20)
+              stickToBottom.current = false;
+          }}
+          onScroll={(event) => {
+            const element = event.currentTarget;
+            if (
+              element.scrollHeight - element.clientHeight - element.scrollTop <=
+              2
+            )
+              stickToBottom.current = true;
+          }}
+          onTouchEnd={() => {
+            touchY.current = undefined;
+          }}
+          onTouchMove={(event) => {
+            const nextY = event.touches[0]?.clientY;
+            if (nextY === undefined) return;
+            if (touchY.current !== undefined && nextY > touchY.current + 1)
+              stickToBottom.current = false;
+            touchY.current = nextY;
+          }}
+          onTouchStart={(event) => {
+            touchY.current = event.touches[0]?.clientY;
+          }}
+          onWheel={(event) => {
+            if (event.deltaY < 0) stickToBottom.current = false;
+          }}
+        >
+          {nextCursor ? (
+            <button
+              className="scratchpad-load-older"
+              disabled={loadingOlder}
+              type="button"
+              onClick={() => {
+                if (!repository.listScratchFeed) return;
+                const history = historyRef.current;
+                if (history)
+                  prependAnchor.current = {
+                    height: history.scrollHeight,
+                    top: history.scrollTop,
+                    wasAtBottom:
+                      history.scrollHeight -
+                        history.clientHeight -
+                        history.scrollTop <=
+                      2,
+                  };
+                setLoadingOlder(true);
+                void repository
+                  .listScratchFeed({ cursor: nextCursor })
+                  .then((page) => {
+                    setHistoryItems((current) => [
+                      ...current,
+                      ...page.items.filter(
+                        (item) =>
+                          !current.some(
+                            (entry) =>
+                              scratchFeedKey(entry) === scratchFeedKey(item),
+                          ),
+                      ),
+                    ]);
+                    setNextCursor(page.nextCursor);
+                  })
+                  .catch((reason) => setError(message(reason)))
+                  .finally(() => setLoadingOlder(false));
+              }}
+            >
+              {loadingOlder ? "Loading…" : "Load older"}
+            </button>
+          ) : null}
+          <div
+            aria-busy={loadingHistory}
+            aria-label="Scratchpad history"
+            className={`scratchpad-history${historyLoaded ? " is-loaded" : ""}`}
+          >
+            {loadingHistory ? (
+              <span className="visually-hidden" role="status">
+                Loading previous notes…
+              </span>
+            ) : null}
+            {historicalItems.map((item) => {
+              if (item.kind === "image")
+                return (
+                  <ScratchImageCard
+                    collapsed={collapsedImageIds.has(item.id)}
+                    image={item}
+                    key={scratchFeedKey(item)}
+                    repository={repository}
+                    onCollapsedChange={(collapsed) =>
+                      setCollapsedImageIds((current) => {
+                        const next = new Set(current);
+                        if (collapsed) next.add(item.id);
+                        else next.delete(item.id);
+                        return next;
+                      })
+                    }
+                    onRemoved={() =>
+                      setHistoryItems((items) =>
+                        items.filter(
+                          (candidate) =>
+                            scratchFeedKey(candidate) !== scratchFeedKey(item),
+                        ),
+                      )
+                    }
+                  />
+                );
+              const document = item;
+              const expanded = expandedIds.has(document.id);
+              return (
+                <article
+                  className={`scratchpad-document${expanded ? " is-expanded" : " is-collapsed"}`}
+                  data-feed-key={scratchFeedKey(item)}
+                  key={scratchFeedKey(item)}
+                >
+                  <button
+                    className={`scratchpad-document-disclosure${document.title && !expanded ? " has-title" : ""}`}
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => void toggleDocument(document)}
+                  >
+                    <span>
+                      {document.title && !expanded ? (
+                        <strong>{document.title}</strong>
+                      ) : null}
+                      <time dateTime={document.dateCreated}>
+                        {new Date(document.dateCreated).toLocaleDateString()}
+                      </time>
+                    </span>
+                    {!expanded && document.title ? (
+                      <small>{scratchpadPreview(document)}</small>
+                    ) : null}
+                    {expanded ? (
+                      <ChevronDown
+                        aria-hidden="true"
+                        className="scratchpad-document-chevron"
+                        size={18}
+                      />
+                    ) : (
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="scratchpad-document-chevron"
+                        size={18}
+                      />
+                    )}
+                  </button>
+                  {expanded ? editor(document) : null}
+                </article>
+              );
+            })}
+          </div>
+          {currentDocument ? (
+            <div aria-hidden="true" className="scratchpad-current-spacer" />
+          ) : null}
+          <header className="scratchpad-stream-header">
+            <h1 className="visually-hidden" id="scratchpad-stream-title">
+              Scratchpad
+            </h1>
+            <div className="scratchpad-stream-actions">
+              <button
+                aria-label="Add image"
+                aria-expanded={imageCaptureOpen}
+                aria-controls="scratchpad-image-capture"
+                className="text-action scratchpad-image-action"
+                disabled={!repository.files || !repository.createScratchImage}
+                ref={imageActionRef}
+                title="Add image"
+                type="button"
+                onClick={() => setImageCaptureOpen((open) => !open)}
+              >
+                <ImagePlus aria-hidden="true" size={18} />
+              </button>
+              <button
+                aria-label="New note"
+                className="text-action scratchpad-new-action"
+                type="button"
+                onClick={() => void startNew()}
+                disabled={
+                  startingNew ||
+                  (!repository.startNewScratchpad &&
+                    !repository.archiveScratchpad)
+                }
+              >
+                <Plus aria-hidden="true" size={18} />
+                <span>{startingNew ? "Starting…" : "New note"}</span>
+              </button>
+            </div>
+          </header>
+          {imageCaptureOpen ? (
+            <section
+              aria-labelledby="scratchpad-image-capture-title"
+              className="scratchpad-image-capture"
+              id="scratchpad-image-capture"
+            >
+              <header>
+                <div>
+                  <strong id="scratchpad-image-capture-title">Add image</strong>
+                  <p>
+                    Drop images here, paste them, upload files, or take a photo.
+                  </p>
+                </div>
+                <button
+                  aria-label="Close image capture"
+                  className="icon-action"
+                  disabled={addingImages}
+                  type="button"
+                  onClick={() => {
+                    setImageCaptureOpen(false);
+                    imageActionRef.current?.focus();
+                  }}
+                >
+                  <X aria-hidden="true" size={18} />
+                </button>
+              </header>
+              <div className="scratchpad-image-capture-actions">
+                <label
+                  aria-disabled={addingImages}
+                  className="outline-action scratchpad-image-picker"
+                >
+                  <Upload aria-hidden="true" size={18} />
+                  {addingImages ? "Adding…" : "Upload images"}
+                  <input
+                    accept="image/*"
+                    className="visually-hidden"
+                    disabled={addingImages}
+                    multiple
+                    type="file"
+                    onChange={(event) => {
+                      void addImages([...(event.target.files ?? [])]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+                <label
+                  aria-disabled={addingImages}
+                  className="outline-action scratchpad-image-picker scratchpad-camera-picker"
+                >
+                  <Camera aria-hidden="true" size={18} /> Take photo
+                  <input
+                    accept="image/*"
+                    capture="environment"
+                    className="visually-hidden"
+                    disabled={addingImages}
+                    type="file"
+                    onChange={(event) => {
+                      void addImages([...(event.target.files ?? [])]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </section>
+          ) : null}
+          {currentDocument ? (
+            <article className="scratchpad-current-document">
+              {editor(currentDocument, true)}
+            </article>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ScratchImageCard({
+  collapsed,
+  image,
+  repository,
+  onCollapsedChange,
+  onRemoved,
+}: {
+  collapsed: boolean;
+  image: ScratchImage;
+  repository: TaskRepository;
+  onCollapsedChange(collapsed: boolean): void;
+  onRemoved(): void;
+}) {
+  const [source, setSource] = useState<string>();
+  const [state, setState] = useState<"loading" | "ready" | "missing" | "error">(
+    repository.files ? "loading" : "missing",
+  );
+  const [removing, setRemoving] = useState(false);
+
+  useEffect(() => {
+    const store = repository.files;
+    if (!store) return;
+    const controller = new AbortController();
+    let url: string | undefined;
+    void store
+      .list({
+        folder: image.file.slice(0, image.file.lastIndexOf("/")),
+        signal: controller.signal,
+      })
+      .then((files) => files.find((file) => file.path === image.file))
+      .then(async (file) => {
+        if (
+          !file ||
+          file.size !== image.size ||
+          file.contentDigest !== image.digest ||
+          file.mediaClass !== "image"
+        ) {
+          setState("missing");
+          return;
+        }
+        const blob = await store.download(file, { signal: controller.signal });
+        url = URL.createObjectURL(blob);
+        setSource(url);
+        setState("ready");
+      })
+      .catch((reason) => {
+        if ((reason as Error).name !== "AbortError") setState("error");
+      });
+    return () => {
+      controller.abort();
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [image, repository]);
+
+  async function remove() {
+    if (!repository.removeScratchImage || removing) return;
+    if (
+      !window.confirm(
+        "Remove this image card from Scratchpad? The image file will be kept.",
+      )
+    )
+      return;
+    setRemoving(true);
+    try {
+      await repository.removeScratchImage(image);
+      onRemoved();
+    } catch {
+      setState("error");
+      setRemoving(false);
+    }
+  }
+
+  return (
+    <article
+      className="scratch-image-card"
+      data-feed-key={scratchFeedKey(image)}
+    >
+      {!collapsed ? (
+        <div
+          className="scratch-image-frame"
+          style={
+            image.width && image.height
+              ? { aspectRatio: `${image.width} / ${image.height}` }
+              : undefined
+          }
+        >
+          {state === "ready" && source ? (
+            <img
+              alt={image.caption || "Pasted Scratchpad image"}
+              src={source}
+            />
+          ) : (
+            <div
+              className="scratch-image-placeholder"
+              role={state === "error" ? "alert" : "status"}
+            >
+              <FileImage aria-hidden="true" size={24} />
+              {state === "loading"
+                ? "Loading image…"
+                : state === "missing"
+                  ? "Image file is unavailable"
+                  : "Image could not be loaded"}
+            </div>
+          )}
+        </div>
+      ) : null}
+      <footer>
+        <button
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand image" : "Collapse image"}
+          className="scratch-image-disclosure"
+          type="button"
+          onClick={() => onCollapsedChange(!collapsed)}
+        >
+          {collapsed ? (
+            <ChevronRight aria-hidden="true" size={18} />
+          ) : (
+            <ChevronDown aria-hidden="true" size={18} />
+          )}
+          <FileImage aria-hidden="true" size={17} />
+          <time dateTime={image.dateCreated}>
+            {new Date(image.dateCreated).toLocaleString()}
+          </time>
+        </button>
+        <button
+          aria-label="Remove image card"
+          disabled={removing || !repository.removeScratchImage}
+          type="button"
+          onClick={() => void remove()}
+        >
+          <Trash2 aria-hidden="true" size={17} />{" "}
+          {removing ? "Removing…" : "Remove"}
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+function ScratchpadDocumentEditor({
+  onOpenTask,
+  initialDocument,
+  isCurrent,
+  registerFlusher,
+  onDocumentUpdated,
+}: {
+  onOpenTask(task: Task): void;
+  initialDocument: ScratchpadDocument;
+  isCurrent: boolean;
+  registerFlusher(flush: (() => Promise<unknown>) | null): void;
+  onDocumentUpdated(document: ScratchpadDocument): void;
+}) {
   const { repository, configuration, createTask, updateTask } = useRepository();
   const [document, setDocument] = useState<ScratchpadDocument | null>(null);
   const [nodes, setNodes] = useState<ScratchNode[]>([]);
+  const [linkedTasks, setLinkedTasks] = useState<Map<string, Task>>(new Map());
+  const [source, setSource] = useState(initialDocument.body);
+  const [title, setTitle] = useState(initialDocument.title ?? "");
+  const [editorMode, setEditorMode] = useState<"outline" | "markdown">(
+    isOutlineCompatible(initialDocument.body) ? "outline" : "markdown",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">(
@@ -123,14 +1031,16 @@ export function ScratchpadScreen({
     Record<string, ReviewResult>
   >({});
   const [reviewProcessing, setReviewProcessing] = useState(false);
-  const [archiveOpen, setArchiveOpen] = useState(false);
-  const [archiving, setArchiving] = useState(false);
-  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [convertingId, setConvertingId] = useState<string>();
   const [notice, setNotice] = useState<ScratchpadNotice | null>(null);
+  const initialDocumentRef = useRef(initialDocument);
   const documentRef = useRef<ScratchpadDocument | null>(null);
   const nodesRef = useRef<ScratchNode[]>([]);
+  const sourceRef = useRef(initialDocument.body);
+  const titleRef = useRef(initialDocument.title ?? "");
+  const rowMenuRef = useRef<HTMLDivElement | null>(null);
+  const editorModeRef = useRef<"outline" | "markdown">(editorMode);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
   const autosaveSuspended = useRef(false);
   const focusAfterRender = useRef<{ id: string; cursor?: number } | undefined>(
@@ -143,15 +1053,10 @@ export function ScratchpadScreen({
   }, []);
 
   const load = useCallback(async () => {
-    if (!repository.getActiveScratchpad) {
-      setError("Scratchpad storage is not available for this collection.");
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError("");
     try {
-      const next = await repository.getActiveScratchpad();
+      const next = initialDocumentRef.current;
       const parsed = parseScratchBody(next.body);
       const tasks = parsed.some((node) => node.kind === "task")
         ? await repository.list({
@@ -165,11 +1070,22 @@ export function ScratchpadScreen({
         tasks,
         configuration.linkWriteFormat,
       );
-      const visible = hydrated.length ? hydrated : [createScratchNode()];
+      const visible = [...hydrated];
+      const last = visible.at(-1);
+      if (!last || last.kind === "task" || last.text.trim())
+        visible.push(createScratchNode());
+      const mode = isOutlineCompatible(next.body) ? "outline" : "markdown";
       documentRef.current = next;
       nodesRef.current = visible;
+      sourceRef.current = next.body;
+      titleRef.current = next.title ?? "";
+      editorModeRef.current = mode;
       setDocument(next);
       setNodes(visible);
+      setLinkedTasks(new Map(tasks.map((task) => [task.id, task])));
+      setSource(next.body);
+      setTitle(next.title ?? "");
+      setEditorMode(mode);
       setSaveState("saved");
     } catch (reason) {
       setError(message(reason));
@@ -183,19 +1099,22 @@ export function ScratchpadScreen({
     return () => window.clearTimeout(timeout);
   }, [load]);
 
-  const persist = useCallback(
-    (nextNodes: readonly ScratchNode[]) => {
-      const body = scratchBody(nextNodes);
+  const persistBody = useCallback(
+    (body: string, nextTitle = titleRef.current) => {
       const current = documentRef.current;
       if (!current || !repository.saveScratchpad)
         return Promise.reject(new Error("Scratchpad storage is unavailable."));
+      const normalizedTitle = nextTitle.trim();
       setSaveState("saving");
       const operation = saveTail.current
         .catch(() => undefined)
         .then(async () => {
           const latest = documentRef.current;
           if (!latest) throw new Error("The scratchpad is not open.");
-          if (body === latest.body) {
+          if (
+            body === latest.body &&
+            normalizedTitle === (latest.title?.trim() ?? "")
+          ) {
             setSaveState("saved");
             return latest;
           }
@@ -205,9 +1124,16 @@ export function ScratchpadScreen({
             revision: latest.revision,
             baseBody: latest.body,
             body,
+            title: normalizedTitle,
           });
           documentRef.current = saved;
+          sourceRef.current = saved.body;
+          if (titleRef.current === nextTitle) {
+            titleRef.current = saved.title ?? "";
+            setTitle(saved.title ?? "");
+          }
           setDocument(saved);
+          onDocumentUpdated(saved);
           setSaveState("saved");
           return saved;
         })
@@ -219,11 +1145,36 @@ export function ScratchpadScreen({
       saveTail.current = operation;
       return operation;
     },
-    [repository],
+    [onDocumentUpdated, repository],
+  );
+
+  const persist = useCallback(
+    (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
+    [persistBody],
+  );
+
+  const flush = useCallback(
+    () =>
+      documentRef.current
+        ? editorModeRef.current === "markdown"
+          ? persistBody(sourceRef.current)
+          : persist(nodesRef.current)
+        : Promise.resolve(initialDocumentRef.current),
+    [persist, persistBody],
   );
 
   useEffect(() => {
-    if (!document || reviewProcessing || archiving || autosaveSuspended.current)
+    registerFlusher(flush);
+    return () => registerFlusher(null);
+  }, [flush, registerFlusher]);
+
+  useEffect(() => {
+    if (
+      !document ||
+      editorMode !== "outline" ||
+      reviewProcessing ||
+      autosaveSuspended.current
+    )
       return;
     const body = scratchBody(nodes);
     if (body === documentRef.current?.body) return;
@@ -231,18 +1182,90 @@ export function ScratchpadScreen({
       if (!autosaveSuspended.current) void persist(nodes);
     }, 260);
     return () => window.clearTimeout(timeout);
-  }, [archiving, document, nodes, persist, reviewProcessing]);
+  }, [document, editorMode, nodes, persist, reviewProcessing]);
+
+  useEffect(() => {
+    if (
+      !document ||
+      editorMode !== "markdown" ||
+      autosaveSuspended.current ||
+      source === documentRef.current?.body
+    )
+      return;
+    const timeout = window.setTimeout(() => {
+      if (!autosaveSuspended.current) void persistBody(source);
+    }, 260);
+    return () => window.clearTimeout(timeout);
+  }, [document, editorMode, persistBody, source]);
+
+  useEffect(() => {
+    if (
+      !document ||
+      autosaveSuspended.current ||
+      title.trim() === (documentRef.current?.title?.trim() ?? "")
+    )
+      return;
+    const timeout = window.setTimeout(() => {
+      if (!autosaveSuspended.current) {
+        const body =
+          editorModeRef.current === "markdown"
+            ? sourceRef.current
+            : scratchBody(nodesRef.current);
+        void persistBody(body, title);
+      }
+    }, 260);
+    return () => window.clearTimeout(timeout);
+  }, [document, persistBody, title]);
 
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
 
   useEffect(() => {
+    sourceRef.current = source;
+  }, [source]);
+
+  useEffect(() => {
+    editorModeRef.current = editorMode;
+  }, [editorMode]);
+
+  useLayoutEffect(() => {
+    if (!isCurrent || loading || editorMode !== "outline") return;
+    const last = nodesRef.current.at(-1);
+    if (!last) return;
+    const input = globalThis.document.querySelector<HTMLInputElement>(
+      `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? initialDocument.id}:${last.id}`)}"]`,
+    );
+    input?.focus({ preventScroll: true });
+  }, [editorMode, initialDocument.id, isCurrent, loading]);
+
+  useLayoutEffect(() => {
+    const menu = rowMenuRef.current;
+    if (!menu || !menuId) return;
+    const row = menu.closest(".scratchpad-row");
+    const scroller = menu.closest(".scratchpad-history-scroll");
+    if (!row) return;
+    const rowBounds = row.getBoundingClientRect();
+    const scrollBounds = scroller?.getBoundingClientRect();
+    const boundaryTop = Math.max(0, scrollBounds?.top ?? 0);
+    const boundaryBottom = Math.min(
+      window.innerHeight,
+      scrollBounds?.bottom ?? window.innerHeight,
+    );
+    const roomAbove = rowBounds.top - boundaryTop;
+    const roomBelow = boundaryBottom - rowBounds.bottom;
+    menu.classList.toggle(
+      "opens-up",
+      roomBelow < menu.offsetHeight + 8 && roomAbove > roomBelow,
+    );
+  }, [menuId]);
+
+  useEffect(() => {
     const request = focusAfterRender.current;
     if (!request) return;
     focusAfterRender.current = undefined;
     const input = globalThis.document.querySelector<HTMLInputElement>(
-      `[data-scratch-input="${CSS.escape(request.id)}"]`,
+      `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? "scratchpad"}:${request.id}`)}"]`,
     );
     input?.focus();
     const position = request.cursor ?? input?.value.length ?? 0;
@@ -455,7 +1478,7 @@ export function ScratchpadScreen({
   }
 
   async function convertNode(id: string) {
-    if (convertingId || reviewProcessing || archiving) return;
+    if (convertingId || reviewProcessing) return;
     setConvertingId(id);
     setError("");
     try {
@@ -493,10 +1516,23 @@ export function ScratchpadScreen({
       ...(result.input.projects ?? []),
       ...(parent?.link ? [parent.link] : []),
     ].filter((value, candidate, values) => values.indexOf(value) === candidate);
-    const task = await createTask({
+    const completedStatus = node.completed
+      ? configuration.statuses.find((status) => status.isCompleted)
+      : undefined;
+    if (node.completed && !completedStatus)
+      throw new Error(
+        "This collection does not define a completed task status.",
+      );
+    const createInput = {
       ...result.input,
       ...(projects.length ? { projects } : {}),
-    });
+    };
+    if (completedStatus) delete createInput.status;
+    const createdTask = await createTask(createInput);
+    const task = completedStatus
+      ? await updateTask(createdTask.id, { status: completedStatus.value })
+      : createdTask;
+    setLinkedTasks((current) => new Map(current).set(task.id, task));
     const link = recordCompletion(
       {
         path: task.path,
@@ -508,17 +1544,18 @@ export function ScratchpadScreen({
     ).value;
     return {
       task,
-      nodes: source.map((candidate) =>
-        candidate.id === id
-          ? {
-              ...candidate,
-              kind: "task" as const,
-              text: task.title,
-              link,
-              taskId: task.id,
-            }
-          : candidate,
-      ),
+      nodes: source.map((candidate) => {
+        if (candidate.id !== id) return candidate;
+        const converted = { ...candidate };
+        delete converted.completed;
+        return {
+          ...converted,
+          kind: "task" as const,
+          text: task.title,
+          link,
+          taskId: task.id,
+        };
+      }),
     };
   }
 
@@ -676,46 +1713,42 @@ export function ScratchpadScreen({
     setReviewOpen(false);
     const tasks = [...completed.values()];
     setNotice({
-      message: `Created ${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}`,
+      message: `Created ${tasks.length} task ${tasks.length === 1 ? "note" : "notes"}`,
       tasks,
     });
     successFeedback();
   }
 
-  async function archiveScratchpad() {
-    if (!repository.archiveScratchpad || archiving) return;
-    autosaveSuspended.current = true;
-    setArchiving(true);
+  async function changeEditorMode(nextMode: "outline" | "markdown") {
+    if (nextMode === editorMode) return;
     setError("");
     try {
-      const working = nodesRef.current.filter(
-        (node) => node.kind === "task" || Boolean(node.text.trim()),
-      );
-      const latest = await persist(working);
-      const title = scratchpadTitle(working);
-      const result = await repository.archiveScratchpad({
-        id: latest.id,
-        path: latest.path,
-        revision: latest.revision,
-        baseBody: latest.body,
-        title,
-        body: scratchBody(working),
-      });
-      documentRef.current = result.active;
-      const empty = [createScratchNode()];
-      nodesRef.current = empty;
-      setDocument(result.active);
-      setNodes(empty);
-      setCollapsedIds(new Set());
-      setArchiveOpen(false);
-      setHeaderMenuOpen(false);
-      setNotice({ message: `Archived “${title}”` });
-      successFeedback();
+      if (nextMode === "markdown") {
+        const latest = await persist(nodesRef.current);
+        sourceRef.current = latest.body;
+        editorModeRef.current = "markdown";
+        setSource(latest.body);
+        setEditorMode("markdown");
+        return;
+      }
+
+      const latest = await persistBody(sourceRef.current);
+      if (!isOutlineCompatible(latest.body)) {
+        setError(
+          "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown.",
+        );
+        return;
+      }
+      const parsed = parseScratchBody(latest.body);
+      const last = parsed.at(-1);
+      if (!last || last.kind === "task" || last.text.trim())
+        parsed.push(createScratchNode());
+      nodesRef.current = parsed;
+      editorModeRef.current = "outline";
+      setNodes(parsed);
+      setEditorMode("outline");
     } catch (reason) {
       setError(message(reason));
-    } finally {
-      autosaveSuspended.current = false;
-      setArchiving(false);
     }
   }
 
@@ -769,13 +1802,7 @@ export function ScratchpadScreen({
 
   if (loading)
     return (
-      <section className="screen scratchpad-screen" aria-busy="true">
-        <header className="scratchpad-header">
-          <div>
-            <p className="eyebrow">Working outline</p>
-            <h1>Scratchpad</h1>
-          </div>
-        </header>
+      <section className="scratchpad-editor" aria-busy="true">
         <div className="scratchpad-loading" />
       </section>
     );
@@ -783,11 +1810,6 @@ export function ScratchpadScreen({
   const drafts = nodes.filter(
     (node) => node.kind === "draft" && node.text.trim(),
   ).length;
-  const notes = nodes.filter(
-    (node) => node.kind === "note" && node.text.trim(),
-  ).length;
-  const linked = nodes.filter((node) => node.kind === "task").length;
-  const hasContent = Boolean(drafts || notes || linked);
   const visibleNodes = visibleScratchNodes(nodes, collapsedIds);
   const failedReviewCount = Object.values(reviewResults).filter(
     (result) => result.state === "error",
@@ -800,13 +1822,59 @@ export function ScratchpadScreen({
 
   return (
     <section
-      className="screen scratchpad-screen"
-      aria-labelledby="scratchpad-title"
+      className="scratchpad-editor"
+      aria-label={`Editor for ${document?.title || (document?.state === "active" ? "current scratchpad" : "scratchpad")}`}
     >
-      <header className="scratchpad-header">
-        <div>
-          <p className="eyebrow">Working outline</p>
-          <h1 id="scratchpad-title">Scratchpad</h1>
+      <div className="scratchpad-title-row">
+        <input
+          aria-label="Note title"
+          maxLength={160}
+          placeholder="Add title"
+          type="text"
+          value={title}
+          onBlur={() => {
+            const trimmed = title.trim();
+            titleRef.current = trimmed;
+            setTitle(trimmed);
+          }}
+          onChange={(event) => {
+            titleRef.current = event.target.value;
+            setTitle(event.target.value);
+          }}
+        />
+        <span className="scratchpad-title-meta">
+          {isCurrent ? <small>Current note</small> : null}
+          <time dateTime={document?.dateCreated ?? initialDocument.dateCreated}>
+            {new Date(
+              document?.dateCreated ?? initialDocument.dateCreated,
+            ).toLocaleDateString()}
+          </time>
+        </span>
+      </div>
+      <header className="scratchpad-editor-toolbar">
+        <div
+          aria-label="Scratchpad editing mode"
+          className="scratchpad-mode-switch"
+          role="group"
+        >
+          <button
+            aria-label="Outline"
+            aria-pressed={editorMode === "outline"}
+            title="Outline"
+            type="button"
+            onClick={() => void changeEditorMode("outline")}
+          >
+            <ListTree aria-hidden="true" size={17} />
+          </button>
+          <button
+            aria-label="Markdown"
+            aria-pressed={editorMode === "markdown"}
+            title="Markdown"
+            type="button"
+            onClick={() => void changeEditorMode("markdown")}
+          >
+            <FileCode2 aria-hidden="true" size={17} />
+          </button>
         </div>
         <div className="scratchpad-header-actions">
           <span
@@ -819,48 +1887,19 @@ export function ScratchpadScreen({
                 ? "Not saved"
                 : "Saved"}
           </span>
-          <button
-            className="text-action scratchpad-review-action"
-            disabled={!drafts}
-            type="button"
-            onClick={openReview}
-          >
-            <ListChecks aria-hidden="true" size={17} /> Review tasks
-          </button>
-          <div className="scratchpad-header-menu-wrap">
+          {editorMode === "outline" ? (
             <button
-              aria-expanded={headerMenuOpen}
-              aria-haspopup="menu"
-              aria-label="More scratchpad actions"
-              className="scratchpad-header-menu-trigger"
+              aria-label="Create task notes"
+              className="text-action scratchpad-review-action"
+              disabled={!drafts}
               type="button"
-              onClick={() => setHeaderMenuOpen((current) => !current)}
+              onClick={openReview}
             >
-              <MoreHorizontal aria-hidden="true" size={19} />
+              <ListChecks aria-hidden="true" size={17} /> Create task notes
             </button>
-            {headerMenuOpen ? (
-              <div
-                aria-label="Scratchpad actions"
-                className="scratchpad-header-menu"
-                role="menu"
-              >
-                <button
-                  disabled={!hasContent}
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    setArchiveOpen(true);
-                  }}
-                >
-                  <Archive aria-hidden="true" size={17} /> Archive and start new
-                </button>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </header>
-      <p className="scratchpad-introduction">Write first. Tab nests an item.</p>
       {error ? (
         <div className="scratchpad-error" role="alert">
           <span>{error}</span>
@@ -869,338 +1908,384 @@ export function ScratchpadScreen({
           </button>
         </div>
       ) : null}
-      <div
-        className="scratchpad-outline"
-        role="tree"
-        aria-label="Scratchpad outline"
-      >
-        {visibleNodes.map(({ node, descendantCount }) => {
-          const activePreview =
-            preview?.id === node.id && preview.text === node.text
-              ? preview.result.preview
-              : [];
-          const dropTarget =
-            drag?.targetId === node.id ? drag.placement : undefined;
-          return (
-            <div
-              className={`scratchpad-row kind-${node.kind}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
-              data-scratch-row={node.id}
-              key={node.id}
-              role="treeitem"
-              aria-level={node.depth + 1}
-              style={{ "--scratch-depth": node.depth } as CSSProperties}
-            >
-              <div className="scratchpad-row-main">
-                {descendantCount ? (
-                  <button
-                    aria-expanded={!collapsedIds.has(node.id)}
-                    aria-label={`${collapsedIds.has(node.id) ? "Expand" : "Collapse"} ${node.text || "item"}, ${descendantCount} nested ${descendantCount === 1 ? "item" : "items"}`}
-                    className="scratchpad-collapse"
-                    type="button"
-                    onClick={() =>
-                      setCollapsedIds((current) => {
-                        const next = new Set(current);
-                        if (next.has(node.id)) next.delete(node.id);
-                        else next.add(node.id);
-                        return next;
-                      })
-                    }
-                  >
-                    {collapsedIds.has(node.id) ? (
-                      <ChevronRight aria-hidden="true" size={17} />
-                    ) : (
-                      <ChevronDown aria-hidden="true" size={17} />
-                    )}
-                  </button>
-                ) : (
-                  <span className="scratchpad-collapse-spacer" />
-                )}
-                <button
-                  aria-label={`Move ${node.text || "empty item"}`}
-                  className="scratchpad-drag-handle"
-                  type="button"
-                  onPointerDown={(event) => beginDrag(event, node.id)}
-                >
-                  <GripVertical aria-hidden="true" size={18} />
-                </button>
-                {node.kind === "task" ? (
-                  <span className="scratchpad-kind-label is-linked">
-                    <Link2 aria-hidden="true" size={14} /> Linked
-                  </span>
-                ) : (
-                  <button
-                    aria-label={
-                      node.kind === "draft" ? "Keep as note" : "Make a task"
-                    }
-                    className="scratchpad-kind-label scratchpad-kind-toggle"
-                    title={node.kind === "draft" ? "Task draft" : "Note"}
-                    type="button"
-                    onClick={() =>
-                      changeNode(node.id, {
-                        kind: node.kind === "draft" ? "note" : "draft",
-                      })
-                    }
-                  >
-                    {node.kind === "draft" ? (
-                      <ListTodo aria-hidden="true" size={14} />
-                    ) : (
-                      <StickyNote aria-hidden="true" size={14} />
-                    )}
-                    <span>{node.kind === "draft" ? "Task" : "Note"}</span>
-                  </button>
-                )}
-                {node.kind === "task" ? (
-                  <button
-                    className="scratchpad-task-link"
-                    type="button"
-                    onClick={() => void openLinkedNode(node)}
-                  >
-                    {node.text}
-                  </button>
-                ) : (
-                  <input
-                    aria-label={`${node.kind === "draft" ? "Draft task" : "Note"}: ${node.text || "empty"}`}
-                    autoComplete="off"
-                    data-scratch-input={node.id}
-                    placeholder={
-                      node.kind === "draft"
-                        ? "What needs doing?"
-                        : "Add context…"
-                    }
-                    value={node.text}
-                    onChange={(event) => {
-                      changeNode(node.id, { text: event.target.value });
-                      setCursor(
-                        event.target.selectionStart ??
-                          event.target.value.length,
-                      );
-                    }}
-                    onFocus={(event) => {
-                      setActiveId(node.id);
-                      setCursor(
-                        event.currentTarget.selectionStart ?? node.text.length,
-                      );
-                    }}
-                    onClick={(event) =>
-                      setCursor(
-                        event.currentTarget.selectionStart ?? node.text.length,
-                      )
-                    }
-                    onKeyDown={(event) => handleKeyDown(event, node)}
-                    onSelect={(event) =>
-                      setCursor(
-                        event.currentTarget.selectionStart ?? node.text.length,
-                      )
-                    }
-                  />
-                )}
-                {node.kind === "draft" && node.text.trim() ? (
-                  <button
-                    aria-label={`Create task for ${node.text}`}
-                    className="scratchpad-convert-line"
-                    disabled={
-                      Boolean(convertingId) || reviewProcessing || archiving
-                    }
-                    title="Create task"
-                    type="button"
-                    onClick={() => void convertNode(node.id)}
-                  >
-                    <FileCheck2 aria-hidden="true" size={18} />
-                  </button>
-                ) : null}
-                <button
-                  aria-expanded={menuId === node.id}
-                  aria-haspopup="menu"
-                  aria-label={`Actions for ${node.text || "empty item"}`}
-                  className="scratchpad-row-menu-trigger"
-                  type="button"
-                  onClick={() =>
-                    setMenuId((current) =>
-                      current === node.id ? undefined : node.id,
-                    )
-                  }
-                >
-                  <MoreHorizontal aria-hidden="true" size={18} />
-                </button>
-              </div>
-              {node.kind === "draft" && activePreview.length ? (
-                <div
-                  className="scratchpad-nlp-preview"
-                  aria-label="Recognized task details"
-                >
-                  {activePreview.map((item) => (
-                    <span key={item.key}>{item.label}</span>
-                  ))}
-                </div>
-              ) : null}
-              {activeId === node.id && node.kind !== "task" ? (
-                <div
-                  aria-label={`Outline controls for ${node.text || "empty item"}`}
-                  className="scratchpad-mobile-depth-actions"
-                >
-                  <button
-                    disabled={node.depth === 0}
-                    type="button"
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => changeDepth(node, -1)}
-                  >
-                    <CornerUpLeft aria-hidden="true" size={15} /> Outdent
-                  </button>
-                  <button
-                    disabled={!canIndent(node)}
-                    type="button"
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => changeDepth(node, 1)}
-                  >
-                    <CornerDownRight aria-hidden="true" size={15} /> Indent
-                  </button>
-                  <button
-                    type="button"
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => addChild(node)}
-                  >
-                    <Plus aria-hidden="true" size={15} /> Child
-                  </button>
-                </div>
-              ) : null}
-              {activeId === node.id && suggestions.length ? (
-                <div
-                  className="scratchpad-suggestions"
-                  role="listbox"
-                  aria-label="Suggestions"
-                >
-                  {suggestions.map((suggestion, index) => (
+      {editorMode === "markdown" ? (
+        <Suspense fallback={<div className="scratchpad-loading" />}>
+          <MarkdownSourceEditor
+            ariaLabel="Scratchpad Markdown"
+            autoFocus={isCurrent}
+            value={source}
+            onChange={setSource}
+          />
+        </Suspense>
+      ) : (
+        <div
+          className="scratchpad-outline"
+          role="tree"
+          aria-label="Scratchpad outline"
+        >
+          {visibleNodes.map(({ node, descendantCount }) => {
+            const linkedTask = node.taskId
+              ? linkedTasks.get(node.taskId)
+              : undefined;
+            const activePreview =
+              preview?.id === node.id && preview.text === node.text
+                ? preview.result.preview
+                : [];
+            const dropTarget =
+              drag?.targetId === node.id ? drag.placement : undefined;
+            return (
+              <div
+                className={`scratchpad-row kind-${node.kind}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
+                data-scratch-row={node.id}
+                key={node.id}
+                role="treeitem"
+                aria-level={node.depth + 1}
+                style={{ "--scratch-depth": node.depth } as CSSProperties}
+              >
+                <div className="scratchpad-row-main">
+                  {descendantCount ? (
                     <button
-                      aria-selected={index === selectedSuggestion}
-                      className={
-                        index === selectedSuggestion ? "is-selected" : undefined
-                      }
-                      key={`${suggestion.kind}:${suggestion.value}`}
-                      role="option"
+                      aria-expanded={!collapsedIds.has(node.id)}
+                      aria-label={`${collapsedIds.has(node.id) ? "Expand" : "Collapse"} ${node.text || "item"}, ${descendantCount} nested ${descendantCount === 1 ? "item" : "items"}`}
+                      className="scratchpad-collapse"
                       type="button"
-                      onPointerDown={(event) => event.preventDefault()}
-                      onClick={() => chooseSuggestion(suggestion)}
+                      onClick={() =>
+                        setCollapsedIds((current) => {
+                          const next = new Set(current);
+                          if (next.has(node.id)) next.delete(node.id);
+                          else next.add(node.id);
+                          return next;
+                        })
+                      }
                     >
-                      <span>{suggestion.label}</span>
-                      {suggestion.detail ? (
-                        <small>{suggestion.detail}</small>
-                      ) : null}
+                      {collapsedIds.has(node.id) ? (
+                        <ChevronRight aria-hidden="true" size={17} />
+                      ) : (
+                        <ChevronDown aria-hidden="true" size={17} />
+                      )}
                     </button>
-                  ))}
-                </div>
-              ) : null}
-              {menuId === node.id ? (
-                <div
-                  className="scratchpad-row-menu"
-                  role="menu"
-                  aria-label={`Actions for ${node.text || "item"}`}
-                >
+                  ) : (
+                    <span className="scratchpad-collapse-spacer" />
+                  )}
+                  <button
+                    aria-label={`Move ${node.text || "empty item"}`}
+                    className="scratchpad-drag-handle"
+                    type="button"
+                    onPointerDown={(event) => beginDrag(event, node.id)}
+                  >
+                    <GripVertical aria-hidden="true" size={18} />
+                  </button>
+                  {node.kind === "task" ? (
+                    <span className="scratchpad-kind-label is-linked">
+                      <Link2 aria-hidden="true" size={14} />
+                      <span>Linked</span>
+                    </span>
+                  ) : node.kind === "draft" ? (
+                    <div className="scratchpad-task-kind-controls">
+                      <button
+                        aria-label={`${node.completed ? "Mark incomplete" : "Mark complete"} ${node.text || "empty task"}`}
+                        aria-pressed={Boolean(node.completed)}
+                        className="scratchpad-draft-completion"
+                        title={
+                          node.completed ? "Completed draft" : "Task draft"
+                        }
+                        type="button"
+                        onClick={() =>
+                          changeNode(node.id, { completed: !node.completed })
+                        }
+                      >
+                        {node.completed ? (
+                          <SquareCheckBig aria-hidden="true" size={19} />
+                        ) : (
+                          <Square aria-hidden="true" size={19} />
+                        )}
+                      </button>
+                      <button
+                        aria-label={`Convert ${node.text || "empty task"} to note`}
+                        className="scratchpad-make-note"
+                        title="Convert to note"
+                        type="button"
+                        onClick={() =>
+                          changeNode(node.id, {
+                            kind: "note",
+                            completed: false,
+                          })
+                        }
+                      >
+                        Task
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      aria-label="Make a task"
+                      className="scratchpad-kind-label scratchpad-kind-toggle"
+                      title="Note"
+                      type="button"
+                      onClick={() =>
+                        changeNode(node.id, {
+                          kind: "draft",
+                          completed: false,
+                        })
+                      }
+                    >
+                      <StickyNote aria-hidden="true" size={14} />
+                      <span>Note</span>
+                    </button>
+                  )}
+                  {node.kind === "task" ? (
+                    <button
+                      className="scratchpad-task-link"
+                      type="button"
+                      onClick={() => void openLinkedNode(node)}
+                    >
+                      {node.text}
+                    </button>
+                  ) : (
+                    <input
+                      aria-label={`${node.kind === "draft" ? "Draft task" : "Note"}: ${node.text || "empty"}`}
+                      autoComplete="off"
+                      data-scratch-input={`${document?.id ?? initialDocument.id}:${node.id}`}
+                      placeholder={
+                        node.kind === "draft"
+                          ? "What needs doing?"
+                          : "Add context…"
+                      }
+                      value={node.text}
+                      onChange={(event) => {
+                        changeNode(node.id, { text: event.target.value });
+                        setCursor(
+                          event.target.selectionStart ??
+                            event.target.value.length,
+                        );
+                      }}
+                      onFocus={(event) => {
+                        setActiveId(node.id);
+                        setCursor(
+                          event.currentTarget.selectionStart ??
+                            node.text.length,
+                        );
+                      }}
+                      onClick={(event) =>
+                        setCursor(
+                          event.currentTarget.selectionStart ??
+                            node.text.length,
+                        )
+                      }
+                      onKeyDown={(event) => handleKeyDown(event, node)}
+                      onSelect={(event) =>
+                        setCursor(
+                          event.currentTarget.selectionStart ??
+                            node.text.length,
+                        )
+                      }
+                    />
+                  )}
                   {node.kind === "draft" && node.text.trim() ? (
                     <button
+                      aria-label={`Create task for ${node.text}`}
+                      className="scratchpad-convert-line"
+                      disabled={Boolean(convertingId) || reviewProcessing}
+                      title="Create task"
+                      type="button"
+                      onClick={() => void convertNode(node.id)}
+                    >
+                      <FileCheck2 aria-hidden="true" size={18} />
+                    </button>
+                  ) : null}
+                  {node.kind === "task" && linkedTask ? (
+                    <TaskActions
+                      task={linkedTask}
+                      onOpen={(task) => onOpenTask(task)}
+                      onToggle={async (task) => {
+                        const updated = await updateTask(task.id, {
+                          completed: !task.completed,
+                        });
+                        setLinkedTasks((current) =>
+                          new Map(current).set(updated.id, updated),
+                        );
+                      }}
+                      onDeleted={() =>
+                        updateNodes(
+                          removeScratchNode(nodesRef.current, node.id),
+                        )
+                      }
+                    />
+                  ) : (
+                    <button
+                      aria-expanded={menuId === node.id}
+                      aria-haspopup="menu"
+                      aria-label={`Actions for ${node.text || "empty item"}`}
+                      className="scratchpad-row-menu-trigger"
+                      type="button"
+                      onClick={() =>
+                        setMenuId((current) =>
+                          current === node.id ? undefined : node.id,
+                        )
+                      }
+                    >
+                      <MoreHorizontal aria-hidden="true" size={18} />
+                    </button>
+                  )}
+                </div>
+                {node.kind === "draft" && activePreview.length ? (
+                  <div
+                    className="scratchpad-nlp-preview"
+                    aria-label="Recognized task details"
+                  >
+                    {activePreview.map((item) => (
+                      <span key={item.key}>{item.label}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {activeId === node.id && node.kind !== "task" ? (
+                  <div
+                    aria-label={`Outline controls for ${node.text || "empty item"}`}
+                    className="scratchpad-mobile-depth-actions"
+                  >
+                    <button
+                      disabled={node.depth === 0}
+                      type="button"
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => changeDepth(node, -1)}
+                    >
+                      <CornerUpLeft aria-hidden="true" size={15} /> Outdent
+                    </button>
+                    <button
+                      disabled={!canIndent(node)}
+                      type="button"
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => changeDepth(node, 1)}
+                    >
+                      <CornerDownRight aria-hidden="true" size={15} /> Indent
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => addChild(node)}
+                    >
+                      <Plus aria-hidden="true" size={15} /> Child
+                    </button>
+                  </div>
+                ) : null}
+                {activeId === node.id && suggestions.length ? (
+                  <div
+                    className="scratchpad-suggestions"
+                    role="listbox"
+                    aria-label="Suggestions"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        aria-selected={index === selectedSuggestion}
+                        className={
+                          index === selectedSuggestion
+                            ? "is-selected"
+                            : undefined
+                        }
+                        key={`${suggestion.kind}:${suggestion.value}`}
+                        role="option"
+                        type="button"
+                        onPointerDown={(event) => event.preventDefault()}
+                        onClick={() => chooseSuggestion(suggestion)}
+                      >
+                        <span>{suggestion.label}</span>
+                        {suggestion.detail ? (
+                          <small>{suggestion.detail}</small>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {menuId === node.id ? (
+                  <div
+                    className="scratchpad-row-menu"
+                    ref={rowMenuRef}
+                    role="menu"
+                    aria-label={`Actions for ${node.text || "item"}`}
+                  >
+                    {node.kind === "draft" && node.text.trim() ? (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => {
+                          setMenuId(undefined);
+                          void convertNode(node.id);
+                        }}
+                      >
+                        <FileCheck2 aria-hidden="true" size={17} /> Create task
+                      </button>
+                    ) : null}
+                    {node.kind !== "task" ? (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => {
+                          changeNode(node.id, {
+                            kind: node.kind === "draft" ? "note" : "draft",
+                            completed: false,
+                          });
+                          setMenuId(undefined);
+                        }}
+                      >
+                        {node.kind === "draft" ? (
+                          <StickyNote aria-hidden="true" size={17} />
+                        ) : (
+                          <ListTodo aria-hidden="true" size={17} />
+                        )}
+                        {node.kind === "draft" ? "Keep as note" : "Make a task"}
+                      </button>
+                    ) : null}
+                    <button
+                      disabled={node.depth === 0}
                       role="menuitem"
                       type="button"
                       onClick={() => {
+                        changeDepth(node, -1);
                         setMenuId(undefined);
-                        void convertNode(node.id);
                       }}
                     >
-                      <FileCheck2 aria-hidden="true" size={17} /> Create task
+                      <CornerUpLeft aria-hidden="true" size={17} /> Outdent
                     </button>
-                  ) : null}
-                  {node.kind !== "task" ? (
+                    <button
+                      disabled={!canIndent(node)}
+                      role="menuitem"
+                      type="button"
+                      onClick={() => {
+                        changeDepth(node, 1);
+                        setMenuId(undefined);
+                      }}
+                    >
+                      <CornerDownRight aria-hidden="true" size={17} /> Indent
+                    </button>
                     <button
                       role="menuitem"
                       type="button"
                       onClick={() => {
-                        changeNode(node.id, {
-                          kind: node.kind === "draft" ? "note" : "draft",
-                        });
+                        addChild(node);
                         setMenuId(undefined);
                       }}
                     >
-                      {node.kind === "draft" ? (
-                        <StickyNote aria-hidden="true" size={17} />
-                      ) : (
-                        <ListTodo aria-hidden="true" size={17} />
-                      )}
-                      {node.kind === "draft" ? "Keep as note" : "Make a task"}
+                      <Plus aria-hidden="true" size={17} /> Add child
                     </button>
-                  ) : null}
-                  <button
-                    disabled={node.depth === 0}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      changeDepth(node, -1);
-                      setMenuId(undefined);
-                    }}
-                  >
-                    <CornerUpLeft aria-hidden="true" size={17} /> Outdent
-                  </button>
-                  <button
-                    disabled={!canIndent(node)}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      changeDepth(node, 1);
-                      setMenuId(undefined);
-                    }}
-                  >
-                    <CornerDownRight aria-hidden="true" size={17} /> Indent
-                  </button>
-                  <button
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      addChild(node);
-                      setMenuId(undefined);
-                    }}
-                  >
-                    <Plus aria-hidden="true" size={17} /> Add child
-                  </button>
-                  <button
-                    className="danger"
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      updateNodes(removeScratchNode(nodesRef.current, node.id));
-                      setMenuId(undefined);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" size={17} /> Delete item
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-      <div className="scratchpad-add-actions">
-        <button
-          type="button"
-          onClick={() => {
-            const created = createScratchNode("draft");
-            focusAfterRender.current = { id: created.id };
-            updateNodes([...nodesRef.current, created]);
-          }}
-        >
-          <Plus aria-hidden="true" size={17} /> Add task
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const created = createScratchNode("note");
-            focusAfterRender.current = { id: created.id };
-            updateNodes([...nodesRef.current, created]);
-          }}
-        >
-          <StickyNote aria-hidden="true" size={16} /> Add note
-        </button>
-      </div>
-      <footer className="scratchpad-path">
-        <FilePenLine aria-hidden="true" size={14} />
-        <span>{document?.path}</span>
-      </footer>
+                    <button
+                      className="danger"
+                      role="menuitem"
+                      type="button"
+                      onClick={() => {
+                        updateNodes(
+                          removeScratchNode(nodesRef.current, node.id),
+                        );
+                        setMenuId(undefined);
+                      }}
+                    >
+                      <Trash2 aria-hidden="true" size={17} /> Delete item
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {reviewOpen ? (
         <div
           className="scratchpad-dialog-backdrop"
@@ -1219,7 +2304,7 @@ export function ScratchpadScreen({
             <header>
               <div>
                 <p className="eyebrow">Choose what becomes a task</p>
-                <h2 id="review-scratchpad-title">Review task drafts</h2>
+                <h2 id="review-scratchpad-title">Create task notes</h2>
               </div>
               <button
                 aria-label="Close"
@@ -1364,79 +2449,8 @@ export function ScratchpadScreen({
                 {reviewProcessing
                   ? "Creating…"
                   : failedReviewCount
-                    ? `Retry ${selectedReviewCount} ${selectedReviewCount === 1 ? "task" : "tasks"}`
-                    : `Create ${selectedReviewCount} ${selectedReviewCount === 1 ? "task" : "tasks"}`}
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
-      {archiveOpen ? (
-        <div
-          className="scratchpad-dialog-backdrop"
-          role="presentation"
-          onPointerDown={(event) => {
-            if (event.target === event.currentTarget && !archiving)
-              setArchiveOpen(false);
-          }}
-        >
-          <section
-            aria-labelledby="archive-scratchpad-title"
-            aria-modal="true"
-            className="scratchpad-dialog"
-            role="dialog"
-          >
-            <header>
-              <div>
-                <p className="eyebrow">Close this outline</p>
-                <h2 id="archive-scratchpad-title">Archive and start new?</h2>
-              </div>
-              <button
-                aria-label="Close"
-                disabled={archiving}
-                type="button"
-                onClick={() => setArchiveOpen(false)}
-              >
-                <X aria-hidden="true" size={20} />
-              </button>
-            </header>
-            <p>
-              {drafts
-                ? `${drafts} draft ${drafts === 1 ? "item" : "items"} will remain only in the archived outline. `
-                : "No draft items remain. "}
-              No tasks will be created.
-            </p>
-            <dl>
-              <div>
-                <dt>Drafts archived</dt>
-                <dd>{drafts}</dd>
-              </div>
-              <div>
-                <dt>Already linked</dt>
-                <dd>{linked}</dd>
-              </div>
-              <div>
-                <dt>Notes archived</dt>
-                <dd>{notes}</dd>
-              </div>
-            </dl>
-            <div className="scratchpad-dialog-actions">
-              <button
-                className="text-action"
-                disabled={archiving}
-                type="button"
-                onClick={() => setArchiveOpen(false)}
-              >
-                Keep writing
-              </button>
-              <button
-                className="outline-action"
-                disabled={archiving}
-                type="button"
-                onClick={() => void archiveScratchpad()}
-              >
-                <Archive aria-hidden="true" size={17} />{" "}
-                {archiving ? "Archiving…" : "Archive and start new"}
+                    ? `Retry ${selectedReviewCount} task notes`
+                    : `Create ${selectedReviewCount} task notes`}
               </button>
             </div>
           </section>
@@ -1467,6 +2481,27 @@ export function ScratchpadScreen({
         </div>
       ) : null}
     </section>
+  );
+}
+
+async function transitionToNewScratchpad(
+  repository: TaskRepository,
+  input: StartNewScratchpadInput,
+): Promise<StartNewScratchpadResult> {
+  if (repository.startNewScratchpad)
+    return repository.startNewScratchpad(input);
+  if (repository.archiveScratchpad) {
+    const result = await repository.archiveScratchpad(input);
+    return { previous: result.archived, current: result.active };
+  }
+  throw new Error("Scratchpad storage is not available for this collection.");
+}
+
+function isOutlineCompatible(body: string): boolean {
+  if (!body.trim()) return true;
+  const normalized = body.replaceAll("\r\n", "\n");
+  return (
+    scratchBody(parseScratchBody(normalized)).trimEnd() === normalized.trimEnd()
   );
 }
 
@@ -1502,6 +2537,32 @@ function hydrateLinkedNodes(
       ).value,
     };
   });
+}
+
+function readScratchpadCollapseState(key: string): {
+  expandedDocuments: string[];
+  collapsedImages: string[];
+} {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? "null") as unknown;
+    if (!value || typeof value !== "object")
+      return { expandedDocuments: [], collapsedImages: [] };
+    const state = value as Record<string, unknown>;
+    return {
+      expandedDocuments: Array.isArray(state.expandedDocuments)
+        ? state.expandedDocuments.filter(
+            (id): id is string => typeof id === "string",
+          )
+        : [],
+      collapsedImages: Array.isArray(state.collapsedImages)
+        ? state.collapsedImages.filter(
+            (id): id is string => typeof id === "string",
+          )
+        : [],
+    };
+  } catch {
+    return { expandedDocuments: [], collapsedImages: [] };
+  }
 }
 
 function message(reason: unknown): string {

@@ -17,6 +17,56 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
     page.getByRole("heading", { name: "Scratchpad", exact: true }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/scratchpad\?demo=50/);
+  const planningHistory = page.getByRole("button", { name: /Planning notes/ });
+  await expect(planningHistory).toHaveAttribute("aria-expanded", "false");
+  await planningHistory.click();
+  await expect(
+    page.getByRole("textbox", { name: "Draft task: Confirm the review date" }),
+  ).toBeVisible();
+  await expect(page.getByText("Image file is unavailable")).toBeVisible();
+  await page.getByRole("button", { name: "Collapse image" }).click();
+  await expect(page.getByText("Image file is unavailable")).toHaveCount(0);
+  await page.getByRole("button", { name: "Expand image" }).click();
+  await expect(page.getByText("Image file is unavailable")).toBeVisible();
+  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
+  await page.getByRole("button", { name: "Add image" }).click();
+  await expect(page.getByText(/Drop images here/)).toBeVisible();
+  await expect(page.getByLabel("Upload images")).toHaveAttribute(
+    "accept",
+    "image/*",
+  );
+  await expect(page.getByLabel("Take photo")).toHaveAttribute(
+    "capture",
+    "environment",
+  );
+  await page.getByRole("button", { name: "Close image capture" }).click();
+  await expect(
+    page.getByRole("region", { name: "Scratchpad" }).getByText(/archive/i),
+  ).toHaveCount(0);
+  const currentScratchpad = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await expect
+    .poll(() =>
+      currentScratchpad.evaluate(
+        (editor) =>
+          getComputedStyle(editor.closest(".scratchpad-current-document")!)
+            .overflow,
+      ),
+    )
+    .toBe("visible");
+  await expect(
+    currentScratchpad.getByRole("button", { name: "Add task" }),
+  ).toHaveCount(0);
+  await currentScratchpad.getByRole("button", { name: "Markdown" }).click();
+  const markdown = currentScratchpad.getByRole("textbox", {
+    name: "Scratchpad Markdown",
+  });
+  await markdown.fill("# Freeform Markdown\n\nAnything can go here.\n");
+  await currentScratchpad.getByRole("button", { name: "Outline" }).click();
+  await expect(currentScratchpad).toContainText(
+    "This Markdown contains blocks the outline cannot represent",
+  );
 
   await openNavigationItem(page, "Search");
   const search = page.getByRole("searchbox", { name: "Search tasks" });
@@ -32,6 +82,69 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await expect(page).toHaveURL(/\/more\?demo=50/);
 });
 
+test("opens a trailing-slash Scratchpad route and focuses current capture", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", exact: true }),
+  ).toBeVisible();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await expect(current.locator("input:focus")).toHaveCount(1);
+  const feed = page.locator(".scratchpad-history-scroll");
+  await expect
+    .poll(() =>
+      feed.evaluate(
+        (element) =>
+          element.scrollHeight - element.clientHeight - element.scrollTop,
+      ),
+    )
+    .toBeLessThanOrEqual(2);
+  const currentBottomGap = () =>
+    feed.evaluate((element) => {
+      const currentDocument = element.querySelector(
+        ".scratchpad-current-document",
+      );
+      if (!currentDocument) return Number.POSITIVE_INFINITY;
+      return (
+        element.getBoundingClientRect().bottom -
+        currentDocument.getBoundingClientRect().bottom
+      );
+    });
+  await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
+  await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+  await current
+    .getByRole("button", { name: "Actions for empty item" })
+    .last()
+    .click();
+  await expect(current.getByRole("menu", { name: /Actions for/ })).toHaveClass(
+    /opens-up/,
+  );
+  await page.keyboard.press("Escape");
+  await current.getByRole("button", { name: "Markdown" }).click();
+  await expect(
+    current.getByRole("textbox", { name: "Scratchpad Markdown" }),
+  ).toBeFocused();
+  await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
+  await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+  for (let index = 0; index < 3; index += 1) {
+    await current.getByRole("button", { name: "Outline" }).click();
+    await expect(
+      current.getByRole("tree", { name: "Scratchpad outline" }),
+    ).toBeVisible();
+    await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
+    await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+    await current.getByRole("button", { name: "Markdown" }).click();
+    await expect(
+      current.getByRole("textbox", { name: "Scratchpad Markdown" }),
+    ).toBeFocused();
+    await expect.poll(currentBottomGap).toBeGreaterThanOrEqual(22);
+    await expect.poll(currentBottomGap).toBeLessThanOrEqual(28);
+  }
+});
+
 test("keeps an embedded demo inside its frameable route", async ({ page }) => {
   await page.goto("embed/?demo=12");
 
@@ -44,6 +157,8 @@ test("keeps an embedded demo inside its frameable route", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Scratchpad", exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
+  await expect(page.getByText("Image file is unavailable")).toBeVisible();
 });
 
 test("supports project capture and saved-view editing in the demo", async ({
