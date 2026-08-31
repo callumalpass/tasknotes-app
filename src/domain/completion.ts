@@ -12,6 +12,8 @@ export interface FieldCompletion {
   label: string;
   detail?: string;
   path?: string;
+  /** Present when this record completion is a TaskNote in the current repository. */
+  taskId?: string;
   kind: "value" | "record";
 }
 

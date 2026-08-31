@@ -223,6 +223,7 @@ export class DemoTaskRepository implements TaskRepository {
         label: task.title,
         detail: task.path,
         path: task.path,
+        taskId: task.id,
       }));
   }
 

@@ -364,11 +364,22 @@ export class MdbaseTaskRepository implements TaskRepository {
         types: record.types,
       };
     });
+    const taskIdsByPath = new Map(
+      [...this.cache.values()].map(({ task }) => [
+        task.path.toLocaleLowerCase(),
+        task.id,
+      ]),
+    );
     return completeRecords(
       records,
       request,
       this.model.configuration().linkWriteFormat,
-    );
+    ).map((completion) => {
+      const taskId = completion.path
+        ? taskIdsByPath.get(completion.path.toLocaleLowerCase())
+        : undefined;
+      return taskId ? { ...completion, taskId } : completion;
+    });
   }
 
   create(input: CreateTaskInput): Promise<Task> {

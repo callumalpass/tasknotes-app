@@ -44,7 +44,6 @@ export function recordWikilinkCompletionSource(
                 label: value.label,
                 detail: value.detail,
                 apply,
-                type: "text",
               },
             ]
           : [];

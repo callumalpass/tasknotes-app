@@ -293,6 +293,38 @@ describe("ScratchpadScreen", () => {
     );
   });
 
+  it("turns an exact task suggestion into a linked row without a checkbox", async () => {
+    cleanup();
+    fixture = mdbaseFixture([
+      taskRecord("suggested", "Suggested task", "task-r1"),
+    ]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+
+    fireEvent.change(input, { target: { value: "[[Suggested" } });
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Suggested task/ }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Suggested task" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("textbox", { name: /Draft task: \[\[/ }),
+    ).toBeNull();
+    await waitFor(async () => {
+      const body = (await repository.getActiveScratchpad()).body;
+      expect(body).toMatch(/^- \[\[tasks\/.+\|Suggested task\]\]\n$/);
+      expect(body).not.toContain("[ ]");
+    });
+  });
+
   it("keeps an exact non-task record link as editable outline note content", async () => {
     cleanup();
     const project: TestRecord = {

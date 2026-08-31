@@ -56,6 +56,7 @@ import {
   activeRecordWikilink,
   applyRecordWikilinkCompletion,
   recordWikilinkCompletionRequest,
+  recordWikilinkValue,
 } from "../domain/record-wikilink-completion";
 import {
   changeScratchDepth,
@@ -1403,16 +1404,53 @@ function ScratchpadDocumentEditor({
       (candidate) => candidate.id === activeId,
     );
     if (!node) return;
-    const next = recordWikilinkToken
-      ? applyRecordWikilinkCompletion(node.text, recordWikilinkToken, value)
-      : activeCaptureSuggestionToken
-        ? applyCaptureSuggestion(
-            node.text,
-            activeCaptureSuggestionToken,
-            value.value,
-          )
-        : undefined;
-    if (!next) return;
+    if (recordWikilinkToken) {
+      const next = applyRecordWikilinkCompletion(
+        node.text,
+        recordWikilinkToken,
+        value,
+      );
+      const link = recordWikilinkValue(value);
+      if (!next || !link) return;
+      const isExactLink = next.text.trim() === link;
+      const taskId = isExactLink ? value.taskId : undefined;
+      changeNode(node.id, {
+        text: taskId ? value.label : next.text,
+        ...(isExactLink
+          ? taskId
+            ? {
+                kind: "task",
+                completed: false,
+                link,
+                taskId,
+              }
+            : {
+                kind: "note",
+                completed: false,
+                link: undefined,
+                taskId: undefined,
+              }
+          : {}),
+      });
+      if (taskId)
+        void repository.get(taskId).then((task) => {
+          if (!task) return;
+          setLinkedTasks((currentTasks) =>
+            new Map(currentTasks).set(task.id, task),
+          );
+        });
+      setCursor(next.cursor);
+      setSuggestionState({ key: "", values: [] });
+      if (!taskId)
+        focusAfterRender.current = { id: node.id, cursor: next.cursor };
+      return;
+    }
+    if (!activeCaptureSuggestionToken) return;
+    const next = applyCaptureSuggestion(
+      node.text,
+      activeCaptureSuggestionToken,
+      value.value,
+    );
     changeNode(node.id, { text: next.text });
     setCursor(next.cursor);
     setSuggestionState({ key: "", values: [] });
@@ -1435,7 +1473,7 @@ function ScratchpadDocumentEditor({
       }
       if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
-        chooseSuggestion(suggestions[selectedSuggestion]!);
+        void chooseSuggestion(suggestions[selectedSuggestion]!);
         return;
       }
       if (event.key === "Escape") {
@@ -2263,7 +2301,7 @@ function ScratchpadDocumentEditor({
                         role="option"
                         type="button"
                         onPointerDown={(event) => event.preventDefault()}
-                        onClick={() => chooseSuggestion(suggestion)}
+                        onClick={() => void chooseSuggestion(suggestion)}
                       >
                         <span>{suggestion.label}</span>
                         {suggestion.detail ? (
