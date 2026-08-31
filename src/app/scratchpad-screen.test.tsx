@@ -166,13 +166,17 @@ describe("ScratchpadScreen", () => {
       { timeout: SCRATCHPAD_LOAD_TIMEOUT },
     );
     fireEvent.change(input, { target: { value: "Keep this as context" } });
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Convert Keep this as context to note",
-      }),
-    );
+    const taskKind = screen.getByRole("button", {
+      name: "Convert Keep this as context to note",
+    });
+    expect(taskKind).toHaveClass("scratchpad-kind-toggle");
+    expect(taskKind).toHaveTextContent("Task");
+    fireEvent.click(taskKind);
 
-    expect(screen.getByRole("button", { name: "Make a task" })).toBeVisible();
+    const noteKind = screen.getByRole("button", { name: "Make a task" });
+    expect(noteKind).toBeVisible();
+    expect(noteKind).toHaveClass("scratchpad-kind-toggle");
+    expect(noteKind).toHaveTextContent("Note");
     await waitFor(async () =>
       expect((await repository.getActiveScratchpad()).body).toBe(
         "- Keep this as context\n",

@@ -4743,7 +4743,7 @@ html.scratchpad-route .page-surface {
   color: var(--success);
 }
 
-.scratchpad-task-kind-controls {
+.scratchpad-kind-controls {
   display: flex;
   width: 70px;
   min-width: 0;
@@ -4751,28 +4751,34 @@ html.scratchpad-route .page-surface {
   align-items: center;
 }
 
-.scratchpad-task-kind-controls .scratchpad-draft-completion {
+.scratchpad-kind-controls .scratchpad-draft-completion,
+.scratchpad-note-kind-icon {
+  display: inline-flex;
   width: 34px;
   min-width: 34px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
 }
 
-.scratchpad-make-note {
-  display: inline-flex;
+.scratchpad-kind-controls .scratchpad-kind-toggle {
   width: 36px;
+  min-width: 36px;
   min-height: 36px;
-  align-items: center;
   justify-content: flex-start;
   padding: 0;
   color: var(--ink-muted);
-  font-size: var(--type-label);
-  font-weight: 650;
-  background: transparent;
-  border: 0;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-mono-micro);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   border-radius: var(--radius-control);
   transition: color 140ms var(--ease-out);
 }
 
-.scratchpad-make-note:hover {
+.scratchpad-kind-controls .scratchpad-kind-toggle:hover {
   color: var(--accent);
 }
 
@@ -5276,17 +5282,19 @@ html.scratchpad-route .page-surface {
     grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
   }
 
-  .scratchpad-task-kind-controls {
+  .scratchpad-kind-controls {
     width: 64px;
   }
 
-  .scratchpad-task-kind-controls .scratchpad-draft-completion {
+  .scratchpad-kind-controls .scratchpad-draft-completion,
+  .scratchpad-note-kind-icon {
     width: 31px;
     min-width: 31px;
   }
 
-  .scratchpad-make-note {
+  .scratchpad-kind-controls .scratchpad-kind-toggle {
     width: 33px;
+    min-width: 33px;
     font-size: 0.63rem;
   }
 
