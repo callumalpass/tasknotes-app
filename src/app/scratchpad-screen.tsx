@@ -2133,10 +2133,13 @@ function ScratchpadDocumentEditor({
                   <div
                     className="scratchpad-nlp-preview"
                     aria-label="Recognized task details"
+                    aria-live="polite"
                   >
-                    {activePreview.map((item) => (
-                      <span key={item.key}>{item.label}</span>
-                    ))}
+                    <div>
+                      {activePreview.map((item) => (
+                        <span key={item.key}>{item.label}</span>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
                 {activeId === node.id && node.kind !== "task" ? (

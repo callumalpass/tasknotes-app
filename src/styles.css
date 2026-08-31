@@ -4875,22 +4875,38 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-nlp-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 88px 9px;
-  margin-top: -4px;
+  display: grid;
+  grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
+  margin-top: -1px;
   border-bottom: 1px solid var(--line);
 }
 
-.scratchpad-nlp-preview span {
-  padding: 2px 6px;
-  color: var(--accent);
+.scratchpad-nlp-preview > div {
+  display: flex;
+  min-width: 0;
+  grid-column: 4 / -1;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  padding: 4px 0 8px;
+  color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
-  background: var(--paper);
-  border: 1px solid color-mix(in srgb, var(--accent), transparent 64%);
-  border-radius: var(--radius-control);
+  line-height: 1.45;
+}
+
+.scratchpad-nlp-preview span {
+  white-space: nowrap;
+}
+
+.scratchpad-nlp-preview span:not(:first-child)::before {
+  position: relative;
+  right: 7px;
+  color: var(--line-strong);
+  content: "·";
+}
+
+.scratchpad-row:focus-within .scratchpad-nlp-preview {
+  background: color-mix(in srgb, var(--paper-soft), transparent 38%);
 }
 
 .scratchpad-suggestions,
@@ -5345,8 +5361,7 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-nlp-preview {
-    padding-right: 88px;
-    padding-left: 88px;
+    grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
   }
 
   .scratchpad-add-actions {
