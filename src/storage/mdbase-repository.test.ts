@@ -298,6 +298,37 @@ describe("mdbase task repository", () => {
     });
   });
 
+  it("temporarily blocks incomplete wikilinks before task writes reach Connect", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("existing", "Existing task", "r1"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    await expect(
+      repository.update("existing", { body: "Draft [[Plan" }),
+    ).rejects.toThrow(
+      "Finish or remove the empty or incomplete wikilink before saving",
+    );
+    await expect(
+      repository.create({ title: "Unsafe task", body: "[[]]" }),
+    ).rejects.toThrow(
+      "Finish or remove the empty or incomplete wikilink before saving",
+    );
+
+    expect(fixture.update).not.toHaveBeenCalled();
+    expect(fixture.create).not.toHaveBeenCalled();
+
+    await expect(
+      repository.update("existing", { body: "Draft [[Plan]]" }),
+    ).resolves.toMatchObject({ body: "Draft [[Plan]]" });
+    await expect(
+      repository.create({ title: "Safe task", body: "[[Plan]]" }),
+    ).resolves.toMatchObject({ title: "Safe task", body: "[[Plan]]" });
+    expect(fixture.update).toHaveBeenCalledOnce();
+    expect(fixture.create).toHaveBeenCalledOnce();
+  });
+
   it("serializes writes to different tasks across the live connection", async () => {
     const fixture = mdbaseFixture([
       taskRecord("first", "First task", "r1"),
