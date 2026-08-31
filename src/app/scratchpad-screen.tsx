@@ -1466,6 +1466,7 @@ function ScratchpadDocumentEditor({
         const index = current.findIndex(
           (candidate) => candidate.id === node.id,
         );
+        const subtreeEnd = scratchSubtreeEnd(current, index);
         updateNodes([
           ...current.slice(0, index),
           {
@@ -1476,8 +1477,9 @@ function ScratchpadDocumentEditor({
             link,
             taskId,
           },
+          ...current.slice(index + 1, subtreeEnd),
           created,
-          ...current.slice(index + 1),
+          ...current.slice(subtreeEnd),
         ]);
         focusAfterRender.current = { id: created.id, cursor: 0 };
         void repository.get(taskId).then((task) => {

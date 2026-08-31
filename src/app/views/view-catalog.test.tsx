@@ -86,7 +86,19 @@ it("keeps secondary view operations in a focused overflow menu", () => {
   expect(within(menu).getByRole("menuitem", { name: "Delete" })).toBeVisible();
   fireEvent.keyDown(menu, { key: "ArrowDown" });
   expect(duplicate).toHaveFocus();
-  fireEvent.click(duplicate);
+  fireEvent.keyDown(duplicate, { key: "Tab" });
+  expect(
+    within(allViews).queryByRole("menu", { name: "Actions for Work board" }),
+  ).toBeNull();
+
+  fireEvent.click(
+    within(allViews).getByRole("button", {
+      name: "More actions for Work board",
+    }),
+  );
+  fireEvent.click(
+    within(allViews).getByRole("menuitem", { name: "Duplicate" }),
+  );
   expect(callbacks.onDuplicate).toHaveBeenCalledWith(
     expect.objectContaining({ name: "Work board" }),
   );

@@ -6539,7 +6539,7 @@ html.scratchpad-route .page-surface {
 
 .navigation-reorder-toggle {
   min-width: 76px;
-  min-height: 40px;
+  min-height: 44px;
   flex: 0 0 auto;
 }
 
@@ -6559,7 +6559,7 @@ html.scratchpad-route .page-surface {
 }
 
 .navigation-view-order li.is-reorderable {
-  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
 }
 
 .navigation-view-order li > svg,
@@ -6583,7 +6583,7 @@ html.scratchpad-route .page-surface {
 
 .navigation-drag-handle {
   display: grid;
-  width: 36px;
+  width: 44px;
   height: 44px;
   padding: 0;
   place-items: center;
@@ -6665,7 +6665,7 @@ html.scratchpad-route .page-surface {
 
 .view-filter-list button {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   flex: 0 0 auto;
   align-items: center;
   gap: 7px;
@@ -6851,7 +6851,7 @@ html.scratchpad-route .page-surface {
 
 .saved-view-menu button {
   display: flex;
-  min-height: 42px;
+  min-height: 44px;
   align-items: center;
   gap: 9px;
   padding: 0 10px;
@@ -6875,7 +6875,7 @@ html.scratchpad-route .page-surface {
 .saved-view-membership {
   display: inline-flex;
   min-width: 108px;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 6px;

@@ -418,6 +418,10 @@ function ViewActions({
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const keyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        setOpen(false);
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         setOpen(false);
@@ -481,6 +485,7 @@ function ViewActions({
             <button
               ref={firstActionRef}
               role="menuitem"
+              tabIndex={-1}
               type="button"
               onClick={() => choose(() => onEdit(view))}
             >
@@ -490,6 +495,7 @@ function ViewActions({
           <button
             ref={view.source.writable ? undefined : firstActionRef}
             role="menuitem"
+            tabIndex={-1}
             type="button"
             onClick={() => choose(() => onDuplicate(view))}
           >
@@ -499,6 +505,7 @@ function ViewActions({
             <button
               className="is-danger"
               role="menuitem"
+              tabIndex={-1}
               type="button"
               onClick={() => choose(() => onDelete(view))}
             >

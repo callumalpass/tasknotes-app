@@ -56,6 +56,40 @@ it("orders Search with saved views and other working screens", () => {
   expect(onMove).toHaveBeenCalledWith(SEARCH_NAVIGATION_KEY, -1);
 });
 
+it("allows saved views to move later across built-in tools when Home stays saved", () => {
+  const today = view("today", "Today");
+  const upcoming = view("upcoming", "Upcoming");
+  const onMove = vi.fn();
+
+  render(
+    <NavigationViewOrder
+      keys={[
+        today.key,
+        SCRATCHPAD_NAVIGATION_KEY,
+        upcoming.key,
+        SEARCH_NAVIGATION_KEY,
+      ]}
+      specialViews={[
+        {
+          key: SCRATCHPAD_NAVIGATION_KEY,
+          name: "Scratchpad",
+          icon: FilePenLine,
+        },
+        { key: SEARCH_NAVIGATION_KEY, name: "Search", icon: Search },
+      ]}
+      views={[today, upcoming]}
+      onMove={onMove}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
+  fireEvent.click(screen.getByRole("button", { name: "Move Upcoming later" }));
+  expect(onMove).toHaveBeenCalledWith(upcoming.key, 1);
+  expect(
+    screen.getByRole("button", { name: "Move Today later" }),
+  ).toBeDisabled();
+});
+
 function view(id: string, name: string): TaskView {
   const path = `TaskNotes/Views/${id}.base`;
   return {

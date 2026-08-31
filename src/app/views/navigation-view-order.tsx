@@ -44,9 +44,7 @@ export function NavigationViewOrder({
   }
 
   function canMove(index: number, direction: -1 | 1): boolean {
-    if (direction === -1)
-      return index > 0 && !(ordered[index]?.special && index === 1);
-    return index < ordered.length - 1 && !ordered[index + 1]?.special;
+    return moveIsValid(ordered, index, direction);
   }
 
   function move(index: number, direction: -1 | 1) {
@@ -73,9 +71,18 @@ export function NavigationViewOrder({
     if (sourceIndex < 0 || sourceIndex === targetIndex) return;
     const direction = targetIndex < sourceIndex ? -1 : 1;
     const moving = ordered[sourceIndex]!;
-    while (sourceIndex !== targetIndex && canMove(sourceIndex, direction)) {
+    const working = [...ordered];
+    while (
+      sourceIndex !== targetIndex &&
+      moveIsValid(working, sourceIndex, direction)
+    ) {
       onMove(moving.key, direction);
-      sourceIndex += direction;
+      const adjacentIndex = sourceIndex + direction;
+      [working[sourceIndex], working[adjacentIndex]] = [
+        working[adjacentIndex]!,
+        working[sourceIndex]!,
+      ];
+      sourceIndex = adjacentIndex;
     }
     const adjacent = ordered[targetIndex];
     setAnnouncement(
@@ -188,6 +195,22 @@ export function NavigationViewOrder({
       </p>
     </section>
   );
+}
+
+function moveIsValid(
+  ordered: ReadonlyArray<{ special: boolean }>,
+  index: number,
+  direction: -1 | 1,
+): boolean {
+  const adjacentIndex = index + direction;
+  if (index < 0 || adjacentIndex < 0 || adjacentIndex >= ordered.length)
+    return false;
+  const proposed = [...ordered];
+  [proposed[index], proposed[adjacentIndex]] = [
+    proposed[adjacentIndex]!,
+    proposed[index]!,
+  ];
+  return proposed[0]?.special === false;
 }
 
 export function ViewIcon({ view }: { view: TaskView }) {
