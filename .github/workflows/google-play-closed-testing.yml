@@ -1,0 +1,175 @@
+name: Google Play closed testing
+
+on:
+  workflow_run:
+    workflows: [Android]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: google-play-closed-testing
+  cancel-in-progress: false
+
+jobs:
+  verify-release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'android-v')
+    runs-on: ubuntu-latest
+    outputs:
+      version_code: ${{ steps.metadata.outputs.version_code }}
+      version_name: ${{ steps.metadata.outputs.version_name }}
+      release_ref: ${{ steps.metadata.outputs.release_ref }}
+    env:
+      RELEASE_REF: ${{ github.event.workflow_run.head_branch }}
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      SOURCE_RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+    steps:
+      - name: Check out protected publication policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag belongs to protected main
+        id: metadata
+        run: |
+          if ! [[ "$RELEASE_REF" =~ ^android-v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unexpected Android release ref." >&2
+            exit 1
+          fi
+          if ! [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unexpected Android release commit." >&2
+            exit 1
+          fi
+          if ! [[ "$SOURCE_RUN_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Unexpected source workflow run number." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin \
+            "+refs/tags/$RELEASE_REF:refs/tags/$RELEASE_REF" \
+            "+refs/heads/main:refs/remotes/origin/main"
+          tag_sha="$(git rev-list -n 1 "$RELEASE_REF")"
+          if [ "$tag_sha" != "$RELEASE_SHA" ]; then
+            echo "Workflow commit does not match the release tag." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$RELEASE_SHA" origin/main; then
+            echo "Android release tag is not reachable from protected main." >&2
+            exit 1
+          fi
+
+          version_name="${RELEASE_REF#android-v}"
+          package_version="$(git show "$RELEASE_SHA:package.json" | node -e \
+            "let data=''; process.stdin.on('data', c => data += c); process.stdin.on('end', () => console.log(JSON.parse(data).version));")"
+          if [ "$version_name" != "$package_version" ]; then
+            echo "Release tag does not match package.json at the tagged commit." >&2
+            exit 1
+          fi
+
+          version_code_base="${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}"
+          if ! [[ "$version_code_base" =~ ^[0-9]+$ ]]; then
+            echo "TASKNOTES_ANDROID_VERSION_CODE_BASE must be a non-negative integer." >&2
+            exit 1
+          fi
+          version_code="$((version_code_base + SOURCE_RUN_NUMBER))"
+          if [ "$version_code" -lt 1 ] || [ "$version_code" -gt 2100000000 ]; then
+            echo "Generated Android version code is outside the platform range." >&2
+            exit 1
+          fi
+
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Download exact source-run artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: tasknotes-android-${{ github.event.workflow_run.head_branch }}
+          path: android-release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Verify release artifacts
+        run: |
+          test -s android-release/app-release.aab
+          test -s android-release/app-release.apk
+          sha256sum android-release/app-release.aab android-release/app-release.apk
+
+  publish-play-closed-testing:
+    needs: verify-release
+    runs-on: ubuntu-latest
+    environment: google-play-closed-testing
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out protected publication policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Download exact source-run artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: tasknotes-android-${{ github.event.workflow_run.head_branch }}
+          path: android-release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Publish to Google Play closed testing
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+          TASKNOTES_ANDROID_VERSION_CODE: ${{ needs.verify-release.outputs.version_code }}
+          TASKNOTES_ANDROID_VERSION_NAME: ${{ needs.verify-release.outputs.version_name }}
+        run: |
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          node scripts/publish-google-play.mjs \
+            android-release/app-release.aab \
+            "$TASKNOTES_ANDROID_VERSION_CODE" \
+            "$TASKNOTES_ANDROID_VERSION_NAME"
+
+  publish-github-release:
+    needs: [verify-release, publish-play-closed-testing]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    env:
+      RELEASE_REF: ${{ needs.verify-release.outputs.release_ref }}
+      TASKNOTES_ANDROID_VERSION_NAME: ${{ needs.verify-release.outputs.version_name }}
+    steps:
+      - name: Download exact source-run artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: tasknotes-android-${{ github.event.workflow_run.head_branch }}
+          path: android-release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Create or reconcile GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$RELEASE_REF" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_REF" \
+              android-release/app-release.apk \
+              android-release/app-release.aab \
+              --clobber
+            gh release edit "$RELEASE_REF" \
+              --title "TaskNotes $TASKNOTES_ANDROID_VERSION_NAME"
+          else
+            gh release create "$RELEASE_REF" \
+              android-release/app-release.apk \
+              android-release/app-release.aab \
+              --generate-notes \
+              --title "TaskNotes $TASKNOTES_ANDROID_VERSION_NAME"
+          fi

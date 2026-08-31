@@ -116,6 +116,7 @@ Contributor documentation:
 - [Architecture and data invariants](docs/architecture.md)
 - [Contract and conformance claims](docs/conformance.md)
 - [Notification behaviour and setup](docs/notifications.md)
+- [Android signing and Google Play closed testing](docs/android-release.md)
 - [iOS signing and TestFlight](docs/ios-release.md)
 - [Vendored package snapshots](vendor/README.md)
 
