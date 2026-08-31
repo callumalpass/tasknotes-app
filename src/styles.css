@@ -4251,6 +4251,11 @@ html.scratchpad-route .page-surface {
   flex: 0 0 8px;
 }
 
+.scratchpad-current-rest-space {
+  min-height: var(--scratch-current-rest, 0px);
+  flex: 0 0 var(--scratch-current-rest, 0px);
+}
+
 .scratchpad-current-document {
   width: min(calc(100% - 2 * var(--page-inset)), var(--scratch-feed-width));
   padding: 12px 16px 18px;
