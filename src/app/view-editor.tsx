@@ -38,10 +38,14 @@ const ViewEditorForm = lazy(async () => ({
 
 export function ViewEditor({
   view,
+  duplicate = false,
+  confirmDelete = false,
   onClose,
   onChanged,
 }: {
   view?: TaskView;
+  duplicate?: boolean;
+  confirmDelete?: boolean;
   onClose(): void;
   onChanged(): Promise<void>;
 }) {
@@ -58,7 +62,7 @@ export function ViewEditor({
   const [filterValid, setFilterValid] = useState(true);
   const [computedValid, setComputedValid] = useState(true);
   const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(
-    null,
+    confirmDelete ? "delete" : null,
   );
   const [status, setStatus] = useState<"loading" | "ready" | "saving">(
     "loading",
@@ -89,10 +93,13 @@ export function ViewEditor({
     ]).then(
       ([configuration, loadedSource]) => {
         if (!active) return;
-        const next = loadedSource
+        const loadedDraft = loadedSource
           ? readViewDraft(loadedSource, view!.id)
           : emptyViewDraft("obsidian-bases");
-        setSource(loadedSource);
+        const next = duplicate
+          ? { ...loadedDraft, name: `${loadedDraft.name} copy` }
+          : loadedDraft;
+        setSource(duplicate ? null : loadedSource);
         setDraft(next);
         setInitialFingerprint(draftFingerprint(next));
         setConfiguration(configuration);
@@ -107,7 +114,7 @@ export function ViewEditor({
     return () => {
       active = false;
     };
-  }, [repository, view]);
+  }, [duplicate, repository, view]);
 
   useEffect(() => {
     let active = true;
@@ -276,7 +283,10 @@ export function ViewEditor({
     }
   }
 
-  const title = draft?.name.trim() || (view ? view.name : "New view");
+  const title =
+    draft?.name.trim() ||
+    (duplicate ? `Copy ${view?.name}` : view?.name) ||
+    "New view";
   const canSave =
     Boolean(draft?.name.trim()) &&
     filterValid &&
@@ -305,7 +315,11 @@ export function ViewEditor({
         <header className="view-editor-header">
           <div>
             <p className="eyebrow">
-              {view ? "Edit saved view" : "Create saved view"}
+              {duplicate
+                ? "Duplicate saved view"
+                : view
+                  ? "Edit saved view"
+                  : "Create saved view"}
             </p>
             <h1 id="view-editor-title">{title}</h1>
             <small>{previewLabel(preview)}</small>
@@ -333,11 +347,11 @@ export function ViewEditor({
             <Suspense fallback={<ViewEditorLoading />}>
               <ViewPreview preview={preview} />
               <ViewEditorForm
-                autoFocusName={!view}
+                autoFocusName={!view || duplicate}
                 configuration={configuration}
                 draft={draft}
                 repository={repository}
-                sourcePath={source?.path}
+                sourcePath={duplicate ? undefined : source?.path}
                 onChange={setDraft}
                 onComputedValidityChange={setComputedValid}
                 onFilterValidityChange={setFilterValid}
@@ -347,7 +361,7 @@ export function ViewEditor({
         </div>
 
         <footer className="view-editor-footer">
-          {view ? (
+          {view && !duplicate ? (
             <button
               className="danger-text-action"
               disabled={status === "saving"}
@@ -381,6 +395,7 @@ export function ViewEditor({
         {confirmation ? (
           <ViewEditorConfirmation
             action={confirmation}
+            busy={status !== "ready"}
             containerRef={confirmationRef}
             name={draft?.name || view?.name || "this view"}
             onCancel={() => setConfirmation(null)}
@@ -429,12 +444,14 @@ function previewLabel(preview: ViewDraftPreview): string {
 
 function ViewEditorConfirmation({
   action,
+  busy,
   containerRef,
   name,
   onCancel,
   onConfirm,
 }: {
   action: "discard" | "delete";
+  busy: boolean;
   containerRef: RefObject<HTMLElement | null>;
   name: string;
   onCancel(): void;
@@ -469,6 +486,7 @@ function ViewEditorConfirmation({
           </button>
           <button
             className="danger-outline-action"
+            disabled={busy}
             type="button"
             onClick={onConfirm}
           >

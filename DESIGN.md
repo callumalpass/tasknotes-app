@@ -147,8 +147,13 @@ Today             Search       More
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Views and Settings. The Views catalog pins and orders Search, Scratchpad, and
-  saved views through the same navigation model.
+  Views and Settings. Manage views separates the ordered destinations shown in
+  navigation from the complete catalog. Reordering is an intentional mode with
+  drag and keyboard/button alternatives; catalog membership uses explicit
+  Add/Added language. Built-in tools and saved views remain distinct, saved
+  source paths are quiet metadata, and search plus All/In navigation/Editable
+  filters keep large collections manageable. Secondary edit, duplicate, and
+  delete operations live in an overflow menu rather than competing with the row.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The

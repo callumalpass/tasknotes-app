@@ -40,13 +40,54 @@ it("orders Search with saved views and other working screens", () => {
     within(screen.getByRole("list"))
       .getAllByRole("listitem")
       .map((item) => item.querySelector("span")?.textContent),
-  ).toEqual(["Today", "Scratchpad", "Search", "Upcoming"]);
+  ).toEqual(["TodayHome", "Scratchpad", "Search", "Upcoming"]);
+  expect(
+    screen.queryByRole("button", { name: "Move Scratchpad earlier" }),
+  ).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
   expect(
     screen.getByRole("button", { name: "Move Scratchpad earlier" }),
   ).toBeDisabled();
-
-  fireEvent.click(screen.getByRole("button", { name: "Move Search earlier" }));
+  fireEvent.keyDown(
+    screen.getByRole("button", { name: "Drag Search to reorder" }),
+    { key: "ArrowUp" },
+  );
   expect(onMove).toHaveBeenCalledWith(SEARCH_NAVIGATION_KEY, -1);
+});
+
+it("allows saved views to move later across built-in tools when Home stays saved", () => {
+  const today = view("today", "Today");
+  const upcoming = view("upcoming", "Upcoming");
+  const onMove = vi.fn();
+
+  render(
+    <NavigationViewOrder
+      keys={[
+        today.key,
+        SCRATCHPAD_NAVIGATION_KEY,
+        upcoming.key,
+        SEARCH_NAVIGATION_KEY,
+      ]}
+      specialViews={[
+        {
+          key: SCRATCHPAD_NAVIGATION_KEY,
+          name: "Scratchpad",
+          icon: FilePenLine,
+        },
+        { key: SEARCH_NAVIGATION_KEY, name: "Search", icon: Search },
+      ]}
+      views={[today, upcoming]}
+      onMove={onMove}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
+  fireEvent.click(screen.getByRole("button", { name: "Move Upcoming later" }));
+  expect(onMove).toHaveBeenCalledWith(upcoming.key, 1);
+  expect(
+    screen.getByRole("button", { name: "Move Today later" }),
+  ).toBeDisabled();
 });
 
 function view(id: string, name: string): TaskView {

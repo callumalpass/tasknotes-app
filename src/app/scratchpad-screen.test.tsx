@@ -341,10 +341,52 @@ describe("ScratchpadScreen", () => {
     expect(
       screen.queryByRole("textbox", { name: /Draft task: \[\[/ }),
     ).toBeNull();
+    expect(
+      screen.getByRole("textbox", { name: "Draft task: empty" }),
+    ).toHaveFocus();
     await waitFor(async () => {
       const body = (await repository.getActiveScratchpad()).body;
       expect(body).toMatch(/^- \[\[tasks\/.+\|Suggested task\]\]\n$/);
       expect(body).not.toContain("[ ]");
+    });
+  });
+
+  it("adds the next line after an exact task row's existing children", async () => {
+    cleanup();
+    fixture = mdbaseFixture([
+      taskRecord("suggested", "Suggested task", "task-r1"),
+    ]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    renderScratchpad();
+    const parent = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(parent, { target: { value: "Parent" } });
+    fireEvent.keyDown(parent, { key: "Enter" });
+    const child = screen.getByRole("textbox", { name: "Draft task: empty" });
+    fireEvent.keyDown(child, { key: "Tab" });
+    fireEvent.change(child, { target: { value: "Child" } });
+
+    const editedParent = screen.getByRole("textbox", {
+      name: "Draft task: Parent",
+    });
+    fireEvent.focus(editedParent);
+    fireEvent.change(editedParent, { target: { value: "[[Suggested" } });
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Suggested task/ }),
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: "Draft task: empty" }),
+    ).toHaveFocus();
+    await waitFor(async () => {
+      const body = (await repository.getActiveScratchpad()).body;
+      expect(body).toMatch(
+        /^- \[\[tasks\/.+\|Suggested task\]\]\n {2}- \[ \] Child\n$/,
+      );
     });
   });
 

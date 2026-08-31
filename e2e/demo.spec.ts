@@ -199,6 +199,9 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
       exact: true,
     }),
   ).toBeVisible();
+  await expect(
+    current.getByRole("textbox", { name: "Draft task: empty" }).last(),
+  ).toBeFocused();
 
   await current.getByRole("button", { name: "Markdown" }).click();
   const source = current.getByRole("textbox", {
@@ -338,6 +341,41 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
     activeLineUsesSoftAccent: true,
     focusIsVisible: true,
   });
+
+  await editor.fill("[[quarterly");
+  const option = current.getByRole("option", {
+    name: /Prepare quarterly planning session/,
+  });
+  await expect(option).toBeVisible();
+  const pickerTheme = await option.evaluate((item) => {
+    const tooltip = item.closest<HTMLElement>(".cm-tooltip-autocomplete")!;
+    const detail = item.querySelector<HTMLElement>(".cm-completionDetail")!;
+    const probe = document.createElement("div");
+    probe.style.backgroundColor = "var(--paper-raised)";
+    probe.style.borderColor = "var(--line-strong)";
+    probe.style.color = "var(--ink-muted)";
+    document.body.append(probe);
+    const expected = getComputedStyle(probe);
+    const values = {
+      raisedSurface:
+        getComputedStyle(tooltip).backgroundColor === expected.backgroundColor,
+      strongBorder:
+        getComputedStyle(tooltip).borderColor === expected.borderColor,
+      mutedPath: getComputedStyle(detail).color === expected.color,
+      selectedUsesAccent:
+        getComputedStyle(item).backgroundColor !== "rgba(0, 0, 0, 0)",
+      elevated: getComputedStyle(tooltip).boxShadow !== "none",
+    };
+    probe.remove();
+    return values;
+  });
+  expect(pickerTheme).toEqual({
+    raisedSurface: true,
+    strongBorder: true,
+    mutedPath: true,
+    selectedUsesAccent: true,
+    elevated: true,
+  });
 });
 
 test("keeps an embedded demo inside its frameable route", async ({ page }) => {
@@ -354,6 +392,57 @@ test("keeps an embedded demo inside its frameable route", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
   await expect(page.getByText("Image file is unavailable")).toBeVisible();
+});
+
+test("keeps view management clear and scalable", async ({ page }) => {
+  await page.goto("views/?demo=24");
+
+  await expect(
+    page.getByRole("heading", { name: "Manage views" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Choose what appears in navigation, change its order, and manage saved views.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Shown in navigation" }),
+  ).toBeVisible();
+  const allViews = page.getByRole("region", { name: "All views" });
+  await expect(
+    allViews.getByRole("searchbox", { name: "Search views" }),
+  ).toBeVisible();
+  await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
+  await expect(allViews.getByText("Saved views")).toBeVisible();
+  await expect(allViews.getByText("TaskNotes/Views/today.base")).toBeVisible();
+  const accessibility = await new AxeBuilder({ page })
+    .include(".views-screen")
+    .analyze();
+  expect(
+    accessibility.violations.filter(({ impact }) =>
+      ["critical", "serious"].includes(impact ?? ""),
+    ),
+  ).toEqual([]);
+
+  await allViews
+    .getByRole("searchbox", { name: "Search views" })
+    .fill("work board");
+  await expect(allViews.getByRole("button", { name: "All 1" })).toBeVisible();
+  await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
+  await expect(allViews.getByText("Today", { exact: true })).toHaveCount(0);
+
+  await allViews.getByRole("searchbox", { name: "Search views" }).fill("");
+  const editableFilter = allViews.getByRole("button", { name: /Editable/ });
+  await editableFilter.focus();
+  await editableFilter.press("Enter");
+  await expect(allViews.getByText("TaskNotes tools")).toHaveCount(0);
+  await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Reorder" }).click();
+  const moveSearch = page.getByRole("button", { name: "Move Search earlier" });
+  await expect(moveSearch).toBeVisible();
+  await moveSearch.click();
+  await expect(page.getByText(/Search moved before Scratchpad/)).toBeAttached();
 });
 
 test("supports project capture and saved-view editing in the demo", async ({
@@ -376,12 +465,13 @@ test("supports project capture and saved-view editing in the demo", async ({
   await expect(page.getByText("Draft the interview guide")).toBeVisible();
 
   await openNavigationItem(page, "Manage views");
-  await page.getByRole("button", { name: "Edit Today" }).click();
+  await page.getByRole("button", { name: "More actions for Today" }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const viewName = page.getByRole("textbox", { name: "View name" });
   await viewName.fill("Daily focus");
   await page.getByRole("button", { name: "Save view" }).click();
   await expect(
-    page.getByRole("button", { name: "Daily focus", exact: true }),
+    page.getByRole("button", { name: /^Daily focus/ }).first(),
   ).toBeVisible();
 });
 
