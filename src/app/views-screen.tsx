@@ -1,13 +1,4 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  FilePenLine,
-  GripVertical,
-  Pencil,
-  Pin,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ChevronLeft, GripVertical, Pencil, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -62,7 +53,7 @@ import {
   calendarDateDefaults,
   calendarSelectionDefaults,
 } from "../domain/mini-calendar";
-import { NavigationViewOrder, ViewIcon } from "./views/navigation-view-order";
+import { ViewCatalog } from "./views/view-catalog";
 import { ProjectsView } from "./views/projects-view";
 import {
   removeConfirmedBoardMoves,
@@ -72,12 +63,6 @@ import {
   type OptimisticListMove,
   type OptimisticManualRank,
 } from "./optimistic-view-reconciliation";
-import {
-  isSpecialNavigationKey,
-  SCRATCHPAD_NAVIGATION_KEY,
-  SEARCH_NAVIGATION_KEY,
-} from "./navigation-views";
-import { TaskNotesCatalogEntries } from "./views/scratchpad-catalog-entry";
 import { PlannerViewHandoff } from "./views/planner-view-handoff";
 import { usePlannerViewLink } from "./use-planner-view-link";
 import { CalendarViewPresentation } from "./views/calendar-view-presentation";
@@ -96,6 +81,11 @@ import type {
 } from "../domain/view";
 
 type ViewExecutionFailure = { key: string; reason: unknown };
+type ViewEditorRequest = {
+  view?: TaskView;
+  duplicate?: boolean;
+  confirmDelete?: boolean;
+};
 
 export function ViewsScreen({
   calendarPreferences = defaultCalendarPreferences(),
@@ -147,7 +137,7 @@ export function ViewsScreen({
   const [refreshingExecution, setRefreshingExecution] = useState<string | null>(
     null,
   );
-  const [editing, setEditing] = useState<TaskView | "new" | null>(null);
+  const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
   const [boardMoves, setBoardMoves] = useState<
     Map<string, OptimisticBoardMove>
   >(() => new Map());
@@ -829,14 +819,18 @@ export function ViewsScreen({
         <section className="screen views-screen" aria-labelledby="views-title">
           <header className="screen-header compact-header views-catalog-header">
             <div>
-              <h1 id="views-title">Views</h1>
+              <h1 id="views-title">Manage views</h1>
+              <p>
+                Choose what appears in navigation, change its order, and manage
+                saved views.
+              </p>
             </div>
             <div className="views-header-actions">
               <button
                 className="text-action views-create-action"
                 type="button"
                 onFocus={preloadViewEditor}
-                onClick={() => setEditing("new")}
+                onClick={() => setEditing({})}
                 onPointerEnter={preloadViewEditor}
               >
                 <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
@@ -848,147 +842,32 @@ export function ViewsScreen({
             <OperationErrorNotice
               action="Views"
               message={viewsError}
-              recovery="Retry by reopening Views or refreshing the collection."
+              recovery="Retry by reopening Manage views or refreshing the collection."
             />
           ) : null}
           {!documents || !views ? (
             <LoadingRows count={4} />
-          ) : views.length ? (
-            <div className="view-catalog">
-              <NavigationViewOrder
-                keys={navigationViewKeys}
-                specialViews={[
-                  {
-                    key: SCRATCHPAD_NAVIGATION_KEY,
-                    name: "Scratchpad",
-                    icon: FilePenLine,
-                  },
-                  {
-                    key: SEARCH_NAVIGATION_KEY,
-                    name: "Search",
-                    icon: Search,
-                  },
-                ]}
-                views={views}
-                onMove={onMoveNavigationView}
-              />
-              <div className="view-document-list">
-                <TaskNotesCatalogEntries
-                  navigationKeys={navigationViewKeys}
-                  onOpenScratchpad={onOpenScratchpad}
-                  onOpenSearch={onSearch}
-                  onToggleNavigation={onToggleNavigationView}
-                />
-                {documents.map((document) => {
-                  const showDocumentHeading =
-                    document.views.length !== 1 ||
-                    document.views[0]?.name !== document.name;
-                  return (
-                    <section
-                      className={`view-document${showDocumentHeading ? "" : " is-single-view"}`}
-                      key={document.source.path}
-                      aria-label={
-                        showDocumentHeading ? undefined : document.name
-                      }
-                      aria-labelledby={
-                        showDocumentHeading
-                          ? `view-document-${safeId(document.id)}`
-                          : undefined
-                      }
-                    >
-                      {showDocumentHeading ? (
-                        <header className="view-document-heading">
-                          <h2 id={`view-document-${safeId(document.id)}`}>
-                            {document.name}
-                          </h2>
-                        </header>
-                      ) : null}
-                      <div className="saved-view-list">
-                        {document.views.map((view) => {
-                          const inNavigation = navigationViewKeys.includes(
-                            view.key,
-                          );
-                          const lastNavigationView =
-                            inNavigation &&
-                            navigationViewKeys.filter(
-                              (key) => !isSpecialNavigationKey(key),
-                            ).length === 1;
-                          return (
-                            <div className="saved-view-row" key={view.key}>
-                              <button
-                                className="saved-view-open"
-                                type="button"
-                                onClick={() => onOpenView(view)}
-                              >
-                                <ViewIcon view={view} />
-                                <span>
-                                  <strong>{view.name}</strong>
-                                </span>
-                                <ChevronRight aria-hidden="true" size={18} />
-                              </button>
-                              {view.source.writable ? (
-                                <button
-                                  aria-label={`Edit ${view.name}`}
-                                  className="saved-view-edit"
-                                  type="button"
-                                  onFocus={preloadViewEditor}
-                                  onClick={() => setEditing(view)}
-                                  onPointerEnter={preloadViewEditor}
-                                >
-                                  <Pencil aria-hidden="true" size={16} />
-                                </button>
-                              ) : null}
-                              <button
-                                aria-label={
-                                  lastNavigationView
-                                    ? `${view.name} must remain in navigation until another view is added`
-                                    : inNavigation
-                                      ? `Remove ${view.name} from navigation`
-                                      : `Add ${view.name} to navigation`
-                                }
-                                aria-pressed={inNavigation}
-                                className="saved-view-pin"
-                                disabled={lastNavigationView}
-                                type="button"
-                                onClick={() => {
-                                  selectionFeedback();
-                                  onToggleNavigationView(view.key);
-                                }}
-                              >
-                                <Pin
-                                  aria-hidden="true"
-                                  fill={inNavigation ? "currentColor" : "none"}
-                                  size={17}
-                                />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </div>
           ) : (
-            <div className="plain-empty">
-              <h2>No saved views yet</h2>
-              <button
-                className="outline-action"
-                type="button"
-                onFocus={preloadViewEditor}
-                onClick={() => setEditing("new")}
-                onPointerEnter={preloadViewEditor}
-              >
-                <Plus aria-hidden="true" size={17} />
-                Create view
-              </button>
-            </div>
+            <ViewCatalog
+              documents={documents}
+              navigationViewKeys={navigationViewKeys}
+              views={views}
+              onDelete={(view) => setEditing({ view, confirmDelete: true })}
+              onDuplicate={(view) => setEditing({ view, duplicate: true })}
+              onEdit={(view) => setEditing({ view })}
+              onMoveNavigation={onMoveNavigationView}
+              onOpenScratchpad={onOpenScratchpad}
+              onOpenSearch={onSearch}
+              onOpenView={onOpenView}
+              onToggleNavigation={onToggleNavigationView}
+            />
           )}
         </section>
         {editing ? (
           <ViewEditor
-            view={editing === "new" ? undefined : editing}
+            confirmDelete={editing.confirmDelete}
+            duplicate={editing.duplicate}
+            view={editing.view}
             onClose={() => setEditing(null)}
             onChanged={onViewsChanged}
           />
@@ -1070,7 +949,7 @@ export function ViewsScreen({
                   title={`Edit ${selected.name}`}
                   type="button"
                   onFocus={preloadViewEditor}
-                  onClick={() => setEditing(selected)}
+                  onClick={() => setEditing({ view: selected })}
                   onPointerEnter={preloadViewEditor}
                 >
                   <Pencil aria-hidden="true" size={18} />
@@ -1083,7 +962,7 @@ export function ViewsScreen({
           <ViewExecutionErrorNotice
             canEdit={Boolean(selected?.source.writable)}
             reason={error}
-            onEdit={() => selected && setEditing(selected)}
+            onEdit={() => selected && setEditing({ view: selected })}
             onRetry={() => setExecutionRetry((attempt) => attempt + 1)}
           />
         ) : null}
@@ -1099,9 +978,11 @@ export function ViewsScreen({
             recovery="Nothing else changed. Try again."
           />
         ) : null}
-        {editing && editing !== "new" ? (
+        {editing ? (
           <ViewEditor
-            view={editing}
+            confirmDelete={editing.confirmDelete}
+            duplicate={editing.duplicate}
+            view={editing.view}
             onClose={() => setEditing(null)}
             onChanged={onViewsChanged}
           />
@@ -2523,10 +2404,6 @@ function executionWithManualRanks(
 
 function valueKey(value: unknown): string {
   return JSON.stringify(value ?? null);
-}
-
-function safeId(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
 function columnLabel(value: unknown): string {

@@ -131,6 +131,39 @@ describe("ViewEditor", () => {
     );
   });
 
+  it("duplicates a saved view into a new provider-neutral source", async () => {
+    const source = baseSource(
+      "views: [{ type: tasknotesTaskList, name: Work }]\n",
+    );
+    const createViewSource = vi.fn(
+      async (input: CreateTaskViewSourceInput) => ({
+        path: "TaskNotes/Views/work-copy.base",
+        format: "obsidian.base",
+        revision: "two",
+        document: input.document,
+      }),
+    );
+    renderEditor({
+      duplicate: true,
+      repository: repository({ source, createViewSource }),
+      view: savedView(),
+    });
+
+    await screen.findByRole("dialog", { name: "Work copy" });
+    expect(screen.getByText("Duplicate saved view")).toBeVisible();
+    expect(screen.getByLabelText("View name")).toHaveValue("Work copy");
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+
+    await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
+    expect(createViewSource.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        format: "obsidian.base",
+        name: "Work copy",
+        path: "TaskNotes/Views/work-copy.base",
+      }),
+    );
+  });
+
   it("offers Manual order as a first-class descending sort", async () => {
     const createViewSource = vi.fn(
       async (input: CreateTaskViewSourceInput) => ({
@@ -408,6 +441,30 @@ views:
     ).toBeVisible();
   });
 
+  it("can open directly into confirmed deletion from the catalog", async () => {
+    const source = baseSource(
+      "views: [{ type: tasknotesTaskList, name: Work }]\n",
+    );
+    const deleteViewSource = vi.fn(async () => undefined);
+    renderEditor({
+      confirmDelete: true,
+      repository: repository({ source, deleteViewSource }),
+      view: savedView(),
+    });
+
+    const confirmation = await screen.findByRole("alertdialog", {
+      name: "Delete “Work”?",
+    });
+    const remove = within(confirmation).getByRole("button", {
+      name: "Delete view",
+    });
+    await waitFor(() => expect(remove).toBeEnabled());
+    fireEvent.click(remove);
+    await waitFor(() =>
+      expect(deleteViewSource).toHaveBeenCalledWith("views/work.base", "one"),
+    );
+  });
+
   it("explains that deleting a view leaves tasks alone", async () => {
     renderEditor({ repository: repository(), view: savedView() });
     await screen.findByRole("dialog", { name: "Work" });
@@ -428,11 +485,15 @@ views:
 function renderEditor({
   repository: supplied,
   view,
+  duplicate,
+  confirmDelete,
   onClose = vi.fn(),
   onChanged = vi.fn(async () => undefined),
 }: {
   repository: TaskRepository;
   view?: TaskView;
+  duplicate?: boolean;
+  confirmDelete?: boolean;
   onClose?: () => void;
   onChanged?: () => Promise<void>;
 }) {
@@ -441,7 +502,13 @@ function renderEditor({
       mutationJournal={new MemoryMutationJournal()}
       repository={supplied}
     >
-      <ViewEditor view={view} onClose={onClose} onChanged={onChanged} />
+      <ViewEditor
+        confirmDelete={confirmDelete}
+        duplicate={duplicate}
+        view={view}
+        onClose={onClose}
+        onChanged={onChanged}
+      />
     </RepositoryProvider>,
   );
 }

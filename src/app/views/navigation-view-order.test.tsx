@@ -40,12 +40,19 @@ it("orders Search with saved views and other working screens", () => {
     within(screen.getByRole("list"))
       .getAllByRole("listitem")
       .map((item) => item.querySelector("span")?.textContent),
-  ).toEqual(["Today", "Scratchpad", "Search", "Upcoming"]);
+  ).toEqual(["TodayHome", "Scratchpad", "Search", "Upcoming"]);
+  expect(
+    screen.queryByRole("button", { name: "Move Scratchpad earlier" }),
+  ).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
   expect(
     screen.getByRole("button", { name: "Move Scratchpad earlier" }),
   ).toBeDisabled();
-
-  fireEvent.click(screen.getByRole("button", { name: "Move Search earlier" }));
+  fireEvent.keyDown(
+    screen.getByRole("button", { name: "Drag Search to reorder" }),
+    { key: "ArrowUp" },
+  );
   expect(onMove).toHaveBeenCalledWith(SEARCH_NAVIGATION_KEY, -1);
 });
 

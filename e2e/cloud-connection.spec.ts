@@ -95,7 +95,9 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   expect(operations).toContain("query");
 
   await openNavigationItem(page, "Manage views");
-  await expect(page.getByRole("heading", { name: "Views" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Manage views" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Create view" }).click();
   await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();
   await page
@@ -109,6 +111,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(
     page.getByRole("button", { name: "Remove Search from navigation" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Reorder" }).click();
   await page.getByRole("button", { name: "Move Search earlier" }).click();
   await expect
     .poll(() => navigationPreference(page))
