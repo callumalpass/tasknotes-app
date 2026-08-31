@@ -83,13 +83,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      TASKNOTES_ANDROID_VERSION_CODE: ${{ github.run_number }}
       TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
       GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
     steps:
@@ -115,13 +114,37 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Validate signing configuration
+      - name: Validate release metadata and signing configuration
+        id: release_metadata
         run: |
           test -n "$ANDROID_KEYSTORE_BASE64"
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
-          echo "TASKNOTES_ANDROID_VERSION_NAME=${GITHUB_REF_NAME#android-v}" >> "$GITHUB_ENV"
+
+          version_name="${GITHUB_REF_NAME#android-v}"
+          package_version="$(node -p "require('./package.json').version")"
+          if [ "$version_name" != "$package_version" ]; then
+            echo "Tag version $version_name does not match package.json version $package_version." >&2
+            exit 1
+          fi
+          if ! [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Android release tag must contain a semantic version." >&2
+            exit 1
+          fi
+
+          version_code_base="${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}"
+          if ! [[ "$version_code_base" =~ ^[0-9]+$ ]]; then
+            echo "TASKNOTES_ANDROID_VERSION_CODE_BASE must be a non-negative integer." >&2
+            exit 1
+          fi
+          version_code="$((version_code_base + GITHUB_RUN_NUMBER))"
+          if [ "$version_code" -lt 1 ] || [ "$version_code" -gt 2100000000 ]; then
+            echo "Generated Android version code is outside the platform range." >&2
+            exit 1
+          fi
+          echo "TASKNOTES_ANDROID_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "TASKNOTES_ANDROID_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
 
       - name: Restore signing key
         run: |
@@ -158,12 +181,8 @@ jobs:
             android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      - name: Publish GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Remove temporary signing material
+        if: always()
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            android/app/build/outputs/apk/release/app-release.apk \
-            android/app/build/outputs/bundle/release/app-release.aab \
-            --generate-notes \
-            --title "TaskNotes ${TASKNOTES_ANDROID_VERSION_NAME}"
+          rm -f "$RUNNER_TEMP/tasknotes-release.jks"
+          rm -f android/app/google-services.json
