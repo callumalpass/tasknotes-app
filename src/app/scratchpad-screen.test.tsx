@@ -205,6 +205,41 @@ describe("ScratchpadScreen", () => {
     );
   });
 
+  it("keeps an incomplete wikilink local and saves after it is finished", async () => {
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fixture.update.mockClear();
+
+    fireEvent.change(input, { target: { value: "Draft [[Plan" } });
+
+    expect(await screen.findByText("Not saved")).toBeVisible();
+    expect(
+      screen.getByText(
+        /Finish or remove the empty or incomplete wikilink before saving/,
+      ),
+    ).toBeVisible();
+    expect(fixture.update).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "Draft [[Plan]]" } });
+
+    await waitFor(async () => {
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body: "- [ ] Draft [[Plan]]\n",
+      });
+      expect(screen.getByText("Saved")).toBeVisible();
+    });
+    expect(
+      screen.queryByText(
+        /Finish or remove the empty or incomplete wikilink before saving/,
+      ),
+    ).toBeNull();
+    expect(fixture.update).toHaveBeenCalledOnce();
+  });
+
   it("edits and clears an explicit note title", async () => {
     renderScratchpad();
     const title = await screen.findByRole(

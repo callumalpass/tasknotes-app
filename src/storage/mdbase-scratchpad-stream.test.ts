@@ -107,6 +107,40 @@ describe("mdbase scratchpad stream", () => {
     expect(saved.body).toContain("edited history");
   });
 
+  it("temporarily blocks incomplete wikilinks before scratchpad saves reach Connect", async () => {
+    const fixture = mdbaseFixture([
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const current = await repository.getActiveScratchpad();
+    fixture.update.mockClear();
+
+    await expect(
+      repository.saveScratchpad({
+        id: current.id,
+        path: current.path,
+        revision: current.revision,
+        baseBody: current.body,
+        body: "- [ ] Draft [[Plan\n",
+      }),
+    ).rejects.toThrow(
+      "Finish or remove the empty or incomplete wikilink before saving",
+    );
+    expect(fixture.update).not.toHaveBeenCalled();
+
+    await expect(
+      repository.saveScratchpad({
+        id: current.id,
+        path: current.path,
+        revision: current.revision,
+        baseBody: current.body,
+        body: "- [ ] Draft [[Plan]]\n",
+      }),
+    ).resolves.toMatchObject({ body: "- [ ] Draft [[Plan]]\n" });
+    expect(fixture.update).toHaveBeenCalledOnce();
+  });
+
   it("saves, preserves, and clears an explicit title independently of the body", async () => {
     const fixture = mdbaseFixture([
       scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),

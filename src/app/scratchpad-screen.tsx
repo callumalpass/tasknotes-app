@@ -1134,6 +1134,7 @@ function ScratchpadDocumentEditor({
           }
           setDocument(saved);
           onDocumentUpdated(saved);
+          setError("");
           setSaveState("saved");
           return saved;
         })
@@ -1179,7 +1180,8 @@ function ScratchpadDocumentEditor({
     const body = scratchBody(nodes);
     if (body === documentRef.current?.body) return;
     const timeout = window.setTimeout(() => {
-      if (!autosaveSuspended.current) void persist(nodes);
+      if (!autosaveSuspended.current)
+        void persist(nodes).catch(() => undefined);
     }, 260);
     return () => window.clearTimeout(timeout);
   }, [document, editorMode, nodes, persist, reviewProcessing]);
@@ -1193,7 +1195,8 @@ function ScratchpadDocumentEditor({
     )
       return;
     const timeout = window.setTimeout(() => {
-      if (!autosaveSuspended.current) void persistBody(source);
+      if (!autosaveSuspended.current)
+        void persistBody(source).catch(() => undefined);
     }, 260);
     return () => window.clearTimeout(timeout);
   }, [document, editorMode, persistBody, source]);
@@ -1211,7 +1214,7 @@ function ScratchpadDocumentEditor({
           editorModeRef.current === "markdown"
             ? sourceRef.current
             : scratchBody(nodesRef.current);
-        void persistBody(body, title);
+        void persistBody(body, title).catch(() => undefined);
       }
     }, 260);
     return () => window.clearTimeout(timeout);
