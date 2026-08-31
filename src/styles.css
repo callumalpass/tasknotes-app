@@ -3992,6 +3992,7 @@ html.scratchpad-route .page-surface {
   max-width: none;
   height: calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom));
   min-height: 0;
+  padding-top: env(safe-area-inset-top);
   padding-right: 0;
   padding-bottom: 8px;
   padding-left: 0;
@@ -8511,6 +8512,7 @@ html.scratchpad-route .page-surface {
   .screen.scratchpad-screen {
     height: 100dvh;
     min-height: 0;
+    padding-top: env(safe-area-inset-top);
   }
 
   .task-screen {

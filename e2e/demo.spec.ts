@@ -89,6 +89,13 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   await expect(
     page.getByRole("heading", { name: "Scratchpad", exact: true }),
   ).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator(".scratchpad-screen")
+        .evaluate((element) => getComputedStyle(element).paddingTop),
+    )
+    .toBe("0px");
   const current = page.getByRole("region", {
     name: "Editor for current scratchpad",
   });
