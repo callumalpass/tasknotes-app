@@ -1,17 +1,25 @@
+import { autocompletion } from "@codemirror/autocomplete";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { basicSetup } from "codemirror";
 import { useEffect, useRef } from "react";
 
+import {
+  recordWikilinkCompletionSource,
+  type CompleteRecords,
+} from "./markdown-wikilink-completion";
+
 export function MarkdownSourceEditor({
   value,
   onChange,
+  completeRecords,
   ariaLabel,
   autoFocus = false,
 }: {
   value: string;
   onChange(value: string): void;
+  completeRecords?: CompleteRecords;
   ariaLabel: string;
   autoFocus?: boolean;
 }) {
@@ -19,13 +27,21 @@ export function MarkdownSourceEditor({
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
   const onChangeRef = useRef(onChange);
+  const completeRecordsRef = useRef(completeRecords);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
   useEffect(() => {
+    completeRecordsRef.current = completeRecords;
+  }, [completeRecords]);
+
+  useEffect(() => {
     if (!hostRef.current) return;
+    const completionSource = recordWikilinkCompletionSource(
+      () => completeRecordsRef.current,
+    );
     const view = new EditorView({
       parent: hostRef.current,
       state: EditorState.create({
@@ -33,6 +49,10 @@ export function MarkdownSourceEditor({
         extensions: [
           basicSetup,
           markdown(),
+          autocompletion({
+            activateOnTyping: true,
+            override: [completionSource],
+          }),
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
           EditorView.updateListener.of((update) => {

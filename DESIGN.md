@@ -160,8 +160,11 @@ Today             Search       More
   row is the capture affordance. Every card can switch between the structured
   Outline editor and its exact Markdown source through compact named icon
   controls. Older documents load explicitly, expand into the full editor, and
-  may remain open together. Create task notes converts only chosen drafts in
-  place; New note preserves the exact current outline without creating tasks.
+  may remain open together. Typing `[[` offers collection-record suggestions in
+  both editors; an exact link becomes a linked row only when it resolves to an
+  actual task, while links to other record types remain editable note content.
+  Create task notes converts only chosen drafts in place; New note preserves the
+  exact current outline without creating tasks.
   Safe raster images added through the compact capture panel, feed-wide drop
   target, file picker, mobile camera picker, or clipboard become independent
   feed cards even when an editor is focused. Image cards resolve lazily, can

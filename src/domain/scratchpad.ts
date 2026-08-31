@@ -142,7 +142,7 @@ export interface ScratchNode {
   text: string;
   /** Portable Markdown checkbox state for an unconverted draft task. */
   completed?: boolean;
-  /** Exact wikilink or Markdown link for a converted TaskNote. */
+  /** Exact record link candidate; hydration confirms whether it is a TaskNote. */
   link?: string;
   taskId?: string;
 }
@@ -165,8 +165,8 @@ export function parseScratchBody(body: string): ScratchNode[] {
     const source = match[2].trim();
     const checkbox = /^\[([ xX])\]\s*(.*)$/.exec(source);
     const linked = linkedScratchValue(checkbox ? checkbox[2] : source);
-    const kind: ScratchNodeKind = linked ? "task" : checkbox ? "draft" : "note";
-    const text = linked?.label ?? checkbox?.[2].trim() ?? source;
+    const kind: ScratchNodeKind = checkbox ? "draft" : "note";
+    const text = checkbox?.[2].trim() ?? linked?.link ?? source;
     const fingerprint = `${kind}:${Math.floor(indentation / 2)}:${text}:${linked?.link ?? ""}`;
     const occurrence = (duplicates.get(fingerprint) ?? 0) + 1;
     duplicates.set(fingerprint, occurrence);
@@ -401,20 +401,11 @@ Scratchpads are Markdown outlines. Checkbox items are draft tasks, plain
 bullets are notes, and links point to TaskNotes created from the outline.
 `;
 
-function linkedScratchValue(
-  source: string,
-): { link: string; label: string } | undefined {
-  const wikilink = /^(\[\[([^\]|]+)(?:\|([^\]]+))?\]\])$/.exec(source);
-  if (wikilink)
-    return {
-      link: wikilink[1],
-      label:
-        wikilink[3]?.trim() ||
-        wikilink[2].split("/").at(-1)?.trim() ||
-        wikilink[2],
-    };
-  const markdown = /^(\[([^\]]+)\]\(([^)]+)\))$/.exec(source);
-  if (markdown) return { link: markdown[1], label: markdown[2].trim() };
+function linkedScratchValue(source: string): { link: string } | undefined {
+  const wikilink = /^(\[\[[^\]|]+(?:\|[^\]]+)?\]\])$/.exec(source);
+  if (wikilink) return { link: wikilink[1] };
+  const markdown = /^(\[[^\]]+\]\([^)]+\))$/.exec(source);
+  if (markdown) return { link: markdown[1] };
 }
 
 function stableStringHash(value: string): string {

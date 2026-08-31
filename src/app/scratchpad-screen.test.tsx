@@ -9,12 +9,18 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { recordMatchesLink } from "../domain/completion";
 import type { ScratchFeedPage } from "../domain/scratch-feed";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { mdbaseFixture } from "../test/mdbase-fixture";
+import {
+  deferred,
+  mdbaseFixture,
+  taskRecord,
+  type TestRecord,
+} from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ScratchpadScreen } from "./scratchpad-screen";
@@ -238,6 +244,127 @@ describe("ScratchpadScreen", () => {
       ),
     ).toBeNull();
     expect(fixture.update).toHaveBeenCalledOnce();
+  });
+
+  it("suggests collection records after [[ in an outline note", async () => {
+    cleanup();
+    const project: TestRecord = {
+      path: "Projects/Plan.md",
+      revision: "project-r1",
+      types: ["project"],
+      frontmatter: { title: "Project plan" },
+      body: "",
+    };
+    fixture = mdbaseFixture([project]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const completeField = vi.spyOn(repository, "completeField");
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Convert empty task to note/ }),
+    );
+    const note = screen.getByRole("textbox", { name: "Note: empty" });
+
+    fireEvent.change(note, { target: { value: "Review [[Pro" } });
+
+    const option = await screen.findByRole("option", {
+      name: /Project plan/,
+    });
+    expect(note).toHaveAttribute("aria-expanded", "true");
+    expect(completeField).toHaveBeenCalledWith({
+      field: "wikilink",
+      kind: "records",
+      query: "Pro",
+      limit: 12,
+    });
+    fireEvent.click(option);
+
+    expect(note).toHaveValue("Review [[Projects/Plan|Project plan]]");
+    expect(note).toHaveFocus();
+    await waitFor(async () =>
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body: "- Review [[Projects/Plan|Project plan]]\n",
+      }),
+    );
+  });
+
+  it("keeps an exact non-task record link as editable outline note content", async () => {
+    cleanup();
+    const project: TestRecord = {
+      path: "Projects/Plan.md",
+      revision: "project-r1",
+      types: ["project"],
+      frontmatter: { title: "Project plan" },
+      body: "",
+    };
+    const linkedScratchpad: TestRecord = {
+      path: "scratchpads/Scratchpad.md",
+      revision: "scratch-r1",
+      types: ["tasknotes-scratch"],
+      frontmatter: {
+        type: "tasknotes-scratch",
+        id: "current",
+        state: "active",
+        dateCreated: "2026-08-31T00:00:00.000Z",
+        dateModified: "2026-08-31T00:00:00.000Z",
+      },
+      body: "- [[Projects/Plan|Project plan]]\n",
+    };
+    fixture = mdbaseFixture([
+      project,
+      taskRecord("task", "Actual task", "task-r1"),
+      linkedScratchpad,
+    ]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    renderScratchpad();
+
+    expect(
+      await screen.findByRole("textbox", {
+        name: "Note: [[Projects/Plan|Project plan]]",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText("Linked")).toBeNull();
+    expect((await repository.getActiveScratchpad()).body).toBe(
+      "- [[Projects/Plan|Project plan]]\n",
+    );
+  });
+
+  it("does not resolve a basename-only non-task link to a task in another folder", async () => {
+    cleanup();
+    const task = {
+      ...taskRecord("task", "Task plan", "task-r1"),
+      path: "tasks/Plan.md",
+    };
+    const linkedScratchpad: TestRecord = {
+      path: "scratchpads/Scratchpad.md",
+      revision: "scratch-r1",
+      types: ["tasknotes-scratch"],
+      frontmatter: {
+        type: "tasknotes-scratch",
+        id: "current",
+        state: "active",
+        dateCreated: "2026-08-31T00:00:00.000Z",
+        dateModified: "2026-08-31T00:00:00.000Z",
+      },
+      body: "- [[Plan]]\n",
+    };
+    fixture = mdbaseFixture([task, linkedScratchpad]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    renderScratchpad();
+
+    expect(
+      await screen.findByRole("textbox", { name: "Note: [[Plan]]" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Task plan" })).toBeNull();
   });
 
   it("edits and clears an explicit note title", async () => {
@@ -577,18 +704,75 @@ describe("ScratchpadScreen", () => {
     ).toHaveFocus();
   });
 
-  it("resolves a linked task title after reloading a bare filepath", async () => {
+  it("keeps newer Markdown edits when Outline hydration is still loading", async () => {
+    cleanup();
+    const task = taskRecord("task", "Linked task", "task-r1");
+    const linkedScratchpad: TestRecord = {
+      path: "scratchpads/Scratchpad.md",
+      revision: "scratch-r1",
+      types: ["tasknotes-scratch"],
+      frontmatter: {
+        type: "tasknotes-scratch",
+        id: "current",
+        state: "active",
+        dateCreated: "2026-08-31T00:00:00.000Z",
+        dateModified: "2026-08-31T00:00:00.000Z",
+      },
+      body: `- [[${task.path.replace(/\.md$/i, "")}]]\n`,
+    };
+    fixture = mdbaseFixture([task, linkedScratchpad]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    renderScratchpad();
+    await screen.findByRole("button", { name: "Linked task" });
+    fireEvent.click(screen.getByRole("button", { name: "Markdown" }));
+    const source = await screen.findByRole("textbox", {
+      name: "Scratchpad Markdown",
+    });
+    const editor = EditorView.findFromDOM(source);
+    expect(editor).not.toBeNull();
+    const tasks = await repository.list({
+      status: "all",
+      archived: "include",
+      limit: 50_000,
+    });
+    const hydration = deferred<typeof tasks>();
+    const list = vi
+      .spyOn(repository, "list")
+      .mockReturnValueOnce(hydration.promise);
+
+    fireEvent.click(screen.getByRole("button", { name: "Outline" }));
+    await waitFor(() => expect(list).toHaveBeenCalledOnce());
+    act(() => {
+      editor!.dispatch({
+        changes: {
+          from: editor!.state.doc.length,
+          insert: "- Newer Markdown edit\n",
+        },
+      });
+    });
+    await act(async () => hydration.resolve(tasks));
+
+    expect(screen.getByRole("button", { name: "Markdown" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(source).toHaveTextContent("Newer Markdown edit");
+  });
+
+  it("resolves a linked task title without rewriting its exact link", async () => {
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
       title: "Readable title property",
     });
     const scratchpad = await repository.getActiveScratchpad();
+    const exactBody = `- [[${renamed.path.replace(/\.md$/i, "")}]]\n`;
     await repository.saveScratchpad({
       id: scratchpad.id,
       path: scratchpad.path,
       revision: scratchpad.revision,
       baseBody: scratchpad.body,
-      body: `- [[${renamed.path.replace(/\.md$/i, "")}]]\n`,
+      body: exactBody,
     });
 
     renderScratchpad();
@@ -597,11 +781,7 @@ describe("ScratchpadScreen", () => {
       await screen.findByRole("button", { name: "Readable title property" }),
     ).toBeVisible();
     expect(screen.queryByText("Filename title")).not.toBeInTheDocument();
-    await waitFor(async () =>
-      expect((await repository.getActiveScratchpad()).body).toContain(
-        "|Readable title property]]",
-      ),
-    );
+    expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
   });
 
   it("converts only selected drafts and leaves the rest active", async () => {
