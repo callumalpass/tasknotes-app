@@ -145,6 +145,39 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   }
 });
 
+test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const outlineInput = current.locator("[data-scratch-input]").last();
+  await outlineInput.fill("[[quarterly");
+  const outlineOption = current.getByRole("option", {
+    name: /Prepare quarterly planning session/,
+  });
+  await expect(outlineOption).toBeVisible();
+  await outlineOption.click();
+  await expect(outlineInput).toHaveValue(
+    /\[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
+  );
+
+  await current.getByRole("button", { name: "Markdown" }).click();
+  const source = current.getByRole("textbox", {
+    name: "Scratchpad Markdown",
+  });
+  await source.fill("[[quarterly");
+  const markdownOption = current.getByRole("option", {
+    name: /Prepare quarterly planning session/,
+  });
+  await expect(markdownOption).toBeVisible();
+  await markdownOption.click();
+  await expect(source).toHaveText(
+    /\[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
+  );
+});
+
 test("uses dark theme tokens throughout the Scratchpad editor", async ({
   page,
 }) => {

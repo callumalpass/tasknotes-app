@@ -4473,6 +4473,33 @@ html.scratchpad-route .page-surface {
   background: color-mix(in srgb, var(--accent) 22%, transparent) !important;
 }
 
+.markdown-source-editor .cm-tooltip-autocomplete {
+  max-width: min(420px, calc(100vw - 40px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.markdown-source-editor .cm-tooltip-autocomplete > ul {
+  max-height: min(320px, 42vh);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+}
+
+.markdown-source-editor .cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.markdown-source-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--paper));
+  color: var(--ink);
+}
+
 .scratchpad-header {
   display: flex;
   min-height: 64px;

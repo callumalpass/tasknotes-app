@@ -44,6 +44,7 @@
     "@capacitor/core": "8.4.2",
     "@capacitor/haptics": "8.0.2",
     "@capacitor/push-notifications": "8.0.2",
+    "@codemirror/autocomplete": "6.20.3",
     "@codemirror/lang-markdown": "^6.5.2",
     "@codemirror/language": "^6.12.4",
     "@codemirror/state": "^6.7.1",
