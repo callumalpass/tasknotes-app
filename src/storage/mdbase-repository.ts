@@ -17,7 +17,6 @@ import {
 
 import { requireConnectOutcome } from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { assertPersistableMarkdownWikilinks } from "../domain/markdown-validation";
 import { archiveMoveWarning } from "../domain/task-archive";
 import { runtimeTimezone } from "../domain/runtime-timezone";
 import {
@@ -403,7 +402,6 @@ export class MdbaseTaskRepository implements TaskRepository {
         body: task.body,
       };
       try {
-        assertPersistableMarkdownWikilinks(operationInput.body);
         const saved = await runMdbaseMutation(
           this.connect,
           async () =>
@@ -1261,8 +1259,6 @@ export class MdbaseTaskRepository implements TaskRepository {
     operation: string,
     input: Parameters<MdbaseConnection<JsonObject>["update"]>[0],
   ): Promise<RecordDocument<JsonObject>> {
-    if (typeof input.body === "string")
-      assertPersistableMarkdownWikilinks(input.body);
     return runMdbaseMutation(
       this.connect,
       async () =>
@@ -1402,7 +1398,6 @@ export class MdbaseTaskRepository implements TaskRepository {
       ifRevision: current.revision,
     };
     try {
-      assertPersistableMarkdownWikilinks(operationInput.body);
       return await runMdbaseMutation(
         this.connect,
         async () =>
@@ -1528,7 +1523,6 @@ export class MdbaseTaskRepository implements TaskRepository {
       body: created.body,
     };
     try {
-      assertPersistableMarkdownWikilinks(operationInput.body);
       const saved = await runMdbaseMutation(
         this.connect,
         async () =>

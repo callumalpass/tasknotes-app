@@ -107,7 +107,7 @@ describe("mdbase scratchpad stream", () => {
     expect(saved.body).toContain("edited history");
   });
 
-  it("temporarily blocks incomplete wikilinks before scratchpad saves reach Connect", async () => {
+  it("saves malformed Markdown, unrelated edits, and a later repair", async () => {
     const fixture = mdbaseFixture([
       scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
     ]);
@@ -116,29 +116,41 @@ describe("mdbase scratchpad stream", () => {
     const current = await repository.getActiveScratchpad();
     fixture.update.mockClear();
 
-    await expect(
-      repository.saveScratchpad({
-        id: current.id,
-        path: current.path,
-        revision: current.revision,
-        baseBody: current.body,
-        body: "- [ ] Draft [[Plan\n",
-      }),
-    ).rejects.toThrow(
-      "Finish or remove the empty or incomplete wikilink before saving",
+    const malformed = await repository.saveScratchpad({
+      id: current.id,
+      path: current.path,
+      revision: current.revision,
+      baseBody: current.body,
+      body: "- [ ] Draft [[Plan\n- [ ] [[]]\n",
+    });
+    expect(fixture.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ body: malformed.body }),
+      expect.anything(),
     );
-    expect(fixture.update).not.toHaveBeenCalled();
+
+    const titled = await repository.saveScratchpad({
+      id: malformed.id,
+      path: malformed.path,
+      revision: malformed.revision,
+      baseBody: malformed.body,
+      body: malformed.body,
+      title: "Ideas",
+    });
+    expect(titled).toMatchObject({ title: "Ideas", body: malformed.body });
 
     await expect(
       repository.saveScratchpad({
-        id: current.id,
-        path: current.path,
-        revision: current.revision,
-        baseBody: current.body,
-        body: "- [ ] Draft [[Plan]]\n",
+        id: titled.id,
+        path: titled.path,
+        revision: titled.revision,
+        baseBody: titled.body,
+        body: "- [ ] Draft [[Plan]]\n- [ ] [[Plan]]\n",
       }),
-    ).resolves.toMatchObject({ body: "- [ ] Draft [[Plan]]\n" });
-    expect(fixture.update).toHaveBeenCalledOnce();
+    ).resolves.toMatchObject({
+      title: "Ideas",
+      body: "- [ ] Draft [[Plan]]\n- [ ] [[Plan]]\n",
+    });
+    expect(fixture.update).toHaveBeenCalledTimes(3);
   });
 
   it("saves, preserves, and clears an explicit title independently of the body", async () => {

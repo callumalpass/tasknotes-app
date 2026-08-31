@@ -298,7 +298,7 @@ describe("mdbase task repository", () => {
     });
   });
 
-  it("temporarily blocks incomplete wikilinks before task writes reach Connect", async () => {
+  it("passes malformed Markdown through the provider-neutral task contract", async () => {
     const fixture = mdbaseFixture([
       taskRecord("existing", "Existing task", "r1"),
     ]);
@@ -307,26 +307,29 @@ describe("mdbase task repository", () => {
 
     await expect(
       repository.update("existing", { body: "Draft [[Plan" }),
-    ).rejects.toThrow(
-      "Finish or remove the empty or incomplete wikilink before saving",
+    ).resolves.toMatchObject({ body: "Draft [[Plan" });
+    expect(fixture.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ body: "Draft [[Plan" }),
+      expect.anything(),
     );
+
     await expect(
-      repository.create({ title: "Unsafe task", body: "[[]]" }),
-    ).rejects.toThrow(
-      "Finish or remove the empty or incomplete wikilink before saving",
-    );
-
-    expect(fixture.update).not.toHaveBeenCalled();
-    expect(fixture.create).not.toHaveBeenCalled();
-
+      repository.update("existing", { title: "Renamed while incomplete" }),
+    ).resolves.toMatchObject({
+      title: "Renamed while incomplete",
+      body: "Draft [[Plan",
+    });
     await expect(
       repository.update("existing", { body: "Draft [[Plan]]" }),
     ).resolves.toMatchObject({ body: "Draft [[Plan]]" });
+
     await expect(
-      repository.create({ title: "Safe task", body: "[[Plan]]" }),
-    ).resolves.toMatchObject({ title: "Safe task", body: "[[Plan]]" });
-    expect(fixture.update).toHaveBeenCalledOnce();
-    expect(fixture.create).toHaveBeenCalledOnce();
+      repository.create({ title: "Empty link task", body: "[[]]" }),
+    ).resolves.toMatchObject({ title: "Empty link task", body: "[[]]" });
+    expect(fixture.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ body: "[[]]" }),
+      expect.anything(),
+    );
   });
 
   it("serializes writes to different tasks across the live connection", async () => {

@@ -211,7 +211,7 @@ describe("ScratchpadScreen", () => {
     );
   });
 
-  it("keeps an incomplete wikilink local and saves after it is finished", async () => {
+  it("autosaves an incomplete wikilink and a later repair", async () => {
     renderScratchpad();
     const input = await screen.findByRole(
       "textbox",
@@ -222,13 +222,16 @@ describe("ScratchpadScreen", () => {
 
     fireEvent.change(input, { target: { value: "Draft [[Plan" } });
 
-    expect(await screen.findByText("Not saved")).toBeVisible();
-    expect(
-      screen.getByText(
-        /Finish or remove the empty or incomplete wikilink before saving/,
-      ),
-    ).toBeVisible();
-    expect(fixture.update).not.toHaveBeenCalled();
+    await waitFor(async () => {
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body: "- [ ] Draft [[Plan\n",
+      });
+      expect(screen.getByText("Saved")).toBeVisible();
+    });
+    expect(fixture.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ body: "- [ ] Draft [[Plan\n" }),
+      expect.anything(),
+    );
 
     fireEvent.change(input, { target: { value: "Draft [[Plan]]" } });
 
@@ -236,14 +239,34 @@ describe("ScratchpadScreen", () => {
       expect(await repository.getActiveScratchpad()).toMatchObject({
         body: "- [ ] Draft [[Plan]]\n",
       });
+      expect(fixture.update).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByText("Not saved")).toBeNull();
+  });
+
+  it("shows a generic autosave rejection and clears it after recovery", async () => {
+    fixture.update.mockRejectedValueOnce(new Error("Temporary save failure"));
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+
+    fireEvent.change(input, { target: { value: "First attempt" } });
+
+    expect(await screen.findByText("Not saved")).toBeVisible();
+    expect(screen.getByText("Temporary save failure")).toBeVisible();
+
+    fireEvent.change(input, { target: { value: "Recovered draft" } });
+
+    await waitFor(async () => {
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body: "- [ ] Recovered draft\n",
+      });
       expect(screen.getByText("Saved")).toBeVisible();
     });
-    expect(
-      screen.queryByText(
-        /Finish or remove the empty or incomplete wikilink before saving/,
-      ),
-    ).toBeNull();
-    expect(fixture.update).toHaveBeenCalledOnce();
+    expect(screen.queryByText("Temporary save failure")).toBeNull();
   });
 
   it("suggests collection records after [[ in an outline note", async () => {
