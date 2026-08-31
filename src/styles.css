@@ -4125,7 +4125,7 @@ html.scratchpad-route .page-surface {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--paper);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent);
+  box-shadow: 0 1px 2px var(--color-shadow-soft);
 }
 
 .scratchpad-document-disclosure {
@@ -4258,7 +4258,7 @@ html.scratchpad-route .page-surface {
   flex: 0 0 auto;
   background: var(--paper-raised);
   border-color: var(--line-strong);
-  box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 8%, transparent);
+  box-shadow: 0 8px 28px var(--color-shadow-soft);
 }
 
 .scratchpad-load-older {
@@ -4347,8 +4347,9 @@ html.scratchpad-route .page-surface {
   min-height: 36px;
   place-items: center;
   padding: 0;
-  border: 0;
   color: var(--ink-muted);
+  background: transparent;
+  border: 0;
   font-size: var(--type-label);
 }
 
@@ -4464,6 +4465,7 @@ html.scratchpad-route .page-surface {
 
 .markdown-source-editor .cm-focused {
   outline: none;
+  box-shadow: inset 0 -2px color-mix(in srgb, var(--accent) 68%, transparent);
 }
 
 .markdown-source-editor .cm-selectionBackground,
