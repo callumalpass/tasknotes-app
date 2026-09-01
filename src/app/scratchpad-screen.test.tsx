@@ -601,6 +601,60 @@ describe("ScratchpadScreen", () => {
     expect(screen.queryByText(/Adding image/)).not.toBeInTheDocument();
   });
 
+  it("tracks the mobile visual viewport bottom and keeps capture pinned", async () => {
+    const viewport = new EventTarget() as VisualViewport;
+    Object.defineProperties(viewport, {
+      height: { configurable: true, writable: true, value: 700 },
+      offsetTop: { configurable: true, writable: true, value: 0 },
+    });
+    vi.stubGlobal("visualViewport", viewport);
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    const surface = document.querySelector(".scratchpad-screen") as HTMLElement;
+    const scroller = document.querySelector(
+      ".scratchpad-history-scroll",
+    ) as HTMLDivElement;
+    Object.defineProperty(scroller, "scrollHeight", {
+      configurable: true,
+      value: 900,
+    });
+    expect(
+      surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
+    ).toBe("700px");
+
+    Object.defineProperties(viewport, {
+      height: { configurable: true, writable: true, value: 420 },
+      offsetTop: { configurable: true, writable: true, value: 12 },
+    });
+    viewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() =>
+      expect(
+        surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
+      ).toBe("432px"),
+    );
+    expect(scroller.scrollTop).toBe(900);
+
+    fireEvent.wheel(scroller, { deltaY: -40 });
+    scroller.scrollTop = 100;
+    Object.defineProperty(viewport, "height", {
+      configurable: true,
+      writable: true,
+      value: 380,
+    });
+    viewport.dispatchEvent(new Event("resize"));
+    await waitFor(() =>
+      expect(
+        surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
+      ).toBe("392px"),
+    );
+    expect(scroller.scrollTop).toBe(100);
+  });
+
   it("stays pinned to the bottom while the current editor grows", async () => {
     let resize!: ResizeObserverCallback;
     vi.stubGlobal(
@@ -1162,6 +1216,127 @@ describe("ScratchpadScreen", () => {
         name: "Draft task: Edited historical draft",
       }),
     ).toBeNull();
+  });
+
+  it("flushes both notes and resumes history as the focused current note", async () => {
+    const original = await repository.getActiveScratchpad();
+    const saved = await repository.saveScratchpad({
+      id: original.id,
+      path: original.path,
+      revision: original.revision,
+      baseBody: original.body,
+      body: "- [ ] Historical draft\n",
+      title: "Earlier notes",
+    });
+    const transition = await repository.startNewScratchpad({
+      id: saved.id,
+      path: saved.path,
+      revision: saved.revision,
+      baseBody: saved.body,
+      body: saved.body,
+    });
+
+    renderScratchpad();
+    const currentInput = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(currentInput, { target: { value: "Current thought" } });
+    fireEvent.click(screen.getByRole("button", { name: /Earlier notes/ }));
+    const historicalInput = await screen.findByRole("textbox", {
+      name: "Draft task: Historical draft",
+    });
+    fireEvent.change(historicalInput, {
+      target: { value: "Resumed historical draft" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Resume as current" }));
+
+    await waitFor(async () =>
+      expect((await repository.getActiveScratchpad()).id).toBe(saved.id),
+    );
+    expect(await repository.getActiveScratchpad()).toMatchObject({
+      path: saved.path,
+      body: "- [ ] Resumed historical draft\n",
+      state: "active",
+    });
+    expect(await repository.getScratchpad(transition.current.id)).toMatchObject(
+      {
+        state: "converted",
+        body: "- [ ] Current thought\n",
+        dateConverted: expect.any(String),
+      },
+    );
+    const resumedInput = await screen.findByRole("textbox", {
+      name: "Draft task: Resumed historical draft",
+    });
+    const currentCard = resumedInput.closest(".scratchpad-current-document")!;
+    expect(currentCard).not.toBeNull();
+    await waitFor(() =>
+      expect(currentCard.querySelector("input:focus")).not.toBeNull(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(async () =>
+      expect((await repository.getActiveScratchpad()).id).toBe(
+        transition.current.id,
+      ),
+    );
+    expect(await repository.getActiveScratchpad()).toMatchObject({
+      body: "- [ ] Current thought\n",
+      state: "active",
+    });
+  });
+
+  it("does not change lifecycle state when a pending note cannot save", async () => {
+    const original = await repository.getActiveScratchpad();
+    const saved = await repository.saveScratchpad({
+      id: original.id,
+      path: original.path,
+      revision: original.revision,
+      baseBody: original.body,
+      body: "- [ ] Historical draft\n",
+      title: "Earlier notes",
+    });
+    const transition = await repository.startNewScratchpad({
+      id: saved.id,
+      path: saved.path,
+      revision: saved.revision,
+      baseBody: saved.body,
+      body: saved.body,
+    });
+    const reactivate = vi.spyOn(repository, "reactivateScratchpad");
+
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Earlier notes/ }));
+    const historicalInput = await screen.findByRole("textbox", {
+      name: "Draft task: Historical draft",
+    });
+    fireEvent.change(historicalInput, {
+      target: { value: "Unsaved historical draft" },
+    });
+    vi.spyOn(repository, "saveScratchpad").mockRejectedValueOnce(
+      new Error("Connection unavailable"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Resume as current" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Connection unavailable",
+    );
+    expect(reactivate).not.toHaveBeenCalled();
+    expect(await repository.getActiveScratchpad()).toMatchObject({
+      id: transition.current.id,
+      state: "active",
+    });
+    expect(await repository.getScratchpad(saved.id)).toMatchObject({
+      id: saved.id,
+      state: "converted",
+    });
   });
 
   it("preserves expanded history and collapsed images across new notes and reloads", async () => {

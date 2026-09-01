@@ -65,6 +65,7 @@ import {
   SCRATCHPAD_TYPE,
   scratchpadPage,
   type ArchiveScratchpadInput,
+  type ReactivateScratchpadInput,
   type SaveScratchpadInput,
   type ScratchpadPageRequest,
   type StartNewScratchpadInput,
@@ -1123,6 +1124,97 @@ export class MdbaseTaskRepository implements TaskRepository {
         this.scratchFeedSnapshot = undefined;
         this.emit();
         return { previous: scratchpadFromRecord(previous), current: active };
+      },
+    );
+  }
+
+  reactivateScratchpad(input: ReactivateScratchpadInput) {
+    return this.serializeWrites(
+      [
+        "scratchpad:active",
+        `scratchpad:${input.current.id}`,
+        `scratchpad:${input.target.id}`,
+      ],
+      async () => {
+        if (input.current.id === input.target.id)
+          throw new Error("The current scratchpad cannot resume itself.");
+        const records = await this.scratchpadRecords();
+        const currentRecord = records.find(
+          (record) =>
+            record.path === input.current.path &&
+            record.frontmatter.id === input.current.id,
+        );
+        const targetRecord = records.find(
+          (record) =>
+            record.path === input.target.path &&
+            record.frontmatter.id === input.target.id,
+        );
+        if (!currentRecord || !targetRecord)
+          throw new Error("This scratchpad is no longer available. Reload it.");
+        const current = scratchpadFromRecord(currentRecord);
+        const target = scratchpadFromRecord(targetRecord);
+        const active = activeScratchpad(records);
+        if (!active || active.id !== current.id)
+          throw new Error("The current scratchpad changed. Reload it.");
+        assertScratchpadRevision(current, input.current);
+        assertScratchpadRevision(target, input.target);
+        if (target.state !== "converted")
+          throw new Error("Only a previous scratchpad can be resumed.");
+
+        const now = new Date().toISOString();
+        const promotedRecord = await this.mutateRecord(
+          "scratchpad:reactivate",
+          {
+            path: target.path,
+            ifRevision: target.revision,
+            patch: asJson({
+              state: "active",
+              dateModified: now,
+              dateConverted: null,
+            }),
+          },
+        );
+        const promoted = scratchpadFromRecord(promotedRecord);
+        try {
+          const previousRecord = await this.mutateRecord(
+            "scratchpad:deactivate-current",
+            {
+              path: current.path,
+              ifRevision: current.revision,
+              patch: asJson({
+                state: "converted",
+                dateModified: now,
+                dateConverted: now,
+              }),
+            },
+          );
+          this.setConnected();
+          this.scratchFeedSnapshot = undefined;
+          this.emit();
+          return {
+            previous: scratchpadFromRecord(previousRecord),
+            current: promoted,
+          };
+        } catch (reason) {
+          try {
+            await this.mutateRecord("scratchpad:reactivate-rollback", {
+              path: promoted.path,
+              ifRevision: promoted.revision,
+              patch: asJson({
+                state: "converted",
+                dateModified: new Date().toISOString(),
+                dateConverted: target.dateConverted ?? null,
+              }),
+            });
+          } catch {
+            this.scratchFeedSnapshot = undefined;
+            throw new Error(
+              "The current scratchpad could not be changed cleanly. Reload before continuing.",
+              { cause: reason },
+            );
+          }
+          throw reason;
+        }
       },
     );
   }

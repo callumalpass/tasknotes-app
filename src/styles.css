@@ -4335,6 +4335,7 @@ html.scratchpad-route .page-surface {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 2px;
+  flex-wrap: wrap;
 }
 
 .scratchpad-mode-switch {
@@ -4560,7 +4561,9 @@ html.scratchpad-route .page-surface {
   display: flex;
   min-height: 44px;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .scratchpad-save-state {
@@ -4595,7 +4598,8 @@ html.scratchpad-route .page-surface {
   color: var(--danger);
 }
 
-.scratchpad-review-action {
+.scratchpad-review-action,
+.scratchpad-reactivate-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4605,7 +4609,8 @@ html.scratchpad-route .page-surface {
   padding: 0 4px;
 }
 
-.scratchpad-review-action svg {
+.scratchpad-review-action svg,
+.scratchpad-reactivate-action svg {
   flex: 0 0 auto;
 }
 
@@ -5320,6 +5325,10 @@ html.scratchpad-route .page-surface {
 @media (max-width: 560px) {
   .scratchpad-screen {
     --scratch-indent: 17px;
+    height: min(
+      calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom)),
+      var(--scratch-visual-viewport-bottom, 100dvh)
+    );
     padding-right: 0;
     padding-left: 0;
   }

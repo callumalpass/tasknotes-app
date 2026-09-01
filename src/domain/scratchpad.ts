@@ -48,6 +48,22 @@ export interface StartNewScratchpadResult {
   current: ScratchpadDocument;
 }
 
+export interface ScratchpadReference {
+  id: string;
+  path: string;
+  revision: string;
+}
+
+export interface ReactivateScratchpadInput {
+  current: ScratchpadReference;
+  target: ScratchpadReference;
+}
+
+export interface ReactivateScratchpadResult {
+  previous: ScratchpadDocument;
+  current: ScratchpadDocument;
+}
+
 /** @deprecated Use StartNewScratchpadInput. */
 export type ArchiveScratchpadInput = StartNewScratchpadInput;
 /** @deprecated Use StartNewScratchpadResult. */
@@ -56,18 +72,24 @@ export interface ScratchpadArchiveResult {
   active: ScratchpadDocument;
 }
 
+export function scratchpadHistoryDate(document: ScratchpadDocument): string {
+  return document.dateConverted ?? document.dateCreated;
+}
+
 export function compareScratchpadsNewestFirst(
   left: ScratchpadDocument,
   right: ScratchpadDocument,
 ): number {
   if (left.state !== right.state) return left.state === "active" ? -1 : 1;
-  const leftTime = Date.parse(left.dateCreated);
-  const rightTime = Date.parse(right.dateCreated);
-  const byCreated =
+  const leftDate = scratchpadHistoryDate(left);
+  const rightDate = scratchpadHistoryDate(right);
+  const leftTime = Date.parse(leftDate);
+  const rightTime = Date.parse(rightDate);
+  const byActivity =
     Number.isFinite(leftTime) && Number.isFinite(rightTime)
       ? rightTime - leftTime
-      : right.dateCreated.localeCompare(left.dateCreated);
-  return byCreated || right.id.localeCompare(left.id);
+      : rightDate.localeCompare(leftDate);
+  return byActivity || right.id.localeCompare(left.id);
 }
 
 export function orderScratchpadsNewestFirst(
@@ -96,9 +118,10 @@ export function scratchpadPage(
   );
   let start = 0;
   if (request.cursor) {
-    const [dateCreated, id] = decodeScratchpadCursor(request.cursor);
+    const [historyDate, id] = decodeScratchpadCursor(request.cursor);
     start = ordered.findIndex(
-      (document) => document.dateCreated === dateCreated && document.id === id,
+      (document) =>
+        scratchpadHistoryDate(document) === historyDate && document.id === id,
     );
     if (start < 0)
       throw new Error("The scratchpad page has expired. Reload it.");
@@ -116,7 +139,7 @@ export function scratchpadPage(
 
 function encodeScratchpadCursor(document: ScratchpadDocument): string {
   return encodeURIComponent(
-    JSON.stringify([document.dateCreated, document.id]),
+    JSON.stringify([scratchpadHistoryDate(document), document.id]),
   );
 }
 

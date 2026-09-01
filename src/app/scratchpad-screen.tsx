@@ -66,11 +66,13 @@ import {
   parseScratchBody,
   removeScratchNode,
   scratchSubtreeEnd,
+  scratchpadHistoryDate,
   scratchpadPreview,
   serializeScratchNodes,
   visibleScratchNodes,
   type ScratchDropPlacement,
   type ScratchNode,
+  type ReactivateScratchpadResult,
   type ScratchpadDocument,
   type StartNewScratchpadInput,
   type StartNewScratchpadResult,
@@ -143,13 +145,16 @@ export function ScratchpadScreen({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [startingNew, setStartingNew] = useState(false);
+  const [reactivatingId, setReactivatingId] = useState<string>();
   const [imageCaptureOpen, setImageCaptureOpen] = useState(false);
   const [addingImages, setAddingImages] = useState(false);
   const [draggingImages, setDraggingImages] = useState(false);
   const [error, setError] = useState("");
   const [streamNotice, setStreamNotice] = useState("");
+  const [resumeUndo, setResumeUndo] = useState<ScratchpadDocument>();
   const flushers = useRef(new Map<string, () => Promise<unknown>>());
   const imageActionRef = useRef<HTMLButtonElement | null>(null);
+  const screenRef = useRef<HTMLElement | null>(null);
   const historyRef = useRef<HTMLDivElement | null>(null);
   const currentCardRef = useRef<HTMLElement | null>(null);
   const prependAnchor = useRef<
@@ -325,10 +330,12 @@ export function ScratchpadScreen({
     if (
       !current ||
       startingNew ||
+      reactivatingId !== undefined ||
       (!repository.startNewScratchpad && !repository.archiveScratchpad)
     )
       return;
     setStartingNew(true);
+    setResumeUndo(undefined);
     setError("");
     try {
       const flushed = (await flushers.current.get(current.id)?.()) as
@@ -355,6 +362,39 @@ export function ScratchpadScreen({
   }
 
   const historicalItems = [...historyItems].reverse();
+
+  useLayoutEffect(() => {
+    const surface = screenRef.current;
+    const viewport = window.visualViewport;
+    if (!surface || !viewport) return;
+
+    let frame = 0;
+    const update = () => {
+      const visualBottom = Math.max(0, viewport.offsetTop + viewport.height);
+      surface.style.setProperty(
+        "--scratch-visual-viewport-bottom",
+        `${visualBottom}px`,
+      );
+      const scroller = historyRef.current;
+      if (scroller && stickToBottom.current)
+        scroller.scrollTop = scroller.scrollHeight;
+    };
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(update);
+    };
+    update();
+    viewport.addEventListener("resize", scheduleUpdate);
+    viewport.addEventListener("scroll", scheduleUpdate);
+    window.addEventListener("resize", scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      viewport.removeEventListener("resize", scheduleUpdate);
+      viewport.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      surface.style.removeProperty("--scratch-visual-viewport-bottom");
+    };
+  }, [loading]);
 
   useLayoutEffect(() => {
     const scroller = historyRef.current;
@@ -446,6 +486,7 @@ export function ScratchpadScreen({
     async (files: readonly File[]) => {
       if (!files.length || addingImages) return;
       setAddingImages(true);
+      setResumeUndo(undefined);
       setError("");
       setStreamNotice(
         files.length === 1 ? "Adding image…" : `Adding ${files.length} images…`,
@@ -566,12 +607,84 @@ export function ScratchpadScreen({
       </section>
     );
 
+  async function reactivate(document: ScratchpadDocument, offerUndo = true) {
+    const current = currentDocument;
+    if (
+      !current ||
+      startingNew ||
+      reactivatingId !== undefined ||
+      !repository.reactivateScratchpad
+    )
+      return;
+    setReactivatingId(document.id);
+    setError("");
+    try {
+      const flushedTarget = (await flushers.current.get(document.id)?.()) as
+        ScratchpadDocument | undefined;
+      const flushedCurrent = (await flushers.current.get(current.id)?.()) as
+        ScratchpadDocument | undefined;
+      const target = flushedTarget ?? document;
+      const latestCurrent = flushedCurrent ?? current;
+      const result: ReactivateScratchpadResult =
+        await repository.reactivateScratchpad({
+          current: {
+            id: latestCurrent.id,
+            path: latestCurrent.path,
+            revision: latestCurrent.revision,
+          },
+          target: {
+            id: target.id,
+            path: target.path,
+            revision: target.revision,
+          },
+        });
+      revealBottom.current = true;
+      stickToBottom.current = true;
+      setCurrentDocument(result.current);
+      setHistoryItems((items) => [
+        { kind: "scratchpad", ...result.previous },
+        ...items.filter(
+          (item) =>
+            item.kind === "image" ||
+            (item.id !== result.current.id && item.id !== result.previous.id),
+        ),
+      ]);
+      setNextCursor(undefined);
+      setResumeUndo(offerUndo ? result.previous : undefined);
+      setStreamNotice(
+        `${result.current.title?.trim() || "Previous note"} resumed`,
+      );
+      if (repository.listScratchFeed) {
+        try {
+          const page = await repository.listScratchFeed();
+          setHistoryItems(page.items);
+          setNextCursor(page.nextCursor);
+        } catch (reason) {
+          setError(
+            `The note was resumed, but history could not refresh. ${message(reason)}`,
+          );
+        }
+      }
+    } catch (reason) {
+      setError(message(reason));
+    } finally {
+      setReactivatingId(undefined);
+    }
+  }
+
   const editor = (document: ScratchpadDocument, isCurrent = false) => (
     <ScratchpadDocumentEditor
       key={document.id}
       initialDocument={document}
       isCurrent={isCurrent}
       onOpenTask={onOpenTask}
+      onReactivate={
+        !isCurrent && repository.reactivateScratchpad
+          ? () => void reactivate(document)
+          : undefined
+      }
+      reactivating={reactivatingId === document.id}
+      reactivationDisabled={startingNew || reactivatingId !== undefined}
       onDocumentUpdated={(updated) => {
         if (updated.id === currentDocument?.id) setCurrentDocument(updated);
         else
@@ -594,6 +707,7 @@ export function ScratchpadScreen({
     <section
       className="screen scratchpad-screen"
       aria-labelledby="scratchpad-stream-title"
+      ref={screenRef}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -608,10 +722,28 @@ export function ScratchpadScreen({
       {streamNotice ? (
         <div className="scratchpad-notice" role="status">
           <span>{streamNotice}</span>
+          {resumeUndo ? (
+            <button
+              className="scratchpad-notice-action"
+              disabled={reactivatingId !== undefined}
+              type="button"
+              onClick={() => {
+                const target = resumeUndo;
+                setResumeUndo(undefined);
+                setStreamNotice("");
+                void reactivate(target, false);
+              }}
+            >
+              Undo
+            </button>
+          ) : null}
           <button
             aria-label="Dismiss"
             type="button"
-            onClick={() => setStreamNotice("")}
+            onClick={() => {
+              setResumeUndo(undefined);
+              setStreamNotice("");
+            }}
           >
             <X aria-hidden="true" size={16} />
           </button>
@@ -754,8 +886,10 @@ export function ScratchpadScreen({
                       {document.title && !expanded ? (
                         <strong>{document.title}</strong>
                       ) : null}
-                      <time dateTime={document.dateCreated}>
-                        {new Date(document.dateCreated).toLocaleDateString()}
+                      <time dateTime={scratchpadHistoryDate(document)}>
+                        {new Date(
+                          scratchpadHistoryDate(document),
+                        ).toLocaleDateString()}
                       </time>
                     </span>
                     {!expanded && document.title ? (
@@ -808,6 +942,7 @@ export function ScratchpadScreen({
                 onClick={() => void startNew()}
                 disabled={
                   startingNew ||
+                  reactivatingId !== undefined ||
                   (!repository.startNewScratchpad &&
                     !repository.archiveScratchpad)
                 }
@@ -1042,14 +1177,20 @@ function ScratchImageCard({
 
 function ScratchpadDocumentEditor({
   onOpenTask,
+  onReactivate,
   initialDocument,
   isCurrent,
+  reactivating,
+  reactivationDisabled,
   registerFlusher,
   onDocumentUpdated,
 }: {
   onOpenTask(task: Task): void;
+  onReactivate?: () => void;
   initialDocument: ScratchpadDocument;
   isCurrent: boolean;
+  reactivating: boolean;
+  reactivationDisabled: boolean;
   registerFlusher(flush: (() => Promise<unknown>) | null): void;
   onDocumentUpdated(document: ScratchpadDocument): void;
 }) {
@@ -1978,6 +2119,9 @@ function ScratchpadDocumentEditor({
       selectedReviewIds.has(item.id) &&
       reviewResults[item.id]?.state !== "created",
   ).length;
+  const displayDate = isCurrent
+    ? (document?.dateCreated ?? initialDocument.dateCreated)
+    : scratchpadHistoryDate(document ?? initialDocument);
 
   return (
     <section
@@ -2003,10 +2147,8 @@ function ScratchpadDocumentEditor({
         />
         <span className="scratchpad-title-meta">
           {isCurrent ? <small>Current note</small> : null}
-          <time dateTime={document?.dateCreated ?? initialDocument.dateCreated}>
-            {new Date(
-              document?.dateCreated ?? initialDocument.dateCreated,
-            ).toLocaleDateString()}
+          <time dateTime={displayDate}>
+            {new Date(displayDate).toLocaleDateString()}
           </time>
         </span>
       </div>
@@ -2046,6 +2188,17 @@ function ScratchpadDocumentEditor({
                 ? "Not saved"
                 : "Saved"}
           </span>
+          {onReactivate ? (
+            <button
+              className="text-action scratchpad-reactivate-action"
+              disabled={reactivationDisabled}
+              type="button"
+              onClick={onReactivate}
+            >
+              <RotateCcw aria-hidden="true" size={17} />
+              {reactivating ? "Resuming…" : "Resume as current"}
+            </button>
+          ) : null}
           {editorMode === "outline" ? (
             <button
               aria-label="Create task notes"

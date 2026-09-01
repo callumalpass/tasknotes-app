@@ -158,10 +158,31 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   }
 });
 
-test("bottom-anchors the current Scratchpad on mobile viewport changes", async ({
+test("bottom-anchors the current Scratchpad above an overlay keyboard", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const viewport = new EventTarget() as VisualViewport;
+    Object.defineProperties(viewport, {
+      height: { configurable: true, writable: true, value: 844 },
+      offsetTop: { configurable: true, writable: true, value: 0 },
+    });
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: viewport,
+    });
+    Object.defineProperty(window, "setTestVisualViewport", {
+      configurable: true,
+      value: (height: number, offsetTop = 0) => {
+        Object.defineProperties(viewport, {
+          height: { configurable: true, writable: true, value: height },
+          offsetTop: { configurable: true, writable: true, value: offsetTop },
+        });
+        viewport.dispatchEvent(new Event("resize"));
+      },
+    });
+  });
   await page.goto("scratchpad/?demo=12");
   const feed = page.locator(".scratchpad-history-scroll");
   const current = page.locator(".scratchpad-current-document");
@@ -187,9 +208,50 @@ test("bottom-anchors the current Scratchpad on mobile viewport changes", async (
     });
 
   await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
-  await page.setViewportSize({ width: 390, height: 520 });
+  await page.evaluate(() => {
+    (
+      window as typeof window & {
+        setTestVisualViewport(height: number, offsetTop?: number): void;
+      }
+    ).setTestVisualViewport(520);
+  });
   await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
+  await expect
+    .poll(() =>
+      page
+        .locator(".scratchpad-screen")
+        .evaluate((element) => element.getBoundingClientRect().bottom),
+    )
+    .toBeLessThanOrEqual(520);
   await expect(capture).toBeFocused();
+});
+
+test("resumes a historical Scratchpad as the current note", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: /Planning notes/ }).click();
+  const historical = page.getByRole("region", {
+    name: "Editor for Planning notes",
+  });
+  await expect(
+    historical.getByRole("textbox", {
+      name: "Draft task: Confirm the review date",
+    }),
+  ).toBeVisible();
+  await historical.getByRole("button", { name: "Resume as current" }).click();
+
+  const current = page.locator(".scratchpad-current-document");
+  await expect(
+    current.getByRole("region", { name: "Editor for Planning notes" }),
+  ).toBeVisible();
+  await expect(
+    current.getByRole("textbox", {
+      name: "Draft task: Confirm the review date",
+    }),
+  ).toBeVisible();
+  await expect(current.locator("input:focus")).toHaveCount(1);
+  await expect(page.getByText("Planning notes resumed")).toBeVisible();
 });
 
 test("moves the centered current Scratchpad down after an intentional upward scroll", async ({

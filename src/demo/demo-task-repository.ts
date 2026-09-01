@@ -39,6 +39,8 @@ import type {
 } from "../domain/task-configuration";
 import type {
   ArchiveScratchpadInput,
+  ReactivateScratchpadInput,
+  ReactivateScratchpadResult,
   SaveScratchpadInput,
   ScratchpadArchiveResult,
   ScratchpadDocument,
@@ -590,6 +592,48 @@ export class DemoTaskRepository implements TaskRepository {
     return clone({ previous, current: next });
   }
 
+  async reactivateScratchpad(
+    input: ReactivateScratchpadInput,
+  ): Promise<ReactivateScratchpadResult> {
+    const current = this.scratchpads.get(input.current.id);
+    const target = this.scratchpads.get(input.target.id);
+    if (
+      !current ||
+      current.path !== input.current.path ||
+      current.revision !== input.current.revision ||
+      current.state !== "active"
+    )
+      throw new Error("The current scratchpad changed. Reload it.");
+    if (
+      !target ||
+      target.path !== input.target.path ||
+      target.revision !== input.target.revision ||
+      target.state !== "converted" ||
+      target.id === current.id
+    )
+      throw new Error("This previous scratchpad changed. Reload it.");
+
+    const now = new Date().toISOString();
+    const previous: ScratchpadDocument = {
+      ...current,
+      state: "converted",
+      revision: nextScratchpadRevision(current.revision),
+      dateModified: now,
+      dateConverted: now,
+    };
+    const resumed: ScratchpadDocument = {
+      ...target,
+      state: "active",
+      revision: nextScratchpadRevision(target.revision),
+      dateModified: now,
+    };
+    delete resumed.dateConverted;
+    this.scratchpads.set(previous.id, previous);
+    this.scratchpads.set(resumed.id, resumed);
+    this.changed();
+    return clone({ previous, current: resumed });
+  }
+
   async archiveScratchpad(
     input: ArchiveScratchpadInput,
   ): Promise<ScratchpadArchiveResult> {
@@ -1131,6 +1175,10 @@ function demoScratchpad(
     title,
     body,
   };
+}
+
+function nextScratchpadRevision(revision: string): string {
+  return `scratch-${Number(revision.split("-").at(-1) ?? 1) + 1}`;
 }
 
 function clone<T>(value: T): T {
