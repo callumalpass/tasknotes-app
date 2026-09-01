@@ -15,6 +15,8 @@ import type {
 import type { TaskRelationships } from "../../domain/task-relationships";
 import type {
   ArchiveScratchpadInput,
+  ReactivateScratchpadInput,
+  ReactivateScratchpadResult,
   SaveScratchpadInput,
   ScratchpadArchiveResult,
   ScratchpadDocument,
@@ -104,6 +106,9 @@ export interface TaskRepository {
   startNewScratchpad?(
     input: StartNewScratchpadInput,
   ): Promise<StartNewScratchpadResult>;
+  reactivateScratchpad?(
+    input: ReactivateScratchpadInput,
+  ): Promise<ReactivateScratchpadResult>;
   /** @deprecated Compatibility alias for startNewScratchpad. */
   archiveScratchpad?(
     input: ArchiveScratchpadInput,

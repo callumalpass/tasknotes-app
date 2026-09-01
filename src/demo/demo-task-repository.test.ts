@@ -80,6 +80,36 @@ describe("DemoTaskRepository", () => {
     expect((await repository.getScratchpad(result.archived.id))?.body).toBe(
       "- [ ] A fresh thought\n",
     );
+
+    const resumed = await repository.reactivateScratchpad({
+      current: {
+        id: result.active.id,
+        path: result.active.path,
+        revision: result.active.revision,
+      },
+      target: {
+        id: result.archived.id,
+        path: result.archived.path,
+        revision: result.archived.revision,
+      },
+    });
+    expect(resumed.current).toMatchObject({
+      id: result.archived.id,
+      path: result.archived.path,
+      state: "active",
+      body: "- [ ] A fresh thought\n",
+    });
+    expect(resumed.current.dateConverted).toBeUndefined();
+    expect(resumed.previous).toMatchObject({
+      id: result.active.id,
+      state: "converted",
+      body: "",
+      dateConverted: expect.any(String),
+    });
+    expect((await repository.listScratchFeed()).items[0]).toMatchObject({
+      kind: "scratchpad",
+      id: result.active.id,
+    });
   });
 
   it("applies saved-view edits to the live demo catalogue", async () => {

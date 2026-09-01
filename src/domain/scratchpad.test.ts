@@ -23,11 +23,14 @@ describe("scratchpad Markdown outline", () => {
       ),
     ).toBe("TaskNotes/Scratchpad/2026-08-06T06-30-12.345Z – 12345678.md");
   });
-  it("pages documents by immutable creation date and id, never modification date", () => {
+  it("pages history by latest use with creation-date fallback and stable ids", () => {
     const documents = [
       scratchpad("a", "2026-08-01T10:00:00Z", "2026-09-01T10:00:00Z"),
       scratchpad("b", "2026-08-02T10:00:00Z", "2026-08-02T10:00:00Z"),
-      scratchpad("c", "2026-08-02T10:00:00Z", "2026-08-03T10:00:00Z"),
+      {
+        ...scratchpad("c", "2026-08-02T10:00:00Z", "2026-08-03T10:00:00Z"),
+        dateConverted: "2026-09-03T10:00:00Z",
+      },
     ];
     const first = scratchpadPage(documents, { limit: 2 });
     expect(first.documents.map(({ id }) => id)).toEqual(["c", "b"]);

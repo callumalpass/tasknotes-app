@@ -38,16 +38,20 @@ function image(id: string, dateCreated: string): ScratchImage {
 }
 
 describe("scratchFeedPage", () => {
-  it("merges both types by immutable creation time and keeps current separate", () => {
+  it("merges images by creation and notes by latest-history activity", () => {
+    const recentlyUsed = {
+      ...note("old", "2026-01-01T00:00:00.000Z"),
+      dateConverted: "2026-02-02T00:00:00.000Z",
+    };
     const page = scratchFeedPage(current, [
-      scratchpadFeedItem(note("old", "2026-01-01T00:00:00.000Z")),
+      scratchpadFeedItem(recentlyUsed),
       image("middle", "2026-02-01T00:00:00.000Z"),
       scratchpadFeedItem(current),
     ]);
     expect(page.current.id).toBe("current");
     expect(page.items.map((item) => [item.kind, item.id])).toEqual([
-      ["image", "middle"],
       ["scratchpad", "old"],
+      ["image", "middle"],
     ]);
   });
 

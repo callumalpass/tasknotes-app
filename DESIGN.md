@@ -161,10 +161,10 @@ Today             Search       More
   wide feed keeps its scrollbar at the page edge while centering spacious note
   cards. On wider screens, when the current card fits, it opens vertically
   centered; long cards fall back to keeping the active capture area near the
-  bottom. On phones, the current card stays anchored above the bottom visual
-  viewport edge so the onscreen keyboard does not trigger re-centering.
-  Intentional upward scrolling reveals history, and loading older items preserves
-  the visible position. Each file is a lightweight note card;
+  bottom. On phones, the current card follows the Visual Viewport boundary so
+  it stays immediately above an overlaying onscreen keyboard without returning
+  to vertical re-centering. Intentional upward scrolling reveals history, and
+  loading older items preserves the visible position. Each file is a lightweight note card;
   this boundary stays stronger than the rules between rows inside it. Explanatory
   chrome and separate Add task/Add note buttons are omitted: the trailing outline
   row is the capture affordance. Every card can switch between the structured
@@ -174,7 +174,10 @@ Today             Search       More
   both editors; an exact link becomes a linked row only when it resolves to an
   actual task, while links to other record types remain editable note content.
   Create task notes converts only chosen drafts in place; New note preserves the
-  exact current outline without creating tasks.
+  exact current outline without creating tasks. An expanded historical note can
+  Resume as current: pending edits to both notes save first, the selected note
+  retains its identity and contents, and the displaced current note becomes the
+  newest history entry.
   Safe raster images added through the compact capture panel, feed-wide drop
   target, file picker, mobile camera picker, or clipboard become independent
   feed cards even when an editor is focused. Image cards resolve lazily, can

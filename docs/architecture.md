@@ -94,10 +94,12 @@ replica. Inline Notes embeds are optional and independent of membership.
 Scratchpads and independent `tasknotes-scratch-image` metadata records are typed
 Markdown documents owned by mdbase; referenced image bytes are authority-owned
 collection files. The repository returns the sole current scratchpad separately
-and merges historical notes and images by immutable `dateCreated`, with `id` as
-the tie-breaker. Connect exposes no suitable durable query cursor, so the
-adapter continues over one bounded in-memory snapshot of at most 1,000 records
-of each type and invalidates that snapshot after mutations.
+and merges historical notes by `dateConverted ?? dateCreated` with images by
+immutable `dateCreated`; `id` remains the deterministic tie-breaker. This makes
+recently resumed work return to the newest end of history. Connect exposes no
+suitable durable query cursor, so the adapter continues over one bounded
+in-memory snapshot of at most 1,000 records of each type and invalidates that
+snapshot after mutations.
 
 Each new scratchpad and image metadata record receives a timestamped,
 identity-suffixed path that never changes. New records and files stay under one
@@ -112,7 +114,13 @@ and session-only: bytes are uploaded and descriptor digest, size, media class,
 and media type are verified before metadata is created. It does not claim crash
 recovery. Removing image metadata never invokes binary deletion. Starting a new
 note transitions the sole current capture target in place and creates its
-replacement through the same provider-neutral boundary. The optional `title`
+replacement through the same provider-neutral boundary. Resuming a historical
+note promotes it without changing its identity, path, content, or creation date
+and demotes the previous current note with a fresh `dateConverted`. Connect does
+not currently expose an atomic two-record compare-and-swap, so the adapter uses
+revision guards, local write serialization, and a compensating rollback if the
+second update fails; duplicate-active detection remains the fail-safe for an
+interruption whose rollback cannot complete. The optional `title`
 frontmatter field is edited independently from the Markdown body: omitting it
 from a save preserves it, while an explicit empty string represents a cleared
 title without introducing a schema-invalid null. Starting a

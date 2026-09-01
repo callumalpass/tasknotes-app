@@ -267,6 +267,141 @@ describe("mdbase scratchpad stream", () => {
     );
   });
 
+  it("reactivates history without changing note identity or content", async () => {
+    const fixture = mdbaseFixture([
+      {
+        ...scratchpad("old", "2026-07-01T00:00:00.000Z"),
+        frontmatter: {
+          ...scratchpad("old", "2026-07-01T00:00:00.000Z").frontmatter,
+          title: "Earlier plan",
+          dateConverted: "2026-07-02T00:00:00.000Z",
+        },
+      },
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const current = await repository.getActiveScratchpad();
+    const target = (await repository.getScratchpad("old"))!;
+    fixture.update.mockClear();
+
+    const result = await repository.reactivateScratchpad({
+      current: {
+        id: current.id,
+        path: current.path,
+        revision: current.revision,
+      },
+      target: {
+        id: target.id,
+        path: target.path,
+        revision: target.revision,
+      },
+    });
+
+    expect(result.current).toMatchObject({
+      id: target.id,
+      path: target.path,
+      state: "active",
+      title: "Earlier plan",
+      body: target.body,
+      dateCreated: target.dateCreated,
+    });
+    expect(result.current.dateConverted).toBeUndefined();
+    expect(result.previous).toMatchObject({
+      id: current.id,
+      path: current.path,
+      state: "converted",
+      body: current.body,
+      dateConverted: expect.any(String),
+    });
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+    expect(fixture.create).not.toHaveBeenCalled();
+    expect(fixture.rename).not.toHaveBeenCalled();
+    expect((await repository.getActiveScratchpad()).id).toBe(target.id);
+    expect((await repository.listScratchFeed()).items[0]).toMatchObject({
+      kind: "scratchpad",
+      id: current.id,
+    });
+  });
+
+  it("rejects stale reactivation before changing either note", async () => {
+    const fixture = mdbaseFixture([
+      scratchpad("old", "2026-07-01T00:00:00.000Z"),
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const current = await repository.getActiveScratchpad();
+    const target = (await repository.getScratchpad("old"))!;
+    fixture.update.mockClear();
+
+    await expect(
+      repository.reactivateScratchpad({
+        current: {
+          id: current.id,
+          path: current.path,
+          revision: "stale",
+        },
+        target: {
+          id: target.id,
+          path: target.path,
+          revision: target.revision,
+        },
+      }),
+    ).rejects.toThrow("changed after it was opened");
+    expect(fixture.update).not.toHaveBeenCalled();
+  });
+
+  it("rolls back a promoted note when the current-note demotion fails", async () => {
+    const fixture = mdbaseFixture([
+      scratchpad("old", "2026-07-01T00:00:00.000Z"),
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const current = await repository.getActiveScratchpad();
+    const target = (await repository.getScratchpad("old"))!;
+    const update = fixture.update.getMockImplementation()!;
+    let demotionFailed = false;
+    fixture.update.mockImplementation(async (...args) => {
+      const [input] = args;
+      if (
+        !demotionFailed &&
+        input.path === current.path &&
+        input.patch.state === "converted"
+      ) {
+        demotionFailed = true;
+        throw new Error("Second write failed");
+      }
+      return update(...args);
+    });
+
+    await expect(
+      repository.reactivateScratchpad({
+        current: {
+          id: current.id,
+          path: current.path,
+          revision: current.revision,
+        },
+        target: {
+          id: target.id,
+          path: target.path,
+          revision: target.revision,
+        },
+      }),
+    ).rejects.toThrow("Second write failed");
+
+    expect(fixture.update).toHaveBeenCalledTimes(3);
+    expect(await repository.getActiveScratchpad()).toMatchObject({
+      id: current.id,
+      state: "active",
+    });
+    expect(await repository.getScratchpad(target.id)).toMatchObject({
+      id: target.id,
+      state: "converted",
+    });
+  });
+
   it("preserves the current document and creates exactly one replacement", async () => {
     const fixture = mdbaseFixture([
       scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),

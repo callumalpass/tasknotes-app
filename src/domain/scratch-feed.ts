@@ -1,5 +1,5 @@
 import type { ScratchImage } from "./scratch-image";
-import type { ScratchpadDocument } from "./scratchpad";
+import { scratchpadHistoryDate, type ScratchpadDocument } from "./scratchpad";
 
 export type ScratchFeedItem =
   ({ kind: "scratchpad" } & ScratchpadDocument) | ScratchImage;
@@ -25,14 +25,16 @@ export function compareScratchFeedNewestFirst(
   left: ScratchFeedItem,
   right: ScratchFeedItem,
 ) {
-  const leftTime = Date.parse(left.dateCreated);
-  const rightTime = Date.parse(right.dateCreated);
-  const byCreated =
+  const leftDate = feedDate(left);
+  const rightDate = feedDate(right);
+  const leftTime = Date.parse(leftDate);
+  const rightTime = Date.parse(rightDate);
+  const byActivity =
     Number.isFinite(leftTime) && Number.isFinite(rightTime)
       ? rightTime - leftTime
-      : right.dateCreated.localeCompare(left.dateCreated);
+      : rightDate.localeCompare(leftDate);
   return (
-    byCreated ||
+    byActivity ||
     right.id.localeCompare(left.id) ||
     right.kind.localeCompare(left.kind)
   );
@@ -70,8 +72,14 @@ export function scratchFeedKey(item: ScratchFeedItem) {
   return `${item.kind}:${item.id}`;
 }
 
+function feedDate(item: ScratchFeedItem) {
+  return item.kind === "scratchpad"
+    ? scratchpadHistoryDate(item)
+    : item.dateCreated;
+}
+
 function feedKey(item: ScratchFeedItem) {
-  return JSON.stringify([item.dateCreated, item.id, item.kind]);
+  return JSON.stringify([feedDate(item), item.id, item.kind]);
 }
 
 function decodeCursor(cursor: string) {
