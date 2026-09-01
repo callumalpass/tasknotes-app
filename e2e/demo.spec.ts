@@ -458,34 +458,40 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reorder" }).click();
-  const dragSearch = page.getByRole("button", {
-    name: "Move Search. Drag, or use up and down arrow keys.",
-  });
   const dragScratchpad = page.getByRole("button", {
     name: "Move Scratchpad. Drag, or use up and down arrow keys.",
   });
-  const [searchBox, scratchpadBox] = await Promise.all([
-    dragSearch.boundingBox(),
+  const dragToday = page.getByRole("button", {
+    name: "Move Today. Drag, or use up and down arrow keys.",
+  });
+  const [scratchpadBox, todayBox] = await Promise.all([
     dragScratchpad.boundingBox(),
+    dragToday.boundingBox(),
   ]);
-  expect(searchBox).not.toBeNull();
   expect(scratchpadBox).not.toBeNull();
-  await page.mouse.move(
-    searchBox!.x + searchBox!.width / 2,
-    searchBox!.y + searchBox!.height / 2,
-  );
-  await page.mouse.down();
+  expect(todayBox).not.toBeNull();
   await page.mouse.move(
     scratchpadBox!.x + scratchpadBox!.width / 2,
-    scratchpadBox!.y + 4,
-    { steps: 6 },
+    scratchpadBox!.y + scratchpadBox!.height / 2,
   );
-  await expect(dragSearch.locator("xpath=..")).toHaveClass(/is-dragging/);
-  await expect(dragScratchpad.locator("xpath=..")).toHaveClass(
-    /is-drop-before/,
-  );
+  await page.mouse.down();
+  await page.mouse.move(todayBox!.x + todayBox!.width / 2, todayBox!.y + 4, {
+    steps: 6,
+  });
+  await expect(dragScratchpad.locator("xpath=..")).toHaveClass(/is-dragging/);
+  await expect(dragToday.locator("xpath=..")).toHaveClass(/is-drop-before/);
   await page.mouse.up();
-  await expect(page.getByText(/Search moved before Scratchpad/)).toBeAttached();
+  await expect(page.getByText(/Scratchpad moved before Today/)).toBeAttached();
+  await page.getByRole("button", { name: "Done" }).click();
+  await allViews.getByRole("button", { name: /^All / }).click();
+  await allViews
+    .getByRole("button", { name: /^Scratchpad/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/?demo=24$/);
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", exact: true }),
+  ).toBeVisible();
 });
 
 test("supports project capture and saved-view editing in the demo", async ({

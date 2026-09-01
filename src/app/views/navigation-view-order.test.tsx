@@ -48,7 +48,7 @@ it("orders Search with saved views and other working screens", () => {
   fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
   expect(
     screen.getByRole("button", { name: "Move Scratchpad earlier" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   fireEvent.keyDown(
     screen.getByRole("button", {
       name: "Move Search. Drag, or use up and down arrow keys.",
@@ -58,7 +58,7 @@ it("orders Search with saved views and other working screens", () => {
   expect(onMove).toHaveBeenCalledWith(SEARCH_NAVIGATION_KEY, -1);
 });
 
-it("allows saved views to move later across built-in tools when Home stays saved", () => {
+it("allows saved views and built-in tools to exchange the Home position", () => {
   const today = view("today", "Today");
   const upcoming = view("upcoming", "Upcoming");
   const onMove = vi.fn();
@@ -89,7 +89,7 @@ it("allows saved views to move later across built-in tools when Home stays saved
   expect(onMove).toHaveBeenCalledWith(upcoming.key, 1);
   expect(
     screen.getByRole("button", { name: "Move Today later" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
 });
 
 it("shows a pointer drop position and moves the view there", () => {
@@ -157,7 +157,7 @@ it("shows a pointer drop position and moves the view there", () => {
   });
 });
 
-it("does not offer a pointer drop that would make a built-in tool Home", () => {
+it("allows a built-in tool to be dropped into the Home position", () => {
   const today = view("today", "Today");
   const onMove = vi.fn();
   const originalElementFromPoint = document.elementFromPoint;
@@ -197,9 +197,12 @@ it("does not offer a pointer drop that would make a built-in tool Home", () => {
 
   fireEvent.pointerDown(source, { button: 0 });
   fireEvent.pointerMove(window, { clientX: 20, clientY: 105 });
-  expect(target).not.toHaveClass("is-drop-before");
+  expect(target).toHaveClass("is-drop-before");
   fireEvent.pointerUp(window, { clientX: 20, clientY: 105 });
-  expect(onMove).not.toHaveBeenCalled();
+  expect(onMove).toHaveBeenCalledWith(SCRATCHPAD_NAVIGATION_KEY, -1);
+  expect(
+    screen.getByText("Scratchpad moved before Today."),
+  ).toBeInTheDocument();
 
   Object.defineProperty(document, "elementFromPoint", {
     configurable: true,

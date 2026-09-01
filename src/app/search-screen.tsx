@@ -12,7 +12,7 @@ export function SearchScreen({
   onBack,
   onOpen,
 }: {
-  onBack(): void;
+  onBack?: () => void;
   onOpen(task: Task): void;
 }) {
   const [query, setQuery] = useState("");
@@ -28,15 +28,17 @@ export function SearchScreen({
   return (
     <section className="screen" aria-labelledby="search-title">
       <header className="screen-header compact-header detail-header search-header">
-        <button
-          aria-label="Back"
-          className="icon-action"
-          title="Back"
-          type="button"
-          onClick={onBack}
-        >
-          <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
-        </button>
+        {onBack ? (
+          <button
+            aria-label="Back"
+            className="icon-action"
+            title="Back"
+            type="button"
+            onClick={onBack}
+          >
+            <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
+          </button>
+        ) : null}
         <div>
           <h1 id="search-title">Search</h1>
           <p>Across this collection</p>

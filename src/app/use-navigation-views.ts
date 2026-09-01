@@ -8,7 +8,6 @@ import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-
 import { flattenViewDocuments } from "../domain/view";
 import { useRepository } from "./repository-context";
 import {
-  isSpecialNavigationKey,
   moveNavigationViewKey,
   navigationViewScope,
   readLegacyPrimaryViewKey,
@@ -35,7 +34,7 @@ export function useNavigationViews(): {
   error: string;
   navigationViews: TaskView[];
   navigationKeys: string[];
-  homeView?: TaskView;
+  homeKey?: string;
   loading: boolean;
   refresh(): Promise<void>;
   toggleNavigationView(key: string): void;
@@ -128,20 +127,14 @@ export function useNavigationViews(): {
     (key: string) =>
       setNavigationKeys((keys) => {
         if (!keys.includes(key)) return [...keys, key];
-        const taskViewCount = keys.filter(
-          (candidate) => !isSpecialNavigationKey(candidate),
-        ).length;
-        if (!isSpecialNavigationKey(key) && taskViewCount === 1) return keys;
-        return keys.filter((candidate) => candidate !== key);
+        const next = keys.filter((candidate) => candidate !== key);
+        return next.length ? next : keys;
       }),
     [setNavigationKeys],
   );
   const moveNavigationView = useCallback(
     (key: string, direction: -1 | 1) =>
-      setNavigationKeys((keys) => {
-        const next = moveNavigationViewKey(keys, key, direction);
-        return isSpecialNavigationKey(next[0]) ? keys : next;
-      }),
+      setNavigationKeys((keys) => moveNavigationViewKey(keys, key, direction)),
     [setNavigationKeys],
   );
   return {
@@ -150,7 +143,7 @@ export function useNavigationViews(): {
     error: catalog.error,
     navigationViews,
     navigationKeys: catalog.navigationKeys,
-    homeView: navigationViews[0],
+    homeKey: catalog.navigationKeys[0],
     loading: catalog.documents === null,
     refresh,
     toggleNavigationView,

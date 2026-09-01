@@ -164,8 +164,8 @@ export function NavigationViewOrder({
             <span>{ordered.length}</span>
           </div>
           <p>
-            The first saved view is Home. Order and visibility are saved for
-            this collection on this device.
+            The first view is Home. Order and visibility are saved for this
+            collection on this device.
           </p>
         </div>
         <button
@@ -261,7 +261,7 @@ function dropFinalIndex(
 }
 
 function dropIsValid(
-  ordered: ReadonlyArray<{ special: boolean }>,
+  ordered: ReadonlyArray<unknown>,
   sourceIndex: number,
   targetIndex: number,
   placement: NavigationDropPlacement,
@@ -284,19 +284,12 @@ function dropIsValid(
 }
 
 function moveIsValid(
-  ordered: ReadonlyArray<{ special: boolean }>,
+  ordered: ReadonlyArray<unknown>,
   index: number,
   direction: -1 | 1,
 ): boolean {
   const adjacentIndex = index + direction;
-  if (index < 0 || adjacentIndex < 0 || adjacentIndex >= ordered.length)
-    return false;
-  const proposed = [...ordered];
-  [proposed[index], proposed[adjacentIndex]] = [
-    proposed[adjacentIndex]!,
-    proposed[index]!,
-  ];
-  return proposed[0]?.special === false;
+  return index >= 0 && adjacentIndex >= 0 && adjacentIndex < ordered.length;
 }
 
 export function ViewIcon({ view }: { view: TaskView }) {

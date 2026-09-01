@@ -21,9 +21,9 @@ it("clearly separates navigation, tools, and saved views", () => {
   expect(within(allViews).getByText("Views/work.base")).toBeVisible();
   expect(
     within(allViews).getByRole("button", {
-      name: "Today must remain in navigation until another saved view is added",
+      name: "Remove Today from navigation",
     }),
-  ).toHaveTextContent("In navigation");
+  ).toBeEnabled();
   expect(
     within(allViews).getByRole("button", {
       name: "Add Work board to navigation",
