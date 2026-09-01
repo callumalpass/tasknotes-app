@@ -201,7 +201,11 @@ export function resolveNavigationViewCatalog(
       writeNavigationViewKeys(storage, scope, stored);
     }
   }
-  if (requireStoredViews && stored?.[0] && !available.has(stored[0]))
+  if (
+    requireStoredViews &&
+    ((!stored && flattenViewDocuments(documents).length === 0) ||
+      (stored?.[0] && !available.has(stored[0])))
+  )
     return null;
   const requested =
     stored ?? withDefaultTools(defaultNavigationViewKeys(documents));
