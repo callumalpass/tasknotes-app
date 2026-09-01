@@ -158,10 +158,12 @@ Today             Search       More
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The
   wide feed keeps its scrollbar at the page edge while centering spacious note
-  cards. When the current card fits, it opens vertically centered; long cards
-  fall back to keeping the active capture area near the bottom. Intentional
-  upward scrolling reveals history, and loading older items preserves the visible
-  position. Each file is a lightweight note card;
+  cards. On wider screens, when the current card fits, it opens vertically
+  centered; long cards fall back to keeping the active capture area near the
+  bottom. On phones, the current card stays anchored above the bottom visual
+  viewport edge so the onscreen keyboard does not trigger re-centering.
+  Intentional upward scrolling reveals history, and loading older items preserves
+  the visible position. Each file is a lightweight note card;
   this boundary stays stronger than the rules between rows inside it. Explanatory
   chrome and separate Add task/Add note buttons are omitted: the trailing outline
   row is the capture affordance. Every card can switch between the structured

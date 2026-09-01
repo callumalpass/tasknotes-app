@@ -109,7 +109,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
       ),
     )
     .toBeLessThanOrEqual(2);
-  const currentCenterOffset = () =>
+  const currentPlacementOffset = () =>
     feed.evaluate((element) => {
       const currentDocument = element.querySelector(
         ".scratchpad-current-document",
@@ -120,14 +120,17 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
       const bottomGutter = Number.parseFloat(
         getComputedStyle(element).paddingBottom,
       );
-      const expectedGap = Math.max(
-        bottomGutter,
-        (element.clientHeight - cardBounds.height) / 2,
-      );
+      const expectedGap =
+        window.innerWidth <= 560
+          ? bottomGutter
+          : Math.max(
+              bottomGutter,
+              (element.clientHeight - cardBounds.height) / 2,
+            );
       const actualGap = scrollerBounds.bottom - cardBounds.bottom;
       return Math.abs(actualGap - expectedGap);
     });
-  await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
+  await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   await current
     .getByRole("button", { name: "Actions for empty item" })
     .last()
@@ -140,19 +143,53 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   await expect(
     current.getByRole("textbox", { name: "Scratchpad Markdown" }),
   ).toBeFocused();
-  await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
+  await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   for (let index = 0; index < 3; index += 1) {
     await current.getByRole("button", { name: "Outline" }).click();
     await expect(
       current.getByRole("tree", { name: "Scratchpad outline" }),
     ).toBeVisible();
-    await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
+    await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
     await current.getByRole("button", { name: "Markdown" }).click();
     await expect(
       current.getByRole("textbox", { name: "Scratchpad Markdown" }),
     ).toBeFocused();
-    await expect.poll(currentCenterOffset).toBeLessThanOrEqual(2);
+    await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   }
+});
+
+test("bottom-anchors the current Scratchpad on mobile viewport changes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("scratchpad/?demo=12");
+  const feed = page.locator(".scratchpad-history-scroll");
+  const current = page.locator(".scratchpad-current-document");
+  const restSpace = page.locator(".scratchpad-current-rest-space");
+  const capture = current.getByRole("textbox", { name: "Draft task: empty" });
+  await expect(current).toBeVisible();
+  await expect(capture).toBeFocused();
+  await expect(restSpace).toHaveCSS("display", "none");
+
+  const currentBottomOffset = () =>
+    feed.evaluate((element) => {
+      const currentDocument = element.querySelector(
+        ".scratchpad-current-document",
+      );
+      if (!currentDocument) return Number.POSITIVE_INFINITY;
+      const actualGap =
+        element.getBoundingClientRect().bottom -
+        currentDocument.getBoundingClientRect().bottom;
+      const expectedGap = Number.parseFloat(
+        getComputedStyle(element).paddingBottom,
+      );
+      return Math.abs(actualGap - expectedGap);
+    });
+
+  await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
+  await page.setViewportSize({ width: 390, height: 520 });
+  await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
+  await expect(capture).toBeFocused();
 });
 
 test("moves the centered current Scratchpad down after an intentional upward scroll", async ({
