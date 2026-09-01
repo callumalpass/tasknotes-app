@@ -415,6 +415,25 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
   await expect(allViews.getByText("Saved views")).toBeVisible();
   await expect(allViews.getByText("TaskNotes/Views/today.base")).toBeVisible();
+  const toolMembership = allViews.getByRole("button", {
+    name: "Remove Scratchpad from navigation",
+  });
+  const savedMembership = allViews.getByRole("button", {
+    name: "Remove Today from navigation",
+  });
+  const [toolMembershipBox, savedMembershipBox] = await Promise.all([
+    toolMembership.boundingBox(),
+    savedMembership.boundingBox(),
+  ]);
+  expect(toolMembershipBox).not.toBeNull();
+  expect(savedMembershipBox).not.toBeNull();
+  expect(
+    Math.abs(
+      toolMembershipBox!.x +
+        toolMembershipBox!.width -
+        (savedMembershipBox!.x + savedMembershipBox!.width),
+    ),
+  ).toBeLessThanOrEqual(1);
   const accessibility = await new AxeBuilder({ page })
     .include(".views-screen")
     .analyze();
@@ -439,9 +458,33 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reorder" }).click();
-  const moveSearch = page.getByRole("button", { name: "Move Search earlier" });
-  await expect(moveSearch).toBeVisible();
-  await moveSearch.click();
+  const dragSearch = page.getByRole("button", {
+    name: "Move Search. Drag, or use up and down arrow keys.",
+  });
+  const dragScratchpad = page.getByRole("button", {
+    name: "Move Scratchpad. Drag, or use up and down arrow keys.",
+  });
+  const [searchBox, scratchpadBox] = await Promise.all([
+    dragSearch.boundingBox(),
+    dragScratchpad.boundingBox(),
+  ]);
+  expect(searchBox).not.toBeNull();
+  expect(scratchpadBox).not.toBeNull();
+  await page.mouse.move(
+    searchBox!.x + searchBox!.width / 2,
+    searchBox!.y + searchBox!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    scratchpadBox!.x + scratchpadBox!.width / 2,
+    scratchpadBox!.y + 4,
+    { steps: 6 },
+  );
+  await expect(dragSearch.locator("xpath=..")).toHaveClass(/is-dragging/);
+  await expect(dragScratchpad.locator("xpath=..")).toHaveClass(
+    /is-drop-before/,
+  );
+  await page.mouse.up();
   await expect(page.getByText(/Search moved before Scratchpad/)).toBeAttached();
 });
 
