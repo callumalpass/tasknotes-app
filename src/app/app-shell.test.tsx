@@ -78,7 +78,7 @@ it("expands configured views directly in the desktop sidebar", () => {
   render(
     <Navigation
       active={`view:${upcoming.key}`}
-      homeViewKey={today.key}
+      homeKey={today.key}
       mode="desktop"
       navigationKeys={[
         today.key,
@@ -129,6 +129,30 @@ it("expands configured views directly in the desktop sidebar", () => {
   expect(onNavigate).toHaveBeenLastCalledWith({ page: "views" });
 });
 
+it("routes a TaskNotes tool through Home when it is first", () => {
+  const onNavigate = vi.fn();
+  const today = navigationView("today", "Today");
+
+  render(
+    <Navigation
+      active="scratchpad"
+      homeKey={SCRATCHPAD_NAVIGATION_KEY}
+      mode="desktop"
+      navigationKeys={[SCRATCHPAD_NAVIGATION_KEY, today.key]}
+      views={[today]}
+      onNavigate={onNavigate}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Scratchpad" }));
+  expect(onNavigate).toHaveBeenLastCalledWith({ page: "home" });
+  fireEvent.click(screen.getByRole("button", { name: "Today" }));
+  expect(onNavigate).toHaveBeenLastCalledWith({
+    page: "views",
+    key: today.key,
+  });
+});
+
 it("keeps additional views behind the mobile Views menu", () => {
   const onNavigate = vi.fn();
   const today = navigationView("today", "Today");
@@ -137,7 +161,7 @@ it("keeps additional views behind the mobile Views menu", () => {
   render(
     <Navigation
       active="search"
-      homeViewKey={today.key}
+      homeKey={today.key}
       mode="mobile"
       navigationKeys={[
         today.key,

@@ -69,7 +69,7 @@ export function AppShell() {
     error: viewsError,
     navigationViews,
     navigationKeys,
-    homeView,
+    homeKey,
     loading: viewsLoading,
     refresh: refreshViews,
     toggleNavigationView,
@@ -203,9 +203,17 @@ export function AppShell() {
 
   const workspace: WorkspaceRoute =
     route.page === "task" ? workspaceRoute : route;
-  const workspaceViewKey =
+  const workspacePage =
     workspace.page === "home"
-      ? homeView?.key
+      ? homeKey === SCRATCHPAD_NAVIGATION_KEY
+        ? "scratchpad"
+        : homeKey === SEARCH_NAVIGATION_KEY
+          ? "search"
+          : "view"
+      : workspace.page;
+  const workspaceViewKey =
+    workspacePage === "view"
+      ? homeKey
       : workspace.page === "views"
         ? workspace.key
         : undefined;
@@ -215,23 +223,21 @@ export function AppShell() {
   );
   const showGlobalCaptureFab =
     !viewsLoading &&
-    (workspace.page === "search" ||
-      workspace.page === "home" ||
-      Boolean(workspace.page === "views" && workspaceViewKey));
+    (workspacePage === "search" ||
+      workspacePage === "view" ||
+      Boolean(workspacePage === "views" && workspaceViewKey));
   const showBottomNavigation =
     route.page !== "task" &&
     !(workspace.page === "home" && viewsLoading) &&
-    (workspace.page !== "views" ||
+    (workspacePage !== "views" ||
       !workspaceViewKey ||
       workspaceIsNavigationView);
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
-      : workspace.page === "views" && !workspace.key
+      : workspacePage === "views"
         ? "views"
-        : workspace.page === "views"
-          ? "views"
-          : workspace.page;
+        : workspacePage;
   return (
     <div className={`app-shell${route.page === "task" ? " has-detail" : ""}`}>
       <a className="skip-link" href="#main-content">
@@ -259,7 +265,7 @@ export function AppShell() {
         </button>
         <Navigation
           active={activePage}
-          homeViewKey={homeView?.key}
+          homeKey={homeKey}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -267,16 +273,20 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface">
-        {workspace.page === "search" ? (
+        {workspacePage === "search" ? (
           <SearchScreen
-            onBack={() => navigate({ page: "home" }, true)}
+            onBack={
+              workspace.page === "home"
+                ? undefined
+                : () => navigate({ page: "home" }, true)
+            }
             onOpen={(task) => navigate({ page: "task", id: task.id })}
           />
-        ) : workspace.page === "scratchpad" ? (
+        ) : workspacePage === "scratchpad" ? (
           <ScratchpadScreen
             onOpenTask={(task) => navigate({ page: "task", id: task.id })}
           />
-        ) : workspace.page === "more" ? (
+        ) : workspacePage === "more" ? (
           <MoreScreen
             calendarPreferences={calendarPreferences}
             onCalendarPreferencesChange={updateCalendarPreferences}
@@ -284,7 +294,7 @@ export function AppShell() {
           />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
-        ) : workspace.page === "views" || workspace.page === "home" ? (
+        ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
             calendarPreferences={calendarPreferences}
             documents={documents}
@@ -302,15 +312,27 @@ export function AppShell() {
             onOpenTask={(task, occurrence) =>
               navigate({ page: "task", id: task.id, occurrence })
             }
-            onSearch={() => navigate({ page: "search" })}
+            onSearch={() =>
+              navigate(
+                homeKey === SEARCH_NAVIGATION_KEY
+                  ? { page: "home" }
+                  : { page: "search" },
+              )
+            }
             onOpenView={(view) =>
               navigate(
-                view.key === homeView?.key
+                view.key === homeKey
                   ? { page: "home" }
                   : { page: "views", key: view.key },
               )
             }
-            onOpenScratchpad={() => navigate({ page: "scratchpad" })}
+            onOpenScratchpad={() =>
+              navigate(
+                homeKey === SCRATCHPAD_NAVIGATION_KEY
+                  ? { page: "home" }
+                  : { page: "scratchpad" },
+              )
+            }
             onToggleNavigationView={toggleNavigationView}
             onMoveNavigationView={moveNavigationView}
             onViewsChanged={refreshViews}
@@ -339,7 +361,7 @@ export function AppShell() {
         >
           <Navigation
             active={activePage}
-            homeViewKey={homeView?.key}
+            homeKey={homeKey}
             mode="mobile"
             navigationKeys={navigationKeys}
             views={views ?? []}
@@ -641,14 +663,14 @@ function HomeViewLoading() {
 
 export function Navigation({
   active,
-  homeViewKey,
+  homeKey,
   mode,
   navigationKeys,
   views,
   onNavigate,
 }: {
   active: string;
-  homeViewKey?: string;
+  homeKey?: string;
   mode: "desktop" | "mobile";
   navigationKeys: string[];
   views: TaskView[];
@@ -666,7 +688,7 @@ export function Navigation({
         key: "scratchpad",
         label: "Scratchpad",
         icon: FilePenLine,
-        route: { page: "scratchpad" },
+        route: key === homeKey ? { page: "home" } : { page: "scratchpad" },
       });
       continue;
     }
@@ -675,7 +697,7 @@ export function Navigation({
         key: "search",
         label: "Search",
         icon: Search,
-        route: { page: "search" },
+        route: key === homeKey ? { page: "home" } : { page: "search" },
       });
       continue;
     }
@@ -686,7 +708,7 @@ export function Navigation({
         label: view.name,
         icon: navigationViewIcon(view),
         route:
-          view.key === homeViewKey
+          view.key === homeKey
             ? { page: "home" }
             : { page: "views", key: view.key },
       });

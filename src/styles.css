@@ -6556,11 +6556,13 @@ html.scratchpad-route .page-surface {
 }
 
 .navigation-view-order li {
+  position: relative;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
   min-height: 54px;
   border-top: 1px solid var(--line);
+  transition: opacity 140ms var(--ease-out);
 }
 
 .navigation-view-order li.is-reorderable {
@@ -6587,20 +6589,52 @@ html.scratchpad-route .page-surface {
 }
 
 .navigation-drag-handle {
+  z-index: 3;
   display: grid;
   width: 44px;
   height: 44px;
   padding: 0;
   place-items: center;
   color: var(--ink-muted);
+  touch-action: none;
+  user-select: none;
   background: transparent;
   border: 0;
   cursor: grab;
-  touch-action: none;
+  -webkit-user-drag: none;
+}
+
+.navigation-drag-handle:hover,
+.navigation-drag-handle:focus-visible {
+  color: var(--accent);
 }
 
 .navigation-drag-handle:active {
   cursor: grabbing;
+}
+
+.navigation-view-order li.is-dragging {
+  opacity: 0.42;
+}
+
+.navigation-view-order li.is-drop-before::before,
+.navigation-view-order li.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}
+
+.navigation-view-order li.is-drop-before::before {
+  top: -1px;
+}
+
+.navigation-view-order li.is-drop-after::after {
+  bottom: -1px;
 }
 
 .navigation-order-actions {
@@ -6765,6 +6799,10 @@ html.scratchpad-route .page-surface {
   min-height: 64px;
   padding: 0;
   border-bottom: 1px solid var(--line);
+}
+
+.saved-view-row.is-tool-row .saved-view-membership {
+  grid-column: 3;
 }
 
 .saved-view-open {

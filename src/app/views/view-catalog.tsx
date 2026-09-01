@@ -127,9 +127,6 @@ export function ViewCatalog({
     }))
     .filter((document) => document.views.length > 0);
   const visibleCount = visibleTools.length + visibleViewKeys.size;
-  const savedNavigationCount = navigationViewKeys.filter(
-    (key) => ![SEARCH_NAVIGATION_KEY, SCRATCHPAD_NAVIGATION_KEY].includes(key),
-  ).length;
 
   return (
     <div className="view-catalog">
@@ -211,6 +208,10 @@ export function ViewCatalog({
                   {visibleTools.map((tool) => (
                     <ToolRow
                       inNavigation={navigationViewKeys.includes(tool.key)}
+                      isOnlyNavigationEntry={
+                        navigationViewKeys.length === 1 &&
+                        navigationViewKeys[0] === tool.key
+                      }
                       key={tool.key}
                       tool={tool}
                       onToggleNavigation={onToggleNavigation}
@@ -248,12 +249,12 @@ export function ViewCatalog({
                         const inNavigation = navigationViewKeys.includes(
                           view.key,
                         );
-                        const lastNavigationView =
-                          inNavigation && savedNavigationCount === 1;
+                        const isOnlyNavigationEntry =
+                          inNavigation && navigationViewKeys.length === 1;
                         return (
                           <SavedViewRow
                             inNavigation={inNavigation}
-                            isLastNavigationView={lastNavigationView}
+                            isOnlyNavigationEntry={isOnlyNavigationEntry}
                             key={view.key}
                             view={view}
                             onDelete={onDelete}
@@ -279,10 +280,12 @@ export function ViewCatalog({
 function ToolRow({
   tool,
   inNavigation,
+  isOnlyNavigationEntry,
   onToggleNavigation,
 }: {
   tool: ToolEntry;
   inNavigation: boolean;
+  isOnlyNavigationEntry: boolean;
   onToggleNavigation(key: string): void;
 }) {
   const Icon = tool.icon;
@@ -297,6 +300,7 @@ function ToolRow({
         <ChevronRight aria-hidden="true" size={18} />
       </button>
       <NavigationMembershipButton
+        disabled={isOnlyNavigationEntry}
         inNavigation={inNavigation}
         name={tool.name}
         onClick={() => onToggleNavigation(tool.key)}
@@ -308,7 +312,7 @@ function ToolRow({
 function SavedViewRow({
   view,
   inNavigation,
-  isLastNavigationView,
+  isOnlyNavigationEntry,
   onOpen,
   onToggleNavigation,
   onEdit,
@@ -317,7 +321,7 @@ function SavedViewRow({
 }: {
   view: TaskView;
   inNavigation: boolean;
-  isLastNavigationView: boolean;
+  isOnlyNavigationEntry: boolean;
   onOpen(view: TaskView): void;
   onToggleNavigation(key: string): void;
   onEdit(view: TaskView): void;
@@ -345,7 +349,7 @@ function SavedViewRow({
         onEdit={onEdit}
       />
       <NavigationMembershipButton
-        disabled={isLastNavigationView}
+        disabled={isOnlyNavigationEntry}
         inNavigation={inNavigation}
         name={view.name}
         onClick={() => onToggleNavigation(view.key)}
@@ -367,7 +371,7 @@ function NavigationMembershipButton({
 }) {
   const action = inNavigation ? "Remove" : "Add";
   const label = disabled
-    ? `${name} must remain in navigation until another saved view is added`
+    ? `${name} must remain in navigation until another view is added`
     : `${action} ${name} ${inNavigation ? "from" : "to"} navigation`;
   return (
     <button

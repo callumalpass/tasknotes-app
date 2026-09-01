@@ -452,6 +452,25 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
   await expect(allViews.getByText("Saved views")).toBeVisible();
   await expect(allViews.getByText("TaskNotes/Views/today.base")).toBeVisible();
+  const toolMembership = allViews.getByRole("button", {
+    name: "Remove Scratchpad from navigation",
+  });
+  const savedMembership = allViews.getByRole("button", {
+    name: "Remove Today from navigation",
+  });
+  const [toolMembershipBox, savedMembershipBox] = await Promise.all([
+    toolMembership.boundingBox(),
+    savedMembership.boundingBox(),
+  ]);
+  expect(toolMembershipBox).not.toBeNull();
+  expect(savedMembershipBox).not.toBeNull();
+  expect(
+    Math.abs(
+      toolMembershipBox!.x +
+        toolMembershipBox!.width -
+        (savedMembershipBox!.x + savedMembershipBox!.width),
+    ),
+  ).toBeLessThanOrEqual(1);
   const accessibility = await new AxeBuilder({ page })
     .include(".views-screen")
     .analyze();
@@ -476,10 +495,40 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reorder" }).click();
-  const moveSearch = page.getByRole("button", { name: "Move Search earlier" });
-  await expect(moveSearch).toBeVisible();
-  await moveSearch.click();
-  await expect(page.getByText(/Search moved before Scratchpad/)).toBeAttached();
+  const dragScratchpad = page.getByRole("button", {
+    name: "Move Scratchpad. Drag, or use up and down arrow keys.",
+  });
+  const dragToday = page.getByRole("button", {
+    name: "Move Today. Drag, or use up and down arrow keys.",
+  });
+  const [scratchpadBox, todayBox] = await Promise.all([
+    dragScratchpad.boundingBox(),
+    dragToday.boundingBox(),
+  ]);
+  expect(scratchpadBox).not.toBeNull();
+  expect(todayBox).not.toBeNull();
+  await page.mouse.move(
+    scratchpadBox!.x + scratchpadBox!.width / 2,
+    scratchpadBox!.y + scratchpadBox!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(todayBox!.x + todayBox!.width / 2, todayBox!.y + 4, {
+    steps: 6,
+  });
+  await expect(dragScratchpad.locator("xpath=..")).toHaveClass(/is-dragging/);
+  await expect(dragToday.locator("xpath=..")).toHaveClass(/is-drop-before/);
+  await page.mouse.up();
+  await expect(page.getByText(/Scratchpad moved before Today/)).toBeAttached();
+  await page.getByRole("button", { name: "Done" }).click();
+  await allViews.getByRole("button", { name: /^All / }).click();
+  await allViews
+    .getByRole("button", { name: /^Scratchpad/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/?demo=24$/);
+  await expect(
+    page.getByRole("heading", { name: "Scratchpad", exact: true }),
+  ).toBeVisible();
 });
 
 test("supports project capture and saved-view editing in the demo", async ({

@@ -82,6 +82,34 @@ describe("home view restoration", () => {
     expect(resolved?.navigationKeys).toEqual([home, SCRATCHPAD_NAVIGATION_KEY]);
   });
 
+  it("waits for provider defaults instead of briefly selecting a tool as Home", () => {
+    expect(
+      resolveNavigationViewCatalog(info, [], true, memoryStorage()),
+    ).toBeNull();
+  });
+
+  it("restores a TaskNotes tool as Home before saved views load", () => {
+    const storage = memoryStorage();
+    writeNavigationViewKeys(storage, "connect:collection-home", [
+      SCRATCHPAD_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+
+    const cached = resolveNavigationViewCatalog(info, [], true, storage);
+    expect(cached?.navigationKeys).toEqual([SCRATCHPAD_NAVIGATION_KEY]);
+
+    const restored = resolveNavigationViewCatalog(
+      info,
+      [workViews()],
+      true,
+      storage,
+    );
+    expect(restored?.navigationKeys).toEqual([
+      SCRATCHPAD_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+  });
+
   it("keeps startup unresolved instead of briefly selecting Today", () => {
     const storage = memoryStorage();
     writeNavigationViewKeys(storage, "connect:collection-home", [
