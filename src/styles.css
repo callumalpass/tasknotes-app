@@ -5372,6 +5372,11 @@ html.scratchpad-route .page-surface {
     margin-top: 16px;
   }
 
+  /* Keep mobile capture attached to the keyboard/visual viewport edge. */
+  .scratchpad-current-rest-space {
+    display: none;
+  }
+
   .scratchpad-title-row {
     gap: 8px;
   }
