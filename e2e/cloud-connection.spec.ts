@@ -689,10 +689,6 @@ function configuredCollectionDescription() {
   return description;
 }
 
-function tasknotesGrantContract() {
-  return collectionDescription().contracts[0];
-}
-
 async function installRelayAuthorization(
   page: import("@playwright/test").Page,
 ) {
@@ -743,7 +739,7 @@ async function installRelayAuthorization(
       name: "TaskNotes E2E",
       operations: liveConnectorOperations(),
       scope: {
-        contracts: [tasknotesGrantContract()],
+        contracts: [],
         access: "full_collection",
       },
       fileCapability: tasknotesFileCapability(),
