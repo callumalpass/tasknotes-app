@@ -99,7 +99,7 @@ describe("DemoTaskRepository", () => {
       state: "active",
       body: "- [ ] A fresh thought\n",
     });
-    expect(resumed.current.dateConverted).toBeUndefined();
+    expect(resumed.current.dateConverted).toBe(result.archived.dateConverted);
     expect(resumed.previous).toMatchObject({
       id: result.active.id,
       state: "converted",

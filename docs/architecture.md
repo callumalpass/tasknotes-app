@@ -115,8 +115,10 @@ and media type are verified before metadata is created. It does not claim crash
 recovery. Removing image metadata never invokes binary deletion. Starting a new
 note transitions the sole current capture target in place and creates its
 replacement through the same provider-neutral boundary. Resuming a historical
-note promotes it without changing its identity, path, content, or creation date
-and demotes the previous current note with a fresh `dateConverted`. Connect does
+note promotes it without changing its identity, path, content, creation date,
+or last history timestamp, and demotes the previous current note with a fresh
+`dateConverted`. Keeping the prior timestamp avoids sending a schema-invalid
+null deletion; it is replaced the next time that note enters history. Connect does
 not currently expose an atomic two-record compare-and-swap, so the adapter uses
 revision guards, local write serialization, and a compensating rollback if the
 second update fails; duplicate-active detection remains the fail-safe for an

@@ -1170,7 +1170,6 @@ export class MdbaseTaskRepository implements TaskRepository {
             patch: asJson({
               state: "active",
               dateModified: now,
-              dateConverted: null,
             }),
           },
         );
@@ -1203,7 +1202,6 @@ export class MdbaseTaskRepository implements TaskRepository {
               patch: asJson({
                 state: "converted",
                 dateModified: new Date().toISOString(),
-                dateConverted: target.dateConverted ?? null,
               }),
             });
           } catch {

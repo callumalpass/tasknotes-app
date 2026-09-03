@@ -306,7 +306,7 @@ describe("mdbase scratchpad stream", () => {
       body: target.body,
       dateCreated: target.dateCreated,
     });
-    expect(result.current.dateConverted).toBeUndefined();
+    expect(result.current.dateConverted).toBe("2026-07-02T00:00:00.000Z");
     expect(result.previous).toMatchObject({
       id: current.id,
       path: current.path,
@@ -315,6 +315,9 @@ describe("mdbase scratchpad stream", () => {
       dateConverted: expect.any(String),
     });
     expect(fixture.update).toHaveBeenCalledTimes(2);
+    expect(fixture.update.mock.calls[0]?.[0].patch).not.toHaveProperty(
+      "dateConverted",
+    );
     expect(fixture.create).not.toHaveBeenCalled();
     expect(fixture.rename).not.toHaveBeenCalled();
     expect((await repository.getActiveScratchpad()).id).toBe(target.id);
@@ -392,6 +395,9 @@ describe("mdbase scratchpad stream", () => {
     ).rejects.toThrow("Second write failed");
 
     expect(fixture.update).toHaveBeenCalledTimes(3);
+    expect(fixture.update.mock.calls[2]?.[0].patch).not.toHaveProperty(
+      "dateConverted",
+    );
     expect(await repository.getActiveScratchpad()).toMatchObject({
       id: current.id,
       state: "active",

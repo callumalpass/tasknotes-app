@@ -627,7 +627,6 @@ export class DemoTaskRepository implements TaskRepository {
       revision: nextScratchpadRevision(target.revision),
       dateModified: now,
     };
-    delete resumed.dateConverted;
     this.scratchpads.set(previous.id, previous);
     this.scratchpads.set(resumed.id, resumed);
     this.changed();
