@@ -4341,23 +4341,27 @@ html.scratchpad-route .page-surface {
 .scratchpad-mode-switch {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
-  padding: 2px;
+  gap: 2px;
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
 }
 
 .scratchpad-mode-switch button {
   display: inline-grid;
-  width: 36px;
-  min-height: 36px;
+  min-width: 64px;
+  min-height: 44px;
   place-items: center;
-  padding: 0;
+  padding: 0 10px;
   color: var(--ink-muted);
   background: transparent;
   border: 0;
-  font-size: var(--type-label);
+  border-radius: var(--radius-control);
+  font-size: var(--type-supporting);
+  cursor: pointer;
+}
+
+.scratchpad-mode-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .scratchpad-mode-switch button[aria-pressed="true"] {
@@ -4485,16 +4489,6 @@ html.scratchpad-route .page-surface {
   background: var(--accent-soft);
 }
 
-.scratchpad-writing-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding: 12px 4px;
-  color: var(--ink-muted);
-  font-size: var(--type-label);
-}
-
 .markdown-source-editor {
   min-height: 280px;
 }
@@ -4516,10 +4510,6 @@ html.scratchpad-route .page-surface {
 
 .markdown-source-editor .cm-line {
   padding: 0 8px;
-}
-
-.markdown-source-editor .cm-placeholder {
-  color: var(--ink-muted);
 }
 
 .markdown-source-editor .cm-content {

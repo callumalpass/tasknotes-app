@@ -168,8 +168,9 @@ Today             Search       More
   this boundary stays stronger than the rules between rows inside it. Explanatory
   chrome and separate Add task/Add note buttons are omitted: the trailing outline
   row is the capture affordance. Every card can switch between the structured
-  Outline editor and its exact Markdown source through compact named icon
-  controls. Older documents load explicitly, expand into the full editor, and
+  Outline editor and its exact Markdown source through a visible Outline / Write
+  text switch. Settings controls the default mode for new, empty notes; existing
+  content keeps its compatible editor without being rewritten. Older documents load explicitly, expand into the full editor, and
   may remain open together. Typing `[[` offers collection-record suggestions in
   both editors; an exact link becomes a linked row only when it resolves to an
   actual task, while links to other record types remain editable note content.
@@ -191,8 +192,9 @@ Today             Search       More
 - Scratchpad Markdown mode is a writing surface, not a code panel: proportional
   prose, generous line spacing, a bounded reading width, and monospace only for
   code. A small, keyboard-accessible formatting row preserves the selection and
-  ordinary undo. Word count and save status stay quiet but visible, including on
-  phones. Formatting is explicit; autosave preserves the exact Markdown source.
+  ordinary undo. Save status stays quiet but visible, including on phones.
+  Instructional footers, placeholder prose, and word counts are omitted.
+  Formatting is explicit; autosave preserves the exact Markdown source.
 - Scratchpad draft-task rows use toggleable portable Markdown checkboxes and
   reveal a direct task-to-note control with the row actions; checked drafts
   convert into the collection's first completed status. Linked rows expose the
