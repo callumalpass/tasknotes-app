@@ -840,7 +840,7 @@ describe("ScratchpadScreen", () => {
     expect(screen.queryByRole("button", { name: "Add note" })).toBeNull();
     fireEvent.change(input, { target: { value: "Source round trip" } });
 
-    fireEvent.click(screen.getByRole("button", { name: "Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
     const source = await screen.findByRole("textbox", {
       name: "Scratchpad Markdown",
     });
@@ -879,7 +879,7 @@ describe("ScratchpadScreen", () => {
     await repository.initialize();
     renderScratchpad();
     await screen.findByRole("button", { name: "Linked task" });
-    fireEvent.click(screen.getByRole("button", { name: "Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
     const source = await screen.findByRole("textbox", {
       name: "Scratchpad Markdown",
     });
@@ -907,7 +907,7 @@ describe("ScratchpadScreen", () => {
     });
     await act(async () => hydration.resolve(tasks));
 
-    expect(screen.getByRole("button", { name: "Markdown" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

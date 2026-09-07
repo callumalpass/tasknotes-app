@@ -2,7 +2,7 @@ import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
 import { Compartment, EditorState } from "@codemirror/state";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup } from "codemirror";
 import { useEffect, useRef } from "react";
@@ -178,7 +178,6 @@ export function MarkdownSourceEditor({
           syntaxHighlighting(scratchpadHighlightStyle),
           theme.of(scratchpadEditorTheme(dark)),
           EditorView.lineWrapping,
-          placeholder("Start anywhere. A thought, a question, a few words…"),
           EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged)
@@ -233,7 +232,6 @@ export function MarkdownSourceEditor({
     view.contentDOM.focus({ preventScroll: true });
   }
 
-  const words = value.trim() ? value.trim().split(/\s+/u).length : 0;
   return (
     <div className="scratchpad-writing-surface">
       <div
@@ -263,12 +261,6 @@ export function MarkdownSourceEditor({
         ))}
       </div>
       <div className="markdown-source-editor" ref={hostRef} />
-      <footer className="scratchpad-writing-footer">
-        <span>
-          {words} {words === 1 ? "word" : "words"}
-        </span>
-        <span>Markdown supported · Type [[ to link a note</span>
-      </footer>
     </div>
   );
 }

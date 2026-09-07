@@ -1,7 +1,6 @@
 import {
   Camera,
   Check,
-  FileCode2,
   FileImage,
   ImagePlus,
   ChevronDown,
@@ -14,7 +13,6 @@ import {
   Link2,
   ListChecks,
   ListTodo,
-  ListTree,
   MoreHorizontal,
   Plus,
   RotateCcw,
@@ -84,6 +82,7 @@ import {
 } from "../domain/task-capture";
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
+import { initialScratchpadMode } from "./scratchpad-preferences";
 
 import type {
   FieldCompletion,
@@ -1200,8 +1199,11 @@ function ScratchpadDocumentEditor({
   const [linkedTasks, setLinkedTasks] = useState<Map<string, Task>>(new Map());
   const [source, setSource] = useState(initialDocument.body);
   const [title, setTitle] = useState(initialDocument.title ?? "");
-  const [editorMode, setEditorMode] = useState<"outline" | "markdown">(
-    isOutlineCompatible(initialDocument.body) ? "outline" : "markdown",
+  const [editorMode, setEditorMode] = useState<"outline" | "markdown">(() =>
+    initialScratchpadMode(
+      initialDocument.body,
+      isOutlineCompatible(initialDocument.body),
+    ),
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1271,7 +1273,10 @@ function ScratchpadDocumentEditor({
       const last = visible.at(-1);
       if (!last || last.kind === "task" || last.text.trim())
         visible.push(createScratchNode());
-      const mode = isOutlineCompatible(next.body) ? "outline" : "markdown";
+      const mode = initialScratchpadMode(
+        next.body,
+        isOutlineCompatible(next.body),
+      );
       documentRef.current = next;
       nodesRef.current = visible;
       sourceRef.current = next.body;
@@ -2165,16 +2170,16 @@ function ScratchpadDocumentEditor({
             type="button"
             onClick={() => void changeEditorMode("outline")}
           >
-            <ListTree aria-hidden="true" size={17} />
+            Outline
           </button>
           <button
-            aria-label="Markdown"
+            aria-label="Write"
             aria-pressed={editorMode === "markdown"}
-            title="Markdown"
+            title="Write"
             type="button"
             onClick={() => void changeEditorMode("markdown")}
           >
-            <FileCode2 aria-hidden="true" size={17} />
+            Write
           </button>
         </div>
         <div className="scratchpad-header-actions">

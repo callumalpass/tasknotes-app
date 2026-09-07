@@ -58,7 +58,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await expect(
     currentScratchpad.getByRole("button", { name: "Add task" }),
   ).toHaveCount(0);
-  await currentScratchpad.getByRole("button", { name: "Markdown" }).click();
+  await currentScratchpad.getByRole("button", { name: "Write" }).click();
   const markdown = currentScratchpad.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
@@ -139,7 +139,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
     /opens-up/,
   );
   await page.keyboard.press("Escape");
-  await current.getByRole("button", { name: "Markdown" }).click();
+  await current.getByRole("button", { name: "Write" }).click();
   await expect(
     current.getByRole("textbox", { name: "Scratchpad Markdown" }),
   ).toBeFocused();
@@ -150,7 +150,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
       current.getByRole("tree", { name: "Scratchpad outline" }),
     ).toBeVisible();
     await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
-    await current.getByRole("button", { name: "Markdown" }).click();
+    await current.getByRole("button", { name: "Write" }).click();
     await expect(
       current.getByRole("textbox", { name: "Scratchpad Markdown" }),
     ).toBeFocused();
@@ -275,6 +275,33 @@ test("moves the centered current Scratchpad down after an intentional upward scr
     .toBeGreaterThan(initialTop + 80);
 });
 
+test("configures the default mode for new Scratchpad notes", async ({
+  page,
+}) => {
+  await page.goto("more/?demo=12");
+  await page.getByRole("combobox", { name: "Default Scratchpad mode" }).click();
+  await page.getByRole("option", { name: "Write", exact: true }).click();
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await expect(
+    current.getByRole("button", { name: "Write", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    current.getByRole("textbox", { name: "Scratchpad Markdown" }),
+  ).toBeFocused();
+  await current.getByRole("button", { name: "Outline", exact: true }).click();
+  await expect(
+    current.getByRole("button", { name: "Outline", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  await expect(
+    current.getByRole("button", { name: "Write", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
 test("offers a quiet writing surface with selection-preserving tools", async ({
   page,
 }) => {
@@ -282,14 +309,16 @@ test("offers a quiet writing surface with selection-preserving tools", async ({
   const current = page.getByRole("region", {
     name: "Editor for current scratchpad",
   });
-  await current.getByRole("button", { name: "Markdown", exact: true }).click();
+  await current.getByRole("button", { name: "Write", exact: true }).click();
   const source = current.getByRole("textbox", { name: "Scratchpad Markdown" });
   await source.fill("A thought worth keeping");
   await source.press("ControlOrMeta+a");
   await current.getByRole("button", { name: "Bold", exact: true }).click();
   await expect(source).toHaveText("**A thought worth keeping**");
   await expect(source).toBeFocused();
-  await expect(current.getByText("4 words", { exact: true })).toBeVisible();
+  await expect(current.getByText("4 words", { exact: true })).toHaveCount(0);
+  await expect(current.getByText(/Markdown supported/)).toHaveCount(0);
+  await expect(current.locator(".cm-placeholder")).toHaveCount(0);
   await expect(current.getByRole("status")).toHaveText("Saved");
   await expect(current.getByRole("status")).toBeVisible();
   await source.press("ControlOrMeta+z");
@@ -331,7 +360,7 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
     current.getByRole("textbox", { name: "Draft task: empty" }).last(),
   ).toBeFocused();
 
-  await current.getByRole("button", { name: "Markdown" }).click();
+  await current.getByRole("button", { name: "Write" }).click();
   const source = current.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
@@ -418,7 +447,7 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
   await expect(current).toBeVisible();
 
   const outlineButton = current.getByRole("button", { name: "Outline" });
-  const markdownButton = current.getByRole("button", { name: "Markdown" });
+  const markdownButton = current.getByRole("button", { name: "Write" });
   await expect(outlineButton).toHaveAttribute("aria-pressed", "true");
   await expect
     .poll(() =>
