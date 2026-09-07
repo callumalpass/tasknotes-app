@@ -4443,22 +4443,83 @@ html.scratchpad-route .page-surface {
   white-space: nowrap;
 }
 
-.markdown-source-editor {
-  min-height: 220px;
+.scratchpad-editor.is-writing .scratchpad-save-state {
+  display: inline;
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  font-size: var(--type-label);
+}
+
+.scratchpad-writing-surface {
+  width: 100%;
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+.scratchpad-writing-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
   border-top: 1px solid var(--line);
+}
+
+.scratchpad-writing-tools button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.scratchpad-writing-tools button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.scratchpad-writing-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 4px;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+
+.markdown-source-editor {
+  min-height: 280px;
 }
 
 .markdown-source-editor .cm-editor {
   min-height: 220px;
   background: transparent;
   color: var(--ink);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.9rem;
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: var(--type-control);
 }
 
 .markdown-source-editor .cm-scroller {
-  padding: 12px 0;
+  padding: 16px 0 32px;
   overflow: auto;
+  font-family: inherit;
+  line-height: 1.75;
+}
+
+.markdown-source-editor .cm-line {
+  padding: 0 8px;
+}
+
+.markdown-source-editor .cm-placeholder {
+  color: var(--ink-muted);
 }
 
 .markdown-source-editor .cm-content {

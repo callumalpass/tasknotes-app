@@ -2125,7 +2125,7 @@ function ScratchpadDocumentEditor({
 
   return (
     <section
-      className="scratchpad-editor"
+      className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
       aria-label={`Editor for ${document?.title || (document?.state === "active" ? "current scratchpad" : "scratchpad")}`}
     >
       <div className="scratchpad-title-row">

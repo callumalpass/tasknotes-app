@@ -2,10 +2,12 @@ import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
 import { Compartment, EditorState } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup } from "codemirror";
 import { useEffect, useRef } from "react";
+import { Bold, Italic, Heading2, Quote, Link } from "lucide-react";
+import { writingCommand, type WritingAction } from "./markdown-writing-command";
 
 import {
   recordWikilinkCompletionSource,
@@ -14,6 +16,8 @@ import {
 
 const scratchpadHighlightStyle = HighlightStyle.define([
   { tag: tags.heading, color: "var(--ink)", fontWeight: "700" },
+  { tag: tags.heading1, fontSize: "1.4em" },
+  { tag: tags.heading2, fontSize: "1.2em" },
   {
     tag: [tags.link, tags.url],
     color: "var(--accent)",
@@ -31,7 +35,13 @@ const scratchpadHighlightStyle = HighlightStyle.define([
   },
   { tag: tags.emphasis, color: "var(--ink-soft)", fontStyle: "italic" },
   { tag: tags.strong, color: "var(--ink)", fontWeight: "700" },
-  { tag: [tags.monospace, tags.quote], color: "var(--ink-soft)" },
+  { tag: tags.quote, color: "var(--ink-soft)" },
+  {
+    tag: tags.monospace,
+    color: "var(--ink-soft)",
+    fontFamily: '"Azeret Mono", ui-monospace, monospace',
+    fontSize: "0.88em",
+  },
   { tag: tags.comment, color: "var(--ink-muted)" },
 ]);
 
@@ -143,6 +153,22 @@ export function MarkdownSourceEditor({
       state: EditorState.create({
         doc: initialValueRef.current,
         extensions: [
+          keymap.of([
+            {
+              key: "Mod-b",
+              run: () => {
+                format("bold");
+                return true;
+              },
+            },
+            {
+              key: "Mod-i",
+              run: () => {
+                format("italic");
+                return true;
+              },
+            },
+          ]),
           basicSetup,
           markdown(),
           autocompletion({
@@ -152,6 +178,7 @@ export function MarkdownSourceEditor({
           syntaxHighlighting(scratchpadHighlightStyle),
           theme.of(scratchpadEditorTheme(dark)),
           EditorView.lineWrapping,
+          placeholder("Start anywhere. A thought, a question, a few words…"),
           EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged)
@@ -195,5 +222,53 @@ export function MarkdownSourceEditor({
     });
   }, [value]);
 
-  return <div className="markdown-source-editor" ref={hostRef} />;
+  function format(action: WritingAction) {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      ...writingCommand(view.state, action),
+      scrollIntoView: true,
+      userEvent: "input",
+    });
+    view.contentDOM.focus({ preventScroll: true });
+  }
+
+  const words = value.trim() ? value.trim().split(/\s+/u).length : 0;
+  return (
+    <div className="scratchpad-writing-surface">
+      <div
+        className="scratchpad-writing-tools"
+        role="group"
+        aria-label="Writing tools"
+      >
+        {(
+          [
+            ["bold", "Bold", Bold],
+            ["italic", "Italic", Italic],
+            ["heading", "Heading", Heading2],
+            ["quote", "Quote", Quote],
+            ["link", "Wikilink", Link],
+          ] as const
+        ).map(([action, label, Icon]) => (
+          <button
+            key={action}
+            type="button"
+            aria-label={label}
+            title={label}
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={() => format(action)}
+          >
+            <Icon aria-hidden="true" size={17} />
+          </button>
+        ))}
+      </div>
+      <div className="markdown-source-editor" ref={hostRef} />
+      <footer className="scratchpad-writing-footer">
+        <span>
+          {words} {words === 1 ? "word" : "words"}
+        </span>
+        <span>Markdown supported · Type [[ to link a note</span>
+      </footer>
+    </div>
+  );
 }
