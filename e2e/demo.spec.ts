@@ -275,6 +275,35 @@ test("moves the centered current Scratchpad down after an intentional upward scr
     .toBeGreaterThan(initialTop + 80);
 });
 
+test("offers a quiet writing surface with selection-preserving tools", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await current.getByRole("button", { name: "Markdown", exact: true }).click();
+  const source = current.getByRole("textbox", { name: "Scratchpad Markdown" });
+  await source.fill("A thought worth keeping");
+  await source.press("ControlOrMeta+a");
+  await current.getByRole("button", { name: "Bold", exact: true }).click();
+  await expect(source).toHaveText("**A thought worth keeping**");
+  await expect(source).toBeFocused();
+  await expect(current.getByText("4 words", { exact: true })).toBeVisible();
+  await expect(current.getByRole("status")).toHaveText("Saved");
+  await expect(current.getByRole("status")).toBeVisible();
+  await source.press("ControlOrMeta+z");
+  await expect(source).toHaveText("A thought worth keeping");
+  const result = await new AxeBuilder({ page })
+    .include(".scratchpad-writing-surface")
+    .analyze();
+  expect(
+    result.violations.filter(({ impact }) =>
+      ["critical", "serious"].includes(impact ?? ""),
+    ),
+  ).toEqual([]);
+});
+
 test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
   page,
 }) => {

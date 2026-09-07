@@ -188,6 +188,11 @@ Today             Search       More
   images are centered without enlarging small source images. Outline menus may
   escape card borders instead of being clipped and open upward when the lower
   feed or viewport edge leaves insufficient room.
+- Scratchpad Markdown mode is a writing surface, not a code panel: proportional
+  prose, generous line spacing, a bounded reading width, and monospace only for
+  code. A small, keyboard-accessible formatting row preserves the selection and
+  ordinary undo. Word count and save status stay quiet but visible, including on
+  phones. Formatting is explicit; autosave preserves the exact Markdown source.
 - Scratchpad draft-task rows use toggleable portable Markdown checkboxes and
   reveal a direct task-to-note control with the row actions; checked drafts
   convert into the collection's first completed status. Linked rows expose the
