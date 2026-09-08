@@ -195,6 +195,9 @@ Today             Search       More
   ordinary undo. Save status stays quiet but visible, including on phones.
   Instructional footers, placeholder prose, and word counts are omitted.
   Formatting is explicit; autosave preserves the exact Markdown source.
+- Outline text and linked-task titles wrap within the text column with hanging
+  indentation. Editable rows grow with their content; controls stay aligned to
+  the first line. Wrapping does not split nodes, and Enter creates the next item.
 - Scratchpad draft-task rows use toggleable portable Markdown checkboxes and
   reveal a direct task-to-note control with the row actions; checked drafts
   convert into the collection's first completed status. Linked rows expose the

@@ -275,6 +275,69 @@ test("moves the centered current Scratchpad down after an intentional upward scr
     .toBeGreaterThan(initialTop + 80);
 });
 
+test("keeps the caret and completion at a multiline paste in an outline item", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  await input.fill("Before after");
+  await input.evaluate((element) => {
+    const textarea = element as HTMLTextAreaElement;
+    textarea.setSelectionRange(7, 7);
+    textarea.setRangeText("one\n\n[[quarterly ", 7, 7, "end");
+    textarea.setSelectionRange(
+      textarea.selectionStart - 1,
+      textarea.selectionStart - 1,
+    );
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect(input).toHaveValue("Before one [[quarterly after");
+  await expect
+    .poll(() =>
+      input.evaluate(
+        (element) => (element as HTMLTextAreaElement).selectionStart,
+      ),
+    )
+    .toBe("Before one [[quarterly".length);
+  await expect(
+    current.getByRole("option", { name: /Prepare quarterly planning session/ }),
+  ).toBeVisible();
+});
+
+test("wraps outline text without splitting nodes or scrolling horizontally", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  const text =
+    "A longer thought that should wrap naturally within its outline row. "
+      .repeat(8)
+      .trim();
+  await input.fill(text);
+  await expect(input).toHaveValue(text);
+  const dimensions = await input.evaluate((element) => ({
+    height: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+  }));
+  expect(dimensions.height).toBeGreaterThan(dimensions.lineHeight * 2);
+  expect(dimensions.scrollHeight).toBeLessThanOrEqual(dimensions.height + 1);
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
+  const count = await current.locator("[data-scratch-row]").count();
+  await input.press("End");
+  await input.press("Enter");
+  await expect(current.locator("[data-scratch-row]")).toHaveCount(count + 1);
+  await expect(current.locator("[data-scratch-input]").last()).toBeFocused();
+});
+
 test("configures the default mode for new Scratchpad notes", async ({
   page,
 }) => {
@@ -408,7 +471,9 @@ test("presents recognized outline details as quiet aligned metadata", async ({
   const presentation = await preview.evaluate((element) => {
     const details = element.firstElementChild as HTMLElement;
     const firstItem = details.firstElementChild as HTMLElement;
-    const input = element.previousElementSibling?.querySelector("input");
+    const input = element.previousElementSibling?.querySelector(
+      "[data-scratch-input]",
+    );
     const detailBounds = details.getBoundingClientRect();
     const inputBounds = input?.getBoundingClientRect();
     const itemStyle = getComputedStyle(firstItem);
