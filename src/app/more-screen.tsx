@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
+import { CalendarLabSettings } from "../calendar-service/react";
 import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import {
   mdbaseNotifications,
@@ -269,6 +270,7 @@ export function MoreScreen({
       </SettingsSection>
 
       <SettingsSection label="Calendar">
+        <CalendarLabSettings />
         <CalendarPreferencesEditor
           value={calendarPreferences}
           onChange={onCalendarPreferencesChange}

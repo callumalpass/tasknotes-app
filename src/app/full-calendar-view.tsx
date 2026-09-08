@@ -1,4 +1,5 @@
 import FullCalendar from "@fullcalendar/react";
+import { useCalendarLabEvents } from "../calendar-service/hooks";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, {
   type DateClickArg,
@@ -101,6 +102,7 @@ export function FullCalendarView({
   const [mode, setMode] = useState<CalendarMode>(initialMode);
   const [title, setTitle] = useState("");
   const [range, setRange] = useState(() => initialRange(selected, initialMode));
+  const external = useCalendarLabEvents(range.start, range.end);
   const [mutationError, setMutationError] = useState("");
   const [contextAction, setContextAction] = useState<{
     id: number;
@@ -281,6 +283,12 @@ export function FullCalendarView({
           The calendar change could not be saved. {mutationError}
         </p>
       ) : null}
+      {external.loading && <p role="status">Loading external calendars…</p>}
+      {external.error && (
+        <p role="alert" className="inline-error">
+          {external.error}
+        </p>
+      )}
       <div className="full-calendar-workspace">
         <div className="full-calendar-surface">
           <FullCalendar
@@ -301,19 +309,27 @@ export function FullCalendarView({
             editable
             eventClick={(info) => openEvent(info, onOpen)}
             eventContent={(info) =>
-              calendarEventContent(info, onOpen, (metadata, x, y) =>
-                setContextAction({
-                  id: Date.now(),
-                  metadata,
-                  x,
-                  y,
-                }),
+              info.event.extendedProps.externalCalendar ? (
+                <span
+                  aria-label={`${info.event.title} · External calendar, read only`}
+                >
+                  {info.timeText} {info.event.title} · Read only
+                </span>
+              ) : (
+                calendarEventContent(info, onOpen, (metadata, x, y) =>
+                  setContextAction({
+                    id: Date.now(),
+                    metadata,
+                    x,
+                    y,
+                  }),
+                )
               )
             }
             eventDrop={(info) => void moveEvent(info)}
             eventResizableFromStart
             eventResize={(info) => void resizeEvent(info)}
-            events={events}
+            events={[...events, ...external.events]}
             eventTimeFormat={calendarEventTimeFormat(preferences.hourFormat)}
             firstDay={preferences.firstDay}
             headerToolbar={false}

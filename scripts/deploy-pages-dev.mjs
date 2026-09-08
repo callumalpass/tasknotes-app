@@ -111,6 +111,12 @@ export function developmentDeploymentEnvironment(
   return {
     ...environment,
     VITE_BASE_PATH: "/",
+    // Never inherit the LAB flag into staging or candidate builds.
+    VITE_CALENDAR_LAB:
+      deployment === developmentDeployments.lab &&
+      environment.VITE_CALENDAR_LAB === "1"
+        ? "1"
+        : "",
     TASKNOTES_APP_URL: deployment.appOrigin,
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",
