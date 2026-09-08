@@ -82,6 +82,8 @@ import {
 } from "../domain/task-capture";
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
+import { OutlineTextarea } from "../components/outline-textarea";
+import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
 import { initialScratchpadMode } from "./scratchpad-preferences";
 
 import type {
@@ -1246,9 +1248,15 @@ function ScratchpadDocumentEditor({
   const editorModeRef = useRef<"outline" | "markdown">(editorMode);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
   const autosaveSuspended = useRef(false);
-  const focusAfterRender = useRef<{ id: string; cursor?: number } | undefined>(
-    undefined,
-  );
+  const focusAfterRender = useRef<
+    | {
+        id: string;
+        cursor?: number;
+        selectionEnd?: number;
+        selectionDirection?: "forward" | "backward" | "none";
+      }
+    | undefined
+  >(undefined);
 
   useEffect(() => {
     const timeout = window.setTimeout(preloadTaskCapture, 0);
@@ -1447,7 +1455,7 @@ function ScratchpadDocumentEditor({
     if (!isCurrent || loading || editorMode !== "outline") return;
     const last = nodesRef.current.at(-1);
     if (!last) return;
-    const input = globalThis.document.querySelector<HTMLInputElement>(
+    const input = globalThis.document.querySelector<HTMLTextAreaElement>(
       `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? initialDocument.id}:${last.id}`)}"]`,
     );
     input?.focus({ preventScroll: true });
@@ -1476,15 +1484,19 @@ function ScratchpadDocumentEditor({
 
   useEffect(() => {
     const request = focusAfterRender.current;
-    if (!request) return;
+    if (!request || reviewOpen) return;
     focusAfterRender.current = undefined;
-    const input = globalThis.document.querySelector<HTMLInputElement>(
+    const input = globalThis.document.querySelector<HTMLTextAreaElement>(
       `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? "scratchpad"}:${request.id}`)}"]`,
     );
     input?.focus();
     const position = request.cursor ?? input?.value.length ?? 0;
-    input?.setSelectionRange(position, position);
-  }, [nodes]);
+    input?.setSelectionRange(
+      position,
+      request.selectionEnd ?? position,
+      request.selectionDirection,
+    );
+  }, [nodes, reviewOpen]);
 
   const activeNode = nodes.find((node) => node.id === activeId);
   const recordWikilinkToken = useMemo(
@@ -1665,7 +1677,7 @@ function ScratchpadDocumentEditor({
   }
 
   function handleKeyDown(
-    event: KeyboardEvent<HTMLInputElement>,
+    event: KeyboardEvent<HTMLTextAreaElement>,
     node: ScratchNode,
   ) {
     if (suggestions.length) {
@@ -1774,6 +1786,7 @@ function ScratchpadDocumentEditor({
     setError("");
     try {
       const converted = await createTaskForNode(nodesRef.current, id);
+      focusAfterRender.current = { id: converted.continuationId, cursor: 0 };
       updateNodes(converted.nodes);
       await persist(converted.nodes);
       await linkExistingChildren(converted.nodes, id, converted.task);
@@ -1835,18 +1848,21 @@ function ScratchpadDocumentEditor({
     ).value;
     return {
       task,
-      nodes: source.map((candidate) => {
-        if (candidate.id !== id) return candidate;
-        const converted = { ...candidate };
-        delete converted.completed;
-        return {
-          ...converted,
-          kind: "task" as const,
-          text: task.title,
-          link,
-          taskId: task.id,
-        };
-      }),
+      ...ensureScratchContinuation(
+        source.map((candidate) => {
+          if (candidate.id !== id) return candidate;
+          const converted = { ...candidate };
+          delete converted.completed;
+          return {
+            ...converted,
+            kind: "task" as const,
+            text: task.title,
+            link,
+            taskId: task.id,
+          };
+        }),
+        id,
+      ),
     };
   }
 
@@ -1967,6 +1983,10 @@ function ScratchpadDocumentEditor({
           const converted = await createTaskForNode(working, item.id);
           working = converted.nodes;
           createdTask = converted.task;
+          focusAfterRender.current = {
+            id: converted.continuationId,
+            cursor: 0,
+          };
           updateNodes(working);
         } else if (currentNode?.kind === "task") {
           createdTask ??= (await resolveLinkedTask(currentNode)) ?? undefined;
@@ -2361,7 +2381,7 @@ function ScratchpadDocumentEditor({
                       {node.text}
                     </button>
                   ) : (
-                    <input
+                    <OutlineTextarea
                       aria-activedescendant={
                         suggestionsOpen
                           ? `${suggestionListId}-${selectedSuggestion}`
@@ -2382,11 +2402,26 @@ function ScratchpadDocumentEditor({
                       }
                       value={node.text}
                       onChange={(event) => {
-                        changeNode(node.id, { text: event.target.value });
-                        setCursor(
-                          event.target.selectionStart ??
-                            event.target.value.length,
-                        );
+                        const input = event.currentTarget;
+                        const raw = input.value;
+                        const normalize = (value: string) =>
+                          value.replace(/[\r\n]+/g, " ");
+                        const text = normalize(raw);
+                        const position = normalize(
+                          raw.slice(0, input.selectionStart),
+                        ).length;
+                        if (text !== raw) {
+                          focusAfterRender.current = {
+                            id: node.id,
+                            cursor: position,
+                            selectionEnd: normalize(
+                              raw.slice(0, input.selectionEnd),
+                            ).length,
+                            selectionDirection: input.selectionDirection,
+                          };
+                        }
+                        changeNode(node.id, { text });
+                        setCursor(position);
                       }}
                       onFocus={(event) => {
                         setActiveId(node.id);

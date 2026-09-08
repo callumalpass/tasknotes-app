@@ -4779,7 +4779,7 @@ html.scratchpad-route .page-surface {
   display: grid;
   grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
   min-height: 48px;
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid var(--line);
   transition: background 150ms ease;
 }
@@ -4907,7 +4907,7 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row .task-actions-trigger {
-  align-self: center;
+  align-self: start;
   width: 36px;
   min-height: 44px;
   opacity: 0;
@@ -4940,7 +4940,7 @@ html.scratchpad-route .page-surface {
   color: var(--accent);
 }
 
-.scratchpad-row input,
+.scratchpad-row textarea,
 .scratchpad-task-link {
   width: 100%;
   min-width: 0;
@@ -4954,7 +4954,20 @@ html.scratchpad-route .page-surface {
   outline: 0;
 }
 
-.scratchpad-row input::placeholder {
+.scratchpad-row textarea {
+  display: block;
+  resize: none;
+  overflow: hidden;
+}
+
+.scratchpad-row textarea,
+.scratchpad-task-link {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.scratchpad-row textarea::placeholder {
   color: var(--ink-muted);
   opacity: 0.74;
 }
@@ -4970,7 +4983,7 @@ html.scratchpad-route .page-surface {
   text-underline-offset: 3px;
 }
 
-.scratchpad-row.kind-note input {
+.scratchpad-row.kind-note textarea {
   color: var(--ink-soft);
 }
 
@@ -9506,7 +9519,7 @@ html.scratchpad-route .page-surface {
   box-shadow: inset 0 -1px color-mix(in srgb, var(--ink-muted), transparent 20%);
 }
 
-.scratchpad-row input:focus-visible {
+.scratchpad-row textarea:focus-visible {
   outline: 0 !important;
   box-shadow: inset 0 -2px var(--ink-muted);
 }
