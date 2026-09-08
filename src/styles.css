@@ -1461,6 +1461,40 @@ button:disabled {
   margin-top: 20px;
 }
 
+.calendar-lab-settings {
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.calendar-lab-settings p {
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+
+.calendar-lab-settings button,
+.calendar-lab-settings label {
+  min-height: 44px;
+}
+
+.calendar-lab-settings label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.calendar-lab-settings fieldset {
+  margin-block: 12px;
+  border: 1px solid var(--line);
+}
+
+.fc .external-calendar-event {
+  background: var(--paper-soft);
+  color: var(--ink);
+  border-color: var(--line-strong);
+  cursor: default;
+}
+
 .help-topic {
   border-bottom: 1px solid var(--line);
 }

@@ -10,6 +10,19 @@ import {
 } from "./deploy-pages-dev.mjs";
 
 describe("TaskNotes development deployment", () => {
+  it("only forwards an explicit calendar opt-in to LAB", () => {
+    expect(developmentDeploymentEnvironment({}).VITE_CALENDAR_LAB).toBe("");
+    expect(
+      developmentDeploymentEnvironment({ VITE_CALENDAR_LAB: "1" })
+        .VITE_CALENDAR_LAB,
+    ).toBe("1");
+    for (const MDBASE_ENV of ["staging", "candidate-b"]) {
+      expect(
+        developmentDeploymentEnvironment({ MDBASE_ENV, VITE_CALENDAR_LAB: "1" })
+          .VITE_CALENDAR_LAB,
+      ).toBe("");
+    }
+  });
   it("defaults to the isolated LAB application and Connect authority", () => {
     expect(developmentDeploymentFor({})).toBe(developmentDeployments.lab);
 
