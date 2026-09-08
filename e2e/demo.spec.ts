@@ -99,7 +99,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   const current = page.getByRole("region", {
     name: "Editor for current scratchpad",
   });
-  await expect(current.locator("input:focus")).toHaveCount(1);
+  await expect(current.locator("[data-scratch-input]:focus")).toHaveCount(1);
   const feed = page.locator(".scratchpad-history-scroll");
   await expect
     .poll(() =>
@@ -250,7 +250,7 @@ test("resumes a historical Scratchpad as the current note", async ({
       name: "Draft task: Confirm the review date",
     }),
   ).toBeVisible();
-  await expect(current.locator("input:focus")).toHaveCount(1);
+  await expect(current.locator("[data-scratch-input]:focus")).toHaveCount(1);
   await expect(page.getByText("Planning notes resumed")).toBeVisible();
 });
 
