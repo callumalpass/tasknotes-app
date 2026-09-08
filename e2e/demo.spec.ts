@@ -275,6 +275,39 @@ test("moves the centered current Scratchpad down after an intentional upward scr
     .toBeGreaterThan(initialTop + 80);
 });
 
+test("continues on a fresh line after converting the final outline draft", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  await input.fill("Continue after conversion");
+  await current
+    .getByRole("button", {
+      name: "Create task for Continue after conversion",
+      exact: true,
+    })
+    .click();
+  await expect(
+    current.getByRole("button", {
+      name: "Continue after conversion",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const next = current.getByRole("textbox", {
+    name: "Draft task: empty",
+    exact: true,
+  });
+  await expect(next).toBeFocused();
+  await next.fill("The next thought");
+  await expect(current.locator("[data-scratch-input]").last()).toHaveValue(
+    "The next thought",
+  );
+});
+
 test("keeps the caret and completion at a multiline paste in an outline item", async ({
   page,
 }) => {

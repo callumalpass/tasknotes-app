@@ -83,6 +83,7 @@ import {
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
 import { OutlineTextarea } from "../components/outline-textarea";
+import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
 import { initialScratchpadMode } from "./scratchpad-preferences";
 
 import type {
@@ -1483,7 +1484,7 @@ function ScratchpadDocumentEditor({
 
   useEffect(() => {
     const request = focusAfterRender.current;
-    if (!request) return;
+    if (!request || reviewOpen) return;
     focusAfterRender.current = undefined;
     const input = globalThis.document.querySelector<HTMLTextAreaElement>(
       `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? "scratchpad"}:${request.id}`)}"]`,
@@ -1495,7 +1496,7 @@ function ScratchpadDocumentEditor({
       request.selectionEnd ?? position,
       request.selectionDirection,
     );
-  }, [nodes]);
+  }, [nodes, reviewOpen]);
 
   const activeNode = nodes.find((node) => node.id === activeId);
   const recordWikilinkToken = useMemo(
@@ -1785,6 +1786,7 @@ function ScratchpadDocumentEditor({
     setError("");
     try {
       const converted = await createTaskForNode(nodesRef.current, id);
+      focusAfterRender.current = { id: converted.continuationId, cursor: 0 };
       updateNodes(converted.nodes);
       await persist(converted.nodes);
       await linkExistingChildren(converted.nodes, id, converted.task);
@@ -1846,18 +1848,21 @@ function ScratchpadDocumentEditor({
     ).value;
     return {
       task,
-      nodes: source.map((candidate) => {
-        if (candidate.id !== id) return candidate;
-        const converted = { ...candidate };
-        delete converted.completed;
-        return {
-          ...converted,
-          kind: "task" as const,
-          text: task.title,
-          link,
-          taskId: task.id,
-        };
-      }),
+      ...ensureScratchContinuation(
+        source.map((candidate) => {
+          if (candidate.id !== id) return candidate;
+          const converted = { ...candidate };
+          delete converted.completed;
+          return {
+            ...converted,
+            kind: "task" as const,
+            text: task.title,
+            link,
+            taskId: task.id,
+          };
+        }),
+        id,
+      ),
     };
   }
 
@@ -1978,6 +1983,10 @@ function ScratchpadDocumentEditor({
           const converted = await createTaskForNode(working, item.id);
           working = converted.nodes;
           createdTask = converted.task;
+          focusAfterRender.current = {
+            id: converted.continuationId,
+            cursor: 0,
+          };
           updateNodes(working);
         } else if (currentNode?.kind === "task") {
           createdTask ??= (await resolveLinkedTask(currentNode)) ?? undefined;
