@@ -117,9 +117,9 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     .poll(() => navigationPreference(page))
     .toEqual([
       "TaskNotes/Views/today.base#today",
+      "TaskNotes/Views/upcoming.base#upcoming",
       "tasknotes:search",
       "tasknotes:scratchpad",
-      "TaskNotes/Views/upcoming.base#upcoming",
       "TaskNotes/Views/calendar.base#calendar",
       "TaskNotes/Views/projects.base#projects",
       "TaskNotes/Views/archive.base#archive",
@@ -131,7 +131,7 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
     page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Settings" }).click();
+  await openNavigationItem(page, "Settings");
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();
@@ -273,7 +273,7 @@ async function openNavigationItem(page: Page, name: string): Promise<void> {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Browse", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 
@@ -370,12 +370,15 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
   await page.reload();
   await expect(page.getByText("Delete over the relay")).toBeVisible();
 
-  const input = page.getByLabel("New task title");
+  if (!(await page.getByLabel("New task title").isVisible()))
+    await page.locator(".view-context-capture").click();
+  const input = page.getByLabel("New task title").filter({ visible: true });
   await input.fill("Create over the relay");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect.poll(() => createRequests).toBe(1);
   await expect(page.getByText("Adding “Create over the relay”…")).toBeVisible();
-  await expect(input).toHaveValue("");
+  await expect(input).toHaveValue("Create over the relay");
+  await expect(input).toHaveAttribute("readonly", "");
 
   createGate.resolve();
   await expect(page.getByText("Create over the relay")).toBeVisible();
