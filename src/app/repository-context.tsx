@@ -17,6 +17,7 @@ import {
   completionKey,
   type CompletionCommand,
 } from "../application/task-mutations";
+import { QueryResource } from "../application/query-resource";
 import { TaskCommandService } from "../application/task-commands";
 import {
   QueryInvalidationStore,
@@ -615,55 +616,60 @@ export function useRepository(): RepositoryContextValue {
 export function useTasks(query: TaskListQuery): {
   tasks: Task[];
   loading: boolean;
+  refreshing: boolean;
+  stale: boolean;
   error: Error | null;
+  retry(): void;
 } {
-  const { pendingDeletion, repository, status } = useRepository();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [error, setError] = useState<Error | null>(null);
-  const [resolved, setResolved] = useState("");
-  const statusFilter = query.status;
-  const search = query.search;
-  const limit = query.limit;
-  const archived = query.archived;
-  const key = `${statusFilter ?? "open"}:${archived ?? "exclude"}:${search ?? ""}:${limit ?? 500}`;
+  const {
+    pendingDeletion,
+    repository,
+    status,
+    error: openingError,
+  } = useRepository();
+  const [resource] = useState(() => new QueryResource<Task[]>());
+  const state = useSyncExternalStore(
+    resource.subscribe,
+    resource.snapshot,
+    resource.snapshot,
+  );
+  const { status: statusFilter, search, limit, archived } = query;
+  // Changing a prefix limit refreshes the same query; changing its meaning clears old results.
+  const key = JSON.stringify([
+    statusFilter ?? "open",
+    archived ?? "exclude",
+    search ?? "",
+  ]);
   const revision = useRepositoryRevision(`tasks:${key}`);
-
   useEffect(() => {
     if (status !== "ready") return;
-    let active = true;
-    repository
-      .list({ status: statusFilter, archived, search, limit })
-      .then((result) => {
-        if (!active) return;
-        setTasks(
-          pendingDeletion
-            ? result.filter((task) => task.id !== pendingDeletion.id)
-            : result,
-        );
-        setError(null);
-        setResolved(key);
-      })
-      .catch((reason: unknown) => {
-        if (!active) return;
-        setError(asError(reason));
-        setResolved(key);
-      });
-    return () => {
-      active = false;
-    };
+    resource.load(key, () =>
+      repository.list({ status: statusFilter, archived, search, limit }),
+    );
+    return resource.cancel;
   }, [
     archived,
     key,
     limit,
-    pendingDeletion,
     repository,
+    resource,
     search,
     status,
     statusFilter,
     revision,
   ]);
-
-  return { tasks, loading: status === "opening" || resolved !== key, error };
+  const tasks = state.key === key ? (state.data ?? []) : [];
+  return {
+    tasks: pendingDeletion
+      ? tasks.filter((task) => task.id !== pendingDeletion.id)
+      : tasks,
+    loading:
+      status === "opening" || state.key !== key || state.status === "loading",
+    refreshing: state.status === "refreshing",
+    stale: state.key === key && state.stale,
+    error: openingError ?? (state.key === key ? state.error : null),
+    retry: resource.retry,
+  };
 }
 
 export function useTask(id: string | null): {
