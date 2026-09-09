@@ -285,12 +285,24 @@ test("continues on a fresh line after converting the final outline draft", async
   });
   const input = current.locator("[data-scratch-input]").last();
   await input.fill("Continue after conversion");
-  await current
-    .getByRole("button", {
-      name: "Create task for Continue after conversion",
-      exact: true,
-    })
-    .click();
+  if ((page.viewportSize()?.width ?? 1000) <= 560) {
+    await current
+      .getByRole("button", {
+        name: "Actions for Continue after conversion",
+        exact: true,
+      })
+      .click();
+    await current
+      .getByRole("menuitem", { name: "Create task", exact: true })
+      .click();
+  } else {
+    await current
+      .getByRole("button", {
+        name: "Create task for Continue after conversion",
+        exact: true,
+      })
+      .click();
+  }
   await expect(
     current.getByRole("button", {
       name: "Continue after conversion",

@@ -223,12 +223,10 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
   await expect(
     page.getByRole("textbox", { name: "Draft task: Parent task" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /Convert .* to note/ }),
-  ).toHaveCount(4);
-  await expect(page.getByRole("button", { name: "Make a task" })).toHaveCount(
-    1,
+  await expect(page.getByRole("textbox", { name: /^Draft task:/ })).toHaveCount(
+    4,
   );
+  await expect(page.getByRole("textbox", { name: /^Note:/ })).toHaveCount(1);
 
   await page
     .getByRole("button", { name: "Collapse Parent task, 1 nested item" })

@@ -135,7 +135,7 @@ export function TaskRow({
           type="button"
           onClick={() => onOpen(task, occurrence?.date)}
         >
-          {task.title}
+          <span className="task-row-title-text">{task.title}</span>
         </button>
         {details ? (
           tracking || shownDetails.length ? (

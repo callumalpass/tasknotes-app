@@ -2280,6 +2280,9 @@ function ScratchpadDocumentEditor({
                 data-scratch-row={node.id}
                 key={node.id}
                 role="treeitem"
+                onFocusCapture={() => {
+                  if (node.kind === "task") setActiveId(node.id);
+                }}
                 aria-level={node.depth + 1}
                 style={{ "--scratch-depth": node.depth } as CSSProperties}
               >
@@ -2504,11 +2507,19 @@ function ScratchpadDocumentEditor({
                     </div>
                   </div>
                 ) : null}
-                {activeId === node.id && node.kind !== "task" ? (
+                {activeId === node.id ? (
                   <div
                     aria-label={`Outline controls for ${node.text || "empty item"}`}
                     className="scratchpad-mobile-depth-actions"
                   >
+                    <button
+                      aria-label="Move focused item"
+                      className="scratchpad-mobile-move"
+                      type="button"
+                      onPointerDown={(event) => beginDrag(event, node.id)}
+                    >
+                      <GripVertical aria-hidden="true" size={15} /> Move
+                    </button>
                     <button
                       disabled={node.depth === 0}
                       type="button"

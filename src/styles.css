@@ -682,8 +682,6 @@ button:disabled {
   min-height: 52px;
   background: transparent;
   border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
-  content-visibility: auto;
-  contain-intrinsic-size: auto 52px;
   transition:
     opacity 180ms var(--ease-out),
     background-color 180ms var(--ease-out);
@@ -693,12 +691,6 @@ button:disabled {
   .task-row:hover {
     background: color-mix(in srgb, var(--paper-soft), transparent 58%);
   }
-}
-
-/* Mounted virtual rows must be measurable, including the overscan buffer. */
-.bounded-list .task-row {
-  content-visibility: visible;
-  contain-intrinsic-size: none;
 }
 
 .task-row.is-tracking {
@@ -1078,16 +1070,17 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: var(--space-xs);
+  gap: 0;
   min-height: 51px;
-  padding: 8px 8px 4px 0;
+  padding: 0 8px 0 0;
 }
 
 .task-row-title {
-  display: -webkit-box;
+  display: block;
   flex: 0 0 auto;
   width: 100%;
-  padding: 0;
+  min-height: 44px;
+  padding: 8px 0;
   overflow: hidden;
   font-size: var(--type-control);
   line-height: 1.35;
@@ -1098,6 +1091,11 @@ button:disabled {
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.task-row-title-text {
+  display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -4813,7 +4811,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
+  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
   min-height: 48px;
   align-items: start;
   border-bottom: 1px solid var(--line);
@@ -4873,8 +4871,8 @@ html.scratchpad-route .page-surface {
 .scratchpad-collapse,
 .scratchpad-collapse-spacer {
   display: inline-flex;
-  width: 36px;
-  min-width: 36px;
+  width: 44px;
+  min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -4905,7 +4903,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-kind-controls {
   display: flex;
-  width: 70px;
+  width: 88px;
   min-width: 0;
   min-height: 44px;
   align-items: center;
@@ -4914,8 +4912,8 @@ html.scratchpad-route .page-surface {
 .scratchpad-kind-controls .scratchpad-draft-completion,
 .scratchpad-note-kind-icon {
   display: inline-flex;
-  width: 34px;
-  min-width: 34px;
+  width: 44px;
+  min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -4923,9 +4921,9 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-kind-controls .scratchpad-kind-toggle {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
   justify-content: flex-start;
   padding: 0;
   color: var(--ink-muted);
@@ -4944,11 +4942,16 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-row .task-actions-trigger {
   align-self: start;
-  width: 36px;
+  width: 44px;
   min-height: 44px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 140ms var(--ease-out);
+}
+
+.scratchpad-row-main > .task-actions-trigger,
+.scratchpad-row-main > .scratchpad-row-menu-trigger {
+  grid-column: 6;
 }
 
 .scratchpad-row .task-actions-trigger > svg {
@@ -5047,7 +5050,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
+  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
   margin-top: -1px;
   border-bottom: 1px solid var(--line);
 }
@@ -5500,29 +5503,32 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
   }
 
   .scratchpad-kind-controls {
-    width: 64px;
+    width: 44px;
   }
 
   .scratchpad-kind-controls .scratchpad-draft-completion,
   .scratchpad-note-kind-icon {
-    width: 31px;
-    min-width: 31px;
+    width: 44px;
+    min-width: 44px;
   }
 
-  .scratchpad-kind-controls .scratchpad-kind-toggle {
-    width: 33px;
-    min-width: 33px;
-    font-size: 0.63rem;
+  /* Conversion remains in the row menu; dragging moves to the focused toolbar. */
+  .scratchpad-kind-controls .scratchpad-kind-toggle,
+  .scratchpad-row-main > .scratchpad-drag-handle,
+  .scratchpad-row-main > .scratchpad-convert-line {
+    display: none;
   }
 
-  .scratchpad-screen .scratchpad-drag-handle,
-  .scratchpad-screen .scratchpad-row-menu-trigger {
-    opacity: 0;
-    pointer-events: none;
+  .scratchpad-screen .scratchpad-row-menu-trigger,
+  .scratchpad-row .task-actions-trigger {
+    grid-column: 4;
+    width: 44px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .scratchpad-kind-label span {
@@ -5539,20 +5545,26 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-collapse,
   .scratchpad-collapse-spacer {
-    width: 26px;
-    min-width: 26px;
+    width: 44px;
+    min-width: 44px;
   }
 
   .scratchpad-mobile-depth-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
-    padding: 5px 36px 7px 54px;
+    padding: 5px 0 7px 44px;
     border-bottom: 1px solid var(--line);
+  }
+  .scratchpad-mobile-move {
+    touch-action: none;
+    cursor: grab;
   }
 
   .scratchpad-mobile-depth-actions button {
     display: inline-flex;
-    min-height: 38px;
+    min-width: 44px;
+    min-height: 44px;
     align-items: center;
     gap: 4px;
     padding: 0 7px;
@@ -5564,7 +5576,10 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-nlp-preview {
-    grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+  }
+  .scratchpad-nlp-preview > div {
+    grid-column: 3 / -1;
   }
 
   .scratchpad-add-actions {

@@ -73,6 +73,61 @@ test("calendar More targets work at desktop and phone widths", async ({
   ).toEqual([]);
 });
 
+test("task titles have real touch targets without overlapping metadata", async ({
+  page,
+}) => {
+  await page.goto("?demo=50");
+  const title = page.getByRole("button", {
+    name: "Book the project room",
+    exact: true,
+  });
+  await expect(title).toBeVisible();
+  const box = await title.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await title.click({ position: { x: box!.width / 2, y: box!.height - 2 } });
+  await expect(
+    page.getByRole("textbox", { name: "Task title", exact: true }),
+  ).toHaveValue("Book the project room");
+});
+
+test("phone Scratchpad reserves writing width and keeps conversion in the row menu", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("scratchpad?demo=50");
+  const input = page.getByRole("textbox", {
+    name: "Draft task: Ask Rowan about the research notes",
+    exact: true,
+  });
+  await expect(input).toBeVisible();
+  expect((await input.boundingBox())!.width).toBeGreaterThanOrEqual(190);
+  const row = input.locator("xpath=../..");
+  for (const selector of [
+    ".scratchpad-collapse",
+    ".scratchpad-draft-completion",
+    ".scratchpad-row-menu-trigger",
+  ]) {
+    const box = await row.locator(selector).boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+  await row
+    .getByRole("button", {
+      name: "Actions for Ask Rowan about the research notes",
+      exact: true,
+    })
+    .click();
+  await row
+    .getByRole("menuitem", { name: "Keep as note", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", {
+      name: "Note: Ask Rowan about the research notes",
+      exact: true,
+    }),
+  ).toHaveValue("Ask Rowan about the research notes");
+});
+
 test("working screens reflow at 320px with 200% text", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const cases = [
