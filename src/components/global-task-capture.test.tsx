@@ -45,6 +45,30 @@ describe("GlobalTaskCapture", () => {
     expect(onOpenTask).not.toHaveBeenCalled();
   });
 
+  it("can keep the composer open for consecutive capture", async () => {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Keep adding tasks" }),
+    );
+    const input = screen.getByRole("combobox", { name: "New task title" });
+    fireEvent.change(input, { target: { value: "First of several" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(input).toHaveValue(""));
+    expect(screen.getByRole("dialog", { name: "New task" })).toBeVisible();
+    expect(input).toHaveFocus();
+    expect(await repository.list({ search: "First of several" })).toHaveLength(
+      1,
+    );
+  });
+
   it("closes on Escape and restores the invoking control", async () => {
     render(
       <RepositoryProvider

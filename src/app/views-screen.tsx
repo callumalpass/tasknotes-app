@@ -7,6 +7,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
@@ -142,6 +143,8 @@ export function ViewsScreen({
   );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
   const [arrangingView, setArrangingView] = useState<string | null>(null);
+  const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
+  const closeMobileCapture = useCallback(() => setMobileCaptureOpen(false), []);
   const [boardMoves, setBoardMoves] = useState<
     Map<string, OptimisticBoardMove>
   >(() => new Map());
@@ -1028,6 +1031,27 @@ export function ViewsScreen({
             href={plannerHref}
             taskCount={presentedExecution?.totalCount}
           />
+        ) : null}
+        {captureDefaults &&
+        selected?.presentation?.type === "tasknotes.task-list" ? (
+          <>
+            <button
+              className="global-capture-fab view-context-capture"
+              type="button"
+              aria-label="New task"
+              onClick={() => setMobileCaptureOpen(true)}
+            >
+              <Plus aria-hidden="true" size={24} />
+              <span>Add task</span>
+            </button>
+            <GlobalTaskCapture
+              open={mobileCaptureOpen}
+              defaults={captureDefaults}
+              onClose={closeMobileCapture}
+              onCreated={refreshAfterCreate}
+              onOpenTask={onOpenTask}
+            />
+          </>
         ) : null}
         {captureDefaults ? (
           <TaskCapture

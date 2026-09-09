@@ -229,7 +229,7 @@ export function TaskCapture({
   }
 
   function chooseSuggestion(completion: FieldCompletion) {
-    if (!activeToken) return;
+    if (capturing || !activeToken) return;
     const next = applyCaptureSuggestion(text, activeToken, completion.value);
     changeText(next.text, next.cursor);
     setSuggestionResult({ key: "", items: [] });
@@ -300,14 +300,15 @@ export function TaskCapture({
         throw new Error("Add a title as well as task details.");
       submittedTitle = next.input.title.trim();
       setPendingTitle(submittedTitle);
+      // Keep the complete interpreted draft until the authority accepts it.
+      // A failed write must not lose dates, notes, or manually edited fields.
+      const created = await createTask(next.input);
       textRef.current = "";
       setText("");
       setResult(null);
       setParsedText("");
       setExpanded(false);
       setFollowUp(null);
-      inputRef.current?.blur();
-      const created = await createTask(next.input);
       if (retainFocusAfterCreate)
         inputRef.current?.focus({ preventScroll: true });
       setWarning(
@@ -354,6 +355,7 @@ export function TaskCapture({
   }
 
   function change(patch: Partial<CreateTaskInput>) {
+    if (capturing) return;
     setResult((current) => {
       const input = { ...(current?.input ?? { title: text.trim() }), ...patch };
       return {
@@ -393,6 +395,7 @@ export function TaskCapture({
           enterKeyHint="done"
           placeholder={placeholder}
           value={text}
+          readOnly={capturing}
           onChange={(event) =>
             changeText(
               event.target.value,
@@ -452,7 +455,37 @@ export function TaskCapture({
             {parsing && parsedText !== text.trim() ? (
               <span className="capture-parsing">Understanding…</span>
             ) : preview.length ? (
-              preview.map((item) => <span key={item.key}>{item.label}</span>)
+              preview.map((item) =>
+                item.key === "scheduled" || item.key === "due" ? (
+                  <span className="capture-date-token" key={item.key}>
+                    <button
+                      type="button"
+                      disabled={capturing}
+                      aria-label={`Edit ${item.key}`}
+                      onClick={() => {
+                        setExpanded(true);
+                        setDetailSections((current) => ({
+                          ...current,
+                          timing: true,
+                        }));
+                      }}
+                    >
+                      {item.key === "scheduled" ? "Scheduled " : ""}
+                      {item.label}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={capturing}
+                      aria-label={`Remove ${item.key}`}
+                      onClick={() => change({ [item.key]: undefined })}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : (
+                  <span key={item.key}>{item.label}</span>
+                ),
+              )
             ) : (
               <span className="capture-plain">Plain task</span>
             )}
@@ -468,6 +501,11 @@ export function TaskCapture({
         </div>
       ) : null}
 
+      {result &&
+      parsedText === text.trim() &&
+      result.input.title !== text.trim() ? (
+        <p className="capture-title-preview">Task: {result.input.title}</p>
+      ) : null}
       {expanded && result && parsedText === text.trim() ? (
         <CaptureDetails
           configuration={configuration}

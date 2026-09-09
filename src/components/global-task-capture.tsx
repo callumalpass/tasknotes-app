@@ -1,21 +1,28 @@
 import { X } from "lucide-react";
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useRepository } from "../app/repository-context";
 import { TaskCapture } from "./task-capture";
 
-import type { Task } from "../domain/task";
+import type { CreateTaskInput, Task } from "../domain/task";
 
 export function GlobalTaskCapture({
   open,
   onClose,
   onOpenTask,
+  defaults,
+  onCreated,
 }: {
   open: boolean;
   onClose(): void;
   onOpenTask(task: Task): void;
+  defaults?: Partial<CreateTaskInput>;
+  onCreated?(
+    task: Task,
+  ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;
 }) {
+  const [keepAdding, setKeepAdding] = useState(false);
   const { configuration, createTask, repository } = useRepository();
   const titleId = useId();
   const dialogRef = useRef<HTMLElement>(null);
@@ -80,7 +87,6 @@ export function GlobalTaskCapture({
       >
         <header>
           <div>
-            <p className="eyebrow">This collection</p>
             <h2 id={titleId}>New task</h2>
           </div>
           <button
@@ -93,18 +99,32 @@ export function GlobalTaskCapture({
           </button>
         </header>
         <TaskCapture
+          defaults={defaults}
+          retainFocusAfterCreate={keepAdding}
           configuration={configuration}
           createTask={createTask}
           completeField={completeField}
           focusRequest={1}
           placeholder="What needs doing?"
           showGuide
-          onCreated={async () => onClose()}
+          onCreated={async (task) => {
+            const followUp = await onCreated?.(task);
+            if (!keepAdding && !followUp?.message) onClose();
+            return followUp;
+          }}
           onOpenCreated={(task) => {
             onClose();
             onOpenTask(task);
           }}
         />
+        <label className="capture-keep-adding">
+          <input
+            type="checkbox"
+            checked={keepAdding}
+            onChange={(event) => setKeepAdding(event.target.checked)}
+          />
+          Keep adding tasks
+        </label>
       </section>
     </div>,
     document.body,

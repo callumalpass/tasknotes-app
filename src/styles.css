@@ -9503,6 +9503,59 @@ html.scratchpad-route .page-surface {
 .task-section-toggle[aria-expanded="true"] > svg {
   transform: rotate(90deg);
 }
+.capture-title-preview {
+  margin: 8px 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.capture-date-token {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  background: var(--paper-soft);
+}
+.capture-date-token > button {
+  min-height: 44px;
+  padding: 4px 8px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.capture-date-token > button:last-child {
+  min-width: 44px;
+  font-size: var(--type-control);
+}
+.capture-interpretation > div > .capture-date-token::after {
+  content: none;
+}
+.capture-keep-adding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.capture-keep-adding input {
+  accent-color: var(--accent);
+}
+.view-context-capture {
+  display: none;
+}
+@media (max-width: 759px) {
+  .has-list-capture > .capture-composer {
+    display: none;
+  }
+  .view-context-capture {
+    display: flex;
+  }
+  .app-shell:has(.view-context-capture) > .global-capture-fab {
+    display: none;
+  }
+}
 .view-date {
   margin: 4px 0 0;
   color: var(--ink-soft);
