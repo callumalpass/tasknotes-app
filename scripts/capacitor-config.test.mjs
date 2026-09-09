@@ -3,7 +3,37 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import capacitorConfig, {
+  TASKNOTES_NATIVE_APPLICATION_ORIGIN,
+} from "../capacitor.config.ts";
+import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
+
 describe("native Capacitor configuration", () => {
+  it("uses the exact production manifest origin in native webviews", async () => {
+    const [manifest, manifestWriter] = await Promise.all([
+      buildTaskNotesManifest({
+        appUrl: TASKNOTES_NATIVE_APPLICATION_ORIGIN,
+        webOnly: false,
+      }),
+      readFile(resolve(process.cwd(), "scripts/write-manifest.mjs"), "utf8"),
+    ]);
+    const manifestOrigin = new URL(manifest.homepage).origin;
+
+    expect(TASKNOTES_NATIVE_APPLICATION_ORIGIN).toBe(
+      "https://app.tasknotes.dev",
+    );
+    expect(manifestOrigin).toBe(TASKNOTES_NATIVE_APPLICATION_ORIGIN);
+    expect(manifestWriter).toContain(
+      `(development ? "http://127.0.0.1:4173" : "${TASKNOTES_NATIVE_APPLICATION_ORIGIN}")`,
+    );
+    expect(
+      `${capacitorConfig.server.androidScheme}://${capacitorConfig.server.hostname}`,
+    ).toBe(manifestOrigin);
+    expect(
+      `${capacitorConfig.server.iosScheme}://${capacitorConfig.server.hostname}`,
+    ).toBe(manifestOrigin);
+  });
+
   it("uses the proven Android push plugin without forcing a legacy bridge", async () => {
     const source = await readFile(
       resolve(process.cwd(), "capacitor.config.ts"),

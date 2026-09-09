@@ -3,7 +3,10 @@
 
 import type { CapacitorConfig } from "@capacitor/cli";
 
+export const TASKNOTES_NATIVE_APPLICATION_ORIGIN = "https://app.tasknotes.dev";
+
 const { existsSync } = process.getBuiltinModule("node:fs");
+const nativeApplicationUrl = new URL(TASKNOTES_NATIVE_APPLICATION_ORIGIN);
 const firebaseProjectConfigured = Boolean(
   process.env.TASKNOTES_FIREBASE_PROJECT_ID?.trim(),
 );
@@ -24,9 +27,9 @@ const config: CapacitorConfig = {
   webDir: "dist",
   backgroundColor: "#fbfcfe",
   server: {
-    hostname: "tasknotes.dev",
-    androidScheme: "https",
-    iosScheme: "https",
+    hostname: nativeApplicationUrl.hostname,
+    androidScheme: nativeApplicationUrl.protocol.slice(0, -1),
+    iosScheme: nativeApplicationUrl.protocol.slice(0, -1),
   },
   android: {
     backgroundColor: "#fbfcfe",
