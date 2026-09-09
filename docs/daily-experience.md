@@ -81,3 +81,6 @@ test now checks both date labels stay uncollapsed.
 The worktree has its own dependencies. An initial run with a dependency symlink
 passed functionally but could not serve font files under Vite's filesystem
 allowlist; the visual suite was rerun with local dependencies and working fonts.
+A later browser run encountered Chromium `ERR_NETWORK_CHANGED` while fetching
+local modules on the initial demo page. The full 33-test suite passed on rerun;
+no timeout increase or retry policy was added to hide the interruption.

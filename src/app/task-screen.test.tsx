@@ -129,9 +129,7 @@ describe("TaskScreen", () => {
     );
 
     expect(
-      screen.getByText(
-        /Detaching removes an image from this task but keeps the file in your collection\. Permanent deletion isn.t available yet\./,
-      ),
+      screen.getByText("Detaching keeps the image file in your collection."),
     ).toBeVisible();
     expect(
       screen.queryByRole("button", { name: /Delete receipt\.png file/ }),
