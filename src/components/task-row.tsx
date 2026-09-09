@@ -1,7 +1,7 @@
 import { Square } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { activeTimeEntry, taskMeta } from "../domain/task";
+import { activeTimeEntry, formatTaskDate, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -36,8 +36,20 @@ export function TaskRow({
     anchor: TaskPropertyEditorAnchor;
   } | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
-  const shownDetails =
-    details ?? defaultTaskDetails(displayedTask, metadata, configuration);
+  const shownDetails = (
+    details ?? defaultTaskDetails(displayedTask, metadata, configuration)
+  ).filter((detail) => {
+    const field = detail.key.replace(/^note\./, "");
+    if (field === configuration.fieldMapping.status || field === "status")
+      return detail.rawValue !== configuration.defaults.status;
+    if (field === configuration.fieldMapping.priority || field === "priority")
+      return (
+        detail.rawValue !== configuration.defaults.priority &&
+        detail.rawValue !== "none"
+      );
+    if (field === "archived") return detail.rawValue !== false;
+    return true;
+  });
   return (
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
@@ -90,6 +102,7 @@ export function TaskRow({
                   className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}`}
                   key={detail.key}
                   title={detail.description}
+                  aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
                   onClick={(event) => {
                     editorTrigger.current = event.currentTarget;
@@ -136,6 +149,7 @@ export function TaskRow({
                   });
                 }}
               >
+                {detail.label === "Scheduled" ? "Scheduled " : ""}
                 {detail.value}
               </button>
             ))}
@@ -228,8 +242,6 @@ function isCompactDetail(
     configuration.fieldMapping.due,
     "status",
     "priority",
-    "scheduled",
-    "due",
   ].includes(key);
 }
 
@@ -248,14 +260,15 @@ function defaultTaskDetails(
       rawValue: task.scheduled,
       overdue: metadata[index - 1]?.overdue,
     });
-  else if (task.due)
+  if (task.due) {
+    if (!task.scheduled) index++;
     details.push({
       key: "due",
       label: "Due",
-      value: metadata[index++]?.label ?? task.due,
+      value: `Due ${formatTaskDate(task.due)}`,
       rawValue: task.due,
-      overdue: metadata[index - 1]?.overdue,
     });
+  }
   const priority = configuration.priorities.find(
     (option) => option.value === task.priority,
   );

@@ -7,6 +7,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { ViewOptions } from "../components/view-options";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
@@ -140,6 +141,7 @@ export function ViewsScreen({
     null,
   );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
+  const [arrangingView, setArrangingView] = useState<string | null>(null);
   const [boardMoves, setBoardMoves] = useState<
     Map<string, OptimisticBoardMove>
   >(() => new Map());
@@ -196,8 +198,8 @@ export function ViewsScreen({
   const [sectionScope, setSectionScope] = useState<string>();
   useEffect(() => {
     let active = true;
-    void repository
-      .collectionInfo()
+    void Promise.resolve()
+      .then(() => repository.collectionInfo())
       .then((info) => {
         if (active) setSectionScope(navigationViewScope(info));
       })
@@ -910,6 +912,15 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
+            {selected?.name === "Today" ? (
+              <p className="view-date">
+                {new Intl.DateTimeFormat(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                }).format(new Date())}
+              </p>
+            ) : null}
             {visibleExecution && currentExecutionRefreshing ? (
               <span
                 aria-live="polite"
@@ -936,39 +947,49 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
-              {selected?.source.writable ? (
+              {arrangingView === selected?.key && selected ? (
                 <button
-                  aria-label={
-                    manualOrder
-                      ? "Turn off manual order"
-                      : "Turn on manual order"
-                  }
-                  aria-pressed={Boolean(manualOrder)}
-                  className="view-header-action"
-                  disabled={manualOrderSortPending === selected.key}
-                  title={
-                    manualOrder
-                      ? "Turn off manual order"
-                      : "Turn on manual order"
-                  }
+                  className="text-action"
                   type="button"
-                  onClick={() => void toggleManualOrderSort()}
+                  onClick={() => setArrangingView(null)}
                 >
-                  <GripVertical aria-hidden="true" size={18} />
+                  Done reordering
                 </button>
               ) : null}
               {selected?.source.writable ? (
-                <button
-                  aria-label={`Edit ${selected.name}`}
-                  className="edit-view-action"
-                  title={`Edit ${selected.name}`}
-                  type="button"
-                  onFocus={preloadViewEditor}
-                  onClick={() => setEditing({ view: selected })}
-                  onPointerEnter={preloadViewEditor}
-                >
-                  <Pencil aria-hidden="true" size={18} />
-                </button>
+                <ViewOptions>
+                  <button
+                    type="button"
+                    disabled={manualOrderSortPending === selected.key}
+                    onClick={async () => {
+                      if (!manualOrder) await toggleManualOrderSort();
+                      setArrangingView(selected.key);
+                    }}
+                  >
+                    <GripVertical aria-hidden="true" size={18} /> Reorder tasks
+                  </button>
+                  {manualOrder ? (
+                    <button
+                      type="button"
+                      disabled={manualOrderSortPending === selected.key}
+                      onClick={() => {
+                        setArrangingView(null);
+                        void toggleManualOrderSort();
+                      }}
+                    >
+                      Turn off manual order
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={`Edit ${selected.name}`}
+                    onFocus={preloadViewEditor}
+                    onPointerEnter={preloadViewEditor}
+                    onClick={() => setEditing({ view: selected })}
+                  >
+                    <Pencil aria-hidden="true" size={18} /> Edit view
+                  </button>
+                </ViewOptions>
               ) : null}
             </div>
           ) : null}
@@ -1146,7 +1167,7 @@ export function ViewsScreen({
                 ),
               )
             }
-            manualOrder={manualOrder}
+            manualOrder={arrangingView === selected?.key ? manualOrder : null}
             orderPending={manualOrderPendingForSelected}
             titleProperty={configuration.fieldMapping.title}
             onMove={(dragged, source, destination, targetId, placement) =>

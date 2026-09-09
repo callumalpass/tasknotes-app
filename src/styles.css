@@ -1083,11 +1083,9 @@ button:disabled {
   flex-wrap: wrap;
   gap: var(--space-xs) 10px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  text-transform: capitalize;
+  font-family: inherit;
+  font-size: var(--type-supporting);
+  line-height: 1.35;
 }
 
 .task-row-meta > button {
@@ -9504,6 +9502,60 @@ html.scratchpad-route .page-surface {
 }
 .task-section-toggle[aria-expanded="true"] > svg {
   transform: rotate(90deg);
+}
+.view-date {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.view-options {
+  position: relative;
+}
+.view-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink-soft);
+  border-radius: 6px;
+}
+.view-options > summary::-webkit-details-marker {
+  display: none;
+}
+.view-options[open] > summary {
+  background: var(--paper-soft);
+}
+.view-options-panel {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  top: 100%;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 12px 22px var(--color-shadow-soft);
+}
+.view-options-panel > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.view-options-panel > button:hover {
+  background: var(--paper-soft);
 }
 .task-section-count {
   margin-left: auto;
