@@ -980,6 +980,22 @@ describe("mdbase task repository", () => {
     expect(fixture.update).toHaveBeenCalledOnce();
   });
 
+  it("refreshes authority state before deciding a desired completion is already satisfied", async () => {
+    const fixture = mdbaseFixture([taskRecord("one", "Complete once", "r1")]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    await repository.toggle("one", undefined, true);
+    // Another client reopens the record while this client's cached status is complete.
+    fixture.records.set(
+      "tasks/one.md",
+      taskRecord("one", "Complete once", "remote-revision"),
+    );
+    expect((await repository.toggle("one", undefined, true)).completed).toBe(
+      true,
+    );
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+  });
+
   it("yields a bounded view page and releases the cursor without reading later pages", async () => {
     const fixture = mdbaseFixture([
       taskRecord("one", "First", "r1"),

@@ -475,12 +475,14 @@ export class MdbaseTaskRepository implements TaskRepository {
       );
     }
     return this.serializeWrite(id, async () => {
-      const current = await this.requireCurrent(id);
+      const current = await this.requireCurrent(id, completed !== undefined);
       if (
         completed !== undefined &&
         taskCompletion(current.task, occurrenceDate) === completed
-      )
+      ) {
+        this.emit();
         return current.task;
+      }
       const next = current.model.toggle(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
@@ -1483,9 +1485,12 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async requireCurrent(
     id: string,
+    fresh = false,
   ): Promise<Required<CachedMdbaseTask>> {
     const cached = this.cache.get(id);
     if (!cached) throw new Error("Task not found.");
+    // A desired-state no-op/retry must not mistake an old cached status for current authority state.
+    if (fresh) return this.readCurrent(id, cached);
     if (cached.revision) return cached as Required<CachedMdbaseTask>;
     const pending = this.revisionReads.get(id);
     if (pending) return pending;
@@ -1748,8 +1753,8 @@ export class MdbaseTaskRepository implements TaskRepository {
     completed?: boolean,
   ): Promise<Task> {
     const [occurrence, parent] = await Promise.all([
-      this.requireCurrent(occurrenceId),
-      this.requireCurrent(parentId),
+      this.requireCurrent(occurrenceId, completed !== undefined),
+      this.requireCurrent(parentId, completed !== undefined),
     ]);
     if (occurrence.typeName !== parent.typeName)
       throw new Error(
@@ -1759,8 +1764,10 @@ export class MdbaseTaskRepository implements TaskRepository {
       action === "toggle" &&
       completed !== undefined &&
       occurrence.task.completed === completed
-    )
+    ) {
+      this.emit();
       return occurrence.task;
+    }
     const transition = parent.model.transitionMaterializedOccurrence(
       occurrence.task,
       parent.task,
