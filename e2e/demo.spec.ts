@@ -76,7 +76,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   ).toBeVisible();
   await search.blur();
 
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await openNavigationItem(page, "Settings");
   await expect(page.getByText("TaskNotes demo")).toBeVisible();
   await expect(page.getByText("50 total")).toBeVisible();
   await expect(page).toHaveURL(/\/more\?demo=50/);
@@ -629,7 +629,7 @@ async function openNavigationItem(page: Page, name: string): Promise<void> {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Views", exact: true }).click();
+  await page.getByRole("button", { name: "Browse", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 
@@ -658,7 +658,7 @@ test("supports demo attachments and collection settings", async ({ page }) => {
   await expect(page.getByText("demo-pixel.png")).toBeVisible();
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await openNavigationItem(page, "Settings");
   await page.getByText("Task model", { exact: true }).click();
   await page.getByRole("combobox", { name: "Default priority" }).click();
   await page.getByRole("option", { name: "High", exact: true }).click();
