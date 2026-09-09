@@ -1,7 +1,9 @@
 import { Square } from "lucide-react";
+import { completionKey } from "../application/task-mutations";
+import { useMutationState } from "./use-mutation-state";
 import { useRef, useState } from "react";
 
-import { activeTimeEntry, taskMeta } from "../domain/task";
+import { activeTimeEntry, formatTaskDate, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -20,11 +22,35 @@ export function TaskRow({
 }: {
   task: Task;
   onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
+  onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
 }) {
-  const { configuration } = useRepository();
+  const { configuration, mutations } = useRepository();
+  const command = useMutationState(
+    mutations,
+    completionKey(task.id, occurrence?.date),
+  );
+  const pendingRef = useRef(false);
+  const [localPending, setLocalPending] = useState(false);
+  const [localError, setLocalError] = useState("");
+  const pending = command.pending || localPending;
+  const error = mutations ? command.error?.message : localError;
+  async function complete() {
+    if (pendingRef.current || command.pending) return;
+    pendingRef.current = true;
+    setLocalPending(true);
+    setLocalError("");
+    try {
+      await onToggle(task, occurrence?.date);
+      actionFeedback();
+    } catch (reason) {
+      setLocalError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      pendingRef.current = false;
+      setLocalPending(false);
+    }
+  }
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
   const statusColor = configuration.statuses.find(
@@ -36,8 +62,20 @@ export function TaskRow({
     anchor: TaskPropertyEditorAnchor;
   } | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
-  const shownDetails =
-    details ?? defaultTaskDetails(displayedTask, metadata, configuration);
+  const shownDetails = (
+    details ?? defaultTaskDetails(displayedTask, metadata, configuration)
+  ).filter((detail) => {
+    const field = detail.key.replace(/^note\./, "");
+    if (field === configuration.fieldMapping.status || field === "status")
+      return detail.rawValue !== configuration.defaults.status;
+    if (field === configuration.fieldMapping.priority || field === "priority")
+      return (
+        detail.rawValue !== configuration.defaults.priority &&
+        detail.rawValue !== "none"
+      );
+    if (field === "archived") return detail.rawValue !== false;
+    return true;
+  });
   return (
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
@@ -64,15 +102,33 @@ export function TaskRow({
         type="button"
         aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
         aria-pressed={displayedTask.completed}
-        style={statusColor ? { color: statusColor } : undefined}
-        onClick={() => {
-          actionFeedback();
-          onToggle(task, occurrence?.date);
-        }}
+        aria-busy={pending}
+        disabled={pending}
+        style={
+          statusColor &&
+          displayedTask.status !== configuration.defaults.status &&
+          displayedTask.status !== "none"
+            ? { color: statusColor }
+            : undefined
+        }
+        onClick={() => void complete()}
       >
         <span aria-hidden="true" />
       </button>
       <div className="task-row-content">
+        {error ? (
+          <p className="task-row-error" role="alert">
+            {error}{" "}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void complete()}
+            >
+              Retry
+            </button>
+          </p>
+        ) : null}
+        {command.warning ? <p role="status">{command.warning}</p> : null}
         <button
           className="task-row-title"
           title={task.title}
@@ -90,6 +146,7 @@ export function TaskRow({
                   className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}`}
                   key={detail.key}
                   title={detail.description}
+                  aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
                   onClick={(event) => {
                     editorTrigger.current = event.currentTarget;
@@ -136,6 +193,7 @@ export function TaskRow({
                   });
                 }}
               >
+                {detail.label === "Scheduled" ? "Scheduled " : ""}
                 {detail.value}
               </button>
             ))}
@@ -224,12 +282,8 @@ function isCompactDetail(
   return [
     configuration.fieldMapping.status,
     configuration.fieldMapping.priority,
-    configuration.fieldMapping.scheduled,
-    configuration.fieldMapping.due,
     "status",
     "priority",
-    "scheduled",
-    "due",
   ].includes(key);
 }
 
@@ -248,14 +302,15 @@ function defaultTaskDetails(
       rawValue: task.scheduled,
       overdue: metadata[index - 1]?.overdue,
     });
-  else if (task.due)
+  if (task.due) {
+    if (!task.scheduled) index++;
     details.push({
       key: "due",
       label: "Due",
-      value: metadata[index++]?.label ?? task.due,
+      value: `Due ${formatTaskDate(task.due)}`,
       rawValue: task.due,
-      overdue: metadata[index - 1]?.overdue,
     });
+  }
   const priority = configuration.priorities.find(
     (option) => option.value === task.priority,
   );

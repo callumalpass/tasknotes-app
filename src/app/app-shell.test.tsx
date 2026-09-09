@@ -153,7 +153,7 @@ it("routes a TaskNotes tool through Home when it is first", () => {
   });
 });
 
-it("keeps additional views behind the mobile Views menu", () => {
+it("keeps three destinations visible and settings inside Browse", () => {
   const onNavigate = vi.fn();
   const today = navigationView("today", "Today");
   const upcoming = navigationView("upcoming", "Upcoming");
@@ -176,15 +176,15 @@ it("keeps additional views behind the mobile Views menu", () => {
 
   expect(
     screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual(["Today", "Scratchpad", "Views", "Settings"]);
-  expect(screen.getByRole("button", { name: "Views" })).toHaveAttribute(
+  ).toEqual(["Today", "Scratchpad", "Search", "Browse"]);
+  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-
-  fireEvent.click(screen.getByRole("button", { name: "Views" }));
-  fireEvent.click(screen.getByRole("menuitem", { name: "Search" }));
-  expect(onNavigate).toHaveBeenCalledWith({ page: "search" });
+  fireEvent.click(screen.getByRole("button", { name: "Browse" }));
+  expect(screen.getByRole("menuitem", { name: "Upcoming" })).toBeVisible();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
+  expect(onNavigate).toHaveBeenCalledWith({ page: "more" });
 });
 
 it("announces a pending deletion without putting Undo inside the live region", () => {

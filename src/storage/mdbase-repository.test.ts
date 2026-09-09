@@ -968,6 +968,92 @@ describe("mdbase task repository", () => {
     expect(await repository.list({ status: "all" })).toHaveLength(1);
   });
 
+  it("converges concurrent desired completion commands without reopening the task", async () => {
+    const fixture = mdbaseFixture([taskRecord("one", "Complete once", "r1")]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const results = await Promise.all([
+      repository.toggle("one", undefined, true),
+      repository.toggle("one", undefined, true),
+    ]);
+    expect(results.every((task) => task.completed)).toBe(true);
+    expect(fixture.update).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes authority state before deciding a desired completion is already satisfied", async () => {
+    const fixture = mdbaseFixture([taskRecord("one", "Complete once", "r1")]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    await repository.toggle("one", undefined, true);
+    // Another client reopens the record while this client's cached status is complete.
+    fixture.records.set(
+      "tasks/one.md",
+      taskRecord("one", "Complete once", "remote-revision"),
+    );
+    expect((await repository.toggle("one", undefined, true)).completed).toBe(
+      true,
+    );
+    expect(fixture.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("yields a bounded view page and releases the cursor without reading later pages", async () => {
+    const fixture = mdbaseFixture([
+      taskRecord("one", "First", "r1"),
+      taskRecord("two", "Second", "r2"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const [document] = await repository.listViews();
+    const response = await fixture.executeView();
+    let requested = 0,
+      released = false;
+    fixture.executeViewPages.mockImplementation(() =>
+      (async function* () {
+        try {
+          for (let page = 0; page < 2; page++) {
+            requested++;
+            yield connectSuccess(
+              {
+                ...response.result,
+                results: response.result.results.slice(page, page + 1),
+                meta: {
+                  ...response.result.meta,
+                  totalCount: 2,
+                  hasMore: page === 0,
+                },
+                page,
+                offset: page,
+                loaded: page + 1,
+                complete: page === 1,
+              },
+              response.diagnostics,
+            );
+          }
+        } finally {
+          released = true;
+        }
+      })(),
+    );
+    const pages = repository.iterateView(document.views[0]);
+    const iterator = pages[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    expect(first.value.rows).toHaveLength(1);
+    expect(first.value).toMatchObject({ totalCount: 2, hasMore: true });
+    expect(requested).toBe(1);
+    expect(fixture.executeViewPages).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ firstPageSize: 200, pageSize: 200 }),
+    );
+    repository.suspend();
+    await vi.waitFor(() => expect(released).toBe(true));
+    await iterator.return?.();
+    expect(released).toBe(true);
+    expect(requested).toBe(1);
+    expect(
+      (await repository.cachedViewExecution(document.views[0]))?.rows,
+    ).toHaveLength(1);
+  });
+
   it("lists and executes provider-owned saved views", async () => {
     const fixture = mdbaseFixture([
       taskRecord("board", "Visible on the board", "r1"),

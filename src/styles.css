@@ -325,6 +325,17 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.view-pagination-action {
+  max-width: 100%;
+  margin-block: var(--space-md);
+  white-space: normal;
+}
+
+.view-pagination-action[aria-disabled="true"] {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
 .capture-guide {
   margin: 0;
   padding: 9px 0 12px 30px;
@@ -639,7 +650,7 @@ button:disabled {
 }
 
 .task-section + .task-section {
-  margin-top: 20px;
+  margin-top: 28px;
 }
 
 .section-heading {
@@ -667,10 +678,10 @@ button:disabled {
 
 .task-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-height: 52px;
   background: transparent;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
   content-visibility: auto;
   contain-intrinsic-size: auto 52px;
   transition:
@@ -684,6 +695,12 @@ button:disabled {
   }
 }
 
+/* Mounted virtual rows must be measurable, including the overscan buffer. */
+.bounded-list .task-row {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
 .task-row.is-tracking {
   background: var(--paper-soft);
 }
@@ -692,7 +709,7 @@ button:disabled {
   display: grid;
   place-items: center;
   align-self: start;
-  width: 40px;
+  width: 44px;
   min-height: 44px;
   padding: 0;
   color: var(--ink-muted);
@@ -1010,6 +1027,10 @@ button:disabled {
   min-height: 44px;
 }
 
+.task-row > .completion-control {
+  align-self: start;
+}
+
 .completion-control span {
   position: relative;
   display: block;
@@ -1021,6 +1042,15 @@ button:disabled {
   transition:
     border-color 160ms var(--ease-out),
     background-color 160ms var(--ease-out);
+}
+
+.completion-control[aria-busy="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.completion-control[aria-busy="true"] span {
+  border-style: dashed;
 }
 
 .completion-control:hover span,
@@ -1059,8 +1089,8 @@ button:disabled {
   width: 100%;
   padding: 0;
   overflow: hidden;
-  font-size: var(--type-body);
-  line-height: 1.25;
+  font-size: var(--type-control);
+  line-height: 1.35;
   color: inherit;
   text-align: left;
   text-overflow: ellipsis;
@@ -1083,15 +1113,15 @@ button:disabled {
   flex-wrap: wrap;
   gap: var(--space-xs) 10px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  text-transform: capitalize;
+  font-family: inherit;
+  font-size: var(--type-supporting);
+  line-height: 1.35;
 }
 
 .task-row-meta > button {
   display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
   align-items: center;
   gap: 6px;
   padding: 0;
@@ -1131,8 +1161,9 @@ button:disabled {
 
 .task-row-property {
   display: inline-flex;
-  align-items: baseline;
-  min-width: 0;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
   gap: 4px;
   padding: 2px 0;
   color: inherit;
@@ -1805,8 +1836,8 @@ button:disabled {
 .title-field {
   display: block;
   width: 100%;
-  min-height: 112px;
-  padding: 25px 0 18px;
+  min-height: 64px;
+  padding: 16px 0;
   resize: none;
   overflow: hidden;
   font-size: 1.75rem;
@@ -2978,6 +3009,7 @@ button:disabled {
 .reminder-editor-heading,
 .reminder-row-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -3137,6 +3169,7 @@ button:disabled {
 
 .notes-field-heading {
   display: flex;
+  flex-wrap: wrap;
   min-height: 44px;
   align-items: center;
   justify-content: space-between;
@@ -3153,6 +3186,7 @@ button:disabled {
 
 .notes-field-heading > div {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--line);
 }
 
@@ -5670,7 +5704,8 @@ html.scratchpad-route .page-surface {
 .global-capture-scrim {
   position: fixed;
   z-index: 60;
-  inset: 0;
+  inset: var(--capture-viewport-top, 0px) 0 auto;
+  height: var(--capture-viewport-height, 100dvh);
   display: grid;
   align-items: start;
   justify-items: center;
@@ -5682,7 +5717,7 @@ html.scratchpad-route .page-surface {
 
 .global-capture-dialog {
   width: min(100%, 680px);
-  max-height: calc(100dvh - 48px);
+  max-height: calc(var(--capture-viewport-height, 100dvh) - 48px);
   padding: var(--space-xl) var(--space-xl) 28px;
   overflow-y: auto;
   color: var(--ink);
@@ -8278,7 +8313,7 @@ html.scratchpad-route .page-surface {
 }
 
 .kanban-card .task-row {
-  grid-template-columns: 44px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-width: 0;
   border-bottom: 0;
 }
@@ -8629,7 +8664,10 @@ html.scratchpad-route .page-surface {
 
 .full-calendar-event-content {
   display: grid;
-  min-width: 0;
+  flex: 1;
+  align-content: center;
+  min-width: 44px;
+  min-height: 44px;
   gap: var(--space-xs);
   color: var(--ink-soft);
   line-height: 1.45;
@@ -8823,19 +8861,32 @@ html.scratchpad-route .page-surface {
     display: inline-flex;
   }
 
-  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time,
-  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > span {
+  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time {
     display: none;
   }
 
   .full-calendar-view .fc-daygrid-event {
-    display: inline-flex;
+    display: flex;
     margin: 1px 2px;
   }
 
   .full-calendar-view .fc-daygrid-day-events {
-    min-height: 11px;
-    padding: 0 5px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  /* Preserve usable day/event targets on very narrow phones without widening the page. */
+  .full-calendar-surface {
+    overflow-x: auto;
+  }
+  .full-calendar-view .fc-dayGridMonth-view {
+    min-width: 350px;
+  }
+  .full-calendar-view .fc-daygrid-more-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -8972,7 +9023,7 @@ html.scratchpad-route .page-surface {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1024px) {
   .app-shell.has-detail {
     grid-template-columns: 190px minmax(400px, 1fr) minmax(380px, 440px);
   }
@@ -9001,7 +9052,7 @@ html.scratchpad-route .page-surface {
   }
 
   .detail-inspector .title-field {
-    min-height: 96px;
+    min-height: 64px;
     font-size: 1.65rem;
   }
 
@@ -9274,7 +9325,9 @@ html.scratchpad-route .page-surface {
 
   .global-capture-dialog {
     width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top));
+    max-height: calc(
+      var(--capture-viewport-height, 100dvh) - env(safe-area-inset-top)
+    );
     padding: 18px var(--page-inset) calc(22px + env(safe-area-inset-bottom));
     border-right: 0;
     border-bottom: 0;
@@ -9545,4 +9598,201 @@ html.scratchpad-route .page-surface {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Collapsing is a display preference; arranging temporarily reveals all lanes. */
+.task-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.task-section-toggle:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.task-section-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.capture-title-preview {
+  margin: 8px 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.capture-date-token {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  background: var(--paper-soft);
+}
+.capture-date-token > button {
+  min-height: 44px;
+  padding: 4px 8px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.capture-date-token > button:last-child {
+  min-width: 44px;
+  font-size: var(--type-control);
+}
+.capture-interpretation > div > .capture-date-token::after {
+  content: none;
+}
+.capture-keep-adding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.capture-keep-adding input {
+  accent-color: var(--accent);
+}
+.view-context-capture {
+  display: none;
+}
+.completion-control:active span {
+  transform: scale(0.92);
+}
+.completion-control[aria-pressed="true"] span {
+  background: var(--accent-soft);
+}
+.task-row-property > span {
+  font-size: inherit;
+}
+.task-title-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.task-title-line > .completion-control {
+  flex: 0 0 44px;
+  align-self: flex-start;
+  margin-top: 10px;
+}
+.task-title-line > .title-field {
+  min-width: 0;
+}
+.detail-inspector:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.task-date-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.task-date-shortcuts > button {
+  min-height: 44px;
+  padding: 6px 10px;
+  color: var(--accent);
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.task-form > .task-form-section:first-of-type > summary small {
+  white-space: normal;
+  overflow: visible;
+}
+.task-row-title {
+  color: var(--ink);
+}
+.completion-control {
+  color: var(--ink-muted);
+}
+.global-capture-fab {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: transparent;
+}
+:root[data-theme="dark"] .global-capture-fab {
+  color: var(--paper);
+}
+@media (max-width: 839px) {
+  .has-list-capture > .capture-composer {
+    display: none;
+  }
+  .view-context-capture {
+    display: flex;
+  }
+  .app-shell:has(.view-context-capture) > .global-capture-fab {
+    display: none;
+  }
+}
+.view-date {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.view-options {
+  position: relative;
+}
+.view-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink-soft);
+  border-radius: 6px;
+}
+.view-options > summary::-webkit-details-marker {
+  display: none;
+}
+.view-options[open] > summary {
+  background: var(--paper-soft);
+}
+.view-options-panel {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  top: 100%;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 12px 22px var(--color-shadow-soft);
+}
+.view-options-panel > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.view-options-panel > button:hover {
+  background: var(--paper-soft);
+}
+.task-section-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.task-section > .section-heading {
+  margin: 0;
 }

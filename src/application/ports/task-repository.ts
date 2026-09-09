@@ -65,7 +65,12 @@ export interface TaskRepository {
   updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]>;
-  toggle(id: string, occurrenceDate?: string): Promise<Task>;
+  /** With completed supplied, converge to that state rather than blindly toggling. */
+  toggle(
+    id: string,
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task>;
   skip(id: string, occurrenceDate: string): Promise<Task>;
   materializeOccurrence(
     parentId: string,
@@ -82,6 +87,13 @@ export interface TaskRepository {
   listViews(): Promise<TaskViewDocument[]>;
   cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
+  /** Optional caller-driven pages in authority order, with whole-query counts/groups.
+   * Closing/aborting the iterator must release its read cursor. No UI provider branching.
+   */
+  iterateView?(
+    view: TaskView,
+    options?: { signal?: AbortSignal },
+  ): AsyncIterable<TaskViewExecution>;
   readViewSource(path: string): Promise<TaskViewSourceDocument>;
   createViewSource(
     input: CreateTaskViewSourceInput,

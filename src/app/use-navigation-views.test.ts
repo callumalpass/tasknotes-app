@@ -31,9 +31,9 @@ describe("home view restoration", () => {
 
     expect(resolved?.navigationKeys.slice(0, 4)).toEqual([
       "TaskNotes/Views/today.base#today",
+      "TaskNotes/Views/upcoming.base#upcoming",
       SCRATCHPAD_NAVIGATION_KEY,
       SEARCH_NAVIGATION_KEY,
-      "TaskNotes/Views/upcoming.base#upcoming",
     ]);
   });
 
@@ -145,10 +145,10 @@ describe("home view restoration", () => {
       document.views.map((view) => view.key),
     );
     const expected = [
-      defaults[0],
+      ...defaults.slice(0, 2),
       SCRATCHPAD_NAVIGATION_KEY,
       SEARCH_NAVIGATION_KEY,
-      ...defaults.slice(1),
+      ...defaults.slice(2),
     ];
     expect(resolved?.navigationKeys).toEqual(expected);
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(

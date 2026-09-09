@@ -2391,7 +2391,6 @@ function ScratchpadDocumentEditor({
                       aria-controls={
                         suggestionsOpen ? suggestionListId : undefined
                       }
-                      aria-expanded={suggestionsOpen}
                       aria-label={`${node.kind === "draft" ? "Draft task" : "Note"}: ${node.text || "empty"}`}
                       autoComplete="off"
                       data-scratch-input={`${document?.id ?? initialDocument.id}:${node.id}`}
