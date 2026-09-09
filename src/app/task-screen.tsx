@@ -595,6 +595,7 @@ function TaskEditor({
               className="completion-control"
               aria-label={task.completed ? "Reopen task" : "Complete task"}
               aria-pressed={task.completed}
+              aria-busy={completing || completion.pending}
               disabled={completing || completion.pending || !draft.title.trim()}
               onClick={async () => {
                 setCompleting(true);

@@ -9,6 +9,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
   const dates = page.locator(
     ".task-row-property, .task-row .task-actions-trigger",
   );
+  await expect(dates.first()).toBeVisible();
   expect(
     await dates.evaluateAll((nodes) =>
       nodes.every((node) => {

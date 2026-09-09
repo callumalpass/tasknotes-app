@@ -1044,6 +1044,15 @@ button:disabled {
     background-color 160ms var(--ease-out);
 }
 
+.completion-control[aria-busy="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.completion-control[aria-busy="true"] span {
+  border-style: dashed;
+}
+
 .completion-control:hover span,
 .completion-control:focus-visible span {
   background-color: var(--accent-soft);
