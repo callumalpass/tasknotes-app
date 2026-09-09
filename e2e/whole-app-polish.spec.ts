@@ -11,6 +11,10 @@ test("mobile writing does not remove navigation without an onscreen keyboard", a
   await page.goto("scratchpad?demo=50");
   await expect(page.locator(".scratchpad-row textarea").last()).toBeFocused();
   await expect(page.locator(".bottom-navigation")).toBeVisible();
+  await expect(page.locator(".scratchpad-history.is-loaded")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),

@@ -4139,19 +4139,11 @@ html.scratchpad-route .page-surface {
   width: min(calc(100% - 2 * var(--page-inset)), var(--scratch-feed-width));
   margin: 0 auto;
   gap: 12px;
-  opacity: 0;
+  visibility: hidden;
 }
 
 .scratchpad-history.is-loaded {
-  opacity: 1;
-  animation: scratchpad-history-reveal 180ms var(--ease-out);
-}
-
-@keyframes scratchpad-history-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+  visibility: visible;
 }
 
 .scratchpad-document,
