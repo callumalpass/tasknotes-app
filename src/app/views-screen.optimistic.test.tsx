@@ -875,6 +875,32 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
   expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
 });
 
+it("does not enter reordering when manual-sort activation is rejected", async () => {
+  const view = manualListView("rejected");
+  const tasks = [listTask("alpha", "Alpha")];
+  const repository = manualListRepository(view, tasks, vi.fn(), () => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: 1,
+    hasMore: false,
+    groups: [],
+  }));
+  repository.readViewSource = async () => ({
+    path: view.source.path,
+    format: "obsidian.base",
+    revision: "one",
+    document: "views:\n  - type: tasknotesTaskList\n    name: rejected\n",
+  });
+  repository.updateViewSource = vi
+    .fn()
+    .mockRejectedValue(new Error("Authority unavailable"));
+  renderListView(repository, view);
+  await startReordering();
+  await screen.findByText("Authority unavailable");
+  expect(screen.queryByRole("button", { name: "Done reordering" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
+});
+
 it("offers manual order from a writable kanban view", async () => {
   const execution = boardExecution();
   execution.view.source.writable = true;

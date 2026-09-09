@@ -464,7 +464,7 @@ export function ViewsScreen({
 
   async function toggleManualOrderSort() {
     if (!selected || !selected.source.writable || manualOrderSortPending)
-      return;
+      return false;
     const view = selected;
     const sortOrderField = configuration.fieldMapping.sortOrder;
     setManualOrderSortPending(view.key);
@@ -489,8 +489,10 @@ export function ViewsScreen({
       });
       setSourceSort({ key: view.key, sort });
       void onViewsChanged().catch(() => undefined);
+      return true;
     } catch (reason) {
       setViewActionError({ viewKey: view.key, message: message(reason) });
+      return false;
     } finally {
       setManualOrderSortPending((key) => (key === view.key ? null : key));
     }
@@ -970,7 +972,8 @@ export function ViewsScreen({
                     type="button"
                     disabled={manualOrderSortPending === selected.key}
                     onClick={async () => {
-                      if (!manualOrder) await toggleManualOrderSort();
+                      if (!manualOrder && !(await toggleManualOrderSort()))
+                        return;
                       setArrangingView(selected.key);
                     }}
                   >
@@ -1103,7 +1106,7 @@ export function ViewsScreen({
             }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
-              void toggleTask(task.id, occurrenceDate)
+              toggleTask(task.id, occurrenceDate)
             }
           />
         ) : presentedExecution.view.presentation?.type ===
@@ -1141,7 +1144,7 @@ export function ViewsScreen({
             canCreateInColumn={canCreateInBoardColumn}
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
-              void toggleTask(task.id, occurrenceDate)
+              toggleTask(task.id, occurrenceDate)
             }
           />
         ) : presentedExecution.view.presentation?.type ===
@@ -1180,7 +1183,7 @@ export function ViewsScreen({
             }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
-              void toggleTask(task.id, occurrenceDate)
+              toggleTask(task.id, occurrenceDate)
             }
             onUpdate={calendarMutations.updateTask}
             onUpdateOccurrence={calendarMutations.updateOccurrence}
@@ -1212,7 +1215,7 @@ export function ViewsScreen({
             }
             onOpen={onOpenTask}
             onToggle={(task, occurrenceDate) =>
-              void toggleTask(task.id, occurrenceDate)
+              toggleTask(task.id, occurrenceDate)
             }
           />
         )}
