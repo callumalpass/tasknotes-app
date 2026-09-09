@@ -9846,8 +9846,34 @@ html.scratchpad-route .page-surface {
   min-height: 44px;
 }
 .full-calendar-view .fc-more-popover {
+  width: min(360px, calc(100vw - 24px));
   max-height: 70dvh;
   overflow: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 8px 24px var(--color-shadow);
+}
+.full-calendar-view .fc-more-popover .full-calendar-event-content {
+  font-size: var(--type-body);
+}
+.app-shell:has(.fc-more-popover) .global-capture-fab {
+  visibility: hidden;
+}
+.task-added-notice {
+  display: flex;
+  flex-wrap: wrap;
+}
+.task-added-notice > span {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.task-added-notice > button {
+  flex: 0 0 auto;
+}
+.task-added-notice > button:last-child {
+  margin-left: auto;
+  min-width: 44px;
+  border-left: 0;
 }
 
 .view-date {

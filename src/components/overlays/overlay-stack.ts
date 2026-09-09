@@ -2,6 +2,9 @@ export interface OverlayOptions {
   root: HTMLElement;
   modal: boolean;
   dismissOnTab?: "always" | "boundary";
+  /** Suspend covered controls without making an otherwise nonmodal panel modal. */
+  inertRoots?: HTMLElement[];
+  dismissOnCover?: boolean;
   dismiss(reason: "escape" | "outside"): void;
   initialFocus?(): HTMLElement | null;
   returnFocus?: HTMLElement | null;
@@ -58,8 +61,14 @@ function lastModalIndex() {
     if (layers[index].modal) return index;
   return -1;
 }
+function markInert(element: HTMLElement) {
+  if (!inertBefore.has(element)) inertBefore.set(element, element.inert);
+  element.inert = true;
+}
 function synchronize() {
   restoreInert();
+  for (const layer of layers)
+    for (const root of layer.inertRoots ?? []) markInert(root);
   const index = lastModalIndex();
   if (index < 0) {
     if (overflowBefore !== undefined)
@@ -81,8 +90,7 @@ function synchronize() {
       if (roots.includes(child)) continue;
       if (roots.some((root) => child.contains(root))) isolate(child);
       else {
-        inertBefore.set(child, child.inert);
-        child.inert = true;
+        markInert(child);
       }
     }
   };
@@ -107,18 +115,18 @@ function keydown(event: KeyboardEvent) {
       document.activeElement === boundary ||
       !top.root.contains(document.activeElement)
     ) {
-      const outside = focusable([document.body]).filter(
-        (element) => !top.root.contains(element),
-      );
-      const origin = outside.indexOf(top.returnFocus as HTMLElement);
-      const next =
-        outside[origin + (event.shiftKey ? -1 : 1)] ??
-        (event.shiftKey ? outside.at(-1) : outside[0]);
       top.restore = false;
       event.preventDefault();
       event.stopImmediatePropagation();
       top.dismiss("outside");
       queueMicrotask(() => {
+        const outside = focusable([document.body]).filter(
+          (element) => !top.root.contains(element),
+        );
+        const origin = outside.indexOf(top.returnFocus as HTMLElement);
+        const next =
+          outside[origin + (event.shiftKey ? -1 : 1)] ??
+          (event.shiftKey ? outside.at(-1) : outside[0]);
         if (next?.isConnected && available(next)) next.focus();
       });
       return;
@@ -170,6 +178,21 @@ export function registerOverlay(
         : null),
     restore: true,
   };
+  const previous = layers.at(-1);
+  if (
+    previous?.dismissOnCover &&
+    !previous.root.contains(layer.root) &&
+    !layer.root.contains(previous.root)
+  ) {
+    if (
+      !layer.returnFocus ||
+      !available(layer.returnFocus) ||
+      previous.root.contains(layer.returnFocus)
+    )
+      layer.returnFocus = previous.returnFocus;
+    previous.restore = false;
+    previous.dismiss("outside");
+  }
   if (!layers.length) {
     document.addEventListener("keydown", keydown);
     document.addEventListener("pointerdown", pointerdown);

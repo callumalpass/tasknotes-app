@@ -68,6 +68,64 @@ it("a nonmodal dialog permits internal Tab but dismisses at its boundary", async
   await Promise.resolve();
   expect(document.activeElement).toBe(next);
 });
+it.each([false, true])(
+  "restores covered controls across nested modal isolation (initial inert: %s)",
+  (initial) => {
+    const grid = element("div");
+    grid.inert = initial;
+    const toolbar = element("button");
+    const popup = element("div");
+    const releasePopup = registerOverlay({
+      root: popup,
+      modal: false,
+      inertRoots: [grid],
+      dismiss: vi.fn(),
+    });
+    disposals.push(releasePopup);
+    expect(grid.inert).toBe(true);
+    expect(toolbar.inert).not.toBe(true);
+    const dialog = element("div");
+    const releaseDialog = registerOverlay({
+      root: dialog,
+      modal: true,
+      dismiss: vi.fn(),
+    });
+    disposals.push(releaseDialog);
+    releaseDialog();
+    expect(grid.inert).toBe(true);
+    releasePopup();
+    expect(grid.inert).toBe(initial);
+  },
+);
+it("retires an imperative popup before another overlay and transfers return focus", async () => {
+  const trigger = element("button");
+  const popup = element("div");
+  const item = element("button", popup);
+  const dismiss = vi.fn(() => releasePopup(false));
+  const releasePopup = registerOverlay({
+    root: popup,
+    modal: false,
+    dismissOnCover: true,
+    dismiss,
+    returnFocus: trigger,
+    initialFocus: () => item,
+  });
+  disposals.push(releasePopup);
+  const dialog = element("div");
+  const field = element("input", dialog);
+  const releaseDialog = registerOverlay({
+    root: dialog,
+    modal: true,
+    dismiss: vi.fn(),
+    initialFocus: () => field,
+  });
+  disposals.push(releaseDialog);
+  expect(dismiss).toHaveBeenCalledWith("outside");
+  expect(document.activeElement).toBe(field);
+  releaseDialog();
+  await Promise.resolve();
+  expect(document.activeElement).toBe(trigger);
+});
 it("isolates the background and traps Tab at both ends of a modal", () => {
   const app = element("main");
   const trigger = element("button", app);

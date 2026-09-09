@@ -156,6 +156,29 @@ test("calendar overflow owns focus and restores More on Escape", async ({
   await page.keyboard.press("Enter");
   const popup = page.getByRole("dialog");
   await expect(popup).toBeVisible();
+  await expect
+    .poll(() =>
+      popup.evaluate((el) => {
+        const bounds = el.getBoundingClientRect();
+        const surface = el
+          .closest(".full-calendar-surface")!
+          .getBoundingClientRect();
+        const nav = document
+          .querySelector(".bottom-navigation")
+          ?.getBoundingClientRect();
+        return (
+          bounds.top >= 0 &&
+          bounds.left >= surface.left - 1 &&
+          bounds.right <= surface.right + 1 &&
+          bounds.bottom <= (nav?.height ? nav.top : innerHeight)
+        );
+      }),
+    )
+    .toBe(true);
+  expect(
+    await popup.evaluate((el) => getComputedStyle(el).backgroundColor),
+  ).not.toBe("rgba(0, 0, 0, 0)");
+  await expect(page.locator(".view-context-capture")).toBeHidden();
   expect(
     await popup.evaluate((el) => el.contains(document.activeElement)),
   ).toBe(true);
@@ -176,6 +199,15 @@ test("calendar overflow owns focus and restores More on Escape", async ({
   await popup.getByRole("button", { name: "Close additional tasks" }).focus();
   await page.keyboard.press("Enter");
   await expect(popup).toHaveCount(0);
+  await expect(more).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(popup).toBeVisible();
+  await page.keyboard.press("Control+n");
+  await expect(
+    page.getByRole("dialog", { name: "New task", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".fc-more-popover")).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(more).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(popup).toBeVisible();
