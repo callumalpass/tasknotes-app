@@ -1,4 +1,68 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("calendar and Scratchpad controls satisfy semantic and target-size contracts", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("?demo=50");
+  const dates = page.locator(
+    ".task-row-property, .task-row .task-actions-trigger",
+  );
+  expect(
+    await dates.evaluateAll((nodes) =>
+      nodes.every((node) => {
+        const box = node.getBoundingClientRect();
+        return box.height >= 44 && box.width >= 44;
+      }),
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
+  expect(
+    (await new AxeBuilder({ page }).analyze()).violations.filter(
+      (item) => item.impact === "serious" || item.impact === "critical",
+    ),
+  ).toEqual([]);
+  await page.goto("?demo=50");
+  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Calendar", exact: true }).click();
+  await expect(
+    page.locator(".full-calendar-event-content").first(),
+  ).toBeVisible();
+  expect(
+    await page.locator(".full-calendar-event-content").evaluateAll((nodes) =>
+      nodes.every((node) => {
+        const box = node.getBoundingClientRect();
+        return box.width >= 44 && box.height >= 44;
+      }),
+    ),
+  ).toBe(true);
+  expect(
+    (await new AxeBuilder({ page }).analyze()).violations.filter(
+      (item) => item.impact === "serious" || item.impact === "critical",
+    ),
+  ).toEqual([]);
+});
+
+test("notes and reminder controls reflow at 320px and 200% text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto("?demo=50");
+  await page.locator(".task-row-title").first().click();
+  await page.locator("details").evaluateAll((nodes) =>
+    nodes.forEach((node) => {
+      node.open = true;
+    }),
+  );
+  await page.getByRole("button", { name: "Add reminder", exact: true }).click();
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(320);
+});
 
 // Local, disposable fixtures only. These are failure-sequence contracts, not screenshots.
 test("nested Escape preserves capture and dismissing preserves its draft", async ({

@@ -667,7 +667,7 @@ button:disabled {
 
 .task-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-height: 52px;
   background: transparent;
   border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
@@ -692,7 +692,7 @@ button:disabled {
   display: grid;
   place-items: center;
   align-self: start;
-  width: 40px;
+  width: 44px;
   min-height: 44px;
   padding: 0;
   color: var(--ink-muted);
@@ -1090,6 +1090,8 @@ button:disabled {
 
 .task-row-meta > button {
   display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
   align-items: center;
   gap: 6px;
   padding: 0;
@@ -1129,8 +1131,9 @@ button:disabled {
 
 .task-row-property {
   display: inline-flex;
-  align-items: baseline;
-  min-width: 0;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
   gap: 4px;
   padding: 2px 0;
   color: inherit;
@@ -2976,6 +2979,7 @@ button:disabled {
 .reminder-editor-heading,
 .reminder-row-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -3135,6 +3139,7 @@ button:disabled {
 
 .notes-field-heading {
   display: flex;
+  flex-wrap: wrap;
   min-height: 44px;
   align-items: center;
   justify-content: space-between;
@@ -3151,6 +3156,7 @@ button:disabled {
 
 .notes-field-heading > div {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--line);
 }
 
@@ -8277,7 +8283,7 @@ html.scratchpad-route .page-surface {
 }
 
 .kanban-card .task-row {
-  grid-template-columns: 44px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-width: 0;
   border-bottom: 0;
 }
@@ -8628,7 +8634,10 @@ html.scratchpad-route .page-surface {
 
 .full-calendar-event-content {
   display: grid;
-  min-width: 0;
+  flex: 1;
+  align-content: center;
+  min-width: 44px;
+  min-height: 44px;
   gap: var(--space-xs);
   color: var(--ink-soft);
   line-height: 1.45;
@@ -8822,19 +8831,32 @@ html.scratchpad-route .page-surface {
     display: inline-flex;
   }
 
-  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time,
-  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > span {
+  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time {
     display: none;
   }
 
   .full-calendar-view .fc-daygrid-event {
-    display: inline-flex;
+    display: flex;
     margin: 1px 2px;
   }
 
   .full-calendar-view .fc-daygrid-day-events {
-    min-height: 11px;
-    padding: 0 5px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  /* Preserve usable day/event targets on very narrow phones without widening the page. */
+  .full-calendar-surface {
+    overflow-x: auto;
+  }
+  .full-calendar-view .fc-dayGridMonth-view {
+    min-width: 350px;
+  }
+  .full-calendar-view .fc-daygrid-more-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 

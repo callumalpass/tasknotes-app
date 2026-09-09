@@ -274,6 +274,14 @@ export function FullCalendarView({
             allDaySlot={preferences.allDaySlot}
             allDayText="All day"
             dayMaxEvents={3}
+            eventMinHeight={44}
+            moreLinkDidMount={({ el }) => {
+              el.setAttribute("role", "button");
+              el.addEventListener("keydown", activateMoreOnSpace);
+            }}
+            moreLinkWillUnmount={({ el }) =>
+              el.removeEventListener("keydown", activateMoreOnSpace)
+            }
             dayCellClassNames={(info) =>
               todayString(info.date) === selected ? ["is-selected-day"] : []
             }
@@ -571,6 +579,12 @@ function calendarEventContent(
       ) : null}
     </span>
   );
+}
+
+function activateMoreOnSpace(event: KeyboardEvent) {
+  if (event.key !== " ") return;
+  event.preventDefault();
+  (event.currentTarget as HTMLElement).click();
 }
 
 function calendarEventLabel(info: EventContentArg): string {
