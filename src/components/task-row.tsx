@@ -157,15 +157,19 @@ export function TaskRow({
                   }}
                 >
                   <span>{detail.label}</span>
-                  <strong
-                    style={
-                      detailPriorityColor(detail, configuration)
-                        ? {
-                            color: detailPriorityColor(detail, configuration),
-                          }
-                        : undefined
-                    }
-                  >
+                  <strong>
+                    {detailPriorityColor(detail, configuration) ? (
+                      <span
+                        aria-hidden="true"
+                        className="value-color"
+                        style={{
+                          backgroundColor: detailPriorityColor(
+                            detail,
+                            configuration,
+                          ),
+                        }}
+                      />
+                    ) : null}
                     {detail.value}
                   </strong>
                 </button>
@@ -179,11 +183,6 @@ export function TaskRow({
               <button
                 className={detail.overdue ? "is-overdue" : undefined}
                 key={detail.key}
-                style={
-                  detailPriorityColor(detail, configuration)
-                    ? { color: detailPriorityColor(detail, configuration) }
-                    : undefined
-                }
                 type="button"
                 onClick={(event) => {
                   editorTrigger.current = event.currentTarget;
@@ -193,6 +192,18 @@ export function TaskRow({
                   });
                 }}
               >
+                {detailPriorityColor(detail, configuration) ? (
+                  <span
+                    aria-hidden="true"
+                    className="value-color"
+                    style={{
+                      backgroundColor: detailPriorityColor(
+                        detail,
+                        configuration,
+                      ),
+                    }}
+                  />
+                ) : null}
                 {detail.label === "Scheduled" ? "Scheduled " : ""}
                 {detail.value}
               </button>

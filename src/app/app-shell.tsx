@@ -14,6 +14,8 @@ import {
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { CollectionAvailability } from "../components/collection-availability";
+import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -49,6 +51,7 @@ type Route =
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
+  const keyboardOccluded = useKeyboardOcclusion();
   const {
     status,
     error,
@@ -278,7 +281,9 @@ export function AppShell() {
         ? "views"
         : workspacePage;
   return (
-    <div className={`app-shell${route.page === "task" ? " has-detail" : ""}`}>
+    <div
+      className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -312,6 +317,15 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
+        {route.page !== "task" ? (
+          <CollectionAvailability
+            onSettings={
+              workspacePage === "more"
+                ? undefined
+                : () => navigate({ page: "more" })
+            }
+          />
+        ) : null}
         {workspacePage === "search" ? (
           <SearchScreen
             onBack={
@@ -385,6 +399,9 @@ export function AppShell() {
           tabIndex={-1}
           ref={detailRef}
         >
+          <CollectionAvailability
+            onSettings={() => navigate({ page: "more" })}
+          />
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}

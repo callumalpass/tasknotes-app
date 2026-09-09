@@ -878,7 +878,7 @@ button:disabled {
   min-width: 0;
   margin-left: auto;
   overflow: hidden;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   font-size: var(--type-mono-micro);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3874,11 +3874,7 @@ button:disabled {
     min-height: 48px;
   }
 
-  body:has(
-      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
-      textarea:focus
-    )
-    .bottom-navigation {
+  .app-shell.keyboard-occluded .bottom-navigation {
     display: none;
   }
 
@@ -8882,12 +8878,13 @@ html.scratchpad-route .page-surface {
   .full-calendar-view .fc-dayGridMonth-view {
     min-width: 350px;
   }
-  .full-calendar-view .fc-daygrid-more-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    min-width: 44px;
-  }
+}
+
+.full-calendar-view .fc-daygrid-more-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 @media (min-width: 840px) {
@@ -9795,4 +9792,44 @@ html.scratchpad-route .page-surface {
 }
 .task-section > .section-heading {
   margin: 0;
+}
+
+.value-color {
+  display: inline-block;
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid var(--ink-soft);
+  border-radius: 50%;
+}
+.collection-availability {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 12px var(--page-inset);
+  color: var(--ink);
+  background: var(--paper-soft);
+  border-bottom: 1px solid var(--line-strong);
+  font-size: var(--type-supporting);
+}
+.collection-availability p {
+  margin: 4px 0 0;
+}
+.availability-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+html.scratchpad-route .page-surface:has(> .collection-availability) {
+  display: flex;
+  flex-direction: column;
+}
+html.scratchpad-route
+  .page-surface:has(> .collection-availability)
+  > .scratchpad-screen {
+  flex: 1;
+  min-height: 0;
 }

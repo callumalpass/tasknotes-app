@@ -958,3 +958,73 @@ async function recoverPendingChangesBefore(page: Page, destination: Locator) {
   await page.getByRole("button", { name: "Confirm recovery" }).click();
   await expect(destination).toBeVisible();
 }
+
+test("keeps collection availability visible across cached search and retries", async ({
+  page,
+}) => {
+  await page.route("**/*", (route) =>
+    ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
+      ? route.continue()
+      : route.abort(),
+  );
+  // The operation route must precede fixture installation (LIFO matching).
+  // eslint-disable-next-line prefer-const
+  let authorization!: MdbaseBrowserFixtureController;
+  let offline = false;
+  const task = new TaskNotesTaskModel().create(
+    { title: "Availability test task" },
+    { id: "availability-task", now: "2026-09-09T00:00:00.000Z" },
+  );
+  const record = {
+    path: task.path,
+    frontmatter: task.frontmatter,
+    body: task.body,
+    types: ["task"],
+  };
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
+    async (route) => {
+      if (offline) {
+        await route.abort("failed");
+        return;
+      }
+      const request = await operationRequest(route, authorization);
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1);
+      const result =
+        operation === "describe"
+          ? collectionDescription()
+          : operation === "query"
+            ? valid({
+                results: [record],
+                meta: { total_count: 1, has_more: false },
+              })
+            : operation === "list_views"
+              ? valid(defaultViewDocuments())
+              : operation === "execute_view"
+                ? valid(defaultViewExecution([record]))
+                : valid({});
+      await fulfillOperation(route, request.request_id, result);
+    },
+  );
+  authorization = await installRelayAuthorization(page);
+  await page.reload();
+  await expect(
+    page.getByText("Availability test task", { exact: true }),
+  ).toBeVisible();
+  await openNavigationItem(page, "Settings");
+  offline = true;
+  await page.getByRole("button", { name: "Refresh now", exact: true }).click();
+  const notice = page.getByRole("region", { name: "Collection connection" });
+  await expect(notice).toContainText("Collection unavailable");
+  await openNavigationItem(page, "Search");
+  await page.getByRole("searchbox").fill("Availability");
+  await expect(
+    page.getByText("Availability test task", { exact: true }),
+  ).toBeVisible();
+  await expect(notice).toContainText("Showing previously loaded tasks");
+  offline = false;
+  await notice.getByRole("button", { name: "Retry connection" }).click();
+  await expect(notice).toHaveCount(0);
+});
