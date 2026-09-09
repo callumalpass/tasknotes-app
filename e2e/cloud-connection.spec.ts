@@ -719,6 +719,7 @@ async function installRelayAuthorization(
             distribution: "web",
             homepage: bundledManifest.homepage,
             requirements: bundledManifest.requirements,
+            provisions: bundledManifest.provisions,
           },
         }),
       });
@@ -765,9 +766,14 @@ async function installRelayAuthorization(
 }
 
 function liveConnectorOperations() {
-  return operationsForApplicationCapabilities(
-    (bundledManifest as MdbaseAppManifest).requirements!.capabilities!,
-  ).filter((operation) => operation !== "sync");
+  return [
+    ...operationsForApplicationCapabilities(
+      (bundledManifest as MdbaseAppManifest).requirements!.capabilities!,
+    ),
+    // Setup authority comes from provisions, independently of intent groups.
+    "assess_collection_setup" as const,
+    "apply_collection_setup" as const,
+  ];
 }
 
 function tasknotesFileCapability(): FileCapability {

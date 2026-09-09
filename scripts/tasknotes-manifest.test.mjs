@@ -40,21 +40,23 @@ describe("TaskNotes mdbase manifest", () => {
       }),
     ]);
     expect(manifest.requirements.files).toEqual({
-      actions: ["list", "read", "add", "replace", "move", "delete"],
+      required: ["list", "read", "add", "replace", "move", "delete"],
       scope: { kind: "collection" },
     });
-    expect(manifest.requirements.capabilities.optional).toEqual([
-      "notifications.background-delivery",
-    ]);
-    expect(manifest.requirements.capabilities.required).not.toContain(
-      "sync.offline-replica",
-    );
-    expect(manifest.requirements.capabilities.required).toContain(
-      "collection.setup.apply",
-    );
-    expect(manifest.requirements.capabilities.required).toEqual(
-      expect.arrayContaining(["definitions.read", "definitions.update"]),
-    );
+    // Exact groups exclude v1 aliases and offline replication. Record and
+    // file deletion remain deliberate, required grants for TaskNotes.
+    expect(manifest.requirements.capabilities).toEqual({
+      contract_version: 2,
+      required: [
+        "collection.read",
+        "records.create",
+        "records.edit",
+        "records.delete",
+        "views.manage",
+        "definitions.manage",
+        "background.schedule",
+      ],
+    });
     expect(manifest.requirements.configuration).toEqual([
       {
         id: "tasknotes-base-sources",
