@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
 import { taskCompletion } from "../domain/task-completion";
+import { linkDisplayLabel } from "../domain/completion";
 import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
+import { searchMatchContext } from "./search-match-context";
 
 import type { Task } from "../domain/task";
 
@@ -41,6 +43,7 @@ export function SearchScreen({
     <TaskRow
       key={task.id}
       task={task}
+      supportingText={searchMatchContext(task, deferred)}
       onOpen={onOpen}
       onToggle={(item) =>
         setTaskCompletion({ id: item.id, completed: !taskCompletion(item) })
@@ -238,7 +241,7 @@ function collect(tasks: Task[], field: "tags" | "contexts" | "projects") {
 }
 
 function cleanField(value: string): string {
-  return value.replace(/^#/, "").replace(/^\[\[|\]\]$/g, "");
+  return linkDisplayLabel(value.replace(/^#/, ""));
 }
 
 function useDebounced<T>(value: T, delay: number): T {

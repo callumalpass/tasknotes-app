@@ -21,12 +21,13 @@ describe("GlobalTaskCapture", () => {
 
   it("focuses, creates through the repository, and closes", async () => {
     const onOpenTask = vi.fn();
+    const onAdded = vi.fn();
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
         repository={repository}
       >
-        <Harness onOpenTask={onOpenTask} />
+        <Harness onOpenTask={onOpenTask} onAdded={onAdded} />
       </RepositoryProvider>,
     );
 
@@ -43,6 +44,9 @@ describe("GlobalTaskCapture", () => {
     );
     expect(await repository.list({ search: "anywhere" })).toHaveLength(1);
     expect(onOpenTask).not.toHaveBeenCalled();
+    expect(onAdded).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ title: "Capture from anywhere" }),
+    );
   });
 
   it("can keep the composer open for consecutive capture", async () => {
@@ -148,9 +152,11 @@ describe("GlobalTaskCapture", () => {
 function Harness({
   onOpenTask,
   onCreated,
+  onAdded,
 }: {
   onOpenTask: () => void;
   onCreated?: () => Promise<void>;
+  onAdded?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -163,6 +169,7 @@ function Harness({
         onClose={() => setOpen(false)}
         onOpenTask={onOpenTask}
         onCreated={onCreated}
+        onAdded={onAdded}
       />
     </>
   );

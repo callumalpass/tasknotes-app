@@ -318,7 +318,7 @@ export function MoreScreen({
         <div className="setting-row">
           <Info aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>TaskNotes</span>
-          <small>Version 0.1.0</small>
+          <small>Version {__APP_VERSION__}</small>
         </div>
       </SettingsSection>
 

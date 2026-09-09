@@ -5553,7 +5553,7 @@ html.scratchpad-route .page-surface {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    padding: 5px 0 7px 44px;
+    padding: 5px 0 7px;
     border-bottom: 1px solid var(--line);
   }
   .scratchpad-mobile-move {
@@ -7251,13 +7251,30 @@ html.scratchpad-route .page-surface {
 }
 
 .view-draft-preview {
-  display: grid;
-  grid-template-columns: minmax(132px, auto) minmax(0, 1fr);
-  gap: 24px;
-  align-items: center;
-  min-height: 82px;
-  padding: 18px 0;
+  display: block;
+  padding: 4px 0;
   border-bottom: 1px solid var(--line);
+}
+.view-draft-preview > summary,
+.view-layout-disclosure > summary,
+.connection-technical-details > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.view-draft-preview > summary > span {
+  margin-left: 8px;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+.view-draft-preview[open] > ol {
+  margin: 8px 16px 12px;
+}
+.view-planner-explanation,
+.connection-technical-details p {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
 }
 
 .view-draft-preview h2,
@@ -8146,9 +8163,63 @@ html.scratchpad-route .page-surface {
   min-width: 0;
 }
 
+.task-row-context {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  line-height: 1.5;
+  padding-bottom: 4px;
+}
+.project-index {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.project-index select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  flex: 1 1 16rem;
+  padding: 8px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+.project-group {
+  scroll-margin-top: 16px;
+}
+.project-group > header .project-toggle {
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.project-toggle > svg {
+  flex-shrink: 0;
+}
+.project-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.project-count {
+  font-size: var(--type-label);
+  font-weight: normal;
+  color: var(--ink-muted);
+}
+
 .projects-view {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 30px;
+}
+.project-index,
+.project-group {
+  min-width: 0;
+}
+.project-toggle > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .project-group > header {

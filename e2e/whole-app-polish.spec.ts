@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { readFileSync } from "node:fs";
 const view = (id: string) =>
   `views/${encodeURIComponent(`TaskNotes/Views/${id}.base#${id}`)}?demo=50`;
 
@@ -26,7 +27,7 @@ test("priority labels are readable in search, projects, and expanded task proper
       await expect(page.locator(".task-row-title").first()).toBeVisible();
     } else if (route.startsWith("views"))
       await expect(
-        page.getByRole("heading", { name: "Field research", exact: true }),
+        page.getByRole("heading", { name: /^Field research/ }),
       ).toBeVisible();
     else {
       await page
@@ -213,6 +214,108 @@ test("phone calendar has one capture action and preserves the selected date", as
         name: "Calendar context regression",
         exact: true,
       }),
+  ).toBeVisible();
+});
+
+test("projects remember collapsing and provide a focused jump", async ({
+  page,
+}) => {
+  await page.goto(view("projects"));
+  const group = page.locator(".project-group").first();
+  const toggle = group.locator(".project-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await toggle.click();
+  await expect(group.locator(".task-row")).toHaveCount(0);
+  await page.reload();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await page
+    .getByRole("combobox", { name: "Jump to project" })
+    .selectOption("0");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toBeFocused();
+  await expect(group.locator(".task-row").first()).toBeVisible();
+});
+test("search explains note matches without altering the query", async ({
+  page,
+}) => {
+  await page.goto("search?demo=50");
+  await page
+    .getByRole("searchbox", { name: "Search tasks" })
+    .fill("supporting");
+  const context = page.locator(".task-row-context").first();
+  await expect(context).toContainText("Matched in notes");
+  await expect(
+    context.locator("..").locator(".task-row-title"),
+  ).toHaveAccessibleDescription(/Matched in notes/);
+});
+test("Archive capture acknowledges the accepted task without moving the view", async ({
+  page,
+}) => {
+  await page.goto(view("archive"));
+  await expect(
+    page.getByRole("heading", { name: "No archived tasks here." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "New task", exact: true }).click();
+  const capture = page.getByRole("dialog", { name: "New task" });
+  await capture
+    .getByRole("combobox", { name: "New task title" })
+    .fill("Archive capture confirmation");
+  await capture.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(capture).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "No archived tasks here." }),
+  ).toBeVisible();
+  const notice = page.locator(".task-added-notice");
+  await expect(notice).toContainText("Archive capture confirmation");
+  await notice.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Task title", exact: true }),
+  ).toHaveValue("Archive capture confirmation");
+  await expect(notice).toHaveCount(0);
+});
+test("phone view editor leads with controls and identifies Planner as external", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("views?demo=50");
+  await page.getByRole("button", { name: "Create view", exact: true }).click();
+  const editor = page.getByRole("dialog");
+  await expect(editor.locator(".view-draft-preview")).not.toHaveAttribute(
+    "open",
+  );
+  await expect(editor.locator(".view-layout-disclosure")).not.toHaveAttribute(
+    "open",
+  );
+  const filter = editor.getByRole("heading", { name: "Filter", exact: true });
+  await expect(filter).toBeVisible();
+  expect((await filter.boundingBox())!.y).toBeLessThan(700);
+  await editor.locator(".view-layout-disclosure > summary").click();
+  await editor.getByRole("radio", { name: "Planner", exact: true }).check();
+  await expect(editor.locator(".view-planner-explanation")).toContainText(
+    "Planner is a separate app",
+  );
+});
+test("task summaries use readable project labels and settings show the build version", async ({
+  page,
+}) => {
+  await page.goto("?demo=50");
+  await page
+    .getByRole("button", {
+      name: "Prepare quarterly planning session",
+      exact: true,
+    })
+    .click();
+  const organize = page
+    .locator(".task-form-section > summary")
+    .filter({ hasText: "Organize" });
+  await expect(organize).toContainText("Product refresh");
+  await expect(organize).not.toContainText("[[");
+  await page.goto("more?demo=50");
+  const { version } = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { version: string };
+  await expect(
+    page.getByText(`Version ${version}`, { exact: true }),
   ).toBeVisible();
 });
 

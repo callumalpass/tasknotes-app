@@ -222,7 +222,7 @@ export function FullCalendarView({
         );
     onSelect(date, value);
     // On phones a day tap browses its tasks; a timed selection still starts capture.
-    if (!info.allDay || !window.matchMedia("(max-width: 839px)").matches) {
+    if (!info.allDay || !window.matchMedia?.("(max-width: 839px)").matches) {
       onCreate(date, value, timeEstimate);
     }
     info.view.calendar.unselect();

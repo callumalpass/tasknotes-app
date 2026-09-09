@@ -281,7 +281,6 @@ export function ViewEditor({
                   : "Create saved view"}
             </p>
             <h1 id="view-editor-title">{title}</h1>
-            <small>{previewLabel(preview)}</small>
           </div>
           <button
             aria-label="Close view editor"
@@ -372,14 +371,10 @@ export function ViewEditor({
 
 function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
   return (
-    <section
-      className="view-draft-preview"
-      aria-labelledby="view-preview-title"
-    >
-      <div>
-        <h2 id="view-preview-title">Preview</h2>
-        <p>{previewLabel(preview)}</p>
-      </div>
+    <details className="view-draft-preview">
+      <summary>
+        Preview <span aria-live="polite">{previewLabel(preview)}</span>
+      </summary>
       {preview.tasks.length ? (
         <ol aria-label="Preview tasks">
           {preview.tasks.map((task) => (
@@ -389,7 +384,7 @@ function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
       ) : preview.kind === "live" ? (
         <p className="view-preview-empty">No tasks match this draft.</p>
       ) : null}
-    </section>
+    </details>
   );
 }
 

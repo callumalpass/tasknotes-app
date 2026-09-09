@@ -681,7 +681,7 @@ export function CloudConnection({
 function OpeningConnection() {
   return (
     <main className="opening-screen">
-      <p>Opening mdbase…</p>
+      <p>Opening TaskNotes…</p>
     </main>
   );
 }
@@ -701,8 +701,16 @@ function ConnectionLifecycleProblem({
         <img alt="" src={tasknotesMarkUrl} />
         <h1>Open TaskNotes</h1>
         <p className="inline-error" role="alert">
-          {message}
+          {onRetry
+            ? "TaskNotes couldn’t open right now. Please try again."
+            : message}
         </p>
+        {onRetry ? (
+          <details className="connection-technical-details">
+            <summary>Technical details</summary>
+            <p>{message}</p>
+          </details>
+        ) : null}
       </div>
       {actionLabel && onRetry ? (
         <div className="welcome-actions">

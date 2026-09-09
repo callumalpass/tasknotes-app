@@ -60,7 +60,14 @@ describe("ViewEditor", () => {
       "New tasks",
     ])
       expect(screen.getByRole("heading", { name })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
+    const preview = screen.getByText("Preview", {
+      selector: "summary",
+      exact: false,
+    });
+    expect(preview).toBeVisible();
+    expect(preview.closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(preview);
+    expect(preview.closest("details")).toHaveAttribute("open");
     fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
     expect(screen.getByRole("combobox", { name: "Group by" })).toHaveValue(
       "Status",

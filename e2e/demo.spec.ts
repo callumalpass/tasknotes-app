@@ -778,7 +778,12 @@ test("supports project capture and saved-view editing in the demo", async ({
   });
   await projectCapture.fill("Draft the interview guide");
   await projectCapture.press("Enter");
-  await expect(page.getByText("Draft the interview guide")).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Draft the interview guide",
+      exact: true,
+    }),
+  ).toBeVisible();
 
   await openNavigationItem(page, "Manage views");
   await page.getByRole("button", { name: "More actions for Today" }).click();

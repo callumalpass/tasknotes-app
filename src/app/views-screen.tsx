@@ -63,6 +63,7 @@ import {
 } from "../domain/mini-calendar";
 import { ViewCatalog } from "./views/view-catalog";
 import { ProjectsView } from "./views/projects-view";
+import { ViewEmptyState } from "./view-empty-state";
 import {
   removeConfirmedBoardMoves,
   removeConfirmedListMoves,
@@ -109,6 +110,7 @@ export function ViewsScreen({
   operational = false,
   onBack,
   onOpenTask,
+  onTaskAdded,
   onSearch,
   onOpenView,
   onOpenScratchpad = () => undefined,
@@ -125,6 +127,7 @@ export function ViewsScreen({
   operational?: boolean;
   onBack(): void;
   onOpenTask(task: Task, occurrenceDate?: string): void;
+  onTaskAdded?(task: Task): void;
   onSearch(): void;
   onOpenView(view: TaskView): void;
   onOpenScratchpad?(): void;
@@ -1145,6 +1148,7 @@ export function ViewsScreen({
               defaults={captureDefaults}
               onClose={closeMobileCapture}
               onCreated={refreshAfterCreate}
+              onAdded={onTaskAdded}
               onOpenTask={onOpenTask}
             />
           </>
@@ -1178,6 +1182,8 @@ export function ViewsScreen({
         ) : presentedExecution.view.presentation?.type ===
           "tasknotes.projects" ? (
           <ProjectsView
+            key={`${sectionScope}:${selected?.key}`}
+            sectionScope={sectionScope}
             execution={presentedExecution}
             linkWriteFormat={configuration.linkWriteFormat}
             projectsField={configuration.fieldMapping.projects}
@@ -1190,7 +1196,7 @@ export function ViewsScreen({
                 defaults: { projects: [value] },
                 focusRequest: Date.now(),
               });
-              if (window.matchMedia("(max-width: 839px)").matches)
+              if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
             onOpen={onOpenTask}
@@ -1265,7 +1271,7 @@ export function ViewsScreen({
                 ),
                 focusRequest: Date.now(),
               });
-              if (window.matchMedia("(max-width: 839px)").matches)
+              if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
             onOpen={onOpenTask}
@@ -2088,20 +2094,7 @@ function TaskListView({
   ): void;
 }) {
   if (!execution.rows.length)
-    return (
-      <div className="plain-empty task-list-view">
-        <h2>
-          {execution.view.id === "today" && !execution.stale
-            ? "You’re done for today."
-            : "No tasks match this view"}
-        </h2>
-        <p>
-          {execution.view.presentation?.options.create === false
-            ? "Adjust this view’s filters or choose another view."
-            : "Add a task whenever you need to."}
-        </p>
-      </div>
-    );
+    return <ViewEmptyState view={execution.view} stale={execution.stale} />;
   const groups = groupTaskViewRows(execution);
   let lanes: TaskListLane[];
   let grouped = false;

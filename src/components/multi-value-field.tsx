@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, X } from "lucide-react";
 
-import { linkLabel, linkTarget } from "../domain/completion";
+import { linkDisplayLabel } from "../domain/completion";
 
 import type {
   FieldCompletion,
@@ -17,7 +17,7 @@ export function MultiValueField({
   completion,
   completeField,
   valueLabels,
-  valueLabel = displayValue,
+  valueLabel = linkDisplayLabel,
   onChange,
 }: {
   label: string;
@@ -260,11 +260,4 @@ export function MultiValueField({
       </p>
     </div>
   );
-}
-
-function displayValue(value: string): string {
-  const label = linkLabel(value);
-  if (label) return label;
-  const target = linkTarget(value);
-  return target.split("/").at(-1) || value;
 }

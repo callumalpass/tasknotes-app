@@ -1,7 +1,7 @@
 import { Square } from "lucide-react";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 import { activeTimeEntry, formatTaskDate, taskMeta } from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
@@ -19,13 +19,16 @@ export function TaskRow({
   onToggle,
   details,
   occurrence,
+  supportingText,
 }: {
   task: Task;
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
+  supportingText?: string;
 }) {
+  const supportingId = useId();
   const { configuration, mutations } = useRepository();
   const command = useMutationState(
     mutations,
@@ -131,12 +134,18 @@ export function TaskRow({
         {command.warning ? <p role="status">{command.warning}</p> : null}
         <button
           className="task-row-title"
+          aria-describedby={supportingText ? supportingId : undefined}
           title={task.title}
           type="button"
           onClick={() => onOpen(task, occurrence?.date)}
         >
           <span className="task-row-title-text">{task.title}</span>
         </button>
+        {supportingText ? (
+          <small id={supportingId} className="task-row-context">
+            {supportingText}
+          </small>
+        ) : null}
         {details ? (
           tracking || shownDetails.length ? (
             <span className="task-row-properties">

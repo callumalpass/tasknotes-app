@@ -15,6 +15,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CollectionAvailability } from "../components/collection-availability";
+import { TaskAddedNotice } from "../components/task-added-notice";
+import type { Task } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
@@ -54,6 +56,7 @@ type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 export function AppShell() {
   const keyboardOccluded = useKeyboardOcclusion();
   const {
+    repository,
     status,
     error,
     refresh,
@@ -81,12 +84,31 @@ export function AppShell() {
   } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [addedNotice, setAddedNotice] = useState<{
+    task: Task;
+    repository: typeof repository;
+    route: Route;
+  }>();
+  const reportAdded = (task: Task) =>
+    setAddedNotice({ task, repository, route });
+  const addedTask = addedNotice?.task;
+  if (
+    addedNotice &&
+    (addedNotice.repository !== repository ||
+      addedNotice.route !== route ||
+      captureOpen ||
+      pendingDeletion ||
+      deletionError)
+  ) {
+    setAddedNotice(undefined);
+  }
   const taskReturn = useRef<{
     element: HTMLElement | null;
     scrollY: number;
     workspaceUrl: string;
   } | null>(null);
   const currentRouteUrl = routeUrl(route);
+
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
   useEffect(() => {
@@ -350,6 +372,7 @@ export function AppShell() {
           <HomeViewLoading />
         ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
+            onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}
             error={viewsError}
@@ -444,9 +467,19 @@ export function AppShell() {
         </button>
       ) : null}
       <GlobalTaskCapture
+        onAdded={reportAdded}
         open={captureOpen}
         onClose={closeCapture}
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+      />
+      <TaskAddedNotice
+        task={!pendingDeletion && !deletionError ? addedTask : undefined}
+        onDismiss={() => setAddedNotice(undefined)}
+        onOpen={(task) => navigate({ page: "task", id: task.id })}
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
       />
       <DeletionFeedback
         aboveMobileControls={
