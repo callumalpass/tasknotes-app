@@ -1027,6 +1027,10 @@ button:disabled {
   min-height: 44px;
 }
 
+.task-row > .completion-control {
+  align-self: start;
+}
+
 .completion-control span {
   position: relative;
   display: block;
