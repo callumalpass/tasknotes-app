@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
 import { taskCompletion } from "../domain/task-completion";
+import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
 
@@ -36,6 +37,16 @@ export function SearchScreen({
     setQuery(value);
     setLimit(300);
   };
+  const renderTask = (task: Task) => (
+    <TaskRow
+      key={task.id}
+      task={task}
+      onOpen={onOpen}
+      onToggle={(item) =>
+        setTaskCompletion({ id: item.id, completed: !taskCompletion(item) })
+      }
+    />
+  );
 
   return (
     <section className="screen" aria-labelledby="search-title">
@@ -110,19 +121,15 @@ export function SearchScreen({
               : `${tasks.length}${hasMore ? "+" : ""} ${tasks.length === 1 ? "task" : "tasks"}${stale ? " — previously loaded" : ""}`}
           </p>
           <div className="task-list search-results">
-            {tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onOpen={onOpen}
-                onToggle={(item) =>
-                  setTaskCompletion({
-                    id: item.id,
-                    completed: !taskCompletion(item),
-                  })
-                }
+            {tasks.length > 100 ? (
+              <BoundedList
+                items={tasks}
+                getKey={(task) => task.id}
+                renderItem={renderTask}
               />
-            ))}
+            ) : (
+              tasks.map(renderTask)
+            )}
           </div>
           {hasMore || refreshing ? (
             <button

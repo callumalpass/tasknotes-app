@@ -18,7 +18,7 @@ describe("collapsible task sections", () => {
     const toggle = screen.getByRole("button", { name: "Overdue 9" });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(toggle);
-    expect(screen.getByText("Tasks")).not.toBeVisible();
+    expect(screen.queryByText("Tasks")).not.toBeInTheDocument();
     unmount();
     render(<TaskListSection {...props}>Tasks</TaskListSection>);
     expect(screen.getByRole("button")).toHaveAttribute(
@@ -36,7 +36,7 @@ describe("collapsible task sections", () => {
     expect(screen.getByText("Tasks")).toBeVisible();
     expect(screen.getByRole("button")).toBeDisabled();
     rerender(<TaskListSection {...props}>Tasks</TaskListSection>);
-    expect(screen.getByText("Tasks")).not.toBeVisible();
+    expect(screen.queryByText("Tasks")).not.toBeInTheDocument();
   });
   it("does not leak preferences to another view or collection", () => {
     localStorage.setItem(props.preferenceKey, "collapsed");

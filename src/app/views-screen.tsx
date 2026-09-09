@@ -10,6 +10,7 @@ import type {
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
+import { VirtualTaskList } from "./views/virtual-task-list";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
@@ -2054,6 +2055,24 @@ function TaskListView({
     }
   }
   lanes = applyOptimisticListMoves(lanes, execution.rows, moves, manualOrder);
+  if (!manualOrder && execution.rows.length > 100)
+    return (
+      <VirtualTaskList
+        key={`${sectionScope}:${execution.view.key}`}
+        preferenceScope={
+          sectionScope
+            ? JSON.stringify([sectionScope, execution.view.key])
+            : undefined
+        }
+        lanes={lanes}
+        grouped={grouped}
+        daySections={daySections}
+        properties={execution.view.properties}
+        titleProperty={titleProperty}
+        onOpen={onOpen}
+        onToggle={onToggle}
+      />
+    );
   return (
     <ManualTaskRows
       preferenceScope={

@@ -61,6 +61,7 @@
     "@lezer/highlight": "^1.2.3",
     "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.94-8d1b5fb1647e.tgz",
     "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.94-8d1b5fb1647e.tgz",
+    "@tanstack/react-virtual": "3.14.11",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.11.tgz",
     "codemirror": "^6.0.2",
     "dexie": "4.4.4",

@@ -64,6 +64,38 @@ test("notes and reminder controls reflow at 320px and 200% text", async ({
   ).toBeLessThanOrEqual(320);
 });
 
+test("large lists keep a bounded DOM while scrolling and preserve detail focus", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.goto("?demo=5000");
+  await expect(page.locator(".task-row-title").first()).toBeVisible();
+  expect(await page.locator(".task-row").count()).toBeLessThan(80);
+  expect(await page.locator("*").count()).toBeLessThan(3000);
+  const initial = await page.locator(".task-row-title").first().textContent();
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight / 2),
+  );
+  await expect
+    .poll(() => page.locator(".task-row-title").first().textContent())
+    .not.toBe(initial);
+  const title = await page.locator(".task-row-title").evaluateAll(
+    (nodes) =>
+      nodes.find((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.top > 150 && rect.bottom < window.innerHeight - 100;
+      })?.textContent,
+  );
+  expect(title).toBeTruthy();
+  const trigger = page.getByRole("button", { name: title!, exact: true });
+  await trigger.click();
+  const detail = page.getByRole("complementary", { name: "Task details" });
+  await expect(detail).toBeFocused();
+  await detail.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(trigger).toBeFocused();
+  expect(await page.locator(".task-row").count()).toBeLessThan(80);
+});
+
 // Local, disposable fixtures only. These are failure-sequence contracts, not screenshots.
 test("nested Escape preserves capture and dismissing preserves its draft", async ({
   page,

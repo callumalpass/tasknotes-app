@@ -1,3 +1,7 @@
+import {
+  sectionCollapsed,
+  saveSectionCollapsed,
+} from "../application/section-preferences";
 import { ChevronRight } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 
@@ -10,6 +14,9 @@ export function TaskListSection({
   className = "",
   laneKey,
   children,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
+  headingOnly = false,
 }: {
   preferenceKey?: string;
   label: string;
@@ -18,17 +25,15 @@ export function TaskListSection({
   className?: string;
   laneKey: string;
   children: ReactNode;
+  collapsed?: boolean;
+  onCollapsedChange?(collapsed: boolean): void;
+  headingOnly?: boolean;
 }) {
   const id = useId();
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return Boolean(
-        preferenceKey && localStorage.getItem(preferenceKey) === "collapsed",
-      );
-    } catch {
-      return false;
-    }
-  });
+  const [localCollapsed, setCollapsed] = useState(() =>
+    sectionCollapsed(preferenceKey),
+  );
+  const collapsed = controlledCollapsed ?? localCollapsed;
   const expanded = arranging || !collapsed;
   if (!count && !arranging) return null;
   return (
@@ -39,20 +44,13 @@ export function TaskListSection({
           className="task-section-toggle"
           aria-label={`${label} ${count}`}
           aria-expanded={expanded}
-          aria-controls={id}
+          aria-controls={headingOnly ? undefined : id}
           disabled={arranging}
           onClick={() => {
             const next = !collapsed;
             setCollapsed(next);
-            try {
-              if (preferenceKey)
-                localStorage.setItem(
-                  preferenceKey,
-                  next ? "collapsed" : "expanded",
-                );
-            } catch {
-              /* Collapsing still works when preferences cannot be stored. */
-            }
+            onCollapsedChange?.(next);
+            saveSectionCollapsed(preferenceKey, next);
           }}
         >
           <ChevronRight aria-hidden="true" size={14} />
@@ -60,9 +58,11 @@ export function TaskListSection({
           <span className="task-section-count">{count}</span>
         </button>
       </h2>
-      <div id={id} hidden={!expanded}>
-        {children}
-      </div>
+      {!headingOnly ? (
+        <div id={id} hidden={!expanded}>
+          {expanded ? children : null}
+        </div>
+      ) : null}
     </section>
   );
 }

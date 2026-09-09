@@ -684,6 +684,12 @@ button:disabled {
   }
 }
 
+/* Mounted virtual rows must be measurable, including the overscan buffer. */
+.bounded-list .task-row {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
 .task-row.is-tracking {
   background: var(--paper-soft);
 }
