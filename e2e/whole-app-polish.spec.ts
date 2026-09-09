@@ -57,14 +57,12 @@ test("calendar More targets work at desktop and phone widths", async ({
 }) => {
   await page.goto(view("calendar"));
   await expect(page.locator(".fc-more-link").first()).toBeVisible();
-  const sizes = await page
-    .locator(".fc-more-link")
-    .evaluateAll((nodes) =>
-      nodes.map((node) => ({
-        width: node.getBoundingClientRect().width,
-        height: node.getBoundingClientRect().height,
-      })),
-    );
+  const sizes = await page.locator(".fc-more-link").evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      width: node.getBoundingClientRect().width,
+      height: node.getBoundingClientRect().height,
+    })),
+  );
   expect(sizes.length).toBeGreaterThan(0);
   expect(sizes.every((size) => size.width >= 44 && size.height >= 44)).toBe(
     true,
@@ -73,4 +71,58 @@ test("calendar More targets work at desktop and phone widths", async ({
     (await new AxeBuilder({ page }).withTags(["wcag22aa"]).analyze())
       .violations,
   ).toEqual([]);
+});
+
+test("working screens reflow at 320px with 200% text", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  const cases = [
+    ["?demo=50", "button.task-row-title"],
+    [view("upcoming"), ".fc-view"],
+    [view("calendar"), ".fc-view"],
+    [view("projects"), ".project-group"],
+    [view("work-board"), ".kanban-column"],
+    ["search?demo=50", ".browse-fields button"],
+    ["scratchpad?demo=50", ".scratchpad-row"],
+    ["more?demo=50", ".setting-row"],
+    ["views?demo=50", ".view-catalog"],
+  ];
+  for (const [route, ready] of cases) {
+    await page.goto(route);
+    await expect(page.locator(ready).first()).toBeVisible();
+    if (route.startsWith("more"))
+      await page.locator("details").evaluateAll((nodes) =>
+        nodes.forEach((node) => {
+          node.open = true;
+        }),
+      );
+    await page.addStyleTag({ content: ":root {font-size:200% !important}" });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth), {
+        message: route,
+      })
+      .toBeLessThanOrEqual(320);
+  }
+});
+
+test("view editor actions remain onscreen at 320px and 200% text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("views?demo=50");
+  await page
+    .getByRole("button", { name: "More actions for Today", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+  await page.getByRole("textbox", { name: "View name" }).fill("Daily focus");
+  await page.addStyleTag({ content: ":root {font-size:200% !important}" });
+  const dialog = page.getByRole("dialog");
+  for (const name of ["Close view editor", "Cancel", "Save view"]) {
+    const control = dialog.getByRole("button", { name, exact: true });
+    await expect(control).toBeVisible();
+    const rect = await control.boundingBox();
+    expect(rect).not.toBeNull();
+    expect(rect!.x).toBeGreaterThanOrEqual(0);
+    expect(rect!.x + rect!.width).toBeLessThanOrEqual(321);
+    expect(rect!.y + rect!.height).toBeLessThanOrEqual(845);
+  }
 });

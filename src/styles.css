@@ -1725,6 +1725,8 @@ button:disabled {
 }
 
 .auto-archive-delay input {
+  flex: 0 1 5rem;
+  min-width: 0;
   width: 5rem;
   min-height: 40px;
   padding: 0 8px;
@@ -3806,10 +3808,14 @@ button:disabled {
 }
 
 .bottom-navigation button span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 @media (max-width: 839px) {
@@ -6797,6 +6803,7 @@ html.scratchpad-route .page-surface {
 
 .view-filter-list {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-xs);
   overflow-x: auto;
   scrollbar-width: none;
@@ -7102,7 +7109,9 @@ html.scratchpad-route .page-surface {
     position: fixed;
     top: auto;
     right: var(--space-md);
-    bottom: calc(var(--mobile-bottom-nav-height, 72px) + var(--space-md));
+    bottom: calc(
+      var(--mobile-bottom-nav-height, var(--nav-height)) + var(--space-md)
+    );
     left: var(--space-md);
     min-width: 0;
     padding: var(--space-sm);
@@ -7153,6 +7162,7 @@ html.scratchpad-route .page-surface {
   bottom: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   width: min(680px, calc(100vw - 72px));
   min-width: 0;
   color: var(--ink);
@@ -7213,6 +7223,7 @@ html.scratchpad-route .page-surface {
 }
 
 .view-editor-body {
+  min-width: 0;
   min-height: 0;
   padding: 0 32px 64px;
   overflow-y: auto;
@@ -7221,6 +7232,7 @@ html.scratchpad-route .page-surface {
 
 .view-editor-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .view-draft-preview {
@@ -7376,6 +7388,7 @@ html.scratchpad-route .page-surface {
 
 .view-kind-field,
 .filter-group {
+  min-width: 0;
   padding: 0;
   margin: 0;
   border: 0;
@@ -7908,6 +7921,7 @@ html.scratchpad-route .page-surface {
 
 .view-editor-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
@@ -7919,6 +7933,10 @@ html.scratchpad-route .page-surface {
 
 .view-editor-footer > div {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 16px;
 }
@@ -8120,6 +8138,7 @@ html.scratchpad-route .page-surface {
 
 .project-group > header {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
   gap: 20px;
@@ -8145,10 +8164,10 @@ html.scratchpad-route .page-surface {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0;
   color: var(--accent);
-  white-space: nowrap;
+  white-space: normal;
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -9792,6 +9811,95 @@ html.scratchpad-route .page-surface {
 }
 .task-section > .section-heading {
   margin: 0;
+}
+
+/* Intrinsic sizing must not turn larger text into page-wide overflow. */
+.screen,
+.screen > *,
+.view-catalog > *,
+.view-catalog-controls > *,
+.view-editor-form > *,
+.view-identity > *,
+.status-automation-row > * {
+  min-width: 0;
+}
+.screen-header,
+.navigation-view-order > header,
+.all-views-heading {
+  flex-wrap: wrap;
+}
+.screen-header > *,
+.navigation-view-order > header > *,
+.all-views-heading > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.view-header > div:not(.view-header-actions) {
+  flex: 1 1 12rem;
+}
+.view-header > .back-action {
+  flex-basis: 100%;
+}
+.view-header h1,
+.screen-header h1,
+.view-kind-options strong {
+  overflow-wrap: anywhere;
+}
+.view-editor-header > .icon-action {
+  flex: 0 0 44px;
+}
+.view-editor-header {
+  gap: 12px;
+}
+.view-editor-header small {
+  white-space: normal;
+}
+.section-title-with-count {
+  min-width: 0;
+}
+.section-title-with-count > h2 {
+  min-width: 0;
+}
+.section-title-with-count > span {
+  flex-shrink: 0;
+  min-height: 24px;
+  height: auto;
+}
+.browse-fields button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 839px) {
+  :root {
+    --nav-height: max(72px, calc(3rem + 24px));
+  }
+  .full-calendar-commandbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .full-calendar-commandbar > h2 {
+    flex: 1 1 9ch;
+    min-width: 0;
+  }
+  .full-calendar-navigation {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .full-calendar-modes {
+    flex: 1 1 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5em), 1fr));
+  }
+  .full-calendar-modes button {
+    min-width: 0;
+    padding: 8px;
+    overflow-wrap: anywhere;
+  }
 }
 
 .value-color {
