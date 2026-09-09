@@ -14,7 +14,9 @@ import {
   combineTaskDateTime,
   taskDatePart,
   taskTimePart,
+  todayString,
 } from "../domain/task";
+import { shiftTaskDate } from "../domain/task-date-actions";
 import { RecurrenceField } from "./recurrence-field";
 import {
   TaskNotesDateField,
@@ -165,6 +167,38 @@ export function TaskPropertyEditor({
           <p className="task-property-editor-note">
             This edits the repeating task, including future occurrences.
           </p>
+        ) : null}
+        {property?.kind === "scheduled" || property?.kind === "due" ? (
+          <div
+            className="task-date-shortcuts"
+            role="group"
+            aria-label="Quick dates"
+          >
+            {[
+              ["Today", 0],
+              ["Tomorrow", 1],
+              ["In one week", 7],
+            ].map(([label, days]) => (
+              <button
+                key={label}
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  const date = shiftTaskDate(todayString(), Number(days));
+                  void save(
+                    combineTaskDateTime(
+                      date,
+                      taskTimePart(
+                        typeof value === "string" ? value : undefined,
+                      ),
+                    ),
+                  );
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         ) : null}
         {property ? (
           <PropertyControl

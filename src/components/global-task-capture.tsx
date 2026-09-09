@@ -26,6 +26,30 @@ export function GlobalTaskCapture({
   const { configuration, createTask, repository } = useRepository();
   const titleId = useId();
   const dialogRef = useRef<HTMLElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const viewport = window.visualViewport;
+    const resize = () => {
+      scrimRef.current?.style.setProperty(
+        "--capture-viewport-height",
+        `${viewport?.height ?? window.innerHeight}px`,
+      );
+      scrimRef.current?.style.setProperty(
+        "--capture-viewport-top",
+        `${viewport?.offsetTop ?? 0}px`,
+      );
+    };
+    resize();
+    viewport?.addEventListener("resize", resize);
+    viewport?.addEventListener("scroll", resize);
+    window.addEventListener("resize", resize);
+    return () => {
+      viewport?.removeEventListener("resize", resize);
+      viewport?.removeEventListener("scroll", resize);
+      window.removeEventListener("resize", resize);
+    };
+  }, [open]);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const completeField = useCallback(
     (request: import("../domain/completion").FieldCompletionRequest) =>
@@ -74,6 +98,7 @@ export function GlobalTaskCapture({
   return createPortal(
     <div
       className="global-capture-scrim"
+      ref={scrimRef}
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

@@ -80,7 +80,9 @@ export function AppShell() {
   const taskReturn = useRef<{
     element: HTMLElement | null;
     scrollY: number;
+    workspaceUrl: string;
   } | null>(null);
+  const currentRouteUrl = routeUrl(route);
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
   useEffect(() => {
@@ -92,6 +94,7 @@ export function AppShell() {
       else if (wasTask && route.page !== "task" && taskReturn.current) {
         const target = taskReturn.current;
         taskReturn.current = null;
+        if (target.workspaceUrl !== currentRouteUrl) return;
         window.scrollTo({ top: target.scrollY, left: 0 });
         if (target.element?.isConnected)
           target.element.focus({ preventScroll: true });
@@ -102,7 +105,7 @@ export function AppShell() {
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [route.page]);
+  }, [route.page, currentRouteUrl]);
   const [calendarPreferences, setCalendarPreferences] =
     useState<CalendarPreferences>(loadCalendarPreferences);
   const updateCalendarPreferences = useCallback((next: CalendarPreferences) => {
@@ -159,6 +162,7 @@ export function AppShell() {
                 ? document.activeElement
                 : null,
             scrollY: window.scrollY,
+            workspaceUrl: routeUrl(route),
           };
           setWorkspaceRoute(route);
         }
@@ -307,7 +311,7 @@ export function AppShell() {
           onNavigate={navigate}
         />
       </aside>
-      <main id="main-content" className="page-surface">
+      <main id="main-content" className="page-surface" tabIndex={-1}>
         {workspacePage === "search" ? (
           <SearchScreen
             onBack={

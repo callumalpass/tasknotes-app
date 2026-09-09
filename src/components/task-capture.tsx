@@ -96,6 +96,7 @@ export function TaskCapture({
   const inputId = useId();
   const suggestionsId = useId();
   const textRef = useRef("");
+  const editedFields = useRef<Partial<CreateTaskInput>>({});
   const followUpSequence = useRef(0);
   const creationDefaults = defaults ?? emptyDefaults;
   const triggers = useMemo(
@@ -174,7 +175,10 @@ export function TaskCapture({
       void parseTaskCapture(value, configuration)
         .then((next) => {
           if (!active) return;
-          const input = mergeTaskCreationDefaults(creationDefaults, next.input);
+          const input = {
+            ...mergeTaskCreationDefaults(creationDefaults, next.input),
+            ...editedFields.current,
+          };
           setResult({
             input,
             preview: taskCapturePreview(input, configuration),
@@ -183,9 +187,12 @@ export function TaskCapture({
         })
         .catch(() => {
           if (!active) return;
-          const input = mergeTaskCreationDefaults(creationDefaults, {
-            title: value,
-          });
+          const input = {
+            ...mergeTaskCreationDefaults(creationDefaults, {
+              title: value,
+            }),
+            ...editedFields.current,
+          };
           setResult({
             input,
             preview: taskCapturePreview(input, configuration),
@@ -219,6 +226,7 @@ export function TaskCapture({
       setParsing(true);
       return;
     }
+    editedFields.current = {};
     setResult(null);
     setParsedText("");
     setParsing(false);
@@ -278,19 +286,22 @@ export function TaskCapture({
           ? result
           : await parseTaskCapture(value, configuration)
               .then((parsed) => {
-                const input = mergeTaskCreationDefaults(
-                  creationDefaults,
-                  parsed.input,
-                );
+                const input = {
+                  ...mergeTaskCreationDefaults(creationDefaults, parsed.input),
+                  ...editedFields.current,
+                };
                 return {
                   input,
                   preview: taskCapturePreview(input, configuration),
                 };
               })
               .catch(() => {
-                const input = mergeTaskCreationDefaults(creationDefaults, {
-                  title: value,
-                });
+                const input = {
+                  ...mergeTaskCreationDefaults(creationDefaults, {
+                    title: value,
+                  }),
+                  ...editedFields.current,
+                };
                 return {
                   input,
                   preview: taskCapturePreview(input, configuration),
@@ -304,6 +315,7 @@ export function TaskCapture({
       // A failed write must not lose dates, notes, or manually edited fields.
       const created = await createTask(next.input);
       textRef.current = "";
+      editedFields.current = {};
       setText("");
       setResult(null);
       setParsedText("");
@@ -356,6 +368,7 @@ export function TaskCapture({
 
   function change(patch: Partial<CreateTaskInput>) {
     if (capturing) return;
+    editedFields.current = { ...editedFields.current, ...patch };
     setResult((current) => {
       const input = { ...(current?.input ?? { title: text.trim() }), ...patch };
       return {
@@ -486,9 +499,7 @@ export function TaskCapture({
                   <span key={item.key}>{item.label}</span>
                 ),
               )
-            ) : (
-              <span className="capture-plain">Plain task</span>
-            )}
+            ) : null}
           </div>
           <button
             className="text-action"

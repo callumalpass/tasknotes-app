@@ -110,9 +110,16 @@ it("keeps edited dates on failure and supports removing a parsed date", async ()
   fireEvent.click(
     await screen.findByRole("button", { name: "Remove scheduled" }),
   );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Keep my edited dates" },
+  });
+  await act(() => new Promise((resolve) => window.setTimeout(resolve, 120)));
+  expect(screen.queryByRole("button", { name: "Remove scheduled" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
   await screen.findByText(/Disconnected/);
-  expect(screen.getByLabelText("New task title")).toHaveValue("Keep my dates");
+  expect(screen.getByLabelText("New task title")).toHaveValue(
+    "Keep my edited dates",
+  );
   expect(screen.queryByRole("button", { name: "Remove scheduled" })).toBeNull();
   expect(screen.getByRole("button", { name: "Remove due" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Add" }));

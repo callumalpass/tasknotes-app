@@ -55,6 +55,34 @@ describe("TaskScreen", () => {
     );
   });
 
+  it("completes from the title after preserving pending notes", async () => {
+    renderTask();
+    fireEvent.change(await screen.findByLabelText("Notes"), {
+      target: { value: "Keep the reasoning behind this task." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Complete task" }));
+    await screen.findByRole("button", { name: "Reopen task" });
+    const saved = await repository.get(task.id);
+    expect(saved?.completed).toBe(true);
+    expect(saved?.body).toContain("Keep the reasoning behind this task.");
+  });
+
+  it("does not complete if the pending draft cannot be saved", async () => {
+    renderTask();
+    await editTitle();
+    vi.spyOn(repository, "update").mockRejectedValueOnce(
+      new Error("Connector unavailable"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Complete task" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Save failed/ })).toBeVisible(),
+    );
+    expect((await repository.get(task.id))?.completed).toBe(false);
+    expect(screen.getByLabelText("Task title", { exact: true })).toHaveValue(
+      "Unsaved important draft",
+    );
+  });
+
   it("does not archive a task after its pending draft fails to save", async () => {
     renderTask();
     await editTitle();

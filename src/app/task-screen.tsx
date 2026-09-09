@@ -11,6 +11,7 @@ import {
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
+import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
 import { TaskAttachments } from "../components/task-attachments";
 import { TaskActions } from "../components/task-actions";
@@ -212,6 +213,8 @@ function TaskEditor({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
   const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [timeAction, setTimeAction] = useState(false);
@@ -569,28 +572,66 @@ function TaskEditor({
         >
           Task title
         </label>
-        <textarea
-          className="title-field"
-          id="task-title"
-          ref={titleRef}
-          rows={1}
-          value={draft.title}
-          onChange={(event) => change({ title: event.target.value })}
-        />
+        <div className="task-title-line">
+          {!occurrenceDate && !task.occurrenceDate ? (
+            <button
+              type="button"
+              className="completion-control"
+              aria-label={task.completed ? "Reopen task" : "Complete task"}
+              aria-pressed={task.completed}
+              disabled={completing || !draft.title.trim()}
+              onClick={async () => {
+                setCompleting(true);
+                setCompletionError(null);
+                try {
+                  await flushBeforeAttachmentMutation();
+                  await toggleTask(task.id);
+                  successFeedback();
+                } catch (reason) {
+                  setCompletionError(
+                    reason instanceof Error ? reason.message : String(reason),
+                  );
+                } finally {
+                  setCompleting(false);
+                }
+              }}
+            >
+              <span aria-hidden="true" />
+            </button>
+          ) : null}
+          <textarea
+            className="title-field"
+            id="task-title"
+            ref={titleRef}
+            rows={1}
+            value={draft.title}
+            onChange={(event) => change({ title: event.target.value })}
+          />
+        </div>
+        {completionError ? (
+          <p className="inline-error" role="alert">
+            {completionError}
+          </p>
+        ) : null}
 
         <TaskFormSection
           title="Schedule and status"
-          summary={[
-            configuration.statuses.find(
-              (status) => status.value === draft.status,
-            )?.label ?? draft.status,
-            draft.scheduled
-              ? `Scheduled ${formatTaskDate(draft.scheduled)}`
-              : "",
-            draft.due ? `Due ${formatTaskDate(draft.due)}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}
+          summary={
+            [
+              draft.status !== "none" &&
+              draft.status !== configuration.defaults.status
+                ? (configuration.statuses.find(
+                    (status) => status.value === draft.status,
+                  )?.label ?? draft.status)
+                : "",
+              draft.scheduled
+                ? `Scheduled ${formatTaskDate(draft.scheduled)}`
+                : "",
+              draft.due ? `Due ${formatTaskDate(draft.due)}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ") || "No dates"
+          }
         >
           <div className="field-grid timing-fields task-core-fields">
             <div className="tasknotes-status-field">

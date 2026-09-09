@@ -1992,11 +1992,15 @@ function TaskListView({
   if (!execution.rows.length)
     return (
       <div className="plain-empty task-list-view">
-        <h2>No tasks match this view</h2>
+        <h2>
+          {execution.view.id === "today" && !execution.stale
+            ? "You’re done for today."
+            : "No tasks match this view"}
+        </h2>
         <p>
           {execution.view.presentation?.options.create === false
             ? "Adjust this view’s filters or choose another view."
-            : "Add a task above, or adjust this view’s filters."}
+            : "Add a task whenever you need to."}
         </p>
       </div>
     );

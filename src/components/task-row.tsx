@@ -76,7 +76,13 @@ export function TaskRow({
         type="button"
         aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
         aria-pressed={displayedTask.completed}
-        style={statusColor ? { color: statusColor } : undefined}
+        style={
+          statusColor &&
+          displayedTask.status !== configuration.defaults.status &&
+          displayedTask.status !== "none"
+            ? { color: statusColor }
+            : undefined
+        }
         onClick={() => {
           actionFeedback();
           onToggle(task, occurrence?.date);
@@ -238,8 +244,6 @@ function isCompactDetail(
   return [
     configuration.fieldMapping.status,
     configuration.fieldMapping.priority,
-    configuration.fieldMapping.scheduled,
-    configuration.fieldMapping.due,
     "status",
     "priority",
   ].includes(key);

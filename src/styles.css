@@ -5604,7 +5604,8 @@ html.scratchpad-route .page-surface {
 .global-capture-scrim {
   position: fixed;
   z-index: 60;
-  inset: 0;
+  inset: var(--capture-viewport-top, 0px) 0 auto;
+  height: var(--capture-viewport-height, 100dvh);
   display: grid;
   align-items: start;
   justify-items: center;
@@ -5616,7 +5617,7 @@ html.scratchpad-route .page-surface {
 
 .global-capture-dialog {
   width: min(100%, 680px);
-  max-height: calc(100dvh - 48px);
+  max-height: calc(var(--capture-viewport-height, 100dvh) - 48px);
   padding: var(--space-xl) var(--space-xl) 28px;
   overflow-y: auto;
   color: var(--ink);
@@ -9208,7 +9209,9 @@ html.scratchpad-route .page-surface {
 
   .global-capture-dialog {
     width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top));
+    max-height: calc(
+      var(--capture-viewport-height, 100dvh) - env(safe-area-inset-top)
+    );
     padding: 18px var(--page-inset) calc(22px + env(safe-area-inset-bottom));
     border-right: 0;
     border-bottom: 0;
@@ -9553,6 +9556,49 @@ html.scratchpad-route .page-surface {
 }
 .task-row-property > span {
   font-size: inherit;
+}
+.task-title-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.task-title-line > .completion-control {
+  flex: 0 0 44px;
+  align-self: flex-start;
+  margin-top: 10px;
+}
+.task-title-line > .title-field {
+  min-width: 0;
+}
+.detail-inspector:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.task-date-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.task-date-shortcuts > button {
+  min-height: 44px;
+  padding: 6px 10px;
+  color: var(--accent);
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.task-form > .task-form-section:first-of-type > summary small {
+  white-space: normal;
+  overflow: visible;
+}
+.task-row-title {
+  color: var(--ink);
+}
+.completion-control {
+  color: var(--ink-muted);
 }
 .global-capture-fab {
   background: var(--accent);
