@@ -133,7 +133,7 @@ export function SearchScreen({
           </div>
           {hasMore || refreshing ? (
             <button
-              className="secondary-button"
+              className="text-action view-pagination-action"
               type="button"
               disabled={refreshing}
               onClick={() => setLimit((value) => value + 300)}

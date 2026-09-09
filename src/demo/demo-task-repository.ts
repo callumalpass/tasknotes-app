@@ -2,6 +2,7 @@ import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { parse } from "yaml";
 
 import { completeTaskValues } from "../storage/completions";
+import { appendViewPage } from "../application/view-query-session";
 import { taskCompletion } from "../domain/task-completion";
 import { taskRelationships } from "../domain/task-relationships";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -377,6 +378,29 @@ export class DemoTaskRepository implements TaskRepository {
 
   async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
     return clone(this.viewExecutions.get(view.key) ?? null);
+  }
+
+  async *iterateView(
+    view: TaskView,
+    options: { signal?: AbortSignal } = {},
+  ): AsyncIterable<TaskViewExecution> {
+    const execution = await this.executeView(view);
+    let cumulative: TaskViewExecution | null = null;
+    for (
+      let offset = 0;
+      offset < Math.max(1, execution.rows.length);
+      offset += 200
+    ) {
+      options.signal?.throwIfAborted();
+      const page = {
+        ...execution,
+        rows: execution.rows.slice(offset, offset + 200),
+        hasMore: offset + 200 < execution.rows.length,
+      };
+      cumulative = appendViewPage(cumulative, page);
+      this.viewExecutions.set(view.key, cumulative);
+      yield clone(page);
+    }
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {

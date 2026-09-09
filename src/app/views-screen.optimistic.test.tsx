@@ -875,6 +875,47 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
   expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
 });
 
+it("loads the complete manual-order scope before appending a captured task", async () => {
+  const view = manualListView("capture-tail", { create: true });
+  const tasks = [
+    { ...listTask("first", "First"), sortOrder: "tnzzzzzzzzzz" },
+    { ...listTask("last", "Last"), sortOrder: "tnmmmmmmmmmm" },
+  ];
+  const complete: TaskViewExecution = {
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: 2,
+    hasMore: false,
+    groups: [],
+  };
+  const repository = manualListRepository(view, tasks, vi.fn(), () => complete);
+  repository.executeView = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ...complete,
+      rows: complete.rows.slice(0, 1),
+      hasMore: true,
+    })
+    .mockResolvedValue(complete);
+  repository.create = vi.fn(async (input) => ({
+    ...listTask("created", input.title),
+    sortOrder: input.sortOrder,
+  }));
+  renderListView(repository, view);
+  await screen.findByText(/Loaded 1 of 2 matching tasks/);
+  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    target: { value: "New last task" },
+  });
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() => expect(repository.create).toHaveBeenCalledOnce());
+  const input = vi.mocked(repository.create).mock.calls[0][0];
+  expect(input.sortOrder).toBeTruthy();
+  expect(input.sortOrder! < "tnmmmmmmmmmm").toBe(true);
+});
+
 it("does not enter reordering when manual-sort activation is rejected", async () => {
   const view = manualListView("rejected");
   const tasks = [listTask("alpha", "Alpha")];

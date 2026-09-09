@@ -26,18 +26,25 @@ export function GlobalTaskCapture({
   defaults,
   onCreated,
   session: providedSession,
+  createTask: suppliedCreateTask,
 }: {
   open: boolean;
   onClose(): void;
   onOpenTask(task: Task): void;
   defaults?: Partial<CreateTaskInput>;
   session?: CaptureSession;
+  createTask?(input: CreateTaskInput): Promise<Task>;
   onCreated?(
     task: Task,
   ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;
 }) {
   const [keepAdding, setKeepAdding] = useState(false);
-  const { configuration, createTask, repository } = useRepository();
+  const {
+    configuration,
+    createTask: repositoryCreateTask,
+    repository,
+  } = useRepository();
+  const createTask = suppliedCreateTask ?? repositoryCreateTask;
   const session = providedSession ?? captureSessionFor(repository);
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const keepAddingRef = useRef(keepAdding);

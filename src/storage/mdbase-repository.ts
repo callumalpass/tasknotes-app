@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { appendViewPage } from "../application/view-query-session";
 import { taskCompletion } from "../domain/task-completion";
 import {
   parseFrontmatter,
@@ -762,6 +763,38 @@ export class MdbaseTaskRepository implements TaskRepository {
     if (!cached) return null;
     this.viewExecutionCache.set(key, cached);
     return structuredClone(cached);
+  }
+
+  async *iterateView(
+    view: TaskView,
+    options: { signal?: AbortSignal } = {},
+  ): AsyncIterable<TaskViewExecution> {
+    const timezone = runtimeTimezone();
+    const key = this.viewExecutionKey(view, timezone);
+    const signal = options.signal
+      ? AbortSignal.any([this.operationController.signal, options.signal])
+      : this.operationController.signal;
+    let cumulative: TaskViewExecution | null = null;
+    try {
+      for await (const outcome of this.connect.executeViewPages(
+        { path: view.source.path, view: view.id, timezone, render: false },
+        { firstPageSize: 200, pageSize: 200, signal },
+      )) {
+        signal.throwIfAborted();
+        const result = validResult(outcome) as ProviderViewExecution;
+        const page = normalizeViewExecution(
+          view,
+          { ...result, diagnostics: operationDiagnostics(outcome) },
+          (record) => this.readRecord(record)?.task ?? null,
+        );
+        cumulative = appendViewPage(cumulative, page);
+        this.viewExecutionCache.set(key, cumulative);
+        yield page;
+      }
+    } catch (reason) {
+      if (!signal.aborted) this.noteOperationFailure(reason);
+      throw reason;
+    }
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {

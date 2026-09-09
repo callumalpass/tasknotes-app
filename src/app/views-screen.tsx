@@ -10,6 +10,8 @@ import type {
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
+import { useMutationState } from "../components/use-mutation-state";
+import { ViewQuerySession } from "../application/view-query-session";
 import { VirtualTaskList } from "./views/virtual-task-list";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
@@ -26,7 +28,6 @@ import {
   enableManualOrderSort,
   manualOrderConfiguration,
   planManualOrder,
-  sortTasksByManualOrder,
   type ManualOrderConfiguration,
   type ManualOrderPlacement,
 } from "../domain/manual-order";
@@ -66,6 +67,10 @@ import {
   removeConfirmedBoardMoves,
   removeConfirmedListMoves,
   removeConfirmedManualRanks,
+  executionWithManualRanks,
+  executionWithoutTask,
+  applyOptimisticListMoves,
+  type TaskListLane,
   type OptimisticBoardMove,
   type OptimisticListMove,
   type OptimisticManualRank,
@@ -129,6 +134,7 @@ export function ViewsScreen({
 }) {
   const {
     repository,
+    mutations,
     createTask,
     setTaskCompletion,
     updateTask,
@@ -142,6 +148,13 @@ export function ViewsScreen({
       occurrenceDate,
       completed: !taskCompletion(task, occurrenceDate),
     });
+  const viewQueryRef = useRef<ViewQuerySession | null>(null);
+  const queryRowsRef = useRef(new Map<string, number>());
+  const [paging, setPaging] = useState({
+    key: "",
+    available: false,
+    used: false,
+  });
   const viewRevision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
   const [executionError, setExecutionError] =
@@ -241,6 +254,8 @@ export function ViewsScreen({
     limit: needsIdentityTasks ? 50_000 : 0,
   });
   const selectedKey = selected?.key;
+  const arrangeKey = JSON.stringify(["arrange", selectedKey]);
+  const arrangeCommand = useMutationState(mutations, arrangeKey);
   const selectedKeyRef = useRef(selectedKey);
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
@@ -281,39 +296,42 @@ export function ViewsScreen({
   );
   useEffect(() => {
     if (!viewKey || !selected) return;
-    let active = true;
-    let refreshed = false;
     const executionKey = `${selected.key}:${selected.source.revision}`;
-    queueMicrotask(() => {
-      if (active) setRefreshingExecution(executionKey);
-    });
-    void repository
-      .cachedViewExecution(selected)
-      .then((cached) => {
-        if (!active || refreshed || !cached) return;
-        setExecution({ ...cached, stale: true });
-      })
-      .catch(() => undefined);
-    void repository.executeView(selected).then(
-      (result) => {
-        if (!active) return;
-        refreshed = true;
-        setExecution(result);
-        reconcileOptimisticExecution(result, selected.key);
-        setExecutionError(null);
-        setRefreshingExecution(null);
+    const session = new ViewQuerySession(
+      repository,
+      selected,
+      {
+        result: (result) => {
+          setExecution(result);
+          if (!result.stale) {
+            if (queryRowsRef.current.get(selected.key) !== Infinity)
+              queryRowsRef.current.set(selected.key, result.rows.length);
+            reconcileOptimisticExecution(result, selected.key);
+          }
+          setExecutionError(null);
+        },
+        error: (reason) => setExecutionError({ key: selected.key, reason }),
+        pending: (pending) => {
+          setRefreshingExecution(pending ? executionKey : null);
+          setPaging((previous) => ({
+            key: selected.key,
+            available: session.canLoadMore,
+            used:
+              session.canLoadMore ||
+              (previous.key === selected.key && previous.used),
+          }));
+        },
       },
-      (reason) => {
-        if (!active) return;
-        refreshed = true;
-        setExecutionError({ key: selected.key, reason });
-        setRefreshingExecution(null);
-      },
+      queryRowsRef.current.get(selected.key) ?? 0,
     );
+    viewQueryRef.current = session;
+    void session.start();
     return () => {
-      active = false;
+      if (viewQueryRef.current === session) viewQueryRef.current = null;
+      session.close();
     };
   }, [
+    configuration.fieldMapping.sortOrder,
     reconcileOptimisticExecution,
     repository,
     selected,
@@ -324,8 +342,10 @@ export function ViewsScreen({
   useEffect(() => {
     if (!viewKey || !selected) return;
     let active = true;
-    void repository
-      .readViewSource(selected.source.path)
+    void (
+      viewQueryRef.current?.readSource() ??
+      repository.readViewSource(selected.source.path)
+    )
       .then((source) => {
         if (!active) return;
         setSourceSort({
@@ -430,7 +450,7 @@ export function ViewsScreen({
       ? (calendarSelection.defaults ?? {})
       : {};
   const manualCreateRank =
-    manualOrder && presentedExecution
+    manualOrder && presentedExecution && !presentedExecution.hasMore
       ? appendManualOrderRank(
           presentedExecution.rows.map(({ task }) => task),
           manualOrder.direction,
@@ -807,19 +827,42 @@ export function ViewsScreen({
       });
   }
 
+  async function createTaskForView(input: CreateTaskInput) {
+    if (selected && manualOrder && presentedExecution?.hasMore) {
+      const complete = await repository.executeView(selected);
+      if (complete.stale || complete.hasMore || complete.hasSkippedRecords)
+        throw new Error(
+          "The complete manual order could not be loaded. Your draft is kept; try again.",
+        );
+      return createTask({
+        ...input,
+        sortOrder: appendManualOrderRank(
+          complete.rows.map((row) => row.task),
+          manualOrder.direction,
+        ),
+      });
+    }
+    return createTask(input);
+  }
+
   async function refreshAfterCreate(task: Task) {
     if (!selected) return;
-    const refreshed = await repository.executeView(selected);
-    if (selectedKeyRef.current === selected.key) {
-      setExecution(refreshed);
-      setExecutionError(null);
+    const session = viewQueryRef.current;
+    const draftVersion = captureSession.getSnapshot().version;
+    await session?.start();
+    const refreshed = session?.currentResult;
+    if (
+      selectedKeyRef.current === selected.key &&
+      captureSession.getSnapshot().version === draftVersion
+    )
       setCreationContext(null);
-    }
+    if (!refreshed) return;
     return refreshed.rows.some((row) => row.task.id === task.id)
       ? undefined
       : {
-          message:
-            "Task created, but this view does not show it. Its filters or result limit may exclude it.",
+          message: refreshed.hasMore
+            ? "Task created. It may be in an unloaded page or excluded by this view’s filters."
+            : "Task created, but this view does not show it. Its filters or result limit may exclude it.",
         };
   }
 
@@ -978,11 +1021,40 @@ export function ViewsScreen({
                 <ViewOptions>
                   <button
                     type="button"
-                    disabled={manualOrderSortPending === selected.key}
-                    onClick={async () => {
-                      if (!manualOrder && !(await toggleManualOrderSort()))
-                        return;
-                      setArrangingView(selected.key);
+                    disabled={
+                      manualOrderSortPending === selected.key ||
+                      arrangeCommand.pending ||
+                      currentExecutionRefreshing
+                    }
+                    onClick={() => {
+                      const session = viewQueryRef.current;
+                      void mutations
+                        .run(
+                          arrangeKey,
+                          async () => {
+                            if (
+                              presentedExecution?.hasMore &&
+                              !(await session?.loadAll())
+                            )
+                              return;
+                            if (selectedKeyRef.current !== selected.key) return;
+                            queryRowsRef.current.set(selected.key, Infinity);
+                            if (
+                              !manualOrder &&
+                              !(await toggleManualOrderSort())
+                            )
+                              return;
+                            if (selectedKeyRef.current === selected.key)
+                              setArrangingView(selected.key);
+                          },
+                          "enter",
+                        )
+                        .catch((reason) =>
+                          setViewActionError({
+                            viewKey: selected.key,
+                            message: message(reason),
+                          }),
+                        );
                     }}
                   >
                     <GripVertical aria-hidden="true" size={18} /> Reorder tasks
@@ -1020,6 +1092,13 @@ export function ViewsScreen({
             onEdit={() => selected && setEditing({ view: selected })}
             onRetry={() => setExecutionRetry((attempt) => attempt + 1)}
           />
+        ) : null}
+        {presentedExecution?.hasMore ? (
+          <p className="view-note" role="status">
+            Loaded {presentedExecution.rows.length} of{" "}
+            {presentedExecution.totalCount} matching tasks. Section counts cover
+            loaded tasks. Reordering loads the complete view.
+          </p>
         ) : null}
         {!error && presentedExecution?.hasSkippedRecords ? (
           <p className="view-record-warning" role="status">
@@ -1061,6 +1140,7 @@ export function ViewsScreen({
               <span>Add task</span>
             </button>
             <GlobalTaskCapture
+              createTask={createTaskForView}
               session={captureSession}
               open={mobileCaptureOpen}
               defaults={captureDefaults}
@@ -1075,7 +1155,7 @@ export function ViewsScreen({
             session={captureSession}
             key={selected?.key}
             configuration={configuration}
-            createTask={createTask}
+            createTask={createTaskForView}
             completeField={completeField}
             defaults={captureDefaults}
             focusRequest={
@@ -1219,6 +1299,23 @@ export function ViewsScreen({
             onToggle={toggleRow}
           />
         )}
+        {paging.key === selected?.key && paging.used && !error ? (
+          <button
+            className="text-action view-pagination-action"
+            type="button"
+            aria-disabled={currentExecutionRefreshing || !paging.available}
+            onClick={() => {
+              if (!currentExecutionRefreshing && paging.available)
+                void viewQueryRef.current?.loadMore();
+            }}
+          >
+            {currentExecutionRefreshing
+              ? "Loading tasks…"
+              : paging.available
+                ? "Load more tasks"
+                : "All matching tasks loaded"}
+          </button>
+        ) : null}
       </section>
     </>
   );
@@ -1961,18 +2058,6 @@ function edgeScrollDistance(
   return 0;
 }
 
-type TaskListLaneMutation =
-  | { type: "group"; values: Record<string, unknown> }
-  | { type: "section"; mode: unknown; section: string };
-
-interface TaskListLane {
-  key: string;
-  label?: string;
-  className?: string;
-  rows: TaskViewRow[];
-  mutation?: TaskListLaneMutation;
-}
-
 function TaskListView({
   sectionScope,
   configuration,
@@ -2419,38 +2504,6 @@ function taskListLaneMoveInput(
   return null;
 }
 
-function applyOptimisticListMoves(
-  lanes: readonly TaskListLane[],
-  rows: readonly TaskViewRow[],
-  moves: ReadonlyMap<string, { laneKey: string }>,
-  manualOrder: ManualOrderConfiguration | null,
-): TaskListLane[] {
-  if (!moves.size) return lanes.map((lane) => ({ ...lane }));
-  const rowById = new Map(rows.map((row) => [row.task.id, row]));
-  const movedIds = new Set(moves.keys());
-  return lanes.map((lane) => {
-    const movedHere = [...moves]
-      .filter(([, move]) => move.laneKey === lane.key)
-      .flatMap(([taskId]) => {
-        const row = rowById.get(taskId);
-        return row ? [row] : [];
-      });
-    const nextRows = [
-      ...lane.rows.filter((row) => !movedIds.has(row.task.id)),
-      ...movedHere,
-    ];
-    if (!manualOrder) return { ...lane, rows: nextRows };
-    const byId = new Map(nextRows.map((row) => [row.task.id, row]));
-    return {
-      ...lane,
-      rows: sortTasksByManualOrder(
-        nextRows.map((row) => row.task),
-        manualOrder.direction,
-      ).map((task) => byId.get(task.id)!),
-    };
-  });
-}
-
 function groupLabel(entries: Array<[string, unknown]>): string {
   if (entries.length === 1) {
     const [field, value] = entries[0];
@@ -2472,42 +2525,6 @@ interface ViewProps {
   onToggle(task: Task, occurrenceDate?: string): void;
 }
 
-function executionWithManualRanks(
-  execution: TaskViewExecution,
-  ranks: ReadonlyMap<string, OptimisticManualRank>,
-  viewKey: string,
-  order: ManualOrderConfiguration,
-  sortOrderField: string,
-): TaskViewExecution {
-  const rows = execution.rows.map((row) => {
-    const rank = ranks.get(row.task.id);
-    if (!rank || rank.viewKey !== viewKey) return row;
-    return {
-      ...row,
-      task: {
-        ...row.task,
-        sortOrder: rank.sortOrder,
-        frontmatter: {
-          ...row.task.frontmatter,
-          [sortOrderField]: rank.sortOrder,
-        },
-      },
-    };
-  });
-  const rowByTask = new Map(rows.map((row) => [row.task.id, row]));
-  return {
-    ...execution,
-    view: {
-      ...execution.view,
-      sort: execution.view.sort?.length ? execution.view.sort : [order],
-    },
-    rows: sortTasksByManualOrder(
-      rows.map(({ task }) => task),
-      order.direction,
-    ).map((task) => rowByTask.get(task.id)!),
-  };
-}
-
 function valueKey(value: unknown): string {
   return JSON.stringify(value ?? null);
 }
@@ -2525,22 +2542,4 @@ function basesProperty(field: string): string {
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
-}
-
-function executionWithoutTask(
-  execution: TaskViewExecution,
-  taskId: string,
-): TaskViewExecution {
-  const removedPath = execution.rows.find((row) => row.task.id === taskId)?.task
-    .path;
-  const rows = execution.rows.filter((row) => row.task.id !== taskId);
-  if (rows.length === execution.rows.length) return execution;
-  return {
-    ...execution,
-    rows,
-    records: removedPath
-      ? execution.records?.filter(({ record }) => record.path !== removedPath)
-      : execution.records,
-    totalCount: Math.max(0, execution.totalCount - 1),
-  };
 }

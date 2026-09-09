@@ -93,6 +93,11 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
   await expect(detail).toBeFocused();
   await detail.getByRole("button", { name: "Back", exact: true }).click();
   await expect(trigger).toBeFocused();
+  await expect(page.getByText(/Loaded 200 of .* matching tasks/)).toBeVisible();
+  await page
+    .getByRole("button", { name: "Load more tasks", exact: true })
+    .click();
+  await expect(page.getByText(/Loaded 400 of .* matching tasks/)).toBeVisible();
   expect(await page.locator(".task-row").count()).toBeLessThan(80);
 });
 

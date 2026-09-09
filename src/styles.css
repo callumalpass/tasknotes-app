@@ -325,6 +325,17 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.view-pagination-action {
+  max-width: 100%;
+  margin-block: var(--space-md);
+  white-space: normal;
+}
+
+.view-pagination-action[aria-disabled="true"] {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
 .capture-guide {
   margin: 0;
   padding: 9px 0 12px 30px;
