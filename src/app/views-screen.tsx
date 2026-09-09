@@ -7,6 +7,8 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { TaskListSection } from "../components/task-list-section";
+import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { ViewExecutionErrorNotice } from "../components/view-execution-error-notice";
@@ -191,6 +193,19 @@ export function ViewsScreen({
       repository.completeField(request),
     [repository],
   );
+  const [sectionScope, setSectionScope] = useState<string>();
+  useEffect(() => {
+    let active = true;
+    void repository
+      .collectionInfo()
+      .then((info) => {
+        if (active) setSectionScope(navigationViewScope(info));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [repository]);
   const hasWritableViews = views?.some((view) => view.source.writable) ?? false;
   useEffect(() => {
     if (!hasWritableViews) return;
@@ -1121,6 +1136,7 @@ export function ViewsScreen({
           />
         ) : (
           <TaskListView
+            sectionScope={sectionScope}
             configuration={configuration}
             execution={presentedExecution}
             moves={
@@ -1903,6 +1919,7 @@ interface TaskListLane {
 }
 
 function TaskListView({
+  sectionScope,
   configuration,
   execution,
   moves,
@@ -1913,6 +1930,7 @@ function TaskListView({
   onOpen,
   onToggle,
 }: ViewProps & {
+  sectionScope?: string;
   configuration: TaskCollectionConfiguration;
   moves: ReadonlyMap<string, { laneKey: string }>;
   manualOrder: ManualOrderConfiguration | null;
@@ -1980,6 +1998,11 @@ function TaskListView({
   lanes = applyOptimisticListMoves(lanes, execution.rows, moves, manualOrder);
   return (
     <ManualTaskRows
+      preferenceScope={
+        sectionScope
+          ? JSON.stringify([sectionScope, execution.view.key])
+          : undefined
+      }
       configuration={configuration}
       daySections={daySections}
       grouped={grouped}
@@ -1996,6 +2019,7 @@ function TaskListView({
 }
 
 function ManualTaskRows({
+  preferenceScope,
   configuration,
   daySections,
   grouped,
@@ -2009,6 +2033,7 @@ function ManualTaskRows({
   onToggle,
 }: {
   configuration: TaskCollectionConfiguration;
+  preferenceScope?: string;
   daySections: boolean;
   grouped: boolean;
   lanes: TaskListLane[];
@@ -2262,17 +2287,21 @@ function ManualTaskRows({
               </div>
             );
           return (
-            <section
-              className={`task-section${lane.className ? ` ${lane.className}` : ""}${drop?.laneKey === lane.key ? " is-drop-target" : ""}`}
-              data-list-lane={lane.key}
-              key={lane.key}
+            <TaskListSection
+              className={`${lane.className ?? ""}${drop?.laneKey === lane.key ? " is-drop-target" : ""}`}
+              laneKey={lane.key}
+              key={`${preferenceScope ?? "loading"}:${lane.key}`}
+              preferenceKey={
+                preferenceScope
+                  ? `tasknotes:section:${preferenceScope}:${lane.key}`
+                  : undefined
+              }
+              label={lane.label ?? "Other"}
+              count={lane.rows.length}
+              arranging={Boolean(manualOrder)}
             >
-              <div className="section-heading">
-                <h2>{lane.label}</h2>
-                <span>{lane.rows.length}</span>
-              </div>
               {rows}
-            </section>
+            </TaskListSection>
           );
         })}
       </div>

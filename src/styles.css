@@ -9482,3 +9482,33 @@ html.scratchpad-route .page-surface {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Collapsing is a display preference; arranging temporarily reveals all lanes. */
+.task-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.task-section-toggle:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.task-section-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.task-section-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.task-section > .section-heading {
+  margin: 0;
+}
