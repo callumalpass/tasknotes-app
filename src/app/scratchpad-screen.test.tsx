@@ -298,7 +298,11 @@ describe("ScratchpadScreen", () => {
     const option = await screen.findByRole("option", {
       name: /Project plan/,
     });
-    expect(note).toHaveAttribute("aria-expanded", "true");
+    expect(note).not.toHaveAttribute("aria-expanded");
+    expect(note).toHaveAttribute(
+      "aria-controls",
+      option.closest('[role="listbox"]')?.id,
+    );
     expect(completeField).toHaveBeenCalledWith({
       field: "wikilink",
       kind: "records",
