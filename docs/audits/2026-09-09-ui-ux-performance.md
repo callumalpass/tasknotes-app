@@ -1,6 +1,14 @@
 # TaskNotes UI, UX, and performance audit
 
-## Verdict
+## Follow-up
+
+This report records the audited `d2e4890` baseline. Subsequent implementation,
+permanent regression coverage, updated performance measurements, and remaining
+scope are documented in [Interaction lifecycle and bounded lists](../interaction-architecture.md).
+The two PR regressions (A03/A12) are fixed; A07 is mitigated for task lists, with
+broader collection hydration and other presentations still explicitly outstanding.
+
+## Original verdict
 
 **Do not treat green happy-path tests as release acceptance.** The broader audit
 found 13 actionable issues, including capture data loss, missing mutation/error

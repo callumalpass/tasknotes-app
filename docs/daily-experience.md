@@ -4,6 +4,10 @@ Implemented on `improve/daily-experience` in
 `~/worktrees/tasknotes-app/daily-experience`. The canonical checkout stays on
 `main`. No LAB services, live collections, or deployment workflows were used.
 
+The subsequent [interaction architecture refactor](interaction-architecture.md)
+adds retained draft sessions, coordinated completion/overlay/query lifecycles,
+and bounded task-list reads/rendering, with audit follow-up and measurements.
+
 ## Scope
 
 - Collapsible grouped sections, expanded by default, with local preferences
