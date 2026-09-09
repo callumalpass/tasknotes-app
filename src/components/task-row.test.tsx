@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Task } from "../domain/task";
@@ -19,6 +19,26 @@ const task = {
   priority: "normal",
   timeEntries: [],
 } as unknown as Task;
+it("guards repeated completion and offers retry after rejection", async () => {
+  let reject!: (reason: Error) => void;
+  const toggle = vi.fn(
+    () =>
+      new Promise<void>((_, fail) => {
+        reject = fail;
+      }),
+  );
+  render(<TaskRow task={task} onOpen={vi.fn()} onToggle={toggle} />);
+  const button = screen.getByRole("button", { name: "Complete Write brief" });
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(toggle).toHaveBeenCalledOnce();
+  expect(button).toBeDisabled();
+  reject(new Error("Offline: try again"));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Offline: try again",
+  );
+  expect(button).toBeEnabled();
+});
 it("shows both scheduled and due dates with explicit meanings", () => {
   render(<TaskRow task={task} onOpen={vi.fn()} onToggle={vi.fn()} />);
   expect(screen.getByRole("button", { name: /Scheduled/ })).toBeVisible();

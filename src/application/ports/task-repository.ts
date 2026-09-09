@@ -65,7 +65,12 @@ export interface TaskRepository {
   updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]>;
-  toggle(id: string, occurrenceDate?: string): Promise<Task>;
+  /** With completed supplied, converge to that state rather than blindly toggling. */
+  toggle(
+    id: string,
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task>;
   skip(id: string, occurrenceDate: string): Promise<Task>;
   materializeOccurrence(
     parentId: string,

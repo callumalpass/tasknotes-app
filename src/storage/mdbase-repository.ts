@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { taskCompletion } from "../domain/task-completion";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -451,7 +452,11 @@ export class MdbaseTaskRepository implements TaskRepository {
     );
   }
 
-  toggle(id: string, occurrenceDate?: string): Promise<Task> {
+  toggle(
+    id: string,
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task> {
     const cached = this.cache.get(id)?.task;
     if (cached?.recurrenceParent && cached.occurrenceDate) {
       const parent = findOccurrenceParent(
@@ -465,11 +470,16 @@ export class MdbaseTaskRepository implements TaskRepository {
           ),
         );
       return this.serializeWrites([id, parent.id], () =>
-        this.transitionMaterializedUnlocked(id, parent.id, "toggle"),
+        this.transitionMaterializedUnlocked(id, parent.id, "toggle", completed),
       );
     }
     return this.serializeWrite(id, async () => {
       const current = await this.requireCurrent(id);
+      if (
+        completed !== undefined &&
+        taskCompletion(current.task, occurrenceDate) === completed
+      )
+        return current.task;
       const next = current.model.toggle(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
@@ -1691,6 +1701,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     occurrenceId: string,
     parentId: string,
     action: "toggle" | "skip",
+    completed?: boolean,
   ): Promise<Task> {
     const [occurrence, parent] = await Promise.all([
       this.requireCurrent(occurrenceId),
@@ -1700,6 +1711,12 @@ export class MdbaseTaskRepository implements TaskRepository {
       throw new Error(
         "A materialized occurrence and its parent must use the same TaskNotes implementation type.",
       );
+    if (
+      action === "toggle" &&
+      completed !== undefined &&
+      occurrence.task.completed === completed
+    )
+      return occurrence.task;
     const transition = parent.model.transitionMaterializedOccurrence(
       occurrence.task,
       parent.task,

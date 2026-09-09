@@ -27,6 +27,8 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { completionKey } from "../application/task-mutations";
+import { useMutationState } from "./use-mutation-state";
 import { useOverlay } from "./overlays/use-overlay";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget, recordCompletion } from "../domain/completion";
@@ -63,7 +65,7 @@ interface TaskActionsProps {
   context?: "row" | "detail";
   beforeAction?(): Promise<void>;
   onOpen?(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void | Promise<void>;
+  onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
   onArchived?(): void;
   onDeleted?(): void;
   contextMenuRequest?: { id: number; x: number; y: number };
@@ -82,6 +84,7 @@ export function TaskActions({
 }: TaskActionsProps) {
   const {
     configuration,
+    mutations,
     repository,
     createTask,
     deleteTask,
@@ -100,8 +103,14 @@ export function TaskActions({
     contexts: task.contexts,
     tags: task.tags,
   });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const command = useMutationState(
+    mutations,
+    completionKey(task.id, occurrenceDate),
+  );
+  const [actionBusy, setBusy] = useState(false);
+  const busy = actionBusy || command.pending;
+  const [localError, setError] = useState("");
+  const error = localError || command.error?.message || "";
   const [mobile, setMobile] = useState(false);
   const menuId = useId();
   const headingId = `${menuId}-heading`;

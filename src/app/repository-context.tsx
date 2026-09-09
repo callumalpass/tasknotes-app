@@ -12,6 +12,11 @@ import {
   type ReactNode,
 } from "react";
 
+import {
+  TaskMutations,
+  completionKey,
+  type CompletionCommand,
+} from "../application/task-mutations";
 import { TaskCommandService } from "../application/task-commands";
 import {
   QueryInvalidationStore,
@@ -61,6 +66,8 @@ interface RepositoryContextValue {
   lastRefresh: RefreshResult | null;
   connection: RepositoryConnectionStatus;
   invalidation: QueryInvalidationStore;
+  mutations: TaskMutations;
+  setTaskCompletion(command: CompletionCommand): Promise<Task>;
   configuration: TaskCollectionConfiguration;
   pendingDeletion: {
     id: string;
@@ -120,6 +127,7 @@ export function RepositoryProvider({
     state: "connecting",
   });
   const [invalidation] = useState(() => new QueryInvalidationStore());
+  const [mutations] = useState(() => new TaskMutations());
   const [pendingDeletion, setPendingDeletion] = useState<{
     id: string;
     title: string;
@@ -355,17 +363,31 @@ export function RepositoryProvider({
     };
   }, [refresh, status]);
 
+  // Authority acceptance is final: a secondary scheduling failure must not invite a duplicate write.
+  const observeAcceptedTask = useCallback(async (task: Task): Promise<Task> => {
+    try {
+      await autoArchiveRef.current?.observe(task);
+      return task;
+    } catch (reason) {
+      return {
+        ...task,
+        operationWarnings: [
+          ...(task.operationWarnings ?? []),
+          `Task saved, but automatic archiving could not be scheduled: ${reason instanceof Error ? reason.message : String(reason)}`,
+        ],
+      };
+    }
+  }, []);
   const createTask = useCallback(
     async (input: CreateTaskInput) => {
-      const task = await repository.create(input);
-      await autoArchiveRef.current?.observe(task);
+      const task = await observeAcceptedTask(await repository.create(input));
       if (reminderAuthority === "connect")
         void syncTaskNotifications(repository, task, reminderAuthority).catch(
           () => undefined,
         );
       return task;
     },
-    [reminderAuthority, repository],
+    [observeAcceptedTask, reminderAuthority, repository],
   );
   const updateTask = useCallback(
     async (id: string, input: UpdateTaskInput) => {
@@ -393,16 +415,31 @@ export function RepositoryProvider({
     [],
   );
   const toggleTask = useCallback(
-    async (id: string, occurrenceDate?: string) => {
-      const task = await repository.toggle(id, occurrenceDate);
-      await autoArchiveRef.current?.observe(task);
-      if (reminderAuthority === "connect")
-        void syncTaskNotifications(repository, task, reminderAuthority).catch(
-          () => undefined,
-        );
-      return task;
-    },
-    [reminderAuthority, repository],
+    (id: string, occurrenceDate?: string, completed?: boolean) =>
+      mutations.run(
+        completionKey(id, occurrenceDate),
+        async () => {
+          const saved =
+            completed === undefined
+              ? await repository.toggle(id, occurrenceDate)
+              : await repository.toggle(id, occurrenceDate, completed);
+          const task = await observeAcceptedTask(saved);
+          if (reminderAuthority === "connect")
+            void syncTaskNotifications(
+              repository,
+              task,
+              reminderAuthority,
+            ).catch(() => undefined);
+          return task;
+        },
+        completed === undefined ? "toggle" : String(completed),
+      ),
+    [mutations, observeAcceptedTask, reminderAuthority, repository],
+  );
+  const setTaskCompletion = useCallback(
+    (command: CompletionCommand) =>
+      toggleTask(command.id, command.occurrenceDate, command.completed),
+    [toggleTask],
   );
   const skipTask = useCallback(
     async (id: string, occurrenceDate: string) => {
@@ -502,6 +539,8 @@ export function RepositoryProvider({
   const value = useMemo<RepositoryContextValue>(
     () => ({
       repository,
+      mutations,
+      setTaskCompletion,
       status,
       error,
       refreshing,
@@ -530,6 +569,8 @@ export function RepositoryProvider({
     }),
     [
       repository,
+      mutations,
+      setTaskCompletion,
       status,
       error,
       refreshing,

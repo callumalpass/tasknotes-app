@@ -14,6 +14,9 @@ import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
 import { TaskAttachments } from "../components/task-attachments";
+import { completionKey } from "../application/task-mutations";
+import { useMutationState } from "../components/use-mutation-state";
+import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
@@ -131,7 +134,8 @@ function TaskEditor({
 }) {
   const {
     updateTask,
-    toggleTask,
+    mutations,
+    setTaskCompletion,
     skipTask,
     materializeOccurrence,
     startTimeTracking,
@@ -141,6 +145,10 @@ function TaskEditor({
     configuration,
     repository,
   } = useRepository();
+  const completion = useMutationState(
+    mutations,
+    completionKey(task.id, task.occurrenceDate ? undefined : occurrenceDate),
+  );
   const { relationships: repositoryRelationships } = useTaskRelationships(
     task.id,
   );
@@ -395,11 +403,15 @@ function TaskEditor({
 
   async function toggleOccurrence() {
     const date = occurrenceDate ?? task.occurrenceDate;
-    if (!date || occurrenceAction) return;
+    if (!date || occurrenceAction || completion.pending) return;
     setOccurrenceAction(true);
     setOccurrenceError(null);
     try {
-      await toggleTask(task.id, task.occurrenceDate ? undefined : date);
+      await setTaskCompletion({
+        id: task.id,
+        occurrenceDate: task.occurrenceDate ? undefined : date,
+        completed: !taskCompletion(task, date),
+      });
     } catch (reason) {
       if (mounted.current)
         setOccurrenceError(
@@ -501,7 +513,11 @@ function TaskEditor({
           onDeleted={onBack}
           onToggle={async () => {
             if (occurrenceDate || task.occurrenceDate) await toggleOccurrence();
-            else await toggleTask(task.id);
+            else
+              await setTaskCompletion({
+                id: task.id,
+                completed: !taskCompletion(task),
+              });
           }}
         />
       </header>
@@ -579,13 +595,16 @@ function TaskEditor({
               className="completion-control"
               aria-label={task.completed ? "Reopen task" : "Complete task"}
               aria-pressed={task.completed}
-              disabled={completing || !draft.title.trim()}
+              disabled={completing || completion.pending || !draft.title.trim()}
               onClick={async () => {
                 setCompleting(true);
                 setCompletionError(null);
                 try {
                   await flushBeforeAttachmentMutation();
-                  await toggleTask(task.id);
+                  await setTaskCompletion({
+                    id: task.id,
+                    completed: !taskCompletion(task),
+                  });
                   successFeedback();
                 } catch (reason) {
                   setCompletionError(

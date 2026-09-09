@@ -2,6 +2,7 @@ import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { parse } from "yaml";
 
 import { completeTaskValues } from "../storage/completions";
+import { taskCompletion } from "../domain/task-completion";
 import { taskRelationships } from "../domain/task-relationships";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import {
@@ -263,8 +264,18 @@ export class DemoTaskRepository implements TaskRepository {
     return clone(result);
   }
 
-  async toggle(id: string, occurrenceDate?: string): Promise<Task> {
-    const task = this.model.toggle(this.requireTask(id), {
+  async toggle(
+    id: string,
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task> {
+    const current = this.requireTask(id);
+    if (
+      completed !== undefined &&
+      taskCompletion(current, occurrenceDate) === completed
+    )
+      return clone(current);
+    const task = this.model.toggle(current, {
       now: new Date().toISOString(),
       currentDate: occurrenceDate,
     });

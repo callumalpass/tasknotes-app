@@ -15,6 +15,7 @@ import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { ViewExecutionErrorNotice } from "../components/view-execution-error-notice";
+import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
 import { kanbanPropertyRole, type KanbanFieldMapping } from "../domain/kanban";
 import { todayString } from "../domain/task";
@@ -128,12 +129,18 @@ export function ViewsScreen({
   const {
     repository,
     createTask,
-    toggleTask,
+    setTaskCompletion,
     updateTask,
     updateTasks,
     configuration,
     pendingDeletion,
   } = useRepository();
+  const toggleRow = (task: Task, occurrenceDate?: string) =>
+    setTaskCompletion({
+      id: task.id,
+      occurrenceDate,
+      completed: !taskCompletion(task, occurrenceDate),
+    });
   const viewRevision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
   const [executionError, setExecutionError] =
@@ -1105,9 +1112,7 @@ export function ViewsScreen({
               })
             }
             onOpen={onOpenTask}
-            onToggle={(task, occurrenceDate) =>
-              toggleTask(task.id, occurrenceDate)
-            }
+            onToggle={toggleRow}
           />
         ) : presentedExecution.view.presentation?.type ===
           "tasknotes.kanban" ? (
@@ -1143,9 +1148,7 @@ export function ViewsScreen({
             onCreateInColumn={createInBoardColumn}
             canCreateInColumn={canCreateInBoardColumn}
             onOpen={onOpenTask}
-            onToggle={(task, occurrenceDate) =>
-              toggleTask(task.id, occurrenceDate)
-            }
+            onToggle={toggleRow}
           />
         ) : presentedExecution.view.presentation?.type ===
             "tasknotes.calendar" ||
@@ -1182,9 +1185,7 @@ export function ViewsScreen({
               })
             }
             onOpen={onOpenTask}
-            onToggle={(task, occurrenceDate) =>
-              toggleTask(task.id, occurrenceDate)
-            }
+            onToggle={toggleRow}
             onUpdate={calendarMutations.updateTask}
             onUpdateOccurrence={calendarMutations.updateOccurrence}
             onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
@@ -1214,9 +1215,7 @@ export function ViewsScreen({
               )
             }
             onOpen={onOpenTask}
-            onToggle={(task, occurrenceDate) =>
-              toggleTask(task.id, occurrenceDate)
-            }
+            onToggle={toggleRow}
           />
         )}
       </section>

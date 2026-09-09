@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
+import { taskCompletion } from "../domain/task-completion";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
 
@@ -17,7 +18,7 @@ export function SearchScreen({
 }) {
   const [query, setQuery] = useState("");
   const deferred = useDebounced(query, 160);
-  const { toggleTask } = useRepository();
+  const { setTaskCompletion } = useRepository();
   const { tasks, loading } = useTasks({
     status: "all",
     search: deferred,
@@ -85,7 +86,12 @@ export function SearchScreen({
                 key={task.id}
                 task={task}
                 onOpen={onOpen}
-                onToggle={(item) => void toggleTask(item.id)}
+                onToggle={(item) =>
+                  setTaskCompletion({
+                    id: item.id,
+                    completed: !taskCompletion(item),
+                  })
+                }
               />
             ))}
           </div>
