@@ -58,7 +58,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await expect(
     currentScratchpad.getByRole("button", { name: "Add task" }),
   ).toHaveCount(0);
-  await currentScratchpad.getByRole("button", { name: "Markdown" }).click();
+  await currentScratchpad.getByRole("button", { name: "Write" }).click();
   const markdown = currentScratchpad.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
@@ -99,7 +99,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   const current = page.getByRole("region", {
     name: "Editor for current scratchpad",
   });
-  await expect(current.locator("input:focus")).toHaveCount(1);
+  await expect(current.locator("[data-scratch-input]:focus")).toHaveCount(1);
   const feed = page.locator(".scratchpad-history-scroll");
   await expect
     .poll(() =>
@@ -139,7 +139,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
     /opens-up/,
   );
   await page.keyboard.press("Escape");
-  await current.getByRole("button", { name: "Markdown" }).click();
+  await current.getByRole("button", { name: "Write" }).click();
   await expect(
     current.getByRole("textbox", { name: "Scratchpad Markdown" }),
   ).toBeFocused();
@@ -150,7 +150,7 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
       current.getByRole("tree", { name: "Scratchpad outline" }),
     ).toBeVisible();
     await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
-    await current.getByRole("button", { name: "Markdown" }).click();
+    await current.getByRole("button", { name: "Write" }).click();
     await expect(
       current.getByRole("textbox", { name: "Scratchpad Markdown" }),
     ).toBeFocused();
@@ -250,7 +250,7 @@ test("resumes a historical Scratchpad as the current note", async ({
       name: "Draft task: Confirm the review date",
     }),
   ).toBeVisible();
-  await expect(current.locator("input:focus")).toHaveCount(1);
+  await expect(current.locator("[data-scratch-input]:focus")).toHaveCount(1);
   await expect(page.getByText("Planning notes resumed")).toBeVisible();
 });
 
@@ -273,6 +273,160 @@ test("moves the centered current Scratchpad down after an intentional upward scr
       current.evaluate((element) => element.getBoundingClientRect().top),
     )
     .toBeGreaterThan(initialTop + 80);
+});
+
+test("continues on a fresh line after converting the final outline draft", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  await input.fill("Continue after conversion");
+  await current
+    .getByRole("button", {
+      name: "Create task for Continue after conversion",
+      exact: true,
+    })
+    .click();
+  await expect(
+    current.getByRole("button", {
+      name: "Continue after conversion",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const next = current.getByRole("textbox", {
+    name: "Draft task: empty",
+    exact: true,
+  });
+  await expect(next).toBeFocused();
+  await next.fill("The next thought");
+  await expect(current.locator("[data-scratch-input]").last()).toHaveValue(
+    "The next thought",
+  );
+});
+
+test("keeps the caret and completion at a multiline paste in an outline item", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  await input.fill("Before after");
+  await input.evaluate((element) => {
+    const textarea = element as HTMLTextAreaElement;
+    textarea.setSelectionRange(7, 7);
+    textarea.setRangeText("one\n\n[[quarterly ", 7, 7, "end");
+    textarea.setSelectionRange(
+      textarea.selectionStart - 1,
+      textarea.selectionStart - 1,
+    );
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect(input).toHaveValue("Before one [[quarterly after");
+  await expect
+    .poll(() =>
+      input.evaluate(
+        (element) => (element as HTMLTextAreaElement).selectionStart,
+      ),
+    )
+    .toBe("Before one [[quarterly".length);
+  await expect(
+    current.getByRole("option", { name: /Prepare quarterly planning session/ }),
+  ).toBeVisible();
+});
+
+test("wraps outline text without splitting nodes or scrolling horizontally", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const input = current.locator("[data-scratch-input]").last();
+  const text =
+    "A longer thought that should wrap naturally within its outline row. "
+      .repeat(8)
+      .trim();
+  await input.fill(text);
+  await expect(input).toHaveValue(text);
+  const dimensions = await input.evaluate((element) => ({
+    height: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+  }));
+  expect(dimensions.height).toBeGreaterThan(dimensions.lineHeight * 2);
+  expect(dimensions.scrollHeight).toBeLessThanOrEqual(dimensions.height + 1);
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
+  const count = await current.locator("[data-scratch-row]").count();
+  await input.press("End");
+  await input.press("Enter");
+  await expect(current.locator("[data-scratch-row]")).toHaveCount(count + 1);
+  await expect(current.locator("[data-scratch-input]").last()).toBeFocused();
+});
+
+test("configures the default mode for new Scratchpad notes", async ({
+  page,
+}) => {
+  await page.goto("more/?demo=12");
+  await page.getByRole("combobox", { name: "Default Scratchpad mode" }).click();
+  await page.getByRole("option", { name: "Write", exact: true }).click();
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await expect(
+    current.getByRole("button", { name: "Write", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    current.getByRole("textbox", { name: "Scratchpad Markdown" }),
+  ).toBeFocused();
+  await current.getByRole("button", { name: "Outline", exact: true }).click();
+  await expect(
+    current.getByRole("button", { name: "Outline", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  await expect(
+    current.getByRole("button", { name: "Write", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("offers a quiet writing surface with selection-preserving tools", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  await current.getByRole("button", { name: "Write", exact: true }).click();
+  const source = current.getByRole("textbox", { name: "Scratchpad Markdown" });
+  await source.fill("A thought worth keeping");
+  await source.press("ControlOrMeta+a");
+  await current.getByRole("button", { name: "Bold", exact: true }).click();
+  await expect(source).toHaveText("**A thought worth keeping**");
+  await expect(source).toBeFocused();
+  await expect(current.getByText("4 words", { exact: true })).toHaveCount(0);
+  await expect(current.getByText(/Markdown supported/)).toHaveCount(0);
+  await expect(current.locator(".cm-placeholder")).toHaveCount(0);
+  await expect(current.getByRole("status")).toHaveText("Saved");
+  await expect(current.getByRole("status")).toBeVisible();
+  await source.press("ControlOrMeta+z");
+  await expect(source).toHaveText("A thought worth keeping");
+  const result = await new AxeBuilder({ page })
+    .include(".scratchpad-writing-surface")
+    .analyze();
+  expect(
+    result.violations.filter(({ impact }) =>
+      ["critical", "serious"].includes(impact ?? ""),
+    ),
+  ).toEqual([]);
 });
 
 test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
@@ -302,7 +456,7 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
     current.getByRole("textbox", { name: "Draft task: empty" }).last(),
   ).toBeFocused();
 
-  await current.getByRole("button", { name: "Markdown" }).click();
+  await current.getByRole("button", { name: "Write" }).click();
   const source = current.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
@@ -350,7 +504,9 @@ test("presents recognized outline details as quiet aligned metadata", async ({
   const presentation = await preview.evaluate((element) => {
     const details = element.firstElementChild as HTMLElement;
     const firstItem = details.firstElementChild as HTMLElement;
-    const input = element.previousElementSibling?.querySelector("input");
+    const input = element.previousElementSibling?.querySelector(
+      "[data-scratch-input]",
+    );
     const detailBounds = details.getBoundingClientRect();
     const inputBounds = input?.getBoundingClientRect();
     const itemStyle = getComputedStyle(firstItem);
@@ -389,7 +545,7 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
   await expect(current).toBeVisible();
 
   const outlineButton = current.getByRole("button", { name: "Outline" });
-  const markdownButton = current.getByRole("button", { name: "Markdown" });
+  const markdownButton = current.getByRole("button", { name: "Write" });
   await expect(outlineButton).toHaveAttribute("aria-pressed", "true");
   await expect
     .poll(() =>

@@ -4339,23 +4339,27 @@ html.scratchpad-route .page-surface {
 .scratchpad-mode-switch {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
-  padding: 2px;
+  gap: 2px;
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
 }
 
 .scratchpad-mode-switch button {
   display: inline-grid;
-  width: 36px;
-  min-height: 36px;
+  min-width: 64px;
+  min-height: 44px;
   place-items: center;
-  padding: 0;
+  padding: 0 10px;
   color: var(--ink-muted);
   background: transparent;
   border: 0;
-  font-size: var(--type-label);
+  border-radius: var(--radius-control);
+  font-size: var(--type-supporting);
+  cursor: pointer;
+}
+
+.scratchpad-mode-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .scratchpad-mode-switch button[aria-pressed="true"] {
@@ -4441,22 +4445,69 @@ html.scratchpad-route .page-surface {
   white-space: nowrap;
 }
 
-.markdown-source-editor {
-  min-height: 220px;
+.scratchpad-editor.is-writing .scratchpad-save-state {
+  display: inline;
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  font-size: var(--type-label);
+}
+
+.scratchpad-writing-surface {
+  width: 100%;
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+.scratchpad-writing-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
   border-top: 1px solid var(--line);
+}
+
+.scratchpad-writing-tools button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.scratchpad-writing-tools button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.markdown-source-editor {
+  min-height: 280px;
 }
 
 .markdown-source-editor .cm-editor {
   min-height: 220px;
   background: transparent;
   color: var(--ink);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.9rem;
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: var(--type-control);
 }
 
 .markdown-source-editor .cm-scroller {
-  padding: 12px 0;
+  padding: 16px 0 32px;
   overflow: auto;
+  font-family: inherit;
+  line-height: 1.75;
+}
+
+.markdown-source-editor .cm-line {
+  padding: 0 8px;
 }
 
 .markdown-source-editor .cm-content {
@@ -4726,7 +4777,7 @@ html.scratchpad-route .page-surface {
   display: grid;
   grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
   min-height: 48px;
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid var(--line);
   transition: background 150ms ease;
 }
@@ -4854,7 +4905,7 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row .task-actions-trigger {
-  align-self: center;
+  align-self: start;
   width: 36px;
   min-height: 44px;
   opacity: 0;
@@ -4887,7 +4938,7 @@ html.scratchpad-route .page-surface {
   color: var(--accent);
 }
 
-.scratchpad-row input,
+.scratchpad-row textarea,
 .scratchpad-task-link {
   width: 100%;
   min-width: 0;
@@ -4901,7 +4952,20 @@ html.scratchpad-route .page-surface {
   outline: 0;
 }
 
-.scratchpad-row input::placeholder {
+.scratchpad-row textarea {
+  display: block;
+  resize: none;
+  overflow: hidden;
+}
+
+.scratchpad-row textarea,
+.scratchpad-task-link {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.scratchpad-row textarea::placeholder {
   color: var(--ink-muted);
   opacity: 0.74;
 }
@@ -4917,7 +4981,7 @@ html.scratchpad-route .page-surface {
   text-underline-offset: 3px;
 }
 
-.scratchpad-row.kind-note input {
+.scratchpad-row.kind-note textarea {
   color: var(--ink-soft);
 }
 
@@ -9456,7 +9520,7 @@ html.scratchpad-route .page-surface {
   box-shadow: inset 0 -1px color-mix(in srgb, var(--ink-muted), transparent 20%);
 }
 
-.scratchpad-row input:focus-visible {
+.scratchpad-row textarea:focus-visible {
   outline: 0 !important;
   box-shadow: inset 0 -2px var(--ink-muted);
 }

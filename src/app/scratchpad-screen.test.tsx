@@ -656,12 +656,14 @@ describe("ScratchpadScreen", () => {
   });
 
   it("stays pinned to the bottom while the current editor grows", async () => {
-    let resize!: ResizeObserverCallback;
+    const resizeCallbacks: ResizeObserverCallback[] = [];
+    const resize = () =>
+      resizeCallbacks.forEach((callback) => callback([], {} as ResizeObserver));
     vi.stubGlobal(
       "ResizeObserver",
       class {
         constructor(callback: ResizeObserverCallback) {
-          resize = callback;
+          resizeCallbacks.push(callback);
         }
         observe() {}
         unobserve() {}
@@ -686,14 +688,14 @@ describe("ScratchpadScreen", () => {
     fireEvent.scroll(scroller);
 
     height = 700;
-    act(() => resize([], {} as ResizeObserver));
+    act(() => resize());
     expect(scroller.scrollTop).toBe(700);
 
     fireEvent.wheel(scroller, { deltaY: -40 });
     scroller.scrollTop = 50;
     fireEvent.scroll(scroller);
     height = 900;
-    act(() => resize([], {} as ResizeObserver));
+    act(() => resize());
     expect(scroller.scrollTop).toBe(50);
   });
 
@@ -840,7 +842,7 @@ describe("ScratchpadScreen", () => {
     expect(screen.queryByRole("button", { name: "Add note" })).toBeNull();
     fireEvent.change(input, { target: { value: "Source round trip" } });
 
-    fireEvent.click(screen.getByRole("button", { name: "Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
     const source = await screen.findByRole("textbox", {
       name: "Scratchpad Markdown",
     });
@@ -879,7 +881,7 @@ describe("ScratchpadScreen", () => {
     await repository.initialize();
     renderScratchpad();
     await screen.findByRole("button", { name: "Linked task" });
-    fireEvent.click(screen.getByRole("button", { name: "Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
     const source = await screen.findByRole("textbox", {
       name: "Scratchpad Markdown",
     });
@@ -907,7 +909,7 @@ describe("ScratchpadScreen", () => {
     });
     await act(async () => hydration.resolve(tasks));
 
-    expect(screen.getByRole("button", { name: "Markdown" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -1273,7 +1275,7 @@ describe("ScratchpadScreen", () => {
     const currentCard = resumedInput.closest(".scratchpad-current-document")!;
     expect(currentCard).not.toBeNull();
     await waitFor(() =>
-      expect(currentCard.querySelector("input:focus")).not.toBeNull(),
+      expect(currentCard.querySelector("textarea:focus")).not.toBeNull(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
