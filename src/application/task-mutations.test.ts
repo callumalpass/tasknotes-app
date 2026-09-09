@@ -52,6 +52,41 @@ it("queues different intent rather than reporting it accepted without writing", 
   expect(history).toEqual([true, false]);
 });
 
+it("does not join an earlier intent across a queued opposite intent", async () => {
+  const commands = new TaskMutations();
+  const history: boolean[] = [];
+  const states: boolean[] = [];
+  commands.subscribe("task", () =>
+    states.push(commands.snapshot("task").pending),
+  );
+  const first = commands.run(
+    "task",
+    async () => {
+      history.push(true);
+    },
+    "true",
+  );
+  const second = commands.run(
+    "task",
+    async () => {
+      history.push(false);
+    },
+    "false",
+  );
+  const third = commands.run(
+    "task",
+    async () => {
+      history.push(true);
+    },
+    "true",
+  );
+  expect(third).not.toBe(first);
+  await Promise.all([first, second, third]);
+  expect(history).toEqual([true, false, true]);
+  expect(states.slice(0, -1).every(Boolean)).toBe(true);
+  expect(states.at(-1)).toBe(false);
+});
+
 it("desired completion is idempotent for ordinary and recurring tasks", async () => {
   const repository = new DemoTaskRepository();
   await repository.initialize();

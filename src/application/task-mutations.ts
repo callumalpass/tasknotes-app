@@ -46,15 +46,16 @@ export class TaskMutations {
     if (current) {
       if (identity !== undefined && identity === current.identity)
         return current.promise as Promise<T>;
-      return current.promise
-        .catch(() => undefined)
-        .then(() => this.run(key, operation, identity));
     }
     this.states.set(key, { pending: true, error: null, warning: null });
-    const promise = Promise.resolve()
+    const ready = current
+      ? current.promise.catch(() => undefined)
+      : Promise.resolve();
+    const promise = ready
       .then(operation)
       .then(
         (result) => {
+          if (this.running.get(key)?.promise !== promise) return result;
           const warnings =
             result &&
             typeof result === "object" &&
@@ -71,18 +72,24 @@ export class TaskMutations {
           return result;
         },
         (reason) => {
-          this.states.set(key, {
-            pending: false,
-            error: reason instanceof Error ? reason : new Error(String(reason)),
-            warning: null,
-          });
+          if (this.running.get(key)?.promise === promise)
+            this.states.set(key, {
+              pending: false,
+              error:
+                reason instanceof Error ? reason : new Error(String(reason)),
+              warning: null,
+            });
           throw reason;
         },
       )
       .finally(() => {
-        this.running.delete(key);
-        this.publish(key);
+        if (this.running.get(key)?.promise === promise) {
+          this.running.delete(key);
+          this.publish(key);
+        }
       });
+    // The controller owns visible failure state, even when a legacy event callback ignores its promise.
+    void promise.catch(() => undefined);
     this.running.set(key, { promise, identity });
     this.publish(key);
     return promise;
