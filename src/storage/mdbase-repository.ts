@@ -775,11 +775,19 @@ export class MdbaseTaskRepository implements TaskRepository {
       ? AbortSignal.any([this.operationController.signal, options.signal])
       : this.operationController.signal;
     let cumulative: TaskViewExecution | null = null;
+    const pages = this.connect.executeViewPages(
+      { path: view.source.path, view: view.id, timezone, render: false },
+      { firstPageSize: 200, pageSize: 200, signal },
+    );
+    // A generator paused at yield will not notice abort until next(). Release its
+    // authority cursor on suspension even if the person never requests another page.
+    const close = () => {
+      void pages.return(undefined).catch(() => undefined);
+    };
+    signal.addEventListener("abort", close, { once: true });
     try {
-      for await (const outcome of this.connect.executeViewPages(
-        { path: view.source.path, view: view.id, timezone, render: false },
-        { firstPageSize: 200, pageSize: 200, signal },
-      )) {
+      signal.throwIfAborted();
+      for await (const outcome of pages) {
         signal.throwIfAborted();
         const result = validResult(outcome) as ProviderViewExecution;
         const page = normalizeViewExecution(
@@ -794,6 +802,9 @@ export class MdbaseTaskRepository implements TaskRepository {
     } catch (reason) {
       if (!signal.aborted) this.noteOperationFailure(reason);
       throw reason;
+    } finally {
+      signal.removeEventListener("abort", close);
+      await pages.return(undefined).catch(() => undefined);
     }
   }
 

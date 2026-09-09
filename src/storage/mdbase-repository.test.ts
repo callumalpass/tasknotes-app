@@ -1028,6 +1028,8 @@ describe("mdbase task repository", () => {
       expect.anything(),
       expect.objectContaining({ firstPageSize: 200, pageSize: 200 }),
     );
+    repository.suspend();
+    await vi.waitFor(() => expect(released).toBe(true));
     await iterator.return?.();
     expect(released).toBe(true);
     expect(requested).toBe(1);
