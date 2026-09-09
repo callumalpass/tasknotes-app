@@ -208,11 +208,12 @@ export function resolveNavigationViewCatalog(
   )
     return null;
   const requested =
-    stored ?? withDefaultTools(defaultNavigationViewKeys(documents));
+    stored ?? dailyNavigationDefaults(defaultNavigationViewKeys(documents));
   const navigationKeys = requested.filter((key) => available.has(key));
   if (!navigationKeys.length) {
     const defaults = defaultNavigationViewKeys(documents);
-    if (defaults.length) navigationKeys.push(...withDefaultTools(defaults));
+    if (defaults.length)
+      navigationKeys.push(...dailyNavigationDefaults(defaults));
     else {
       const first = flattenViewDocuments(documents)[0];
       if (first) navigationKeys.push(first.key);
@@ -245,6 +246,15 @@ function upgradeDefaultViewKey(
   const id = match[1].toLowerCase();
   const upgraded = `${taskNotesViewSourcePath(id)}#${id}`;
   return available.has(upgraded) ? upgraded : key;
+}
+
+function dailyNavigationDefaults(keys: readonly string[]): string[] {
+  return [
+    ...keys.slice(0, 2),
+    SCRATCHPAD_NAVIGATION_KEY,
+    SEARCH_NAVIGATION_KEY,
+    ...keys.slice(2),
+  ];
 }
 
 function withDefaultTools(keys: readonly string[]): string[] {

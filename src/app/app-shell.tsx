@@ -77,6 +77,32 @@ export function AppShell() {
   } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [captureOpen, setCaptureOpen] = useState(false);
+  const taskReturn = useRef<{
+    element: HTMLElement | null;
+    scrollY: number;
+  } | null>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const previousPage = useRef(route.page);
+  useEffect(() => {
+    const wasTask = previousPage.current === "task";
+    previousPage.current = route.page;
+    const frame = requestAnimationFrame(() => {
+      if (route.page === "task" && !wasTask)
+        detailRef.current?.focus({ preventScroll: true });
+      else if (wasTask && route.page !== "task" && taskReturn.current) {
+        const target = taskReturn.current;
+        taskReturn.current = null;
+        window.scrollTo({ top: target.scrollY, left: 0 });
+        if (target.element?.isConnected)
+          target.element.focus({ preventScroll: true });
+        else
+          document
+            .getElementById("main-content")
+            ?.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [route.page]);
   const [calendarPreferences, setCalendarPreferences] =
     useState<CalendarPreferences>(loadCalendarPreferences);
   const updateCalendarPreferences = useCallback((next: CalendarPreferences) => {
@@ -126,7 +152,16 @@ export function AppShell() {
       if (replace) window.history.replaceState(state, "", url);
       else window.history.pushState(state, "", url);
       if (next.page === "task") {
-        if (route.page !== "task") setWorkspaceRoute(route);
+        if (route.page !== "task") {
+          taskReturn.current = {
+            element:
+              document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null,
+            scrollY: window.scrollY,
+          };
+          setWorkspaceRoute(route);
+        }
       } else {
         setWorkspaceRoute(next);
       }
@@ -340,7 +375,12 @@ export function AppShell() {
         ) : null}
       </main>
       {route.page === "task" ? (
-        <aside className="detail-inspector" aria-label="Task details">
+        <aside
+          className="detail-inspector"
+          aria-label="Task details"
+          tabIndex={-1}
+          ref={detailRef}
+        >
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
@@ -713,7 +753,7 @@ export function Navigation({
             : { page: "views", key: view.key },
       });
   }
-  const visibleViews = navigationEntries.slice(0, mode === "mobile" ? 2 : 3);
+  const visibleViews = navigationEntries.slice(0, 3);
   const additionalViews = navigationEntries.slice(visibleViews.length);
   const hiddenNavigationViewActive = additionalViews.some(
     (view) => active === view.key,
@@ -782,7 +822,7 @@ export function Navigation({
     const rect = triggerRef.current?.getBoundingClientRect();
     const width = Math.min(236, innerWidth - 16);
     const height = Math.min(
-      (additionalViews.length + 1) * 46 + 16,
+      (additionalViews.length + 2) * 46 + 16,
       innerHeight - 96,
     );
     const left =
@@ -870,14 +910,18 @@ export function Navigation({
           <button
             aria-controls={menuPosition ? menuId : undefined}
             aria-current={
-              active === "views" || hiddenNavigationViewActive
+              active === "views" ||
+              active === "more" ||
+              hiddenNavigationViewActive
                 ? "page"
                 : undefined
             }
             aria-expanded={Boolean(menuPosition)}
             aria-haspopup="menu"
             className={
-              active === "views" || hiddenNavigationViewActive
+              active === "views" ||
+              active === "more" ||
+              hiddenNavigationViewActive
                 ? "is-active"
                 : undefined
             }
@@ -886,12 +930,12 @@ export function Navigation({
             onClick={openMenu}
           >
             <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
-            <span>Views</span>
+            <span>Browse</span>
           </button>
           {menuPosition
             ? createPortal(
                 <div
-                  aria-label="Views"
+                  aria-label="Browse"
                   className="navigation-views-menu"
                   id={menuId}
                   ref={menuRef}
@@ -922,21 +966,31 @@ export function Navigation({
                     <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
                     <span>Manage views</span>
                   </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => choose({ page: "more" })}
+                  >
+                    <Settings aria-hidden="true" size={19} strokeWidth={1.7} />
+                    <span>Settings</span>
+                  </button>
                 </div>,
                 document.body,
               )
             : null}
         </>
       )}
-      <button
-        aria-current={active === "more" ? "page" : undefined}
-        className={active === "more" ? "is-active" : undefined}
-        type="button"
-        onClick={() => onNavigate({ page: "more" })}
-      >
-        <Settings aria-hidden="true" size={22} strokeWidth={1.7} />
-        <span>Settings</span>
-      </button>
+      {mode === "desktop" ? (
+        <button
+          aria-current={active === "more" ? "page" : undefined}
+          className={active === "more" ? "is-active" : undefined}
+          type="button"
+          onClick={() => onNavigate({ page: "more" })}
+        >
+          <Settings aria-hidden="true" size={22} strokeWidth={1.7} />
+          <span>Settings</span>
+        </button>
+      ) : null}
     </>
   );
 }

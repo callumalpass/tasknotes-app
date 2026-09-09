@@ -28,6 +28,7 @@ import {
 import {
   activeTimeEntry,
   combineTaskDateTime,
+  formatTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -572,42 +573,57 @@ function TaskEditor({
           className="title-field"
           id="task-title"
           ref={titleRef}
-          rows={2}
+          rows={1}
           value={draft.title}
           onChange={(event) => change({ title: event.target.value })}
         />
 
-        <div className="field-grid timing-fields task-core-fields">
-          <div className="tasknotes-status-field">
-            <TaskNotesSelectField
-              ariaDescribedBy={
-                task.occurrenceDate ? "occurrence-status-help" : undefined
-              }
-              disabled={Boolean(task.occurrenceDate)}
-              label="Status"
-              options={[...configuration.statuses].sort(
-                (left, right) => left.order - right.order,
-              )}
-              value={draft.status}
-              onChange={(status) => change({ status })}
+        <TaskFormSection
+          title="Schedule and status"
+          summary={[
+            configuration.statuses.find(
+              (status) => status.value === draft.status,
+            )?.label ?? draft.status,
+            draft.scheduled
+              ? `Scheduled ${formatTaskDate(draft.scheduled)}`
+              : "",
+            draft.due ? `Due ${formatTaskDate(draft.due)}` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        >
+          <div className="field-grid timing-fields task-core-fields">
+            <div className="tasknotes-status-field">
+              <TaskNotesSelectField
+                ariaDescribedBy={
+                  task.occurrenceDate ? "occurrence-status-help" : undefined
+                }
+                disabled={Boolean(task.occurrenceDate)}
+                label="Status"
+                options={[...configuration.statuses].sort(
+                  (left, right) => left.order - right.order,
+                )}
+                value={draft.status}
+                onChange={(status) => change({ status })}
+              />
+              {task.occurrenceDate ? (
+                <small id="occurrence-status-help">
+                  Use the occurrence actions above to change this state.
+                </small>
+              ) : null}
+            </div>
+            <DateTimeField
+              label="Scheduled"
+              value={draft.scheduled}
+              onChange={(scheduled) => change({ scheduled })}
             />
-            {task.occurrenceDate ? (
-              <small id="occurrence-status-help">
-                Use the occurrence actions above to change this state.
-              </small>
-            ) : null}
+            <DateTimeField
+              label="Due"
+              value={draft.due}
+              onChange={(due) => change({ due })}
+            />
           </div>
-          <DateTimeField
-            label="Scheduled"
-            value={draft.scheduled}
-            onChange={(scheduled) => change({ scheduled })}
-          />
-          <DateTimeField
-            label="Due"
-            value={draft.due}
-            onChange={(due) => change({ due })}
-          />
-        </div>
+        </TaskFormSection>
 
         <section className="notes-field">
           <header className="notes-field-heading">
@@ -632,7 +648,7 @@ function TaskEditor({
           {notesMode === "write" ? (
             <textarea
               aria-labelledby="task-notes-title"
-              placeholder="Add Markdown notes"
+              placeholder="Add thoughts, links, or supporting details…"
               rows={8}
               value={draft.body}
               onChange={(event) => change({ body: event.target.value })}

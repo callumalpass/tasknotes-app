@@ -639,7 +639,7 @@ button:disabled {
 }
 
 .task-section + .task-section {
-  margin-top: 20px;
+  margin-top: 28px;
 }
 
 .section-heading {
@@ -670,7 +670,7 @@ button:disabled {
   grid-template-columns: 44px minmax(0, 1fr) 40px;
   min-height: 52px;
   background: transparent;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
   content-visibility: auto;
   contain-intrinsic-size: auto 52px;
   transition:
@@ -1059,8 +1059,8 @@ button:disabled {
   width: 100%;
   padding: 0;
   overflow: hidden;
-  font-size: var(--type-body);
-  line-height: 1.25;
+  font-size: var(--type-control);
+  line-height: 1.35;
   color: inherit;
   text-align: left;
   text-overflow: ellipsis;
@@ -1803,8 +1803,8 @@ button:disabled {
 .title-field {
   display: block;
   width: 100%;
-  min-height: 112px;
-  padding: 25px 0 18px;
+  min-height: 64px;
+  padding: 16px 0;
   resize: none;
   overflow: hidden;
   font-size: 1.75rem;
@@ -8906,7 +8906,7 @@ html.scratchpad-route .page-surface {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1024px) {
   .app-shell.has-detail {
     grid-template-columns: 190px minmax(400px, 1fr) minmax(380px, 440px);
   }
@@ -8935,7 +8935,7 @@ html.scratchpad-route .page-surface {
   }
 
   .detail-inspector .title-field {
-    min-height: 96px;
+    min-height: 64px;
     font-size: 1.65rem;
   }
 
@@ -9545,7 +9545,24 @@ html.scratchpad-route .page-surface {
 .view-context-capture {
   display: none;
 }
-@media (max-width: 759px) {
+.completion-control:active span {
+  transform: scale(0.92);
+}
+.completion-control[aria-pressed="true"] span {
+  background: var(--accent-soft);
+}
+.task-row-property > span {
+  font-size: inherit;
+}
+.global-capture-fab {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: transparent;
+}
+:root[data-theme="dark"] .global-capture-fab {
+  color: var(--paper);
+}
+@media (max-width: 839px) {
   .has-list-capture > .capture-composer {
     display: none;
   }
