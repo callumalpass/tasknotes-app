@@ -128,6 +128,94 @@ test("phone Scratchpad reserves writing width and keeps conversion in the row me
   ).toHaveValue("Ask Rowan about the research notes");
 });
 
+test("Browse dismisses on Tab and no longer owns background arrow keys", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("?demo=50");
+  const browse = page.getByRole("button", { name: "Browse", exact: true });
+  await browse.click();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menu", { name: "Browse" })).toHaveCount(0);
+  const active = await page.evaluate(() => document.activeElement?.outerHTML);
+  await page.keyboard.press("ArrowDown");
+  expect(await page.evaluate(() => document.activeElement?.outerHTML)).toBe(
+    active,
+  );
+  await browse.click();
+  await page.keyboard.press("Escape");
+  await expect(browse).toBeFocused();
+});
+test("calendar overflow owns focus and restores More on Escape", async ({
+  page,
+}) => {
+  await page.goto(view("calendar"));
+  const more = page.locator(".fc-more-link").first();
+  await more.focus();
+  await page.keyboard.press("Enter");
+  const popup = page.getByRole("dialog");
+  await expect(popup).toBeVisible();
+  expect(
+    await popup.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
+  await page.keyboard.press("Tab");
+  expect(
+    await popup.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(popup).toHaveCount(0);
+  await expect(more).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(popup).toBeVisible();
+  await popup.getByRole("button", { name: "Close additional tasks" }).focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(popup).toHaveCount(0);
+  await more.focus();
+  await page.keyboard.press("Enter");
+  await popup.getByRole("button", { name: "Close additional tasks" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(popup).toHaveCount(0);
+  await expect(more).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(popup).toBeVisible();
+  await popup.locator(".full-calendar-event-content").first().focus();
+  await page.keyboard.press("Enter");
+  await expect(popup).toHaveCount(0);
+  await expect(
+    page.getByRole("complementary", { name: "Task details" }),
+  ).toBeFocused();
+});
+test("phone calendar has one capture action and preserves the selected date", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(view("calendar"));
+  const day = page.locator(".fc-daygrid-day:not(.fc-day-other)").first();
+  await day.locator(".fc-daygrid-day-top").click();
+  await expect(
+    page.getByRole("dialog", { name: "New task", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "New task", exact: true }),
+  ).toHaveCount(1);
+  await expect(page.locator(".full-calendar-create")).toBeHidden();
+  await page.getByRole("button", { name: "New task", exact: true }).click();
+  const capture = page.getByRole("dialog", { name: "New task", exact: true });
+  await capture
+    .getByRole("combobox", { name: "New task title" })
+    .fill("Calendar context regression");
+  await capture.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(capture).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("complementary", { name: "Selected day" })
+      .getByRole("button", {
+        name: "Calendar context regression",
+        exact: true,
+      }),
+  ).toBeVisible();
+});
+
 test("working screens reflow at 320px with 200% text", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const cases = [

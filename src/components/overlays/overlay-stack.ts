@@ -1,6 +1,7 @@
 export interface OverlayOptions {
   root: HTMLElement;
   modal: boolean;
+  dismissOnTab?: "always" | "boundary";
   dismiss(reason: "escape" | "outside"): void;
   initialFocus?(): HTMLElement | null;
   returnFocus?: HTMLElement | null;
@@ -98,6 +99,31 @@ function keydown(event: KeyboardEvent) {
     return;
   }
   if (event.key !== "Tab") return;
+  if (top.dismissOnTab) {
+    const inside = focusable([top.root]);
+    const boundary = event.shiftKey ? inside[0] : inside.at(-1);
+    if (
+      top.dismissOnTab === "always" ||
+      document.activeElement === boundary ||
+      !top.root.contains(document.activeElement)
+    ) {
+      const outside = focusable([document.body]).filter(
+        (element) => !top.root.contains(element),
+      );
+      const origin = outside.indexOf(top.returnFocus as HTMLElement);
+      const next =
+        outside[origin + (event.shiftKey ? -1 : 1)] ??
+        (event.shiftKey ? outside.at(-1) : outside[0]);
+      top.restore = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      top.dismiss("outside");
+      queueMicrotask(() => {
+        if (next?.isConnected && available(next)) next.focus();
+      });
+      return;
+    }
+  }
   const index = lastModalIndex();
   if (index < 0) return;
   const elements = focusable(layers.slice(index).map((layer) => layer.root));
@@ -132,7 +158,9 @@ function pointerdown(event: PointerEvent) {
 }
 
 /** One owner for modal isolation, focus, scroll lock, and top-layer dismissal. */
-export function registerOverlay(options: OverlayOptions): () => void {
+export function registerOverlay(
+  options: OverlayOptions,
+): (restoreFocus?: boolean) => void {
   const layer: Layer = {
     ...options,
     returnFocus:
@@ -153,7 +181,8 @@ export function registerOverlay(options: OverlayOptions): () => void {
   layers.splice(descendant < 0 ? layers.length : descendant, 0, layer);
   synchronize();
   layer.initialFocus?.()?.focus({ preventScroll: true });
-  return () => {
+  return (restoreFocus = true) => {
+    if (!restoreFocus) layer.restore = false;
     const index = layers.indexOf(layer);
     if (index < 0) return;
     const wasTop = index === layers.length - 1;

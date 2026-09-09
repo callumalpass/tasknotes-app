@@ -962,7 +962,7 @@ export function ViewsScreen({
           selected?.presentation?.type === "tasknotes.task-list"
             ? " has-list-capture"
             : ""
-        }${presentationClass}`}
+        }${captureDefaults ? " has-context-capture" : ""}${presentationClass}`}
       >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
@@ -1127,8 +1127,7 @@ export function ViewsScreen({
             taskCount={presentedExecution?.totalCount}
           />
         ) : null}
-        {captureDefaults &&
-        selected?.presentation?.type === "tasknotes.task-list" ? (
+        {captureDefaults ? (
           <>
             <button
               className="global-capture-fab view-context-capture"
@@ -1183,15 +1182,17 @@ export function ViewsScreen({
             linkWriteFormat={configuration.linkWriteFormat}
             projectsField={configuration.fieldMapping.projects}
             tasks={identityTasks}
-            onCreate={(value, label) =>
-              selected &&
+            onCreate={(value, label) => {
+              if (!selected) return;
               setCreationContext({
                 key: selected.key,
                 label,
                 defaults: { projects: [value] },
                 focusRequest: Date.now(),
-              })
-            }
+              });
+              if (window.matchMedia("(max-width: 839px)").matches)
+                setMobileCaptureOpen(true);
+            }}
             onOpen={onOpenTask}
             onToggle={toggleRow}
           />
@@ -1251,8 +1252,8 @@ export function ViewsScreen({
                 createValue,
               })
             }
-            onCreate={(date, createValue = date, timeEstimate) =>
-              selected &&
+            onCreate={(date, createValue = date, timeEstimate) => {
+              if (!selected) return;
               setCalendarSelection({
                 key: selected.key,
                 date,
@@ -1263,8 +1264,10 @@ export function ViewsScreen({
                   timeEstimate,
                 ),
                 focusRequest: Date.now(),
-              })
-            }
+              });
+              if (window.matchMedia("(max-width: 839px)").matches)
+                setMobileCaptureOpen(true);
+            }}
             onOpen={onOpenTask}
             onToggle={toggleRow}
             onUpdate={calendarMutations.updateTask}

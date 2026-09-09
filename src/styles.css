@@ -9756,7 +9756,8 @@ html.scratchpad-route .page-surface {
   color: var(--paper);
 }
 @media (max-width: 839px) {
-  .has-list-capture > .capture-composer {
+  .has-context-capture > .capture-composer,
+  .has-context-capture .full-calendar-create {
     display: none;
   }
   .view-context-capture {
@@ -9766,6 +9767,18 @@ html.scratchpad-route .page-surface {
     display: none;
   }
 }
+.full-calendar-view .fc-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.full-calendar-view .fc-more-popover {
+  max-height: 70dvh;
+  overflow: auto;
+}
+
 .view-date {
   margin: 4px 0 0;
   color: var(--ink-soft);

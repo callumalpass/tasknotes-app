@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 
 import { CollectionAvailability } from "../components/collection-availability";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
+import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -788,22 +789,20 @@ export function Navigation({
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  useOverlay({
+    open: Boolean(menuPosition),
+    rootRef: menuRef,
+    returnFocusRef: triggerRef,
+    dismissOnTab: "always",
+    onDismiss: closeMenu,
+    initialFocus: () =>
+      menuRef.current?.querySelector<HTMLButtonElement>("[role='menuitem']") ??
+      null,
+  });
   useEffect(() => {
     if (!menuPosition) return;
-    const close = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        !menuRef.current?.contains(target) &&
-        !triggerRef.current?.contains(target)
-      )
-        closeMenu();
-    };
+    const menu = menuRef.current;
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
-        triggerRef.current?.focus();
-        return;
-      }
       if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
       const choices = [
         ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
@@ -825,12 +824,10 @@ export function Navigation({
       event.preventDefault();
       choices[next]?.focus();
     };
-    window.addEventListener("pointerdown", close);
-    window.addEventListener("keydown", keydown);
+    menu?.addEventListener("keydown", keydown);
     window.addEventListener("resize", closeMenu);
     return () => {
-      window.removeEventListener("pointerdown", close);
-      window.removeEventListener("keydown", keydown);
+      menu?.removeEventListener("keydown", keydown);
       window.removeEventListener("resize", closeMenu);
     };
   }, [menuPosition]);
@@ -863,11 +860,6 @@ export function Navigation({
         ? Math.max(8, (rect?.top ?? innerHeight) - height - 8)
         : Math.max(8, Math.min(rect?.top ?? 80, innerHeight - height - 8));
     setMenuPosition({ left, top });
-    queueMicrotask(() =>
-      menuRef.current
-        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
-        ?.focus(),
-    );
   }
 
   function closeMenu() {

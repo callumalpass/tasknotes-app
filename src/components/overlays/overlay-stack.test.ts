@@ -21,6 +21,53 @@ function key(key: string, shiftKey = false) {
     }),
   );
 }
+it.each([false, true])(
+  "Tab dismisses a menu and continues outside it (reverse: %s)",
+  async (reverse) => {
+    const before = element("button");
+    const trigger = element("button");
+    const after = element("button");
+    const menu = element("div");
+    const item = element("button", menu);
+    const dismiss = vi.fn(() => remove());
+    const remove = registerOverlay({
+      root: menu,
+      modal: false,
+      dismissOnTab: "always",
+      returnFocus: trigger,
+      initialFocus: () => item,
+      dismiss,
+    });
+    disposals.push(remove);
+    key("Tab", reverse);
+    await Promise.resolve();
+    expect(dismiss).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(reverse ? before : after);
+  },
+);
+it("a nonmodal dialog permits internal Tab but dismisses at its boundary", async () => {
+  const trigger = element("button");
+  const next = element("button");
+  const popup = element("div");
+  const first = element("button", popup);
+  const last = element("button", popup);
+  const dismiss = vi.fn(() => remove());
+  const remove = registerOverlay({
+    root: popup,
+    modal: false,
+    dismissOnTab: "boundary",
+    returnFocus: trigger,
+    initialFocus: () => first,
+    dismiss,
+  });
+  disposals.push(remove);
+  key("Tab");
+  expect(dismiss).not.toHaveBeenCalled();
+  last.focus();
+  key("Tab");
+  await Promise.resolve();
+  expect(document.activeElement).toBe(next);
+});
 it("isolates the background and traps Tab at both ends of a modal", () => {
   const app = element("main");
   const trigger = element("button", app);
