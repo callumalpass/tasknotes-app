@@ -28,12 +28,6 @@
       "sha512": "4NsAGAFsWzMx7DzEzQX2vc0KyE01S9bWSSvGkrCB56lew7cOHz50FJebPglfvbs4Z7mIIsu6Cja6A/4Le1320g=="
     },
     {
-      "package": "pickle",
-      "file": "mdbase-dev-pickle-0.1.0-beta.96-56ed32ffde05.tgz",
-      "bytes": 9403,
-      "sha512": "fl7uhVzCi8AiQOcOhYDQp6u6ReePBPCf3HFa21Wn779EASukVn+kS6j7wEIoUFw69lKCIiXTBtrrfoYnlIYKuw=="
-    },
-    {
       "package": "testing",
       "file": "mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz",
       "bytes": 6802,
