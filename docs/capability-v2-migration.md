@@ -29,8 +29,8 @@ v2 to v1. Live stale-grant/recovery acceptance is still required.
 
 The active SDK pins now use authentic `0.1.0-beta.96` SHA-qualified development
 packs from committed product source
-`43c3dedd61bb44ca497e854702d87ef2c175b954`, supplied by the parent at
-`/home/calluma/projects/mdbase-connect/.ops/artifacts/v2-sdk-43c3dedd61bb`.
+`56ed32ffde0544ca497e854702d87ef2c175b954`, supplied by the parent at
+`/home/calluma/projects/mdbase-connect/.ops/artifacts/v2-sdk-56ed32ffde05`.
 The parent generated these with `pack-consumer-sdk.mjs` for phase
 `v2-enablement`, supporting capability contracts `[1, 2]`.
 These are **not signed Q artifacts or an npm publication**.

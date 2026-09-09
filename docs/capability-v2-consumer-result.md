@@ -2,14 +2,14 @@
 
 Integrated authentic development packs into exactly TaskNotes, Planner,
 Workouts and Pickle. The source revision is
-`43c3dedd61bb44ca497e854702d87ef2c175b954`, package version `0.1.0-beta.96`,
+`56ed32ffde0544ca497e854702d87ef2c175b954`, package version `0.1.0-beta.96`,
 parent-supplied phase `v2-enablement` / contracts `[1, 2]`. These are SHA-qualified
 committed-source development packs, not signed Q or npm publication artifacts.
 
 All six source archives matched the supplied SHA-512 and byte sizes; every
 consumer copy was checked again. Each consumer's `vendor/mdbase-connect-sdk.json`
 contains its exact subset and SHA-512 values. The common filename suffix is
-`0.1.0-beta.96-43c3dedd61bb.tgz`.
+`0.1.0-beta.96-56ed32ffde05.tgz`.
 
 | Package  |  Bytes | SHA-256                                                            |
 | -------- | -----: | ------------------------------------------------------------------ |
