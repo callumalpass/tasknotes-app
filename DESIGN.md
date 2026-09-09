@@ -59,10 +59,10 @@ spacing:
 
 ## Creative north star
 
-**A pocket standards notebook.** TaskNotes mobile borrows mdbase's paper,
-blue-black ink, quiet rules, literal labels, and generous page-level space. It
-applies them to a mobile workflow where task rows stay compact and controls
-remain familiar.
+**A personal working notebook.** TaskNotes retains mdbase's paper, blue-black
+ink, and precise language, but prioritizes daily decisions over visible
+configuration. Task titles lead, supporting metadata explains rather than
+competes, and notes preserve the thinking behind the work.
 
 The physical scene is a person checking or capturing work on a phone in normal
 daylight or after dark, often one-handed and between other activities. This
@@ -103,9 +103,9 @@ transport details in ordinary task flows.
 
 ## Typography
 
-Atkinson Hyperlegible carries headings, task titles, fields, and explanatory
-copy. Azeret Mono is reserved for dates, compact section labels, sync state,
-collection names, and Markdown paths. Preserve platform text scaling and avoid
+Atkinson Hyperlegible carries headings, task titles, fields, dates, section
+labels, and explanatory copy. Azeret Mono is reserved for technical state,
+collection identifiers, and Markdown paths. Preserve platform text scaling and avoid
 text smaller than 11 points.
 
 The semantic type scale is intentionally small: 32px page titles, 20px section
@@ -138,7 +138,9 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-- Buttons are text or lightly outlined controls. There are no black or saturated filled buttons.
+- Secondary buttons are text or lightly outlined controls. The persistent
+  mobile capture button uses the blue accent fill with contrasting canvas text:
+  one unmistakable primary action, not a page full of competing buttons.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Persistent selection uses an accent label, icon, check, or soft fill. Do not
@@ -147,7 +149,9 @@ Today             Search       More
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Views and Settings. Manage views separates the ordered destinations shown in
+  Browse. Browse contains additional destinations, Manage views, and Settings.
+  Fresh collections begin with Today, Upcoming, and Scratchpad; existing choices
+  and migrated navigation preferences remain intact. Manage views separates the ordered destinations shown in
   navigation from the complete catalog. Reordering is an intentional mode with
   drag and keyboard/button alternatives; any saved view or built-in tool may
   occupy the first, Home position. Catalog membership uses explicit Add/Added
@@ -204,11 +208,32 @@ Today             Search       More
   seconds.
 - Disclosure rows use a title, a plain-language current-value summary, and the
   same chevron treatment across capture, task editing, views, and settings.
-- Every writable saved view exposes manual ordering in its page header. The
-  control updates the view's sort rule; layouts that support spatial ordering
-  also expose direct drag and keyboard arrangement.
-- The saved-view capture field retains focus after a successful creation so a
-  user can enter several tasks without returning to the field.
+- Every writable saved view exposes Reorder tasks and Edit view in a quiet
+  View options disclosure. Reordering enables the manual sort rule if needed;
+  Done reordering hides list handles without changing that rule or saved ranks.
+  Turning manual order off remains a separate deliberate action. Boards retain
+  direct spatial arrangement.
+- Grouped lists have accessible collapsible sections, expanded by default.
+  Explicit collapse choices are local preferences scoped to collection, view,
+  and section. Reordering temporarily expands sections and reveals empty drop
+  destinations without overwriting those preferences. There is no special
+  overdue-review workflow or automatic hiding of overdue work.
+- Scheduled and Due retain visible labels, including when both dates occur on
+  a row. Routine status/priority defaults recede; custom meaningful values stay
+  available. Completion circles do not use a legacy default status color.
+- Task detail leads with a title-level completion control and the note body.
+  Schedule and status have a compact, wrapping disclosure summary; advanced
+  properties and the backing Markdown record remain inspectable. Returning to
+  the list restores the invoking control and scroll position.
+- Desktop saved-view capture retains focus after successful creation. Phone
+  task lists have one persistent contextual Add task button instead of a second
+  inline capture field; the shared capture sheet retains view creation defaults.
+  Keep adding tasks supports consecutive capture. The sheet follows the visual
+  viewport above an overlay keyboard.
+- Capture shows the interpreted title and editable/removable date tokens.
+  Explicit property edits survive subsequent title typing. The complete draft
+  remains visible while saving and survives a rejected write; it clears only
+  after authority acceptance. Date shortcuts preserve an existing time.
 - A kanban board consumes the remaining usable viewport. Its horizontal
   scrollbar stays at the bottom of the screen while columns scroll within that
   surface.
