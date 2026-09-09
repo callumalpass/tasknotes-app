@@ -18,6 +18,8 @@ import {
   type SetStateAction,
 } from "react";
 
+import { useOverlay } from "./overlays/use-overlay";
+
 export interface TaskNotesOption {
   value: string;
   label: string;
@@ -273,7 +275,9 @@ export function TaskNotesCombobox({
           } else if (event.key === "Enter" && open && filtered.length) {
             event.preventDefault();
             choose(activeIndex);
-          } else if (event.key === "Escape") {
+          } else if (event.key === "Escape" && open) {
+            event.preventDefault();
+            event.stopPropagation();
             setOpen(false);
           }
         }}
@@ -549,6 +553,8 @@ export function TaskNotesDatePicker({
                             event.preventDefault();
                             moveFocus(addMonths(day, 1));
                           } else if (event.key === "Escape") {
+                            event.preventDefault();
+                            event.stopPropagation();
                             setOpen(false);
                             triggerRef.current?.focus();
                           }
@@ -794,23 +800,12 @@ function useDismissablePopover<T extends HTMLElement>(
 } {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const pointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const keyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      triggerRef.current?.focus();
-    };
-    document.addEventListener("pointerdown", pointerDown);
-    document.addEventListener("keydown", keyDown);
-    return () => {
-      document.removeEventListener("pointerdown", pointerDown);
-      document.removeEventListener("keydown", keyDown);
-    };
-  }, [open, triggerRef]);
+  useOverlay({
+    open,
+    rootRef,
+    returnFocusRef: triggerRef,
+    onDismiss: () => setOpen(false),
+  });
   return { open, setOpen, rootRef };
 }
 

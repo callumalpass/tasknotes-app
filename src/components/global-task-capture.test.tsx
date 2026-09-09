@@ -138,7 +138,7 @@ describe("GlobalTaskCapture", () => {
     const trigger = screen.getByRole("button", { name: "Open capture" });
     trigger.focus();
     fireEvent.click(trigger);
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
 
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(screen.queryByRole("dialog", { name: "New task" })).toBeNull();

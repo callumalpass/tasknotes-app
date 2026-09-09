@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 
 import { useRepository } from "../app/repository-context";
 import { TaskCapture } from "./task-capture";
+import { useOverlay } from "./overlays/use-overlay";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 
@@ -66,59 +67,17 @@ export function GlobalTaskCapture({
       window.removeEventListener("resize", resize);
     };
   }, [open]);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
   const completeField = useCallback(
     (request: import("../domain/completion").FieldCompletionRequest) =>
       repository.completeField(request),
     [repository],
   );
 
-  useEffect(() => {
-    if (!open) return;
-    returnFocusRef.current = document.activeElement as HTMLElement | null;
-    const app = document.getElementById("root");
-    const previousOverflow = document.body.style.overflow;
-    if (app) app.inert = true;
-    document.body.style.overflow = "hidden";
-    const keydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", keydown);
-    return () => {
-      if (app) app.inert = false;
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", keydown);
-      queueMicrotask(() => returnFocusRef.current?.focus());
-    };
-  }, [onClose, open]);
+  useOverlay({ open, rootRef: dialogRef, modal: true, onDismiss: onClose });
 
   if (!open) return null;
   return createPortal(
-    <div
-      className="global-capture-scrim"
-      ref={scrimRef}
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <div className="global-capture-scrim" ref={scrimRef}>
       <section
         aria-labelledby={titleId}
         aria-modal="true"

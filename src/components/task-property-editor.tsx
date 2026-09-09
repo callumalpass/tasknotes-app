@@ -1,6 +1,5 @@
 import { X } from "lucide-react";
 import {
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -9,6 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useOverlay } from "./overlays/use-overlay";
 import { useRepository } from "../app/repository-context";
 import {
   combineTaskDateTime,
@@ -103,7 +103,13 @@ export function TaskPropertyEditor({
     return () => window.removeEventListener("resize", position);
   }, [property?.kind, triggerAnchor]);
 
-  useEffect(() => closeRef.current?.focus(), []);
+  useOverlay({
+    open: true,
+    rootRef: editorRef,
+    modal: window.innerWidth <= 600,
+    onDismiss: onClose,
+    initialFocus: () => closeRef.current,
+  });
 
   async function save(next: unknown = value, closeAfter = true) {
     if (!property || saving) return;
@@ -124,19 +130,14 @@ export function TaskPropertyEditor({
   }
 
   return createPortal(
-    <div
-      className="task-property-editor-scrim"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <div className="task-property-editor-scrim" role="presentation">
       <section
         aria-label={`Edit ${detail.label}`}
         aria-modal={desktopPosition ? undefined : "true"}
         className="task-property-editor"
         ref={editorRef}
         role="dialog"
+        tabIndex={-1}
         style={
           desktopPosition
             ? ({
@@ -145,9 +146,6 @@ export function TaskPropertyEditor({
               } as CSSProperties)
             : undefined
         }
-        onKeyDown={(event) => {
-          if (event.key === "Escape") onClose();
-        }}
       >
         <header>
           <div>

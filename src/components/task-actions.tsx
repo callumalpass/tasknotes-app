@@ -27,6 +27,7 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { useOverlay } from "./overlays/use-overlay";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget, recordCompletion } from "../domain/completion";
 import { activeTimeEntry, todayString } from "../domain/task";
@@ -163,31 +164,6 @@ export function TaskActions({
   }, []);
 
   useEffect(() => {
-    if (!position) return;
-    const close = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        menuRef.current?.contains(target) ||
-        triggerRef.current?.contains(target)
-      )
-        return;
-      closeMenu();
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      if (panels.length > 1) goBack();
-      else closeMenu(true);
-    };
-    window.addEventListener("pointerdown", close);
-    window.addEventListener("keydown", escape);
-    return () => {
-      window.removeEventListener("pointerdown", close);
-      window.removeEventListener("keydown", escape);
-    };
-  }, [panels, position]);
-
-  useEffect(() => {
     if (!position || panel === "subtask") return;
     queueMicrotask(() => {
       const selector =
@@ -199,18 +175,6 @@ export function TaskActions({
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
     });
   }, [panel, position]);
-
-  useEffect(() => {
-    if (!position || !mobile) return;
-    const app = document.getElementById("root");
-    const previousOverflow = document.body.style.overflow;
-    if (app) app.inert = true;
-    document.body.style.overflow = "hidden";
-    return () => {
-      if (app) app.inert = false;
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobile, position]);
 
   function openFromTrigger() {
     if (position) {
@@ -320,6 +284,16 @@ export function TaskActions({
     panel !== "subtask" &&
     panel !== "delete" &&
     !isOrganizeEditor(panel);
+  useOverlay({
+    open: Boolean(position),
+    rootRef: menuRef,
+    modal: rootRole !== "menu",
+    returnFocusRef: triggerRef,
+    onDismiss: (reason) => {
+      if (reason === "escape" && panels.length > 1) goBack();
+      else closeMenu();
+    },
+  });
 
   return (
     <>
@@ -872,26 +846,6 @@ export function TaskActions({
   }
 
   function handleMenuKeys(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (
-      event.key === "Tab" &&
-      (mobile || panel === "subtask" || panel === "delete")
-    ) {
-      const controls = [
-        ...(menuRef.current?.querySelectorAll<HTMLElement>(
-          "button:not(:disabled), input:not(:disabled)",
-        ) ?? []),
-      ];
-      const first = controls[0];
-      const last = controls.at(-1);
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-      return;
-    }
     if (
       event.target instanceof HTMLInputElement ||
       event.target instanceof HTMLTextAreaElement
