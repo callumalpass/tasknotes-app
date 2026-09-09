@@ -69,6 +69,63 @@ describe("GlobalTaskCapture", () => {
     );
   });
 
+  it("keeps the draft when the sheet is dismissed and reopened", async () => {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "Do not lose me tomorrow" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Close new task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    expect(
+      screen.getByRole("combobox", { name: "New task title" }),
+    ).toHaveValue("Do not lose me tomorrow");
+    fireEvent.click(screen.getByRole("button", { name: "Discard draft" }));
+    expect(
+      screen.getByRole("combobox", { name: "New task title" }),
+    ).toHaveValue("");
+  });
+
+  it("an earlier refresh cannot close a newly opened draft", async () => {
+    let finish!: () => void;
+    const refresh = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} onCreated={() => refresh} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "First task" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "New task" })).toBeNull(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "Second task" },
+    });
+    finish();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "New task title" }),
+      ).toHaveValue("Second task"),
+    );
+  });
+
   it("closes on Escape and restores the invoking control", async () => {
     render(
       <RepositoryProvider
@@ -88,7 +145,13 @@ describe("GlobalTaskCapture", () => {
   });
 });
 
-function Harness({ onOpenTask }: { onOpenTask: () => void }) {
+function Harness({
+  onOpenTask,
+  onCreated,
+}: {
+  onOpenTask: () => void;
+  onCreated?: () => Promise<void>;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -99,6 +162,7 @@ function Harness({ onOpenTask }: { onOpenTask: () => void }) {
         open={open}
         onClose={() => setOpen(false)}
         onOpenTask={onOpenTask}
+        onCreated={onCreated}
       />
     </>
   );

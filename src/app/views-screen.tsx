@@ -7,6 +7,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
 import { TaskListSection } from "../components/task-list-section";
@@ -219,6 +220,10 @@ export function ViewsScreen({
   }, [hasWritableViews]);
 
   const selected = views?.find((view) => view.key === viewKey);
+  const captureSession = captureSessionFor(
+    repository,
+    `view:${viewKey ?? "catalog"}`,
+  );
   const plannerHref = usePlannerViewLink(repository, selected);
   const needsIdentityTasks =
     selected?.presentation?.type === "tasknotes.calendar" ||
@@ -1045,6 +1050,7 @@ export function ViewsScreen({
               <span>Add task</span>
             </button>
             <GlobalTaskCapture
+              session={captureSession}
               open={mobileCaptureOpen}
               defaults={captureDefaults}
               onClose={closeMobileCapture}
@@ -1055,6 +1061,7 @@ export function ViewsScreen({
         ) : null}
         {captureDefaults ? (
           <TaskCapture
+            session={captureSession}
             key={selected?.key}
             configuration={configuration}
             createTask={createTask}

@@ -1,5 +1,16 @@
 import { X } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  captureSessionFor,
+  type CaptureSession,
+} from "../application/capture-session";
 import { createPortal } from "react-dom";
 
 import { useRepository } from "../app/repository-context";
@@ -13,17 +24,22 @@ export function GlobalTaskCapture({
   onOpenTask,
   defaults,
   onCreated,
+  session: providedSession,
 }: {
   open: boolean;
   onClose(): void;
   onOpenTask(task: Task): void;
   defaults?: Partial<CreateTaskInput>;
+  session?: CaptureSession;
   onCreated?(
     task: Task,
   ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;
 }) {
   const [keepAdding, setKeepAdding] = useState(false);
   const { configuration, createTask, repository } = useRepository();
+  const session = providedSession ?? captureSessionFor(repository);
+  const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
+  const keepAddingRef = useRef(keepAdding);
   const titleId = useId();
   const dialogRef = useRef<HTMLElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
@@ -124,6 +140,7 @@ export function GlobalTaskCapture({
           </button>
         </header>
         <TaskCapture
+          session={session}
           defaults={defaults}
           retainFocusAfterCreate={keepAdding}
           configuration={configuration}
@@ -132,21 +149,37 @@ export function GlobalTaskCapture({
           focusRequest={1}
           placeholder="What needs doing?"
           showGuide
-          onCreated={async (task) => {
-            const followUp = await onCreated?.(task);
-            if (!keepAdding && !followUp?.message) onClose();
-            return followUp;
+          onCreated={onCreated}
+          onAccepted={(_task, version) => {
+            if (!keepAddingRef.current && session.canCloseAccepted(version))
+              onClose();
           }}
           onOpenCreated={(task) => {
             onClose();
             onOpenTask(task);
           }}
         />
+        {snapshot.text.trim() ? (
+          <div className="capture-draft-actions">
+            <small>Draft kept while this collection is open.</small>
+            <button
+              type="button"
+              className="text-action"
+              disabled={snapshot.status === "submitting"}
+              onClick={() => session.discard()}
+            >
+              Discard draft
+            </button>
+          </div>
+        ) : null}
         <label className="capture-keep-adding">
           <input
             type="checkbox"
             checked={keepAdding}
-            onChange={(event) => setKeepAdding(event.target.checked)}
+            onChange={(event) => {
+              keepAddingRef.current = event.target.checked;
+              setKeepAdding(event.target.checked);
+            }}
           />
           Keep adding tasks
         </label>
