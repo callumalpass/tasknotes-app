@@ -88,7 +88,7 @@ path so existing drag, keyboard, and cross-section semantics are preserved.
 | A09      | Valid Scratchpad textbox autocomplete relationships without unsupported `aria-expanded`                                               |
 | A10      | 44px calendar event controls; semantic, Space-operable More controls; narrow month grids scroll locally rather than shrinking targets |
 | A11      | Notes/reminder controls wrap at 320px with 200% text                                                                                  |
-| A12      | Authority acknowledgement required before entering reorder mode                                                                       |
+| A12      | Authority acknowledgement required before changing manual sort; handles follow the saved primary sort                                 |
 | A13      | 44px row date/action targets; completion remains aligned with the title                                                               |
 
 The two reproduced PR regressions (A03/A12) have permanent passing regression

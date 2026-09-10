@@ -2,6 +2,18 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./local-test";
 
 // Disposable in-memory demo only: never opens a Connect authority or LAB.
+test("saved manual sorting keeps large lists windowed and keyboard operable", async ({
+  page,
+}) => {
+  await page.goto("?demo=500");
+  const handles = page.locator(".manual-order-handle");
+  await expect(handles.first()).toBeEnabled();
+  expect(await handles.count()).toBeLessThan(80);
+  const label = await handles.first().getAttribute("aria-label");
+  await handles.first().press("ArrowDown");
+  await expect(handles.nth(1)).toHaveAttribute("aria-label", label!);
+  expect(await handles.count()).toBeLessThan(80);
+});
 test("daily list, capture and detail remain clear and keyboard accessible", async ({
   page,
 }, testInfo) => {
@@ -11,6 +23,10 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     exact: true,
   });
   await expect(title).toBeVisible();
+  await expect(page.locator(".manual-order-handle").first()).toHaveCSS(
+    "opacity",
+    "1",
+  );
   const firstRow = title.locator(
     "xpath=ancestor::div[contains(@class, 'task-row')][1]",
   );
@@ -34,7 +50,7 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
 
   await page.getByLabel("View options", { exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Reorder tasks", exact: true }),
+    page.getByRole("button", { name: "Manual order", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByLabel("View options", { exact: true })).toBeFocused();
@@ -42,13 +58,24 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     page.getByRole("button", { name: "Edit Today" }),
   ).not.toBeVisible();
   await page.getByLabel("View options", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Reorder tasks", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Manual order", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Manual order", exact: true }).click();
+  await expect(page.locator(".manual-order-handle")).toHaveCount(0);
+  await page.getByLabel("View options", { exact: true }).click();
+  await page.getByRole("button", { name: "Manual order", exact: true }).click();
   await expect(
     page.getByRole("button", { name: /Reorder Prepare quarterly/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Done reordering" }).click();
+  await expect(
+    page.getByRole("button", { name: "Done reordering" }),
+  ).toHaveCount(0);
+  await page.getByLabel("View options", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Manual order", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Manual order", exact: true }).click();
   await expect(
     page.getByRole("button", { name: /Reorder Prepare quarterly/ }),
   ).toHaveCount(0);

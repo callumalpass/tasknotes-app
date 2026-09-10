@@ -8833,8 +8833,7 @@ html.scratchpad-route .page-surface {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .task-actions-trigger,
-  .manual-order-handle {
+  .task-actions-trigger {
     opacity: 0;
     transition:
       color 160ms var(--ease-out),
@@ -8842,9 +8841,7 @@ html.scratchpad-route .page-surface {
   }
 
   .task-row:hover .task-actions-trigger,
-  .task-row:focus-within .task-actions-trigger,
-  .manual-order-row:hover .manual-order-handle,
-  .manual-order-row:focus-within .manual-order-handle {
+  .task-row:focus-within .task-actions-trigger {
     opacity: 1;
   }
 }

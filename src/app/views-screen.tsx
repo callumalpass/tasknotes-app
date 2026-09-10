@@ -1,4 +1,11 @@
-import { ChevronLeft, GripVertical, Pencil, Plus, Search } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  GripVertical,
+  Pencil,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -10,9 +17,9 @@ import type {
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
-import { useMutationState } from "../components/use-mutation-state";
 import { ViewQuerySession } from "../application/view-query-session";
 import { VirtualTaskList } from "./views/virtual-task-list";
+import { canReorderExecution } from "./manual-order-availability";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
@@ -137,7 +144,6 @@ export function ViewsScreen({
 }) {
   const {
     repository,
-    mutations,
     createTask,
     setTaskCompletion,
     updateTask,
@@ -167,7 +173,6 @@ export function ViewsScreen({
     null,
   );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
-  const [arrangingView, setArrangingView] = useState<string | null>(null);
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
   const closeMobileCapture = useCallback(() => setMobileCaptureOpen(false), []);
   const [boardMoves, setBoardMoves] = useState<
@@ -257,8 +262,6 @@ export function ViewsScreen({
     limit: needsIdentityTasks ? 50_000 : 0,
   });
   const selectedKey = selected?.key;
-  const arrangeKey = JSON.stringify(["arrange", selectedKey]);
-  const arrangeCommand = useMutationState(mutations, arrangeKey);
   const selectedKeyRef = useRef(selectedKey);
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
@@ -391,11 +394,10 @@ export function ViewsScreen({
   const selectedManualOrderOperations = [...manualOrderPending.values()].filter(
     ({ viewKey: pendingViewKey }) => pendingViewKey === selected?.key,
   );
-  const manualOrderPendingForSelected =
-    selectedManualOrderOperations.length > 0;
   const manualOrderPendingTaskIds = new Set(
     selectedManualOrderOperations.map(({ taskId }) => taskId),
   );
+  const manualOrderPendingForSelected = manualOrderPendingTaskIds.size > 0;
   const presentedExecution = useMemo(() => {
     const ranked =
       visibleExecution && manualOrder
@@ -423,6 +425,10 @@ export function ViewsScreen({
     (selected ? `${selected.key}:${selected.source.revision}` : null);
   const error =
     executionError?.key === selected?.key ? executionError?.reason : viewsError;
+  const orderUnavailable =
+    Boolean(error) ||
+    currentExecutionRefreshing ||
+    !canReorderExecution(presentedExecution);
   const currentViewActionError =
     viewActionError && viewActionError.viewKey === selected?.key
       ? viewActionError.message
@@ -493,7 +499,7 @@ export function ViewsScreen({
             ? " is-mini-calendar-view"
             : "";
 
-  async function toggleManualOrderSort() {
+  async function setManualOrderSort(enabled: boolean) {
     if (!selected || !selected.source.writable || manualOrderSortPending)
       return false;
     const view = selected;
@@ -503,16 +509,13 @@ export function ViewsScreen({
     try {
       const source = await repository.readViewSource(view.source.path);
       const draft = readViewDraft(source, view.id);
-      const active = Boolean(
-        manualOrderConfiguration(draft.sort, sortOrderField),
-      );
       const defaultProperty =
         draft.dialect === "obsidian-bases"
           ? basesProperty(sortOrderField)
           : sortOrderField;
-      const sort = active
-        ? disableManualOrderSort(draft.sort, sortOrderField)
-        : enableManualOrderSort(draft.sort, sortOrderField, defaultProperty);
+      const sort = enabled
+        ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)
+        : disableManualOrderSort(draft.sort, sortOrderField);
       await repository.updateViewSource({
         path: source.path,
         ifRevision: source.revision,
@@ -536,7 +539,7 @@ export function ViewsScreen({
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
   ): Promise<boolean> {
-    if (!selected || !manualOrder) return false;
+    if (!selected || !manualOrder || orderUnavailable) return false;
     const plan = planManualOrder(
       rows.map(({ task }) => task),
       dragged.task,
@@ -1011,69 +1014,25 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
-              {arrangingView === selected?.key && selected ? (
-                <button
-                  className="text-action"
-                  type="button"
-                  onClick={() => setArrangingView(null)}
-                >
-                  Done reordering
-                </button>
-              ) : null}
               {selected?.source.writable ? (
                 <ViewOptions>
                   <button
                     type="button"
+                    aria-pressed={Boolean(manualOrder)}
                     disabled={
-                      manualOrderSortPending === selected.key ||
-                      arrangeCommand.pending ||
+                      manualOrderSortPending !== null ||
+                      manualOrderPendingForSelected ||
                       currentExecutionRefreshing
                     }
-                    onClick={() => {
-                      const session = viewQueryRef.current;
-                      void mutations
-                        .run(
-                          arrangeKey,
-                          async () => {
-                            if (
-                              presentedExecution?.hasMore &&
-                              !(await session?.loadAll())
-                            )
-                              return;
-                            if (selectedKeyRef.current !== selected.key) return;
-                            queryRowsRef.current.set(selected.key, Infinity);
-                            if (
-                              !manualOrder &&
-                              !(await toggleManualOrderSort())
-                            )
-                              return;
-                            if (selectedKeyRef.current === selected.key)
-                              setArrangingView(selected.key);
-                          },
-                          "enter",
-                        )
-                        .catch((reason) =>
-                          setViewActionError({
-                            viewKey: selected.key,
-                            message: message(reason),
-                          }),
-                        );
-                    }}
+                    onClick={() => void setManualOrderSort(!manualOrder)}
                   >
-                    <GripVertical aria-hidden="true" size={18} /> Reorder tasks
+                    {manualOrder ? (
+                      <Check aria-hidden="true" size={18} />
+                    ) : (
+                      <GripVertical aria-hidden="true" size={18} />
+                    )}{" "}
+                    Manual order
                   </button>
-                  {manualOrder ? (
-                    <button
-                      type="button"
-                      disabled={manualOrderSortPending === selected.key}
-                      onClick={() => {
-                        setArrangingView(null);
-                        void toggleManualOrderSort();
-                      }}
-                    >
-                      Turn off manual order
-                    </button>
-                  ) : null}
                   <button
                     type="button"
                     aria-label={`Edit ${selected.name}`}
@@ -1100,8 +1059,26 @@ export function ViewsScreen({
           <p className="view-note" role="status">
             Loaded {presentedExecution.rows.length} of{" "}
             {presentedExecution.totalCount} matching tasks. Section counts cover
-            loaded tasks. Reordering loads the complete view.
+            loaded tasks.{" "}
+            {manualOrder ? "Load remaining tasks to change manual order." : ""}
           </p>
+        ) : null}
+        {manualOrder && presentedExecution?.hasMore ? (
+          <button
+            type="button"
+            className="text-action"
+            disabled={currentExecutionRefreshing}
+            onClick={() => {
+              const key = selected?.key;
+              void viewQueryRef.current?.loadAll().then((complete) => {
+                if (complete && key) queryRowsRef.current.set(key, Infinity);
+              });
+            }}
+          >
+            {currentExecutionRefreshing
+              ? "Loading tasks…"
+              : "Load remaining tasks"}
+          </button>
         ) : null}
         {!error && presentedExecution?.hasSkippedRecords ? (
           <p className="view-record-warning" role="status">
@@ -1292,8 +1269,11 @@ export function ViewsScreen({
                 ),
               )
             }
-            manualOrder={arrangingView === selected?.key ? manualOrder : null}
-            orderPending={manualOrderPendingForSelected}
+            manualOrder={manualOrder}
+            orderPending={
+              manualOrderPendingForSelected || currentExecutionRefreshing
+            }
+            orderUnavailable={orderUnavailable}
             titleProperty={configuration.fieldMapping.title}
             onMove={(dragged, source, destination, targetId, placement) =>
               void moveListTask(
@@ -2068,6 +2048,7 @@ function edgeScrollDistance(
 }
 
 function TaskListView({
+  orderUnavailable,
   sectionScope,
   configuration,
   execution,
@@ -2079,6 +2060,7 @@ function TaskListView({
   onOpen,
   onToggle,
 }: ViewProps & {
+  orderUnavailable: boolean;
   sectionScope?: string;
   configuration: TaskCollectionConfiguration;
   moves: ReadonlyMap<string, { laneKey: string }>;
@@ -2156,6 +2138,7 @@ function TaskListView({
     );
   return (
     <ManualTaskRows
+      orderUnavailable={orderUnavailable}
       preferenceScope={
         sectionScope
           ? JSON.stringify([sectionScope, execution.view.key])
@@ -2177,6 +2160,7 @@ function TaskListView({
 }
 
 function ManualTaskRows({
+  orderUnavailable,
   preferenceScope,
   configuration,
   daySections,
@@ -2190,6 +2174,7 @@ function ManualTaskRows({
   onMove,
   onToggle,
 }: {
+  orderUnavailable: boolean;
   configuration: TaskCollectionConfiguration;
   preferenceScope?: string;
   daySections: boolean;
@@ -2276,11 +2261,24 @@ function ManualTaskRows({
     setDrop(next);
   }
 
+  function revealLane(key: string) {
+    const section = [
+      ...(listRef.current?.querySelectorAll<HTMLElement>(
+        "section[data-list-lane]",
+      ) ?? []),
+    ].find((node) => node.dataset.listLane === key);
+    section
+      ?.querySelector<HTMLButtonElement>(
+        '.task-section-toggle[aria-expanded="false"]',
+      )
+      ?.click();
+  }
+
   function finish(row: TaskViewRow) {
     const active = draggingRef.current;
     const destination = dropRef.current;
     clearDrag();
-    if (!active || !destination) return;
+    if (!active || !destination || orderPending || orderUnavailable) return;
     const sourceLane = laneByKey.get(active.sourceLaneKey);
     const destinationLane = laneByKey.get(destination.laneKey);
     if (!sourceLane || !destinationLane) return;
@@ -2299,6 +2297,7 @@ function ManualTaskRows({
       );
       return;
     }
+    revealLane(destinationLane.key);
     onMove(
       row,
       sourceLane,
@@ -2323,6 +2322,7 @@ function ManualTaskRows({
     row: TaskViewRow,
     sourceLane: TaskListLane,
   ) {
+    if (orderPending || orderUnavailable) return;
     const direction =
       event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
     if (!direction) return;
@@ -2352,6 +2352,7 @@ function ManualTaskRows({
     if (!input) return;
     event.preventDefault();
     const crossesLane = sourceLane.key !== destinationLane.key;
+    if (crossesLane) revealLane(destinationLane.key);
     onMove(
       row,
       sourceLane,
@@ -2372,6 +2373,51 @@ function ManualTaskRows({
     );
   }
 
+  const renderRow = (row: TaskViewRow, lane: TaskListLane) => (
+    <div
+      className={`manual-order-row${dragging?.taskId === row.task.id ? " is-dragging" : ""}${drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
+      data-manual-order-task={row.task.id}
+      data-list-lane={lane.key}
+      key={row.task.id}
+    >
+      {manualOrder ? (
+        <button
+          aria-label={`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
+          className="manual-order-handle"
+          disabled={orderPending || orderUnavailable}
+          type="button"
+          onKeyDown={(event) => moveWithKeyboard(event, row, lane)}
+          onPointerDown={(event) => {
+            if (orderPending || orderUnavailable) return;
+            event.preventDefault();
+            event.currentTarget.focus();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            const active = { taskId: row.task.id, sourceLaneKey: lane.key };
+            draggingRef.current = active;
+            setDragging(active);
+            setAnnouncement(`Moving ${row.task.title}.`);
+          }}
+          onPointerMove={(event) => {
+            if (draggingRef.current?.taskId !== row.task.id) return;
+            event.preventDefault();
+            updateDrop(event.clientX, event.clientY);
+          }}
+          onPointerCancel={clearDrag}
+          onPointerUp={() => finish(row)}
+        >
+          <GripVertical aria-hidden="true" size={16} />
+        </button>
+      ) : null}
+      <ViewTaskRow
+        row={row}
+        properties={properties}
+        titleProperty={titleProperty}
+        onOpen={onOpen}
+        onToggle={onToggle}
+      />
+    </div>
+  );
+
   return (
     <>
       <div
@@ -2383,85 +2429,60 @@ function ManualTaskRows({
         }
         ref={listRef}
       >
-        {lanes.map((lane) => {
-          const rows = (
-            <div
-              className={`saved-task-list${grouped && manualOrder ? " manual-order-list" : ""}`}
-            >
-              {lane.rows.map((row) => (
-                <div
-                  className={`manual-order-row${dragging?.taskId === row.task.id ? " is-dragging" : ""}${drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
-                  data-manual-order-task={row.task.id}
-                  key={row.task.id}
-                >
-                  {manualOrder ? (
-                    <button
-                      aria-label={`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
-                      className="manual-order-handle"
-                      disabled={orderPending}
-                      type="button"
-                      onKeyDown={(event) => moveWithKeyboard(event, row, lane)}
-                      onPointerDown={(event) => {
-                        if (orderPending) return;
-                        event.preventDefault();
-                        event.currentTarget.setPointerCapture(event.pointerId);
-                        const active = {
-                          taskId: row.task.id,
-                          sourceLaneKey: lane.key,
-                        };
-                        draggingRef.current = active;
-                        setDragging(active);
-                        setAnnouncement(`Moving ${row.task.title}.`);
-                      }}
-                      onPointerMove={(event) => {
-                        if (draggingRef.current?.taskId !== row.task.id) return;
-                        event.preventDefault();
-                        updateDrop(event.clientX, event.clientY);
-                      }}
-                      onPointerCancel={clearDrag}
-                      onPointerUp={() => finish(row)}
-                    >
-                      <GripVertical aria-hidden="true" size={16} />
-                    </button>
-                  ) : null}
-                  <ViewTaskRow
-                    row={row}
-                    properties={properties}
-                    titleProperty={titleProperty}
-                    onOpen={onOpen}
-                    onToggle={onToggle}
-                  />
-                </div>
-              ))}
-              {grouped && manualOrder && !lane.rows.length ? (
-                <div className="task-list-empty-drop-zone">Drop here</div>
-              ) : null}
-            </div>
-          );
-          if (!grouped)
-            return (
-              <div data-list-lane={lane.key} key={lane.key}>
-                {rows}
+        {lanes.reduce((total, lane) => total + lane.rows.length, 0) > 100 ? (
+          <div className={manualOrder ? "manual-order-list" : undefined}>
+            <VirtualTaskList
+              lanes={lanes}
+              grouped={grouped}
+              daySections={daySections}
+              preferenceScope={preferenceScope}
+              properties={properties}
+              titleProperty={titleProperty}
+              onOpen={onOpen}
+              onToggle={onToggle}
+              showEmpty={Boolean(manualOrder)}
+              renderRow={(row, lane) =>
+                renderRow(row, laneByKey.get(lane.key)!)
+              }
+            />
+          </div>
+        ) : (
+          lanes.map((lane) => {
+            const rows = (
+              <div
+                className={`saved-task-list${grouped && manualOrder ? " manual-order-list" : ""}`}
+              >
+                {lane.rows.map((row) => renderRow(row, lane))}
+                {grouped && manualOrder && !lane.rows.length ? (
+                  <div className="task-list-empty-drop-zone">Drop here</div>
+                ) : null}
               </div>
             );
-          return (
-            <TaskListSection
-              className={`${lane.className ?? ""}${drop?.laneKey === lane.key ? " is-drop-target" : ""}`}
-              laneKey={lane.key}
-              key={`${preferenceScope ?? "loading"}:${lane.key}`}
-              preferenceKey={
-                preferenceScope
-                  ? `tasknotes:section:${preferenceScope}:${lane.key}`
-                  : undefined
-              }
-              label={lane.label ?? "Other"}
-              count={lane.rows.length}
-              arranging={Boolean(manualOrder)}
-            >
-              {rows}
-            </TaskListSection>
-          );
-        })}
+            if (!grouped)
+              return (
+                <div data-list-lane={lane.key} key={lane.key}>
+                  {rows}
+                </div>
+              );
+            return (
+              <TaskListSection
+                className={`${lane.className ?? ""}${drop?.laneKey === lane.key ? " is-drop-target" : ""}`}
+                laneKey={lane.key}
+                key={`${preferenceScope ?? "loading"}:${lane.key}`}
+                preferenceKey={
+                  preferenceScope
+                    ? `tasknotes:section:${preferenceScope}:${lane.key}`
+                    : undefined
+                }
+                label={lane.label ?? "Other"}
+                count={lane.rows.length}
+                showEmpty={Boolean(manualOrder)}
+              >
+                {rows}
+              </TaskListSection>
+            );
+          })
+        )}
       </div>
       {manualOrder && grouped && !canMoveAcrossLanes ? (
         <p className="view-note">
