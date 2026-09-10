@@ -59,10 +59,10 @@ spacing:
 
 ## Creative north star
 
-**A pocket standards notebook.** TaskNotes mobile borrows mdbase's paper,
-blue-black ink, quiet rules, literal labels, and generous page-level space. It
-applies them to a mobile workflow where task rows stay compact and controls
-remain familiar.
+**A personal working notebook.** TaskNotes retains mdbase's paper, blue-black
+ink, and precise language, but prioritizes daily decisions over visible
+configuration. Task titles lead, supporting metadata explains rather than
+competes, and notes preserve the thinking behind the work.
 
 The physical scene is a person checking or capturing work on a phone in normal
 daylight or after dark, often one-handed and between other activities. This
@@ -79,6 +79,9 @@ Dark mode uses deep blue-black paper rather than pure black. Raised surfaces
 remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA
 contrast.
+
+Stored priority colors decorate a swatch, not the label's ink. Keep selected and
+unselected text legible without rewriting users' colors.
 
 `#808080` is a data-layer compatibility value used when parsing legacy task
 color metadata and in its fixtures. It is not an interface color.
@@ -99,13 +102,15 @@ computer to remain reachable. A completed write has been accepted by that
 authority. TaskNotes never presents browser or device storage as another copy
 of the collection, and it does not imply offline availability. Portability is
 visible through Markdown paths and collection information without exposing
-transport details in ordinary task flows.
+transport details in ordinary task flows. Known unavailability stays visible across
+the workspace and detail, even when a cached read succeeds; retry and connection
+settings remain available.
 
 ## Typography
 
-Atkinson Hyperlegible carries headings, task titles, fields, and explanatory
-copy. Azeret Mono is reserved for dates, compact section labels, sync state,
-collection names, and Markdown paths. Preserve platform text scaling and avoid
+Atkinson Hyperlegible carries headings, task titles, fields, dates, section
+labels, and explanatory copy. Azeret Mono is reserved for technical state,
+collection identifiers, and Markdown paths. Preserve platform text scaling and avoid
 text smaller than 11 points.
 
 The semantic type scale is intentionally small: 32px page titles, 20px section
@@ -138,7 +143,12 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-- Buttons are text or lightly outlined controls. There are no black or saturated filled buttons.
+  The title's effective target is at least 44px high, separate from completion,
+  date, and action controls. Search explains observed non-title matches with
+  concise labels such as “Matched in notes.”
+- Secondary buttons are text or lightly outlined controls. The persistent
+  mobile capture button uses the blue accent fill with contrasting canvas text:
+  one unmistakable primary action, not a page full of competing buttons.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Persistent selection uses an accent label, icon, check, or soft fill. Do not
@@ -147,7 +157,12 @@ Today             Search       More
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Views and Settings. Manage views separates the ordered destinations shown in
+  Browse. Editable focus alone never hides navigation; keyboard-aware changes
+  require observed viewport occlusion. Browse contains additional destinations,
+  Manage views, and Settings. Tab dismisses Browse and continues outside it;
+  arrow keys belong to the menu only while focus is inside.
+  Fresh collections begin with Today, Upcoming, and Scratchpad; existing choices
+  and migrated navigation preferences remain intact. Manage views separates the ordered destinations shown in
   navigation from the complete catalog. Reordering is an intentional mode with
   drag and keyboard/button alternatives; any saved view or built-in tool may
   occupy the first, Home position. Catalog membership uses explicit Add/Added
@@ -168,8 +183,9 @@ Today             Search       More
   this boundary stays stronger than the rules between rows inside it. Explanatory
   chrome and separate Add task/Add note buttons are omitted: the trailing outline
   row is the capture affordance. Every card can switch between the structured
-  Outline editor and its exact Markdown source through compact named icon
-  controls. Older documents load explicitly, expand into the full editor, and
+  Outline editor and its exact Markdown source through a visible Outline / Write
+  text switch. Settings controls the default mode for new, empty notes; existing
+  content keeps its compatible editor without being rewritten. Older documents load explicitly, expand into the full editor, and
   may remain open together. Typing `[[` offers collection-record suggestions in
   both editors; an exact link becomes a linked row only when it resolves to an
   actual task, while links to other record types remain editable note content.
@@ -188,12 +204,23 @@ Today             Search       More
   images are centered without enlarging small source images. Outline menus may
   escape card borders instead of being clipped and open upward when the lower
   feed or viewport edge leaves insufficient room.
-- Scratchpad draft-task rows use toggleable portable Markdown checkboxes and
-  reveal a direct task-to-note control with the row actions; checked drafts
-  convert into the collection's first completed status. Linked rows expose the
-  same task-actions menu used by task lists. Nested branches can
-  collapse, and focused mobile rows expose outdent, indent, and add-child
-  controls without dismissing the keyboard.
+- Scratchpad Markdown mode is a writing surface, not a code panel: proportional
+  prose, generous line spacing, a bounded reading width, and monospace only for
+  code. A small, keyboard-accessible formatting row preserves the selection and
+  ordinary undo. Save status stays quiet but visible, including on phones.
+  Instructional footers, placeholder prose, and word counts are omitted.
+  Formatting is explicit; autosave preserves the exact Markdown source.
+- Outline text and linked-task titles wrap within the text column with hanging
+  indentation. Editable rows grow with their content; controls stay aligned to
+  the first line. Wrapping does not split nodes, and Enter creates the next item.
+- Scratchpad draft-task rows use toggleable portable Markdown checkboxes;
+  checked drafts convert into the collection's first completed status. Desktop
+  rows keep a direct task-to-note control. Phone rows reserve width for writing:
+  conversion and individual task creation live in the row menu, with dragging,
+  outdent, indent, and add-child controls in the focused-row toolbar. Leading
+  row controls have 44px targets. Linked rows expose the same task-actions menu
+  used by task lists, and nested branches can collapse. Loaded history appears
+  without fading its readable text.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
@@ -204,11 +231,55 @@ Today             Search       More
   seconds.
 - Disclosure rows use a title, a plain-language current-value summary, and the
   same chevron treatment across capture, task editing, views, and settings.
-- Every writable saved view exposes manual ordering in its page header. The
-  control updates the view's sort rule; layouts that support spatial ordering
-  also expose direct drag and keyboard arrangement.
-- The saved-view capture field retains focus after a successful creation so a
-  user can enter several tasks without returning to the field.
+- Every writable saved view exposes a pressed-state Manual order sorting option
+  and Edit view in a quiet View options disclosure. Manual sorting directly
+  enables list handles, including when reopening a saved view; there is no
+  separate reorder mode. Switching it off restores the other sort rules without
+  deleting stored task ranks. Selecting a different primary sort in the editor
+  also hides handles. Partial results expose Load remaining tasks before ordering
+  is enabled; stale or incomplete reads never permit rank writes. Boards retain
+  direct spatial arrangement.
+- Grouped lists have accessible collapsible sections, expanded by default.
+  Explicit collapse choices are local preferences scoped to collection, view,
+  and section. Manual sorting keeps sections collapsible and reveals empty drop
+  destinations. Moving into a collapsed section expands that destination. Large
+  manually sorted lists keep measured windowing rather than rendering every row. There is no special
+  overdue-review workflow or automatic hiding of overdue work. Projects likewise
+  have collection/view-scoped collapse choices, visible counts, and a compact
+  jump selector that expands and focuses the chosen project.
+- Scheduled and Due retain visible labels, including when both dates occur on
+  a row. Routine status/priority defaults recede; custom meaningful values stay
+  available. Completion circles do not use a legacy default status color.
+- Task detail leads with a title-level completion control and the note body.
+  Schedule and status have a compact, wrapping disclosure summary; advanced
+  properties and the backing Markdown record remain inspectable. Returning to
+  the list restores the invoking control and scroll position.
+- Desktop saved-view capture retains focus after successful creation. Phone
+  saved views with creation defaults have one persistent contextual Add task
+  button instead of a second inline capture field; the shared capture sheet
+  retains view creation defaults. Calendar day taps browse the selected day;
+  timed selection still starts capture. The calendar toolbar does not duplicate
+  the phone capture button.
+  Keep adding tasks supports consecutive capture. The sheet follows the visual
+  viewport above an overlay keyboard.
+- Capture shows the interpreted title and editable/removable date tokens.
+  Explicit property edits survive subsequent title typing. The complete draft
+  remains visible while saving and survives a rejected write; it clears only
+  after authority acceptance. Date shortcuts preserve an existing time. Closing
+  an accepted capture sheet announces Task added with an Open action, without
+  moving the current view. This confirmation has no action timeout, yields to
+  deletion recovery, and clears on navigation or replacement.
+- Calendar More opens a readable, opaque panel with 44px controls, bounded to
+  the calendar surface and viewport above navigation. The covered calendar grid
+  is temporarily inert, not the whole application. Internal Tab stays within
+  the panel until its boundary; Tab then dismisses and continues outside.
+  Escape returns to More. Opening another overlay retires the imperative panel
+  and transfers its return-focus target rather than leaving competing owners.
+- View editing has one compact Preview disclosure. On phones, Layout initially
+  summarizes the chosen layout so filters are reachable without passing every
+  layout tile. Planner is explicitly an external app before saving. Ordinary
+  pages and editors reflow at 320px with 200% root text; deliberate board and
+  calendar scrolling stays local rather than widening the document.
 - A kanban board consumes the remaining usable viewport. Its horizontal
   scrollbar stays at the bottom of the screen while columns scroll within that
   surface.

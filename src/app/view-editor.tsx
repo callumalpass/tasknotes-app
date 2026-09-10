@@ -26,6 +26,7 @@ import {
   type ViewDraftPreview,
 } from "../domain/view-preview";
 import { loadViewEditorForm } from "./view-editor-loader";
+import { useOverlay } from "../components/overlays/use-overlay";
 import { useRepository } from "./repository-context";
 
 import type { TaskView, TaskViewSourceDocument } from "../domain/view";
@@ -164,66 +165,24 @@ export function ViewEditor({
     onClose();
   }, [dirty, onClose]);
 
-  useEffect(() => {
-    if (!confirmation) return;
-    confirmationRef.current?.querySelector<HTMLElement>("button")?.focus();
-  }, [confirmation]);
-
-  useEffect(() => {
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const appRoot = document.getElementById("root");
-    const previousInert = appRoot?.inert ?? false;
-    const previousAriaHidden = appRoot?.getAttribute("aria-hidden");
-    if (appRoot) {
-      appRoot.inert = true;
-      appRoot.setAttribute("aria-hidden", "true");
-    }
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      if (appRoot) {
-        appRoot.inert = previousInert;
-        if (previousAriaHidden == null) appRoot.removeAttribute("aria-hidden");
-        else appRoot.setAttribute("aria-hidden", previousAriaHidden);
-      }
-      previousFocus?.focus();
-    };
-  }, []);
-
-  useEffect(() => {
-    const keyDown = (event: KeyboardEvent) => {
-      if (status === "saving") return;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        if (confirmation) setConfirmation(null);
-        else requestClose();
-        return;
-      }
-      const focusRoot = confirmationRef.current ?? editorRef.current;
-      if (event.key !== "Tab" || !focusRoot) return;
-      const controls = focusableControls(focusRoot);
-      if (!controls.length) return;
-      const first = controls[0];
-      const last = controls.at(-1)!;
-      if (
-        event.shiftKey &&
-        (document.activeElement === first ||
-          document.activeElement === focusRoot)
-      ) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", keyDown);
-    return () => window.removeEventListener("keydown", keyDown);
-  }, [confirmation, requestClose, status]);
+  useOverlay({
+    open: true,
+    rootRef: editorRef,
+    modal: true,
+    onDismiss: () => {
+      if (status !== "saving") requestClose();
+    },
+  });
+  useOverlay({
+    open: Boolean(confirmation),
+    rootRef: confirmationRef,
+    modal: true,
+    initialFocus: () =>
+      confirmationRef.current?.querySelector<HTMLElement>("button") ?? null,
+    onDismiss: () => {
+      if (status !== "saving") setConfirmation(null);
+    },
+  });
 
   async function save() {
     if (!draft || !draft.name.trim() || !filterValid || !computedValid) return;
@@ -322,7 +281,6 @@ export function ViewEditor({
                   : "Create saved view"}
             </p>
             <h1 id="view-editor-title">{title}</h1>
-            <small>{previewLabel(preview)}</small>
           </div>
           <button
             aria-label="Close view editor"
@@ -413,14 +371,10 @@ export function ViewEditor({
 
 function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
   return (
-    <section
-      className="view-draft-preview"
-      aria-labelledby="view-preview-title"
-    >
-      <div>
-        <h2 id="view-preview-title">Preview</h2>
-        <p>{previewLabel(preview)}</p>
-      </div>
+    <details className="view-draft-preview">
+      <summary>
+        Preview <span aria-live="polite">{previewLabel(preview)}</span>
+      </summary>
       {preview.tasks.length ? (
         <ol aria-label="Preview tasks">
           {preview.tasks.map((task) => (
@@ -430,7 +384,7 @@ function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
       ) : preview.kind === "live" ? (
         <p className="view-preview-empty">No tasks match this draft.</p>
       ) : null}
-    </section>
+    </details>
   );
 }
 
@@ -521,14 +475,6 @@ function draftFingerprint(draft: EditableViewDraft | null): string {
     groupDirection: draft.groupDirection,
     options: draft.options,
   });
-}
-
-function focusableControls(container: HTMLElement): HTMLElement[] {
-  return [
-    ...container.querySelectorAll<HTMLElement>(
-      'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-    ),
-  ].filter((control) => !control.hidden);
 }
 
 function message(reason: unknown): string {

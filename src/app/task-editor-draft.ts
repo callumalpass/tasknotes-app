@@ -1,3 +1,4 @@
+import { linkDisplayLabel } from "../domain/completion";
 import { recurrencePreset } from "../domain/recurrence-rule";
 import { activeTimeEntry, type Task } from "../domain/task";
 
@@ -114,7 +115,9 @@ export function isEmptyFieldValue(value: unknown): boolean {
 }
 
 function listSummary(values: string[], singular: string): string {
-  return values.length === 1 ? values[0] : `${values.length} ${singular}s`;
+  return values.length === 1
+    ? linkDisplayLabel(values[0])
+    : `${values.length} ${singular}s`;
 }
 
 function humanizeValue(value: string): string {

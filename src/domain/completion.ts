@@ -61,6 +61,12 @@ export function linkLabel(value: string): string | undefined {
   return markdown?.[1].trim() || undefined;
 }
 
+export function linkDisplayLabel(value: string): string {
+  const label = linkLabel(value);
+  if (label) return label;
+  return linkTarget(value).split("/").at(-1) || value;
+}
+
 export function recordLabel(record: {
   path: string;
   frontmatter?: Record<string, unknown>;

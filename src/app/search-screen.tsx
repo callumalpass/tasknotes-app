@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
 import { LoadingRows } from "../components/loading";
+import { taskCompletion } from "../domain/task-completion";
+import { linkDisplayLabel } from "../domain/completion";
+import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
+import { searchMatchContext } from "./search-match-context";
 
 import type { Task } from "../domain/task";
 
@@ -17,13 +21,35 @@ export function SearchScreen({
 }) {
   const [query, setQuery] = useState("");
   const deferred = useDebounced(query, 160);
-  const { toggleTask } = useRepository();
-  const { tasks, loading } = useTasks({
-    status: "all",
-    search: deferred,
-    limit: 300,
-  });
+  const { setTaskCompletion } = useRepository();
+  const [limit, setLimit] = useState(300);
+  const {
+    tasks: results,
+    loading,
+    refreshing,
+    error,
+    stale,
+    retry,
+  } = useTasks({ status: "all", search: deferred, limit: limit + 1 });
+  const tasks = results.slice(0, limit);
+  const hasMore = results.length > limit;
   const searching = query.trim().length > 0;
+  const waiting = query !== deferred;
+  const chooseQuery = (value: string) => {
+    setQuery(value);
+    setLimit(300);
+  };
+  const renderTask = (task: Task) => (
+    <TaskRow
+      key={task.id}
+      task={task}
+      supportingText={searchMatchContext(task, deferred)}
+      onOpen={onOpen}
+      onToggle={(item) =>
+        setTaskCompletion({ id: item.id, completed: !taskCompletion(item) })
+      }
+    />
+  );
 
   return (
     <section className="screen" aria-labelledby="search-title">
@@ -57,38 +83,67 @@ export function SearchScreen({
           placeholder="Tasks, tags, projects"
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => chooseQuery(event.target.value)}
         />
         {query ? (
           <button
             aria-label="Clear search"
             title="Clear search"
             type="button"
-            onClick={() => setQuery("")}
+            onClick={() => chooseQuery("")}
           >
             <X aria-hidden="true" size={19} strokeWidth={1.7} />
           </button>
         ) : null}
       </div>
-      {!searching ? (
-        <BrowseFields tasks={tasks} onChoose={setQuery} />
-      ) : loading ? (
+      {!waiting && error ? (
+        <div className="operation-error-notice" role="alert">
+          <p>Search could not be loaded. {error.message}</p>
+          {stale ? <p>Previously loaded results may be out of date.</p> : null}
+          <button type="button" onClick={retry}>
+            Retry search
+          </button>
+        </div>
+      ) : null}
+      {waiting || (loading && !error) ? (
         <LoadingRows count={4} />
+      ) : error && !tasks.length ? null : !searching ? (
+        <>
+          <BrowseFields tasks={tasks} onChoose={chooseQuery} />
+          {hasMore ? (
+            <p role="status">
+              Suggestions from the first {limit} tasks. Search to find others.
+            </p>
+          ) : null}
+        </>
       ) : tasks.length ? (
         <>
           <p className="search-result-count" role="status">
-            {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+            {refreshing
+              ? "Refreshing results…"
+              : `${tasks.length}${hasMore ? "+" : ""} ${tasks.length === 1 ? "task" : "tasks"}${stale ? " — previously loaded" : ""}`}
           </p>
           <div className="task-list search-results">
-            {tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onOpen={onOpen}
-                onToggle={(item) => void toggleTask(item.id)}
+            {tasks.length > 100 ? (
+              <BoundedList
+                items={tasks}
+                getKey={(task) => task.id}
+                renderItem={renderTask}
               />
-            ))}
+            ) : (
+              tasks.map(renderTask)
+            )}
           </div>
+          {hasMore || refreshing ? (
+            <button
+              className="text-action view-pagination-action"
+              type="button"
+              disabled={refreshing}
+              onClick={() => setLimit((value) => value + 300)}
+            >
+              {refreshing ? "Loading more…" : "Show more results"}
+            </button>
+          ) : null}
         </>
       ) : (
         <EmptyState
@@ -186,7 +241,7 @@ function collect(tasks: Task[], field: "tags" | "contexts" | "projects") {
 }
 
 function cleanField(value: string): string {
-  return value.replace(/^#/, "").replace(/^\[\[|\]\]$/g, "");
+  return linkDisplayLabel(value.replace(/^#/, ""));
 }
 
 function useDebounced<T>(value: T, delay: number): T {

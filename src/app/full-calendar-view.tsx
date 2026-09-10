@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { TaskActions } from "../components/task-actions";
+import { useCalendarOverflow } from "./use-calendar-overflow";
 import { TaskRow } from "../components/task-row";
 import {
   calendarEntryKey,
@@ -67,7 +68,7 @@ export function FullCalendarView({
   titleProperty,
   onSelect,
   onCreate,
-  onOpen,
+  onOpen: onOpenTask,
   onToggle,
   onUpdate,
   onUpdateOccurrence,
@@ -87,6 +88,12 @@ export function FullCalendarView({
   onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
   onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const closeOverflow = useCalendarOverflow(rootRef);
+  function onOpen(task: Task, occurrenceDate?: string) {
+    closeOverflow();
+    onOpenTask(task, occurrenceDate);
+  }
   const calendarRef = useRef<FullCalendar | null>(null);
   const initialMode = calendarMode(
     execution.view.presentation?.options.calendarView,
@@ -214,12 +221,18 @@ export function FullCalendarView({
           Math.round((info.end.getTime() - info.start.getTime()) / 60_000),
         );
     onSelect(date, value);
-    onCreate(date, value, timeEstimate);
+    // On phones a day tap browses its tasks; a timed selection still starts capture.
+    if (!info.allDay || !window.matchMedia?.("(max-width: 839px)").matches) {
+      onCreate(date, value, timeEstimate);
+    }
     info.view.calendar.unselect();
   }
 
   return (
-    <div className={`full-calendar-view${listMode ? " is-agenda" : ""}`}>
+    <div
+      ref={rootRef}
+      className={`full-calendar-view${listMode ? " is-agenda" : ""}`}
+    >
       <div className="full-calendar-commandbar">
         <div className="full-calendar-navigation">
           <button
@@ -274,6 +287,14 @@ export function FullCalendarView({
             allDaySlot={preferences.allDaySlot}
             allDayText="All day"
             dayMaxEvents={3}
+            eventMinHeight={44}
+            moreLinkDidMount={({ el }) => {
+              el.setAttribute("role", "button");
+              el.addEventListener("keydown", activateMoreOnSpace);
+            }}
+            moreLinkWillUnmount={({ el }) =>
+              el.removeEventListener("keydown", activateMoreOnSpace)
+            }
             dayCellClassNames={(info) =>
               todayString(info.date) === selected ? ["is-selected-day"] : []
             }
@@ -571,6 +592,12 @@ function calendarEventContent(
       ) : null}
     </span>
   );
+}
+
+function activateMoreOnSpace(event: KeyboardEvent) {
+  if (event.key !== " ") return;
+  event.preventDefault();
+  (event.currentTarget as HTMLElement).click();
 }
 
 function calendarEventLabel(info: EventContentArg): string {

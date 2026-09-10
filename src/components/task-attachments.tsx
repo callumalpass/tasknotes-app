@@ -131,7 +131,6 @@ export function TaskAttachments({
       <header className="task-attachments-heading">
         <div>
           <h2 id="task-attachments-title">Attachments</h2>
-          <p>Listed with this task. Inserting an image in Notes is optional.</p>
         </div>
         <div className="task-attachment-add-actions">
           <input
@@ -168,10 +167,11 @@ export function TaskAttachments({
           {error}
         </p>
       ) : null}
-      <p className="attachment-policy">
-        Detaching removes an image from this task but keeps the file in your
-        collection. Permanent deletion isn&apos;t available yet.
-      </p>
+      {items.length ? (
+        <p className="attachment-policy">
+          Detaching keeps the image file in your collection.
+        </p>
+      ) : null}
       {loading && !items.length ? (
         <p className="attachment-status" role="status">
           <LoaderCircle aria-hidden="true" className="spin" size={17} /> Loading

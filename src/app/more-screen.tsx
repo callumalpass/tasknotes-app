@@ -12,6 +12,7 @@ import {
 import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
+import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
 import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import {
@@ -259,6 +260,14 @@ export function MoreScreen({
         </div>
       </SettingsSection>
 
+      <SettingsSection label="Scratchpad">
+        <div className="setting-row">
+          <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
+          <span>Default mode for new notes</span>
+          <ScratchpadModePreference />
+        </div>
+      </SettingsSection>
+
       <SettingsSection label="Calendar">
         <CalendarPreferencesEditor
           value={calendarPreferences}
@@ -309,7 +318,7 @@ export function MoreScreen({
         <div className="setting-row">
           <Info aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>TaskNotes</span>
-          <small>Version 0.1.0</small>
+          <small>Version {__APP_VERSION__}</small>
         </div>
       </SettingsSection>
 

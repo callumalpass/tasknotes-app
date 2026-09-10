@@ -81,13 +81,52 @@ it("acknowledges a task immediately while a remote create is pending", async () 
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
   expect(await screen.findByText("Adding “Slow relay task”…")).toBeVisible();
-  expect(input).toHaveValue("");
+  expect(input).toHaveValue("Slow relay task");
+  expect(input).toHaveAttribute("readonly");
 
   await act(async () => pending.resolve(task({ title: "Slow relay task" })));
+  expect(input).toHaveValue("");
 
   expect(
     screen.queryByText("Adding “Slow relay task”…"),
   ).not.toBeInTheDocument();
+});
+
+it("keeps edited dates on failure and supports removing a parsed date", async () => {
+  const create = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("Disconnected"))
+    .mockImplementation(async (input: CreateTaskInput) => task(input));
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+      defaults={{ scheduled: "2026-08-13", due: "2026-08-14" }}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Keep my dates" },
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Remove scheduled" }),
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Keep my edited dates" },
+  });
+  await act(() => new Promise((resolve) => window.setTimeout(resolve, 120)));
+  expect(screen.queryByRole("button", { name: "Remove scheduled" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await screen.findByText(/Disconnected/);
+  expect(screen.getByLabelText("New task title")).toHaveValue(
+    "Keep my edited dates",
+  );
+  expect(screen.queryByRole("button", { name: "Remove scheduled" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Remove due" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+  expect(create.mock.calls[1][0]).toEqual(create.mock.calls[0][0]);
+  expect(create.mock.calls[1][0].scheduled).toBeUndefined();
+  expect(create.mock.calls[1][0].due).toBe("2026-08-14");
 });
 
 it("returns focus to a retained capture field after creating a task", async () => {

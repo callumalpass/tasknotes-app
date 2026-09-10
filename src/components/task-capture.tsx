@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type KeyboardEvent,
 } from "react";
@@ -15,18 +16,17 @@ import {
   captureTriggers,
   configuredCaptureSuggestions,
 } from "../domain/capture-autosuggest";
+import { preloadTaskCapture, taskCapturePreview } from "../domain/task-capture";
 import {
-  parseTaskCapture,
-  preloadTaskCapture,
-  taskCapturePreview,
-  type TaskCaptureResult,
-} from "../domain/task-capture";
+  CaptureSession,
+  type CaptureFollowUp as TaskCaptureFollowUp,
+} from "../application/capture-session";
+export type { CaptureFollowUp as TaskCaptureFollowUp } from "../application/capture-session";
 import {
   combineTaskDateTime,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
-import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import { successFeedback } from "../native/feedback";
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
@@ -58,6 +58,8 @@ export function TaskCapture({
   focusRequest,
   onCreated,
   onOpenCreated,
+  session: providedSession,
+  onAccepted,
 }: {
   configuration: TaskCollectionConfiguration;
   createTask(input: CreateTaskInput): Promise<Task>;
@@ -69,10 +71,21 @@ export function TaskCapture({
   focusRequest?: number;
   onCreated?(task: Task): Promise<TaskCaptureFollowUp | void>;
   onOpenCreated?(task: Task): void;
+  session?: CaptureSession;
+  onAccepted?(task: Task, version: number): void;
 }) {
-  const [text, setText] = useState("");
-  const [parsedText, setParsedText] = useState("");
-  const [result, setResult] = useState<TaskCaptureResult | null>(null);
+  const [localSession] = useState(() => new CaptureSession());
+  const session = providedSession ?? localSession;
+  const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
+  const { text, parsedText, result, parsing, pendingTitle, error, accepted } =
+    snapshot;
+  const capturing = snapshot.status === "submitting";
+  const warning = accepted?.task.operationWarnings
+    ?.map(cleanTemplateWarning)
+    .join(" ");
+  const followUp = accepted?.followUp
+    ? { task: accepted.task, message: accepted.followUp }
+    : null;
   const [expanded, setExpanded] = useState(false);
   const [detailSections, setDetailSections] = useState<
     Record<CaptureDetailSection, boolean>
@@ -83,20 +96,9 @@ export function TaskCapture({
     items: FieldCompletion[];
   }>({ key: "", items: [] });
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [parsing, setParsing] = useState(false);
-  const [capturing, setCapturing] = useState(false);
-  const [pendingTitle, setPendingTitle] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [followUp, setFollowUp] = useState<{
-    task: Task;
-    message: string;
-  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const suggestionsId = useId();
-  const textRef = useRef("");
-  const followUpSequence = useRef(0);
   const creationDefaults = defaults ?? emptyDefaults;
   const triggers = useMemo(
     () => captureTriggers(configuration),
@@ -154,11 +156,9 @@ export function TaskCapture({
   }, [completeField, suggestionKey, suggestionRequest]);
 
   useEffect(() => {
-    // Start after the first paint: collection opening stays lean, while the
-    // parser is usually ready before a person begins typing.
-    const timeout = window.setTimeout(preloadTaskCapture, 0);
-    return () => window.clearTimeout(timeout);
-  }, []);
+    if (!text.trim()) return;
+    preloadTaskCapture();
+  }, [text]);
 
   useEffect(() => {
     if (focusRequest === undefined) return;
@@ -167,40 +167,13 @@ export function TaskCapture({
   }, [focusRequest]);
 
   useEffect(() => {
-    const value = text.trim();
-    if (!value) return;
-    let active = true;
-    const timeout = window.setTimeout(() => {
-      void parseTaskCapture(value, configuration)
-        .then((next) => {
-          if (!active) return;
-          const input = mergeTaskCreationDefaults(creationDefaults, next.input);
-          setResult({
-            input,
-            preview: taskCapturePreview(input, configuration),
-          });
-          setParsedText(value);
-        })
-        .catch(() => {
-          if (!active) return;
-          const input = mergeTaskCreationDefaults(creationDefaults, {
-            title: value,
-          });
-          setResult({
-            input,
-            preview: taskCapturePreview(input, configuration),
-          });
-          setParsedText(value);
-        })
-        .finally(() => {
-          if (active) setParsing(false);
-        });
-    }, 80);
-    return () => {
-      active = false;
-      window.clearTimeout(timeout);
-    };
-  }, [configuration, creationDefaults, text]);
+    if (!text.trim()) return;
+    const timeout = window.setTimeout(
+      () => void session.parse(configuration, creationDefaults),
+      80,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [session, configuration, creationDefaults, text]);
 
   const preview = useMemo(
     () =>
@@ -211,25 +184,13 @@ export function TaskCapture({
   );
 
   function changeText(value: string, nextCursor = value.length) {
-    textRef.current = value;
-    setText(value);
+    session.editText(value);
     setCursor(nextCursor);
-    setError(null);
-    if (value.trim()) {
-      setParsing(true);
-      return;
-    }
-    setResult(null);
-    setParsedText("");
-    setParsing(false);
-    setExpanded(false);
-    setError(null);
-    setWarning(null);
-    setFollowUp(null);
+    if (!value.trim()) setExpanded(false);
   }
 
   function chooseSuggestion(completion: FieldCompletion) {
-    if (!activeToken) return;
+    if (capturing || !activeToken) return;
     const next = applyCaptureSuggestion(text, activeToken, completion.value);
     changeText(next.text, next.cursor);
     setSuggestionResult({ key: "", items: [] });
@@ -266,102 +227,26 @@ export function TaskCapture({
 
   async function capture(event: FormEvent) {
     event.preventDefault();
-    const value = text.trim();
-    if (!value || capturing) return;
-    setCapturing(true);
-    setError(null);
-    setWarning(null);
-    let submittedTitle = "";
-    try {
-      const next =
-        result && parsedText === value
-          ? result
-          : await parseTaskCapture(value, configuration)
-              .then((parsed) => {
-                const input = mergeTaskCreationDefaults(
-                  creationDefaults,
-                  parsed.input,
-                );
-                return {
-                  input,
-                  preview: taskCapturePreview(input, configuration),
-                };
-              })
-              .catch(() => {
-                const input = mergeTaskCreationDefaults(creationDefaults, {
-                  title: value,
-                });
-                return {
-                  input,
-                  preview: taskCapturePreview(input, configuration),
-                };
-              });
-      if (!next.input.title.trim())
-        throw new Error("Add a title as well as task details.");
-      submittedTitle = next.input.title.trim();
-      setPendingTitle(submittedTitle);
-      textRef.current = "";
-      setText("");
-      setResult(null);
-      setParsedText("");
-      setExpanded(false);
-      setFollowUp(null);
-      inputRef.current?.blur();
-      const created = await createTask(next.input);
-      if (retainFocusAfterCreate)
-        inputRef.current?.focus({ preventScroll: true });
-      setWarning(
-        created.operationWarnings?.map(cleanTemplateWarning).join(" ") ?? null,
-      );
-      successFeedback();
-      const sequence = followUpSequence.current + 1;
-      followUpSequence.current = sequence;
-      if (onCreated)
-        void Promise.resolve()
-          .then(() => onCreated(created))
-          .then(
-            (result) => {
-              if (
-                followUpSequence.current === sequence &&
-                result?.message?.trim()
-              )
-                setFollowUp({ task: created, message: result.message.trim() });
-            },
-            () => {
-              if (followUpSequence.current === sequence)
-                setFollowUp({
-                  task: created,
-                  message:
-                    "Task created. This view could not refresh, so it may not appear yet.",
-                });
-            },
+    if (session.getSnapshot().status === "submitting") return;
+    await session.submit({
+      configuration,
+      defaults: creationDefaults,
+      create: createTask,
+      refresh: onCreated,
+      onAccepted: (task, version) => {
+        setExpanded(false);
+        successFeedback();
+        onAccepted?.(task, version);
+        if (retainFocusAfterCreate)
+          requestAnimationFrame(() =>
+            inputRef.current?.focus({ preventScroll: true }),
           );
-    } catch (reason) {
-      const message = reason instanceof Error ? reason.message : String(reason);
-      if (submittedTitle && !textRef.current.trim()) {
-        textRef.current = value;
-        setText(value);
-      }
-      setError(
-        submittedTitle
-          ? `Could not add “${submittedTitle}”. ${message}`
-          : message,
-      );
-    } finally {
-      setPendingTitle("");
-      setCapturing(false);
-    }
+      },
+    });
   }
 
   function change(patch: Partial<CreateTaskInput>) {
-    setResult((current) => {
-      const input = { ...(current?.input ?? { title: text.trim() }), ...patch };
-      return {
-        input,
-        preview: taskCapturePreview(input, configuration),
-      };
-    });
-    setParsedText(text.trim());
+    session.editFields(patch, configuration);
   }
 
   return (
@@ -393,6 +278,7 @@ export function TaskCapture({
           enterKeyHint="done"
           placeholder={placeholder}
           value={text}
+          readOnly={capturing}
           onChange={(event) =>
             changeText(
               event.target.value,
@@ -452,10 +338,38 @@ export function TaskCapture({
             {parsing && parsedText !== text.trim() ? (
               <span className="capture-parsing">Understanding…</span>
             ) : preview.length ? (
-              preview.map((item) => <span key={item.key}>{item.label}</span>)
-            ) : (
-              <span className="capture-plain">Plain task</span>
-            )}
+              preview.map((item) =>
+                item.key === "scheduled" || item.key === "due" ? (
+                  <span className="capture-date-token" key={item.key}>
+                    <button
+                      type="button"
+                      disabled={capturing}
+                      aria-label={`Edit ${item.key}`}
+                      onClick={() => {
+                        setExpanded(true);
+                        setDetailSections((current) => ({
+                          ...current,
+                          timing: true,
+                        }));
+                      }}
+                    >
+                      {item.key === "scheduled" ? "Scheduled " : ""}
+                      {item.label}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={capturing}
+                      aria-label={`Remove ${item.key}`}
+                      onClick={() => change({ [item.key]: undefined })}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : (
+                  <span key={item.key}>{item.label}</span>
+                ),
+              )
+            ) : null}
           </div>
           <button
             className="text-action"
@@ -468,6 +382,11 @@ export function TaskCapture({
         </div>
       ) : null}
 
+      {result &&
+      parsedText === text.trim() &&
+      result.input.title !== text.trim() ? (
+        <p className="capture-title-preview">Task: {result.input.title}</p>
+      ) : null}
       {expanded && result && parsedText === text.trim() ? (
         <CaptureDetails
           configuration={configuration}
@@ -514,10 +433,6 @@ export function TaskCapture({
       ) : null}
     </form>
   );
-}
-
-export interface TaskCaptureFollowUp {
-  message?: string;
 }
 
 function CaptureDetails({

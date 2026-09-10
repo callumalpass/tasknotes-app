@@ -21,12 +21,13 @@ describe("GlobalTaskCapture", () => {
 
   it("focuses, creates through the repository, and closes", async () => {
     const onOpenTask = vi.fn();
+    const onAdded = vi.fn();
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
         repository={repository}
       >
-        <Harness onOpenTask={onOpenTask} />
+        <Harness onOpenTask={onOpenTask} onAdded={onAdded} />
       </RepositoryProvider>,
     );
 
@@ -43,6 +44,90 @@ describe("GlobalTaskCapture", () => {
     );
     expect(await repository.list({ search: "anywhere" })).toHaveLength(1);
     expect(onOpenTask).not.toHaveBeenCalled();
+    expect(onAdded).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ title: "Capture from anywhere" }),
+    );
+  });
+
+  it("can keep the composer open for consecutive capture", async () => {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Keep adding tasks" }),
+    );
+    const input = screen.getByRole("combobox", { name: "New task title" });
+    fireEvent.change(input, { target: { value: "First of several" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(input).toHaveValue(""));
+    expect(screen.getByRole("dialog", { name: "New task" })).toBeVisible();
+    expect(input).toHaveFocus();
+    expect(await repository.list({ search: "First of several" })).toHaveLength(
+      1,
+    );
+  });
+
+  it("keeps the draft when the sheet is dismissed and reopened", async () => {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "Do not lose me tomorrow" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Close new task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    expect(
+      screen.getByRole("combobox", { name: "New task title" }),
+    ).toHaveValue("Do not lose me tomorrow");
+    fireEvent.click(screen.getByRole("button", { name: "Discard draft" }));
+    expect(
+      screen.getByRole("combobox", { name: "New task title" }),
+    ).toHaveValue("");
+  });
+
+  it("an earlier refresh cannot close a newly opened draft", async () => {
+    let finish!: () => void;
+    const refresh = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <Harness onOpenTask={vi.fn()} onCreated={() => refresh} />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "First task" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "New task" })).toBeNull(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+      target: { value: "Second task" },
+    });
+    finish();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "New task title" }),
+      ).toHaveValue("Second task"),
+    );
   });
 
   it("closes on Escape and restores the invoking control", async () => {
@@ -57,14 +142,22 @@ describe("GlobalTaskCapture", () => {
     const trigger = screen.getByRole("button", { name: "Open capture" });
     trigger.focus();
     fireEvent.click(trigger);
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
 
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(screen.queryByRole("dialog", { name: "New task" })).toBeNull();
   });
 });
 
-function Harness({ onOpenTask }: { onOpenTask: () => void }) {
+function Harness({
+  onOpenTask,
+  onCreated,
+  onAdded,
+}: {
+  onOpenTask: () => void;
+  onCreated?: () => Promise<void>;
+  onAdded?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -75,6 +168,8 @@ function Harness({ onOpenTask }: { onOpenTask: () => void }) {
         open={open}
         onClose={() => setOpen(false)}
         onOpenTask={onOpenTask}
+        onCreated={onCreated}
+        onAdded={onAdded}
       />
     </>
   );

@@ -1,4 +1,6 @@
 import { Capacitor } from "@capacitor/core";
+import { appendViewPage } from "../application/view-query-session";
+import { taskCompletion } from "../domain/task-completion";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -451,7 +453,11 @@ export class MdbaseTaskRepository implements TaskRepository {
     );
   }
 
-  toggle(id: string, occurrenceDate?: string): Promise<Task> {
+  toggle(
+    id: string,
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task> {
     const cached = this.cache.get(id)?.task;
     if (cached?.recurrenceParent && cached.occurrenceDate) {
       const parent = findOccurrenceParent(
@@ -465,11 +471,18 @@ export class MdbaseTaskRepository implements TaskRepository {
           ),
         );
       return this.serializeWrites([id, parent.id], () =>
-        this.transitionMaterializedUnlocked(id, parent.id, "toggle"),
+        this.transitionMaterializedUnlocked(id, parent.id, "toggle", completed),
       );
     }
     return this.serializeWrite(id, async () => {
-      const current = await this.requireCurrent(id);
+      const current = await this.requireCurrent(id, completed !== undefined);
+      if (
+        completed !== undefined &&
+        taskCompletion(current.task, occurrenceDate) === completed
+      ) {
+        this.emit();
+        return current.task;
+      }
       const next = current.model.toggle(current.task, {
         now: new Date().toISOString(),
         currentDate: occurrenceDate,
@@ -752,6 +765,49 @@ export class MdbaseTaskRepository implements TaskRepository {
     if (!cached) return null;
     this.viewExecutionCache.set(key, cached);
     return structuredClone(cached);
+  }
+
+  async *iterateView(
+    view: TaskView,
+    options: { signal?: AbortSignal } = {},
+  ): AsyncIterable<TaskViewExecution> {
+    const timezone = runtimeTimezone();
+    const key = this.viewExecutionKey(view, timezone);
+    const signal = options.signal
+      ? AbortSignal.any([this.operationController.signal, options.signal])
+      : this.operationController.signal;
+    let cumulative: TaskViewExecution | null = null;
+    const pages = this.connect.executeViewPages(
+      { path: view.source.path, view: view.id, timezone, render: false },
+      { firstPageSize: 200, pageSize: 200, signal },
+    );
+    // A generator paused at yield will not notice abort until next(). Release its
+    // authority cursor on suspension even if the person never requests another page.
+    const close = () => {
+      void pages.return(undefined).catch(() => undefined);
+    };
+    signal.addEventListener("abort", close, { once: true });
+    try {
+      signal.throwIfAborted();
+      for await (const outcome of pages) {
+        signal.throwIfAborted();
+        const result = validResult(outcome) as ProviderViewExecution;
+        const page = normalizeViewExecution(
+          view,
+          { ...result, diagnostics: operationDiagnostics(outcome) },
+          (record) => this.readRecord(record)?.task ?? null,
+        );
+        cumulative = appendViewPage(cumulative, page);
+        this.viewExecutionCache.set(key, cumulative);
+        yield page;
+      }
+    } catch (reason) {
+      if (!signal.aborted) this.noteOperationFailure(reason);
+      throw reason;
+    } finally {
+      signal.removeEventListener("abort", close);
+      await pages.return(undefined).catch(() => undefined);
+    }
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
@@ -1429,9 +1485,12 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async requireCurrent(
     id: string,
+    fresh = false,
   ): Promise<Required<CachedMdbaseTask>> {
     const cached = this.cache.get(id);
     if (!cached) throw new Error("Task not found.");
+    // A desired-state no-op/retry must not mistake an old cached status for current authority state.
+    if (fresh) return this.readCurrent(id, cached);
     if (cached.revision) return cached as Required<CachedMdbaseTask>;
     const pending = this.revisionReads.get(id);
     if (pending) return pending;
@@ -1691,15 +1750,24 @@ export class MdbaseTaskRepository implements TaskRepository {
     occurrenceId: string,
     parentId: string,
     action: "toggle" | "skip",
+    completed?: boolean,
   ): Promise<Task> {
     const [occurrence, parent] = await Promise.all([
-      this.requireCurrent(occurrenceId),
-      this.requireCurrent(parentId),
+      this.requireCurrent(occurrenceId, completed !== undefined),
+      this.requireCurrent(parentId, completed !== undefined),
     ]);
     if (occurrence.typeName !== parent.typeName)
       throw new Error(
         "A materialized occurrence and its parent must use the same TaskNotes implementation type.",
       );
+    if (
+      action === "toggle" &&
+      completed !== undefined &&
+      occurrence.task.completed === completed
+    ) {
+      this.emit();
+      return occurrence.task;
+    }
     const transition = parent.model.transitionMaterializedOccurrence(
       occurrence.task,
       parent.task,

@@ -793,7 +793,7 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     { property: "note.due", direction: "asc" },
     { property: "note.priority", direction: "desc" },
   ];
-  const tasks = [listTask("alpha", "Alpha")];
+  const tasks = [{ ...listTask("alpha", "Alpha"), sortOrder: "tnmmmmmmmmmm" }];
   let source = {
     path: view.source.path,
     format: "obsidian.base",
@@ -842,12 +842,13 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     syncIssues: async () => [],
   } as unknown as TaskRepository;
 
-  renderListView(repository, view);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Turn on manual order" }),
+  const mounted = renderListView(repository, view);
+  await startReordering();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Manual order", hidden: true }),
+    ).toHaveAttribute("aria-pressed", "true"),
   );
-
-  await screen.findByRole("button", { name: "Turn off manual order" });
   expect(updateViewSource).toHaveBeenCalledOnce();
   expect(source.document.indexOf("note.tasknotes_manual_order")).toBeLessThan(
     source.document.indexOf("note.due"),
@@ -861,16 +862,92 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     }),
   ).toBeVisible();
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Turn off manual order" }),
-  );
-
-  await screen.findByRole("button", { name: "Turn on manual order" });
+  expect(screen.queryByRole("button", { name: "Done reordering" })).toBeNull();
+  fireEvent.click(screen.getByLabelText("View options"));
+  fireEvent.click(screen.getByRole("button", { name: "Manual order" }));
+  await waitFor(() => expect(updateViewSource).toHaveBeenCalledTimes(2));
   expect(updateViewSource).toHaveBeenCalledTimes(2);
   expect(source.document).not.toContain("note.tasknotes_manual_order");
   expect(source.document.indexOf("note.due")).toBeLessThan(
     source.document.indexOf("note.priority"),
   );
+  expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
+  expect(tasks[0].sortOrder).toBe("tnmmmmmmmmmm");
+  await startReordering();
+  await waitFor(() => expect(updateViewSource).toHaveBeenCalledTimes(3));
+  mounted.unmount();
+  renderListView(repository, view);
+  expect(
+    await screen.findByRole("button", { name: /Reorder Alpha/ }),
+  ).toBeEnabled();
+  expect(tasks[0].sortOrder).toBe("tnmmmmmmmmmm");
+  expect(updateViewSource).toHaveBeenCalledTimes(3);
+});
+
+it("loads the complete manual-order scope before appending a captured task", async () => {
+  const view = manualListView("capture-tail", { create: true });
+  const tasks = [
+    { ...listTask("first", "First"), sortOrder: "tnzzzzzzzzzz" },
+    { ...listTask("last", "Last"), sortOrder: "tnmmmmmmmmmm" },
+  ];
+  const complete: TaskViewExecution = {
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: 2,
+    hasMore: false,
+    groups: [],
+  };
+  const repository = manualListRepository(view, tasks, vi.fn(), () => complete);
+  repository.executeView = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ...complete,
+      rows: complete.rows.slice(0, 1),
+      hasMore: true,
+    })
+    .mockResolvedValue(complete);
+  repository.create = vi.fn(async (input) => ({
+    ...listTask("created", input.title),
+    sortOrder: input.sortOrder,
+  }));
+  renderListView(repository, view);
+  await screen.findByText(/Loaded 1 of 2 matching tasks/);
+  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    target: { value: "New last task" },
+  });
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() => expect(repository.create).toHaveBeenCalledOnce());
+  const input = vi.mocked(repository.create).mock.calls[0][0];
+  expect(input.sortOrder).toBeTruthy();
+  expect(input.sortOrder! < "tnmmmmmmmmmm").toBe(true);
+});
+
+it("does not enter reordering when manual-sort activation is rejected", async () => {
+  const view = manualListView("rejected");
+  const tasks = [listTask("alpha", "Alpha")];
+  const repository = manualListRepository(view, tasks, vi.fn(), () => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: 1,
+    hasMore: false,
+    groups: [],
+  }));
+  repository.readViewSource = async () => ({
+    path: view.source.path,
+    format: "obsidian.base",
+    revision: "one",
+    document: "views:\n  - type: tasknotesTaskList\n    name: rejected\n",
+  });
+  repository.updateViewSource = vi
+    .fn()
+    .mockRejectedValue(new Error("Authority unavailable"));
+  renderListView(repository, view);
+  await startReordering();
+  await screen.findByText("Authority unavailable");
+  expect(screen.queryByRole("button", { name: "Done reordering" })).toBeNull();
   expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
 });
 
@@ -915,9 +992,7 @@ it("offers manual order from a writable kanban view", async () => {
   } as unknown as TaskRepository;
 
   renderListView(repository, execution.view);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Turn on manual order" }),
-  );
+  await startReordering();
 
   await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
   expect(source.document).toContain("note.tasknotes_manual_order");
@@ -1016,6 +1091,13 @@ it("moves a grouped list task by mutating the destination property", async () =>
   });
 
   renderListView(repository, view);
+  const destination = (await screen.findByText("Done task")).closest(
+    "section",
+  )!;
+  fireEvent.click(
+    within(within(destination).getByRole("heading")).getByRole("button"),
+  );
+  expect(screen.queryByText("Done task")).toBeNull();
   fireEvent.keyDown(
     await screen.findByRole("button", {
       name: "Reorder Open task. Drag, or use up and down arrow keys.",
@@ -1030,7 +1112,67 @@ it("moves a grouped list task by mutating the destination property", async () =>
       ),
     ).toBe(true),
   );
+  expect(screen.getByText("Done task")).toBeVisible();
 });
+
+it.each(["stale", "hasSkippedRecords"] as const)(
+  "keeps manual handles disabled for %s results",
+  async (flag) => {
+    const view = manualListView(`unsafe-${flag.toLowerCase()}`);
+    const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+    const update = vi.fn();
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      groups: [],
+      totalCount: 2,
+      hasMore: false,
+      [flag]: true,
+    }));
+    renderListView(repository, view);
+    const handle = await screen.findByRole("button", { name: /Reorder Alpha/ });
+    expect(handle).toBeDisabled();
+    fireEvent.keyDown(handle, { key: "ArrowDown" });
+    expect(update).not.toHaveBeenCalled();
+  },
+);
+
+it("loads remaining manual-sort rows without a reorder mode or sort rewrite", async () => {
+  const view = manualListView("paged-manual");
+  const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+  const complete: TaskViewExecution = {
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    groups: [],
+    totalCount: 2,
+    hasMore: false,
+  };
+  const repository = manualListRepository(view, tasks, vi.fn(), () => complete);
+  let pages = 0;
+  repository.iterateView = async function* () {
+    pages++;
+    yield { ...complete, rows: complete.rows.slice(0, 1), hasMore: true };
+    pages++;
+    yield { ...complete, rows: complete.rows.slice(1) };
+  };
+  repository.updateViewSource = vi.fn();
+  renderListView(repository, view);
+  const handle = await screen.findByRole("button", { name: /Reorder Alpha/ });
+  expect(handle).toBeDisabled();
+  expect(pages).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Load remaining tasks" }));
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: /Reorder Alpha/ })).toBeEnabled(),
+  );
+  expect(screen.getByRole("button", { name: /Reorder Bravo/ })).toBeEnabled();
+  expect(pages).toBe(2);
+  expect(repository.updateViewSource).not.toHaveBeenCalled();
+});
+
+async function startReordering() {
+  fireEvent.click(await screen.findByLabelText("View options"));
+  fireEvent.click(await screen.findByRole("button", { name: "Manual order" }));
+}
 
 function manualListView(
   id: string,
@@ -1105,7 +1247,7 @@ ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC
 }
 
 function renderListView(repository: TaskRepository, view: TaskView) {
-  render(
+  return render(
     <RepositoryProvider
       mutationJournal={new MemoryMutationJournal()}
       repository={repository}

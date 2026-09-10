@@ -11,8 +11,12 @@ import {
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
+import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
 import { TaskAttachments } from "../components/task-attachments";
+import { completionKey } from "../application/task-mutations";
+import { useMutationState } from "../components/use-mutation-state";
+import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
@@ -28,6 +32,7 @@ import {
 import {
   activeTimeEntry,
   combineTaskDateTime,
+  formatTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -129,7 +134,8 @@ function TaskEditor({
 }) {
   const {
     updateTask,
-    toggleTask,
+    mutations,
+    setTaskCompletion,
     skipTask,
     materializeOccurrence,
     startTimeTracking,
@@ -139,6 +145,10 @@ function TaskEditor({
     configuration,
     repository,
   } = useRepository();
+  const completion = useMutationState(
+    mutations,
+    completionKey(task.id, task.occurrenceDate ? undefined : occurrenceDate),
+  );
   const { relationships: repositoryRelationships } = useTaskRelationships(
     task.id,
   );
@@ -211,6 +221,8 @@ function TaskEditor({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [occurrenceAction, setOccurrenceAction] = useState(false);
   const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [timeAction, setTimeAction] = useState(false);
@@ -391,11 +403,15 @@ function TaskEditor({
 
   async function toggleOccurrence() {
     const date = occurrenceDate ?? task.occurrenceDate;
-    if (!date || occurrenceAction) return;
+    if (!date || occurrenceAction || completion.pending) return;
     setOccurrenceAction(true);
     setOccurrenceError(null);
     try {
-      await toggleTask(task.id, task.occurrenceDate ? undefined : date);
+      await setTaskCompletion({
+        id: task.id,
+        occurrenceDate: task.occurrenceDate ? undefined : date,
+        completed: !taskCompletion(task, date),
+      });
     } catch (reason) {
       if (mounted.current)
         setOccurrenceError(
@@ -497,7 +513,11 @@ function TaskEditor({
           onDeleted={onBack}
           onToggle={async () => {
             if (occurrenceDate || task.occurrenceDate) await toggleOccurrence();
-            else await toggleTask(task.id);
+            else
+              await setTaskCompletion({
+                id: task.id,
+                completed: !taskCompletion(task),
+              });
           }}
         />
       </header>
@@ -568,46 +588,103 @@ function TaskEditor({
         >
           Task title
         </label>
-        <textarea
-          className="title-field"
-          id="task-title"
-          ref={titleRef}
-          rows={2}
-          value={draft.title}
-          onChange={(event) => change({ title: event.target.value })}
-        />
-
-        <div className="field-grid timing-fields task-core-fields">
-          <div className="tasknotes-status-field">
-            <TaskNotesSelectField
-              ariaDescribedBy={
-                task.occurrenceDate ? "occurrence-status-help" : undefined
-              }
-              disabled={Boolean(task.occurrenceDate)}
-              label="Status"
-              options={[...configuration.statuses].sort(
-                (left, right) => left.order - right.order,
-              )}
-              value={draft.status}
-              onChange={(status) => change({ status })}
-            />
-            {task.occurrenceDate ? (
-              <small id="occurrence-status-help">
-                Use the occurrence actions above to change this state.
-              </small>
-            ) : null}
-          </div>
-          <DateTimeField
-            label="Scheduled"
-            value={draft.scheduled}
-            onChange={(scheduled) => change({ scheduled })}
-          />
-          <DateTimeField
-            label="Due"
-            value={draft.due}
-            onChange={(due) => change({ due })}
+        <div className="task-title-line">
+          {!occurrenceDate && !task.occurrenceDate ? (
+            <button
+              type="button"
+              className="completion-control"
+              aria-label={task.completed ? "Reopen task" : "Complete task"}
+              aria-pressed={task.completed}
+              aria-busy={completing || completion.pending}
+              disabled={completing || completion.pending || !draft.title.trim()}
+              onClick={async () => {
+                setCompleting(true);
+                setCompletionError(null);
+                try {
+                  await flushBeforeAttachmentMutation();
+                  await setTaskCompletion({
+                    id: task.id,
+                    completed: !taskCompletion(task),
+                  });
+                  successFeedback();
+                } catch (reason) {
+                  setCompletionError(
+                    reason instanceof Error ? reason.message : String(reason),
+                  );
+                } finally {
+                  setCompleting(false);
+                }
+              }}
+            >
+              <span aria-hidden="true" />
+            </button>
+          ) : null}
+          <textarea
+            className="title-field"
+            id="task-title"
+            ref={titleRef}
+            rows={1}
+            value={draft.title}
+            onChange={(event) => change({ title: event.target.value })}
           />
         </div>
+        {completionError ? (
+          <p className="inline-error" role="alert">
+            {completionError}
+          </p>
+        ) : null}
+
+        <TaskFormSection
+          title="Schedule and status"
+          summary={
+            [
+              draft.status !== "none" &&
+              draft.status !== configuration.defaults.status
+                ? (configuration.statuses.find(
+                    (status) => status.value === draft.status,
+                  )?.label ?? draft.status)
+                : "",
+              draft.scheduled
+                ? `Scheduled ${formatTaskDate(draft.scheduled)}`
+                : "",
+              draft.due ? `Due ${formatTaskDate(draft.due)}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ") || "No dates"
+          }
+        >
+          <div className="field-grid timing-fields task-core-fields">
+            <div className="tasknotes-status-field">
+              <TaskNotesSelectField
+                ariaDescribedBy={
+                  task.occurrenceDate ? "occurrence-status-help" : undefined
+                }
+                disabled={Boolean(task.occurrenceDate)}
+                label="Status"
+                options={[...configuration.statuses].sort(
+                  (left, right) => left.order - right.order,
+                )}
+                value={draft.status}
+                onChange={(status) => change({ status })}
+              />
+              {task.occurrenceDate ? (
+                <small id="occurrence-status-help">
+                  Use the occurrence actions above to change this state.
+                </small>
+              ) : null}
+            </div>
+            <DateTimeField
+              label="Scheduled"
+              value={draft.scheduled}
+              onChange={(scheduled) => change({ scheduled })}
+            />
+            <DateTimeField
+              label="Due"
+              value={draft.due}
+              onChange={(due) => change({ due })}
+            />
+          </div>
+        </TaskFormSection>
 
         <section className="notes-field">
           <header className="notes-field-heading">
@@ -632,7 +709,7 @@ function TaskEditor({
           {notesMode === "write" ? (
             <textarea
               aria-labelledby="task-notes-title"
-              placeholder="Add Markdown notes"
+              placeholder="Add thoughts, links, or supporting details…"
               rows={8}
               value={draft.body}
               onChange={(event) => change({ body: event.target.value })}

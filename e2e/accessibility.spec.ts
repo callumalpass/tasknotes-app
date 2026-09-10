@@ -1,15 +1,29 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-test";
 
-test("mdbase onboarding has no serious accessibility violations", async ({
+test("blocked opening screen has no serious accessibility violations", async ({
   page,
 }) => {
+  const requestFailures: string[] = [];
+  page.on("requestfailed", (request) =>
+    requestFailures.push(request.failure()?.errorText ?? ""),
+  );
   await page.goto("./");
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(
+    "TaskNotes couldn’t open right now",
+  );
 
+  expect(requestFailures).toEqual(
+    expect.arrayContaining([
+      expect.stringMatching(/^net::ERR_BLOCKED_BY_CLIENT\b/),
+    ]),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
