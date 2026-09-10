@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./local-test";
 
 test("opens and navigates the disposable demo repository", async ({ page }) => {
   await page.goto("?demo=50");
@@ -285,12 +285,24 @@ test("continues on a fresh line after converting the final outline draft", async
   });
   const input = current.locator("[data-scratch-input]").last();
   await input.fill("Continue after conversion");
-  await current
-    .getByRole("button", {
-      name: "Create task for Continue after conversion",
-      exact: true,
-    })
-    .click();
+  if ((page.viewportSize()?.width ?? 1000) <= 560) {
+    await current
+      .getByRole("button", {
+        name: "Actions for Continue after conversion",
+        exact: true,
+      })
+      .click();
+    await current
+      .getByRole("menuitem", { name: "Create task", exact: true })
+      .click();
+  } else {
+    await current
+      .getByRole("button", {
+        name: "Create task for Continue after conversion",
+        exact: true,
+      })
+      .click();
+  }
   await expect(
     current.getByRole("button", {
       name: "Continue after conversion",
@@ -766,7 +778,12 @@ test("supports project capture and saved-view editing in the demo", async ({
   });
   await projectCapture.fill("Draft the interview guide");
   await projectCapture.press("Enter");
-  await expect(page.getByText("Draft the interview guide")).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Draft the interview guide",
+      exact: true,
+    }),
+  ).toBeVisible();
 
   await openNavigationItem(page, "Manage views");
   await page.getByRole("button", { name: "More actions for Today" }).click();

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-test";
 
 // Disposable in-memory demo only: never opens a Connect authority or LAB.
 test("daily list, capture and detail remain clear and keyboard accessible", async ({

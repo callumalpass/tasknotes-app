@@ -1,6 +1,10 @@
 export interface OverlayOptions {
   root: HTMLElement;
   modal: boolean;
+  dismissOnTab?: "always" | "boundary";
+  /** Suspend covered controls without making an otherwise nonmodal panel modal. */
+  inertRoots?: HTMLElement[];
+  dismissOnCover?: boolean;
   dismiss(reason: "escape" | "outside"): void;
   initialFocus?(): HTMLElement | null;
   returnFocus?: HTMLElement | null;
@@ -57,8 +61,14 @@ function lastModalIndex() {
     if (layers[index].modal) return index;
   return -1;
 }
+function markInert(element: HTMLElement) {
+  if (!inertBefore.has(element)) inertBefore.set(element, element.inert);
+  element.inert = true;
+}
 function synchronize() {
   restoreInert();
+  for (const layer of layers)
+    for (const root of layer.inertRoots ?? []) markInert(root);
   const index = lastModalIndex();
   if (index < 0) {
     if (overflowBefore !== undefined)
@@ -80,8 +90,7 @@ function synchronize() {
       if (roots.includes(child)) continue;
       if (roots.some((root) => child.contains(root))) isolate(child);
       else {
-        inertBefore.set(child, child.inert);
-        child.inert = true;
+        markInert(child);
       }
     }
   };
@@ -98,6 +107,31 @@ function keydown(event: KeyboardEvent) {
     return;
   }
   if (event.key !== "Tab") return;
+  if (top.dismissOnTab) {
+    const inside = focusable([top.root]);
+    const boundary = event.shiftKey ? inside[0] : inside.at(-1);
+    if (
+      top.dismissOnTab === "always" ||
+      document.activeElement === boundary ||
+      !top.root.contains(document.activeElement)
+    ) {
+      top.restore = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      top.dismiss("outside");
+      queueMicrotask(() => {
+        const outside = focusable([document.body]).filter(
+          (element) => !top.root.contains(element),
+        );
+        const origin = outside.indexOf(top.returnFocus as HTMLElement);
+        const next =
+          outside[origin + (event.shiftKey ? -1 : 1)] ??
+          (event.shiftKey ? outside.at(-1) : outside[0]);
+        if (next?.isConnected && available(next)) next.focus();
+      });
+      return;
+    }
+  }
   const index = lastModalIndex();
   if (index < 0) return;
   const elements = focusable(layers.slice(index).map((layer) => layer.root));
@@ -132,7 +166,9 @@ function pointerdown(event: PointerEvent) {
 }
 
 /** One owner for modal isolation, focus, scroll lock, and top-layer dismissal. */
-export function registerOverlay(options: OverlayOptions): () => void {
+export function registerOverlay(
+  options: OverlayOptions,
+): (restoreFocus?: boolean) => void {
   const layer: Layer = {
     ...options,
     returnFocus:
@@ -142,6 +178,21 @@ export function registerOverlay(options: OverlayOptions): () => void {
         : null),
     restore: true,
   };
+  const previous = layers.at(-1);
+  if (
+    previous?.dismissOnCover &&
+    !previous.root.contains(layer.root) &&
+    !layer.root.contains(previous.root)
+  ) {
+    if (
+      !layer.returnFocus ||
+      !available(layer.returnFocus) ||
+      previous.root.contains(layer.returnFocus)
+    )
+      layer.returnFocus = previous.returnFocus;
+    previous.restore = false;
+    previous.dismiss("outside");
+  }
   if (!layers.length) {
     document.addEventListener("keydown", keydown);
     document.addEventListener("pointerdown", pointerdown);
@@ -153,7 +204,8 @@ export function registerOverlay(options: OverlayOptions): () => void {
   layers.splice(descendant < 0 ? layers.length : descendant, 0, layer);
   synchronize();
   layer.initialFocus?.()?.focus({ preventScroll: true });
-  return () => {
+  return (restoreFocus = true) => {
+    if (!restoreFocus) layer.restore = false;
     const index = layers.indexOf(layer);
     if (index < 0) return;
     const wasTop = index === layers.length - 1;

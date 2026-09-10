@@ -534,6 +534,12 @@ function ViewIdentitySection({
   draft: EditableViewDraft;
   onChange(draft: EditableViewDraft): void;
 }) {
+  const [layoutOpen, setLayoutOpen] = useState(
+    () => !window.matchMedia?.("(max-width: 839px)").matches,
+  );
+  const layoutLabel =
+    layouts.find((layout) => layout.value === draft.renderer)?.label ??
+    draft.renderer;
   return (
     <section className="view-identity" aria-labelledby="view-identity-title">
       <div className="view-identity-heading">
@@ -549,28 +555,44 @@ function ViewIdentitySection({
           onChange={(event) => onChange({ ...draft, name: event.target.value })}
         />
       </label>
-      <fieldset className="view-kind-field">
-        <legend>Layout</legend>
-        <div className="view-kind-options">
-          {layouts.map(({ value, label, description, icon: Icon }) => (
-            <label key={value}>
-              <Icon aria-hidden="true" size={17} strokeWidth={1.7} />
-              <span>
-                <strong>{label}</strong>
-                <small>{description}</small>
-              </span>
-              <input
-                aria-label={label}
-                checked={draft.renderer === value}
-                name="view-layout"
-                type="radio"
-                value={value}
-                onChange={() => onChange(changeRenderer(draft, value))}
-              />
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <details
+        className="view-layout-disclosure"
+        open={layoutOpen}
+        onToggle={(event) => setLayoutOpen(event.currentTarget.open)}
+      >
+        <summary>
+          Layout: {layoutLabel}
+          {draft.renderer === "tasknotes.planner" ? " (external app)" : ""}
+        </summary>
+        <fieldset className="view-kind-field">
+          <legend className="visually-hidden">Layout</legend>
+          <div className="view-kind-options">
+            {layouts.map(({ value, label, description, icon: Icon }) => (
+              <label key={value}>
+                <Icon aria-hidden="true" size={17} strokeWidth={1.7} />
+                <span>
+                  <strong>{label}</strong>
+                  <small>{description}</small>
+                </span>
+                <input
+                  aria-label={label}
+                  checked={draft.renderer === value}
+                  name="view-layout"
+                  type="radio"
+                  value={value}
+                  onChange={() => onChange(changeRenderer(draft, value))}
+                />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </details>
+      {draft.renderer === "tasknotes.planner" ? (
+        <p className="view-planner-explanation">
+          Planner is a separate app. Save this view, then choose Open in
+          Planner.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -1028,7 +1050,7 @@ const layouts: Array<{
   {
     value: "tasknotes.planner",
     label: "Planner",
-    description: "Timeline handoff",
+    description: "External app",
     icon: ChartNoAxesGantt,
   },
 ];

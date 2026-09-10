@@ -25,12 +25,14 @@ export function GlobalTaskCapture({
   onOpenTask,
   defaults,
   onCreated,
+  onAdded,
   session: providedSession,
   createTask: suppliedCreateTask,
 }: {
   open: boolean;
   onClose(): void;
   onOpenTask(task: Task): void;
+  onAdded?(task: Task): void;
   defaults?: Partial<CreateTaskInput>;
   session?: CaptureSession;
   createTask?(input: CreateTaskInput): Promise<Task>;
@@ -116,9 +118,11 @@ export function GlobalTaskCapture({
           placeholder="What needs doing?"
           showGuide
           onCreated={onCreated}
-          onAccepted={(_task, version) => {
-            if (!keepAddingRef.current && session.canCloseAccepted(version))
+          onAccepted={(task, version) => {
+            if (!keepAddingRef.current && session.canCloseAccepted(version)) {
+              onAdded?.(task);
               onClose();
+            }
           }}
           onOpenCreated={(task) => {
             onClose();

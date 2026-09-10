@@ -70,10 +70,16 @@ export function Choice({
       aria-pressed={selected}
       className={selected ? "is-selected" : undefined}
       disabled={disabled}
-      style={color ? { color } : undefined}
       type="button"
       onClick={onClick}
     >
+      {color ? (
+        <span
+          aria-hidden="true"
+          className="value-color"
+          style={{ backgroundColor: color }}
+        />
+      ) : null}
       {children}
     </button>
   );

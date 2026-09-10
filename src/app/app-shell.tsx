@@ -14,6 +14,11 @@ import {
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { CollectionAvailability } from "../components/collection-availability";
+import { TaskAddedNotice } from "../components/task-added-notice";
+import type { Task } from "../domain/task";
+import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
+import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -49,7 +54,9 @@ type Route =
 type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 export function AppShell() {
+  const keyboardOccluded = useKeyboardOcclusion();
   const {
+    repository,
     status,
     error,
     refresh,
@@ -77,12 +84,31 @@ export function AppShell() {
   } = useNavigationViews();
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [addedNotice, setAddedNotice] = useState<{
+    task: Task;
+    repository: typeof repository;
+    route: Route;
+  }>();
+  const reportAdded = (task: Task) =>
+    setAddedNotice({ task, repository, route });
+  const addedTask = addedNotice?.task;
+  if (
+    addedNotice &&
+    (addedNotice.repository !== repository ||
+      addedNotice.route !== route ||
+      captureOpen ||
+      pendingDeletion ||
+      deletionError)
+  ) {
+    setAddedNotice(undefined);
+  }
   const taskReturn = useRef<{
     element: HTMLElement | null;
     scrollY: number;
     workspaceUrl: string;
   } | null>(null);
   const currentRouteUrl = routeUrl(route);
+
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
   useEffect(() => {
@@ -278,7 +304,9 @@ export function AppShell() {
         ? "views"
         : workspacePage;
   return (
-    <div className={`app-shell${route.page === "task" ? " has-detail" : ""}`}>
+    <div
+      className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -312,6 +340,15 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
+        {route.page !== "task" ? (
+          <CollectionAvailability
+            onSettings={
+              workspacePage === "more"
+                ? undefined
+                : () => navigate({ page: "more" })
+            }
+          />
+        ) : null}
         {workspacePage === "search" ? (
           <SearchScreen
             onBack={
@@ -335,6 +372,7 @@ export function AppShell() {
           <HomeViewLoading />
         ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
+            onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}
             error={viewsError}
@@ -385,6 +423,9 @@ export function AppShell() {
           tabIndex={-1}
           ref={detailRef}
         >
+          <CollectionAvailability
+            onSettings={() => navigate({ page: "more" })}
+          />
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
@@ -426,9 +467,19 @@ export function AppShell() {
         </button>
       ) : null}
       <GlobalTaskCapture
+        onAdded={reportAdded}
         open={captureOpen}
         onClose={closeCapture}
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
+      />
+      <TaskAddedNotice
+        task={!pendingDeletion && !deletionError ? addedTask : undefined}
+        onDismiss={() => setAddedNotice(undefined)}
+        onOpen={(task) => navigate({ page: "task", id: task.id })}
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
       />
       <DeletionFeedback
         aboveMobileControls={
@@ -771,22 +822,20 @@ export function Navigation({
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  useOverlay({
+    open: Boolean(menuPosition),
+    rootRef: menuRef,
+    returnFocusRef: triggerRef,
+    dismissOnTab: "always",
+    onDismiss: closeMenu,
+    initialFocus: () =>
+      menuRef.current?.querySelector<HTMLButtonElement>("[role='menuitem']") ??
+      null,
+  });
   useEffect(() => {
     if (!menuPosition) return;
-    const close = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        !menuRef.current?.contains(target) &&
-        !triggerRef.current?.contains(target)
-      )
-        closeMenu();
-    };
+    const menu = menuRef.current;
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
-        triggerRef.current?.focus();
-        return;
-      }
       if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
       const choices = [
         ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
@@ -808,12 +857,10 @@ export function Navigation({
       event.preventDefault();
       choices[next]?.focus();
     };
-    window.addEventListener("pointerdown", close);
-    window.addEventListener("keydown", keydown);
+    menu?.addEventListener("keydown", keydown);
     window.addEventListener("resize", closeMenu);
     return () => {
-      window.removeEventListener("pointerdown", close);
-      window.removeEventListener("keydown", keydown);
+      menu?.removeEventListener("keydown", keydown);
       window.removeEventListener("resize", closeMenu);
     };
   }, [menuPosition]);
@@ -846,11 +893,6 @@ export function Navigation({
         ? Math.max(8, (rect?.top ?? innerHeight) - height - 8)
         : Math.max(8, Math.min(rect?.top ?? 80, innerHeight - height - 8));
     setMenuPosition({ left, top });
-    queueMicrotask(() =>
-      menuRef.current
-        ?.querySelector<HTMLButtonElement>("[role='menuitem']")
-        ?.focus(),
-    );
   }
 
   function closeMenu() {

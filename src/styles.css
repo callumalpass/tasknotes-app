@@ -682,8 +682,6 @@ button:disabled {
   min-height: 52px;
   background: transparent;
   border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
-  content-visibility: auto;
-  contain-intrinsic-size: auto 52px;
   transition:
     opacity 180ms var(--ease-out),
     background-color 180ms var(--ease-out);
@@ -693,12 +691,6 @@ button:disabled {
   .task-row:hover {
     background: color-mix(in srgb, var(--paper-soft), transparent 58%);
   }
-}
-
-/* Mounted virtual rows must be measurable, including the overscan buffer. */
-.bounded-list .task-row {
-  content-visibility: visible;
-  contain-intrinsic-size: none;
 }
 
 .task-row.is-tracking {
@@ -878,7 +870,7 @@ button:disabled {
   min-width: 0;
   margin-left: auto;
   overflow: hidden;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   font-size: var(--type-mono-micro);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1078,16 +1070,17 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: var(--space-xs);
+  gap: 0;
   min-height: 51px;
-  padding: 8px 8px 4px 0;
+  padding: 0 8px 0 0;
 }
 
 .task-row-title {
-  display: -webkit-box;
+  display: block;
   flex: 0 0 auto;
   width: 100%;
-  padding: 0;
+  min-height: 44px;
+  padding: 8px 0;
   overflow: hidden;
   font-size: var(--type-control);
   line-height: 1.35;
@@ -1098,6 +1091,11 @@ button:disabled {
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.task-row-title-text {
+  display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -1725,6 +1723,8 @@ button:disabled {
 }
 
 .auto-archive-delay input {
+  flex: 0 1 5rem;
+  min-width: 0;
   width: 5rem;
   min-height: 40px;
   padding: 0 8px;
@@ -3806,10 +3806,14 @@ button:disabled {
 }
 
 .bottom-navigation button span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 @media (max-width: 839px) {
@@ -3874,11 +3878,7 @@ button:disabled {
     min-height: 48px;
   }
 
-  body:has(
-      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
-      textarea:focus
-    )
-    .bottom-navigation {
+  .app-shell.keyboard-occluded .bottom-navigation {
     display: none;
   }
 
@@ -4139,19 +4139,11 @@ html.scratchpad-route .page-surface {
   width: min(calc(100% - 2 * var(--page-inset)), var(--scratch-feed-width));
   margin: 0 auto;
   gap: 12px;
-  opacity: 0;
+  visibility: hidden;
 }
 
 .scratchpad-history.is-loaded {
-  opacity: 1;
-  animation: scratchpad-history-reveal 180ms var(--ease-out);
-}
-
-@keyframes scratchpad-history-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+  visibility: visible;
 }
 
 .scratchpad-document,
@@ -4811,7 +4803,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
+  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
   min-height: 48px;
   align-items: start;
   border-bottom: 1px solid var(--line);
@@ -4871,8 +4863,8 @@ html.scratchpad-route .page-surface {
 .scratchpad-collapse,
 .scratchpad-collapse-spacer {
   display: inline-flex;
-  width: 36px;
-  min-width: 36px;
+  width: 44px;
+  min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -4903,7 +4895,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-kind-controls {
   display: flex;
-  width: 70px;
+  width: 88px;
   min-width: 0;
   min-height: 44px;
   align-items: center;
@@ -4912,8 +4904,8 @@ html.scratchpad-route .page-surface {
 .scratchpad-kind-controls .scratchpad-draft-completion,
 .scratchpad-note-kind-icon {
   display: inline-flex;
-  width: 34px;
-  min-width: 34px;
+  width: 44px;
+  min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -4921,9 +4913,9 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-kind-controls .scratchpad-kind-toggle {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
   justify-content: flex-start;
   padding: 0;
   color: var(--ink-muted);
@@ -4942,11 +4934,16 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-row .task-actions-trigger {
   align-self: start;
-  width: 36px;
+  width: 44px;
   min-height: 44px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 140ms var(--ease-out);
+}
+
+.scratchpad-row-main > .task-actions-trigger,
+.scratchpad-row-main > .scratchpad-row-menu-trigger {
+  grid-column: 6;
 }
 
 .scratchpad-row .task-actions-trigger > svg {
@@ -5045,7 +5042,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns: 28px 28px 70px minmax(0, 1fr) 36px 36px;
+  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
   margin-top: -1px;
   border-bottom: 1px solid var(--line);
 }
@@ -5498,29 +5495,32 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
   }
 
   .scratchpad-kind-controls {
-    width: 64px;
+    width: 44px;
   }
 
   .scratchpad-kind-controls .scratchpad-draft-completion,
   .scratchpad-note-kind-icon {
-    width: 31px;
-    min-width: 31px;
+    width: 44px;
+    min-width: 44px;
   }
 
-  .scratchpad-kind-controls .scratchpad-kind-toggle {
-    width: 33px;
-    min-width: 33px;
-    font-size: 0.63rem;
+  /* Conversion remains in the row menu; dragging moves to the focused toolbar. */
+  .scratchpad-kind-controls .scratchpad-kind-toggle,
+  .scratchpad-row-main > .scratchpad-drag-handle,
+  .scratchpad-row-main > .scratchpad-convert-line {
+    display: none;
   }
 
-  .scratchpad-screen .scratchpad-drag-handle,
-  .scratchpad-screen .scratchpad-row-menu-trigger {
-    opacity: 0;
-    pointer-events: none;
+  .scratchpad-screen .scratchpad-row-menu-trigger,
+  .scratchpad-row .task-actions-trigger {
+    grid-column: 4;
+    width: 44px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .scratchpad-kind-label span {
@@ -5537,20 +5537,26 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-collapse,
   .scratchpad-collapse-spacer {
-    width: 26px;
-    min-width: 26px;
+    width: 44px;
+    min-width: 44px;
   }
 
   .scratchpad-mobile-depth-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
-    padding: 5px 36px 7px 54px;
+    padding: 5px 0 7px;
     border-bottom: 1px solid var(--line);
+  }
+  .scratchpad-mobile-move {
+    touch-action: none;
+    cursor: grab;
   }
 
   .scratchpad-mobile-depth-actions button {
     display: inline-flex;
-    min-height: 38px;
+    min-width: 44px;
+    min-height: 44px;
     align-items: center;
     gap: 4px;
     padding: 0 7px;
@@ -5562,7 +5568,10 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-nlp-preview {
-    grid-template-columns: 26px 28px 64px minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+  }
+  .scratchpad-nlp-preview > div {
+    grid-column: 3 / -1;
   }
 
   .scratchpad-add-actions {
@@ -6801,6 +6810,7 @@ html.scratchpad-route .page-surface {
 
 .view-filter-list {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-xs);
   overflow-x: auto;
   scrollbar-width: none;
@@ -7106,7 +7116,9 @@ html.scratchpad-route .page-surface {
     position: fixed;
     top: auto;
     right: var(--space-md);
-    bottom: calc(var(--mobile-bottom-nav-height, 72px) + var(--space-md));
+    bottom: calc(
+      var(--mobile-bottom-nav-height, var(--nav-height)) + var(--space-md)
+    );
     left: var(--space-md);
     min-width: 0;
     padding: var(--space-sm);
@@ -7157,6 +7169,7 @@ html.scratchpad-route .page-surface {
   bottom: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   width: min(680px, calc(100vw - 72px));
   min-width: 0;
   color: var(--ink);
@@ -7217,6 +7230,7 @@ html.scratchpad-route .page-surface {
 }
 
 .view-editor-body {
+  min-width: 0;
   min-height: 0;
   padding: 0 32px 64px;
   overflow-y: auto;
@@ -7225,16 +7239,34 @@ html.scratchpad-route .page-surface {
 
 .view-editor-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .view-draft-preview {
-  display: grid;
-  grid-template-columns: minmax(132px, auto) minmax(0, 1fr);
-  gap: 24px;
-  align-items: center;
-  min-height: 82px;
-  padding: 18px 0;
+  display: block;
+  padding: 4px 0;
   border-bottom: 1px solid var(--line);
+}
+.view-draft-preview > summary,
+.view-layout-disclosure > summary,
+.connection-technical-details > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.view-draft-preview > summary > span {
+  margin-left: 8px;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+.view-draft-preview[open] > ol {
+  margin: 8px 16px 12px;
+}
+.view-planner-explanation,
+.connection-technical-details p {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
 }
 
 .view-draft-preview h2,
@@ -7380,6 +7412,7 @@ html.scratchpad-route .page-surface {
 
 .view-kind-field,
 .filter-group {
+  min-width: 0;
   padding: 0;
   margin: 0;
   border: 0;
@@ -7912,6 +7945,7 @@ html.scratchpad-route .page-surface {
 
 .view-editor-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
@@ -7923,6 +7957,10 @@ html.scratchpad-route .page-surface {
 
 .view-editor-footer > div {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 16px;
 }
@@ -8117,13 +8155,68 @@ html.scratchpad-route .page-surface {
   min-width: 0;
 }
 
+.task-row-context {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  line-height: 1.5;
+  padding-bottom: 4px;
+}
+.project-index {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.project-index select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  flex: 1 1 16rem;
+  padding: 8px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+.project-group {
+  scroll-margin-top: 16px;
+}
+.project-group > header .project-toggle {
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.project-toggle > svg {
+  flex-shrink: 0;
+}
+.project-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.project-count {
+  font-size: var(--type-label);
+  font-weight: normal;
+  color: var(--ink-muted);
+}
+
 .projects-view {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 30px;
+}
+.project-index,
+.project-group {
+  min-width: 0;
+}
+.project-toggle > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .project-group > header {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
   gap: 20px;
@@ -8149,10 +8242,10 @@ html.scratchpad-route .page-surface {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0;
   color: var(--accent);
-  white-space: nowrap;
+  white-space: normal;
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -8882,12 +8975,13 @@ html.scratchpad-route .page-surface {
   .full-calendar-view .fc-dayGridMonth-view {
     min-width: 350px;
   }
-  .full-calendar-view .fc-daygrid-more-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    min-width: 44px;
-  }
+}
+
+.full-calendar-view .fc-daygrid-more-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 @media (min-width: 840px) {
@@ -9725,7 +9819,8 @@ html.scratchpad-route .page-surface {
   color: var(--paper);
 }
 @media (max-width: 839px) {
-  .has-list-capture > .capture-composer {
+  .has-context-capture > .capture-composer,
+  .has-context-capture .full-calendar-create {
     display: none;
   }
   .view-context-capture {
@@ -9735,6 +9830,44 @@ html.scratchpad-route .page-surface {
     display: none;
   }
 }
+.full-calendar-view .fc-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.full-calendar-view .fc-more-popover {
+  width: min(360px, calc(100vw - 24px));
+  max-height: 70dvh;
+  overflow: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 8px 24px var(--color-shadow);
+}
+.full-calendar-view .fc-more-popover .full-calendar-event-content {
+  font-size: var(--type-body);
+}
+.app-shell:has(.fc-more-popover) .global-capture-fab {
+  visibility: hidden;
+}
+.task-added-notice {
+  display: flex;
+  flex-wrap: wrap;
+}
+.task-added-notice > span {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.task-added-notice > button {
+  flex: 0 0 auto;
+}
+.task-added-notice > button:last-child {
+  margin-left: auto;
+  min-width: 44px;
+  border-left: 0;
+}
+
 .view-date {
   margin: 4px 0 0;
   color: var(--ink-soft);
@@ -9795,4 +9928,133 @@ html.scratchpad-route .page-surface {
 }
 .task-section > .section-heading {
   margin: 0;
+}
+
+/* Intrinsic sizing must not turn larger text into page-wide overflow. */
+.screen,
+.screen > *,
+.view-catalog > *,
+.view-catalog-controls > *,
+.view-editor-form > *,
+.view-identity > *,
+.status-automation-row > * {
+  min-width: 0;
+}
+.screen-header,
+.navigation-view-order > header,
+.all-views-heading {
+  flex-wrap: wrap;
+}
+.screen-header > *,
+.navigation-view-order > header > *,
+.all-views-heading > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.view-header > div:not(.view-header-actions) {
+  flex: 1 1 12rem;
+}
+.view-header > .back-action {
+  flex-basis: 100%;
+}
+.view-header h1,
+.screen-header h1,
+.view-kind-options strong {
+  overflow-wrap: anywhere;
+}
+.view-editor-header > .icon-action {
+  flex: 0 0 44px;
+}
+.view-editor-header {
+  gap: 12px;
+}
+.view-editor-header small {
+  white-space: normal;
+}
+.section-title-with-count {
+  min-width: 0;
+}
+.section-title-with-count > h2 {
+  min-width: 0;
+}
+.section-title-with-count > span {
+  flex-shrink: 0;
+  min-height: 24px;
+  height: auto;
+}
+.browse-fields button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 839px) {
+  :root {
+    --nav-height: max(72px, calc(3rem + 24px));
+  }
+  .full-calendar-commandbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .full-calendar-commandbar > h2 {
+    flex: 1 1 9ch;
+    min-width: 0;
+  }
+  .full-calendar-navigation {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .full-calendar-modes {
+    flex: 1 1 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5em), 1fr));
+  }
+  .full-calendar-modes button {
+    min-width: 0;
+    padding: 8px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.value-color {
+  display: inline-block;
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid var(--ink-soft);
+  border-radius: 50%;
+}
+.collection-availability {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 12px var(--page-inset);
+  color: var(--ink);
+  background: var(--paper-soft);
+  border-bottom: 1px solid var(--line-strong);
+  font-size: var(--type-supporting);
+}
+.collection-availability p {
+  margin: 4px 0 0;
+}
+.availability-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+html.scratchpad-route .page-surface:has(> .collection-availability) {
+  display: flex;
+  flex-direction: column;
+}
+html.scratchpad-route
+  .page-surface:has(> .collection-availability)
+  > .scratchpad-screen {
+  flex: 1;
+  min-height: 0;
 }

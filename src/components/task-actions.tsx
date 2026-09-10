@@ -928,9 +928,14 @@ function MenuAction({
         size={18}
         style={iconColor ? { color: iconColor } : undefined}
       />
-      <span style={labelColor ? { color: labelColor } : undefined}>
-        {label}
-      </span>
+      {labelColor ? (
+        <span
+          aria-hidden="true"
+          className="value-color"
+          style={{ backgroundColor: labelColor }}
+        />
+      ) : null}
+      <span>{label}</span>
       {detail ? <small>{detail}</small> : null}
       {next ? (
         <ChevronRight

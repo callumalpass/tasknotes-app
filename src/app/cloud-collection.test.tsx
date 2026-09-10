@@ -185,8 +185,13 @@ it("offers an explicit retry after session startup fails", () => {
   );
 
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Mdbase is temporarily unavailable.",
+    "TaskNotes couldn’t open right now.",
   );
+  expect(
+    screen.getByText("Mdbase is temporarily unavailable."),
+  ).not.toBeVisible();
+  fireEvent.click(screen.getByText("Technical details"));
+  expect(screen.getByText("Mdbase is temporarily unavailable.")).toBeVisible();
   fireEvent.click(
     screen.getByRole("button", { name: "Retry opening TaskNotes" }),
   );
@@ -210,8 +215,12 @@ it("shows a retry when startup cancellation returns to not started", () => {
   );
 
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Application session startup was cancelled.",
+    "TaskNotes couldn’t open right now.",
   );
+  fireEvent.click(screen.getByText("Technical details"));
+  expect(
+    screen.getByText("Application session startup was cancelled."),
+  ).toBeVisible();
   fireEvent.click(
     screen.getByRole("button", { name: "Retry opening TaskNotes" }),
   );

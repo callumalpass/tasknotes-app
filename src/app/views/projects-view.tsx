@@ -1,4 +1,9 @@
-import { Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
+import { useId, useState } from "react";
+import {
+  sectionCollapsed,
+  saveSectionCollapsed,
+} from "../../application/section-preferences";
 
 import { TaskRow } from "../../components/task-row";
 import {
@@ -13,6 +18,7 @@ import type { TaskViewExecution } from "../../domain/view";
 
 export function ProjectsView({
   execution,
+  sectionScope,
   linkWriteFormat,
   projectsField,
   tasks,
@@ -21,6 +27,7 @@ export function ProjectsView({
   onToggle,
 }: {
   execution: TaskViewExecution;
+  sectionScope?: string;
   projectsField: string;
   linkWriteFormat: "wikilink" | "markdown";
   tasks: readonly Task[];
@@ -28,6 +35,16 @@ export function ProjectsView({
   onOpen(task: Task, occurrenceDate?: string): void;
   onToggle(task: Task, occurrenceDate?: string): void;
 }) {
+  const id = useId();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const preferenceKey = (key: string) =>
+    sectionScope
+      ? JSON.stringify([sectionScope, execution.view.key, "project", key])
+      : undefined;
+  const collapse = (key: string, value: boolean) => {
+    setCollapsed((current) => ({ ...current, [key]: value }));
+    saveSectionCollapsed(preferenceKey(key), value);
+  };
   const activeTasks = tasks.filter((task) => !task.completed && !task.archived);
   const records = indexProjectRecords(
     (execution.records ?? []).map(({ record }) => record),
@@ -74,11 +91,13 @@ export function ProjectsView({
     }
   }
 
-  const ordered = [...groups.values()].sort(
-    (left, right) =>
-      left.label.localeCompare(right.label) ||
-      (left.path ?? "").localeCompare(right.path ?? ""),
-  );
+  const ordered = [...groups.entries()]
+    .map(([key, project]) => ({ key, ...project }))
+    .sort(
+      (left, right) =>
+        left.label.localeCompare(right.label) ||
+        (left.path ?? "").localeCompare(right.path ?? ""),
+    );
   if (!ordered.length)
     return (
       <div className="plain-empty">
@@ -88,39 +107,87 @@ export function ProjectsView({
     );
   return (
     <div className="projects-view">
-      {ordered.map((project) => (
-        <section className="project-group" key={project.path ?? project.value}>
-          <header>
-            <div>
-              <h2>{project.label}</h2>
-              <small>
-                {project.path ??
-                  `${project.tasks.length} linked ${
-                    project.tasks.length === 1 ? "task" : "tasks"
-                  }`}
-              </small>
+      <label className="project-index">
+        <span>{ordered.length} projects · Jump to</span>
+        <select
+          aria-label="Jump to project"
+          value=""
+          onChange={(event) => {
+            const index = Number(event.target.value);
+            const project = ordered[index];
+            if (!project) return;
+            collapse(project.key, false);
+            const heading = document.getElementById(`${id}-${index}`);
+            heading?.querySelector("button")?.focus({ preventScroll: true });
+            heading?.scrollIntoView({ block: "start" });
+          }}
+        >
+          <option value="" disabled>
+            Choose a project
+          </option>
+          {ordered.map((project, index) => (
+            <option key={project.key} value={index}>
+              {project.label}
+              {project.path ? ` — ${project.path}` : ""} ({project.tasks.length}
+              )
+            </option>
+          ))}
+        </select>
+      </label>
+      {ordered.map((project, index) => {
+        const isCollapsed =
+          collapsed[project.key] ??
+          sectionCollapsed(preferenceKey(project.key));
+        const listId = `${id}-${index}-tasks`;
+        return (
+          <section
+            id={`${id}-${index}`}
+            className="project-group"
+            key={project.key}
+          >
+            <header>
+              <div>
+                <h2>
+                  <button
+                    className="project-toggle"
+                    type="button"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={listId}
+                    onClick={() => collapse(project.key, !isCollapsed)}
+                  >
+                    <ChevronRight aria-hidden="true" size={16} />
+                    <span>{project.label}</span>
+                    <span className="project-count">
+                      {project.tasks.length}{" "}
+                      {project.tasks.length === 1 ? "task" : "tasks"}
+                    </span>
+                  </button>
+                </h2>
+                {project.path ? <small>{project.path}</small> : null}
+              </div>
+              <button
+                aria-label={`Add task to ${project.label}`}
+                type="button"
+                onClick={() => onCreate(project.value, project.label)}
+              >
+                <Plus aria-hidden="true" size={16} />
+                Add task
+              </button>
+            </header>
+            <div id={listId} className="saved-task-list" hidden={isCollapsed}>
+              {!isCollapsed &&
+                project.tasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onOpen={onOpen}
+                    onToggle={onToggle}
+                  />
+                ))}
             </div>
-            <button
-              aria-label={`Add task to ${project.label}`}
-              type="button"
-              onClick={() => onCreate(project.value, project.label)}
-            >
-              <Plus aria-hidden="true" size={16} />
-              Add task
-            </button>
-          </header>
-          <div className="saved-task-list">
-            {project.tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onOpen={onOpen}
-                onToggle={onToggle}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+          </section>
+        );
+      })}
     </div>
   );
 }
