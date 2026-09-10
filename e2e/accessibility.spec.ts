@@ -19,7 +19,11 @@ test("blocked opening screen has no serious accessibility violations", async ({
     "TaskNotes couldn’t open right now",
   );
 
-  expect(requestFailures).toContain("net::ERR_BLOCKED_BY_CLIENT");
+  expect(requestFailures).toEqual(
+    expect.arrayContaining([
+      expect.stringMatching(/^net::ERR_BLOCKED_BY_CLIENT\b/),
+    ]),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();

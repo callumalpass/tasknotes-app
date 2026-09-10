@@ -32,10 +32,10 @@ IndexedDB task replica.
 
 ## Verification
 
-Final application code: `fae7f93` (following `172435c`, `278f0b8`, `dd33c70`,
-`276b1b7`, `610ebf6`, and `5bc35eb`).
+Final application code: `a83b428` (following `172435c`, `278f0b8`, `dd33c70`,
+`276b1b7`, `610ebf6`, `5bc35eb`, and `fae7f93`).
 
-- `pnpm verify` passed: formatting, typecheck, lint, **607 unit tests / 110 files**,
+- `pnpm verify` passed: formatting, typecheck, lint, **610 unit tests / 111 files**,
   overall/application/domain coverage gates, conformance, and production build.
 - **4,982 TaskNotes conformance checks** passed, one skipped; the isolated local
   mdbase v0.3 collection oracle passed.
@@ -58,9 +58,17 @@ Visual review also caught transparent calendar overflow and awkward confirmation
 button wrapping; both were corrected and rescanned. Final full runs pass without
 retries or suppressed accessibility rules.
 
-Testing used local synthetic/demo fixtures and fully mocked relay traffic only.
-No LAB, live collection, real task data, deployment, or canonical-checkout testing
-was used. Generated manifests were restored after building.
+Final harness review found that the legacy opening-screen test attempted the
+public app-registration endpoint. No authorized collection or real task data was
+used. That attempt is retained in `onboarding-unmocked-registration.zip`.
+The opening-screen check now explicitly tests blocked startup; all six suites
+use `e2e/local-test.ts` (`a83698b`) to block unmatched non-local HTTP/WebSocket
+traffic and disable service workers. Explicit relay mocks still take precedence.
+
+Final verification used local synthetic/demo fixtures and fully mocked relay
+traffic. No LAB, live collection, real task data, deployment, or
+canonical-checkout testing was used. Generated manifests were restored after
+building.
 
 ## Evidence and remaining acceptance
 
@@ -77,7 +85,7 @@ Follow-up evidence:
 - `logs/` and `repro/`: verification output and local probe scripts.
 - `transient-localhost-network-change.zip`: the diagnosed infrastructure failure.
 
-Physical keyboards/IME occlusion, VoiceOver/TalkBack, native Dynamic Type,
+Physical-device keyboard/IME behavior, VoiceOver/TalkBack, native Dynamic Type,
 notification delivery, real authority outages, heavy media, and external Planner
 behavior still require device/authority acceptance. This work neither deploys
 nor claims that acceptance. Broader collection hydration and non-list windowing
