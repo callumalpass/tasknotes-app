@@ -4,7 +4,7 @@ export function ViewEmptyState({
   view,
   stale,
 }: {
-  view: TaskView;
+  view: Pick<TaskView, "id" | "presentation">;
   stale?: boolean;
 }) {
   const title = stale
@@ -19,7 +19,7 @@ export function ViewEmptyState({
   const body = stale
     ? "Retry this view to check for tasks."
     : view.id === "archive"
-      ? "Archived tasks remain searchable. You can restore them from their task menu."
+      ? "Archived tasks are kept, not deleted. You can restore them from their task menu."
       : view.id === "upcoming"
         ? "Add a Scheduled or Due date to an active task."
         : view.presentation?.options.create === false
