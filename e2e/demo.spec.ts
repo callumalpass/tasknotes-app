@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./local-test";
 
 test("opens and navigates the disposable demo repository", async ({ page }) => {
   await page.goto("?demo=50");

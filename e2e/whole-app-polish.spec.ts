@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 const view = (id: string) =>

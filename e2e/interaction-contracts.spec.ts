@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-test";
 import AxeBuilder from "@axe-core/playwright";
 
 test("calendar and Scratchpad controls satisfy semantic and target-size contracts", async ({

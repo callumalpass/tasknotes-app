@@ -17,7 +17,7 @@ import {
   type Locator,
   type Page,
   type Route,
-} from "@playwright/test";
+} from "./local-test";
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
