@@ -30,11 +30,19 @@ incremental application-layer refactor, not a new data authority or task replica
   inert background branches, scroll locking, Tab containment, and focus return.
   Capture, shared field popovers, property editors, task menus, and view editing
   use it. Child handlers consume Escape before their parent can dismiss.
+  Browse uses Tab-to-dismiss; calendar overflow allows internal Tab and dismisses
+  at the boundary. The imperative calendar bridge marks only the covered grid
+  inert, bounds its panel, and retires it before another overlay takes ownership.
+  Return focus transfers to More rather than to a removed calendar event.
 - **Queries own asynchronous read lifetime.** `QueryResource` distinguishes
   loading, refreshing, success, failure, and retained stale data, and rejects
   superseded callbacks. Search no longer translates failure into an empty result.
   A sentinel record distinguishes a full prefix from an exact total; additional
   results can be requested explicitly.
+- **Availability is not inferred from a successful cached query.** The shared
+  collection notice observes repository status independently of query results.
+  Accepted capture confirmations are transient, repository/route-scoped UI state;
+  they do not alter saved-view membership or create a task replica.
 - **A saved-view session owns its read cursor.** `ViewQuerySession` requests the
   first 200-record page without draining the iterator. Load more advances that
   cursor rather than rereading every earlier page. Query order, total count, and
@@ -46,6 +54,8 @@ incremental application-layer refactor, not a new data authority or task replica
   over 100 rows use it. The focused row remains mounted while its menu/detail
   owns focus. Hidden mobile workspaces must not overwrite measured heights with
   zero. Collapsing a section removes its task components, not just their paint.
+  Task rows no longer combine their real targets with browser intrinsic-height
+  estimates from `content-visibility`; measured windowing owns bounded layout.
 
 All durable operations still go through `TaskRepository`. These controllers keep
 only transient interaction/read state. There is no IndexedDB task replica,
@@ -117,7 +127,7 @@ partial/failed/cancelled cursors, complete-scope rank placement, nested Escape,
 modal Tab/focus return, Scratchpad/calendar semantics, 44px targets, 200% text,
 and large-list DOM budgets while scrolling, paging, and returning from detail.
 
-Final local validation:
+PR #156 local validation:
 
 - **590 unit tests / 106 files** passed; application/domain coverage gates passed.
 - **61 browser tests** passed, including eight fully mocked relay tests; one
@@ -129,6 +139,10 @@ Final local validation:
 
 No LAB daemon, live collection, production deployment, or canonical checkout was
 used for testing.
+
+The subsequent [whole-app polish follow-up](audits/2026-09-10-whole-app-polish.md)
+records P01–P16, newer coverage, and the separate acceptance limits. The counts
+above describe PR #156, not that later work.
 
 Remaining work is explicit:
 

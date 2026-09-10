@@ -40,7 +40,7 @@ Obsidian UI at phone scale.
 ## Design Principles
 
 1. Open into the work. Once mdbase is available, show the selected collection without an extra storage layer.
-2. Make authority explicit. A successful write means the selected mdbase authority accepted it.
+2. Make authority explicit. A successful write means the selected mdbase authority accepted it. Known unavailability remains visible even when cached reads succeed. Accepted capture is confirmed without forcing navigation or pretending it must appear in the current filtered view.
 3. Keep structure legible. Dates, status, priority, and recurrence should scan clearly without becoming a control panel.
 4. Reveal portability gently. Let users inspect the Markdown record and collection location when they choose.
 5. Use one vocabulary across providers. Hosted and connected-computer collections should behave like the same product.
@@ -57,4 +57,6 @@ Target WCAG AA contrast and platform accessibility conventions. All controls
 need accessible names, at least 44-point touch targets, dynamic text-friendly
 layouts, non-color state indicators, reduced-motion support, and predictable
 screen-reader order. Support system, light, and dark appearance settings, and
-test all three without encoding task state by color alone.
+test all three without encoding task state by color alone. Focusing an editable
+field alone must not remove navigation. Ordinary pages and editors reflow at
+320px with 200% root text; intentional board/calendar scrolling stays local.
