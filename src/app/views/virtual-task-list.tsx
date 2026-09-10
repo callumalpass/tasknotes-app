@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
 import { TaskListSection } from "../../components/task-list-section";
@@ -29,7 +29,11 @@ export function VirtualTaskList({
   titleProperty,
   onOpen,
   onToggle,
+  renderRow,
+  showEmpty = false,
 }: {
+  renderRow?(row: TaskViewRow, lane: Lane): ReactNode;
+  showEmpty?: boolean;
   lanes: Lane[];
   grouped: boolean;
   daySections: boolean;
@@ -55,7 +59,7 @@ export function VirtualTaskList({
   const entries = useMemo(() => {
     const result: Entry[] = [];
     for (const lane of lanes) {
-      if (!lane.rows.length) continue;
+      if (!lane.rows.length && !showEmpty) continue;
       const headerIndex = grouped ? result.length : -1;
       if (grouped)
         result.push({ key: `heading:${lane.key}`, lane, headerIndex });
@@ -69,7 +73,7 @@ export function VirtualTaskList({
         });
     }
     return result;
-  }, [grouped, isCollapsed, lanes]);
+  }, [grouped, isCollapsed, lanes, showEmpty]);
   const relatedIndices = useCallback(
     (index: number) =>
       entries[index]?.headerIndex >= 0 ? [entries[index].headerIndex] : [],
@@ -84,15 +88,20 @@ export function VirtualTaskList({
       className={`task-list-view${daySections ? " day-task-sections" : ""}`}
       renderItem={(entry) =>
         entry.row ? (
-          <ViewTaskRow
-            row={entry.row}
-            properties={properties}
-            titleProperty={titleProperty}
-            onOpen={onOpen}
-            onToggle={onToggle}
-          />
+          renderRow ? (
+            renderRow(entry.row, entry.lane)
+          ) : (
+            <ViewTaskRow
+              row={entry.row}
+              properties={properties}
+              titleProperty={titleProperty}
+              onOpen={onOpen}
+              onToggle={onToggle}
+            />
+          )
         ) : (
           <TaskListSection
+            showEmpty={showEmpty}
             headingOnly
             className={entry.lane.className}
             laneKey={entry.lane.key}

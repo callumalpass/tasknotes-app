@@ -764,7 +764,6 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     </RepositoryProvider>,
   );
 
-  await startReordering();
   const handle = await screen.findByRole("button", {
     name: "Reorder Charlie. Drag, or use up and down arrow keys.",
   });
@@ -794,7 +793,7 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     { property: "note.due", direction: "asc" },
     { property: "note.priority", direction: "desc" },
   ];
-  const tasks = [listTask("alpha", "Alpha")];
+  const tasks = [{ ...listTask("alpha", "Alpha"), sortOrder: "tnmmmmmmmmmm" }];
   let source = {
     path: view.source.path,
     format: "obsidian.base",
@@ -843,9 +842,13 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     syncIssues: async () => [],
   } as unknown as TaskRepository;
 
-  renderListView(repository, view);
+  const mounted = renderListView(repository, view);
   await startReordering();
-  await screen.findByRole("button", { name: "Done reordering" });
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Manual order", hidden: true }),
+    ).toHaveAttribute("aria-pressed", "true"),
+  );
   expect(updateViewSource).toHaveBeenCalledOnce();
   expect(source.document.indexOf("note.tasknotes_manual_order")).toBeLessThan(
     source.document.indexOf("note.due"),
@@ -859,13 +862,9 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     }),
   ).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Done reordering" }));
-  expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
-  expect(updateViewSource).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("button", { name: "Done reordering" })).toBeNull();
   fireEvent.click(screen.getByLabelText("View options"));
-  fireEvent.click(
-    screen.getByRole("button", { name: "Turn off manual order" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Manual order" }));
   await waitFor(() => expect(updateViewSource).toHaveBeenCalledTimes(2));
   expect(updateViewSource).toHaveBeenCalledTimes(2);
   expect(source.document).not.toContain("note.tasknotes_manual_order");
@@ -873,6 +872,16 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     source.document.indexOf("note.priority"),
   );
   expect(screen.queryByRole("button", { name: /Reorder Alpha/ })).toBeNull();
+  expect(tasks[0].sortOrder).toBe("tnmmmmmmmmmm");
+  await startReordering();
+  await waitFor(() => expect(updateViewSource).toHaveBeenCalledTimes(3));
+  mounted.unmount();
+  renderListView(repository, view);
+  expect(
+    await screen.findByRole("button", { name: /Reorder Alpha/ }),
+  ).toBeEnabled();
+  expect(tasks[0].sortOrder).toBe("tnmmmmmmmmmm");
+  expect(updateViewSource).toHaveBeenCalledTimes(3);
 });
 
 it("loads the complete manual-order scope before appending a captured task", async () => {
@@ -1016,7 +1025,6 @@ it("moves a task between reusable day sections with the shared list move path", 
   }));
 
   renderListView(repository, view);
-  await startReordering();
   const handle = await screen.findByRole("button", {
     name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
   });
@@ -1083,7 +1091,13 @@ it("moves a grouped list task by mutating the destination property", async () =>
   });
 
   renderListView(repository, view);
-  await startReordering();
+  const destination = (await screen.findByText("Done task")).closest(
+    "section",
+  )!;
+  fireEvent.click(
+    within(within(destination).getByRole("heading")).getByRole("button"),
+  );
+  expect(screen.queryByText("Done task")).toBeNull();
   fireEvent.keyDown(
     await screen.findByRole("button", {
       name: "Reorder Open task. Drag, or use up and down arrow keys.",
@@ -1098,11 +1112,66 @@ it("moves a grouped list task by mutating the destination property", async () =>
       ),
     ).toBe(true),
   );
+  expect(screen.getByText("Done task")).toBeVisible();
+});
+
+it.each(["stale", "hasSkippedRecords"] as const)(
+  "keeps manual handles disabled for %s results",
+  async (flag) => {
+    const view = manualListView(`unsafe-${flag.toLowerCase()}`);
+    const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+    const update = vi.fn();
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      groups: [],
+      totalCount: 2,
+      hasMore: false,
+      [flag]: true,
+    }));
+    renderListView(repository, view);
+    const handle = await screen.findByRole("button", { name: /Reorder Alpha/ });
+    expect(handle).toBeDisabled();
+    fireEvent.keyDown(handle, { key: "ArrowDown" });
+    expect(update).not.toHaveBeenCalled();
+  },
+);
+
+it("loads remaining manual-sort rows without a reorder mode or sort rewrite", async () => {
+  const view = manualListView("paged-manual");
+  const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+  const complete: TaskViewExecution = {
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    groups: [],
+    totalCount: 2,
+    hasMore: false,
+  };
+  const repository = manualListRepository(view, tasks, vi.fn(), () => complete);
+  let pages = 0;
+  repository.iterateView = async function* () {
+    pages++;
+    yield { ...complete, rows: complete.rows.slice(0, 1), hasMore: true };
+    pages++;
+    yield { ...complete, rows: complete.rows.slice(1) };
+  };
+  repository.updateViewSource = vi.fn();
+  renderListView(repository, view);
+  const handle = await screen.findByRole("button", { name: /Reorder Alpha/ });
+  expect(handle).toBeDisabled();
+  expect(pages).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Load remaining tasks" }));
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: /Reorder Alpha/ })).toBeEnabled(),
+  );
+  expect(screen.getByRole("button", { name: /Reorder Bravo/ })).toBeEnabled();
+  expect(pages).toBe(2);
+  expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
 
 async function startReordering() {
   fireEvent.click(await screen.findByLabelText("View options"));
-  fireEvent.click(await screen.findByRole("button", { name: "Reorder tasks" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Manual order" }));
 }
 
 function manualListView(
@@ -1178,7 +1247,7 @@ ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC
 }
 
 function renderListView(repository: TaskRepository, view: TaskView) {
-  render(
+  return render(
     <RepositoryProvider
       mutationJournal={new MemoryMutationJournal()}
       repository={repository}

@@ -11,6 +11,7 @@ export function TaskListSection({
   label,
   count,
   arranging = false,
+  showEmpty = false,
   className = "",
   laneKey,
   children,
@@ -22,6 +23,7 @@ export function TaskListSection({
   label: string;
   count: number;
   arranging?: boolean;
+  showEmpty?: boolean;
   className?: string;
   laneKey: string;
   children: ReactNode;
@@ -35,7 +37,7 @@ export function TaskListSection({
   );
   const collapsed = controlledCollapsed ?? localCollapsed;
   const expanded = arranging || !collapsed;
-  if (!count && !arranging) return null;
+  if (!count && !arranging && !showEmpty) return null;
   return (
     <section className={`task-section ${className}`} data-list-lane={laneKey}>
       <h2 className="section-heading">

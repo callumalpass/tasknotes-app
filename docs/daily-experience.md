@@ -11,10 +11,14 @@ and bounded task-list reads/rendering, with audit follow-up and measurements.
 ## Scope
 
 - Collapsible grouped sections, expanded by default, with local preferences
-  scoped to collection, saved view, and section. Reordering temporarily opens
-  sections and reveals empty destinations without overwriting preferences.
-- View options replace competing header icons. Reorder tasks is an explicit
-  mode; Done hides list handles without discarding the saved sort or ranks.
+  scoped to collection, saved view, and section. Manual sorting retains collapse
+  controls and reveals empty destinations. Moving into a collapsed group opens it.
+  Large manually sorted lists retain measured windowing.
+- View options replace competing header icons. Manual order is a sorting choice,
+  not a separate interaction mode: its handles remain visible while selected.
+  Turning it off restores fallback sorts but retains task ranks for reuse.
+  Saved manual views reopen with handles; partial reads must load remaining tasks
+  before ordering is enabled.
 - Visible Scheduled / Due labels, both dates where applicable, quieter routine
   defaults, stronger task titles, softer rules, and clearer completion circles.
 - A contextual mobile capture button replaces duplicate list capture. It uses

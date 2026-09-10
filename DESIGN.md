@@ -231,15 +231,19 @@ Today             Search       More
   seconds.
 - Disclosure rows use a title, a plain-language current-value summary, and the
   same chevron treatment across capture, task editing, views, and settings.
-- Every writable saved view exposes Reorder tasks and Edit view in a quiet
-  View options disclosure. Reordering enables the manual sort rule if needed;
-  Done reordering hides list handles without changing that rule or saved ranks.
-  Turning manual order off remains a separate deliberate action. Boards retain
+- Every writable saved view exposes a pressed-state Manual order sorting option
+  and Edit view in a quiet View options disclosure. Manual sorting directly
+  enables list handles, including when reopening a saved view; there is no
+  separate reorder mode. Switching it off restores the other sort rules without
+  deleting stored task ranks. Selecting a different primary sort in the editor
+  also hides handles. Partial results expose Load remaining tasks before ordering
+  is enabled; stale or incomplete reads never permit rank writes. Boards retain
   direct spatial arrangement.
 - Grouped lists have accessible collapsible sections, expanded by default.
   Explicit collapse choices are local preferences scoped to collection, view,
-  and section. Reordering temporarily expands sections and reveals empty drop
-  destinations without overwriting those preferences. There is no special
+  and section. Manual sorting keeps sections collapsible and reveals empty drop
+  destinations. Moving into a collapsed section expands that destination. Large
+  manually sorted lists keep measured windowing rather than rendering every row. There is no special
   overdue-review workflow or automatic hiding of overdue work. Projects likewise
   have collection/view-scoped collapse choices, visible counts, and a compact
   jump selector that expands and focuses the chosen project.
