@@ -50,6 +50,10 @@ const cloudSelection = new MdbaseBrowserSelection({
   fallbackPath: joinBase(""),
 });
 
+// Let the SDK derive v2 intent groups, exact file actions and provision-based
+// setup authority from the declaration. Passing legacy exact operations here
+// would reject v2; stale grants must use the session's explicit authorization flow.
+// Notification delivery registration remains a separate, user-initiated action.
 export const cloudSession = cloudConnect.application({
   selection: cloudSelection,
   autoSelect: "never",

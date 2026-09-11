@@ -22,7 +22,9 @@ import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
-const TIMER_CAPABILITY = "timers.reconcile" as const;
+// Scheduling is required; delivery registration remains an explicit opt-in
+// through the notification APIs, not an application-readiness prerequisite.
+const TIMER_CAPABILITY = "background.schedule" as const;
 
 export type MdbaseNotificationState =
   | "checking"

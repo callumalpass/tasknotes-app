@@ -16,6 +16,11 @@ describe("mdbase native notifications", () => {
       optedIn: false,
     });
     expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
+    expect(fixture.connect.capabilityState).toHaveBeenCalledWith(
+      "background.schedule",
+    );
+    // No delivery grant/registration is needed merely to be connected or off.
+    expect(fixture.connect.registerNativeNotifications).not.toHaveBeenCalled();
 
     expect(await fixture.subject.enable()).toEqual({
       state: "enabled",
