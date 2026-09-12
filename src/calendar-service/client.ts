@@ -84,7 +84,11 @@ export class CalendarLabClient {
   #controller = new AbortController();
   #listeners = new Set<() => void>();
   #snapshot = initial();
-  constructor(private readonly transport: typeof fetch = fetch) {}
+  // Native browser fetch requires the global receiver, not this client instance.
+  constructor(
+    private readonly transport: typeof fetch = (...args) =>
+      globalThis.fetch(...args),
+  ) {}
   getSnapshot = () => this.#snapshot;
   subscribe = (listener: () => void) => {
     this.#listeners.add(listener);

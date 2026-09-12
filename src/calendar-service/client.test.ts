@@ -83,9 +83,26 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("LAB calendar client", () => {
+  it("calls the default browser transport with the global receiver", async () => {
+    const { transport } = fixture();
+    const nativeFetch = vi.fn(function (
+      this: unknown,
+      ...args: Parameters<typeof fetch>
+    ) {
+      if (this !== globalThis)
+        return Promise.reject(new TypeError("Illegal invocation"));
+      return transport(...args);
+    });
+    vi.stubGlobal("fetch", nativeFetch);
+    const client = new CalendarLabClient();
+    await signIn(client);
+    expect(nativeFetch).toHaveBeenCalled();
+    expect(client.getSnapshot().calendars).toEqual([calendar]);
+  });
   it("requires both the explicit build flag and exact LAB origin", () => {
     expect(isCalendarLabEnabled("1", LAB_APP_ORIGIN)).toBe(true);
     for (const origin of [
