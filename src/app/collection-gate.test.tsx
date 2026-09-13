@@ -115,7 +115,7 @@ it("offers mdbase without a device-folder storage path", async () => {
   );
 });
 
-it("queues a native callback until explicit startup succeeds", async () => {
+it("joins startup before closing the native authorization browser", async () => {
   let finishStartup!: () => void;
   connect.startCloudSession.mockImplementation(
     () =>
@@ -128,13 +128,12 @@ it("queues a native callback until explicit startup succeeds", async () => {
 
   render(<CollectionGate />);
   await waitFor(() => expect(connect.startCloudSession).toHaveBeenCalled());
-  expect(connect.handleAuthorizationCallback).not.toHaveBeenCalled();
+  expect(native.close).not.toHaveBeenCalled();
 
   finishStartup();
 
-  await waitFor(() =>
-    expect(connect.handleAuthorizationCallback).toHaveBeenCalledTimes(1),
-  );
+  await waitFor(() => expect(native.close).toHaveBeenCalledTimes(1));
+  expect(connect.handleAuthorizationCallback).toHaveBeenCalledTimes(1);
 });
 
 it("deduplicates a native callback delivered as launch and open events", async () => {
@@ -218,14 +217,15 @@ it("preserves a web callback before startup so retry replays its exact URL", asy
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Startup failed before callback handling.",
   );
-  expect(connect.handleAuthorizationCallback).not.toHaveBeenCalled();
+  expect(connect.handleAuthorizationCallback).toHaveBeenCalledTimes(1);
 
   fireEvent.click(screen.getByRole("button", { name: "Retry authorization" }));
 
   await waitFor(() =>
-    expect(connect.handleAuthorizationCallback).toHaveBeenCalledWith(
-      callback,
-      expect.objectContaining({ timeoutMs: 60_000 }),
-    ),
+    expect(connect.handleAuthorizationCallback).toHaveBeenCalledTimes(2),
+  );
+  expect(connect.handleAuthorizationCallback).toHaveBeenLastCalledWith(
+    callback,
+    expect.objectContaining({ timeoutMs: 60_000 }),
   );
 });

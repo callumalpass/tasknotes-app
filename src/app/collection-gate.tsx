@@ -54,13 +54,14 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
       if (existing) return existing;
       const operation = (async () => {
         try {
-          await startSession();
-          requireConnectOutcome(
-            await cloudSession.handleAuthorizationCallback(
-              url,
-              requestOptions(),
-            ),
-          );
+          // Startup consumes an initial web callback. Join it while startup is
+          // in flight; calling the handler afterward would exchange it twice.
+          // The SDK also waits for startup before handling native deep links.
+          const [, outcome] = await Promise.all([
+            startSession(),
+            cloudSession.handleAuthorizationCallback(url, requestOptions()),
+          ]);
+          requireConnectOutcome(outcome);
           pendingCallbackUrls.current.delete(url);
           handledCallbackUrls.current.add(url);
           setCallbackRetryAvailable(pendingCallbackUrls.current.size > 0);
@@ -85,13 +86,12 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
 
   const retryStartup = useCallback(() => {
     setAuthorizationError(null);
-    void startSession()
-      .then(() =>
-        Promise.all(
-          [...pendingCallbackUrls.current].map((url) => complete(url)),
-        ),
-      )
-      .catch((reason) => setAuthorizationError(message(reason)));
+    const pending = [...pendingCallbackUrls.current];
+    void (
+      pending.length > 0
+        ? Promise.all(pending.map((url) => complete(url)))
+        : startSession()
+    ).catch((reason) => setAuthorizationError(message(reason)));
   }, [complete, startSession]);
 
   useEffect(() => {
