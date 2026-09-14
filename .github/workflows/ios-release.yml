@@ -13,6 +13,11 @@ on:
         required: true
         default: false
         type: boolean
+      submit_public:
+        description: Submit to public App Store review after approval (main only; requires upload)
+        required: true
+        default: false
+        type: boolean
   push:
     tags: ["ios-v*"]
 
@@ -26,6 +31,9 @@ concurrency:
 jobs:
   release:
     runs-on: macos-15
+    outputs:
+      version: ${{ steps.configuration.outputs.version }}
+      build: ${{ steps.configuration.outputs.build }}
     env:
       APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
       APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
@@ -46,9 +54,11 @@ jobs:
           xcode-version: latest-stable
 
       - name: Validate Xcode and release configuration
+        id: configuration
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
           REQUESTED_UPLOAD: ${{ inputs.upload }}
+          REQUESTED_PUBLIC_SUBMISSION: ${{ inputs.submit_public }}
         run: |
           sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
           sdk_major="${sdk_version%%.*}"
@@ -69,6 +79,14 @@ jobs:
             exit 1
           fi
 
+          if [ "$REQUESTED_PUBLIC_SUBMISSION" = true ]; then
+            if [ "$GITHUB_REF" != refs/heads/main ] || [ "$upload" != true ]; then
+              echo "Public submission requires a manual main-branch run with upload enabled." >&2
+              exit 1
+            fi
+            TASKNOTES_IOS_VERSION="$version" node scripts/submit-app-store.mjs --validate
+          fi
+
           test -n "$APPLE_DISTRIBUTION_CERTIFICATE_BASE64"
           test -n "$APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD"
           test -n "$APPLE_PROVISIONING_PROFILE_BASE64"
@@ -84,6 +102,8 @@ jobs:
           echo "TASKNOTES_IOS_VERSION=$version" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_BUILD=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_UPLOAD=$upload" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -216,3 +236,41 @@ jobs:
             rm -f "$TASKNOTES_PROFILE_INSTALL_PATH"
           fi
           rm -f ios/App/App/GoogleService-Info.plist
+
+  submit-public:
+    name: Submit public App Store release
+    needs: release
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.upload && inputs.submit_public
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: app-store-production
+      url: https://appstoreconnect.apple.com/apps/6797168033/distribution
+    concurrency:
+      group: app-store-production
+      cancel-in-progress: false
+    steps:
+      - name: Check out exact built commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Test App Store publication policy
+        run: node --test scripts/submit-app-store.node-test.mjs
+
+      - name: Prepare listing and submit for automatic release after Apple approval
+        env:
+          APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
+          APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
+          APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
+          TASKNOTES_IOS_VERSION: ${{ needs.release.outputs.version }}
+          TASKNOTES_IOS_BUILD: ${{ needs.release.outputs.build }}
+        run: node scripts/submit-app-store.mjs --submit

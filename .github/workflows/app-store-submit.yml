@@ -1,0 +1,65 @@
+name: App Store submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful iOS release workflow run ID to promote (not a build number)
+        required: true
+        type: string
+      submit:
+        description: Submit publicly after environment approval; false performs read-only checks
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: app-store-production
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: app-store-production
+      url: https://appstoreconnect.apple.com/apps/6797168033/distribution
+    steps:
+      - name: Check out approved release policy and metadata
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Verify source workflow and resolve exact uploaded build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          node scripts/app-store-source-run.mjs
+
+      - name: Test publication policy
+        run: node --test scripts/submit-app-store.node-test.mjs scripts/app-store-source-run.node-test.mjs
+
+      - name: Check or submit the public release
+        env:
+          APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
+          APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
+          APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
+          SUBMIT: ${{ inputs.submit }}
+        run: |
+          if [ "$SUBMIT" = true ]; then
+            node scripts/submit-app-store.mjs --submit
+          else
+            node scripts/submit-app-store.mjs
+          fi
