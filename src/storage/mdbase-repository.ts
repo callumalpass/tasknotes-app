@@ -39,6 +39,7 @@ import {
   runMdbaseMutation,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
+import { readPeopleDirectory } from "./mdbase-people";
 import {
   activeScratchpad,
   assertActiveScratchpad,
@@ -274,6 +275,10 @@ export class MdbaseTaskRepository implements TaskRepository {
       removed,
       elapsedMs: Math.round(performance.now() - startedAt),
     };
+  }
+
+  people(signal?: AbortSignal) {
+    return readPeopleDirectory(this.connect, signal);
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {

@@ -28,6 +28,45 @@ taskRepositoryContract("direct mdbase", async () => ({
 }));
 
 describe("mdbase task repository", () => {
+  it("persists person-ID assignments, filters before limits, and preserves unresolved references", async () => {
+    const assigned = taskRecord("assigned", "Assigned task", "r1");
+    assigned.frontmatter.assignees = ["person_missing"];
+    const fixture = mdbaseFixture([
+      assigned,
+      ...Array.from({ length: 20 }, (_, index) =>
+        taskRecord(`other-${index}`, `Other ${index}`, "r1"),
+      ),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    expect(
+      (
+        await repository.list({
+          status: "all",
+          assignee: "person_missing",
+          limit: 1,
+        })
+      ).map((task) => task.id),
+    ).toEqual(["assigned"]);
+    const updated = await repository.update("assigned", {
+      title: "Still assigned",
+    });
+    expect(updated.assignees).toEqual(["person_missing"]);
+    expect(
+      (await repository.update("assigned", { assignees: [] })).assignees,
+    ).toEqual([]);
+    expect(
+      await repository.list({ status: "all", assignee: "person_missing" }),
+    ).toEqual([]);
+    expect(
+      (
+        await repository.create({
+          title: "New assignment",
+          assignees: ["person_new"],
+        })
+      ).assignees,
+    ).toEqual(["person_new"]);
+  });
   it("loads more than ten thousand tasks through bounded opaque pages", async () => {
     const records = Array.from({ length: 10_005 }, (_, index) =>
       taskRecord(`paged-${index}`, `Paged task ${index}`, `r${index + 1}`),
@@ -513,7 +552,7 @@ describe("mdbase task repository", () => {
         implements: [
           {
             contract: "tasknotes.task",
-            version: "0.3.0-rc.3",
+            version: "0.3.0-rc.4",
             fields: next.contracts[0]!.implementations[0].fields,
             binding: configuration,
           },

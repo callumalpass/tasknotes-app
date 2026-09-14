@@ -22,6 +22,7 @@ import { AttachmentService } from "../application/attachments/attachment-service
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { RecurrenceField } from "../components/recurrence-field";
+import { AssigneeEditor } from "../components/assignee-editor";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateField,
@@ -281,6 +282,7 @@ function TaskEditor({
             tags: value.tags,
             contexts: value.contexts,
             projects: value.projects,
+            assignees: value.assignees ?? [],
             blockedBy: value.blockedBy,
             recurrence: value.recurrence ?? null,
             recurrenceAnchor: value.recurrenceAnchor,
@@ -789,6 +791,10 @@ function TaskEditor({
               onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
+          <AssigneeEditor
+            values={draft.assignees ?? []}
+            onChange={(assignees) => change({ assignees })}
+          />
           <DependencyEditor
             completeField={completeDependencyField}
             dependencies={draft.blockedBy}

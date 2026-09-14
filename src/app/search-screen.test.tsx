@@ -6,6 +6,7 @@ vi.mock("./repository-context", () => ({
   useRepository: () => ({ setTaskCompletion: vi.fn() }),
   useTasks: fixture.query,
 }));
+vi.mock("./use-people", () => ({ usePeople: () => ({ supported: false }) }));
 vi.mock("../components/task-row", () => ({
   TaskRow: ({ task }: { task: { title: string } }) => <div>{task.title}</div>,
 }));

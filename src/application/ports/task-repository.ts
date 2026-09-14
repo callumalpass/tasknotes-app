@@ -54,6 +54,10 @@ import type { CollectionFileStore } from "./collection-file-store";
 export interface TaskRepository {
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
+  /** Account/person discovery is unavailable in non-account demo repositories. */
+  people?(
+    signal?: AbortSignal,
+  ): Promise<import("../../domain/people").PeopleDirectory>;
   initialize(): Promise<void>;
   refresh(): Promise<RefreshResult>;
   list(query?: TaskListQuery): Promise<Task[]>;

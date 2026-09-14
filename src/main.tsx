@@ -12,6 +12,7 @@ import {
   registerTaskNotesServiceWorker,
 } from "./service-worker-registration";
 import "./styles.css";
+import "./people.css";
 import "./accessibility.css";
 
 initializePwaInstall();

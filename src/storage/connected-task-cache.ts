@@ -19,6 +19,11 @@ export function listConnectedTasks(
     .map(({ task }) => task)
     .filter((task) => {
       if (!matchesArchiveFilter(task, query)) return false;
+      if (
+        query.assignee !== undefined &&
+        !task.assignees?.includes(query.assignee)
+      )
+        return false;
       if (query.status === "completed" && !task.completed) return false;
       if (
         query.status !== "completed" &&

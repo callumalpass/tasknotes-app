@@ -63,6 +63,10 @@ changing a real collection.
 Demo data is disposable and resets when you reload the page. Change the number
 in `?demo=30` to generate a different number of tasks, up to 5,000.
 
+The portable-people feature branch adds person-ID assignments and an
+**Assigned to me** search filter. See [People and assignments](docs/portable-people.md)
+for setup, consent, portability and coordinated-release requirements.
+
 ## For contributors
 
 TaskNotes is a web-first application packaged for Android and iOS with

@@ -40,6 +40,8 @@ export interface Task {
   tags: string[];
   contexts: string[];
   projects: string[];
+  /** Stable person IDs; unresolved references are preserved. */
+  assignees?: string[];
   /** Canonical frontmatter links that define attachment membership. */
   attachments: string[];
   blockedBy: TaskDependency[];
@@ -66,6 +68,7 @@ export interface Task {
 }
 
 export interface CreateTaskInput {
+  assignees?: string[];
   title: string;
   status?: TaskStatus;
   priority?: TaskPriority;
@@ -93,6 +96,7 @@ export interface CreateTaskInput {
 }
 
 export interface UpdateTaskInput {
+  assignees?: string[];
   title?: string;
   status?: TaskStatus;
   completed?: boolean;
@@ -155,6 +159,8 @@ export function activeTimeEntry(
 }
 
 export interface TaskListQuery {
+  /** Exact portable person ID, applied before sorting and pagination. */
+  assignee?: string;
   status?: "open" | "completed" | "all";
   archived?: "exclude" | "only" | "include";
   search?: string;

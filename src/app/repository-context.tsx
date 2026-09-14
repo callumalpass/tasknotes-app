@@ -633,22 +633,30 @@ export function useTasks(query: TaskListQuery): {
     resource.snapshot,
     resource.snapshot,
   );
-  const { status: statusFilter, search, limit, archived } = query;
+  const { status: statusFilter, search, limit, archived, assignee } = query;
   // Changing a prefix limit refreshes the same query; changing its meaning clears old results.
   const key = JSON.stringify([
     statusFilter ?? "open",
     archived ?? "exclude",
     search ?? "",
+    assignee ?? null,
   ]);
   const revision = useRepositoryRevision(`tasks:${key}`);
   useEffect(() => {
     if (status !== "ready") return;
     resource.load(key, () =>
-      repository.list({ status: statusFilter, archived, search, limit }),
+      repository.list({
+        status: statusFilter,
+        archived,
+        search,
+        limit,
+        ...(assignee !== undefined ? { assignee } : {}),
+      }),
     );
     return resource.cancel;
   }, [
     archived,
+    assignee,
     key,
     limit,
     repository,

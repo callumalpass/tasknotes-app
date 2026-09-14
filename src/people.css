@@ -1,0 +1,53 @@
+.assignee-editor {
+  min-width: 0;
+  margin: 16px 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.assignee-editor legend {
+  font-weight: 600;
+}
+.assignee-editor p {
+  color: var(--ink-soft);
+}
+.assignee-editor ul {
+  list-style: none;
+  padding: 0;
+}
+.assignee-editor li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.assignee-editor li span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.assignee-editor button,
+.assignee-editor select,
+.assignee-editor a {
+  min-height: 44px;
+}
+.assignee-editor select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 8px 0;
+}
+.assignee-editor a {
+  display: inline-flex;
+  align-items: center;
+}
+.assigned-to-me-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 12px 0;
+}
+.assigned-to-me-filter input {
+  width: 20px;
+  height: 20px;
+}

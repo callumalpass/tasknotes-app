@@ -9,6 +9,7 @@ import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTasks } from "./repository-context";
 import { searchMatchContext } from "./search-match-context";
+import { usePeople } from "./use-people";
 
 import type { Task } from "../domain/task";
 
@@ -20,6 +21,13 @@ export function SearchScreen({
   onOpen(task: Task): void;
 }) {
   const [query, setQuery] = useState("");
+  const [assignedToMe, setAssignedToMe] = useState(false);
+  const people = usePeople(assignedToMe);
+  const personId =
+    assignedToMe && people.directory?.current.status === "linked"
+      ? people.directory.current.personId
+      : undefined;
+  const peopleBlocked = assignedToMe && personId === undefined;
   const deferred = useDebounced(query, 160);
   const { setTaskCompletion } = useRepository();
   const [limit, setLimit] = useState(300);
@@ -30,10 +38,15 @@ export function SearchScreen({
     error,
     stale,
     retry,
-  } = useTasks({ status: "all", search: deferred, limit: limit + 1 });
+  } = useTasks({
+    status: "all",
+    search: deferred,
+    limit: peopleBlocked ? 0 : limit + 1,
+    ...(personId ? { assignee: personId } : {}),
+  });
   const tasks = results.slice(0, limit);
   const hasMore = results.length > limit;
-  const searching = query.trim().length > 0;
+  const searching = assignedToMe || query.trim().length > 0;
   const waiting = query !== deferred;
   const chooseQuery = (value: string) => {
     setQuery(value);
@@ -96,7 +109,20 @@ export function SearchScreen({
           </button>
         ) : null}
       </div>
-      {!waiting && error ? (
+      {people.supported && (
+        <label className="assigned-to-me-filter">
+          <input
+            type="checkbox"
+            checked={assignedToMe}
+            onChange={(event) => {
+              setAssignedToMe(event.target.checked);
+              setLimit(300);
+            }}
+          />
+          Assigned to me
+        </label>
+      )}
+      {!peopleBlocked && !waiting && error ? (
         <div className="operation-error-notice" role="alert">
           <p>Search could not be loaded. {error.message}</p>
           {stale ? <p>Previously loaded results may be out of date.</p> : null}
@@ -105,7 +131,34 @@ export function SearchScreen({
           </button>
         </div>
       ) : null}
-      {waiting || (loading && !error) ? (
+      {peopleBlocked ? (
+        <div
+          className="operation-error-notice"
+          role={people.error ? "alert" : "status"}
+        >
+          <p>
+            {people.error
+              ? `Your person identity could not be loaded. ${people.error.message}`
+              : !people.directory
+                ? "Loading your person identity…"
+                : people.directory.current.status === "ambiguous"
+                  ? "Multiple person records match your account. Resolve those duplicates before filtering tasks."
+                  : "Link your account to a person record before using Assigned to me."}
+          </p>
+          {people.directory && (
+            <a
+              href={people.directory.profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Choose or create your person record in Connect
+            </a>
+          )}
+          <button type="button" onClick={people.retry}>
+            Reload people
+          </button>
+        </div>
+      ) : waiting || (loading && !error) ? (
         <LoadingRows count={4} />
       ) : error && !tasks.length ? null : !searching ? (
         <>
@@ -147,8 +200,16 @@ export function SearchScreen({
         </>
       ) : (
         <EmptyState
-          title="No tasks matched."
-          body="Try fewer words or another spelling."
+          title={
+            assignedToMe
+              ? "No matching tasks assigned to you."
+              : "No tasks matched."
+          }
+          body={
+            assignedToMe
+              ? "Assignments use your linked person record."
+              : "Try fewer words or another spelling."
+          }
         />
       )}
     </section>

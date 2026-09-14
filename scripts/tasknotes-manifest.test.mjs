@@ -35,7 +35,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.contracts).toEqual([
       expect.objectContaining({
         id: "tasknotes.task",
-        version: "0.3.0-rc.3",
+        version: "0.3.0-rc.4",
         digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       }),
     ]);
@@ -79,7 +79,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.12");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.13");
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
@@ -149,7 +149,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.3",
+        candidate.version === "0.3.0-rc.4",
     );
     const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
@@ -173,7 +173,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.3",
+        candidate.version === "0.3.0-rc.4",
     );
     const taskDateSchema = {
       anyOf: [

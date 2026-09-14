@@ -3,7 +3,8 @@ export type QueryScope =
   | `tasks:${string}`
   | `relationships:${string}`
   | `view:${string}`
-  | "collection-summary";
+  | "collection-summary"
+  | "people";
 
 /** Query-scoped revisions keep repository writes out of global React state. */
 export class QueryInvalidationStore {
