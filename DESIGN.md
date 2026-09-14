@@ -115,7 +115,9 @@ text smaller than 11 points.
 
 The semantic type scale is intentionally small: 32px page titles, 20px section
 headings, 17px controls, 16px body text, 14px supporting copy, and 12px mono
-labels. Operational text never falls below the label role. Context-specific
+labels. Shared form fields use 17px on phones and 16px from the 840px desktop
+breakpoint, without reducing their 44px minimum target. Field labels use
+sentence-case proportional text, not the technical mono scale. Operational text never falls below the label role. Context-specific
 display sizes above body text are reserved for task titles, modal headings, and
 the capture plus; ordinary component text uses the nearest semantic token.
 
@@ -150,6 +152,11 @@ Today             Search       More
   mobile capture button uses the blue accent fill with contrasting canvas text:
   one unmistakable primary action, not a page full of competing buttons.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
+  Text fields, selects, and date/time triggers share a type and height rhythm.
+  Keep labels close to their fields (4px), separate related fields by 16px,
+  and reserve 24px for section boundaries. An expanded disclosure owns its
+  bottom spacing; its final field group must not add a second empty band.
+  Compact settings selectors use the same proportional type as other fields.
 - Focus uses the muted blue accent and remains visible without adding a heavy glow.
 - Persistent selection uses an accent label, icon, check, or soft fill. Do not
   enclose selected controls in accent-colored borders; reserve accent outlines
