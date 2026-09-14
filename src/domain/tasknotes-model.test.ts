@@ -29,6 +29,45 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("does not invent membership properties when creating a task", () => {
+    const created = model.create(
+      { title: "Buy milk" },
+      { id: "implicit", now: "2026-09-14T00:00:00.000Z" },
+    );
+    expect(created.frontmatter).not.toHaveProperty("type");
+    expect(created.frontmatter).not.toHaveProperty("types");
+    expect(created.frontmatter).not.toHaveProperty("mdbase_type");
+    expect(created.frontmatter.tags).toContain("task");
+  });
+
+  it.each(
+    ["article-journal", "book", ["book", "article-journal"], null].map(
+      (type) => ({ type }),
+    ),
+  )("preserves ordinary type metadata on edit: $type", ({ type }) => {
+    const task = model.read({
+      path: "tasks/paper.md",
+      body: "Keep this body",
+      frontmatter: {
+        title: "Read paper",
+        type,
+        mdbase_type: "custom-task",
+        types: ["literature"],
+        tags: ["task"],
+        id: "paper",
+        dateCreated: "2026-09-14T00:00:00.000Z",
+        dateModified: "2026-09-14T00:00:00.000Z",
+        status: "todo",
+        priority: "later",
+      },
+    });
+    const updated = model.update(task, { title: "Read revised paper" });
+    expect(updated.frontmatter.type).toEqual(type);
+    expect(updated.frontmatter.mdbase_type).toBe("custom-task");
+    expect(updated.frontmatter.types).toEqual(["literature"]);
+    expect(updated.body).toBe("Keep this body");
+  });
+
   it("preserves configured intermediate statuses during ordinary edits", () => {
     const task = model.read({
       path: "tasks/custom.md",
