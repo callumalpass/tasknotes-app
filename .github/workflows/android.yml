@@ -42,6 +42,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -113,6 +115,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - name: Validate release metadata and signing configuration
         id: release_metadata
