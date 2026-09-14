@@ -41,6 +41,7 @@
   --type-page: 2rem;
   --type-section: 1.25rem;
   --type-control: 1.0625rem;
+  --type-field: var(--type-control);
   --type-body: 1rem;
   --type-supporting: 0.875rem;
   --type-label: 0.75rem;
@@ -257,12 +258,6 @@ button:disabled {
 
 .eyebrow,
 .section-heading,
-.settings-section > h2,
-.settings-disclosure > summary h2,
-.choice-field legend,
-.notes-field > span,
-.form-field > span,
-.form-field > label,
 .record-path > span {
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-mono-micro);
@@ -270,6 +265,17 @@ button:disabled {
   letter-spacing: 0.045em;
   line-height: 1.45;
   text-transform: uppercase;
+}
+
+/* Ordinary labels belong to the form, not the technical metadata scale. */
+.choice-field legend,
+.notes-field > span,
+.form-field > span,
+.form-field > label {
+  font-family: inherit;
+  font-size: var(--type-supporting);
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .eyebrow {
@@ -323,6 +329,47 @@ button:disabled {
 .quick-capture button:disabled,
 .text-action:disabled {
   color: var(--ink-muted);
+}
+
+.primary-action,
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--type-field);
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.primary-action {
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.secondary-action {
+  color: var(--ink-soft);
+  background: transparent;
+}
+
+.primary-action:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent), var(--ink) 12%);
+}
+
+.secondary-action:not(:disabled):hover {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
+.primary-action:disabled,
+.secondary-action:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .view-pagination-action {
@@ -1220,7 +1267,7 @@ button:disabled {
   left: var(--task-property-editor-left, 50%);
   width: min(360px, calc(100vw - 24px));
   max-height: min(680px, calc(100dvh - 24px));
-  padding: 14px;
+  padding: var(--space-lg);
   overflow: visible;
   color: var(--ink);
   background: var(--paper-raised);
@@ -1263,8 +1310,9 @@ button:disabled {
   border-radius: 50%;
 }
 .task-property-editor footer {
-  margin-top: 14px;
-  padding-top: 10px;
+  flex-wrap: wrap;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--line);
 }
 .task-property-editor-note {
@@ -1274,7 +1322,7 @@ button:disabled {
 }
 
 .task-property-editor-clear {
-  min-height: 36px;
+  min-height: var(--control-min-size);
   margin-top: 8px;
 }
 
@@ -1296,7 +1344,7 @@ button:disabled {
     position: static;
     width: 100%;
     max-height: min(82dvh, 680px);
-    padding: 18px;
+    padding: var(--page-inset);
     overflow: auto;
     border-width: 1px 0 0;
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
@@ -1304,7 +1352,7 @@ button:disabled {
     animation: none;
   }
   .task-property-editor header {
-    margin-bottom: 18px;
+    margin-bottom: var(--space-lg);
   }
   .task-property-editor header span {
     display: block;
@@ -1315,10 +1363,10 @@ button:disabled {
   }
   .task-property-editor h2 {
     margin-top: 2px;
-    font-size: var(--type-heading);
+    font-size: var(--type-section);
   }
   .task-property-editor footer {
-    margin-top: 20px;
+    margin-top: var(--space-xl);
     padding-top: 0;
     border-top: 0;
   }
@@ -1487,7 +1535,7 @@ button:disabled {
 }
 
 .settings-section {
-  margin-top: 20px;
+  margin-top: var(--space-xl);
 }
 
 .help-topic {
@@ -1510,7 +1558,7 @@ button:disabled {
 }
 
 .settings-section > h2 {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-sm);
   color: var(--ink);
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
   font-size: var(--type-supporting);
@@ -1523,15 +1571,16 @@ button:disabled {
   border-top: 0;
 }
 
+.settings-content > .settings-subsection,
 .settings-subsection + .settings-subsection,
 .task-model-settings + .settings-subsection {
-  padding-top: 18px;
-  margin-top: 18px;
+  padding-top: var(--space-lg);
+  margin-top: var(--space-xl);
   border-top: 1px solid var(--line);
 }
 
 .settings-subsection > h3 {
-  margin: 0 0 2px;
+  margin: 0 0 var(--space-sm);
   color: var(--ink);
   font-size: var(--type-supporting);
   letter-spacing: 0;
@@ -1644,7 +1693,7 @@ button:disabled {
 }
 
 .refresh-detail {
-  padding-bottom: 10px;
+  padding-bottom: 0;
   font-size: var(--type-supporting);
 }
 
@@ -1830,7 +1879,7 @@ button:disabled {
 }
 
 .task-form {
-  padding: 0 3px;
+  min-width: 0;
 }
 
 .title-field {
@@ -1853,7 +1902,8 @@ button:disabled {
 .form-field select {
   width: 100%;
   min-height: 44px;
-  padding: 0 28px 0 0;
+  padding: var(--space-sm) 28px var(--space-sm) 0;
+  font-size: var(--type-field);
   color: var(--ink);
   background: transparent;
   border: 0;
@@ -1909,7 +1959,7 @@ button:disabled {
 }
 
 .choice-field {
-  padding: 25px 0 22px;
+  padding: var(--space-xl) 0;
   margin: 0;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -1918,9 +1968,10 @@ button:disabled {
 .choice-field legend,
 .notes-field > span,
 .form-field > span,
+.form-field > label,
 .record-path > span {
   display: block;
-  margin: 0 0 11px;
+  margin: 0 0 var(--space-xs);
   color: var(--ink-muted);
 }
 
@@ -1962,9 +2013,9 @@ button:disabled {
 
 .field-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  padding: 25px 0 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg);
+  padding: var(--space-xl) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1985,7 +2036,7 @@ button:disabled {
 }
 
 .time-tracking {
-  padding: 24px 0 22px;
+  padding: var(--space-xl) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -2132,8 +2183,10 @@ button:disabled {
 
 .form-field input {
   width: 100%;
-  min-height: 44px;
-  padding: 0;
+  min-width: 0;
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) 0;
+  font-size: var(--type-field);
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--line-strong);
@@ -2155,11 +2208,12 @@ button:disabled {
 .tasknotes-control-trigger {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  padding: 0;
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) 0;
+  font-size: var(--type-field);
   color: var(--ink);
   text-align: left;
   background: transparent;
@@ -2216,6 +2270,7 @@ button:disabled {
   padding: 6px;
   overflow: hidden;
   color: var(--ink);
+  font-size: var(--type-field);
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
@@ -2224,13 +2279,10 @@ button:disabled {
 
 .tasknotes-popover-title {
   display: block;
-  padding: 7px 10px 6px;
+  padding: var(--space-sm) 10px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
+  font-size: var(--type-supporting);
   font-weight: 500;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
 }
 
 .tasknotes-option-list {
@@ -2514,24 +2566,9 @@ button:disabled {
   background: var(--accent-soft);
 }
 
-.view-editor-body .tasknotes-control-trigger {
-  min-height: 44px;
-  padding: 9px 0;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
-}
-
 .view-editor-control-field {
   display: grid;
-  gap: 7px;
-}
-
-.view-editor-control-field > span {
-  color: var(--ink-soft);
-  font-size: var(--type-supporting);
-  font-weight: 700;
+  gap: var(--space-xs);
 }
 
 .theme-picker.tasknotes-select {
@@ -2545,8 +2582,6 @@ button:disabled {
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
 }
 
 .metadata-fields {
@@ -2583,6 +2618,7 @@ button:disabled {
   width: 22px;
   min-height: 22px;
   margin: 0;
+  padding: 0;
   accent-color: var(--accent);
   border: 0;
 }
@@ -3002,7 +3038,7 @@ button:disabled {
 }
 
 .reminder-editor {
-  padding: 25px 0 22px;
+  padding: var(--space-xl) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -3163,7 +3199,7 @@ button:disabled {
 
 .notes-field {
   display: block;
-  padding: 25px 0 22px;
+  padding: var(--space-xl) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -3219,7 +3255,7 @@ button:disabled {
 }
 
 .task-attachments {
-  padding: 25px 0 22px;
+  padding: var(--space-xl) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -3538,9 +3574,9 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 70px;
-  padding: 15px 2px;
+  gap: var(--space-lg);
+  min-height: 64px;
+  padding: var(--space-md) 0;
   cursor: pointer;
   list-style: none;
 }
@@ -3590,7 +3626,7 @@ button:disabled {
 }
 
 .task-form-section-content {
-  padding: 0 0 22px 18px;
+  padding: 0 0 var(--space-xl) var(--space-lg);
   border-left: 1px solid var(--line);
 }
 
@@ -3606,6 +3642,11 @@ button:disabled {
 .task-form-section-content > .field-grid:first-child,
 .task-form-section-content > .repeat-fields:first-child {
   padding-top: 4px;
+}
+
+/* The disclosure owns its bottom gap; its final field group must not add it twice. */
+.task-form-section-content > :is(.field-grid, .choice-field):last-child {
+  padding-bottom: 0;
 }
 
 .task-form-section-content > .time-estimate-field {
@@ -7361,7 +7402,7 @@ html.scratchpad-route .page-surface {
 .view-kind-field,
 .filter-group {
   display: grid;
-  gap: 7px;
+  gap: var(--space-xs);
 }
 
 .view-editor-body label > span,
@@ -7370,15 +7411,16 @@ html.scratchpad-route .page-surface {
 .view-editor-control-field > span {
   color: var(--ink-soft);
   font-size: var(--type-supporting);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .view-editor-body input:not([type]),
 .view-editor-body input[type="text"] {
   width: 100%;
-  min-height: 44px;
-  padding: 9px 0;
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) 0;
   color: var(--ink);
+  font-size: var(--type-field);
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--line-strong);
@@ -7399,7 +7441,7 @@ html.scratchpad-route .page-surface {
   border-radius: var(--radius-control);
 }
 
-.view-name-field input {
+.view-editor-body .view-name-field input {
   min-height: 50px;
   padding: 0;
   font-size: 1.42rem;
@@ -8984,6 +9026,7 @@ html.scratchpad-route .page-surface {
 @media (min-width: 840px) {
   :root {
     --page-inset: 32px;
+    --type-field: var(--type-body);
   }
 
   .app-shell {
@@ -9150,10 +9193,6 @@ html.scratchpad-route .page-surface {
   .detail-inspector .timing-fields,
   .detail-inspector .metadata-fields {
     grid-template-columns: 1fr;
-  }
-
-  .detail-inspector .task-form-section-content {
-    padding-left: 14px;
   }
 
   .detail-inspector .task-attachments-heading {
@@ -9659,8 +9698,9 @@ html.scratchpad-route .page-surface {
   [role="combobox"],
   [role="gridcell"]
 ):focus-visible {
-  outline: 0 !important;
-  box-shadow: inset 0 -1px color-mix(in srgb, var(--ink-muted), transparent 20%);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  box-shadow: none;
 }
 
 .scratchpad-row textarea:focus-visible {
