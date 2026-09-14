@@ -105,7 +105,6 @@ export function resolveTaskTypeDefinition(
         implements: [implementation],
       }),
       {
-        typeName,
         recordsFolder: taskRecordsFolder,
         pathPattern:
           pathPattern(collection) ??

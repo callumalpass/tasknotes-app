@@ -480,7 +480,7 @@ describe("mdbase task repository", () => {
     await repository.refresh();
     const created = await repository.create({ title: "Provider path" });
 
-    expect(created.frontmatter.type).toBe("todo");
+    expect(created.frontmatter).not.toHaveProperty("type");
     expect(created.path).toBe(`canonical/${created.id}.md`);
     expect(fixture.create).toHaveBeenLastCalledWith(
       expect.objectContaining({

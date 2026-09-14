@@ -95,14 +95,12 @@ export interface MaterializedOccurrenceTransition {
 
 export class TaskNotesTaskModel {
   readonly config: TaskCollectionConfiguration;
-  private readonly typeName: string;
   private readonly recordsFolder: string;
   private readonly pathPattern?: string;
 
   constructor(
     config: Partial<TaskCollectionConfiguration> = {},
     options: {
-      typeName?: string;
       recordsFolder?: string;
       pathPattern?: string;
     } = {},
@@ -123,7 +121,6 @@ export class TaskNotesTaskModel {
       fieldCompletions: structuredClone(config.fieldCompletions ?? {}),
       linkWriteFormat: config.linkWriteFormat ?? "wikilink",
     };
-    this.typeName = options.typeName ?? "task";
     this.recordsFolder = options.recordsFolder ?? "tasks";
     this.pathPattern = options.pathPattern;
   }
@@ -813,7 +810,6 @@ export class TaskNotesTaskModel {
         this.config.storeTitleInFilename,
         this.config.userFields,
       ),
-      type: this.typeName,
       id,
       mobileRevision: revision,
     };
