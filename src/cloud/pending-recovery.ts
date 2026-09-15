@@ -20,7 +20,7 @@ export interface PendingRecoveryEntry {
 }
 
 export function pendingRecoveryEntry(
-  pending: PendingMutation,
+  pending: Pick<PendingMutation, "requestId" | "operation" | "createdAt">,
 ): PendingRecoveryEntry {
   return {
     requestId: pending.requestId,

@@ -6,6 +6,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 
+import * as connectRepository from "../storage/connect-repository";
+
 const connect = vi.hoisted(() => {
   const connections = [
     {
@@ -231,6 +233,43 @@ it("shows a retry when startup cancellation returns to not started", () => {
     screen.getByRole("button", { name: "Retry opening TaskNotes" }),
   );
   expect(retryStartup).toHaveBeenCalledOnce();
+});
+
+it("refreshes the repository when the SDK connection changes without new snapshot JSON", () => {
+  const create = vi.spyOn(connectRepository, "createConnectTaskRepository");
+  try {
+    const first = {
+      collectionId: "collection-online",
+      pendingMutations: () => [],
+    };
+    connect.setConnection(first);
+    connect.setSnapshot({
+      status: "ready",
+      collectionId: "collection-online",
+      connections: [],
+      info: {},
+    });
+    const content = () => (
+      <CloudCollection
+        authorizationError={null}
+        authorizeAnotherCollection={vi.fn()}
+        callbackRetryAvailable={false}
+        ensureStarted={() => Promise.resolve()}
+        openCollectionPicker={vi.fn()}
+        reauthorizeCurrentCollection={vi.fn()}
+        retryStartup={vi.fn()}
+      />
+    );
+    const { rerender } = render(content());
+    expect(create).toHaveBeenLastCalledWith(first);
+    const replacement = { ...first };
+    connect.setConnection(replacement);
+    rerender(content());
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create).toHaveBeenLastCalledWith(replacement);
+  } finally {
+    create.mockRestore();
+  }
 });
 
 it("recovers restart-time pending mutations only after confirmation", async () => {
