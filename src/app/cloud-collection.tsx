@@ -1,11 +1,23 @@
+import type { MdbaseConnection, PendingMutation } from "@mdbase-dev/connect";
 import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import {
   cloudSession,
   isHostedCloudConnection,
   startCloudSession,
 } from "../cloud/connect";
 import { requireConnectOutcome } from "../cloud/outcome";
+import {
+  recoverPendingChanges,
+  type PendingRecoveryEntry,
+} from "../cloud/pending-recovery";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import {
@@ -42,6 +54,14 @@ export default function CloudCollection({
   );
   const connection =
     session.status === "ready" ? cloudSession.connection() : null;
+  const [recovery, setRecovery] = useState<{
+    collectionId: string;
+    active: boolean;
+    entries: PendingRecoveryEntry[];
+  } | null>(null);
+  const activeRecovery =
+    recovery?.collectionId === connection?.collectionId &&
+    recovery?.active === true;
   const pendingMutations = connection?.pendingMutations() ?? [];
   const pendingRequestKey = pendingMutations
     .map((pending) => pending.requestId)
@@ -97,16 +117,16 @@ export default function CloudCollection({
         (pending) => !mappedRequestIds.has(pending.requestId),
       )
     : [];
-  const opened = useMemo(
-    () =>
-      connection && session.status === "ready"
-        ? {
-            collectionId: connection.collectionId,
-            repository: createConnectTaskRepository(connection),
-          }
-        : null,
-    [connection, session],
+  const genericEntries: PendingRecoveryEntry[] = genericPendingMutations.map(
+    (pending) => ({
+      requestId: pending.requestId,
+      operation: pending.operation,
+      createdAt: pending.createdAt,
+      status: "waiting",
+      message: "Waiting to check the exact saved request.",
+    }),
   );
+  const opened = session.status === "ready" ? connection : null;
 
   if (session.status === "not_started" && authorizationError)
     return (
@@ -131,7 +151,7 @@ export default function CloudCollection({
       <ConnectionLifecycleProblem message="This TaskNotes connection has been closed." />
     );
 
-  if (opened && recoveryLoadError)
+  if (opened && recoveryLoadError && !activeRecovery)
     return (
       <ConnectionLifecycleProblem
         actionLabel="Retry recovery review"
@@ -140,24 +160,64 @@ export default function CloudCollection({
       />
     );
 
-  if (opened && pendingMutations.length > 0 && !mappedRequestIds)
+  if (
+    opened &&
+    pendingMutations.length > 0 &&
+    !mappedRequestIds &&
+    !activeRecovery
+  )
     return <OpeningConnection />;
 
-  if (opened && genericPendingMutations.length > 0)
+  if (opened && (genericPendingMutations.length > 0 || activeRecovery))
     return (
       <PendingMutationReview
-        count={genericPendingMutations.length}
+        count={
+          activeRecovery
+            ? recovery.entries.length
+            : genericPendingMutations.length
+        }
+        recovering={activeRecovery}
+        pending={genericPendingMutations}
+        entries={
+          recovery?.collectionId === opened.collectionId
+            ? [
+                ...recovery.entries,
+                ...genericEntries.filter(
+                  (p) =>
+                    !recovery.entries.some((e) => e.requestId === p.requestId),
+                ),
+              ]
+            : genericEntries
+        }
         onDiscard={async () => {
           await removePendingRecoveryCommands(opened.collectionId);
           requireConnectOutcome(cloudSession.forget(opened.collectionId));
         }}
-        onRecover={async () => {
-          for (const pending of genericPendingMutations)
-            requireConnectOutcome(
-              await pending.recover({
-                timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
-              }),
-            );
+        onRecover={() => {
+          setRecovery({
+            collectionId: opened.collectionId,
+            active: true,
+            entries: genericEntries,
+          });
+        }}
+        onProgress={(entry) =>
+          setRecovery((current) =>
+            current?.collectionId === opened.collectionId
+              ? {
+                  ...current,
+                  entries: current.entries.map((item) =>
+                    item.requestId === entry.requestId ? entry : item,
+                  ),
+                }
+              : current,
+          )
+        }
+        onRecoveryFinished={() => {
+          setRecovery((current) =>
+            current?.collectionId === opened.collectionId
+              ? { ...current, active: false }
+              : current,
+          );
           pendingMutationChanged();
         }}
       />
@@ -174,12 +234,13 @@ export default function CloudCollection({
     );
 
   return (
-    <OpenedCollection
+    <ReadyCloudCollection
+      connection={opened}
+      session={session}
       authorizeAnotherCollection={authorizeAnotherCollection}
       changeCollection={openCollectionPicker}
       key={opened.collectionId}
       reauthorizeCurrentCollection={reauthorizeCurrentCollection}
-      repository={opened.repository}
       discardPendingRecovery={async () => {
         await removePendingRecoveryCommands(opened.collectionId);
         requireConnectOutcome(cloudSession.forget(opened.collectionId));
@@ -188,30 +249,73 @@ export default function CloudCollection({
   );
 }
 
+// Keep repository identity tied to both the SDK connection and application
+// snapshot. The SDK may replace a connection without changing snapshot JSON.
+function ReadyCloudCollection({
+  connection,
+  session,
+  ...props
+}: Omit<ComponentProps<typeof OpenedCollection>, "repository"> & {
+  connection: MdbaseConnection;
+  session: ReturnType<typeof useCloudSessionSnapshot>;
+}) {
+  const repository = useMemo(
+    () =>
+      session.status === "ready"
+        ? createConnectTaskRepository(connection)
+        : null,
+    [connection, session],
+  );
+  return repository ? (
+    <OpenedCollection {...props} repository={repository} />
+  ) : null;
+}
+
 function PendingMutationReview({
   count,
+  entries,
+  recovering,
+  pending,
   onDiscard,
   onRecover,
+  onProgress,
+  onRecoveryFinished,
 }: {
   count: number;
+  entries: PendingRecoveryEntry[];
+  recovering: boolean;
+  pending: PendingMutation[];
   onDiscard(): Promise<void>;
-  onRecover(): Promise<void>;
+  onRecover(): void;
+  onProgress(entry: PendingRecoveryEntry): void;
+  onRecoveryFinished(): void;
 }) {
   const [confirming, setConfirming] = useState<"recover" | "discard" | null>(
     null,
   );
-  const [working, setWorking] = useState(false);
+  const [workingLocally, setWorking] = useState(false);
+  const working = workingLocally || recovering;
   const [error, setError] = useState<string | null>(null);
 
   async function recover() {
+    if (working) return;
     setWorking(true);
     setError(null);
     try {
-      await onRecover();
+      onRecover();
+      await recoverPendingChanges(
+        pending,
+        {
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
+        },
+        onProgress,
+      );
+      setConfirming(null);
     } catch (reason) {
       setError(message(reason));
       setConfirming(null);
     } finally {
+      onRecoveryFinished();
       setWorking(false);
     }
   }
@@ -240,8 +344,10 @@ function PendingMutationReview({
           replay {count === 1 ? "it" : "them"} automatically.
         </p>
         <p>
-          Recover checks each exact saved request. Discard removes the saved
-          recovery, its grant keys, and disconnects this collection.
+          Recover checks each exact saved request, even if another check fails.
+          An earlier change may already have applied. Discard removes the saved
+          recovery, its grant keys, and disconnects this collection; it cannot
+          undo a change.
         </p>
       </div>
       {error ? (
@@ -249,6 +355,21 @@ function PendingMutationReview({
           {error}
         </p>
       ) : null}
+      <ul aria-label="Saved change recovery" aria-live="polite">
+        {entries.map((entry) => (
+          <li key={entry.requestId}>
+            <strong>{entry.operation}</strong>{" "}
+            <span>Request {entry.requestId.slice(0, 8)}</span>
+            {" · "}
+            <span>
+              {Number.isNaN(Date.parse(entry.createdAt))
+                ? "Unknown time"
+                : new Date(entry.createdAt).toLocaleString()}
+            </span>
+            <p>{entry.message}</p>
+          </li>
+        ))}
+      </ul>
       <div className="welcome-actions">
         {confirming === "recover" ? (
           <>
@@ -297,6 +418,7 @@ function PendingMutationReview({
           <>
             <button
               className="outline-action"
+              disabled={working}
               onClick={() => setConfirming("recover")}
               type="button"
             >
@@ -304,6 +426,7 @@ function PendingMutationReview({
             </button>
             <button
               className="text-action"
+              disabled={working}
               onClick={() => setConfirming("discard")}
               type="button"
             >

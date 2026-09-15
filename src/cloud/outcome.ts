@@ -63,7 +63,7 @@ export function pendingRecoveryError(
       recovery: "resolve_outcome",
       operation_outcome: "unknown",
       message:
-        "TaskNotes is still confirming an earlier change. This change was not sent. Keep the collection connected and retry recovery.",
+        "The earlier change may have been applied, but its result could not be confirmed. Keep the collection connected and retry exact recovery.",
       details: { request_id: requestId },
     },
     { cause },
