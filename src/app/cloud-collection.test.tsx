@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 const connect = vi.hoisted(() => {
   const connections = [
@@ -272,6 +278,84 @@ it("recovers restart-time pending mutations only after confirmation", async () =
   await waitFor(() =>
     expect(recover).toHaveBeenCalledWith({ timeoutMs: 60_000 }),
   );
+});
+
+it("keeps partial progress visible and retries only the remaining exact handle", async () => {
+  let releaseLast!: () => void;
+  const first = vi.fn().mockRejectedValueOnce(new Error("private failure"));
+  const second = vi.fn(async () => {
+    pending = pending.filter((item) => item.requestId !== "confirmed-second");
+    return { ok: true, value: {} };
+  });
+  const last = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        releaseLast = () => {
+          pending = pending.filter(
+            (item) => item.requestId !== "confirmed-last",
+          );
+          resolve({ ok: true, value: {} });
+        };
+      }),
+  );
+  let pending = [
+    { requestId: "retained-first", recover: first },
+    { requestId: "confirmed-second", recover: second },
+    { requestId: "confirmed-last", recover: last },
+  ].map((item) => ({
+    ...item,
+    operation: "create",
+    createdAt: "2026-09-15T00:00:00Z",
+  }));
+  first.mockImplementationOnce(async () => {
+    pending = pending.filter((item) => item.requestId !== "retained-first");
+    return { ok: true, value: {} };
+  });
+  connect.setConnection({
+    collectionId: "collection-online",
+    pendingMutations: () => pending,
+  });
+  connect.setSnapshot({
+    status: "ready",
+    collectionId: "collection-online",
+    connections: [],
+    info: {},
+  });
+  render(
+    <CloudCollection
+      authorizationError={null}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Recover saved changes" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Confirm recovery" }));
+  await waitFor(() => expect(last).toHaveBeenCalledOnce());
+  expect(
+    screen.getByText("The saved request’s result was recovered."),
+  ).toBeVisible();
+  expect(screen.getByText(/result is still unconfirmed/)).toBeVisible();
+  expect(screen.getByText("Checking the exact saved request…")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Recovering…" })).toBeDisabled();
+  expect(screen.queryByText("private failure")).not.toBeInTheDocument();
+  await act(async () => releaseLast());
+  expect(await screen.findByText(/Mdbase retained 1 change/)).toBeVisible();
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Recover saved changes" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Confirm recovery" }));
+  expect(await screen.findByText("Opened collection")).toBeVisible();
+  expect(first).toHaveBeenCalledTimes(2);
+  expect(second).toHaveBeenCalledOnce();
+  expect(last).toHaveBeenCalledOnce();
+  expect(connect.forget).not.toHaveBeenCalled();
+  expect(recoveryStorage.removePendingRecoveryCommands).not.toHaveBeenCalled();
 });
 
 it("discards generic pending handles through confirmed session forget", async () => {
