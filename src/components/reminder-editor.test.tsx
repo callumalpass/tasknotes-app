@@ -1,3 +1,4 @@
+import { mutationFingerprint } from "@mdbase-dev/connect-protocol";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -7,7 +8,7 @@ import { ReminderEditor } from "./reminder-editor";
 import type { TaskReminder } from "../domain/task";
 
 describe("ReminderEditor", () => {
-  it("adds, edits, and removes multiple relative reminders", () => {
+  it("adds, edits, and removes multiple relative reminders", async () => {
     const changed = vi.fn();
 
     function Harness() {
@@ -70,6 +71,12 @@ describe("ReminderEditor", () => {
       ]),
     );
 
+    await expect(
+      mutationFingerprint("update", {
+        patch: { reminders: changed.mock.lastCall?.[0] },
+      }),
+    ).resolves.toEqual(expect.any(String));
+
     fireEvent.click(screen.getByRole("button", { name: "Remove reminder 1" }));
     expect(screen.getAllByRole("region", { name: /Reminder \d/ })).toHaveLength(
       2,
@@ -77,6 +84,50 @@ describe("ReminderEditor", () => {
     expect(changed.mock.lastCall?.[0]).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "absolute" })]),
     );
+  });
+
+  it("emits JSON-safe fixed reminder edits without losing identity or description", async () => {
+    const changed = vi.fn();
+    render(
+      <ReminderEditor
+        reminders={[
+          {
+            id: "fixed",
+            type: "absolute",
+            absoluteTime: "2026-08-05T08:00:00Z",
+            description: "Keep this description",
+          },
+        ]}
+        onChange={changed}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reminder time" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Now",
+      }),
+    );
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Done",
+      }),
+    );
+
+    const reminders = changed.mock.lastCall?.[0];
+    expect(reminders).toEqual([
+      expect.objectContaining({
+        id: "fixed",
+        type: "absolute",
+        description: "Keep this description",
+        absoluteTime: expect.stringMatching(/Z$/),
+      }),
+    ]);
+    expect(reminders[0]).not.toHaveProperty("relatedTo");
+    expect(reminders[0]).not.toHaveProperty("offset");
+    await expect(
+      mutationFingerprint("update", { patch: { reminders } }),
+    ).resolves.toEqual(expect.any(String));
   });
 
   it("defaults to a valid absolute reminder when no anchor date exists", () => {

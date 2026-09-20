@@ -29,6 +29,42 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it.each(["reminders", "alerts"])(
+    "retains an empty reminder array in the mapped %s field after removal",
+    (field) => {
+      const mappedModel = new TaskNotesTaskModel({
+        fieldMapping: { ...model.config.fieldMapping, reminders: field },
+      });
+      const original = mappedModel.create(
+        {
+          title: "Clear reminders",
+          body: "Keep my notes",
+          reminders: [
+            {
+              id: "fixed",
+              type: "absolute",
+              absoluteTime: "2099-01-01T00:00:00Z",
+            },
+          ],
+        },
+        { id: "clear-reminders", now: "2026-09-20T00:00:00Z" },
+      );
+      const cleared = mappedModel.update(original, { reminders: [] });
+      expect(cleared.reminders).toEqual([]);
+      expect(cleared.frontmatter[field]).toEqual([]);
+      expect(cleared.body).toBe("Keep my notes");
+      const reloaded = mappedModel.read(cleared);
+      expect(reloaded.reminders).toEqual([]);
+      expect(
+        mappedModel.update(reloaded, { title: "Still clear" }).frontmatter[
+          field
+        ],
+      ).toEqual([]);
+      if (field !== "reminders")
+        expect(cleared.frontmatter).not.toHaveProperty("reminders");
+    },
+  );
+
   it("does not invent membership properties when creating a task", () => {
     const created = model.create(
       { title: "Buy milk" },

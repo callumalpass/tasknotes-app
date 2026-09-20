@@ -28,6 +28,30 @@ taskRepositoryContract("direct mdbase", async () => ({
 }));
 
 describe("mdbase task repository", () => {
+  it("clears the last reminder with an empty array rather than a null patch", async () => {
+    const fixture = mdbaseFixture([]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const task = await repository.create({
+      title: "Remove my reminder",
+      reminders: [
+        { id: "fixed", type: "absolute", absoluteTime: "2099-01-01T00:00:00Z" },
+      ],
+    });
+
+    const updated = await repository.update(task.id, { reminders: [] });
+    expect(updated.reminders).toEqual([]);
+    expect(fixture.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        patch: expect.objectContaining({ reminders: [] }),
+      }),
+      expect.anything(),
+    );
+    await repository.refresh();
+    expect((await repository.get(task.id))?.reminders).toEqual([]);
+    expect((await repository.get(task.id))?.frontmatter.reminders).toEqual([]);
+  });
+
   it("loads more than ten thousand tasks through bounded opaque pages", async () => {
     const records = Array.from({ length: 10_005 }, (_, index) =>
       taskRecord(`paged-${index}`, `Paged task ${index}`, `r${index + 1}`),

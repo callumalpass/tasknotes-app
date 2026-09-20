@@ -230,17 +230,18 @@ function RelativeReminderFields({
     nextUnit = unit,
     nextDirection = direction,
   ) {
-    onChange({
-      ...reminder,
-      type: "relative",
-      relatedTo: reminder.relatedTo ?? (due ? "due" : "scheduled"),
-      offset: reminderOffset({
-        amount: nextAmount,
-        unit: nextUnit,
-        direction: nextDirection,
-      }),
-      absoluteTime: undefined,
-    });
+    onChange(
+      relativeReminder(
+        reminder.relatedTo ?? (due ? "due" : "scheduled"),
+        reminderOffset({
+          amount: nextAmount,
+          unit: nextUnit,
+          direction: nextDirection,
+        }),
+        reminder.description,
+        reminder.id,
+      ),
+    );
   }
 
   return (
@@ -324,11 +325,10 @@ function AbsoluteReminderFields({
   function commit(nextDate: string, nextTime: string) {
     if (!nextDate || !nextTime) return;
     onChange({
-      ...reminder,
+      id: reminder.id,
       type: "absolute",
       absoluteTime: new Date(`${nextDate}T${nextTime}`).toISOString(),
-      relatedTo: undefined,
-      offset: undefined,
+      ...(reminder.description ? { description: reminder.description } : {}),
     });
   }
 
