@@ -2,6 +2,8 @@ import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
   Task,
+  TaskSummary,
+  TaskSearchResult,
   TaskListQuery,
   TaskStats,
   TaskTimeEntry,
@@ -54,9 +56,21 @@ import type { CollectionFileStore } from "./collection-file-store";
 export interface TaskRepository {
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
-  initialize(): Promise<void>;
+  /** Workspace mode opens configuration without waiting for collection-wide indexes. */
+  initialize(options?: { deferTaskIndex?: boolean }): Promise<void>;
   refresh(): Promise<RefreshResult>;
-  list(query?: TaskListQuery): Promise<Task[]>;
+  /** Lightweight metadata; no body is fetched or represented as empty. */
+  listSummaries(query?: Omit<TaskListQuery, "search">): Promise<TaskSummary[]>;
+  /** Metadata plus observed match evidence; never downloads bodies. */
+  search(
+    query: TaskListQuery,
+    options?: { signal?: AbortSignal },
+  ): Promise<TaskSearchResult[]>;
+  /** Complete documents for callers explicitly requiring bodies. */
+  list(
+    query?: TaskListQuery,
+    options?: { signal?: AbortSignal },
+  ): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
@@ -132,7 +146,7 @@ export interface TaskRepository {
   ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   connectionStatus(): Promise<RepositoryConnectionStatus>;
-  subscribe(listener: () => void): () => void;
+  subscribe(listener: (change?: RepositoryChange) => void): () => void;
   /** Cancel active foreground authority work without discarding local UI state. */
   suspend?(): void;
   /** Open a fresh foreground cancellation scope after suspension. */
@@ -149,6 +163,11 @@ export interface CollectionInfo {
   runtime: "browser" | "native";
 }
 
+/** Legacy producers may omit the event; omission means data may have changed. */
+export interface RepositoryChange {
+  kind: "data" | "status";
+}
+
 export interface RepositoryConnectionStatus {
   state: "connecting" | "connected" | "unavailable";
   lastReachedAt?: string;
@@ -156,6 +175,7 @@ export interface RepositoryConnectionStatus {
 }
 
 export interface RefreshResult {
+  /** Records examined in this refresh, not the collection's total size. */
   scanned: number;
   changed: number;
   removed: number;

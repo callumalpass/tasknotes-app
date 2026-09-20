@@ -39,6 +39,7 @@ import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
   Task,
+  TaskSummary,
   TaskTimeEntry,
   UpdateTaskInput,
 } from "./task";
@@ -141,6 +142,29 @@ export class TaskNotesTaskModel {
     frontmatter: Record<string, unknown>;
     body: string;
   }): Task {
+    return this.toTask(
+      this.readInfo(input),
+      input.frontmatter,
+      integerValue(input.frontmatter.mobileRevision) ?? 1,
+    );
+  }
+
+  readSummary(input: {
+    path: string;
+    frontmatter: Record<string, unknown>;
+  }): TaskSummary {
+    return this.toTaskSummary(
+      this.readInfo(input),
+      input.frontmatter,
+      integerValue(input.frontmatter.mobileRevision) ?? 1,
+    );
+  }
+
+  private readInfo(input: {
+    path: string;
+    frontmatter: Record<string, unknown>;
+    body?: string;
+  }): TaskInfo {
     const readable = this.canonicalizeAliases(input.frontmatter, false);
     const mapped = mapTaskFromFrontmatter(
       this.config.fieldMapping,
@@ -153,11 +177,7 @@ export class TaskNotesTaskModel {
     );
     const task = this.completeTaskInfo(mapped, input.path, input.body);
     this.assertValid(task);
-    return this.toTask(
-      task,
-      input.frontmatter,
-      integerValue(input.frontmatter.mobileRevision) ?? 1,
-    );
+    return task;
   }
 
   create(
@@ -485,13 +505,16 @@ export class TaskNotesTaskModel {
     return this.toTask(plan.updatedTask, frontmatter, revision);
   }
 
-  async materializeOccurrence(
+  async materializeOccurrence<Existing extends TaskSummary>(
     parent: Task,
     targetDate: string,
-    existingOccurrences: readonly Task[],
+    existingOccurrences: readonly Existing[],
     context: { id: string; now?: string },
     loadTemplate?: (path: string) => Promise<string>,
-  ): Promise<MaterializeOccurrenceResult> {
+  ): Promise<
+    | (MaterializeOccurrenceResult & { created: true })
+    | { created: false; task: Existing; warnings: string[] }
+  > {
     const now = context.now ?? new Date().toISOString();
     const parentInfo = this.taskInfo(parent);
     const occurrenceInfos = existingOccurrences.map((task) =>
@@ -512,12 +535,15 @@ export class TaskNotesTaskModel {
             task.path === plan.existingOccurrence?.path,
         )
       : undefined;
-    if (!plan.created && existing)
+    if (!plan.created) {
+      if (!existing)
+        throw new Error("The existing occurrence could not be resolved.");
       return {
         task: existing,
         created: false,
         warnings: plan.issues.map((issue) => issue.message),
       };
+    }
 
     let templateFrontmatter: Record<string, unknown> = {};
     let templateWarning: string | undefined;
@@ -717,7 +743,7 @@ export class TaskNotesTaskModel {
   private completeTaskInfo(
     mapped: Partial<TaskInfo>,
     path: string,
-    body: string,
+    body: string | undefined,
   ): TaskInfo {
     const normalized = { ...mapped } as Partial<TaskInfo> &
       Record<string, unknown>;
@@ -739,6 +765,17 @@ export class TaskNotesTaskModel {
     frontmatter: Record<string, unknown>,
     revision: number,
   ): Task {
+    return {
+      ...this.toTaskSummary(info, frontmatter, revision),
+      body: info.details ?? "",
+    };
+  }
+
+  private toTaskSummary(
+    info: TaskInfo,
+    frontmatter: Record<string, unknown>,
+    revision: number,
+  ): TaskSummary {
     const storedDependencies = mapTaskFromFrontmatter(
       this.config.fieldMapping,
       frontmatter,
@@ -758,7 +795,6 @@ export class TaskNotesTaskModel {
       priority: info.priority,
       due: info.due,
       scheduled: info.scheduled,
-      body: info.details ?? "",
       createdAt: info.dateCreated ?? "",
       updatedAt: info.dateModified ?? "",
       completedDate: info.completedDate,
@@ -913,7 +949,7 @@ export class TaskNotesTaskModel {
     return normalizeCanonicalPath(expanded);
   }
 
-  private taskInfo(current: Task): TaskInfo {
+  private taskInfo(current: TaskSummary): TaskInfo {
     return this.completeTaskInfo(
       mapTaskFromFrontmatter(
         this.config.fieldMapping,
@@ -925,7 +961,9 @@ export class TaskNotesTaskModel {
         this.config.priorities,
       ),
       current.path,
-      current.body,
+      "body" in current && typeof current.body === "string"
+        ? current.body
+        : undefined,
     );
   }
 

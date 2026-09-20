@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 
 export function TaskAddedNotice({
   task,
@@ -7,8 +7,8 @@ export function TaskAddedNotice({
   onDismiss,
   aboveMobileControls,
 }: {
-  task?: Task;
-  onOpen(task: Task): void;
+  task?: TaskSummary;
+  onOpen(task: TaskSummary): void;
   onDismiss(): void;
   aboveMobileControls: boolean;
 }) {

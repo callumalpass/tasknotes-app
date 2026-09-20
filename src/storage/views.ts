@@ -2,7 +2,7 @@ import { taskViewKey } from "../domain/view";
 import { normalizePresentationType } from "../domain/view-renderer";
 import { recordLabel } from "../domain/completion";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type {
   TaskView,
   TaskViewDocument,
@@ -123,7 +123,9 @@ function providerSort(
 export function normalizeViewExecution(
   view: TaskView,
   result: ProviderViewExecution,
-  readTask: (record: ProviderViewExecution["results"][number]) => Task | null,
+  readTask: (
+    record: ProviderViewExecution["results"][number],
+  ) => TaskSummary | null,
 ): TaskViewExecution {
   const normalizedView = inferExecutionPresentationMapping(view, result);
   const rows = result.results.flatMap((record) => {

@@ -67,16 +67,61 @@ export function mdbaseFixture(
     const requestedTypes = Array.isArray(input?.types)
       ? new Set(input.types.map(String))
       : null;
+    const where = typeof input?.where === "string" ? input.where : "";
+    const exactPaths = [
+      ...where.matchAll(/file\.path == ("(?:[^"\\]|\\.)*")/g),
+    ].map((match) => JSON.parse(match[1]) as string);
+    const bodyTokens = [
+      ...where.matchAll(
+        /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/g,
+      ),
+    ].map((match) => JSON.parse(match[1]) as string);
     const matching = [...records.values()].filter(
       (record) =>
-        !requestedTypes ||
-        record.types.some((type) => requestedTypes.has(type)),
+        (!requestedTypes ||
+          record.types.some((type) => requestedTypes.has(type))) &&
+        (!exactPaths.length || exactPaths.includes(record.path)) &&
+        (!bodyTokens.length ||
+          (where.includes(" && ")
+            ? bodyTokens.every((token) =>
+                record.body.toLowerCase().includes(token),
+              )
+            : bodyTokens.some((token) =>
+                record.body.toLowerCase().includes(token),
+              ))),
     );
     return valid<QueryResult<JsonObject>>({
       results: matching.map((record) => ({
         path: record.path,
         effectiveFrontmatter: record.effectiveFrontmatter ?? record.frontmatter,
-        body: record.body,
+        ...(input?.includeBody === false ? {} : { body: record.body }),
+        ...(input?.projections
+          ? {
+              values: Object.fromEntries(
+                Object.entries(input.projections).flatMap(
+                  ([name, projection]) => {
+                    const expression = (projection as { expression?: string })
+                      .expression;
+                    if (!expression) return [];
+                    const match =
+                      /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/.exec(
+                        expression,
+                      );
+                    return match
+                      ? [
+                          [
+                            name,
+                            record.body
+                              .toLowerCase()
+                              .includes(JSON.parse(match[1])),
+                          ],
+                        ]
+                      : [];
+                  },
+                ),
+              ),
+            }
+          : {}),
         types: record.types,
         file: record.file ?? testQueryFile(record.path),
       })),
@@ -87,20 +132,29 @@ export function mdbaseFixture(
       },
     });
   });
-  const queryPages = vi.fn((input?: Record<string, unknown>) =>
-    (async function* () {
-      const outcome = await query(input);
-      yield connectSuccess(
-        {
-          ...outcome.result,
-          page: 0,
-          offset: 0,
-          loaded: outcome.result.results.length,
-          complete: true,
-        },
-        outcome.diagnostics,
-      );
-    })(),
+  const queryPages = vi.fn(
+    (
+      input?: Record<string, unknown>,
+      options?: {
+        signal?: AbortSignal;
+        firstPageSize?: number;
+        pageSize?: number;
+      },
+    ) =>
+      (async function* () {
+        options?.signal?.throwIfAborted();
+        const outcome = await query(input);
+        yield connectSuccess(
+          {
+            ...outcome.result,
+            page: 0,
+            offset: 0,
+            loaded: outcome.result.results.length,
+            complete: true,
+          },
+          outcome.diagnostics,
+        );
+      })(),
   );
   const read = vi.fn(async ({ path }: { path: string }) => {
     const record = records.get(path);

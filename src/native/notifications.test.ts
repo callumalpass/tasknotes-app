@@ -97,7 +97,7 @@ describe("mdbase task reminders", () => {
       connectionStatus: vi.fn(async () => ({
         state: "connected",
       })),
-      list: vi.fn(async () => [
+      listSummaries: vi.fn(async () => [
         {
           id: "task with an imported ID",
           completed: false,
@@ -132,12 +132,12 @@ describe("mdbase task reminders", () => {
 
   it("does no reminder work when mdbase reminder delivery is disabled", async () => {
     const repository = {
-      list: vi.fn(async () => []),
+      listSummaries: vi.fn(async () => []),
     } as unknown as TaskRepository;
 
     await reconcileTaskNotifications(repository, "none");
 
-    expect(repository.list).not.toHaveBeenCalled();
+    expect(repository.listSummaries).not.toHaveBeenCalled();
   });
 
   it("reconciles reminders for a live connector collection", async () => {
@@ -145,12 +145,12 @@ describe("mdbase task reminders", () => {
       connectionStatus: vi.fn(async () => ({
         state: "connected",
       })),
-      list: vi.fn(async () => []),
+      listSummaries: vi.fn(async () => []),
     } as unknown as TaskRepository;
 
     await reconcileTaskNotifications(repository, "connect");
 
-    expect(repository.list).toHaveBeenCalledWith({
+    expect(repository.listSummaries).toHaveBeenCalledWith({
       status: "open",
       limit: 50_000,
     });
@@ -166,7 +166,7 @@ describe("mdbase task reminders", () => {
 
   it("waits for an active task write before reconciling reminders", async () => {
     const repository = {
-      list: vi.fn(async () => []),
+      listSummaries: vi.fn(async () => []),
     } as unknown as TaskRepository;
     const connection =
       mocks.connection as unknown as MdbaseConnection<JsonObject>;

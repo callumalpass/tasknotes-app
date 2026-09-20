@@ -23,7 +23,8 @@ export interface TaskTimeEntry {
   description?: string;
 }
 
-export interface Task {
+/** Metadata projection. It cannot be used as a complete editable document. */
+export interface TaskSummary {
   id: string;
   path: string;
   title: string;
@@ -33,7 +34,6 @@ export interface Task {
   priority: TaskPriority;
   due?: string;
   scheduled?: string;
-  body: string;
   createdAt: string;
   updatedAt: string;
   completedDate?: string;
@@ -63,6 +63,23 @@ export interface Task {
   operationWarnings?: string[];
   revision: number;
   frontmatter: Record<string, unknown>;
+}
+
+/** A fully hydrated task; even an empty body has been read from authority. */
+export interface Task extends TaskSummary {
+  body: string;
+}
+
+export interface TaskSearchResult {
+  task: TaskSummary;
+  /** Normalized query tokens observed in the body by the authority. */
+  bodyMatches: string[];
+}
+
+export function summarizeTask(task: Task): TaskSummary {
+  const { body, ...summary } = task;
+  void body;
+  return summary;
 }
 
 export interface CreateTaskInput {
@@ -280,7 +297,7 @@ function formatTaskTime(value: string): string {
 }
 
 export function taskMeta(
-  task: Task,
+  task: TaskSummary,
   today = todayString(),
 ): { label: string; overdue?: boolean }[] {
   const values: { label: string; overdue?: boolean }[] = [];

@@ -10,7 +10,7 @@ import {
   taskNotesDefaultBaseSources,
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
-import { todayString } from "../domain/task";
+import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
 import { DemoFileStore } from "./demo-file-store";
@@ -171,6 +171,24 @@ export class DemoTaskRepository implements TaskRepository {
 
   async refresh(): Promise<RefreshResult> {
     return { scanned: this.tasks.size, changed: 0, removed: 0, elapsedMs: 2 };
+  }
+
+  async listSummaries(query: Omit<TaskListQuery, "search"> = {}) {
+    return (await this.list(query)).map(summarizeTask);
+  }
+
+  async search(query: TaskListQuery) {
+    const tokens = [
+      ...new Set(
+        (query.search ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean),
+      ),
+    ];
+    return (await this.list(query)).map((task) => ({
+      task: summarizeTask(task),
+      bodyMatches: tokens.filter((token) =>
+        task.body.toLowerCase().includes(token),
+      ),
+    }));
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {

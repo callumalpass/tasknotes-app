@@ -1,6 +1,6 @@
 import { reminderFireTime } from "../domain/reminder";
 
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { type MdbaseDesiredTimer } from "@mdbase-dev/connect";
 import { cloudSession } from "../cloud/connect";
@@ -44,7 +44,7 @@ export async function reconcileTaskNotifications(
 
 export async function syncTaskNotifications(
   repository: TaskRepository,
-  _task: Task,
+  _task: TaskSummary,
   authority: ReminderAuthority = "none",
 ): Promise<void> {
   if (authority !== "connect") return;
@@ -71,7 +71,10 @@ function reconcileConnectNotifications(
         const target = requestedReconciliation;
         const current = latestRepository;
         if (!current) return;
-        const tasks = await current.list({ status: "open", limit: 50_000 });
+        const tasks = await current.listSummaries({
+          status: "open",
+          limit: 50_000,
+        });
         const snapshot = cloudSession.getSnapshot();
         const connection =
           snapshot.status === "ready" ? cloudSession.connection() : null;
@@ -107,7 +110,7 @@ function reconcileConnectNotifications(
 }
 
 export async function desiredTaskTimers(
-  tasks: Task[],
+  tasks: TaskSummary[],
   now = Date.now(),
 ): Promise<MdbaseDesiredTimer[]> {
   const desired = tasks.flatMap((task) => {

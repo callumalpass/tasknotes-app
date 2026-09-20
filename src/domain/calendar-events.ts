@@ -6,12 +6,12 @@ import {
   taskOccurrencesBetween,
 } from "./task-occurrence";
 
-import type { Task, TaskTimeEntry } from "./task";
+import type { TaskSummary, TaskTimeEntry } from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
 import type { TaskViewExecution, TaskViewRow } from "./view";
 
 export interface CalendarEntry {
-  task: Task;
+  task: TaskSummary;
   row: TaskViewRow;
   occurrence?: TaskOccurrence;
   recurringKind?: "next-scheduled" | "pattern";
@@ -23,7 +23,7 @@ export function calendarEvents(
   execution: TaskViewExecution,
   rangeStart: Date,
   rangeEnd: Date,
-  identityTasks: readonly Task[],
+  identityTasks: readonly TaskSummary[],
   display: { showTimeEntries?: boolean } = {},
 ): Map<string, CalendarEntry[]> {
   const events = new Map<string, CalendarEntry[]>();

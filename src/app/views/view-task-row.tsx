@@ -1,7 +1,7 @@
 import { TaskRow } from "../../components/task-row";
 import { viewPropertyDetails } from "../../domain/view-values";
 
-import type { Task } from "../../domain/task";
+import type { TaskSummary } from "../../domain/task";
 import type { TaskOccurrence } from "../../domain/task-occurrence";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
 
@@ -19,8 +19,8 @@ export function ViewTaskRow({
   titleProperty?: string;
   omittedProperties?: string[];
   occurrence?: TaskOccurrence;
-  onOpen(task: Task): void;
-  onToggle(task: Task): void;
+  onOpen(task: TaskSummary): void;
+  onToggle(task: TaskSummary): void;
 }) {
   const details = viewPropertyDetails(row, properties, {
     identityProperty: titleProperty,

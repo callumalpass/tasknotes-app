@@ -1,0 +1,45 @@
+{
+  "revision": "deferred-startup-working-tree",
+  "node": "v22.22.0",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+  "samples": 1,
+  "environment": "Synthetic serialized authority; repository first page, not React paint, network or real query-engine latency. Full index is requested after the first page to measure deferred work separately.",
+  "results": [
+    {
+      "size": 10000,
+      "configuredMs": 2.1,
+      "firstViewMs": 27.6,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105056,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 568,
+      "totalWork": {
+        "requests": 13,
+        "rows": 10200,
+        "responseBytes": 3930784,
+        "bodyBytes": 0
+      }
+    },
+    {
+      "size": 50000,
+      "configuredMs": 1.05,
+      "firstViewMs": 13.86,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105056,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 2859.96,
+      "totalWork": {
+        "requests": 53,
+        "rows": 50200,
+        "responseBytes": 19456024,
+        "bodyBytes": 0
+      }
+    }
+  ]
+}

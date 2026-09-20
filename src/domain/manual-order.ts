@@ -1,4 +1,4 @@
-import type { Task } from "./task";
+import type { TaskSummary } from "./task";
 import type { TaskViewSort } from "./view";
 
 export type ManualOrderDirection = "asc" | "desc";
@@ -72,8 +72,8 @@ export function disableManualOrderSort(
 }
 
 export function planManualOrder(
-  tasks: readonly Task[],
-  dragged: Task,
+  tasks: readonly TaskSummary[],
+  dragged: TaskSummary,
   targetId: string | undefined,
   placement: ManualOrderPlacement,
   direction: ManualOrderDirection,
@@ -127,7 +127,7 @@ export function planManualOrder(
 }
 
 export function appendManualOrderRank(
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
   direction: ManualOrderDirection,
 ): string | undefined {
   if (!tasks.length) return encode(Math.floor(MAX / 2));
@@ -140,9 +140,9 @@ export function appendManualOrderRank(
 }
 
 export function sortTasksByManualOrder(
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
   direction: ManualOrderDirection,
-): Task[] {
+): TaskSummary[] {
   const original = new Map(tasks.map((task, index) => [task.id, index]));
   return [...tasks].sort((left, right) => {
     const compared = compareRankValues(left.sortOrder, right.sortOrder);
@@ -162,7 +162,7 @@ function propertyName(value: string): string {
 }
 
 function hasOrderedAlphaRanks(
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
   direction: ManualOrderDirection,
 ): boolean {
   let previous: number | null = null;

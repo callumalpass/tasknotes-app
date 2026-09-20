@@ -534,7 +534,7 @@ function repository(
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => [],
+    listSummaries: async () => [],
     completeField: async () => [],
     readViewSource: async () => source,
     taskConfiguration: async () => defaultTaskCollectionConfiguration(),

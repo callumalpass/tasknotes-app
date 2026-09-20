@@ -74,7 +74,7 @@ describe("mdbase task repository", () => {
     });
     expect(fixture.query).not.toHaveBeenCalled();
     expect(fixture.queryPages).toHaveBeenCalledWith(
-      expect.objectContaining({ includeBody: true }),
+      expect.objectContaining({ includeBody: false }),
       expect.objectContaining({ firstPageSize: 1_000, pageSize: 1_000 }),
     );
   });
@@ -598,7 +598,7 @@ describe("mdbase task repository", () => {
 
     const refreshed = await repository.refresh();
 
-    expect(refreshed.scanned).toBe(1);
+    expect(refreshed.scanned).toBe(0);
     expect(await repository.get("cached")).toMatchObject({
       title: "Visible while unavailable",
     });
@@ -630,7 +630,7 @@ describe("mdbase task repository", () => {
     await vi.waitFor(() => expect(activeSignal).toBeDefined());
     repository.suspend();
 
-    await expect(interrupted).resolves.toMatchObject({ scanned: 1 });
+    await expect(interrupted).resolves.toMatchObject({ scanned: 0 });
     expect(activeSignal?.aborted).toBe(true);
     expect(await repository.connectionStatus()).toMatchObject({
       state: "unavailable",

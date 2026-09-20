@@ -1,11 +1,20 @@
 import {
-  connectedTaskSignature,
+  sameConnectedTaskMetadata,
   connectedTaskStats,
   connectedViewExecutionKey,
-  listConnectedTasks,
 } from "./connected-task-cache";
+import { ConnectedTaskIndex } from "./connected-task-index";
 
-import type { Task } from "../domain/task";
+import type { Task, TaskSummary, TaskListQuery } from "../domain/task";
+
+function listConnectedTasks(
+  cached: { task: Task }[],
+  query: TaskListQuery,
+): TaskSummary[] {
+  const index = new ConnectedTaskIndex<{ task: Task }>();
+  for (const entry of cached) index.set(entry.task.id, entry);
+  return index.list(query);
+}
 import type { TaskView } from "../domain/view";
 
 it("applies shared search, state, archive, and limit projection rules", () => {
@@ -54,9 +63,13 @@ it("shares connected statistics and stable projection keys", () => {
   expect(
     connectedTaskStats([{ task: open }, { task: done }, { task: archived }]),
   ).toEqual({ total: 2, open: 1, completed: 1, archived: 1 });
-  expect(connectedTaskSignature(open)).toBe(
-    JSON.stringify([open.path, open.frontmatter, open.body]),
-  );
+  expect(sameConnectedTaskMetadata(open, { ...open })).toBe(true);
+  expect(
+    sameConnectedTaskMetadata(open, {
+      ...open,
+      frontmatter: { title: "Edited" },
+    }),
+  ).toBe(false);
   expect(
     connectedViewExecutionKey({
       key: "views/work.base#All",

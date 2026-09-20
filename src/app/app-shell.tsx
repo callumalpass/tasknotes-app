@@ -16,7 +16,7 @@ import { createPortal } from "react-dom";
 
 import { CollectionAvailability } from "../components/collection-availability";
 import { TaskAddedNotice } from "../components/task-added-notice";
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
@@ -85,11 +85,11 @@ export function AppShell() {
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [captureOpen, setCaptureOpen] = useState(false);
   const [addedNotice, setAddedNotice] = useState<{
-    task: Task;
+    task: TaskSummary;
     repository: typeof repository;
     route: Route;
   }>();
-  const reportAdded = (task: Task) =>
+  const reportAdded = (task: TaskSummary) =>
     setAddedNotice({ task, repository, route });
   const addedTask = addedNotice?.task;
   if (

@@ -1,6 +1,6 @@
 import { taskDatePart, todayString } from "./task";
 
-import type { Task, UpdateTaskInput } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 
 export interface RecurringCalendarDrop {
   occurrenceDate: string;
@@ -15,7 +15,7 @@ export interface RecurringCalendarDrop {
  * virtual pattern previews. Virtual drops never create occurrence notes.
  */
 export function planRecurringCalendarDrop(
-  task: Task,
+  task: TaskSummary,
   drop: RecurringCalendarDrop,
 ): UpdateTaskInput {
   if (drop.recurringKind === "next-scheduled") {
@@ -34,7 +34,7 @@ export function planRecurringCalendarDrop(
 }
 
 function updatePatternStart(
-  task: Task,
+  task: TaskSummary,
   draggedStart: Date,
   allDay: boolean,
 ): string | null {

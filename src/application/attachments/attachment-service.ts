@@ -9,7 +9,7 @@ import type {
   CollectionFileStore,
 } from "../ports/collection-file-store";
 import type { TaskRepository } from "../ports/task-repository";
-import type { Task } from "../../domain/task";
+import type { Task, TaskSummary } from "../../domain/task";
 
 interface AttachmentJournalEntry {
   id: string;
@@ -113,7 +113,7 @@ export class AttachmentService {
       throw new Error("The attachment file is missing and cannot be inserted.");
   }
 
-  async resolve(task: Task): Promise<ResolvedTaskAttachment[]> {
+  async resolve(task: TaskSummary): Promise<ResolvedTaskAttachment[]> {
     const files = this.requireStore();
     const listed = await files.list({ folder: "Attachments" });
     const byPath = new Map(listed.map((file) => [file.path, file]));

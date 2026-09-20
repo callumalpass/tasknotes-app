@@ -1,4 +1,4 @@
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskRepository } from "./ports/task-repository";
 
@@ -33,7 +33,7 @@ export interface AutoArchiveActivityOptions {
   configuration(): TaskCollectionConfiguration;
   store: AutoArchiveScheduleStore;
   clock?: AutoArchiveClock;
-  onArchived?(task: Task): void | Promise<void>;
+  onArchived?(task: TaskSummary): void | Promise<void>;
   onError?(error: Error): void;
 }
 
@@ -50,11 +50,13 @@ export class AutoArchiveActivity {
   private readonly configuration: () => TaskCollectionConfiguration;
   private readonly store: AutoArchiveScheduleStore;
   private readonly clock: AutoArchiveClock;
-  private readonly onArchived?: (task: Task) => void | Promise<void>;
+  private readonly onArchived?: (task: TaskSummary) => void | Promise<void>;
   private readonly onError: (error: Error) => void;
   private schedules = new Map<string, AutoArchiveSchedule>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tail: Promise<void> = Promise.resolve();
+  private reconciliation: Promise<void> | null = null;
+  private reconcileRequested = false;
   private started = false;
   private disposed = false;
 
@@ -83,7 +85,7 @@ export class AutoArchiveActivity {
     });
   }
 
-  observe(task: Task): Promise<void> {
+  observe(task: TaskSummary): Promise<void> {
     return this.enqueue(async () => {
       const changed = this.observeUnlocked(task);
       if (changed) await this.persistUnlocked();
@@ -100,7 +102,20 @@ export class AutoArchiveActivity {
   }
 
   reconcile(): Promise<void> {
-    return this.enqueue(() => this.reconcileUnlocked());
+    this.reconcileRequested = true;
+    if (this.reconciliation) return this.reconciliation;
+    this.reconciliation = this.enqueue(async () => {
+      try {
+        // Coalesce a burst, but run again if a change arrives during the scan.
+        while (this.reconcileRequested && !this.disposed) {
+          this.reconcileRequested = false;
+          await this.reconcileUnlocked();
+        }
+      } finally {
+        this.reconciliation = null;
+      }
+    });
+    return this.reconciliation;
   }
 
   dispose(): void {
@@ -126,7 +141,15 @@ export class AutoArchiveActivity {
 
   private async reconcileUnlocked(): Promise<void> {
     if (this.disposed) return;
-    const tasks = await this.repository.list({
+    if (!this.configuration().statuses.some((status) => status.autoArchive)) {
+      if (this.schedules.size) {
+        this.schedules.clear();
+        await this.persistUnlocked();
+      }
+      this.armTimerUnlocked();
+      return;
+    }
+    const tasks = await this.repository.listSummaries({
       status: "all",
       archived: "include",
       limit: Number.MAX_SAFE_INTEGER,
@@ -145,7 +168,7 @@ export class AutoArchiveActivity {
     this.armTimerUnlocked();
   }
 
-  private observeUnlocked(task: Task): boolean {
+  private observeUnlocked(task: TaskSummary): boolean {
     const status = eligibleStatus(task, this.configuration());
     const existing = this.schedules.get(task.id);
     if (!status) {
@@ -272,7 +295,7 @@ export async function createRepositoryAutoArchiveActivity(
 }
 
 function eligibleStatus(
-  task: Task,
+  task: TaskSummary,
   configuration: TaskCollectionConfiguration,
 ) {
   if (task.archived || task.recurrence) return undefined;

@@ -7,6 +7,7 @@ import {
   type AutoArchiveScheduleStore,
 } from "./auto-archive-activity";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { deferred } from "../test/mdbase-fixture";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "./ports/task-repository";
@@ -173,6 +174,69 @@ describe("AutoArchiveActivity", () => {
     );
   });
 
+  it("does not enumerate tasks when no status enables auto-archive", async () => {
+    const repository = taskRepository([makeTask()]);
+    const list = vi.spyOn(repository, "listSummaries");
+    const activity = new AutoArchiveActivity({
+      repository,
+      store: new MemoryScheduleStore(),
+      clock: new ManualClock(),
+      configuration: defaultTaskCollectionConfiguration,
+    });
+    await activity.start();
+    await activity.reconcile();
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it("clears schedules when auto-archive is disabled without listing tasks", async () => {
+    const task = makeTask({ status: "done", completed: true });
+    const repository = taskRepository([task]);
+    const store = new MemoryScheduleStore();
+    let configuration = autoArchiveConfiguration();
+    const activity = new AutoArchiveActivity({
+      repository,
+      store,
+      clock: new ManualClock(),
+      configuration: () => configuration,
+    });
+    await activity.start();
+    expect(activity.pending()).toHaveLength(1);
+    configuration = defaultTaskCollectionConfiguration();
+    const list = vi.spyOn(repository, "listSummaries");
+    await activity.reconcile();
+    expect(activity.pending()).toEqual([]);
+    expect(store.schedules).toEqual([]);
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it("coalesces bursts and performs one trailing scan for changes during a scan", async () => {
+    const repository = taskRepository([makeTask()]);
+    const activity = new AutoArchiveActivity({
+      repository,
+      store: new MemoryScheduleStore(),
+      clock: new ManualClock(),
+      configuration: autoArchiveConfiguration,
+    });
+    await activity.start();
+    const list = vi.spyOn(repository, "listSummaries");
+    await Promise.all(Array.from({ length: 100 }, () => activity.reconcile()));
+    expect(list).toHaveBeenCalledOnce();
+    list.mockClear();
+    const started = deferred<void>();
+    const release = deferred<Task[]>();
+    list.mockImplementationOnce(() => {
+      started.resolve();
+      return release.promise;
+    });
+    const first = activity.reconcile();
+    await started.promise;
+    const trailing = activity.reconcile();
+    expect(trailing).toBe(first);
+    release.resolve([]);
+    await trailing;
+    expect(list).toHaveBeenCalledTimes(2);
+  });
+
   it("reconciles 10,000 task events with one durable queue write", async () => {
     const tasks = Array.from({ length: 10_000 }, (_, index) =>
       makeTask({
@@ -243,7 +307,7 @@ function makeTask(patch: Partial<Task> = {}): Task {
 function taskRepository(tasks: Task[]): TaskRepository {
   const byId = new Map(tasks.map((task) => [task.id, task]));
   return {
-    list: async () => [...byId.values()],
+    listSummaries: async () => [...byId.values()],
     get: async (id: string) => byId.get(id) ?? null,
     setArchived: async (id: string, archived: boolean) => {
       const task = byId.get(id);

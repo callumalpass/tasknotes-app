@@ -1,7 +1,7 @@
 import type { FieldMapping } from "@tasknotes/model/types";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { Task, UpdateTaskInput } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 
 export type ViewFieldMapping = Partial<FieldMapping>;
 
@@ -92,7 +92,7 @@ export function viewPropertyMoveInput({
   preserveOtherListValues = false,
   configuration,
 }: {
-  task: Task;
+  task: TaskSummary;
   property: string;
   destinationValue: unknown;
   sourceValue?: unknown;
@@ -166,7 +166,7 @@ export function viewPropertyMoveInput({
 }
 
 export function viewGroupMoveInput(
-  task: Task,
+  task: TaskSummary,
   sourceValues: Record<string, unknown>,
   destinationValues: Record<string, unknown>,
   configuration: TaskCollectionConfiguration,

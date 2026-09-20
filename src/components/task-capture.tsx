@@ -37,7 +37,7 @@ import {
   TaskNotesSelectField,
 } from "./tasknotes-controls";
 
-import type { CreateTaskInput, Task } from "../domain/task";
+import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
   FieldCompletion,
@@ -69,10 +69,10 @@ export function TaskCapture({
   showGuide?: boolean;
   retainFocusAfterCreate?: boolean;
   focusRequest?: number;
-  onCreated?(task: Task): Promise<TaskCaptureFollowUp | void>;
-  onOpenCreated?(task: Task): void;
+  onCreated?(task: TaskSummary): Promise<TaskCaptureFollowUp | void>;
+  onOpenCreated?(task: TaskSummary): void;
   session?: CaptureSession;
-  onAccepted?(task: Task, version: number): void;
+  onAccepted?(task: TaskSummary, version: number): void;
 }) {
   const [localSession] = useState(() => new CaptureSession());
   const session = providedSession ?? localSession;

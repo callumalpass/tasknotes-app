@@ -1,4 +1,4 @@
-import type { Task, UpdateTaskInput } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 import {
   viewPropertyMoveInput,
   viewPropertyName,
@@ -23,7 +23,7 @@ export function kanbanPropertyRole(
 }
 
 export function kanbanMoveInput(
-  task: Task,
+  task: TaskSummary,
   property: string,
   value: unknown,
   fieldMapping?: KanbanFieldMapping,

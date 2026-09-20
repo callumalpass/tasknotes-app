@@ -16,7 +16,8 @@ export class QueryResource<T> {
     stale: false,
   };
   private generation = 0;
-  private request: (() => Promise<T>) | null = null;
+  private request: ((signal: AbortSignal) => Promise<T>) | null = null;
+  private controller: AbortController | null = null;
   private readonly listeners = new Set<() => void>();
   snapshot = () => this.state;
   subscribe = (listener: () => void) => {
@@ -25,7 +26,10 @@ export class QueryResource<T> {
       this.listeners.delete(listener);
     };
   };
-  load(key: string, request: () => Promise<T>) {
+  load(key: string, request: (signal: AbortSignal) => Promise<T>) {
+    this.controller?.abort();
+    const controller = new AbortController();
+    this.controller = controller;
     this.request = request;
     const generation = ++this.generation;
     const data = this.state.key === key ? this.state.data : null;
@@ -37,7 +41,7 @@ export class QueryResource<T> {
       error: null,
     });
     void Promise.resolve()
-      .then(request)
+      .then(() => request(controller.signal))
       .then(
         (data) => {
           if (generation === this.generation)
@@ -67,6 +71,7 @@ export class QueryResource<T> {
       this.load(this.state.key, this.request);
   };
   cancel = () => {
+    this.controller?.abort();
     this.generation++;
   };
   private publish(state: QueryState<T>) {

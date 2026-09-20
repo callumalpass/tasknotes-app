@@ -1,22 +1,23 @@
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 
 /** Explain observed non-title matches without fetching or changing search semantics. */
 export function searchMatchContext(
   task: Pick<
-    Task,
-    "title" | "body" | "projects" | "contexts" | "tags" | "attachments"
+    TaskSummary,
+    "title" | "projects" | "contexts" | "tags" | "attachments"
   >,
   query: string,
+  bodyMatches: readonly string[],
 ): string | undefined {
-  const title = task.title.toLocaleLowerCase();
+  const title = task.title.toLowerCase();
   const outsideTitle = query
     .trim()
-    .toLocaleLowerCase()
+    .toLowerCase()
     .split(/\s+/)
     .filter((token) => token && !title.includes(token));
   if (!outsideTitle.length) return undefined;
   const fields: [string, string[]][] = [
-    ["notes", [task.body]],
+    ["notes", [...bodyMatches]],
     ["projects", task.projects],
     ["contexts", task.contexts],
     ["tags", task.tags],
@@ -25,7 +26,7 @@ export function searchMatchContext(
   const matches = fields
     .filter(([, values]) =>
       values.some((value) =>
-        outsideTitle.some((token) => value.toLocaleLowerCase().includes(token)),
+        outsideTitle.some((token) => value.toLowerCase().includes(token)),
       ),
     )
     .map(([label]) => label);

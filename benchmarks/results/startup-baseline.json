@@ -1,0 +1,45 @@
+{
+  "revision": "dca721a",
+  "node": "v22.22.0",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+  "samples": 1,
+  "environment": "Synthetic serialized authority; repository first page, not React paint, network or real query-engine latency. Full index is requested after the first page to measure deferred work separately.",
+  "results": [
+    {
+      "size": 10000,
+      "configuredMs": 589.42,
+      "firstViewMs": 604.41,
+      "firstViewWork": {
+        "requests": 13,
+        "rows": 10200,
+        "responseBytes": 3930784,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 1.65,
+      "totalWork": {
+        "requests": 13,
+        "rows": 10200,
+        "responseBytes": 3930784,
+        "bodyBytes": 0
+      }
+    },
+    {
+      "size": 50000,
+      "configuredMs": 2690.25,
+      "firstViewMs": 2710.25,
+      "firstViewWork": {
+        "requests": 53,
+        "rows": 50200,
+        "responseBytes": 19456024,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 2.6,
+      "totalWork": {
+        "requests": 53,
+        "rows": 50200,
+        "responseBytes": 19456024,
+        "bodyBytes": 0
+      }
+    }
+  ]
+}

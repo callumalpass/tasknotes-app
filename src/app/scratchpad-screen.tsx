@@ -90,7 +90,7 @@ import type {
   FieldCompletion,
   FieldCompletionRequest,
 } from "../domain/completion";
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
 import type { ScratchFeedItem } from "../domain/scratch-feed";
 import type { ScratchImage } from "../domain/scratch-image";
@@ -118,18 +118,18 @@ interface ReviewItem {
 interface ReviewResult {
   state: "creating" | "created" | "error";
   message?: string;
-  task?: Task;
+  task?: TaskSummary;
 }
 
 interface ScratchpadNotice {
   message: string;
-  tasks?: Task[];
+  tasks?: TaskSummary[];
 }
 
 export function ScratchpadScreen({
   onOpenTask,
 }: {
-  onOpenTask(task: Task): void;
+  onOpenTask(task: TaskSummary): void;
 }) {
   const { repository } = useRepository();
   const [currentDocument, setCurrentDocument] = useState<ScratchpadDocument>();
@@ -1186,7 +1186,7 @@ function ScratchpadDocumentEditor({
   registerFlusher,
   onDocumentUpdated,
 }: {
-  onOpenTask(task: Task): void;
+  onOpenTask(task: TaskSummary): void;
   onReactivate?: () => void;
   initialDocument: ScratchpadDocument;
   isCurrent: boolean;
@@ -1198,7 +1198,9 @@ function ScratchpadDocumentEditor({
   const { repository, configuration, createTask, updateTask } = useRepository();
   const [document, setDocument] = useState<ScratchpadDocument | null>(null);
   const [nodes, setNodes] = useState<ScratchNode[]>([]);
-  const [linkedTasks, setLinkedTasks] = useState<Map<string, Task>>(new Map());
+  const [linkedTasks, setLinkedTasks] = useState<Map<string, TaskSummary>>(
+    new Map(),
+  );
   const [source, setSource] = useState(initialDocument.body);
   const [title, setTitle] = useState(initialDocument.title ?? "");
   const [editorMode, setEditorMode] = useState<"outline" | "markdown">(() =>
@@ -1270,7 +1272,7 @@ function ScratchpadDocumentEditor({
       const next = initialDocumentRef.current;
       const parsed = parseScratchBody(next.body);
       const tasks = parsed.some((node) => node.link)
-        ? await repository.list({
+        ? await repository.listSummaries({
             status: "all",
             archived: "include",
             limit: 50_000,
@@ -1869,7 +1871,7 @@ function ScratchpadDocumentEditor({
   async function linkExistingChildren(
     source: ScratchNode[],
     parentId: string,
-    parentTask: Task,
+    parentTask: TaskSummary,
   ) {
     const parentIndex = source.findIndex((node) => node.id === parentId);
     if (parentIndex < 0) return;
@@ -1897,12 +1899,14 @@ function ScratchpadDocumentEditor({
     }
   }
 
-  async function resolveLinkedTask(node: ScratchNode): Promise<Task | null> {
+  async function resolveLinkedTask(
+    node: ScratchNode,
+  ): Promise<TaskSummary | null> {
     if (node.taskId) {
       const task = await repository.get(node.taskId);
       if (task) return task;
     }
-    const tasks = await repository.list({
+    const tasks = await repository.listSummaries({
       status: "all",
       archived: "include",
       limit: 50_000,
@@ -1964,7 +1968,7 @@ function ScratchpadDocumentEditor({
     setReviewProcessing(true);
     setError("");
     const failedIds = new Set<string>();
-    const completed = new Map<string, Task>();
+    const completed = new Map<string, TaskSummary>();
     for (const result of Object.values(reviewResults))
       if (result.state === "created" && result.task)
         completed.set(result.task.id, result.task);
@@ -2054,7 +2058,7 @@ function ScratchpadDocumentEditor({
       }
       const parsed = parseScratchBody(latest.body);
       const tasks = parsed.some((node) => node.link)
-        ? await repository.list({
+        ? await repository.listSummaries({
             status: "all",
             archived: "include",
             limit: 50_000,
@@ -2893,7 +2897,7 @@ function scratchBody(nodes: readonly ScratchNode[]): string {
 
 function hydrateLinkedNodes(
   nodes: readonly ScratchNode[],
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
 ): ScratchNode[] {
   return nodes.map((node) => {
     if (!node.link) return node;

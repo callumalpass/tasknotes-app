@@ -1,6 +1,6 @@
-import type { Task, TaskListQuery } from "./task";
+import type { TaskSummary, TaskListQuery } from "./task";
 
-export function compareTasks(left: Task, right: Task): number {
+export function compareTasks(left: TaskSummary, right: TaskSummary): number {
   if (left.completed !== right.completed) return left.completed ? 1 : -1;
   const leftDate = left.scheduled ?? left.due;
   const rightDate = right.scheduled ?? right.due;
@@ -18,7 +18,7 @@ export function compareTasks(left: Task, right: Task): number {
 }
 
 export function matchesArchiveFilter(
-  task: Task,
+  task: TaskSummary,
   query: TaskListQuery,
 ): boolean {
   const filter = query.archived ?? "exclude";

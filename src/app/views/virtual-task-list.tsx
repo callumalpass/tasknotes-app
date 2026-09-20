@@ -3,7 +3,7 @@ import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
 import { TaskListSection } from "../../components/task-list-section";
 import { ViewTaskRow } from "./view-task-row";
-import type { Task } from "../../domain/task";
+import type { TaskSummary } from "../../domain/task";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
 
 type Lane = {
@@ -40,8 +40,8 @@ export function VirtualTaskList({
   preferenceScope?: string;
   properties: TaskViewProperty[];
   titleProperty: string;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void | Promise<unknown>;
 }) {
   const [choices, setChoices] = useState<Map<string, boolean>>(() => new Map());
   const preferenceKey = useCallback(
