@@ -71,6 +71,8 @@ export interface TaskRepository {
     query?: TaskListQuery,
     options?: { signal?: AbortSignal },
   ): Promise<Task[]>;
+  /** Resolve metadata without waiting for a document body or revision read. */
+  getSummary(id: string): Promise<TaskSummary | null>;
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;

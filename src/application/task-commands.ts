@@ -1,4 +1,4 @@
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 import type { CollectionInfo } from "./ports/task-repository";
 import type { MutationJournal, PendingTaskDeletion } from "./mutation-journal";
 import { OperationalError, toOperationalError } from "./operational-error";
@@ -6,7 +6,7 @@ import { OperationalError, toOperationalError } from "./operational-error";
 const DEFAULT_UNDO_WINDOW_MS = 30_000;
 
 export interface TaskCommandRepository {
-  get(id: string): Promise<Task | null>;
+  getSummary(id: string): Promise<TaskSummary | null>;
   delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
   updateMany(
@@ -124,7 +124,7 @@ export class TaskCommandService {
       if (this.pendingDeletion?.taskId === taskId) return;
       if (this.pendingDeletion)
         await this.commitDeletionNow(this.pendingDeletion);
-      const task = await this.options.repository.get(taskId);
+      const task = await this.options.repository.getSummary(taskId);
       if (!task) return;
       const requestedAt = this.clock.now();
       const command: PendingTaskDeletion = {

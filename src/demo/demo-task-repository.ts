@@ -214,6 +214,11 @@ export class DemoTaskRepository implements TaskRepository {
     return clone(query.limit ? matches.slice(0, query.limit) : matches);
   }
 
+  async getSummary(id: string) {
+    const task = this.tasks.get(id);
+    return task ? summarizeTask(clone(task)) : null;
+  }
+
   async get(id: string): Promise<Task | null> {
     return clone(this.tasks.get(id) ?? null);
   }
