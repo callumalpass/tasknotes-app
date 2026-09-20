@@ -316,9 +316,10 @@ export function RepositoryProvider({
 
   useEffect(() => {
     if (!repository.subscribe) return;
-    return repository.subscribe(() => {
-      bump();
+    return repository.subscribe((change) => {
       void loadConnection().catch(() => undefined);
+      if (change?.kind === "status") return;
+      bump();
       void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
   }, [bump, loadConnection, repository]);

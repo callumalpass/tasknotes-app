@@ -1,46 +1,9 @@
 import { taskRelationships } from "../domain/task-relationships";
-import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
 
-import type { Task, TaskListQuery, TaskStats } from "../domain/task";
+import type { Task, TaskStats } from "../domain/task";
 import type { TaskView } from "../domain/view";
 
 type CachedTask = { task: Task };
-
-export function listConnectedTasks(
-  cached: Iterable<CachedTask>,
-  query: TaskListQuery = {},
-): Task[] {
-  const tokens = (query.search ?? "")
-    .trim()
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-  return [...cached]
-    .map(({ task }) => task)
-    .filter((task) => {
-      if (!matchesArchiveFilter(task, query)) return false;
-      if (query.status === "completed" && !task.completed) return false;
-      if (
-        query.status !== "completed" &&
-        query.status !== "all" &&
-        task.completed
-      )
-        return false;
-      const searchable = [
-        task.title,
-        task.body,
-        ...task.tags,
-        ...task.contexts,
-        ...task.projects,
-        ...task.attachments,
-      ]
-        .join("\n")
-        .toLocaleLowerCase();
-      return tokens.every((token) => searchable.includes(token));
-    })
-    .sort(compareTasks)
-    .slice(0, query.limit ?? 500);
-}
 
 export function connectedTaskRelationships(
   cached: Iterable<CachedTask>,
@@ -69,8 +32,12 @@ export function connectedTaskStats(cached: Iterable<CachedTask>): TaskStats {
   };
 }
 
-export function connectedTaskSignature(task: Task): string {
-  return JSON.stringify([task.path, task.frontmatter, task.body]);
+export function sameConnectedTaskDocument(left: Task, right: Task): boolean {
+  return (
+    left.path === right.path &&
+    left.body === right.body &&
+    JSON.stringify(left.frontmatter) === JSON.stringify(right.frontmatter)
+  );
 }
 
 export function connectedViewExecutionKey(view: TaskView): string {

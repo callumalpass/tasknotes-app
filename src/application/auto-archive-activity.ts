@@ -55,6 +55,8 @@ export class AutoArchiveActivity {
   private schedules = new Map<string, AutoArchiveSchedule>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tail: Promise<void> = Promise.resolve();
+  private reconciliation: Promise<void> | null = null;
+  private reconcileRequested = false;
   private started = false;
   private disposed = false;
 
@@ -100,7 +102,20 @@ export class AutoArchiveActivity {
   }
 
   reconcile(): Promise<void> {
-    return this.enqueue(() => this.reconcileUnlocked());
+    this.reconcileRequested = true;
+    if (this.reconciliation) return this.reconciliation;
+    this.reconciliation = this.enqueue(async () => {
+      try {
+        // Coalesce a burst, but run again if a change arrives during the scan.
+        while (this.reconcileRequested && !this.disposed) {
+          this.reconcileRequested = false;
+          await this.reconcileUnlocked();
+        }
+      } finally {
+        this.reconciliation = null;
+      }
+    });
+    return this.reconciliation;
   }
 
   dispose(): void {
@@ -126,6 +141,14 @@ export class AutoArchiveActivity {
 
   private async reconcileUnlocked(): Promise<void> {
     if (this.disposed) return;
+    if (!this.configuration().statuses.some((status) => status.autoArchive)) {
+      if (this.schedules.size) {
+        this.schedules.clear();
+        await this.persistUnlocked();
+      }
+      this.armTimerUnlocked();
+      return;
+    }
     const tasks = await this.repository.list({
       status: "all",
       archived: "include",

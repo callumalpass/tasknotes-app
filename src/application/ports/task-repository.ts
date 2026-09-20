@@ -132,7 +132,7 @@ export interface TaskRepository {
   ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   connectionStatus(): Promise<RepositoryConnectionStatus>;
-  subscribe(listener: () => void): () => void;
+  subscribe(listener: (change?: RepositoryChange) => void): () => void;
   /** Cancel active foreground authority work without discarding local UI state. */
   suspend?(): void;
   /** Open a fresh foreground cancellation scope after suspension. */
@@ -149,6 +149,11 @@ export interface CollectionInfo {
   runtime: "browser" | "native";
 }
 
+/** Legacy producers may omit the event; omission means data may have changed. */
+export interface RepositoryChange {
+  kind: "data" | "status";
+}
+
 export interface RepositoryConnectionStatus {
   state: "connecting" | "connected" | "unavailable";
   lastReachedAt?: string;
@@ -156,6 +161,7 @@ export interface RepositoryConnectionStatus {
 }
 
 export interface RefreshResult {
+  /** Records examined in this refresh, not the collection's total size. */
   scanned: number;
   changed: number;
   removed: number;

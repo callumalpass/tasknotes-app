@@ -29,11 +29,12 @@ import {
 } from "../domain/task-occurrence";
 import {
   connectedTaskRelationships,
-  connectedTaskSignature as signature,
+  sameConnectedTaskDocument,
   connectedTaskStats,
   connectedViewExecutionKey as viewExecutionKey,
-  listConnectedTasks,
 } from "./connected-task-cache";
+import { ConnectedTaskIndex } from "./connected-task-index";
+import { changedRecordPaths } from "./mdbase-change-plan";
 import {
   mdbaseMutationKey,
   runMdbaseMutation,
@@ -118,6 +119,7 @@ import type {
   CollectionInfo,
   RefreshResult,
   RepositoryConnectionStatus,
+  RepositoryChange,
   TaskRepository,
 } from "../application/ports/task-repository";
 
@@ -152,7 +154,9 @@ export class MdbaseTaskRepository implements TaskRepository {
     ["task", this.model],
   ]);
   private displayName = "mdbase collection";
-  private readonly cache = new Map<string, CachedMdbaseTask>();
+  private readonly cache = new ConnectedTaskIndex<CachedMdbaseTask>();
+  private changeCursor?: number;
+  private descriptionSignature?: string;
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private readonly viewExecutionInFlight = new Map<
@@ -160,7 +164,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     { signal: AbortSignal; promise: Promise<TaskViewExecution> }
   >();
   private collectionId = "";
-  private readonly listeners = new Set<() => void>();
+  private readonly listeners = new Set<(change?: RepositoryChange) => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
   private emitBatchDepth = 0;
   private emitPending = false;
@@ -223,12 +227,15 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async initializeUnlocked(): Promise<void> {
-    const description = validResult(
-      await this.connect.describe(this.requestOptions()),
-    );
+    const signal = this.operationController.signal;
+    const description = validResult(await this.connect.describe({ signal }));
+    signal.throwIfAborted();
     this.configureDescription(description);
     this.collectionId = description.collectionId;
-    await this.reloadCache();
+    await this.reloadCache(undefined, signal);
+    this.changeCursor = description.operations.includes("changes")
+      ? description.changeCursor
+      : undefined;
     this.setConnected();
     await this.maintainRollingOccurrencesUnlocked();
     this.emit();
@@ -245,39 +252,41 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private async refreshUnlocked(): Promise<RefreshResult> {
     const startedAt = performance.now();
-    const before = new Map(
-      [...this.cache.values()].map(({ task }) => [task.id, signature(task)]),
-    );
+    const signal = this.operationController.signal;
+    let result = { scanned: 0, changed: 0, removed: 0 };
+    let invalidate = false;
     this.status = { ...this.status, state: "connecting", message: undefined };
-    this.emit();
+    this.emit({ kind: "status" });
     try {
-      this.configureDescription(
-        validResult(await this.connect.describe(this.requestOptions())),
+      const description = validResult(await this.connect.describe({ signal }));
+      signal.throwIfAborted();
+      const configurationChanged = this.configureDescription(description);
+      const plan = await this.refreshPlan(
+        description,
+        configurationChanged,
+        signal,
       );
-      await this.reloadCache();
+      signal.throwIfAborted();
+      result = await this.reloadCache(plan.paths, signal);
+      // Advance only after all pages have been read and committed successfully.
+      this.changeCursor = plan.cursor;
+      invalidate =
+        plan.invalidate ||
+        configurationChanged ||
+        result.changed > 0 ||
+        result.removed > 0;
+      if (invalidate) this.scratchFeedSnapshot = undefined;
       this.setConnected();
       await this.maintainRollingOccurrencesUnlocked();
     } catch (reason) {
       this.setOffline(reason);
     }
-    this.emit();
-
-    let changed = 0;
-    for (const { task } of this.cache.values())
-      if (before.get(task.id) !== signature(task)) changed += 1;
-    const removed = [...before.keys()].filter(
-      (id) => !this.cache.has(id),
-    ).length;
-    return {
-      scanned: this.cache.size,
-      changed,
-      removed,
-      elapsedMs: Math.round(performance.now() - startedAt),
-    };
+    this.emit({ kind: invalidate ? "data" : "status" });
+    return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {
-    return listConnectedTasks(this.cache.values(), query);
+    return this.cache.list(query);
   }
 
   async get(id: string): Promise<Task | null> {
@@ -1435,7 +1444,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     return { ...this.status };
   }
 
-  subscribe(listener: () => void): () => void {
+  subscribe(listener: (change?: RepositoryChange) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -1448,39 +1457,130 @@ export class MdbaseTaskRepository implements TaskRepository {
     return `${timezone}\u0000${viewExecutionKey(view)}`;
   }
 
-  private async reloadCache(): Promise<void> {
-    const next = new Map<string, CachedMdbaseTask>();
-    const timezone = runtimeTimezone();
-    for await (const response of this.connect.queryPages(
-      {
-        timezone,
-        types: [...this.taskProviders.keys()],
-        includeBody: true,
-        frontmatterMode: "effective",
-      },
-      {
-        firstPageSize: PAGE_SIZE,
-        pageSize: PAGE_SIZE,
-        signal: this.operationController.signal,
-      },
-    )) {
-      const page = validResult(response);
-      for (const record of page.results) {
-        const decoded = this.readRecord(record);
-        if (!decoded) continue;
-        const cached = this.cache.get(decoded.task.id);
-        next.set(decoded.task.id, {
-          ...decoded,
-          revision:
-            cached && signature(cached.task) === signature(decoded.task)
-              ? cached.revision
-              : undefined,
-        });
-      }
+  private async refreshPlan(
+    description: CollectionDescription,
+    configurationChanged: boolean,
+    signal: AbortSignal,
+  ): Promise<{
+    paths?: Set<string>;
+    cursor?: number;
+    invalidate: boolean;
+  }> {
+    const supportsChanges = description.operations.includes("changes");
+    const full = {
+      cursor: supportsChanges ? description.changeCursor : undefined,
+      invalidate: true,
+    };
+    if (
+      !supportsChanges ||
+      this.changeCursor === undefined ||
+      configurationChanged
+    )
+      return full;
+    let cursor = this.changeCursor;
+    const paths = new Set<string>();
+    let invalidate = false;
+    // Bound catch-up work. A reset, schema event, or large backlog replaces the
+    // snapshot rather than issuing thousands of individual record requests.
+    for (let page = 0; page < 10; page++) {
+      const outcome = await this.connect.changes(
+        { after: cursor, limit: 1000 },
+        { signal },
+      );
+      signal.throwIfAborted();
+      if (!outcome.ok && outcome.problem.code === "change_cursor_reset")
+        return full;
+      const changes = validResult(outcome);
+      if (changes.reset || changes.cursor < cursor) return full;
+      const changedPaths = changedRecordPaths(changes.events);
+      if (!changedPaths) return full;
+      for (const path of changedPaths) paths.add(path);
+      if (paths.size > 500) return full;
+      invalidate ||= changes.events.length > 0;
+      if (!changes.hasMore)
+        return { paths, cursor: changes.cursor, invalidate };
+      if (changes.cursor <= cursor) return full;
+      cursor = changes.cursor;
     }
+    return full;
+  }
 
-    this.cache.clear();
-    for (const [id, value] of next) this.cache.set(id, value);
+  private async reloadCache(
+    paths?: Set<string>,
+    signal = this.operationController.signal,
+  ): Promise<{ scanned: number; changed: number; removed: number }> {
+    const result = { scanned: 0, changed: 0, removed: 0 };
+    if (paths?.size === 0) return result;
+    const next = new Map<string, CachedMdbaseTask>();
+    const writes = this.cache.trackWrites();
+    try {
+      const batches = paths ? chunkPaths([...paths], 100) : [undefined];
+      for (const batch of batches) {
+        for await (const response of this.connect.queryPages(
+          {
+            timezone: runtimeTimezone(),
+            types: [...this.taskProviders.keys()],
+            includeBody: true,
+            frontmatterMode: "effective",
+            ...(batch
+              ? {
+                  where: batch
+                    .map((path) => `file.path == ${JSON.stringify(path)}`)
+                    .join(" || "),
+                }
+              : {}),
+          },
+          { firstPageSize: PAGE_SIZE, pageSize: PAGE_SIZE, signal },
+        )) {
+          signal.throwIfAborted();
+          const page = validResult(response);
+          result.scanned += page.results.length;
+          for (const record of page.results) {
+            const decoded = this.readRecord(record);
+            if (!decoded) continue;
+            const cached = this.cache.get(decoded.task.id);
+            next.set(
+              decoded.task.id,
+              cached &&
+                cached.model === decoded.model &&
+                sameConnectedTaskDocument(cached.task, decoded.task)
+                ? cached
+                : decoded,
+            );
+          }
+        }
+      }
+      signal.throwIfAborted();
+      writes.stop();
+      // A query may be older than a write accepted while it was in flight. Do
+      // not overwrite or resurrect locally changed paths with that snapshot.
+      const previous = paths
+        ? [...paths].flatMap((path) => {
+            const value = this.cache.atPath(path);
+            return value ? [value] : [];
+          })
+        : [...this.cache.values()];
+      for (const { task } of previous) {
+        if (!next.has(task.id) && !writes.paths.has(task.path)) {
+          this.cache.delete(task.id);
+          result.removed++;
+        }
+      }
+      for (const [id, value] of next) {
+        if (
+          writes.paths.has(value.task.path) ||
+          writes.paths.has(this.cache.get(id)?.task.path ?? "")
+        )
+          continue;
+        if (this.cache.get(id) !== value) {
+          this.cache.set(id, value);
+          result.changed++;
+        }
+      }
+      return result;
+    } finally {
+      writes.stop();
+    }
   }
 
   private async requireCurrent(
@@ -1514,7 +1614,15 @@ export class MdbaseTaskRepository implements TaskRepository {
       );
       const decoded = this.readRecord(result);
       if (!decoded) throw new Error("The task is no longer readable.");
-      const current = { ...decoded, revision: result.revision };
+      const current = {
+        ...decoded,
+        task:
+          cached.model === decoded.model &&
+          sameConnectedTaskDocument(cached.task, decoded.task)
+            ? cached.task
+            : decoded.task,
+        revision: result.revision,
+      };
       if (decoded.task.id !== id) this.cache.delete(id);
       this.cache.set(decoded.task.id, current);
       return current;
@@ -1524,16 +1632,26 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
-  private configureDescription(description: CollectionDescription): void {
-    const resolved = resolveTaskCollection(description);
+  private configureDescription(description: CollectionDescription): boolean {
     if (this.collectionId && description.collectionId !== this.collectionId)
       throw new Error("The connected mdbase collection changed unexpectedly.");
+    const nextSignature = JSON.stringify([
+      description.displayName,
+      description.types,
+      description.contracts,
+      description.configuration,
+    ]);
+    this.displayName = description.displayName;
+    if (nextSignature === this.descriptionSignature) return false;
+    const resolved = resolveTaskCollection(description);
+    this.descriptionSignature = nextSignature;
+    this.changeCursor = undefined;
     this.model = resolved.model;
     this.taskTypeName = resolved.typeName;
     this.taskProviders = new Map(
       resolved.providers.map((provider) => [provider.typeName, provider.model]),
     );
-    this.displayName = description.displayName;
+    return true;
   }
 
   private async persistUpdate(
@@ -1819,12 +1937,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async maintainRollingOccurrencesUnlocked(): Promise<void> {
-    const parents = [...this.cache.values()]
-      .map(({ task }) => task)
-      .filter(
-        (task) =>
-          task.recurrence && task.occurrenceMaterialization === "rolling",
-      );
+    const parents = this.cache.rollingParents();
     for (const parent of parents) {
       const warnings = await this.materializeRollingWindow(parent);
       if (!warnings.length) continue;
@@ -1913,16 +2026,16 @@ export class MdbaseTaskRepository implements TaskRepository {
       )
         return;
       this.setOffline(reason);
-      this.emit();
+      this.emit({ kind: "status" });
     }
   }
 
-  private emit(): void {
+  private emit(change: RepositoryChange = { kind: "data" }): void {
     if (this.emitBatchDepth) {
       this.emitPending = true;
       return;
     }
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) listener(change);
   }
 
   private async withBatchedEmits<Result>(
@@ -1939,6 +2052,13 @@ export class MdbaseTaskRepository implements TaskRepository {
       }
     }
   }
+}
+
+function chunkPaths(paths: string[], size: number): string[][] {
+  const batches: string[][] = [];
+  for (let offset = 0; offset < paths.length; offset += size)
+    batches.push(paths.slice(offset, offset + size));
+  return batches;
 }
 
 function validResult<Result>(
