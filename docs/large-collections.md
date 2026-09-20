@@ -335,11 +335,18 @@ Provisional acceptance goals:
 
 ## Verification and current limits
 
-Third increment: **686 tests across 121 files**, 42 Node release/probe tests,
+Third increment: **687 tests across 121 files**, 42 Node release/probe tests,
 typecheck, lint, formatting, production build, benchmark typecheck, and the
 before/after first-page benchmark passed. Startup regressions cover a stalled
 index with enabled auto-archive, edits before index completion, shared loads,
 failed-load/schema rediscovery, lifecycle cancellation, and stale path hints.
+
+Deployment browser checks exposed deletion preparation waiting for a prefetched
+body. `getSummary(id)` now supplies deletion-intent metadata without joining that
+read; actual deletion still requires authority revision checks. The unchanged
+slow-relay browser regression passes, along with the full built-artifact suite:
+111 desktop/mobile tests passed, one skipped. These browser fixtures are not live
+LAB or 50k provider acceptance.
 
 Validated the second increment: 677 tests across 119 files, 42 Node release/probe
 tests with the Rust CLI probe enabled, `pnpm typecheck`, `pnpm lint`,

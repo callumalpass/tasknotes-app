@@ -248,7 +248,7 @@ function taskRepository() {
     title: "Durable task",
   } as Task;
   const repository = {
-    get: vi.fn(async (id: string) => (id === task.id ? task : null)),
+    getSummary: vi.fn(async (id: string) => (id === task.id ? task : null)),
     delete: vi.fn(async () => undefined),
     update: vi.fn(async (id: string, input: UpdateTaskInput) => {
       void input;

@@ -531,6 +531,11 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
+  async getSummary(id: string): Promise<TaskSummary | null> {
+    if (!this.cache.has(id)) await this.ensureKnownTask(id);
+    return this.cache.get(id)?.task ?? null;
+  }
+
   async get(id: string): Promise<Task | null> {
     if (!this.cache.has(id)) await this.ensureKnownTask(id);
     if (!this.cache.has(id)) return null;

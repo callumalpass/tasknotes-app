@@ -1,4 +1,6 @@
 import { expect, it } from "vitest";
+import { TaskCommandService } from "../application/task-commands";
+import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { MdbaseTaskRepository } from "./mdbase-repository";
 import { deferred, mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
 
@@ -9,6 +11,45 @@ function setup() {
   ]);
   return { ...fixture, repository: new MdbaseTaskRepository(fixture.connect) };
 }
+
+it("publishes deletion undo while a document-prefetch read is still pending", async () => {
+  const fixture = setup();
+  await fixture.repository.initialize({ deferTaskIndex: true });
+  const [document] = await fixture.repository.listViews();
+  await fixture.repository.executeView(document.views[0]);
+  const started = deferred<void>();
+  const release = deferred<void>();
+  const read = fixture.read.getMockImplementation()!;
+  fixture.read.mockImplementationOnce(async (input) => {
+    started.resolve();
+    await release.promise;
+    return read(input);
+  });
+  const prefetch = fixture.repository.get("one");
+  await started.promise;
+  const service = new TaskCommandService({
+    repository: fixture.repository,
+    journal: new MemoryMutationJournal(),
+  });
+  try {
+    await service.initialize();
+    await service.requestDeletion("one");
+    expect(service.snapshot().pendingDeletion).toMatchObject({
+      taskId: "one",
+      title: "First",
+    });
+    expect(fixture.remove).not.toHaveBeenCalled();
+    expect(fixture.queryPages).not.toHaveBeenCalled();
+    expect(await fixture.repository.getSummary("one")).not.toHaveProperty(
+      "body",
+    );
+    await service.undoDeletion();
+  } finally {
+    service.dispose();
+    release.resolve();
+    await prefetch;
+  }
+});
 
 it("opens configuration and a view without enumerating task metadata", async () => {
   const fixture = setup();
