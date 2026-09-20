@@ -2,12 +2,12 @@
 
 ## Status
 
-Two architectural increments, not 50k-record product acceptance. The target is a
+Three architectural increments, not 50k-record product acceptance. The target is a
 responsive web/native TaskNotes at up to 50,000 records, without a durable local
 task replica. Incremental refresh, session indexes, metadata-only browsing,
 bounded document retention, and authority-side body matching are implemented.
-Startup still loads all task metadata. Bounded first-content loading and
-browser/mobile acceptance remain necessary.
+Task-list views can now open before the full metadata index. Background indexing,
+broad non-list views, and browser/mobile acceptance still need measurement.
 
 ## Reproducible baseline
 
@@ -189,6 +189,70 @@ nested `file.body` text returned. The JavaScript reference engine rejected
 Connect beta.96 SDK/relay test, provider latency benchmark, or LAB acceptance.
 Without `MDBASE_TEST_CLI`, ordinary release tests explicitly skip this probe.
 
+## Third increment: workspace readiness before the metadata index
+
+The application requests `initialize({ deferTaskIndex: true })`. Configuration
+opens first; saved-view catalogue and page queries no longer depend on the task
+index. Ordinary `initialize()` retains complete initialization for callers that
+explicitly need it. Index consumers share one lazy, atomic load and await it:
+statistics, search, relationships, metadata lists, creation/path allocation, and
+materialized-occurrence resolution never treat a partial index as complete.
+
+The first view records bounded metadata hints (up to 512 tasks). Opening or
+completing an ordinary visible task can hydrate its exact path without waiting
+for the full index. Unknown IDs still await authoritative index completion before
+being reported absent. Accepted writes remain protected against a delayed index
+snapshot. Authoritative snapshots retire stale path hints, and hydration checks
+identity before allowing a hinted path to modify a replacement record. Suspension
+cancels the old load; a resumed load cannot be overwritten by old responses. Metadata decoding yields cooperatively rather than occupying
+one uninterrupted collection-sized JavaScript turn.
+
+Auto-archive startup runs through its existing serialized/error-reporting queue
+without blocking workspace readiness. The provider still launches background
+refresh and reminder reconciliation. These can load metadata concurrently with
+the first view; this change removes a dependency, not all background traffic.
+Rolling maintenance and pending deletion recovery retain their correctness
+requirements. Calendar/kanban still execute complete view scopes, and operations
+requiring global identity/path knowledge may still wait for indexing.
+
+### First-page benchmark
+
+Reports: [startup-baseline](../benchmarks/results/startup-baseline.json), source
+`dca721a`, and [startup-deferred](../benchmarks/results/startup-deferred.json).
+Both use the same synthetic authority and default task-list fixture with
+2,048-byte bodies. One fresh sample per size, GC outside timing. The measurement
+runs configuration → catalogue → first 200-row page, then requests statistics to
+measure deferred indexing separately. It does **not** run React, concurrent app
+background activities, network latency, or real provider query planning.
+
+| Metric                           | 10k before | 10k after | 50k before | 50k after |
+| -------------------------------- | ---------: | --------: | ---------: | --------: |
+| First repository view page, ms   |     604.41 |     27.60 |   2,710.25 |     13.86 |
+| Records fetched before that page |     10,200 |       200 |     50,200 |       200 |
+| Requests before that page        |         13 |         3 |         53 |         3 |
+| JSON before that page, MB        |       3.93 |     0.105 |      19.46 |     0.105 |
+| Subsequent index wait, ms        |       1.65 |    568.00 |       2.60 |  2,859.96 |
+
+The three isolated foreground requests are description, catalogue, and view page.
+The full index work has moved off that path, **not disappeared**. Background
+requests in the actual application can overlap the first page, so these byte and
+request counts are not a browser first-paint traffic claim. The lower 50k
+first-page time reflects sample/JIT variation, not a larger collection being
+intrinsically faster. No p95 or mobile SLO is established by these single samples.
+
+```sh
+PERF_STARTUP_OUTPUT=benchmarks/results/startup-latest.json \
+  pnpm exec vitest run --config benchmarks/vitest.config.ts benchmarks/startup.perf.ts
+# To compare: use the temporary source procedure above with dca721a,
+# PERF_REPOSITORY_MODULE and PERF_REVISION=dca721a.
+```
+
+Regression coverage deliberately stalls metadata loading while a real
+`RepositoryProvider` and `ViewQuerySession` show the first task. Repository tests
+also verify first-page/no-index traffic, edits versus delayed snapshots, shared
+index loading, failed-load retries, lifecycle cancellation, and no duplicate
+initial snapshot for authorities without changes.
+
 ## Architecture implemented
 
 ### Change-feed reconciliation instead of periodic full downloads
@@ -241,7 +305,7 @@ These are implementation/verification requirements, not claims already met.
 
 | Surface                      | Remaining architectural work                                                                                                                                                                                                                                                                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Cold opening and detail      | Summary/document separation and bounded hydration are implemented. Show the first saved-view page without awaiting the full metadata index; measure bounded first-content requests.                                                                                                                                                  |
+| Cold opening and detail      | Task-list first pages no longer await the metadata index; verify browser first paint, concurrent background traffic and real authority scheduling. Replace remaining global-index prerequisites with bounded identity/path lookups where appropriate.                                                                                |
 | Search                       | Authority body evidence and cancellation are implemented. Validate real query plans, cold/typed-query latency, Unicode matching, broad predicates, and application/authority ordering mismatches. Bound evidence transfer for these worst cases.                                                                                     |
 | Calendar                     | Replace `useTasks(limit: 50_000)` identity loading with bounded range/identity lookups. Preserve recurrence exceptions, occurrence identity, and drag mutations.                                                                                                                                                                     |
 | Scratchpad                   | Replace repeated `list(limit: 50_000)` link resolution with batch identity/path lookup; page note/image history at the authority. Review the current 1,000-row history queries and per-document reads for truncation and N+1 traffic.                                                                                                |
@@ -270,6 +334,12 @@ Provisional acceptance goals:
   authorities before declaring 50k acceptance. No production test data.
 
 ## Verification and current limits
+
+Third increment: **686 tests across 121 files**, 42 Node release/probe tests,
+typecheck, lint, formatting, production build, benchmark typecheck, and the
+before/after first-page benchmark passed. Startup regressions cover a stalled
+index with enabled auto-archive, edits before index completion, shared loads,
+failed-load/schema rediscovery, lifecycle cancellation, and stale path hints.
 
 Validated the second increment: 677 tests across 119 files, 42 Node release/probe
 tests with the Rust CLI probe enabled, `pnpm typecheck`, `pnpm lint`,

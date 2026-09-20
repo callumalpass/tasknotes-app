@@ -194,7 +194,7 @@ export function RepositoryProvider({
       resolveTaskCommands = resolve;
     });
     repository
-      .initialize()
+      .initialize({ deferTaskIndex: true })
       .then(async () => {
         const nextConfiguration = await repository.taskConfiguration();
         if (!active) return;
@@ -215,7 +215,8 @@ export function RepositoryProvider({
           return;
         }
         autoArchiveRef.current = autoArchive;
-        await autoArchive.start();
+        // Reconciliation has its own error reporting and must not gate the view.
+        void autoArchive.start().catch(() => undefined);
         if (!active) return;
         const taskCommands = new TaskCommandService({
           repository,

@@ -56,7 +56,8 @@ import type { CollectionFileStore } from "./collection-file-store";
 export interface TaskRepository {
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
-  initialize(): Promise<void>;
+  /** Workspace mode opens configuration without waiting for collection-wide indexes. */
+  initialize(options?: { deferTaskIndex?: boolean }): Promise<void>;
   refresh(): Promise<RefreshResult>;
   /** Lightweight metadata; no body is fetched or represented as empty. */
   listSummaries(query?: Omit<TaskListQuery, "search">): Promise<TaskSummary[]>;
