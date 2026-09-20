@@ -90,16 +90,36 @@ it("benchmarks large collections", async () => {
       (async function* () {
         // Changed-path queries use exact equality disjunctions, not a fake index
         // shared with the client. CPU spent selecting rows is not a real engine benchmark.
-        const paths = input?.where
-          ? new Set(
-              [
-                ...input.where.matchAll(/file\.path == ("(?:[^"\\]|\\.)*")/g),
-              ].map((match) => JSON.parse(match[1])),
-            )
-          : null;
-        const matching = [...fixture.records.values()].filter(
-          (record) => !paths || paths.has(record.path),
+        const paths = new Set(
+          [
+            ...(input?.where ?? "").matchAll(
+              /file\.path == ("(?:[^"\\]|\\.)*")/g,
+            ),
+          ].map((match) => JSON.parse(match[1])),
         );
+        const tokens = [
+          ...(input?.where ?? "").matchAll(
+            /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/g,
+          ),
+        ].map((match) => JSON.parse(match[1]) as string);
+        const projections = Object.entries(input?.projections ?? {}).map(
+          ([name, projection]) => {
+            const match =
+              /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/.exec(
+                projection.expression,
+              );
+            if (!match) throw new Error("Unsupported synthetic projection");
+            return [name, JSON.parse(match[1]) as string] as const;
+          },
+        );
+        const matching = [...fixture.records.values()].filter((record) => {
+          if (paths.size && !paths.has(record.path)) return false;
+          if (!tokens.length) return true;
+          const body = record.body.toLowerCase();
+          return input?.where?.includes(" && ")
+            ? tokens.every((token) => body.includes(token))
+            : tokens.some((token) => body.includes(token));
+        });
         for (
           let offset = 0;
           offset < matching.length || offset === 0;
@@ -116,6 +136,16 @@ it("benchmarks large collections", async () => {
               body,
               types: record.types,
               file: testQueryFile(record.path),
+              ...(projections.length
+                ? {
+                    values: Object.fromEntries(
+                      projections.map(([name, token]) => [
+                        name,
+                        record.body.toLowerCase().includes(token),
+                      ]),
+                    ),
+                  }
+                : {}),
             };
           });
           yield transfer(
@@ -141,7 +171,27 @@ it("benchmarks large collections", async () => {
       counters.bodyBytes += Buffer.byteLength(response.result.body);
       return transfer(response);
     });
-    const repository = new MdbaseTaskRepository(fixture.connect);
+    const update = fixture.update.getMockImplementation()!;
+    fixture.update.mockImplementation(async (input) => {
+      const response = await update(input);
+      counters.records++;
+      counters.bodyBytes += Buffer.byteLength(response.result.body);
+      return transfer(response);
+    });
+    type Repository = InstanceType<typeof MdbaseTaskRepository>;
+    const repository: Omit<Repository, "listSummaries" | "search"> &
+      Partial<Pick<Repository, "listSummaries" | "search">> =
+      new MdbaseTaskRepository(fixture.connect);
+    // Feature detection is only in the benchmark, so historical implementations
+    // exercise the same browsing/search intent through their original API.
+    const list =
+      repository.listSummaries?.bind(repository) ??
+      repository.list.bind(repository);
+    const search =
+      repository.search?.bind(repository) ?? repository.list.bind(repository);
+    expect(globalThis.gc).toBeTypeOf("function");
+    globalThis.gc!();
+    const heapBeforeInitialize = process.memoryUsage().heapUsed;
     const measurements: Record<string, unknown> = {};
     const measure = async (
       name: string,
@@ -169,28 +219,46 @@ it("benchmarks large collections", async () => {
     };
     await measure("initialize", () => repository.initialize(), 1);
     expect((await repository.stats()).total).toBe(size);
+    if (repository.listSummaries) expect(counters.bodyBytes).toBe(0);
+    globalThis.gc!();
+    const retainedAfterInitializeMiB = +(
+      (process.memoryUsage().heapUsed - heapBeforeInitialize) /
+      1024 ** 2
+    ).toFixed(2);
+    await measure(
+      "firstDetail",
+      async () => {
+        expect((await repository.get(`task-${size - 1}`))?.body).toBe(
+          records[size - 1].body,
+        );
+      },
+      1,
+    );
+    await measure("cachedDetail", () => repository.get(`task-${size - 1}`));
     await measure("unchangedRefresh", () => repository.refresh());
-    await measure("listZero", () =>
-      repository.list({ status: "all", limit: 0 }),
-    );
-    await measure("list300", () =>
-      repository.list({ status: "all", limit: 300 }),
-    );
-    await measure("searchBody", () =>
-      repository.list({ status: "all", search: "ordinary note", limit: 300 }),
-    );
+    await measure("listZero", () => list({ status: "all", limit: 0 }));
+    await measure("list300", () => list({ status: "all", limit: 300 }));
+    await measure("searchBody", async () => {
+      expect(
+        await search({ status: "all", search: "ordinary note", limit: 300 }),
+      ).toHaveLength(Math.min(300, size));
+    });
     await measure(
       "searchColdRare",
-      () =>
-        repository.list({
+      async () => {
+        const results = await search({
           status: "all",
           search: `Notes for ${size - 1}.`,
           limit: 300,
-        }),
+        });
+        expect(
+          results.map((row) => ("task" in row ? row.task : row).id),
+        ).toEqual([`task-${size - 1}`]);
+      },
       1,
     );
     await measure("searchRare", () =>
-      repository.list({
+      search({
         status: "all",
         search: `Notes for ${size - 1}.`,
         limit: 300,
@@ -214,10 +282,28 @@ it("benchmarks large collections", async () => {
     });
     await measure(
       "listAfterMutation",
-      () => repository.list({ status: "all", limit: 300 }),
+      () => list({ status: "all", limit: 300 }),
       1,
     );
-    (report.results as unknown[]).push({ size, measurements });
+    await measure(
+      "acceptedMetadataEdit",
+      () =>
+        repository.update(`task-${size - 1}`, {
+          title: "Changed through the authority",
+        }),
+      1,
+    );
+    globalThis.gc!();
+    const retainedAfterQueriesMiB = +(
+      (process.memoryUsage().heapUsed - heapBeforeInitialize) /
+      1024 ** 2
+    ).toFixed(2);
+    (report.results as unknown[]).push({
+      size,
+      retainedAfterInitializeMiB,
+      retainedAfterQueriesMiB,
+      measurements,
+    });
     repository.dispose();
   }
   const destination =

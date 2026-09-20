@@ -40,7 +40,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => [execution.rows[0].task],
+    listSummaries: async () => [execution.rows[0].task],
     cachedViewExecution: async () => null,
     executeView: async () => execution,
     readViewSource: async () => ({
@@ -301,7 +301,7 @@ it("recovers an uncertain manual board write before sending the queued move", as
       row.task.frontmatter.status = input.status;
       row.values.status = input.status;
     }
-    return row.task;
+    return { ...row.task, body: "" };
   };
   let recoveryActive = false;
   const providerUpdate = vi.fn(
@@ -360,7 +360,7 @@ it("recovers an uncertain manual board write before sending the queued move", as
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => execution.rows.map(({ task }) => task),
+    listSummaries: async () => execution.rows.map(({ task }) => task),
     cachedViewExecution: async () => null,
     executeView: async () => execution,
     readViewSource: async () => ({
@@ -480,7 +480,7 @@ it("serializes rapid consecutive board moves without rejecting the second move",
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => [execution.rows[0].task],
+    listSummaries: async () => [execution.rows[0].task],
     cachedViewExecution: async () => null,
     executeView: async () => execution,
     readViewSource: async () => ({
@@ -563,11 +563,13 @@ it("serializes rapid consecutive board moves without rejecting the second move",
     status: "in-progress",
   });
 
-  await act(async () => first.resolve(execution.rows[0].task));
+  await act(async () => first.resolve({ ...execution.rows[0].task, body: "" }));
   await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
   expect(update).toHaveBeenNthCalledWith(2, "task-1", { status: "done" });
 
-  await act(async () => second.resolve(execution.rows[0].task));
+  await act(async () =>
+    second.resolve({ ...execution.rows[0].task, body: "" }),
+  );
   await waitFor(() =>
     expect(screen.getByLabelText("Work board")).toHaveAttribute(
       "aria-busy",
@@ -594,7 +596,7 @@ it("shows a cached view while its authoritative result refreshes", async () => {
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => [cached.rows[0].task],
+    listSummaries: async () => [cached.rows[0].task],
     cachedViewExecution: async () => cached,
     executeView: () => pending.promise,
     readViewSource: async () => ({
@@ -704,7 +706,7 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => tasks,
+    listSummaries: async () => tasks,
     cachedViewExecution: async () => null,
     executeView: async () => staleExecution,
     readViewSource: async () => ({
@@ -823,7 +825,7 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => tasks,
+    listSummaries: async () => tasks,
     cachedViewExecution: async () => null,
     executeView: async () => ({
       view,
@@ -978,7 +980,7 @@ it("offers manual order from a writable kanban view", async () => {
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => [execution.rows[0].task],
+    listSummaries: async () => [execution.rows[0].task],
     cachedViewExecution: async () => null,
     executeView: async () => execution,
     readViewSource: async () => source,
@@ -1214,7 +1216,7 @@ function manualListRepository(
       removed: 0,
       elapsedMs: 0,
     }),
-    list: async () => tasks,
+    listSummaries: async () => tasks,
     cachedViewExecution: async () => null,
     executeView: async () => execution(),
     readViewSource: async () => ({

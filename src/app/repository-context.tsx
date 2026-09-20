@@ -40,6 +40,8 @@ import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
   Task,
+  TaskSummary,
+  TaskSearchResult,
   TaskListQuery,
   TaskStats,
   TaskTimeEntry,
@@ -614,21 +616,62 @@ export function useRepository(): RepositoryContextValue {
   return value;
 }
 
-export function useTasks(query: TaskListQuery): {
-  tasks: Task[];
+interface TaskQueryState<Value> {
+  tasks: Value[];
   loading: boolean;
   refreshing: boolean;
   stale: boolean;
   error: Error | null;
   retry(): void;
-} {
+}
+
+const summaryQuery = {
+  kind: "summaries",
+  load: (repository: TaskRepository, query: TaskListQuery) =>
+    repository.listSummaries(query),
+  id: (task: TaskSummary) => task.id,
+};
+const searchQuery = {
+  kind: "search",
+  load: (
+    repository: TaskRepository,
+    query: TaskListQuery,
+    signal: AbortSignal,
+  ) => repository.search(query, { signal }),
+  id: (result: TaskSearchResult) => result.task.id,
+};
+
+export function useTasks(
+  query: Omit<TaskListQuery, "search">,
+): TaskQueryState<TaskSummary> {
+  return useRepositoryTaskQuery(query, summaryQuery);
+}
+
+export function useTaskSearch(
+  query: TaskListQuery,
+): TaskQueryState<TaskSearchResult> {
+  return useRepositoryTaskQuery(query, searchQuery);
+}
+
+function useRepositoryTaskQuery<Value>(
+  query: TaskListQuery,
+  reader: {
+    kind: string;
+    load(
+      repository: TaskRepository,
+      query: TaskListQuery,
+      signal: AbortSignal,
+    ): Promise<Value[]>;
+    id(value: Value): string;
+  },
+): TaskQueryState<Value> {
   const {
     pendingDeletion,
     repository,
     status,
     error: openingError,
   } = useRepository();
-  const [resource] = useState(() => new QueryResource<Task[]>());
+  const [resource] = useState(() => new QueryResource<Value[]>());
   const state = useSyncExternalStore(
     resource.subscribe,
     resource.snapshot,
@@ -637,6 +680,7 @@ export function useTasks(query: TaskListQuery): {
   const { status: statusFilter, search, limit, archived } = query;
   // Changing a prefix limit refreshes the same query; changing its meaning clears old results.
   const key = JSON.stringify([
+    reader.kind,
     statusFilter ?? "open",
     archived ?? "exclude",
     search ?? "",
@@ -644,8 +688,12 @@ export function useTasks(query: TaskListQuery): {
   const revision = useRepositoryRevision(`tasks:${key}`);
   useEffect(() => {
     if (status !== "ready") return;
-    resource.load(key, () =>
-      repository.list({ status: statusFilter, archived, search, limit }),
+    resource.load(key, (signal) =>
+      reader.load(
+        repository,
+        { status: statusFilter, archived, search, limit },
+        signal,
+      ),
     );
     return resource.cancel;
   }, [
@@ -658,11 +706,12 @@ export function useTasks(query: TaskListQuery): {
     status,
     statusFilter,
     revision,
+    reader,
   ]);
   const tasks = state.key === key ? (state.data ?? []) : [];
   return {
     tasks: pendingDeletion
-      ? tasks.filter((task) => task.id !== pendingDeletion.id)
+      ? tasks.filter((task) => reader.id(task) !== pendingDeletion.id)
       : tasks,
     loading:
       status === "opening" || state.key !== key || state.status === "loading",

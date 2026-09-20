@@ -6,10 +6,10 @@ import {
   type FieldCompletionRequest,
 } from "../domain/completion";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 
 export function completeTaskValues(
-  tasks: Iterable<Task>,
+  tasks: Iterable<TaskSummary>,
   request: FieldCompletionRequest,
 ): FieldCompletion[] {
   const values = new Map<string, FieldCompletion>();

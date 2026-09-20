@@ -24,7 +24,7 @@ import {
   TaskNotesSelectField,
 } from "./tasknotes-controls";
 
-import type { UpdateTaskInput, Task } from "../domain/task";
+import type { UpdateTaskInput, TaskSummary } from "../domain/task";
 import type {
   TaskCollectionConfiguration,
   TaskUserMappedField,
@@ -45,7 +45,7 @@ export function TaskPropertyEditor({
   occurrenceDate,
   onClose,
 }: {
-  task: Task;
+  task: TaskSummary;
   detail: TaskRowDetail;
   anchor: TaskPropertyEditorAnchor;
   occurrenceDate?: string;
@@ -461,7 +461,10 @@ function notePropertyName(key: string): string {
   return /^note\[(["'])(.+)\1\]$/.exec(key)?.[2] ?? key;
 }
 
-function propertyValue(task: Task, property: EditableProperty | null): unknown {
+function propertyValue(
+  task: TaskSummary,
+  property: EditableProperty | null,
+): unknown {
   if (!property) return undefined;
   return property.kind === "custom"
     ? task.customProperties[property.key]
@@ -469,7 +472,7 @@ function propertyValue(task: Task, property: EditableProperty | null): unknown {
 }
 
 function updateFor(
-  task: Task,
+  task: TaskSummary,
   property: EditableProperty,
   value: unknown,
   anchor?: "scheduled" | "completion",

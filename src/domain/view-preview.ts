@@ -4,18 +4,18 @@ import {
   evaluateToPlain,
 } from "obsidian-bases-expression";
 
-import type { Task } from "./task";
+import type { TaskSummary } from "./task";
 import type { EditableViewDraft } from "./view-document";
 
 export interface ViewDraftPreview {
   kind: "live" | "current" | "unavailable";
   count?: number;
-  tasks: Task[];
+  tasks: TaskSummary[];
 }
 
 export function previewViewDraft(
   draft: EditableViewDraft,
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
 ): ViewDraftPreview {
   const matching = tasksForViewDraft(draft, tasks);
   if (!matching) return { kind: "unavailable", tasks: [] };
@@ -27,10 +27,10 @@ export function previewViewDraft(
 }
 
 /** Evaluate an editable Obsidian Bases view against an in-memory task set. */
-export function tasksForViewDraft(
+export function tasksForViewDraft<Value extends TaskSummary>(
   draft: EditableViewDraft,
-  tasks: readonly Task[],
-): Task[] | null {
+  tasks: readonly Value[],
+): Value[] | null {
   if (draft.dialect !== "obsidian-bases") return null;
 
   const filter = compileFilter(
@@ -51,7 +51,7 @@ export function tasksForViewDraft(
 
 export function computedViewValues(
   draft: EditableViewDraft,
-  task: Task,
+  task: TaskSummary,
 ): Record<string, unknown> {
   if (draft.dialect !== "obsidian-bases") return {};
   const formulas = Object.fromEntries(
@@ -69,7 +69,7 @@ export function computedViewValues(
   );
 }
 
-function taskProperties(task: Task): Record<string, unknown> {
+function taskProperties(task: TaskSummary): Record<string, unknown> {
   return {
     ...task.frontmatter,
     ...task.customProperties,
@@ -87,7 +87,10 @@ function taskProperties(task: Task): Record<string, unknown> {
   };
 }
 
-function sortTasks(tasks: Task[], draft: EditableViewDraft): Task[] {
+function sortTasks<Value extends TaskSummary>(
+  tasks: Value[],
+  draft: EditableViewDraft,
+): Value[] {
   if (!draft.sort.length) return tasks;
   return [...tasks].sort((left, right) => {
     const leftValues = {
@@ -107,7 +110,10 @@ function sortTasks(tasks: Task[], draft: EditableViewDraft): Task[] {
   });
 }
 
-function evaluationContext(task: Task, formulas: Record<string, string>) {
+function evaluationContext(
+  task: TaskSummary,
+  formulas: Record<string, string>,
+) {
   return createEvaluationContext({
     note: taskProperties(task),
     file: {

@@ -76,7 +76,7 @@ async function setup(
 describe("incremental repository refresh", () => {
   it("does not reload tasks or invalidate data on an unchanged refresh", async () => {
     const fixture = await setup();
-    const before = await fixture.repository.list();
+    const before = await fixture.repository.listSummaries();
     const listener = vi.fn();
     fixture.repository.subscribe(listener);
     expect(await fixture.repository.refresh()).toMatchObject({
@@ -85,7 +85,7 @@ describe("incremental repository refresh", () => {
       removed: 0,
     });
     expect(fixture.queryPages).not.toHaveBeenCalled();
-    expect((await fixture.repository.list())[0]).toBe(before[0]);
+    expect((await fixture.repository.listSummaries())[0]).toBe(before[0]);
     expect(listener.mock.calls).toEqual([
       [{ kind: "status" }],
       [{ kind: "status" }],
@@ -131,7 +131,9 @@ describe("incremental repository refresh", () => {
       changed: 3,
       removed: 2,
     });
-    expect(await fixture.repository.list({ status: "all" })).toHaveLength(3);
+    expect(
+      await fixture.repository.listSummaries({ status: "all" }),
+    ).toHaveLength(3);
     expect(await fixture.repository.get("one")).toMatchObject({
       body: "Edited body",
     });
@@ -363,7 +365,7 @@ describe("incremental repository refresh", () => {
     );
     expect(await fixture.repository.refresh()).toMatchObject({
       scanned: 1,
-      changed: 0,
+      changed: 1,
     });
     expect(fixture.changes.mock.calls.map(([input]) => input.after)).toEqual([
       0, 100,

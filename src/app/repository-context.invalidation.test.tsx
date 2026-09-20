@@ -18,7 +18,7 @@ it("updates connectivity without reloading data queries on status-only events", 
     notify = listener;
     return () => {};
   });
-  const list = vi.spyOn(repository, "list");
+  const list = vi.spyOn(repository, "listSummaries");
   render(
     <RepositoryProvider
       repository={repository}

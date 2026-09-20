@@ -5,7 +5,11 @@ import { MiniCalendarView } from "./mini-calendar-view";
 
 import type { CalendarPreferences } from "../calendar-preferences";
 import type { RecurringCalendarDrop } from "../../domain/calendar-recurrence-drag";
-import type { Task, TaskTimeEntry, UpdateTaskInput } from "../../domain/task";
+import type {
+  TaskSummary,
+  TaskTimeEntry,
+  UpdateTaskInput,
+} from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
 const FullCalendarView = lazy(async () => ({
@@ -29,17 +33,23 @@ export function CalendarViewPresentation({
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
-  identityTasks: readonly Task[];
+  identityTasks: readonly TaskSummary[];
   selected: string;
   selectedCreateValue: string;
   titleProperty: string;
   onSelect(date: string, createValue?: string): void;
   onCreate(date: string, createValue?: string, timeEstimate?: number): void;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
-  onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
-  onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
-  onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
+  onUpdate(task: TaskSummary, input: UpdateTaskInput): Promise<void>;
+  onUpdateOccurrence(
+    task: TaskSummary,
+    drop: RecurringCalendarDrop,
+  ): Promise<void>;
+  onReplaceTimeEntries(
+    task: TaskSummary,
+    entries: TaskTimeEntry[],
+  ): Promise<void>;
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
     <Suspense fallback={<LoadingRows count={6} />}>

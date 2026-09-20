@@ -1,4 +1,4 @@
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 import type { TaskViewRow, TaskViewExecution } from "../domain/view";
 import {
   sortTasksByManualOrder,
@@ -177,11 +177,14 @@ export function removeConfirmedListMoves(
   return next ?? moves;
 }
 
-function taskReflectsUpdate(task: Task, input: UpdateTaskInput): boolean {
+function taskReflectsUpdate(
+  task: TaskSummary,
+  input: UpdateTaskInput,
+): boolean {
   return (
     Object.entries(input) as Array<[keyof UpdateTaskInput, unknown]>
   ).every(([property, expected]) => {
-    const current = task[property as keyof Task];
+    const current = task[property as keyof TaskSummary];
     return expected === null
       ? current === null || current === undefined
       : valueKey(current) === valueKey(expected);

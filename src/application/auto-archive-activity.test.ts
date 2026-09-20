@@ -176,7 +176,7 @@ describe("AutoArchiveActivity", () => {
 
   it("does not enumerate tasks when no status enables auto-archive", async () => {
     const repository = taskRepository([makeTask()]);
-    const list = vi.spyOn(repository, "list");
+    const list = vi.spyOn(repository, "listSummaries");
     const activity = new AutoArchiveActivity({
       repository,
       store: new MemoryScheduleStore(),
@@ -202,7 +202,7 @@ describe("AutoArchiveActivity", () => {
     await activity.start();
     expect(activity.pending()).toHaveLength(1);
     configuration = defaultTaskCollectionConfiguration();
-    const list = vi.spyOn(repository, "list");
+    const list = vi.spyOn(repository, "listSummaries");
     await activity.reconcile();
     expect(activity.pending()).toEqual([]);
     expect(store.schedules).toEqual([]);
@@ -218,7 +218,7 @@ describe("AutoArchiveActivity", () => {
       configuration: autoArchiveConfiguration,
     });
     await activity.start();
-    const list = vi.spyOn(repository, "list");
+    const list = vi.spyOn(repository, "listSummaries");
     await Promise.all(Array.from({ length: 100 }, () => activity.reconcile()));
     expect(list).toHaveBeenCalledOnce();
     list.mockClear();
@@ -307,7 +307,7 @@ function makeTask(patch: Partial<Task> = {}): Task {
 function taskRepository(tasks: Task[]): TaskRepository {
   const byId = new Map(tasks.map((task) => [task.id, task]));
   return {
-    list: async () => [...byId.values()],
+    listSummaries: async () => [...byId.values()],
     get: async (id: string) => byId.get(id) ?? null,
     setArchived: async (id: string, archived: boolean) => {
       const task = byId.get(id);

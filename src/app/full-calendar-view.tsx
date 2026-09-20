@@ -42,7 +42,11 @@ import type {
   EventInput,
   DateSelectArg,
 } from "@fullcalendar/core";
-import type { Task, TaskTimeEntry, UpdateTaskInput } from "../domain/task";
+import type {
+  TaskSummary,
+  TaskTimeEntry,
+  UpdateTaskInput,
+} from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
 type CalendarMode =
@@ -76,21 +80,27 @@ export function FullCalendarView({
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
-  identityTasks: readonly Task[];
+  identityTasks: readonly TaskSummary[];
   selected: string;
   selectedCreateValue: string;
   titleProperty: string;
   onSelect(date: string, createValue?: string): void;
   onCreate(date: string, createValue?: string, timeEstimate?: number): void;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
-  onUpdate(task: Task, input: UpdateTaskInput): Promise<void>;
-  onUpdateOccurrence(task: Task, drop: RecurringCalendarDrop): Promise<void>;
-  onReplaceTimeEntries(task: Task, entries: TaskTimeEntry[]): Promise<void>;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
+  onUpdate(task: TaskSummary, input: UpdateTaskInput): Promise<void>;
+  onUpdateOccurrence(
+    task: TaskSummary,
+    drop: RecurringCalendarDrop,
+  ): Promise<void>;
+  onReplaceTimeEntries(
+    task: TaskSummary,
+    entries: TaskTimeEntry[],
+  ): Promise<void>;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const closeOverflow = useCalendarOverflow(rootRef);
-  function onOpen(task: Task, occurrenceDate?: string) {
+  function onOpen(task: TaskSummary, occurrenceDate?: string) {
     closeOverflow();
     onOpenTask(task, occurrenceDate);
   }
@@ -535,7 +545,7 @@ function fullCalendarEvents(
 
 function calendarEventContent(
   info: EventContentArg,
-  onOpen: (task: Task, occurrenceDate?: string) => void,
+  onOpen: (task: TaskSummary, occurrenceDate?: string) => void,
   onContextAction: (
     metadata: CalendarEventMetadata,
     x: number,
@@ -636,7 +646,7 @@ function eventDetails(value: unknown): ViewPropertyDetail[] {
 
 function openEvent(
   info: EventClickArg,
-  onOpen: (task: Task, occurrenceDate?: string) => void,
+  onOpen: (task: TaskSummary, occurrenceDate?: string) => void,
 ) {
   const metadata = eventMetadata(info.event.extendedProps);
   if (metadata) onOpen(metadata.entry.task, metadata.occurrence?.date);
@@ -702,7 +712,7 @@ function agendaLabel(value: string): string {
     : value;
 }
 
-function eventTone(task: Task): string {
+function eventTone(task: TaskSummary): string {
   if (task.completed) return "var(--ink-muted)";
   if (task.priority === "high") return "var(--danger)";
   if (task.priority === "low") return "var(--success)";

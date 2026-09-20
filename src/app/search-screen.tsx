@@ -7,17 +7,17 @@ import { taskCompletion } from "../domain/task-completion";
 import { linkDisplayLabel } from "../domain/completion";
 import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
-import { useRepository, useTasks } from "./repository-context";
+import { useRepository, useTaskSearch } from "./repository-context";
 import { searchMatchContext } from "./search-match-context";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 
 export function SearchScreen({
   onBack,
   onOpen,
 }: {
   onBack?: () => void;
-  onOpen(task: Task): void;
+  onOpen(task: TaskSummary): void;
 }) {
   const [query, setQuery] = useState("");
   const deferred = useDebounced(query, 160);
@@ -30,8 +30,11 @@ export function SearchScreen({
     error,
     stale,
     retry,
-  } = useTasks({ status: "all", search: deferred, limit: limit + 1 });
-  const tasks = results.slice(0, limit);
+  } = useTaskSearch({ status: "all", search: deferred, limit: limit + 1 });
+  const tasks = results.slice(0, limit).map((result) => result.task);
+  const bodyMatches = new Map(
+    results.map((result) => [result.task.id, result.bodyMatches]),
+  );
   const hasMore = results.length > limit;
   const searching = query.trim().length > 0;
   const waiting = query !== deferred;
@@ -39,11 +42,15 @@ export function SearchScreen({
     setQuery(value);
     setLimit(300);
   };
-  const renderTask = (task: Task) => (
+  const renderTask = (task: TaskSummary) => (
     <TaskRow
       key={task.id}
       task={task}
-      supportingText={searchMatchContext(task, deferred)}
+      supportingText={searchMatchContext(
+        task,
+        deferred,
+        bodyMatches.get(task.id) ?? [],
+      )}
       onOpen={onOpen}
       onToggle={(item) =>
         setTaskCompletion({ id: item.id, completed: !taskCompletion(item) })
@@ -159,7 +166,7 @@ function BrowseFields({
   tasks,
   onChoose,
 }: {
-  tasks: Task[];
+  tasks: TaskSummary[];
   onChoose(value: string): void;
 }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
@@ -228,7 +235,10 @@ function BrowseFields({
   );
 }
 
-function collect(tasks: Task[], field: "tags" | "contexts" | "projects") {
+function collect(
+  tasks: TaskSummary[],
+  field: "tags" | "contexts" | "projects",
+) {
   const counts = new Map<string, number>();
   for (const value of tasks.flatMap((task) => task[field]).filter(Boolean))
     counts.set(value, (counts.get(value) ?? 0) + 1);

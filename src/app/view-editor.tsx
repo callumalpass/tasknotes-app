@@ -30,7 +30,7 @@ import { useOverlay } from "../components/overlays/use-overlay";
 import { useRepository } from "./repository-context";
 
 import type { TaskView, TaskViewSourceDocument } from "../domain/view";
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
 const ViewEditorForm = lazy(async () => ({
@@ -56,7 +56,7 @@ export function ViewEditor({
   const [initialFingerprint, setInitialFingerprint] = useState("");
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration | null>(null);
-  const [tasks, setTasks] = useState<Task[] | null>(null);
+  const [tasks, setTasks] = useState<TaskSummary[] | null>(null);
   const [currentPreview, setCurrentPreview] = useState<ViewDraftPreview | null>(
     null,
   );
@@ -120,7 +120,7 @@ export function ViewEditor({
   useEffect(() => {
     let active = true;
     void repository
-      .list({ status: "all", archived: "include", limit: 50_000 })
+      .listSummaries({ status: "all", archived: "include", limit: 50_000 })
       .then((loadedTasks) => {
         if (active) setTasks(loadedTasks);
       })

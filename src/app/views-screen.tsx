@@ -53,7 +53,7 @@ import {
   viewGroupMoveInput,
   viewPropertyMoveInput,
 } from "../domain/view-mutation";
-import { formatPropertyValue, propertyLabel } from "../domain/view-values";
+import { groupLabel, propertyLabel } from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
 import {
   useRepository,
@@ -88,7 +88,11 @@ import { usePlannerViewLink } from "./use-planner-view-link";
 import { CalendarViewPresentation } from "./views/calendar-view-presentation";
 import { useCalendarMutations } from "./use-calendar-mutations";
 
-import type { CreateTaskInput, Task, UpdateTaskInput } from "../domain/task";
+import type {
+  CreateTaskInput,
+  TaskSummary,
+  UpdateTaskInput,
+} from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { CalendarPreferences } from "./calendar-preferences";
 import { defaultCalendarPreferences } from "./calendar-preferences";
@@ -133,8 +137,8 @@ export function ViewsScreen({
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
-  onOpenTask(task: Task, occurrenceDate?: string): void;
-  onTaskAdded?(task: Task): void;
+  onOpenTask(task: TaskSummary, occurrenceDate?: string): void;
+  onTaskAdded?(task: TaskSummary): void;
   onSearch(): void;
   onOpenView(view: TaskView): void;
   onOpenScratchpad?(): void;
@@ -151,7 +155,7 @@ export function ViewsScreen({
     configuration,
     pendingDeletion,
   } = useRepository();
-  const toggleRow = (task: Task, occurrenceDate?: string) =>
+  const toggleRow = (task: TaskSummary, occurrenceDate?: string) =>
     setTaskCompletion({
       id: task.id,
       occurrenceDate,
@@ -851,7 +855,7 @@ export function ViewsScreen({
     return createTask(input);
   }
 
-  async function refreshAfterCreate(task: Task) {
+  async function refreshAfterCreate(task: TaskSummary) {
     if (!selected) return;
     const session = viewQueryRef.current;
     const draftVersion = captureSession.getSnapshot().version;
@@ -2184,7 +2188,7 @@ function ManualTaskRows({
   orderPending: boolean;
   properties: TaskViewProperty[];
   titleProperty: string;
-  onOpen(task: Task, occurrenceDate?: string): void;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onMove(
     dragged: TaskViewRow,
     source: TaskListLane,
@@ -2192,7 +2196,7 @@ function ManualTaskRows({
     targetId: string | undefined,
     placement: ManualOrderPlacement,
   ): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
   const [dragging, setDragging] = useState<{
     taskId: string;
@@ -2498,7 +2502,7 @@ function ManualTaskRows({
 }
 
 function taskListLaneMoveInput(
-  task: Task,
+  task: TaskSummary,
   source: TaskListLane,
   destination: TaskListLane,
   configuration: TaskCollectionConfiguration,
@@ -2521,25 +2525,10 @@ function taskListLaneMoveInput(
   return null;
 }
 
-function groupLabel(entries: Array<[string, unknown]>): string {
-  if (entries.length === 1) {
-    const [field, value] = entries[0];
-    return (
-      formatPropertyValue(value) ?? `No ${propertyLabel(field).toLowerCase()}`
-    );
-  }
-  return entries
-    .map(
-      ([field, value]) =>
-        `${propertyLabel(field)}: ${formatPropertyValue(value) ?? "None"}`,
-    )
-    .join(" · ");
-}
-
 interface ViewProps {
   execution: TaskViewExecution;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }
 
 function valueKey(value: unknown): string {

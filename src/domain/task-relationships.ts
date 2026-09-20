@@ -1,17 +1,17 @@
 import { linkTarget, recordMatchesLink } from "./completion";
 
-import type { Task, TaskDependency } from "./task";
+import type { TaskSummary, TaskDependency } from "./task";
 
 export interface ResolvedTaskDependency {
   dependency: TaskDependency;
-  task?: Task;
+  task?: TaskSummary;
 }
 
 export interface TaskRelationships {
   blockedBy: ResolvedTaskDependency[];
-  blocking: Task[];
-  subtasks: Task[];
-  projectTasks: Task[];
+  blocking: TaskSummary[];
+  subtasks: TaskSummary[];
+  projectTasks: TaskSummary[];
 }
 
 /**
@@ -19,11 +19,11 @@ export interface TaskRelationships {
  * only persisted edges; blocking tasks and subtasks are their inverses.
  */
 export function taskRelationships(
-  current: Task,
-  tasks: readonly Task[],
+  current: TaskSummary,
+  tasks: readonly TaskSummary[],
 ): TaskRelationships {
   const taskById = new Map(tasks.map((task) => [task.id, task]));
-  const taskByPath = new Map<string, Task>();
+  const taskByPath = new Map<string, TaskSummary>();
   for (const task of tasks) {
     const normalized = normalizeLinkTarget(task.path);
     taskByPath.set(normalized, task);
@@ -37,8 +37,8 @@ export function taskRelationships(
     dependency,
     task: resolve(dependency.uid),
   }));
-  const blocking: Task[] = [];
-  const subtasks: Task[] = [];
+  const blocking: TaskSummary[] = [];
+  const subtasks: TaskSummary[] = [];
 
   for (const candidate of tasks) {
     if (candidate.id === current.id) continue;

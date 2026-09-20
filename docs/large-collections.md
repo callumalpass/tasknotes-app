@@ -2,11 +2,12 @@
 
 ## Status
 
-First architectural increment, not 50k-record product acceptance. The target is a
+Two architectural increments, not 50k-record product acceptance. The target is a
 responsive web/native TaskNotes at up to 50,000 records, without a durable local
-task replica. Incremental refresh and session indexes are implemented. Bounded
-cold loading, body search off the main thread/provider-side, and browser/mobile
-acceptance remain necessary.
+task replica. Incremental refresh, session indexes, metadata-only browsing,
+bounded document retention, and authority-side body matching are implemented.
+Startup still loads all task metadata. Bounded first-content loading and
+browser/mobile acceptance remain necessary.
 
 ## Reproducible baseline
 
@@ -30,10 +31,15 @@ unique ID/path/title, and one of 50 tags. This stresses resident task volume; it
 is not a mixed-type, large-attachment, recurrence-heavy, or long-body benchmark.
 Fixture generation is outside the measured interval. Seven sequential samples
 are taken, except initialization, first rare search, and the first list after
-mutation, which have one sample. There is no explicit GC or warm-up. The first
-list sample builds ordering; its cost is visible in the recorded p95 (with seven
-samples, p95 is just the maximum). These are directional measurements, not
-statistically established browser latency SLOs.
+mutation, which have one sample. First detail and accepted edit also have one
+sample. The initial reports had no explicit GC. The second-increment harness
+exposes GC and samples process heap before initialization, after initialization,
+and after queries. GC runs outside timed operations. Heap deltas exclude fixture
+allocation but include mock bookkeeping; they are not isolated browser heaps or
+mobile memory budgets. There is no explicit warm-up. The first list sample builds
+ordering; its cost is visible in the recorded p95 (with seven samples, p95 is
+just the maximum). The first rare search follows common searches, not a fresh
+process. These are directional measurements, not browser latency SLOs.
 
 Baseline source is `c27e1e6`. To run the same harness against it without reverting
 working code:
@@ -43,7 +49,7 @@ working code:
 test ! -e .performance-baseline && mkdir .performance-baseline
 git archive c27e1e6 src | tar -x -C .performance-baseline
 PERF_REPOSITORY_MODULE=../.performance-baseline/src/storage/mdbase-repository \
-  PERF_REVISION=c27e1e6 PERF_OUTPUT=benchmarks/results/baseline.json \
+  PERF_REVISION=c27e1e6 PERF_OUTPUT=benchmarks/results/baseline-bounded-loading.json \
   pnpm bench:collections
 # Remove only this generated source directory after the run.
 rm -r .performance-baseline
@@ -94,6 +100,94 @@ unchanged-refresh latency includes two authority round trips; the submillisecond
 number above is not an end-to-end network promise. The fixture's changed-path
 selection itself scans its in-memory records; this is not evidence of an
 indexed query plan in the actual provider.
+
+## Second increment: summaries, documents, and search evidence
+
+Fresh runs of the expanded harness are saved as
+[baseline-bounded-loading](../benchmarks/results/baseline-bounded-loading.json)
+and [bounded-loading](../benchmarks/results/bounded-loading.json). The former
+uses original source `c27e1e6`, not the first increment. Browsing/search feature
+detection exists only in the benchmark, so old implementations exercise the
+same user intent through their original `list()` API.
+
+| 50k operation / resource                  | Original baseline rerun | Second increment |
+| ----------------------------------------- | ----------------------: | ---------------: |
+| Initialize, ms                            |                2,790.40 |         2,379.27 |
+| Startup JSON, MB                          |                  122.55 |            19.65 |
+| Startup body bytes                        |             102,400,000 |                0 |
+| Retained heap delta after initialize, MiB |                  157.37 |            60.39 |
+| Retained heap delta after queries, MiB    |                  157.77 |            64.65 |
+| Unchanged refresh, ms                     |                4,180.07 |             0.22 |
+| Warm list300, ms                          |                   63.47 |             0.03 |
+| Common body search, ms                    |                   64.65 |            51.29 |
+| First rare body search, ms                |                   50.41 |            63.46 |
+| Subsequent rare body search, ms           |                   52.94 |            63.54 |
+| One-record refresh, ms                    |                4,344.83 |             3.18 |
+| First list after body mutation, ms        |                   92.05 |             0.02 |
+
+At 10k, initialization is 590.79 → 518.77 ms and retained initialization heap is
+32.25 → 12.97 MiB. Startup still makes 51 requests for 50k records: fewer bytes,
+not bounded first paint. The first list costs 11.93 ms at 50k; 0.03 ms is warm.
+
+Search is a **tradeoff**, not a universal latency win. Relative to the first
+increment's in-memory body scan, common search regresses from 0.26 to 51.29 ms in
+this synthetic harness, and it now needs authority access. A first uncached
+detail also needs a point read (one record / 2,378 JSON bytes / 2,048 body bytes
+in this fixture). Repeated details use the bounded cache. A metadata edit after
+that read uses one accepted write, retains the exact body, and transfers one
+complete response. Offline uncached documents/search fail explicitly rather
+than showing fabricated bodies or empty results.
+
+The simulated authority performs body scanning in the benchmark process, so
+search timings include its JavaScript scan and are **not client main-thread or
+real engine timings**. Common body search returns one 1,000-record evidence
+page (447,724 JSON bytes), while the rare search returns one record (613 bytes).
+Neither transfers body text. Required body-only tokens are combined with AND;
+otherwise a conservative OR predicate plus local metadata/evidence matching
+preserves AND-across-fields semantics. Nonmatching records can be discarded
+only after authoritative evidence or query completion. Application ordering is
+preserved even when authority order differs.
+
+Important worst cases remain: common searches with a different application
+ordering can consume many evidence pages, and a query whose every token occurs
+somewhere in metadata can still have a broad OR predicate. The all-open fixture
+has aligned path ordering and does not demonstrate these cases are fast. Local
+metadata search scans yield cooperatively after an 8 ms budget, checked every
+128 candidates; browser long-task measurements remain necessary.
+
+### Explicit document boundary
+
+`TaskSummary` has no `body`. `Task` requires an observed complete body.
+`listSummaries()` serves browsing, calendar identity, archive candidates,
+reminders, and scratchpad linking. `search()` returns summaries plus matching
+body tokens, not snippets derived from unloaded text. `get()` hydrates complete
+documents/revisions on demand. Explicit complete `list()` calls batch exact
+paths, but application browsing does not use that API.
+
+Hydrated documents use a session LRU capped at 64 entries and 8 MiB of
+conservatively counted UTF-16 body/frontmatter text. This bounds the cache, not
+an actively edited large document or an explicitly requested complete result
+array. Simultaneous point reads coalesce; eviction never removes metadata.
+Missing body fields fail closed; an observed empty string is valid. Metadata
+mutations hydrate first and preserve the exact Markdown body. Incremental and
+full refresh invalidate document hydration, including body-only changes.
+Accepted-write and lifecycle guards prevent stale reads from replacing current
+state. Query resources abort superseded/unmounted searches.
+
+### Real-engine contract probe
+
+```sh
+MDBASE_TEST_CLI="$(command -v mdbase)" \
+  node --test scripts/body-search-projection.node-test.mjs
+```
+
+This opt-in probe uses only its own temporary `[test]` filesystem collection,
+not a daemon or user collection. The installed Rust CLI beta.98 confirmed
+boolean `file.body.lower().contains(...)` projections with neither top-level nor
+nested `file.body` text returned. The JavaScript reference engine rejected
+`.lower()` and was not used as authority evidence. The CLI probe is not a live
+Connect beta.96 SDK/relay test, provider latency benchmark, or LAB acceptance.
+Without `MDBASE_TEST_CLI`, ordinary release tests explicitly skip this probe.
 
 ## Architecture implemented
 
@@ -147,8 +241,8 @@ These are implementation/verification requirements, not claims already met.
 
 | Surface                      | Remaining architectural work                                                                                                                                                                                                                                                                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Cold opening and detail      | Split task summaries from complete editable documents in the repository port. Show the first saved-view page without awaiting a full task-body scan. Fetch details/revisions on demand with a bounded session LRU. Never represent an unloaded body as an editable empty string.                                                     |
-| Search                       | Provider-side indexed search with mapped fields and preserved substring semantics, or a bounded worker pipeline if authority semantics cannot express it. Avoid retaining all bodies plus another normalized copy. Cancel superseded queries and measure first-query as well as warm latency.                                        |
+| Cold opening and detail      | Summary/document separation and bounded hydration are implemented. Show the first saved-view page without awaiting the full metadata index; measure bounded first-content requests.                                                                                                                                                  |
+| Search                       | Authority body evidence and cancellation are implemented. Validate real query plans, cold/typed-query latency, Unicode matching, broad predicates, and application/authority ordering mismatches. Bound evidence transfer for these worst cases.                                                                                     |
 | Calendar                     | Replace `useTasks(limit: 50_000)` identity loading with bounded range/identity lookups. Preserve recurrence exceptions, occurrence identity, and drag mutations.                                                                                                                                                                     |
 | Scratchpad                   | Replace repeated `list(limit: 50_000)` link resolution with batch identity/path lookup; page note/image history at the authority. Review the current 1,000-row history queries and per-document reads for truncation and N+1 traffic.                                                                                                |
 | View editing                 | Remove the whole-task enumeration for property suggestions; use bounded provider completions.                                                                                                                                                                                                                                        |
@@ -177,8 +271,13 @@ Provisional acceptance goals:
 
 ## Verification and current limits
 
-Validated this increment: 660 tests across 116 files; `pnpm typecheck`,
-`pnpm lint`, `pnpm format:check`, `pnpm build`, and both benchmark runs passed.
+Validated the second increment: 677 tests across 119 files, 42 Node release/probe
+tests with the Rust CLI probe enabled, `pnpm typecheck`, `pnpm lint`,
+`pnpm format:check`, `pnpm build`, and both expanded benchmark runs passed.
+Additional regression tests cover body omission, exact-body mutation preservation,
+point-read coalescing, bounded retention/eviction, delayed reads versus accepted
+writes/disposal, body-only refresh invalidation, cross-field search matching,
+out-of-order evidence pages, incomplete/failed evidence, and cancellation.
 
 Regression tests cover query parity, index invalidation, no-work empty requests,
 status-only application invalidation, disabled/coalesced archive reconciliation,
@@ -188,6 +287,6 @@ both full and incremental snapshots. Existing repository contract tests retain
 mapped-provider and mutation behavior coverage.
 
 Live LAB verification is **blocked**: `mdbase-env lab up` timed out after 10 seconds
-during this run. Preflight did not complete, so no test fixtures were created,
+again when retried after disk space was freed. Preflight did not complete, so no LAB test fixtures were created,
 no browser was started, and no staging/production actions were taken. No real
 Connect, browser, Android, or iOS performance result is claimed here.

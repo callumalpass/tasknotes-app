@@ -13,7 +13,7 @@ import {
   type CollectionRecord,
 } from "../../domain/completion";
 
-import type { Task } from "../../domain/task";
+import type { TaskSummary } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
 export function ProjectsView({
@@ -30,10 +30,10 @@ export function ProjectsView({
   sectionScope?: string;
   projectsField: string;
   linkWriteFormat: "wikilink" | "markdown";
-  tasks: readonly Task[];
+  tasks: readonly TaskSummary[];
   onCreate(value: string, label: string): void;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
   const id = useId();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -51,7 +51,7 @@ export function ProjectsView({
   );
   const groups = new Map<
     string,
-    { label: string; path?: string; value: string; tasks: Task[] }
+    { label: string; path?: string; value: string; tasks: TaskSummary[] }
   >();
 
   for (const task of activeTasks) {

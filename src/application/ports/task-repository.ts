@@ -2,6 +2,8 @@ import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
   Task,
+  TaskSummary,
+  TaskSearchResult,
   TaskListQuery,
   TaskStats,
   TaskTimeEntry,
@@ -56,7 +58,18 @@ export interface TaskRepository {
   readonly files?: CollectionFileStore;
   initialize(): Promise<void>;
   refresh(): Promise<RefreshResult>;
-  list(query?: TaskListQuery): Promise<Task[]>;
+  /** Lightweight metadata; no body is fetched or represented as empty. */
+  listSummaries(query?: Omit<TaskListQuery, "search">): Promise<TaskSummary[]>;
+  /** Metadata plus observed match evidence; never downloads bodies. */
+  search(
+    query: TaskListQuery,
+    options?: { signal?: AbortSignal },
+  ): Promise<TaskSearchResult[]>;
+  /** Complete documents for callers explicitly requiring bodies. */
+  list(
+    query?: TaskListQuery,
+    options?: { signal?: AbortSignal },
+  ): Promise<Task[]>;
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;

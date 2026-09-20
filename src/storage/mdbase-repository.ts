@@ -29,11 +29,12 @@ import {
 } from "../domain/task-occurrence";
 import {
   connectedTaskRelationships,
-  sameConnectedTaskDocument,
+  sameConnectedTaskMetadata,
   connectedTaskStats,
   connectedViewExecutionKey as viewExecutionKey,
 } from "./connected-task-cache";
 import { ConnectedTaskIndex } from "./connected-task-index";
+import { TaskDocumentCache } from "./task-document-cache";
 import { changedRecordPaths } from "./mdbase-change-plan";
 import {
   mdbaseMutationKey,
@@ -93,6 +94,8 @@ import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
   Task,
+  TaskSummary,
+  TaskSearchResult,
   TaskListQuery,
   TaskStats,
   TaskTimeEntry,
@@ -124,11 +127,16 @@ import type {
 } from "../application/ports/task-repository";
 
 interface CachedMdbaseTask {
-  task: Task;
+  task: TaskSummary;
   revision?: string;
   model: TaskNotesTaskModel;
   typeName: string;
 }
+
+interface CachedTaskDocument extends CachedMdbaseTask {
+  task: Task;
+}
+type CurrentTaskDocument = CachedTaskDocument & { revision: string };
 
 interface ReadableMdbaseRecord {
   path: string;
@@ -155,6 +163,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   ]);
   private displayName = "mdbase collection";
   private readonly cache = new ConnectedTaskIndex<CachedMdbaseTask>();
+  private readonly documents = new TaskDocumentCache<CachedTaskDocument>();
   private changeCursor?: number;
   private descriptionSignature?: string;
   private viewCache: TaskViewDocument[] = [];
@@ -171,7 +180,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private readonly reservedTaskPaths = new Set<string>();
   private readonly revisionReads = new Map<
     string,
-    Promise<Required<CachedMdbaseTask>>
+    Promise<CurrentTaskDocument>
   >();
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
@@ -207,6 +216,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   resume(): void {
     if (this.operationController.signal.aborted) {
       this.operationController = new AbortController();
+      this.revisionReads.clear();
       // A lifecycle interruption can abort the first initialization attempt
       // (including React Strict Mode's development remount). Do not retain that
       // rejected promise: the resumed owner must be able to open the same
@@ -216,6 +226,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   dispose(): void {
+    this.documents.clear();
     this.operationController.abort(
       new DOMException("The TaskNotes collection changed.", "AbortError"),
     );
@@ -285,15 +296,178 @@ export class MdbaseTaskRepository implements TaskRepository {
     return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };
   }
 
-  async list(query: TaskListQuery = {}): Promise<Task[]> {
-    return this.cache.list(query);
+  async listSummaries(
+    query: Omit<TaskListQuery, "search"> = {},
+  ): Promise<TaskSummary[]> {
+    const { status, archived, limit } = query;
+    return this.cache.list({ status, archived, limit });
+  }
+
+  async list(
+    query: TaskListQuery = {},
+    options: { signal?: AbortSignal } = {},
+  ): Promise<Task[]> {
+    const signal = options.signal
+      ? AbortSignal.any([this.operationController.signal, options.signal])
+      : this.operationController.signal;
+    signal.throwIfAborted();
+    const selected = query.search?.trim()
+      ? (await this.search(query, { signal })).map((result) => result.task)
+      : this.cache.list(query);
+    return this.hydrateTasks(selected, signal);
+  }
+
+  async search(
+    query: TaskListQuery,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<TaskSearchResult[]> {
+    const limit = query.limit ?? 500;
+    const target = limit < 0 ? Infinity : Math.max(0, Math.trunc(limit));
+    if (target === 0 || Number.isNaN(target)) return [];
+    const signal = options.signal
+      ? AbortSignal.any([this.operationController.signal, options.signal])
+      : this.operationController.signal;
+    signal.throwIfAborted();
+    const tokens = [
+      ...new Set(
+        (query.search ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean),
+      ),
+    ];
+    if (!tokens.length)
+      return this.cache.list(query).map((task) => ({ task, bodyMatches: [] }));
+    const candidates = this.cache.list({
+      ...query,
+      search: undefined,
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+    const observed = new Map<string, string[]>();
+    const selected: TaskSearchResult[] = [];
+    let position = 0;
+    let yieldAt = performance.now() + 8;
+    const checkpoint = async () => {
+      signal.throwIfAborted();
+      if (performance.now() < yieldAt) return;
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      signal.throwIfAborted();
+      yieldAt = performance.now() + 8;
+    };
+    // Stop early only when every earlier candidate is known, preserving the
+    // app's ordering even if the provider returns body matches in another order.
+    const consume = async (complete: boolean): Promise<boolean> => {
+      while (position < candidates.length) {
+        const task = candidates[position];
+        const bodyMatches = observed.get(task.path);
+        const missing = tokens.filter(
+          (token) => !this.cache.matchesMetadata(task, token),
+        );
+        if (missing.length && bodyMatches === undefined && !complete)
+          return false;
+        if (missing.every((token) => bodyMatches?.includes(token)))
+          selected.push({ task, bodyMatches: bodyMatches ?? [] });
+        position++;
+        if (selected.length >= target) return true;
+        if (position % 128 === 0) await checkpoint();
+      }
+      return true;
+    };
+    if (await consume(false)) return selected.slice(0, limit);
+    const expressions = tokens.map(
+      (token) => `file.body.lower().contains(${JSON.stringify(token)})`,
+    );
+    // A token absent from every candidate's metadata MUST occur in its body.
+    // This avoids transferring all records for "ordinary notes rare-needle",
+    // without depending on provider field mappings.
+    const metadataTokens = new Set<string>();
+    for (let index = 0; index < candidates.length; index++) {
+      for (const token of tokens) {
+        if (
+          !metadataTokens.has(token) &&
+          this.cache.matchesMetadata(candidates[index], token)
+        )
+          metadataTokens.add(token);
+      }
+      if (metadataTokens.size === tokens.length) break;
+      if (index % 128 === 0) await checkpoint();
+    }
+    const required = expressions.filter(
+      (_, index) => !metadataTokens.has(tokens[index]),
+    );
+    const where = (required.length ? required : expressions).join(
+      required.length ? " && " : " || ",
+    );
+    try {
+      for await (const outcome of this.connect.queryPages(
+        {
+          types: [...this.taskProviders.keys()],
+          timezone: runtimeTimezone(),
+          where,
+          includeBody: false,
+          projections: Object.fromEntries(
+            expressions.map((expression, index) => [
+              `tasknotes_body_${index}`,
+              { expression },
+            ]),
+          ),
+          select: [
+            "file.path",
+            ...expressions.map(
+              (_, index) => `projection.tasknotes_body_${index}`,
+            ),
+          ],
+          orderBy: [{ field: "file.path", direction: "asc" }],
+        },
+        { firstPageSize: PAGE_SIZE, pageSize: PAGE_SIZE, signal },
+      )) {
+        signal.throwIfAborted();
+        if (
+          operationDiagnostics(outcome).some(
+            (diagnostic) =>
+              diagnostic.severity === "error" ||
+              diagnostic.code === "expression_evaluation_error",
+          )
+        )
+          throw new Error(
+            "The authority could not evaluate this search completely.",
+          );
+        for (const record of validResult(outcome).results) {
+          const values = (
+            record as typeof record & { values?: Record<string, unknown> }
+          ).values;
+          const matches = tokens.filter((token, index) => {
+            void token;
+            const match = values?.[`tasknotes_body_${index}`];
+            if (typeof match !== "boolean")
+              throw new Error(
+                "The authority returned incomplete search match evidence.",
+              );
+            return match;
+          });
+          observed.set(record.path, matches);
+        }
+        if (await consume(false)) return selected.slice(0, limit);
+      }
+      await consume(true);
+      return selected.slice(0, limit);
+    } catch (reason) {
+      if (!signal.aborted) this.noteOperationFailure(reason);
+      throw reason;
+    }
   }
 
   async get(id: string): Promise<Task | null> {
-    const cached = this.cache.get(id);
-    if (cached && !cached.revision)
-      void this.requireCurrent(id).catch(() => undefined);
-    return cached?.task ?? null;
+    if (!this.cache.has(id)) return null;
+    const document = this.documents.get(id);
+    if (
+      document &&
+      document.model === this.taskProviders.get(document.typeName)
+    )
+      return document.task;
+    try {
+      return (await this.requireCurrent(id)).task;
+    } catch (reason) {
+      if (!this.cache.has(id)) return null;
+      throw reason;
+    }
   }
 
   async relationships(id: string) {
@@ -610,12 +784,7 @@ export class MdbaseTaskRepository implements TaskRepository {
           ...updated,
           operationWarnings: [archiveMoveWarning(reason, archived)],
         };
-        if (saved)
-          this.cache.set(id, {
-            ...saved,
-            task: retained,
-            revision: saved.revision,
-          });
+        if (saved) this.storeDocument({ ...saved, task: retained });
         this.emit();
         return retained;
       }
@@ -638,6 +807,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       try {
         const applyDeleted = () => {
           this.cache.delete(id);
+          this.documents.delete(id);
           this.setConnected();
           this.emit();
         };
@@ -804,7 +974,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         const page = normalizeViewExecution(
           view,
           { ...result, diagnostics: operationDiagnostics(outcome) },
-          (record) => this.readRecord(record)?.task ?? null,
+          (record) => this.readSummary(record)?.task ?? null,
         );
         cumulative = appendViewPage(cumulative, page);
         this.viewExecutionCache.set(key, cumulative);
@@ -880,7 +1050,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const execution = normalizeViewExecution(
         view,
         result,
-        (record) => this.readRecord(record)?.task ?? null,
+        (record) => this.readSummary(record)?.task ?? null,
       );
       signal.throwIfAborted();
       this.viewExecutionCache.set(cacheKey, execution);
@@ -1520,7 +1690,7 @@ export class MdbaseTaskRepository implements TaskRepository {
           {
             timezone: runtimeTimezone(),
             types: [...this.taskProviders.keys()],
-            includeBody: true,
+            includeBody: false,
             frontmatterMode: "effective",
             ...(batch
               ? {
@@ -1536,14 +1706,14 @@ export class MdbaseTaskRepository implements TaskRepository {
           const page = validResult(response);
           result.scanned += page.results.length;
           for (const record of page.results) {
-            const decoded = this.readRecord(record);
+            const decoded = this.readSummary(record);
             if (!decoded) continue;
             const cached = this.cache.get(decoded.task.id);
             next.set(
               decoded.task.id,
               cached &&
                 cached.model === decoded.model &&
-                sameConnectedTaskDocument(cached.task, decoded.task)
+                sameConnectedTaskMetadata(cached.task, decoded.task)
                 ? cached
                 : decoded,
             );
@@ -1563,6 +1733,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       for (const { task } of previous) {
         if (!next.has(task.id) && !writes.paths.has(task.path)) {
           this.cache.delete(task.id);
+          this.documents.delete(task.id);
           result.removed++;
         }
       }
@@ -1572,10 +1743,11 @@ export class MdbaseTaskRepository implements TaskRepository {
           writes.paths.has(this.cache.get(id)?.task.path ?? "")
         )
           continue;
-        if (this.cache.get(id) !== value) {
-          this.cache.set(id, value);
-          result.changed++;
-        }
+        if (this.cache.get(id) !== value || paths) result.changed++;
+        // Metadata projections cannot detect body-only edits. A change event
+        // or full rebuild invalidates any hydrated document for this path.
+        this.documents.delete(id);
+        this.cache.set(id, { ...value, revision: undefined });
       }
       return result;
     } finally {
@@ -1586,12 +1758,17 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async requireCurrent(
     id: string,
     fresh = false,
-  ): Promise<Required<CachedMdbaseTask>> {
+  ): Promise<CurrentTaskDocument> {
     const cached = this.cache.get(id);
     if (!cached) throw new Error("Task not found.");
     // A desired-state no-op/retry must not mistake an old cached status for current authority state.
     if (fresh) return this.readCurrent(id, cached);
-    if (cached.revision) return cached as Required<CachedMdbaseTask>;
+    const document = this.documents.get(id);
+    if (
+      document?.revision &&
+      document.model === this.taskProviders.get(document.typeName)
+    )
+      return document as CurrentTaskDocument;
     const pending = this.revisionReads.get(id);
     if (pending) return pending;
     const read = this.readCurrent(id, cached).finally(() => {
@@ -1604,27 +1781,40 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async readCurrent(
     id: string,
     cached: CachedMdbaseTask,
-  ): Promise<Required<CachedMdbaseTask>> {
+  ): Promise<CurrentTaskDocument> {
+    const signal = this.operationController.signal;
     try {
       const result = validResult(
-        await this.connect.read(
-          { path: cached.task.path },
-          this.requestOptions(),
-        ),
+        await this.connect.read({ path: cached.task.path }, { signal }),
       );
+      signal.throwIfAborted();
+      if (this.cache.get(id) !== cached) {
+        const current = this.documents.get(id);
+        if (current?.revision) return current as CurrentTaskDocument;
+        throw new Error(
+          "The task changed while its document was loading. Try again.",
+        );
+      }
       const decoded = this.readRecord(result);
       if (!decoded) throw new Error("The task is no longer readable.");
       const current = {
         ...decoded,
         task:
           cached.model === decoded.model &&
-          sameConnectedTaskDocument(cached.task, decoded.task)
-            ? cached.task
+          sameConnectedTaskMetadata(cached.task, decoded.task) &&
+          cached.task.operationWarnings
+            ? {
+                ...decoded.task,
+                operationWarnings: cached.task.operationWarnings,
+              }
             : decoded.task,
         revision: result.revision,
       };
-      if (decoded.task.id !== id) this.cache.delete(id);
-      this.cache.set(decoded.task.id, current);
+      if (decoded.task.id !== id) {
+        this.cache.delete(id);
+        this.documents.delete(id);
+      }
+      this.storeDocument(current);
       return current;
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -1655,7 +1845,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async persistUpdate(
-    current: Required<CachedMdbaseTask>,
+    current: CurrentTaskDocument,
     next: Task,
   ): Promise<Task> {
     const operationInput = {
@@ -1707,18 +1897,101 @@ export class MdbaseTaskRepository implements TaskRepository {
     });
   }
 
+  private storeDocument(document: CachedTaskDocument): void {
+    const { body, ...summary } = document.task;
+    void body;
+    const previous = this.cache.get(summary.id);
+    const task =
+      previous?.model === document.model &&
+      sameConnectedTaskMetadata(previous.task, summary)
+        ? previous.task
+        : summary;
+    this.cache.set(task.id, { ...document, task });
+    this.documents.set(task.id, document);
+  }
+
+  private async hydrateTasks(
+    tasks: TaskSummary[],
+    signal: AbortSignal,
+  ): Promise<Task[]> {
+    const results = new Map<string, Task>();
+    const pending: TaskSummary[] = [];
+    for (const task of tasks) {
+      const cached = this.documents.get(task.id);
+      if (cached) results.set(task.id, cached.task);
+      else pending.push(task);
+    }
+    for (const paths of chunkPaths(
+      pending.map((task) => task.path),
+      100,
+    )) {
+      const before = new Map(
+        paths.map((path) => [path, this.cache.atPath(path)]),
+      );
+      for await (const outcome of this.connect.queryPages(
+        {
+          timezone: runtimeTimezone(),
+          types: [...this.taskProviders.keys()],
+          where: paths
+            .map((path) => `file.path == ${JSON.stringify(path)}`)
+            .join(" || "),
+          includeBody: true,
+          frontmatterMode: "effective",
+        },
+        { firstPageSize: 100, pageSize: 100, signal },
+      )) {
+        signal.throwIfAborted();
+        for (const record of validResult(outcome).results) {
+          const decoded = this.readRecord(record);
+          if (!decoded) continue;
+          if (this.cache.atPath(record.path) !== before.get(record.path)) {
+            const current = this.documents.get(decoded.task.id);
+            if (!current)
+              throw new Error(
+                "The task changed while its document was loading. Try again.",
+              );
+            results.set(current.task.id, current.task);
+            continue;
+          }
+          this.documents.set(decoded.task.id, decoded);
+          results.set(decoded.task.id, decoded.task);
+        }
+      }
+    }
+    return tasks.flatMap((task) => {
+      const value = results.get(task.id);
+      return value ? [value] : [];
+    });
+  }
+
+  private readSummary(record: ReadableMdbaseRecord): CachedMdbaseTask | null {
+    const provider = this.providerForTypes(record.types ?? []);
+    if (!provider) return null;
+    try {
+      return {
+        task: provider.model.readSummary({
+          path: record.path,
+          frontmatter: mdbaseFrontmatter(record),
+        }),
+        ...provider,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private storeResult(result: RecordDocument<JsonObject>): Task {
     const decoded = this.readRecord(result);
     if (!decoded) throw new Error("The saved task could not be read.");
-    this.cache.set(decoded.task.id, { ...decoded, revision: result.revision });
+    this.storeDocument({ ...decoded, revision: result.revision });
     this.setConnected();
     this.emit();
     return decoded.task;
   }
 
-  private readRecord(
-    record: ReadableMdbaseRecord,
-  ): Omit<CachedMdbaseTask, "revision"> | null {
+  private readRecord(record: ReadableMdbaseRecord): CachedTaskDocument | null {
+    if (typeof record.body !== "string")
+      throw new Error("The authority did not return the complete task body.");
     const provider = this.providerForTypes(record.types ?? []);
     if (!provider) return null;
     try {
@@ -1726,7 +1999,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         task: provider.model.read({
           path: record.path,
           frontmatter: mdbaseFrontmatter(record),
-          body: record.body ?? "",
+          body: record.body,
         }),
         ...provider,
       };
@@ -1765,7 +2038,12 @@ export class MdbaseTaskRepository implements TaskRepository {
       parent.task,
       occurrenceDate,
     );
-    if (resolved) return { task: resolved, created: false, warnings: [] };
+    if (resolved)
+      return {
+        task: (await this.requireCurrent(resolved.id)).task,
+        created: false,
+        warnings: [],
+      };
     const result = await parent.model.materializeOccurrence(
       parent.task,
       occurrenceDate,
@@ -1781,7 +2059,11 @@ export class MdbaseTaskRepository implements TaskRepository {
         return serializeMarkdownDocument(template.frontmatter, template.body);
       },
     );
-    if (!result.created) return result;
+    if (!result.created)
+      return {
+        ...result,
+        task: (await this.requireCurrent(result.task.id)).task,
+      };
     const created = this.reserveAvailableTaskPath(result.task);
     const operationInput = {
       path: created.path,
@@ -1809,7 +2091,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         ? { ...saved, operationWarnings: result.warnings }
         : saved;
       const cached = this.cache.get(saved.id);
-      if (cached) this.cache.set(saved.id, { ...cached, task });
+      if (cached) this.storeDocument({ ...cached, task });
       return { ...result, task };
     } catch (reason) {
       try {
@@ -1919,7 +2201,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     if (!warnings.length) return savedOccurrence;
     const task = { ...savedOccurrence, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    if (cached) this.cache.set(task.id, { ...cached, task });
+    if (cached) this.storeDocument({ ...cached, task });
     this.emit();
     return task;
   }
@@ -1931,7 +2213,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     if (!warnings.length) return task;
     const retained = { ...task, operationWarnings: warnings };
     const cached = this.cache.get(task.id);
-    if (cached) this.cache.set(task.id, { ...cached, task: retained });
+    if (cached) this.storeDocument({ ...cached, task: retained });
     this.emit();
     return retained;
   }
@@ -1942,15 +2224,22 @@ export class MdbaseTaskRepository implements TaskRepository {
       const warnings = await this.materializeRollingWindow(parent);
       if (!warnings.length) continue;
       const cached = this.cache.get(parent.id);
-      if (cached)
+      if (cached) {
         this.cache.set(parent.id, {
           ...cached,
           task: { ...cached.task, operationWarnings: warnings },
         });
+        const document = this.documents.get(parent.id);
+        if (document)
+          this.documents.set(parent.id, {
+            ...document,
+            task: { ...document.task, operationWarnings: warnings },
+          });
+      }
     }
   }
 
-  private async materializeRollingWindow(task: Task): Promise<string[]> {
+  private async materializeRollingWindow(task: TaskSummary): Promise<string[]> {
     let dates: string[];
     try {
       dates = rollingOccurrenceDates(task);

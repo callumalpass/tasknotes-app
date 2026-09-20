@@ -4,7 +4,7 @@ import { SearchScreen } from "./search-screen";
 const fixture = vi.hoisted(() => ({ query: vi.fn(), retry: vi.fn() }));
 vi.mock("./repository-context", () => ({
   useRepository: () => ({ setTaskCompletion: vi.fn() }),
-  useTasks: fixture.query,
+  useTaskSearch: fixture.query,
 }));
 vi.mock("../components/task-row", () => ({
   TaskRow: ({ task }: { task: { title: string } }) => <div>{task.title}</div>,
@@ -35,7 +35,7 @@ it("shows an actionable error rather than pretending a failed search was empty",
 });
 it("labels stale results instead of silently presenting them as current", async () => {
   fixture.query.mockReturnValue({
-    tasks: [{ id: "one", title: "Match old" }],
+    tasks: [{ task: { id: "one", title: "Match old" }, bodyMatches: [] }],
     stale: true,
     error: new Error("Offline"),
     retry: fixture.retry,
@@ -49,8 +49,8 @@ it("labels stale results instead of silently presenting them as current", async 
 it("does not claim an exact total at the prefix boundary and can request more", async () => {
   fixture.query.mockReturnValue({
     tasks: Array.from({ length: 301 }, (_, index) => ({
-      id: String(index),
-      title: `Match ${index}`,
+      task: { id: String(index), title: `Match ${index}` },
+      bodyMatches: [],
     })),
     retry: fixture.retry,
   });

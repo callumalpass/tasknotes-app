@@ -31,10 +31,12 @@ describe("session task index", () => {
     expect(readBody).not.toHaveBeenCalled();
     index.list({ search: "one" });
     expect(readBody).not.toHaveBeenCalled();
-    index.list({ search: "body" });
-    index.list({ search: "BODY" });
-    expect(readBody).toHaveBeenCalledTimes(2);
-    index.set(item.id, { task: { ...item, body: "Replacement" } });
+    const bodyMatches = vi.fn(() => true);
+    expect(index.list({ search: "body" }, bodyMatches)).toEqual([item]);
+    index.list({ search: "BODY" }, bodyMatches);
+    expect(bodyMatches).toHaveBeenCalledTimes(2);
+    expect(readBody).not.toHaveBeenCalled();
+    index.set(item.id, { task: task("one", { title: "Replacement" }) });
     expect(index.list({ search: "body" })).toEqual([]);
     expect(index.list({ search: "replacement" })).toHaveLength(1);
     expect(values).toHaveBeenCalledTimes(2);
@@ -99,9 +101,13 @@ describe("session task index", () => {
               })
               .sort(compareTasks)
               .slice(0, limit);
-            expect(index.list(query).map((item) => item.id)).toEqual(
-              expected.map((item) => item.id),
-            );
+            expect(
+              index
+                .list(query, (item, token) =>
+                  index.get(item.id)!.task.body.toLowerCase().includes(token),
+                )
+                .map((item) => item.id),
+            ).toEqual(expected.map((item) => item.id));
           }
   });
 

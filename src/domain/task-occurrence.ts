@@ -7,12 +7,12 @@ import {
   taskDatePart,
   taskTimePart,
   todayString,
-  type Task,
+  type TaskSummary,
 } from "./task";
 
 export interface TaskOccurrence {
   key: string;
-  task: Task;
+  task: TaskSummary;
   date: string;
   completed: boolean;
   skipped: boolean;
@@ -20,7 +20,7 @@ export interface TaskOccurrence {
 
 export interface TaskOccurrenceEntry {
   key: string;
-  task: Task;
+  task: TaskSummary;
   occurrence?: TaskOccurrence;
   date: string;
 }
@@ -43,7 +43,7 @@ const RECURRENCE_CACHE_LIMIT = 2_048;
 const recurrenceDateCache = new Map<string, readonly string[]>();
 
 export function taskOccurrencesBetween(
-  task: Task,
+  task: TaskSummary,
   start: string,
   end: string,
 ): TaskOccurrence[] {
@@ -54,7 +54,7 @@ export function taskOccurrencesBetween(
 }
 
 export function taskOccurrenceForDate(
-  task: Task,
+  task: TaskSummary,
   date: string,
 ): TaskOccurrence {
   return {
@@ -67,7 +67,7 @@ export function taskOccurrenceForDate(
 }
 
 function recurringDatesBetween(
-  task: Task,
+  task: TaskSummary,
   start: string,
   end: string,
 ): readonly string[] {
@@ -115,7 +115,7 @@ function utcCalendarDate(date: Date): string {
   ].join("-");
 }
 
-export function occurrenceTask(value: TaskOccurrence): Task {
+export function occurrenceTask(value: TaskOccurrence): TaskSummary {
   const task = value.task;
   const scheduled = task.scheduled
     ? combineTaskDateTime(value.date, taskTimePart(task.scheduled))
@@ -147,7 +147,7 @@ export function occurrenceRange(
 }
 
 export function projectTodayTasks(
-  tasks: Task[],
+  tasks: TaskSummary[],
   start: string,
   today: string,
   perSectionLimit: number,
@@ -196,7 +196,7 @@ export function projectTodayTasks(
 }
 
 export function projectUpcomingTasks(
-  tasks: Task[],
+  tasks: TaskSummary[],
   today: string,
   recurrenceEnd: string,
   limit: number,
@@ -263,17 +263,17 @@ export function projectUpcomingTasks(
 }
 
 export function findOccurrenceParent(
-  tasks: readonly Task[],
-  occurrence: Pick<Task, "recurrenceParent">,
-): Task | undefined {
+  tasks: readonly TaskSummary[],
+  occurrence: Pick<TaskSummary, "recurrenceParent">,
+): TaskSummary | undefined {
   return buildOccurrenceParentIndex(tasks).resolve(occurrence.recurrenceParent);
 }
 
 export function findMaterializedOccurrenceTask(
-  tasks: readonly Task[],
-  parent: Task,
+  tasks: readonly TaskSummary[],
+  parent: TaskSummary,
   date: string,
-): Task | undefined {
+): TaskSummary | undefined {
   const parents = buildOccurrenceParentIndex(tasks);
   const matches = tasks.filter(
     (candidate) =>
@@ -288,7 +288,7 @@ export function findMaterializedOccurrenceTask(
 }
 
 export function materializedOccurrenceKeys(
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
 ): Set<string> {
   const parents = buildOccurrenceParentIndex(tasks);
   const keys = new Set<string>();
@@ -301,14 +301,14 @@ export function materializedOccurrenceKeys(
 }
 
 interface OccurrenceParentIndex {
-  resolve(reference: string | undefined): Task | undefined;
+  resolve(reference: string | undefined): TaskSummary | undefined;
 }
 
 function buildOccurrenceParentIndex(
-  tasks: readonly Task[],
+  tasks: readonly TaskSummary[],
 ): OccurrenceParentIndex {
-  const exact = new Map<string, Task | null>();
-  const filenames = new Map<string, Task | null>();
+  const exact = new Map<string, TaskSummary | null>();
+  const filenames = new Map<string, TaskSummary | null>();
   for (const task of tasks) {
     addUniqueTask(exact, task.id.toLocaleLowerCase(), task);
     const path = normalizeTaskReference(task.path);
@@ -328,9 +328,9 @@ function buildOccurrenceParentIndex(
 }
 
 function addUniqueTask(
-  index: Map<string, Task | null>,
+  index: Map<string, TaskSummary | null>,
   key: string,
-  task: Task,
+  task: TaskSummary,
 ): void {
   const current = index.get(key);
   if (current === undefined) index.set(key, task);
@@ -355,7 +355,10 @@ export async function occurrenceRecordId(
   return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
-export function rollingOccurrenceDates(task: Task, now = new Date()): string[] {
+export function rollingOccurrenceDates(
+  task: TaskSummary,
+  now = new Date(),
+): string[] {
   if (!task.recurrence || task.occurrenceMaterialization !== "rolling")
     return [];
   const today = todayString(now);
@@ -406,7 +409,7 @@ function shiftByIsoDuration(
   return todayString(date);
 }
 
-function dueOffsetDays(task: Task): number {
+function dueOffsetDays(task: TaskSummary): number {
   const scheduled = dateFromStorage(taskDatePart(task.scheduled));
   const due = dateFromStorage(taskDatePart(task.due));
   if (!scheduled || !due) return 0;

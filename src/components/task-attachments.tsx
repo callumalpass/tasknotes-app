@@ -12,7 +12,7 @@ import {
   type ResolvedTaskAttachment,
 } from "../application/attachments/attachment-service";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type { CollectionFileStore } from "../application/ports/collection-file-store";
 
 export function TaskAttachments({
@@ -22,7 +22,7 @@ export function TaskAttachments({
   beforeMutation,
   onInsertInline,
 }: {
-  task: Task;
+  task: TaskSummary;
   service: AttachmentService;
   store: CollectionFileStore;
   beforeMutation(): Promise<void>;

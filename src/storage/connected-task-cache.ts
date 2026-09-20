@@ -1,9 +1,9 @@
 import { taskRelationships } from "../domain/task-relationships";
 
-import type { Task, TaskStats } from "../domain/task";
+import type { TaskSummary, TaskStats } from "../domain/task";
 import type { TaskView } from "../domain/view";
 
-type CachedTask = { task: Task };
+type CachedTask = { task: TaskSummary };
 
 export function connectedTaskRelationships(
   cached: Iterable<CachedTask>,
@@ -32,10 +32,12 @@ export function connectedTaskStats(cached: Iterable<CachedTask>): TaskStats {
   };
 }
 
-export function sameConnectedTaskDocument(left: Task, right: Task): boolean {
+export function sameConnectedTaskMetadata(
+  left: TaskSummary,
+  right: TaskSummary,
+): boolean {
   return (
     left.path === right.path &&
-    left.body === right.body &&
     JSON.stringify(left.frontmatter) === JSON.stringify(right.frontmatter)
   );
 }

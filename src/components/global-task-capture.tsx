@@ -17,7 +17,7 @@ import { useRepository } from "../app/repository-context";
 import { TaskCapture } from "./task-capture";
 import { useOverlay } from "./overlays/use-overlay";
 
-import type { CreateTaskInput, Task } from "../domain/task";
+import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
 
 export function GlobalTaskCapture({
   open,
@@ -31,13 +31,13 @@ export function GlobalTaskCapture({
 }: {
   open: boolean;
   onClose(): void;
-  onOpenTask(task: Task): void;
-  onAdded?(task: Task): void;
+  onOpenTask(task: TaskSummary): void;
+  onAdded?(task: TaskSummary): void;
   defaults?: Partial<CreateTaskInput>;
   session?: CaptureSession;
   createTask?(input: CreateTaskInput): Promise<Task>;
   onCreated?(
-    task: Task,
+    task: TaskSummary,
   ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;
 }) {
   const [keepAdding, setKeepAdding] = useState(false);

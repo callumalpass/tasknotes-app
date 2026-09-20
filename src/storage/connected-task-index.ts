@@ -1,7 +1,7 @@
 import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
-import type { Task, TaskListQuery } from "../domain/task";
+import type { TaskSummary, TaskListQuery } from "../domain/task";
 
-type Entry = { task: Task };
+type Entry = { task: TaskSummary };
 
 /** Session-only indexes over repository-owned tasks; never a durable replica. */
 export class ConnectedTaskIndex<Value extends Entry> extends Map<
@@ -9,9 +9,9 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   Value
 > {
   private readonly paths = new Map<string, string>();
-  private readonly rolling = new Map<string, Task>();
-  private ordered?: Task[];
-  private readonly searchMetadata = new WeakMap<Task, string>();
+  private readonly rolling = new Map<string, TaskSummary>();
+  private ordered?: TaskSummary[];
+  private readonly searchMetadata = new WeakMap<TaskSummary, string>();
   private readonly trackers = new Set<Set<string>>();
 
   constructor() {
@@ -57,7 +57,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     return id === undefined ? undefined : this.get(id);
   }
 
-  rollingParents(): Task[] {
+  rollingParents(): TaskSummary[] {
     return [...this.rolling.values()];
   }
 
@@ -68,7 +68,27 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     return { paths, stop: () => this.trackers.delete(paths) };
   }
 
-  list(query: TaskListQuery = {}): Task[] {
+  matchesMetadata(task: TaskSummary, token: string): boolean {
+    let text = this.searchMetadata.get(task);
+    if (text === undefined) {
+      text = [
+        task.title,
+        ...task.tags,
+        ...task.contexts,
+        ...task.projects,
+        ...task.attachments,
+      ]
+        .join("\n")
+        .toLowerCase();
+      this.searchMetadata.set(task, text);
+    }
+    return text.includes(token);
+  }
+
+  list(
+    query: TaskListQuery = {},
+    bodyMatches?: (task: TaskSummary, token: string) => boolean,
+  ): TaskSummary[] {
     const limit = query.limit ?? 500;
     if (limit === 0) return [];
     this.ordered ??= [...this.values()]
@@ -76,10 +96,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       .sort(compareTasks);
     const tokens = (query.search ?? "")
       .trim()
-      .toLocaleLowerCase()
+      .toLowerCase()
       .split(/\s+/)
       .filter(Boolean);
-    const results: Task[] = [];
+    const results: TaskSummary[] = [];
     for (const task of this.ordered) {
       if (!matchesArchiveFilter(task, query)) continue;
       if (query.status === "completed" && !task.completed) continue;
@@ -89,28 +109,13 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
         task.completed
       )
         continue;
-      if (tokens.length) {
-        let text = this.searchMetadata.get(task);
-        if (text === undefined) {
-          text = [
-            task.title,
-            ...task.tags,
-            ...task.contexts,
-            ...task.projects,
-            ...task.attachments,
-          ]
-            .join("\n")
-            .toLocaleLowerCase();
-          this.searchMetadata.set(task, text);
-        }
-        const bodyTokens = tokens.filter((token) => !text.includes(token));
-        if (bodyTokens.length) {
-          // Do not retain a second normalized copy of every note body. Search
-          // metadata first; normalize the body only when it could affect a match.
-          const body = task.body.toLocaleLowerCase();
-          if (!bodyTokens.every((token) => body.includes(token))) continue;
-        }
-      }
+      if (
+        !tokens.every(
+          (token) =>
+            this.matchesMetadata(task, token) || bodyMatches?.(task, token),
+        )
+      )
+        continue;
       results.push(task);
       if (limit > 0 && results.length >= limit) break;
     }

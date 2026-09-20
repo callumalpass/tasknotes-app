@@ -898,7 +898,7 @@ describe("ScratchpadScreen", () => {
     });
     const hydration = deferred<typeof tasks>();
     const list = vi
-      .spyOn(repository, "list")
+      .spyOn(repository, "listSummaries")
       .mockReturnValueOnce(hydration.promise);
 
     fireEvent.click(screen.getByRole("button", { name: "Outline" }));

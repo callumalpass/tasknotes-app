@@ -10,7 +10,7 @@ import {
   startOfCalendarWeek,
 } from "../calendar-preferences";
 
-import type { Task } from "../../domain/task";
+import type { TaskSummary } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
 export function MiniCalendarView({
@@ -26,13 +26,13 @@ export function MiniCalendarView({
 }: {
   execution: TaskViewExecution;
   firstDay: number;
-  identityTasks: readonly Task[];
+  identityTasks: readonly TaskSummary[];
   selected: string;
   titleProperty: string;
   onSelect(date: string): void;
   onCreate(date: string): void;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
   const initial = dateFromStorage(todayString()) ?? new Date();
   const [month, setMonth] = useState(

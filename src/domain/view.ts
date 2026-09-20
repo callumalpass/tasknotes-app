@@ -1,4 +1,4 @@
-import type { Task } from "./task";
+import type { TaskSummary } from "./task";
 import type { CollectionRecord } from "./completion";
 
 export interface TaskViewPresentation {
@@ -46,7 +46,7 @@ export interface TaskViewProperty {
 }
 
 export interface TaskViewRow {
-  task: Task;
+  task: TaskSummary;
   values: Record<string, unknown>;
 }
 

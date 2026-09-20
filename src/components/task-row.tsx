@@ -10,7 +10,7 @@ import { useRepository } from "../app/repository-context";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
 
 export function TaskRow({
@@ -21,9 +21,9 @@ export function TaskRow({
   occurrence,
   supportingText,
 }: {
-  task: Task;
-  onOpen(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
+  task: TaskSummary;
+  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void | Promise<unknown>;
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
   supportingText?: string;
@@ -308,7 +308,7 @@ function isCompactDetail(
 }
 
 function defaultTaskDetails(
-  task: Task,
+  task: TaskSummary,
   metadata: ReturnType<typeof taskMeta>,
   configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
 ): TaskRowDetail[] {

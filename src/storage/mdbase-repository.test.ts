@@ -74,7 +74,7 @@ describe("mdbase task repository", () => {
     });
     expect(fixture.query).not.toHaveBeenCalled();
     expect(fixture.queryPages).toHaveBeenCalledWith(
-      expect.objectContaining({ includeBody: true }),
+      expect.objectContaining({ includeBody: false }),
       expect.objectContaining({ firstPageSize: 1_000, pageSize: 1_000 }),
     );
   });

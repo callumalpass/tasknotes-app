@@ -48,6 +48,26 @@ it("labels retained results stale and never substitutes another query's results"
     stale: false,
   });
 });
+it("aborts superseded and unmounted work and gives retries a fresh signal", async () => {
+  const resource = new QueryResource<string[]>();
+  const signals: AbortSignal[] = [];
+  const request = async (signal: AbortSignal) => {
+    signals.push(signal);
+    return [];
+  };
+  resource.load("one", request);
+  await settle();
+  resource.load("two", request);
+  await settle();
+  expect(signals[0].aborted).toBe(true);
+  expect(signals[1].aborted).toBe(false);
+  resource.cancel();
+  expect(signals[1].aborted).toBe(true);
+  resource.retry();
+  await settle();
+  expect(signals[2].aborted).toBe(false);
+});
+
 it("ignores delayed callbacks from a superseded query", async () => {
   const resource = new QueryResource<string[]>();
   let resolve!: (value: string[]) => void;

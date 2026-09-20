@@ -1,16 +1,16 @@
 import {
-  sameConnectedTaskDocument,
+  sameConnectedTaskMetadata,
   connectedTaskStats,
   connectedViewExecutionKey,
 } from "./connected-task-cache";
 import { ConnectedTaskIndex } from "./connected-task-index";
 
-import type { Task, TaskListQuery } from "../domain/task";
+import type { Task, TaskSummary, TaskListQuery } from "../domain/task";
 
 function listConnectedTasks(
   cached: { task: Task }[],
   query: TaskListQuery,
-): Task[] {
+): TaskSummary[] {
   const index = new ConnectedTaskIndex<{ task: Task }>();
   for (const entry of cached) index.set(entry.task.id, entry);
   return index.list(query);
@@ -63,12 +63,9 @@ it("shares connected statistics and stable projection keys", () => {
   expect(
     connectedTaskStats([{ task: open }, { task: done }, { task: archived }]),
   ).toEqual({ total: 2, open: 1, completed: 1, archived: 1 });
-  expect(sameConnectedTaskDocument(open, { ...open })).toBe(true);
-  expect(sameConnectedTaskDocument(open, { ...open, body: "Edited" })).toBe(
-    false,
-  );
+  expect(sameConnectedTaskMetadata(open, { ...open })).toBe(true);
   expect(
-    sameConnectedTaskDocument(open, {
+    sameConnectedTaskMetadata(open, {
       ...open,
       frontmatter: { title: "Edited" },
     }),

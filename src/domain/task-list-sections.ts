@@ -1,7 +1,7 @@
 import { setTaskDate, shiftTaskDate } from "./task-date-actions";
 import { taskDatePart, todayString } from "./task";
 
-import type { Task, UpdateTaskInput } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
 
 export type TaskListSectionMode = "day";
@@ -54,7 +54,7 @@ export function sectionTaskViewRows(
  * not to any particular saved view such as Today.
  */
 export function taskListSectionMoveInput(
-  task: Task,
+  task: TaskSummary,
   mode: unknown,
   destination: string,
   today = todayString(),

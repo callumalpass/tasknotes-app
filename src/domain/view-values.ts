@@ -1,7 +1,7 @@
 import { occurrenceTask } from "./task-occurrence";
 import { dateFromStorage } from "./task";
 
-import type { Task } from "./task";
+import type { TaskSummary } from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
 import type { TaskViewProperty, TaskViewRow } from "./view";
 
@@ -67,7 +67,7 @@ export function viewPropertyValue(
   const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
   const field = notePropertyName(key) ?? key;
   if (occurrence && Object.prototype.hasOwnProperty.call(displayed, field))
-    return displayed[field as keyof Task];
+    return displayed[field as keyof TaskSummary];
   if (Object.prototype.hasOwnProperty.call(row.values, key))
     return row.values[key];
   return displayed.frontmatter[field];
@@ -81,6 +81,21 @@ export function propertyLabel(key: string): string {
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .trim();
   return words ? `${words[0].toUpperCase()}${words.slice(1)}` : key;
+}
+
+export function groupLabel(entries: Array<[string, unknown]>): string {
+  if (entries.length === 1) {
+    const [field, value] = entries[0];
+    return (
+      formatPropertyValue(value) ?? `No ${propertyLabel(field).toLowerCase()}`
+    );
+  }
+  return entries
+    .map(
+      ([field, value]) =>
+        `${propertyLabel(field)}: ${formatPropertyValue(value) ?? "None"}`,
+    )
+    .join(" · ");
 }
 
 export function formatPropertyValue(

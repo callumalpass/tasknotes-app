@@ -1,4 +1,4 @@
-import type { Task, TaskReminder } from "./task";
+import type { TaskSummary, TaskReminder } from "./task";
 
 export type ReminderOffsetUnit = "minutes" | "hours" | "days";
 export type ReminderOffsetDirection = "before" | "after";
@@ -37,7 +37,7 @@ export function editableReminderOffset(value?: string): EditableReminderOffset {
 }
 
 export function reminderFireTime(
-  task: Pick<Task, "due" | "scheduled">,
+  task: Pick<TaskSummary, "due" | "scheduled">,
   reminder: TaskReminder,
 ): string | undefined {
   if (reminder.type === "absolute") return validInstant(reminder.absoluteTime);

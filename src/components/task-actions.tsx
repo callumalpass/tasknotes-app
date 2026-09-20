@@ -38,7 +38,7 @@ import { actionFeedback } from "../native/feedback";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
-import type { Task } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
 
 interface MenuPosition {
   x: number;
@@ -60,12 +60,12 @@ type MenuPanel =
   | "delete";
 
 interface TaskActionsProps {
-  task: Task;
+  task: TaskSummary;
   occurrenceDate?: string;
   context?: "row" | "detail";
   beforeAction?(): Promise<void>;
-  onOpen?(task: Task, occurrenceDate?: string): void;
-  onToggle(task: Task, occurrenceDate?: string): void | Promise<unknown>;
+  onOpen?(task: TaskSummary, occurrenceDate?: string): void;
+  onToggle(task: TaskSummary, occurrenceDate?: string): void | Promise<unknown>;
   onArchived?(): void;
   onDeleted?(): void;
   contextMenuRequest?: { id: number; x: number; y: number };
@@ -985,7 +985,7 @@ function organizeValueLabel(value: string): string {
   return target.split("/").at(-1) || value;
 }
 
-function dateSummary(task: Task): string {
+function dateSummary(task: TaskSummary): string {
   if (task.due && task.scheduled) return "Due and scheduled";
   if (task.due) return "Due set";
   if (task.scheduled) return "Scheduled";
