@@ -145,8 +145,10 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-  The title's effective target is at least 44px high, separate from completion,
-  date, and action controls. Search explains observed non-title matches with
+  On touch layouts the title's effective target is at least 44px high, separate
+  from completion, date, and action controls. Wide fine-pointer layouts use
+  32px title and 24px metadata targets, keeping typical two-line rows near 64px
+  without reducing typography. Plain rows retain the 48px minimum. Search explains observed non-title matches with
   concise labels such as “Matched in notes.”
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
@@ -276,6 +278,10 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
+- Calendar month events use a 24px content minimum on wide fine-pointer
+  layouts; timed events use a 28px minimum. Touch event content retains 44px
+  targets. Agenda cells add only 2px vertical padding on touch and 4px on
+  desktop, instead of stacking generous padding around a full-height target.
 - Calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within
