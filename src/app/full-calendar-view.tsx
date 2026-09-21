@@ -7,7 +7,7 @@ import interactionPlugin, {
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
@@ -99,6 +99,17 @@ export function FullCalendarView({
   ): Promise<void>;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [compactEvents, setCompactEvents] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia?.(
+      "(min-width: 840px) and (hover: hover) and (pointer: fine)",
+    );
+    if (!media) return;
+    const update = () => setCompactEvents(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const closeOverflow = useCalendarOverflow(rootRef);
   function onOpen(task: TaskSummary, occurrenceDate?: string) {
     closeOverflow();
@@ -297,7 +308,7 @@ export function FullCalendarView({
             allDaySlot={preferences.allDaySlot}
             allDayText="All day"
             dayMaxEvents={3}
-            eventMinHeight={44}
+            eventMinHeight={compactEvents ? 28 : 44}
             moreLinkDidMount={({ el }) => {
               el.setAttribute("role", "button");
               el.addEventListener("keydown", activateMoreOnSpace);
