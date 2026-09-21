@@ -81,6 +81,7 @@ test("calendar More targets work at desktop and phone widths", async ({
 test("task titles have real touch targets without overlapping metadata", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("?demo=50");
   const title = page.getByRole("button", {
     name: "Book the project room",
