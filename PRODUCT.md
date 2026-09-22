@@ -54,8 +54,12 @@ Obsidian UI at phone scale.
 ## Accessibility & Inclusion
 
 Target WCAG AA contrast and platform accessibility conventions. All controls
-need accessible names, at least 44-point touch targets, dynamic text-friendly
-layouts, non-color state indicators, reduced-motion support, and predictable
+need accessible names, dynamic text-friendly layouts, and non-overlapping targets.
+Use at least 44-point touch targets for primary controls; compact task lists use
+32px title and 24px inline-property minimum targets while completion and overflow
+remain 44px. Calendar grid events use 24px content / 28px timed-event minimums;
+calendar toolbar and overflow controls remain 44px. Preserve non-color state
+indicators, reduced-motion support, and predictable
 screen-reader order. Support system, light, and dark appearance settings, and
 test all three without encoding task state by color alone. Focusing an editable
 field alone must not remove navigation. Ordinary pages and editors reflow at
