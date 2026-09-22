@@ -78,7 +78,7 @@ test("calendar More targets work at desktop and phone widths", async ({
   ).toEqual([]);
 });
 
-test("task titles have real touch targets without overlapping metadata", async ({
+test("compact task titles remain independently tappable without overlapping metadata", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -89,7 +89,7 @@ test("task titles have real touch targets without overlapping metadata", async (
   });
   await expect(title).toBeVisible();
   const box = await title.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(32);
   await title.click({ position: { x: box!.width / 2, y: box!.height - 2 } });
   await expect(
     page.getByRole("textbox", { name: "Task title", exact: true }),

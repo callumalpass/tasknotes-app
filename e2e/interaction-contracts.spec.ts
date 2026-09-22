@@ -14,7 +14,8 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
     await dates.evaluateAll((nodes) =>
       nodes.every((node) => {
         const box = node.getBoundingClientRect();
-        return box.height >= 44 && box.width >= 44;
+        const minimumHeight = node.matches(".task-row-property") ? 24 : 44;
+        return box.height >= minimumHeight && box.width >= 44;
       }),
     ),
   ).toBe(true);
@@ -34,7 +35,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
     await page.locator(".full-calendar-event-content").evaluateAll((nodes) =>
       nodes.every((node) => {
         const box = node.getBoundingClientRect();
-        return box.width >= 44 && box.height >= 44;
+        return box.width >= 44 && box.height >= 24;
       }),
     ),
   ).toBe(true);

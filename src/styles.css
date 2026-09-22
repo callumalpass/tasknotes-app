@@ -8802,8 +8802,8 @@ html.scratchpad-route .page-surface {
   flex: 1;
   align-content: center;
   min-width: 44px;
-  min-height: 44px;
-  gap: var(--space-xs);
+  min-height: 24px;
+  gap: 2px;
   color: var(--ink-soft);
   line-height: 1.45;
 }
@@ -8895,7 +8895,7 @@ html.scratchpad-route .page-surface {
 }
 
 .full-calendar-view .fc-timegrid-event {
-  padding: 2px 4px;
+  padding: 1px 4px;
   background: var(--paper-raised);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
@@ -8927,7 +8927,7 @@ html.scratchpad-route .page-surface {
 }
 
 .full-calendar-view .fc-list-event td {
-  padding: 2px 8px;
+  padding: 4px 8px;
   background: transparent;
   border-color: var(--line);
 }
@@ -9427,9 +9427,8 @@ html.scratchpad-route .page-surface {
 
   .task-row-meta {
     min-width: 0;
-    overflow: hidden;
-    flex-wrap: nowrap;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 4px 8px;
   }
 
   .task-row-meta > span {
@@ -9873,41 +9872,28 @@ html.scratchpad-route .page-surface {
   border: 1px solid var(--line-strong);
   box-shadow: 0 8px 24px var(--color-shadow);
 }
-/* Compact pointer-driven surfaces; touch layouts keep independent 44px targets.
-   Let wrapped titles and properties grow rather than clipping their controls. */
-@media (min-width: 840px) and (hover: hover) and (pointer: fine) {
-  .task-row:not(.kanban-card *) .task-row-content {
-    justify-content: center;
-    padding-block: 3px;
-  }
+/* Compact lists on every input type. Completion and overflow retain 44px
+   targets; title and inline properties remain separate, non-overlapping actions.
+   Wrapped content grows naturally rather than being forced into a fixed row. */
+.task-row:not(.kanban-card *) .task-row-content {
+  justify-content: center;
+  padding-block: 1px;
+}
 
-  .task-row:not(.kanban-card *) .task-row-title {
-    min-height: 32px;
-    padding-block: 4px;
-  }
+.task-row:not(.kanban-card *) .task-row-title {
+  min-height: 32px;
+  padding-block: 4px;
+}
 
-  .task-row:not(.kanban-card *) .task-row-property,
-  .task-row:not(.kanban-card *) .task-row-meta > button {
-    min-height: 24px;
-    padding-block: 2px;
-  }
+.task-row:not(.kanban-card *) .task-row-property,
+.task-row:not(.kanban-card *) .task-row-meta > button {
+  min-height: 24px;
+  padding-block: 2px;
+}
 
-  .full-calendar-event-content {
-    min-height: 24px;
-    gap: 2px;
-  }
-
-  .full-calendar-view .fc-timegrid-event {
-    padding-block: 1px;
-  }
-
-  .full-calendar-view .fc-list-event td {
-    padding-block: 4px;
-  }
-
-  .full-calendar-view .fc-list .full-calendar-event-content {
-    min-height: 36px;
-  }
+/* Agenda rows retain a ~44px overall minimum without inflating grid events. */
+.full-calendar-view .fc-list .full-calendar-event-content {
+  min-height: 36px;
 }
 
 .full-calendar-view .fc-more-popover .full-calendar-event-content {

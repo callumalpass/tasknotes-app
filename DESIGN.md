@@ -145,10 +145,12 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-  On touch layouts the title's effective target is at least 44px high, separate
-  from completion, date, and action controls. Wide fine-pointer layouts use
-  32px title and 24px metadata targets, keeping typical two-line rows near 64px
-  without reducing typography. Plain rows retain the 48px minimum. Search explains observed non-title matches with
+  Lists use 32px title and 24px metadata minimum targets on phones and desktop,
+  keeping a single-line title plus one metadata line near 60px without reducing
+  typography. Completion and overflow retain independent 44px targets. Dates
+  and other properties remain directly editable, with no overlapping hit areas.
+  Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows
+  retain the 48px minimum; kanban cards keep their existing targets. Search explains observed non-title matches with
   concise labels such as “Matched in notes.”
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
@@ -278,10 +280,11 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
-- Calendar month events use a 24px content minimum on wide fine-pointer
-  layouts; timed events use a 28px minimum. Touch event content retains 44px
-  targets. Agenda cells add only 2px vertical padding on touch and 4px on
-  desktop, instead of stacking generous padding around a full-height target.
+- Calendar month events use a 24px content minimum on phones and desktop;
+  timed events use a 28px minimum. Agenda content uses a 36px minimum with
+  4px vertical cell padding, keeping simple rows near 44px. Metadata and wrapped
+  content may grow naturally. Calendar toolbar, More links, and overflow-panel
+  events retain 44px targets; compact grid events remain independently tappable.
 - Calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within
