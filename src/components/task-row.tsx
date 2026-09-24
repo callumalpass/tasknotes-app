@@ -3,18 +3,14 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useId, useRef, useState } from "react";
 
-import {
-  activeTimeEntry,
-  dateFromStorage,
-  formatRelativeTaskDate,
-  isTaskDateOverdue,
-  taskMeta,
-} from "../domain/task";
+import { activeTimeEntry, taskMeta } from "../domain/task";
+import { relativeDateDetail } from "../domain/view-values";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
+import { useSwipeActions } from "./use-swipe-actions";
 
 import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -93,9 +89,36 @@ export function TaskRow({
       return true;
     })
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
+  const rowRef = useRef<HTMLDivElement>(null);
+  const swipe = useSwipeActions({
+    disabled: pending,
+    onSwipe: (direction) => {
+      if (direction === "complete") void complete();
+      else
+        rowRef.current
+          ?.querySelector<HTMLButtonElement>(".task-actions-trigger")
+          ?.click();
+    },
+  });
   return (
     <div
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
+      {...swipe.handlers}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      data-swipe-hint={
+        swipe.offset > 0
+          ? displayedTask.completed
+            ? "Reopen"
+            : "Complete"
+          : swipe.offset < 0
+            ? "Actions"
+            : undefined
+      }
+      ref={rowRef}
+      style={
+        swipe.offset
+          ? ({ "--swipe-x": `${swipe.offset}px` } as React.CSSProperties)
+          : undefined
+      }
       onContextMenu={(event) => {
         if ((event.target as HTMLElement).closest(".task-actions-trigger"))
           return;
@@ -304,34 +327,6 @@ function detailPriorityColor(
   return configuration.priorities.find(
     (option) => option.value === detail.rawValue,
   )?.color;
-}
-
-function detailField(key: string): string {
-  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(key);
-  return bracketed?.[1] ?? key.replace(/^note\./, "");
-}
-
-/** Scheduled and due dates read relative to today and flag overdue work. */
-function relativeDateDetail(
-  detail: TaskRowDetail,
-  task: TaskSummary,
-  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
-): TaskRowDetail {
-  const field = detailField(detail.key);
-  const scheduled =
-    field === configuration.fieldMapping.scheduled || field === "scheduled";
-  const due = field === configuration.fieldMapping.due || field === "due";
-  if (
-    (!scheduled && !due) ||
-    typeof detail.rawValue !== "string" ||
-    !dateFromStorage(detail.rawValue)
-  )
-    return detail;
-  return {
-    ...detail,
-    value: formatRelativeTaskDate(detail.rawValue),
-    overdue: !task.completed && isTaskDateOverdue(detail.rawValue),
-  };
 }
 
 function isCompactDetail(

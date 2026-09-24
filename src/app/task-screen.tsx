@@ -32,7 +32,7 @@ import {
 import {
   activeTimeEntry,
   combineTaskDateTime,
-  formatTaskDate,
+  formatRelativeTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -648,10 +648,11 @@ function TaskEditor({
                     (status) => status.value === draft.status,
                   )?.label ?? draft.status)
                 : "",
+              // Matches list rows; exact dates stay in the expanded fields.
               draft.scheduled
-                ? `Scheduled ${formatTaskDate(draft.scheduled)}`
+                ? `Scheduled ${formatRelativeTaskDate(draft.scheduled)}`
                 : "",
-              draft.due ? `Due ${formatTaskDate(draft.due)}` : "",
+              draft.due ? `Due ${formatRelativeTaskDate(draft.due)}` : "",
             ]
               .filter(Boolean)
               .join(" · ") || "No dates"

@@ -232,3 +232,84 @@ test("list and note detail fit narrow phones through desktop", async ({
     });
   }
 });
+
+test("touch rows complete on a right swipe and open actions on a left swipe", async ({
+  page,
+}) => {
+  test.skip(
+    !(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)),
+    "Swipe gestures are touch-only",
+  );
+  await page.goto("?demo=50");
+  const swipe = async (title: string, distance: number) => {
+    const row = page
+      .getByRole("button", { name: title, exact: true })
+      .locator("xpath=ancestor::div[contains(@class, 'task-row')][1]");
+    const box = (await row.boundingBox())!;
+    const y = box.y + box.height / 2;
+    const x = box.x + box.width / 2;
+    await row.evaluate(
+      (element, { x, y, distance }) => {
+        const fire = (type: string, clientX: number) =>
+          element.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              pointerId: 7,
+              pointerType: "touch",
+              clientX,
+              clientY: y,
+            }),
+          );
+        fire("pointerdown", x);
+        for (let step = 1; step <= 6; step += 1)
+          fire("pointermove", x + (distance * step) / 6);
+        fire("pointerup", x + distance);
+      },
+      { x, y, distance },
+    );
+    return row;
+  };
+
+  await swipe("Review demo task 43", -120);
+  await expect(page.getByRole("menu").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await swipe("Send the research summary to Rowan", 120);
+  // Today hides completed work, so the completed row leaves the list.
+  await expect(
+    page.getByRole("button", {
+      name: "Send the research summary to Rowan",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+});
+
+test("desktop sidebar destinations reorder by keyboard and drag", async ({
+  page,
+}) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 840, "Desktop sidebar only");
+  await page.goto("?demo=50");
+  const rail = page.getByRole("complementary", { name: "Primary" });
+  const order = () =>
+    rail
+      .locator("button[draggable='true'] span")
+      .evaluateAll((nodes) => nodes.map((node) => node.textContent));
+  await expect.poll(order).toEqual(expect.arrayContaining(["Today"]));
+  const initial = await order();
+
+  await rail.getByRole("button", { name: initial[0]!, exact: true }).focus();
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect
+    .poll(order)
+    .toEqual([initial[1], initial[0], ...initial.slice(2)]);
+
+  // Dropping on the top half of the current first item places it before.
+  await rail
+    .getByRole("button", { name: initial[2]!, exact: true })
+    .dragTo(rail.getByRole("button", { name: initial[1]!, exact: true }), {
+      targetPosition: { x: 10, y: 4 },
+    });
+  await expect
+    .poll(order)
+    .toEqual([initial[2], initial[1], initial[0], ...initial.slice(3)]);
+});

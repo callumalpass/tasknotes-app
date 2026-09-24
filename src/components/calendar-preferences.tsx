@@ -19,7 +19,7 @@ export function CalendarPreferencesEditor({
 
   return (
     <div className="calendar-preferences">
-      <div className="setting-row task-model-setting-row">
+      <div className="setting-row">
         <CalendarClock aria-hidden="true" size={20} strokeWidth={1.6} />
         <span>Calendar display</span>
         <small>On this device</small>

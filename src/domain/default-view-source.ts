@@ -377,7 +377,8 @@ function note(field: string): string {
   return `note[${literal(field)}]`;
 }
 
-function basesProperty(field: string): string {
+/** An Obsidian Bases property reference for a note field. */
+export function basesProperty(field: string): string {
   return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(field)
     ? `note.${field}`
     : note(field);

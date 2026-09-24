@@ -45,10 +45,11 @@ describe("formatRelativeTaskDate", () => {
     expect(formatRelativeTaskDate(value, today)).toBe(label);
   });
 
-  it("keeps the time and falls back to a short date beyond a week", () => {
-    expect(formatRelativeTaskDate("2026-09-23T09:00", today)).toMatch(
-      /^Yesterday, 9:00/,
+  it("keeps upcoming times, drops past ones, and uses short dates beyond a week", () => {
+    expect(formatRelativeTaskDate("2026-09-25T09:00", today)).toMatch(
+      /^Tomorrow, 9:00/,
     );
+    expect(formatRelativeTaskDate("2026-09-23T09:00", today)).toBe("Yesterday");
     expect(formatRelativeTaskDate("2026-08-01", today)).not.toMatch(/ago|day/);
   });
 });

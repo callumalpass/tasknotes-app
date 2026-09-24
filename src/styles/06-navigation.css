@@ -1,0 +1,277 @@
+/* Bottom navigation, the desktop sidebar, capture button, and notices. */
+
+.bottom-navigation {
+  position: fixed;
+  z-index: 10;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding: var(--space-xs) var(--space-md) env(safe-area-inset-bottom);
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+
+.bottom-navigation.items-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bottom-navigation.items-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.bottom-navigation.items-5 button {
+  padding: 0 2px;
+  font-size: var(--type-label);
+}
+
+.bottom-navigation button,
+.navigation-rail nav button,
+.navigation-rail .navigation-view-section button,
+.navigation-rail > button:not(.wordmark) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-width: 64px;
+  min-height: 54px;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.bottom-navigation button {
+  min-width: 0;
+}
+
+.bottom-navigation button.is-active,
+.navigation-rail button.is-active {
+  color: var(--accent);
+}
+
+/*
+ * Labels scale with system text until the tab width is reached, then stop
+ * growing so a word is never split across lines ("Upcomi / ng").
+ */
+.bottom-navigation button span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: min(var(--type-supporting), 4.2vw);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.bottom-navigation.items-5 button span {
+  font-size: min(var(--type-label), 3.4vw);
+}
+
+@media (max-width: 839px) {
+  .app-shell.has-detail .page-surface,
+  .app-shell.has-detail .bottom-navigation {
+    display: none;
+  }
+
+  .detail-inspector {
+    width: 100%;
+  }
+
+  .task-actions-menu {
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    width: 100%;
+    max-height: min(82dvh, 620px);
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    box-shadow: 0 -16px 40px var(--color-shadow);
+  }
+
+  .task-actions-menu.is-organize-editor {
+    width: 100%;
+    overflow-y: auto;
+  }
+
+  .task-actions-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .task-actions-heading strong {
+    max-width: calc(100% - 72px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task-actions-heading button {
+    min-height: 44px;
+    color: var(--accent);
+    background: transparent;
+    border: 0;
+  }
+
+  .task-actions-items button,
+  .task-actions-confirm button {
+    min-height: 48px;
+  }
+
+  .task-actions-subheading {
+    min-height: 48px;
+  }
+
+  .app-shell.keyboard-occluded .bottom-navigation {
+    display: none;
+  }
+
+  body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+      textarea:focus
+    )
+    .global-capture-fab {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+      textarea:focus
+    )
+    .page-surface {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  input,
+  textarea {
+    scroll-margin-bottom: 28vh;
+  }
+
+  .time-entry-editor > div:not(.time-entry-editor-actions) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .time-entry-editor-actions {
+    justify-content: space-between;
+  }
+
+  .time-entry-editor-actions .text-action {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+}
+
+.navigation-rail {
+  display: none;
+}
+
+.global-capture-navigation kbd {
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+}
+
+.global-capture-fab {
+  position: fixed;
+  z-index: 9;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
+  display: inline-flex;
+  width: auto;
+  min-width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  color: var(--paper);
+  font-weight: 700;
+  background: var(--accent);
+  border: 1px solid var(--line-strong);
+  border-radius: 26px;
+  box-shadow: 0 10px 24px var(--color-shadow-soft);
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  border-color: transparent;
+}
+
+.global-capture-fab span {
+  line-height: 1;
+}
+
+.undo-toast {
+  position: fixed;
+  z-index: 25;
+  right: max(var(--page-inset), env(safe-area-inset-right));
+  bottom: max(var(--page-inset), env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(26rem, calc(100vw - (var(--page-inset) * 2)));
+  min-height: 56px;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 8px 8px 8px var(--space-lg);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 10px 28px var(--color-shadow);
+  animation: deletion-feedback-enter 180ms var(--ease-out);
+}
+
+.undo-toast.is-above-mobile-controls,
+.deletion-recovery-notice.is-above-mobile-controls {
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 82px);
+}
+
+.undo-toast > span {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@keyframes deletion-feedback-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+:root[data-theme="dark"] .global-capture-fab {
+  color: var(--paper);
+}
+.app-shell:has(.fc-more-popover) .global-capture-fab {
+  visibility: hidden;
+}
+@media (max-width: 839px) {
+  :root {
+    --nav-height: max(72px, calc(3rem + 24px));
+  }
+}

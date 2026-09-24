@@ -1,0 +1,1309 @@
+/* Mini calendar, full calendar, and Agenda. */
+
+.mini-calendar-cell-tasks {
+  display: none;
+}
+
+.mini-calendar-agenda {
+  margin-top: 26px;
+}
+
+.mini-calendar-agenda > h2 {
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: var(--type-body);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.mini-calendar-agenda > p {
+  padding: 20px 0;
+}
+
+.full-calendar-view {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--paper-soft);
+  --fc-neutral-text-color: var(--ink-muted);
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: var(--accent);
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: var(--ink);
+  min-width: 0;
+}
+
+.full-calendar-commandbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.full-calendar-commandbar > h2 {
+  grid-row: 1;
+  grid-column: 2;
+  margin: 0;
+  font-size: var(--type-control);
+  text-align: right;
+}
+
+.full-calendar-navigation,
+.full-calendar-modes {
+  display: flex;
+  align-items: center;
+}
+
+.full-calendar-navigation button,
+.full-calendar-modes button {
+  min-height: 44px;
+  padding: 0 11px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.full-calendar-navigation .full-calendar-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.full-calendar-navigation button:first-child,
+.full-calendar-navigation button:last-child {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+}
+
+.full-calendar-modes {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: var(--space-xs);
+  background: var(--paper-soft);
+  border-radius: var(--radius-control);
+}
+
+.full-calendar-modes button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.full-calendar-modes button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--paper-raised);
+  border-color: var(--line);
+}
+
+.full-calendar-modes .wide-mode {
+  display: none;
+}
+
+.full-calendar-workspace,
+.full-calendar-surface {
+  min-width: 0;
+}
+
+.full-calendar-surface {
+  overflow: hidden;
+}
+
+.full-calendar-inspector {
+  margin-top: var(--space-xl);
+}
+
+.full-calendar-inspector > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 38px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.full-calendar-inspector h2 {
+  margin: 0;
+  font-size: var(--type-body);
+}
+
+.full-calendar-inspector header span {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.full-calendar-inspector > p {
+  margin: 0;
+  padding: 20px 0;
+  color: var(--ink-muted);
+}
+
+.full-calendar-day-tasks {
+  border-bottom: 1px solid var(--line);
+}
+
+.full-calendar-view .fc {
+  color: var(--ink);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: var(--type-supporting);
+}
+
+.full-calendar-view .fc-theme-standard .fc-scrollgrid,
+.full-calendar-view .fc-theme-standard td,
+.full-calendar-view .fc-theme-standard th {
+  border-color: var(--line);
+}
+
+.full-calendar-view .fc-theme-standard .fc-scrollgrid {
+  border-width: 1px 0 0 1px;
+}
+
+.full-calendar-view .fc-col-header-cell-cushion,
+.full-calendar-view .fc-timegrid-axis-cushion {
+  padding: 8px 4px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-mono-micro);
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.full-calendar-view .fc-daygrid-day-frame {
+  min-height: 66px;
+}
+
+.full-calendar-view .fc-daygrid-day-top {
+  flex-direction: row;
+}
+
+.full-calendar-view .fc-daygrid-day-number {
+  padding: 7px 8px;
+  color: var(--ink-soft);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+}
+
+.full-calendar-view .fc-day-other .fc-daygrid-day-number {
+  color: color-mix(in srgb, var(--ink-muted), transparent 45%);
+}
+
+.full-calendar-view .fc-day-today .fc-daygrid-day-number {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.full-calendar-view .fc-daygrid-day.is-selected-day {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.full-calendar-view .fc-daygrid-event {
+  margin: 1px 5px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.full-calendar-view .fc-daygrid-event:hover,
+.full-calendar-view .fc-list-event:hover td {
+  background: var(--accent-soft);
+}
+
+.full-calendar-event-content {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  min-width: 44px;
+  min-height: 24px;
+  gap: 2px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.full-calendar-event-primary {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: var(--space-xs);
+}
+
+.full-calendar-event-primary > i {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  background: var(--event-tone);
+  border-radius: 50%;
+}
+
+.full-calendar-event-primary > time {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+
+/* Grid cells are narrow: the reason reads as a quiet word, not a chip. */
+.full-calendar-view .fc-daygrid-event .full-calendar-event-kind {
+  padding: 0;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+}
+
+.full-calendar-event-primary > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.full-calendar-event-content.is-recurring
+  .full-calendar-event-primary
+  > span::after {
+  content: " ↻";
+  color: var(--ink-muted);
+}
+
+.full-calendar-view
+  .task-calendar-event.is-recurring-next
+  .full-calendar-event-content,
+.full-calendar-view
+  .task-calendar-event.is-recurring-pattern
+  .full-calendar-event-content {
+  padding-inline-start: var(--space-xs);
+  border-inline-start: 2px solid var(--event-tone);
+}
+
+.full-calendar-view
+  .task-calendar-event.is-recurring-pattern
+  .full-calendar-event-content {
+  border-inline-start-style: dashed;
+  opacity: 0.72;
+}
+
+.full-calendar-event-properties {
+  display: none;
+}
+
+.full-calendar-view .task-calendar-event.is-complete {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+.full-calendar-view .task-calendar-event.is-time-entry {
+  background: color-mix(in srgb, var(--success), transparent 90%);
+  border-color: color-mix(in srgb, var(--success), var(--line) 72%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .task-actions-trigger {
+    opacity: 0;
+    transition:
+      color 160ms var(--ease-out),
+      opacity 160ms var(--ease-out);
+  }
+
+  .task-row:hover .task-actions-trigger,
+  .task-row:focus-within .task-actions-trigger {
+    opacity: 1;
+  }
+}
+
+.full-calendar-view .fc-timegrid-slot-label-cushion {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+
+.full-calendar-view .fc-timegrid-event {
+  padding: 1px 4px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+
+.full-calendar-view .fc-timegrid-event .full-calendar-event-primary {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.full-calendar-view .fc-list {
+  border: 0;
+}
+
+.full-calendar-view .fc-list-table {
+  border-top: 1px solid var(--line-strong);
+}
+
+.full-calendar-view .fc-list-day-cushion {
+  padding: 12px 0 7px;
+  background: transparent;
+}
+
+.full-calendar-view .fc-list-day-text,
+.full-calendar-view .fc-list-day-side-text {
+  color: var(--ink);
+  font-size: var(--type-supporting);
+}
+
+.full-calendar-view .fc-list-event td {
+  padding: 4px 8px;
+  background: transparent;
+  border-color: var(--line);
+}
+
+.full-calendar-view .fc-list-event-time {
+  width: 112px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  white-space: nowrap;
+}
+
+.full-calendar-view .fc-list-event-graphic {
+  display: none;
+}
+
+.full-calendar-view .fc-list .full-calendar-event-primary > time {
+  display: none;
+}
+
+.full-calendar-view .fc-list .full-calendar-event-primary > span {
+  color: var(--ink);
+  font-size: var(--type-body);
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties .is-overdue,
+.full-calendar-view
+  .fc-list
+  .full-calendar-event-properties
+  .is-overdue
+  strong {
+  color: var(--danger);
+}
+
+/* Names why an entry is here: its due day, or logged time. */
+.full-calendar-event-kind {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  color: var(--ink-soft);
+  font-size: var(--type-label);
+  font-style: normal;
+  line-height: 1.6;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties > span {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties span > span {
+  color: var(--ink-muted);
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties strong {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.full-calendar-view .fc-list-empty {
+  background: transparent;
+}
+
+.full-calendar-view .fc-list-empty-cushion {
+  color: var(--ink-muted);
+}
+
+@media (max-width: 839px) {
+  .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time {
+    display: none;
+  }
+
+  .full-calendar-view .fc-daygrid-event {
+    display: flex;
+    margin: 1px 2px;
+  }
+
+  .full-calendar-view .fc-daygrid-day-events {
+    min-height: 44px;
+    padding: 0;
+  }
+
+  /* Preserve usable day/event targets on very narrow phones without widening the page. */
+  .full-calendar-surface {
+    overflow-x: auto;
+  }
+  .full-calendar-view .fc-dayGridMonth-view {
+    min-width: 350px;
+  }
+
+  /*
+   * Phone months show one dot per task; the selected day's tasks are listed
+   * readably beneath the grid instead of as clipped titles in each cell.
+   */
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-day-events {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 3px;
+    min-height: 28px;
+    padding: 0 6px;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-day-events
+    > .fc-daygrid-event-harness {
+    width: auto;
+    margin: 0 !important;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-day-events
+    > .fc-daygrid-day-bottom {
+    flex-basis: 100%;
+  }
+
+  /* Dots are indicators: a tap selects the day, whose tasks list below. */
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-event {
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-content {
+    min-width: 10px;
+    min-height: 10px;
+    place-items: center;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-primary
+    > :not(i) {
+    display: none;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-primary
+    > i {
+    width: 8px;
+    height: 8px;
+  }
+
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-more-link {
+    font-size: var(--type-label);
+  }
+
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    min-height: 72px;
+  }
+
+  /* Agenda rows put the time above the title so titles keep the full width. */
+  .full-calendar-view .fc-list-event {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .full-calendar-view .fc-list-event td {
+    border: 0;
+  }
+
+  .full-calendar-view .fc-list-event {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .full-calendar-view .fc-list-event-time {
+    width: auto;
+    padding-bottom: 0 !important;
+    font-size: var(--type-label);
+  }
+
+  .full-calendar-view .fc-list-event-title {
+    padding-top: 0 !important;
+  }
+
+  .full-calendar-view .fc-list .full-calendar-event-primary > span {
+    white-space: normal;
+  }
+}
+
+.full-calendar-view .fc-daygrid-more-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 840px) {
+  :root {
+    --page-inset: 32px;
+    --type-field: var(--type-body);
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .navigation-rail {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 28px 18px;
+    overflow-y: auto;
+    background: var(--paper-soft);
+    border-right: 1px solid var(--line);
+  }
+
+  .search-header > .icon-action {
+    display: none;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 0 8px;
+    margin-bottom: 34px;
+    font-size: var(--type-control);
+    font-weight: 700;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .wordmark img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .navigation-rail > button:not(.wordmark),
+  .navigation-rail nav button,
+  .navigation-rail .navigation-view-section button {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 10px;
+    border-radius: var(--radius-control);
+  }
+
+  .navigation-rail button.is-active {
+    background: var(--accent-soft);
+  }
+
+  .navigation-rail button > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navigation-view-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The desktop counterpart of the phone capture button: one filled action. */
+  .navigation-rail > button.global-capture-navigation {
+    min-height: 44px;
+    margin-bottom: 20px;
+    color: var(--paper);
+    font-weight: 700;
+    background: var(--accent);
+    border: 0;
+  }
+
+  .navigation-rail > button.global-capture-navigation:hover {
+    background: color-mix(in srgb, var(--accent), var(--ink) 12%);
+  }
+
+  /* Drop position while dragging a destination in the sidebar. */
+  .navigation-rail button[data-drop="before"] {
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+
+  .navigation-rail button[data-drop="after"] {
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  .navigation-utility {
+    display: flex;
+    flex-direction: column;
+    margin-top: auto;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--line);
+  }
+
+  .navigation-rail .navigation-utility button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    color: var(--ink-muted);
+    font-size: var(--type-supporting);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+  }
+
+  .navigation-rail .navigation-utility button.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .task-row .task-actions-trigger {
+    opacity: 0;
+  }
+
+  .task-row:hover .task-actions-trigger,
+  .task-row:focus-within .task-actions-trigger {
+    opacity: 1;
+  }
+
+  .navigation-rail > button.global-capture-navigation kbd {
+    color: var(--paper);
+  }
+
+  .global-capture-fab {
+    display: none;
+  }
+
+  .page-surface {
+    padding-bottom: 0;
+  }
+
+  .view-detail.is-kanban-view {
+    height: 100dvh;
+  }
+
+  .detail-inspector {
+    grid-column: 2;
+  }
+
+  .app-shell.has-detail .page-surface {
+    display: none;
+  }
+
+  .screen {
+    min-height: 100vh;
+    padding-top: 44px;
+  }
+
+  .screen.scratchpad-screen {
+    height: 100dvh;
+    min-height: 0;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .task-screen {
+    padding-top: 22px;
+  }
+
+  .bottom-navigation {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell.has-detail {
+    grid-template-columns: 190px minmax(400px, 1fr) minmax(380px, 440px);
+  }
+
+  .app-shell.has-detail .page-surface {
+    display: block;
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .detail-inspector {
+    position: sticky;
+    top: 0;
+    grid-column: 3;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    border-left: 1px solid var(--line);
+  }
+
+  .detail-inspector .screen {
+    width: 100%;
+    min-height: 100%;
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .detail-inspector .title-field {
+    min-height: 64px;
+    font-size: 1.65rem;
+  }
+
+  .detail-inspector .timing-fields,
+  .detail-inspector .metadata-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-inspector .task-attachments-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-inspector .task-attachment-add-actions {
+    justify-content: flex-start;
+  }
+
+  .view-detail {
+    width: min(100%, 1440px);
+  }
+
+  .view-detail.is-task-list-view {
+    width: min(100%, 1040px);
+  }
+
+  .full-calendar-commandbar {
+    grid-template-columns: auto minmax(140px, 1fr) auto;
+    margin-bottom: 14px;
+  }
+
+  .full-calendar-commandbar > h2 {
+    grid-column: 2;
+    text-align: center;
+  }
+
+  .full-calendar-modes {
+    grid-row: 1;
+    grid-column: 3;
+    display: flex;
+  }
+
+  .full-calendar-modes .wide-mode {
+    display: block;
+  }
+
+  .full-calendar-workspace {
+    display: grid;
+    grid-template-columns: minmax(580px, 1fr) minmax(280px, 340px);
+    gap: 32px;
+    align-items: start;
+  }
+
+  .full-calendar-view.is-agenda .full-calendar-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .full-calendar-inspector {
+    margin-top: 0;
+  }
+
+  .full-calendar-view .fc-daygrid-day-frame {
+    min-height: 108px;
+  }
+
+  .app-shell.has-detail .full-calendar-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.has-detail .full-calendar-inspector {
+    margin-top: 26px;
+  }
+
+  .mini-calendar-view {
+    display: grid;
+    grid-template-columns: minmax(520px, 1fr) minmax(280px, 360px);
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  .mini-calendar-toolbar,
+  .mini-calendar-weekdays,
+  .mini-calendar-grid {
+    grid-column: 1;
+  }
+
+  .mini-calendar-agenda {
+    grid-row: 1 / span 3;
+    grid-column: 2;
+    margin-top: 0;
+  }
+
+  .mini-calendar-grid button {
+    align-content: start;
+    justify-items: stretch;
+    min-height: 112px;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .mini-calendar-date-number {
+    justify-self: end;
+    font-family: "Azeret Mono", ui-monospace, monospace;
+    font-size: var(--type-label);
+  }
+
+  .mini-calendar-cell-tasks {
+    display: grid;
+    gap: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .mini-calendar-cell-tasks > span {
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: var(--type-label);
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mini-calendar-cell-tasks > span.is-complete {
+    color: var(--ink-muted);
+    text-decoration: line-through;
+  }
+
+  .mini-calendar-cell-tasks small {
+    color: var(--ink-muted);
+    font-size: var(--type-label);
+  }
+
+  .mini-calendar-grid i {
+    display: none;
+  }
+
+  .app-shell.has-detail .mini-calendar-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.has-detail .mini-calendar-agenda {
+    grid-row: auto;
+    grid-column: 1;
+    margin-top: 26px;
+  }
+
+  .view-editor {
+    right: 0;
+    left: auto;
+    width: min(680px, calc(100vw - 190px));
+    border-left: 1px solid var(--line);
+    box-shadow: -24px 0 60px var(--color-shadow-soft);
+  }
+}
+
+@media (max-width: 839px) {
+  .view-editor {
+    top: 0;
+    width: 100%;
+    max-height: none;
+    border-top: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .view-editor-header {
+    min-height: calc(88px + env(safe-area-inset-top));
+    padding: calc(14px + env(safe-area-inset-top)) var(--page-inset) 14px;
+  }
+
+  .view-editor-body {
+    padding-right: var(--page-inset);
+    padding-left: var(--page-inset);
+  }
+
+  .view-editor-footer {
+    padding-right: var(--page-inset);
+    padding-left: var(--page-inset);
+  }
+
+  .view-draft-preview {
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .settings-screen button,
+  .settings-screen input:not([type="checkbox"]),
+  .settings-screen .tasknotes-control-trigger,
+  .view-editor button,
+  .view-editor summary,
+  .view-editor input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+
+  .view-editor .quiet-icon,
+  .view-editor .view-order-actions button,
+  .saved-view-edit {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .task-actions-subheading {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .task-actions-subheading button,
+  .browse-fields button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .view-editor .filter-group-heading .tasknotes-control-trigger,
+  .view-editor .view-editor-footer .save-view-action {
+    min-height: 44px;
+  }
+
+  body:has(.settings-disclosure[open]) .global-capture-fab {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (max-width: 600px) {
+  .manual-order-list {
+    margin-left: 16px;
+  }
+
+  .task-row-title {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .task-row-meta {
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .task-row-meta > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task-row-meta > .task-row-tracking {
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+
+  .global-capture-dialog {
+    width: 100%;
+    max-height: calc(
+      var(--capture-viewport-height, 100dvh) - env(safe-area-inset-top)
+    );
+    padding: 18px var(--page-inset) calc(22px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  }
+
+  .global-capture-scrim {
+    align-items: end;
+    padding: env(safe-area-inset-top) 0 0;
+  }
+
+  .task-model-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-model-save {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .status-automation-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 4px 0 10px;
+  }
+
+  .auto-archive-delay {
+    padding-left: 28px;
+  }
+
+  .tasknotes-popover-scrim {
+    background: var(--color-scrim-soft);
+  }
+
+  .tasknotes-select-popover,
+  .tasknotes-calendar-popover,
+  .tasknotes-time-popover {
+    position: fixed;
+    z-index: 30;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    min-width: 0;
+    max-height: min(76vh, 620px);
+    max-height: min(76dvh, 620px);
+    padding: 10px var(--page-inset) calc(10px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    box-shadow: 0 -16px 44px var(--color-shadow);
+  }
+
+  .tasknotes-select-popover .tasknotes-option-list {
+    max-height: min(60vh, 480px);
+    max-height: min(60dvh, 480px);
+  }
+
+  .tasknotes-option-list > button {
+    min-height: 48px;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+
+  .tasknotes-calendar-popover {
+    padding-right: max(var(--page-inset), calc((100vw - 320px) / 2));
+    padding-left: max(var(--page-inset), calc((100vw - 320px) / 2));
+  }
+
+  .tasknotes-calendar-grid [role="gridcell"] {
+    width: 100%;
+    max-width: 44px;
+    height: 44px;
+    justify-self: center;
+  }
+
+  .tasknotes-calendar-grid [role="gridcell"].is-today::after {
+    right: calc(50% - 2px);
+    bottom: 5px;
+  }
+
+  .tasknotes-time-columns {
+    width: min(100%, 340px);
+    margin: 0 auto;
+  }
+
+  .tasknotes-time-list {
+    height: min(36vh, 250px);
+    height: min(36dvh, 250px);
+  }
+
+  .tasknotes-combobox-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    box-shadow: 0 14px 38px var(--color-shadow-soft);
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-rule {
+    grid-template-columns: 1fr 1fr 36px;
+  }
+
+  .filter-rule > label:nth-of-type(3) {
+    grid-column: 1 / 3;
+  }
+
+  .filter-rule > .quiet-icon {
+    grid-row: 1;
+    grid-column: 3;
+    align-self: end;
+  }
+
+  .view-kind-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .view-editor-body .view-kind-options label {
+    grid-template-columns: 20px minmax(0, 1fr) 20px;
+    gap: 6px;
+    min-height: 66px;
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .view-editor-body .view-kind-options label:nth-child(odd) {
+    border-right: 1px solid var(--line);
+  }
+
+  .view-editor-body .view-kind-options label:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .view-kind-options label small {
+    display: none;
+  }
+
+  .view-draft-preview {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .view-draft-preview ol {
+    gap: 2px;
+  }
+
+  .field-grid,
+  .metadata-fields,
+  .timing-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .capture-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .view-create-defaults-fields,
+  .view-editor-grid,
+  .view-computed-property {
+    grid-template-columns: 1fr;
+  }
+
+  .view-sort-rules > div {
+    grid-template-columns: minmax(0, 1fr) 128px;
+    padding: 8px 0;
+  }
+
+  .view-sort-rules .view-order-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .view-editor-footer {
+    gap: 8px;
+  }
+
+  .view-editor-footer > div {
+    gap: 8px;
+  }
+
+  .recurrence-end {
+    grid-template-columns: 1fr;
+  }
+
+  .occurrence-banner {
+    align-items: flex-start;
+  }
+
+  .task-attachments-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-attachment-add-actions {
+    justify-content: flex-start;
+  }
+
+  .attachment-list > li {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .attachment-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-left: 56px;
+  }
+
+  .delete-confirmation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 340px) {
+  .is-full-calendar-view .full-calendar-surface {
+    margin-right: calc((var(--page-inset) - 6px) * -1);
+    margin-left: calc((var(--page-inset) - 6px) * -1);
+  }
+} /* The date-aware capture row (or phone capture button) is the one add action. */
+.has-context-capture .full-calendar-create {
+  display: none;
+}
+.full-calendar-view .fc-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.full-calendar-view .fc-more-popover {
+  width: min(360px, calc(100vw - 24px));
+  max-height: 70dvh;
+  overflow: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 8px 24px var(--color-shadow);
+} /* Agenda rows retain a ~44px overall minimum without inflating grid events. */
+.full-calendar-view .fc-list .full-calendar-event-content {
+  min-height: 36px;
+}
+.full-calendar-view .fc-more-popover .full-calendar-event-content {
+  min-height: 44px;
+  font-size: var(--type-body);
+}
+@media (max-width: 839px) {
+  .full-calendar-commandbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .full-calendar-commandbar > h2 {
+    flex: 1 1 9ch;
+    min-width: 0;
+  }
+  .full-calendar-navigation {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .full-calendar-modes {
+    flex: 1 1 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5em), 1fr));
+  }
+  .full-calendar-modes button {
+    min-width: 0;
+    padding: 8px;
+    overflow-wrap: anywhere;
+  }
+}

@@ -18,6 +18,7 @@ import { CollectionAvailability } from "../components/collection-availability";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
+import { useSidebarReorder } from "./use-sidebar-reorder";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
@@ -333,6 +334,7 @@ export function AppShell() {
         <Navigation
           active={activePage}
           homeKey={homeKey}
+          onMove={moveNavigationView}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -366,7 +368,6 @@ export function AppShell() {
           <MoreScreen
             calendarPreferences={calendarPreferences}
             onCalendarPreferencesChange={updateCalendarPreferences}
-            onNewTask={() => setCaptureOpen(true)}
           />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
@@ -763,6 +764,7 @@ export function Navigation({
   navigationKeys,
   views,
   onNavigate,
+  onMove,
 }: {
   active: string;
   homeKey?: string;
@@ -770,9 +772,11 @@ export function Navigation({
   navigationKeys: string[];
   views: TaskView[];
   onNavigate(route: Route): void;
+  onMove?(key: string, direction: -1 | 1): void;
 }) {
   const navigationEntries: {
     key: string;
+    navigationKey: string;
     label: string;
     icon: typeof CheckCircle2;
     route: Route;
@@ -781,6 +785,7 @@ export function Navigation({
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
       navigationEntries.push({
         key: "scratchpad",
+        navigationKey: key,
         label: "Scratchpad",
         icon: FilePenLine,
         route: key === homeKey ? { page: "home" } : { page: "scratchpad" },
@@ -790,6 +795,7 @@ export function Navigation({
     if (key === SEARCH_NAVIGATION_KEY) {
       navigationEntries.push({
         key: "search",
+        navigationKey: key,
         label: "Search",
         icon: Search,
         route: key === homeKey ? { page: "home" } : { page: "search" },
@@ -800,6 +806,7 @@ export function Navigation({
     if (view)
       navigationEntries.push({
         key: `view:${view.key}`,
+        navigationKey: key,
         label: view.name,
         icon: navigationViewIcon(view),
         route:
@@ -808,6 +815,10 @@ export function Navigation({
             : { page: "views", key: view.key },
       });
   }
+  const reorder = useSidebarReorder(
+    navigationEntries.map((entry) => entry.navigationKey),
+    mode === "desktop" ? onMove : undefined,
+  );
   const visibleViews = navigationEntries.slice(0, 3);
   const additionalViews = navigationEntries.slice(visibleViews.length);
   const hiddenNavigationViewActive = additionalViews.some(
@@ -906,8 +917,9 @@ export function Navigation({
 
   return (
     <>
-      {items.map(({ key, label, icon: Icon, route }) => (
+      {items.map(({ key, navigationKey, label, icon: Icon, route }) => (
         <button
+          {...reorder.itemProps(navigationKey, label)}
           aria-current={active === key ? "page" : undefined}
           className={active === key ? "is-active" : undefined}
           key={key}
@@ -929,6 +941,7 @@ export function Navigation({
             const Icon = view.icon;
             return (
               <button
+                {...reorder.itemProps(view.navigationKey, view.label)}
                 aria-current={active === view.key ? "page" : undefined}
                 className={active === view.key ? "is-active" : undefined}
                 key={view.key}
@@ -1017,6 +1030,11 @@ export function Navigation({
             : null}
         </>
       )}
+      {mode === "desktop" ? (
+        <p aria-live="polite" className="visually-hidden">
+          {reorder.announcement}
+        </p>
+      ) : null}
       {mode === "desktop" ? (
         <div aria-label="Manage" className="navigation-utility" role="group">
           <button

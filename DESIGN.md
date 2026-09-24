@@ -150,12 +150,21 @@ Today             Search       More
   typography. Completion and overflow retain independent 44px targets. Dates
   and other properties remain directly editable, with no overlapping hit areas.
   Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows
-  retain the 48px minimum; kanban cards keep their existing targets. Scheduled
+  retain the 48px minimum; board cards use the same compact property targets as
+  list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
-  "Tomorrow", "Sat") and use a short date beyond it; an overdue date takes the
+  "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
+  time so overdue rows stay compact. An overdue date takes the
   danger color beside its visible label. A non-default status adds a filled dot
   inside the completion circle, so status never relies on color alone. The
-  starter Today view shows each task's project as quiet, unlabelled metadata. Search explains observed non-title matches with
+  starter Today view shows each task's project as quiet, unlabelled metadata.
+  An existing Today view without it gets a one-time, dismissible "Show each
+  task's project on Today?" offer; the saved view changes only if accepted.
+- On touch, swiping a row right completes (or reopens) the task and swiping
+  left opens its actions, which include Schedule today and Schedule tomorrow.
+  The revealed side names the action and fills with accent once the swipe
+  will act. Buttons keep every action available; board cards never claim
+  horizontal swipes. Search explains observed non-title matches with
   concise labels such as “Matched in notes.”
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
@@ -173,11 +182,14 @@ Today             Search       More
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - The desktop sidebar leads with a filled New task action, lists navigation
-  destinations, and groups Manage views and Settings at its foot. Because the
+  destinations, and groups Manage views and Settings at its foot. Destinations
+  reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
+  it Home. Because the
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Browse. Editable focus alone never hides navigation; keyboard-aware changes
+  Browse. Tab labels scale with system text until the tab width is reached and
+  never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
   require observed viewport occlusion. Browse contains additional destinations,
   Manage views, and Settings. Tab dismisses Browse and continues outside it;
   arrow keys belong to the menu only while focus is inside.
@@ -190,6 +202,11 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
+- Settings leads with the collection name, its counts, and Refresh now. How
+  tasks are stored, the collection location, and refresh diagnostics sit in a
+  collapsed disclosure. Settings has no capture control of its own.
+- Projects shows a project count beside a compact native "Jump to project"
+  picker rather than a full-width field.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The
@@ -280,7 +297,8 @@ Today             Search       More
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
 - Task detail leads with a title-level completion control and the note body.
-  Existing notes open as rendered Markdown; clicking the text or choosing
+  The Schedule and status summary uses the same relative date labels as rows;
+  exact dates remain in its fields. Existing notes open as rendered Markdown; clicking the text or choosing
   Write opens the source. Empty notes open ready for writing. Save status is
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
@@ -297,7 +315,8 @@ Today             Search       More
   viewport above an overlay keyboard.
 - Capture shows the interpreted title above proportional-type chips. Date chips
   open timing details; date, project, context, tag, repeat, and estimate chips
-  are removable. A suggestion list closes once its only match is fully typed,
+  are removable; on touch each chip action has a 44px hit area without larger
+  visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible while saving and survives a rejected write; it clears only
@@ -305,12 +324,21 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
-- Calendar month events use a 24px content minimum on phones and desktop;
-  timed events use a 28px minimum. Agenda content uses a 36px minimum with
+- Desktop calendar month events use a 24px content minimum; timed events use
+  a 28px minimum. Phone months draw every task as a colored dot, with no More
+  popover; the dots are indicators hidden from assistive technology, a tap
+  selects the day (at least 44px), and the selected day's tasks are listed as
+  ordinary task rows beneath the grid.
+- Agenda and calendar entries use proportional type and the same relative date
+  labels as task rows. An entry on a task's due day, when the task is also
+  scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".
+  Agenda day headings appear once. Phones stack the time above the title so
+  titles keep the full width. A calendar view with a capture row has no second
+  Add task button in its toolbar. Agenda content uses a 36px minimum with
   4px vertical cell padding, keeping simple rows near 44px. Metadata and wrapped
   content may grow naturally. Calendar toolbar, More links, and overflow-panel
-  events retain 44px targets; compact grid events remain independently tappable.
-- Calendar More opens a readable, opaque panel with 44px controls, bounded to
+  events retain 44px targets; desktop grid events remain independently tappable.
+- Desktop calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within
   the panel until its boundary; Tab then dismisses and continues outside.
@@ -321,6 +349,11 @@ Today             Search       More
   layout tile. Planner is explicitly an external app before saving. Ordinary
   pages and editors reflow at 320px with 200% root text; deliberate board and
   calendar scrolling stays local rather than widening the document.
+- Board columns holding the empty status or priority read "No status" or
+  "No priority". Desktop columns share the available width before the board
+  scrolls. Phones show one full-width column at a time with mandatory snapping;
+  a jump bar above the board names every column with its count and marks the
+  visible one.
 - A kanban board consumes the remaining usable viewport. Its horizontal
   scrollbar stays at the bottom of the screen while columns scroll within that
   surface.
