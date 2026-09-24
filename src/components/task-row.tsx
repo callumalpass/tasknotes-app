@@ -3,13 +3,8 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useId, useRef, useState } from "react";
 
-import {
-  activeTimeEntry,
-  dateFromStorage,
-  formatRelativeTaskDate,
-  isTaskDateOverdue,
-  taskMeta,
-} from "../domain/task";
+import { activeTimeEntry, taskMeta } from "../domain/task";
+import { relativeDateDetail } from "../domain/view-values";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -304,34 +299,6 @@ function detailPriorityColor(
   return configuration.priorities.find(
     (option) => option.value === detail.rawValue,
   )?.color;
-}
-
-function detailField(key: string): string {
-  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(key);
-  return bracketed?.[1] ?? key.replace(/^note\./, "");
-}
-
-/** Scheduled and due dates read relative to today and flag overdue work. */
-function relativeDateDetail(
-  detail: TaskRowDetail,
-  task: TaskSummary,
-  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
-): TaskRowDetail {
-  const field = detailField(detail.key);
-  const scheduled =
-    field === configuration.fieldMapping.scheduled || field === "scheduled";
-  const due = field === configuration.fieldMapping.due || field === "due";
-  if (
-    (!scheduled && !due) ||
-    typeof detail.rawValue !== "string" ||
-    !dateFromStorage(detail.rawValue)
-  )
-    return detail;
-  return {
-    ...detail,
-    value: formatRelativeTaskDate(detail.rawValue),
-    overdue: !task.completed && isTaskDateOverdue(detail.rawValue),
-  };
 }
 
 function isCompactDetail(

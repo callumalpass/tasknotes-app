@@ -31,11 +31,27 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
   await expect(
     page.locator(".full-calendar-event-content").first(),
   ).toBeVisible();
+  // Phone month events are dots: a tap lands on the day (at least 44px),
+  // which lists that day's tasks as full rows below the grid.
   expect(
-    await page.locator(".full-calendar-event-content").evaluateAll((nodes) =>
+    await page
+      .locator(".fc-daygrid-event .full-calendar-event-content")
+      .evaluateAll((nodes) =>
+        nodes.every((node) => {
+          const event = node.closest<HTMLElement>(".fc-daygrid-event")!;
+          return (
+            getComputedStyle(event).pointerEvents === "none" &&
+            event.getAttribute("aria-hidden") === "true" &&
+            event.tabIndex === -1
+          );
+        }),
+      ),
+  ).toBe(true);
+  expect(
+    await page.locator(".fc-daygrid-day").evaluateAll((nodes) =>
       nodes.every((node) => {
         const box = node.getBoundingClientRect();
-        return box.width >= 44 && box.height >= 24;
+        return box.width >= 44 && box.height >= 44;
       }),
     ),
   ).toBe(true);

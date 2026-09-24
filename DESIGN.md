@@ -306,12 +306,21 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
-- Calendar month events use a 24px content minimum on phones and desktop;
-  timed events use a 28px minimum. Agenda content uses a 36px minimum with
+- Desktop calendar month events use a 24px content minimum; timed events use
+  a 28px minimum. Phone months draw every task as a colored dot, with no More
+  popover; the dots are indicators hidden from assistive technology, a tap
+  selects the day (at least 44px), and the selected day's tasks are listed as
+  ordinary task rows beneath the grid.
+- Agenda and calendar entries use proportional type and the same relative date
+  labels as task rows. An entry on a task's due day, when the task is also
+  scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".
+  Agenda day headings appear once. Phones stack the time above the title so
+  titles keep the full width. A calendar view with a capture row has no second
+  Add task button in its toolbar. Agenda content uses a 36px minimum with
   4px vertical cell padding, keeping simple rows near 44px. Metadata and wrapped
   content may grow naturally. Calendar toolbar, More links, and overflow-panel
-  events retain 44px targets; compact grid events remain independently tappable.
-- Calendar More opens a readable, opaque panel with 44px controls, bounded to
+  events retain 44px targets; desktop grid events remain independently tappable.
+- Desktop calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within
   the panel until its boundary; Tab then dismisses and continues outside.

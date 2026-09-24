@@ -25,9 +25,11 @@ import {
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
 import {
+  relativeDateDetail,
   viewPropertyDetails,
   type ViewPropertyDetail,
 } from "../domain/view-values";
+import { useRepository } from "./repository-context";
 import {
   calendarEventTimeFormat,
   type CalendarPreferences,
@@ -125,9 +127,10 @@ export function FullCalendarView({
       }),
     [execution, identityTasks, preferences.showTimeEntries, range],
   );
+  const { configuration } = useRepository();
   const events = useMemo(
-    () => fullCalendarEvents(entries, execution, titleProperty),
-    [entries, execution, titleProperty],
+    () => fullCalendarEvents(entries, execution, titleProperty, configuration),
+    [configuration, entries, execution, titleProperty],
   );
   const selectedEntries = (entries.get(selected) ?? []).filter(
     (entry) => !entry.timeEntry,
@@ -296,7 +299,11 @@ export function FullCalendarView({
           <FullCalendar
             allDaySlot={preferences.allDaySlot}
             allDayText="All day"
-            dayMaxEvents={3}
+            listDayFormat={{ weekday: "long", month: "long", day: "numeric" }}
+            listDaySideFormat={false}
+            // Phone months draw every task as a dot and list the selected
+            // day below, so there is no More popover to open.
+            dayMaxEvents={phoneMonth("dayGridMonth") ? false : 3}
             eventMinHeight={28}
             moreLinkDidMount={({ el }) => {
               el.setAttribute("role", "button");
@@ -310,6 +317,12 @@ export function FullCalendarView({
             }
             editable
             eventClick={(info) => openEvent(info, onOpen)}
+            eventDidMount={({ el, view }) => {
+              if (!phoneMonth(view.type)) return;
+              // Phone month dots are indicators; the day list holds the tasks.
+              el.setAttribute("tabindex", "-1");
+              el.setAttribute("aria-hidden", "true");
+            }}
             eventContent={(info) =>
               calendarEventContent(info, onOpen, (metadata, x, y) =>
                 setContextAction({
@@ -449,6 +462,7 @@ function fullCalendarEvents(
   entries: Map<string, CalendarEntry[]>,
   execution: TaskViewExecution,
   titleProperty: string,
+  configuration: Parameters<typeof relativeDateDetail>[2],
 ): EventInput[] {
   const result: EventInput[] = [];
   for (const [date, values] of entries) {
@@ -469,7 +483,7 @@ function fullCalendarEvents(
           id: calendarEntryKey(entry),
           title: entry.timeEntry.description
             ? `${entry.task.title}: ${entry.timeEntry.description}`
-            : `${entry.task.title}: tracked time`,
+            : entry.task.title,
           start: entry.timeEntry.startTime,
           end: end.toISOString(),
           allDay: false,
@@ -484,6 +498,7 @@ function fullCalendarEvents(
             } satisfies CalendarEventMetadata,
             tone: "var(--success)",
             details: [],
+            kind: "Tracked time",
           },
         });
         continue;
@@ -505,11 +520,12 @@ function fullCalendarEvents(
       const editable = entry.occurrence
         ? !entry.occurrence.completed && !entry.occurrence.skipped
         : !entry.task.recurrence;
-      const details =
+      const details = (
         viewPropertyDetails(entry.row, execution.view.properties, {
           identityProperty: titleProperty,
           occurrence: entry.occurrence,
-        }) ?? [];
+        }) ?? []
+      ).map((detail) => relativeDateDetail(detail, displayed, configuration));
       result.push({
         id: [calendarEntryKey(entry), dateField, date].join(":"),
         title: entry.task.title,
@@ -536,6 +552,9 @@ function fullCalendarEvents(
           } satisfies CalendarEventMetadata,
           tone: eventTone(displayed),
           details,
+          // A task can appear on its scheduled and its due day; name the
+          // reason on the due-day entry so the repeat is not a mystery.
+          kind: dateField === "due" && displayed.scheduled ? "Due" : undefined,
         },
       });
     }
@@ -553,11 +572,27 @@ function calendarEventContent(
   ) => void,
 ) {
   const tone = String(info.event.extendedProps.tone ?? "var(--accent)");
+  if (phoneMonth(info.view.type))
+    return (
+      <span
+        aria-hidden="true"
+        className="full-calendar-event-content"
+        style={{ "--event-tone": tone } as React.CSSProperties}
+      >
+        <span className="full-calendar-event-primary">
+          <i />
+        </span>
+      </span>
+    );
   const details = eventDetails(info.event.extendedProps.details);
   const metadata = eventMetadata(info.event.extendedProps);
+  const kind =
+    typeof info.event.extendedProps.kind === "string"
+      ? info.event.extendedProps.kind
+      : undefined;
   return (
     <span
-      aria-label={calendarEventLabel(info)}
+      aria-label={`${kind ? `${kind}: ` : ""}${calendarEventLabel(info)}`}
       className={`full-calendar-event-content${info.event.extendedProps.metadata?.occurrence ? " is-recurring" : ""}`}
       role="button"
       style={{ "--event-tone": tone } as React.CSSProperties}
@@ -588,12 +623,17 @@ function calendarEventContent(
       <span className="full-calendar-event-primary">
         <i aria-hidden="true" />
         {info.timeText ? <time>{info.timeText}</time> : null}
+        {kind ? <em className="full-calendar-event-kind">{kind}</em> : null}
         <span>{info.event.title}</span>
       </span>
       {details.length ? (
         <span className="full-calendar-event-properties">
           {details.map((detail) => (
-            <span key={detail.key} title={detail.description}>
+            <span
+              className={detail.overdue ? "is-overdue" : undefined}
+              key={detail.key}
+              title={detail.description}
+            >
               <span>{detail.label}</span>
               <strong>{detail.value}</strong>
             </span>
@@ -601,6 +641,13 @@ function calendarEventContent(
         </span>
       ) : null}
     </span>
+  );
+}
+
+function phoneMonth(viewType: string): boolean {
+  return (
+    viewType === "dayGridMonth" &&
+    Boolean(window.matchMedia?.("(max-width: 839px)").matches)
   );
 }
 
@@ -630,7 +677,9 @@ function calendarEventLabel(info: EventContentArg): string {
   return `${info.event.title} ${date}${time}`;
 }
 
-function eventDetails(value: unknown): ViewPropertyDetail[] {
+function eventDetails(
+  value: unknown,
+): (ViewPropertyDetail & { overdue?: boolean })[] {
   return Array.isArray(value)
     ? value.filter((detail): detail is ViewPropertyDetail =>
         Boolean(

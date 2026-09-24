@@ -1,6 +1,11 @@
 import { linkDisplayLabel } from "./completion";
 import { occurrenceTask } from "./task-occurrence";
-import { dateFromStorage } from "./task";
+import {
+  dateFromStorage,
+  formatRelativeTaskDate,
+  isTaskDateOverdue,
+} from "./task";
+import type { TaskCollectionConfiguration } from "./task-configuration";
 
 import type { TaskSummary } from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
@@ -168,4 +173,34 @@ function notePropertyName(key: string): string | undefined {
   if (key.startsWith("note.")) return key.slice("note.".length);
   const match = /^note\[(["'])(.+)\1\]$/.exec(key);
   return match?.[2];
+}
+
+/** Scheduled and due dates read relative to today and flag overdue work. */
+export function relativeDateDetail<
+  Detail extends {
+    key: string;
+    value: string;
+    rawValue?: unknown;
+    overdue?: boolean;
+  },
+>(
+  detail: Detail,
+  task: Pick<TaskSummary, "completed">,
+  configuration: Pick<TaskCollectionConfiguration, "fieldMapping">,
+): Detail & { overdue?: boolean } {
+  const field = notePropertyName(detail.key) ?? detail.key;
+  const scheduled =
+    field === configuration.fieldMapping.scheduled || field === "scheduled";
+  const due = field === configuration.fieldMapping.due || field === "due";
+  if (
+    (!scheduled && !due) ||
+    typeof detail.rawValue !== "string" ||
+    !dateFromStorage(detail.rawValue)
+  )
+    return detail;
+  return {
+    ...detail,
+    value: formatRelativeTaskDate(detail.rawValue),
+    overdue: !task.completed && isTaskDateOverdue(detail.rawValue),
+  };
 }

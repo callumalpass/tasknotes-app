@@ -57,9 +57,15 @@ test("priority labels are readable in search, projects, and expanded task proper
   }
 });
 
-test("calendar More targets work at desktop and phone widths", async ({
+test("calendar More targets meet target size where More is shown", async ({
   page,
 }) => {
+  // Phone months show every task as a dot and list the selected day below
+  // the grid, so only wider layouts have a More popover.
+  test.skip(
+    (page.viewportSize()?.width ?? 0) < 840,
+    "No More popover on phones",
+  );
   await page.goto(view("calendar"));
   await expect(page.locator(".fc-more-link").first()).toBeVisible();
   const sizes = await page.locator(".fc-more-link").evaluateAll((nodes) =>
@@ -157,6 +163,12 @@ test("Browse dismisses on Tab and no longer owns background arrow keys", async (
 test("calendar overflow owns focus and restores More on Escape", async ({
   page,
 }) => {
+  // Phone months show every task as a dot and list the selected day below
+  // the grid, so only wider layouts have a More popover.
+  test.skip(
+    (page.viewportSize()?.width ?? 0) < 840,
+    "No More popover on phones",
+  );
   await page.goto(view("calendar"));
   const more = page.locator(".fc-more-link").first();
   await more.focus();

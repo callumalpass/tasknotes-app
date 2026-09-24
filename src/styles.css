@@ -8939,8 +8939,7 @@ html.scratchpad-route .page-surface {
 
 .full-calendar-inspector header span {
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
+  font-size: var(--type-supporting);
 }
 
 .full-calendar-inspector > p {
@@ -9049,8 +9048,15 @@ html.scratchpad-route .page-surface {
 .full-calendar-event-primary > time {
   flex: 0 0 auto;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
+}
+
+/* Grid cells are narrow: the reason reads as a quiet word, not a chip. */
+.full-calendar-view .fc-daygrid-event .full-calendar-event-kind {
+  padding: 0;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
 }
 
 .full-calendar-event-primary > span {
@@ -9113,7 +9119,6 @@ html.scratchpad-route .page-surface {
 
 .full-calendar-view .fc-timegrid-slot-label-cushion {
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
 }
 
@@ -9156,10 +9161,10 @@ html.scratchpad-route .page-surface {
 }
 
 .full-calendar-view .fc-list-event-time {
-  width: 84px;
+  width: 112px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
+  font-size: var(--type-supporting);
+  white-space: nowrap;
 }
 
 .full-calendar-view .fc-list-event-graphic {
@@ -9180,9 +9185,30 @@ html.scratchpad-route .page-surface {
   flex-wrap: wrap;
   gap: 3px 12px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+}
+
+.full-calendar-view .fc-list .full-calendar-event-properties .is-overdue,
+.full-calendar-view
+  .fc-list
+  .full-calendar-event-properties
+  .is-overdue
+  strong {
+  color: var(--danger);
+}
+
+/* Names why an entry is here: its due day, or logged time. */
+.full-calendar-event-kind {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  color: var(--ink-soft);
   font-size: var(--type-label);
-  line-height: 1.55;
+  font-style: normal;
+  line-height: 1.6;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
 }
 
 .full-calendar-view .fc-list .full-calendar-event-properties > span {
@@ -9198,7 +9224,7 @@ html.scratchpad-route .page-surface {
 .full-calendar-view .fc-list .full-calendar-event-properties strong {
   overflow: hidden;
   color: var(--ink-soft);
-  font-weight: 500;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -9236,6 +9262,102 @@ html.scratchpad-route .page-surface {
   }
   .full-calendar-view .fc-dayGridMonth-view {
     min-width: 350px;
+  }
+
+  /*
+   * Phone months show one dot per task; the selected day's tasks are listed
+   * readably beneath the grid instead of as clipped titles in each cell.
+   */
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-day-events {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 3px;
+    min-height: 28px;
+    padding: 0 6px;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-day-events
+    > .fc-daygrid-event-harness {
+    width: auto;
+    margin: 0 !important;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-day-events
+    > .fc-daygrid-day-bottom {
+    flex-basis: 100%;
+  }
+
+  /* Dots are indicators: a tap selects the day, whose tasks list below. */
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-event {
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-content {
+    min-width: 10px;
+    min-height: 10px;
+    place-items: center;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-primary
+    > :not(i) {
+    display: none;
+  }
+
+  .full-calendar-view
+    .fc-dayGridMonth-view
+    .fc-daygrid-event
+    .full-calendar-event-primary
+    > i {
+    width: 8px;
+    height: 8px;
+  }
+
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-more-link {
+    font-size: var(--type-label);
+  }
+
+  .full-calendar-view .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    min-height: 72px;
+  }
+
+  /* Agenda rows put the time above the title so titles keep the full width. */
+  .full-calendar-view .fc-list-event {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .full-calendar-view .fc-list-event td {
+    border: 0;
+  }
+
+  .full-calendar-view .fc-list-event {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .full-calendar-view .fc-list-event-time {
+    width: auto;
+    padding-bottom: 0 !important;
+    font-size: var(--type-label);
+  }
+
+  .full-calendar-view .fc-list-event-title {
+    padding-top: 0 !important;
+  }
+
+  .full-calendar-view .fc-list .full-calendar-event-primary > span {
+    white-space: normal;
   }
 }
 
@@ -10120,9 +10242,12 @@ html.scratchpad-route .page-surface {
 :root[data-theme="dark"] .global-capture-fab {
   color: var(--paper);
 }
+/* The date-aware capture row (or phone capture button) is the one add action. */
+.has-context-capture .full-calendar-create {
+  display: none;
+}
 @media (max-width: 839px) {
-  .has-context-capture > .capture-composer,
-  .has-context-capture .full-calendar-create {
+  .has-context-capture > .capture-composer {
     display: none;
   }
   .view-context-capture {
