@@ -1,4 +1,7 @@
+import { taskListSectionMoveInput } from "../domain/task-list-sections";
+import { viewGroupMoveInput } from "../domain/view-mutation";
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewRow, TaskViewExecution } from "../domain/view";
 import {
   sortTasksByManualOrder,
@@ -193,4 +196,29 @@ function taskReflectsUpdate(
 
 function valueKey(value: unknown): string {
   return JSON.stringify(value ?? null);
+}
+
+/** The task change that moves a row into another group or day section. */
+export function taskListLaneMoveInput(
+  task: TaskSummary,
+  source: TaskListLane,
+  destination: TaskListLane,
+  configuration: TaskCollectionConfiguration,
+): UpdateTaskInput | null {
+  if (destination.mutation?.type === "group") {
+    if (source.mutation?.type !== "group") return null;
+    return viewGroupMoveInput(
+      task,
+      source.mutation.values,
+      destination.mutation.values,
+      configuration,
+    );
+  }
+  if (destination.mutation?.type === "section")
+    return taskListSectionMoveInput(
+      task,
+      destination.mutation.mode,
+      destination.mutation.section,
+    );
+  return null;
 }

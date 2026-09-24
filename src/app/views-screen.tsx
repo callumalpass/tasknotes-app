@@ -21,6 +21,12 @@ import { ViewQuerySession } from "../application/view-query-session";
 import { VirtualTaskList } from "./views/virtual-task-list";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
+import { KanbanColumnJump } from "../components/kanban-column-jump";
+import {
+  columnLabel,
+  kanbanColumnLabel,
+  valueKey,
+} from "./views/kanban-columns";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
@@ -46,14 +52,8 @@ import {
   type ViewCreationPlan,
 } from "../domain/view-creation";
 import { groupTaskViewRows } from "../domain/view-grouping";
-import {
-  sectionTaskViewRows,
-  taskListSectionMoveInput,
-} from "../domain/task-list-sections";
-import {
-  viewGroupMoveInput,
-  viewPropertyMoveInput,
-} from "../domain/view-mutation";
+import { sectionTaskViewRows } from "../domain/task-list-sections";
+import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { groupLabel, propertyLabel } from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
 import {
@@ -79,6 +79,7 @@ import {
   executionWithManualRanks,
   executionWithoutTask,
   applyOptimisticListMoves,
+  taskListLaneMoveInput,
   type TaskListLane,
   type OptimisticBoardMove,
   type OptimisticListMove,
@@ -1851,6 +1852,14 @@ function KanbanView({
           between columns.
         </p>
       ) : null}
+      <KanbanColumnJump
+        boardRef={boardRef}
+        columns={orderedColumns.map((column) => ({
+          key: valueKey(column.value),
+          label: kanbanColumnLabel(column, propertyName),
+          count: column.rows.length,
+        }))}
+      />
       <div
         aria-busy={orderPending || pendingMoveTaskIds.size > 0}
         className={`kanban-board${dragging ? " is-dragging" : ""}`}
@@ -1866,7 +1875,7 @@ function KanbanView({
       >
         {orderedColumns.map((column, columnIndex) => {
           const key = valueKey(column.value);
-          const label = column.label ?? columnLabel(column.value);
+          const label = kanbanColumnLabel(column, propertyName);
           return (
             <section
               aria-label={`${label} column`}
@@ -2509,43 +2518,10 @@ function ManualTaskRows({
   );
 }
 
-function taskListLaneMoveInput(
-  task: TaskSummary,
-  source: TaskListLane,
-  destination: TaskListLane,
-  configuration: TaskCollectionConfiguration,
-): UpdateTaskInput | null {
-  if (destination.mutation?.type === "group") {
-    if (source.mutation?.type !== "group") return null;
-    return viewGroupMoveInput(
-      task,
-      source.mutation.values,
-      destination.mutation.values,
-      configuration,
-    );
-  }
-  if (destination.mutation?.type === "section")
-    return taskListSectionMoveInput(
-      task,
-      destination.mutation.mode,
-      destination.mutation.section,
-    );
-  return null;
-}
-
 interface ViewProps {
   execution: TaskViewExecution;
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
-}
-
-function valueKey(value: unknown): string {
-  return JSON.stringify(value ?? null);
-}
-
-function columnLabel(value: unknown): string {
-  if (value === null || value === "") return "No value";
-  return String(value).replaceAll("-", " ");
 }
 
 function basesProperty(field: string): string {

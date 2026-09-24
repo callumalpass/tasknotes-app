@@ -72,6 +72,8 @@ interface RepositoryContextValue {
   mutations: TaskMutations;
   setTaskCompletion(command: CompletionCommand): Promise<Task>;
   configuration: TaskCollectionConfiguration;
+  /** Whether this collection delivers reminder notifications at all. */
+  reminderAuthority: ReminderAuthority;
   pendingDeletion: {
     id: string;
     title: string;
@@ -553,6 +555,7 @@ export function RepositoryProvider({
       connection,
       invalidation,
       configuration,
+      reminderAuthority,
       pendingDeletion,
       deletionError,
       createTask,
@@ -583,6 +586,7 @@ export function RepositoryProvider({
       connection,
       invalidation,
       configuration,
+      reminderAuthority,
       pendingDeletion,
       deletionError,
       createTask,

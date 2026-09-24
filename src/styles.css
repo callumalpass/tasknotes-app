@@ -3894,15 +3894,26 @@ button:disabled {
   color: var(--accent);
 }
 
+/*
+ * Labels scale with system text until the tab width is reached, then stop
+ * growing so a word is never split across lines ("Upcomi / ng").
+ */
 .bottom-navigation button span {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   max-width: 100%;
   overflow: hidden;
-  overflow-wrap: anywhere;
+  font-size: min(var(--type-supporting), 4.2vw);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
   white-space: normal;
   line-height: 1.2;
+}
+
+.bottom-navigation.items-5 button span {
+  font-size: min(var(--type-label), 3.4vw);
 }
 
 @media (max-width: 839px) {
@@ -8468,6 +8479,68 @@ html.scratchpad-route .page-surface {
   flex: 0 0 min(82vw, 310px);
   scroll-snap-align: start;
   transition: background-color 140ms var(--ease-out);
+}
+
+.kanban-column-jump {
+  display: none;
+}
+
+/*
+ * Phones show one whole column at a time rather than a sliver of the next
+ * column; the jump bar names every column and marks the visible one.
+ */
+@media (max-width: 839px) {
+  .kanban-board {
+    scroll-snap-type: x mandatory;
+  }
+
+  .kanban-column {
+    flex-basis: 100%;
+  }
+
+  .kanban-column-jump {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .kanban-column-jump button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--control-min-size);
+    padding: 0 12px;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--type-supporting);
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .kanban-column-jump button[aria-current="true"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: transparent;
+  }
+
+  .kanban-column-jump small {
+    color: var(--ink-muted);
+    font-size: var(--type-label);
+  }
+}
+
+/* Desktop columns share the available width before the board scrolls. */
+@media (min-width: 840px) {
+  .kanban-column {
+    flex: 1 0 250px;
+    max-width: 360px;
+  }
 }
 
 .kanban-column.is-drop-target {

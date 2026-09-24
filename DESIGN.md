@@ -177,7 +177,8 @@ Today             Search       More
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Browse. Editable focus alone never hides navigation; keyboard-aware changes
+  Browse. Tab labels scale with system text until the tab width is reached and
+  never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
   require observed viewport occlusion. Browse contains additional destinations,
   Manage views, and Settings. Tab dismisses Browse and continues outside it;
   arrow keys belong to the menu only while focus is inside.
@@ -321,6 +322,11 @@ Today             Search       More
   layout tile. Planner is explicitly an external app before saving. Ordinary
   pages and editors reflow at 320px with 200% root text; deliberate board and
   calendar scrolling stays local rather than widening the document.
+- Board columns holding the empty status or priority read "No status" or
+  "No priority". Desktop columns share the available width before the board
+  scrolls. Phones show one full-width column at a time with mandatory snapping;
+  a jump bar above the board names every column with its count and marks the
+  visible one.
 - A kanban board consumes the remaining usable viewport. Its horizontal
   scrollbar stays at the bottom of the screen while columns scroll within that
   surface.

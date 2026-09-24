@@ -44,7 +44,9 @@ export function MoreScreen({
   onNewTask(): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
-  const { connection, lastRefresh, refresh, refreshing } = useRepository();
+  const { connection, lastRefresh, refresh, refreshing, reminderAuthority } =
+    useRepository();
+  const deliversReminders = reminderAuthority !== "none";
   const { changeCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
   const [changeNotifications, setChangeNotifications] =
@@ -204,11 +206,16 @@ export function MoreScreen({
         <div className="setting-row">
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>Task reminders</span>
-          <small>{changeNotificationLabel(changeNotifications)}</small>
+          <small>
+            {deliversReminders
+              ? changeNotificationLabel(changeNotifications)
+              : "Not in the demo"}
+          </small>
         </div>
         <p className="section-copy">
-          mdbase delivers reminders while TaskNotes is closed. Notifications
-          never include task content.
+          {deliversReminders
+            ? "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
+            : "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."}
         </p>
         {changeNotifications.state === "off" ||
         changeNotifications.state === "enabled" ||
