@@ -186,7 +186,11 @@ function TaskEditor({
     [repository, task.id, task.path],
   );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
-  const [notesMode, setNotesMode] = useState<"write" | "preview">("write");
+  // Existing notes open as reading text; empty notes open ready for writing.
+  const [notesMode, setNotesMode] = useState<"write" | "preview">(() =>
+    draft.body.trim() ? "preview" : "write",
+  );
+  const notesInputRef = useRef<HTMLTextAreaElement>(null);
   const relationships = useMemo(
     () => ({
       ...repositoryRelationships,
@@ -709,6 +713,7 @@ function TaskEditor({
           {notesMode === "write" ? (
             <textarea
               aria-labelledby="task-notes-title"
+              ref={notesInputRef}
               placeholder="Add thoughts, links, or supporting details…"
               rows={8}
               value={draft.body}
@@ -718,10 +723,24 @@ function TaskEditor({
             <Suspense
               fallback={<p className="markdown-preview-empty">Rendering…</p>}
             >
-              <MarkdownPreview
-                resolveImage={resolveTaskImage}
-                source={draft.body}
-              />
+              {/* Keyboard users switch with Write; pointer users click the text. */}
+              <div
+                className="notes-preview-surface"
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("a, button"))
+                    return;
+                  if (window.getSelection()?.toString()) return;
+                  setNotesMode("write");
+                  window.requestAnimationFrame(() =>
+                    notesInputRef.current?.focus(),
+                  );
+                }}
+              >
+                <MarkdownPreview
+                  resolveImage={resolveTaskImage}
+                  source={draft.body}
+                />
+              </div>
             </Suspense>
           )}
         </section>

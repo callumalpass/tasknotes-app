@@ -25,9 +25,11 @@ export function sectionTaskViewRows(
   options: { includeEmpty?: boolean } = {},
 ): TaskListSection[] {
   if (mode !== "day") return [];
+  // Today leads so a long overdue backlog cannot push today's work below
+  // the fold; overdue work stays expanded directly beneath it.
   const sections: TaskListSection[] = [
-    { key: "overdue", label: "Overdue", rows: [] },
     { key: "today", label: "Today", rows: [] },
+    { key: "overdue", label: "Overdue", rows: [] },
     { key: "anytime", label: "Anytime", rows: [] },
     { key: "later", label: "Later", rows: [] },
   ];

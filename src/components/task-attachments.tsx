@@ -125,7 +125,7 @@ export function TaskAttachments({
 
   return (
     <section
-      className="task-attachments"
+      className={`task-attachments${!items.length && !loading && !error ? " is-empty" : ""}`}
       aria-labelledby="task-attachments-title"
     >
       <header className="task-attachments-heading">
@@ -229,9 +229,7 @@ export function TaskAttachments({
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="attachment-empty">No images attached.</p>
-      )}
+      ) : null}
     </section>
   );
 }

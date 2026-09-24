@@ -20,6 +20,7 @@ import { ViewOptions } from "../components/view-options";
 import { ViewQuerySession } from "../application/view-query-session";
 import { VirtualTaskList } from "./views/virtual-task-list";
 import { canReorderExecution } from "./manual-order-availability";
+import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { TaskListSection } from "../components/task-list-section";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
@@ -177,6 +178,7 @@ export function ViewsScreen({
     null,
   );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
+  const [arrangingViewKey, setArrangingViewKey] = useState<string>();
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
   const closeMobileCapture = useCallback(() => setMobileCaptureOpen(false), []);
   const [boardMoves, setBoardMoves] = useState<
@@ -972,7 +974,7 @@ export function ViewsScreen({
           selected?.presentation?.type === "tasknotes.task-list"
             ? " has-list-capture"
             : ""
-        }${captureDefaults ? " has-context-capture" : ""}${presentationClass}`}
+        }${captureDefaults ? " has-context-capture" : ""}${manualOrder && arrangingViewKey === selected?.key ? " is-arranging" : ""}${presentationClass}`}
       >
         <header className={`view-header${operational ? " operational" : ""}`}>
           {!operational ? (
@@ -1037,6 +1039,12 @@ export function ViewsScreen({
                     )}{" "}
                     Manual order
                   </button>
+                  <ArrangeTasksOption
+                    available={Boolean(manualOrder)}
+                    arrangingViewKey={arrangingViewKey}
+                    viewKey={selected.key}
+                    onChange={setArrangingViewKey}
+                  />
                   <button
                     type="button"
                     aria-label={`Edit ${selected.name}`}

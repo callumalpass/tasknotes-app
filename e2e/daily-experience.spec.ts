@@ -2,10 +2,21 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./local-test";
 
 // Disposable in-memory demo only: never opens a Connect authority or LAB.
+async function arrangeOnTouch(page: import("@playwright/test").Page) {
+  if (!(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)))
+    return;
+  await expect(page.locator(".manual-order-handle").first()).toBeHidden();
+  await page.getByLabel("View options", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Arrange tasks", exact: true })
+    .click();
+}
+
 test("saved manual sorting keeps large lists windowed and keyboard operable", async ({
   page,
 }) => {
   await page.goto("?demo=500");
+  await arrangeOnTouch(page);
   const handles = page.locator(".manual-order-handle");
   await expect(handles.first()).toBeEnabled();
   expect(await handles.count()).toBeLessThan(80);
@@ -23,10 +34,17 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     exact: true,
   });
   await expect(title).toBeVisible();
-  await expect(page.locator(".manual-order-handle").first()).toHaveCSS(
-    "opacity",
-    "1",
-  );
+  // Handles recede until a fine pointer reaches the row; touch arranges.
+  if (await page.evaluate(() => matchMedia("(pointer: fine)").matches)) {
+    const handle = title
+      .locator("xpath=ancestor::div[contains(@class, 'manual-order-row')][1]")
+      .locator(".manual-order-handle");
+    await expect(handle).toHaveCSS("opacity", "0");
+    await title.hover();
+    await expect(handle).toHaveCSS("opacity", "1");
+  } else {
+    await expect(page.locator(".manual-order-handle").first()).toBeHidden();
+  }
   const firstRow = title.locator(
     "xpath=ancestor::div[contains(@class, 'task-row')][1]",
   );
@@ -65,6 +83,7 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
   await expect(page.locator(".manual-order-handle")).toHaveCount(0);
   await page.getByLabel("View options", { exact: true }).click();
   await page.getByRole("button", { name: "Manual order", exact: true }).click();
+  await arrangeOnTouch(page);
   await expect(
     page.getByRole("button", { name: /Reorder Prepare quarterly/ }),
   ).toBeVisible();
@@ -121,6 +140,11 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
   await page.keyboard.press("Enter");
   const detail = page.getByRole("complementary", { name: "Task details" });
   await expect(detail).toBeFocused();
+  // Existing notes open for reading; Write switches to the source editor.
+  await expect(
+    detail.getByRole("button", { name: "Preview", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await detail.getByRole("button", { name: "Write", exact: true }).click();
   await expect(
     detail.getByRole("textbox", { name: "Notes", exact: true }),
   ).toBeVisible();
@@ -195,6 +219,7 @@ test("list and note detail fit narrow phones through desktop", async ({
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(width);
     await task.click();
+    await page.getByRole("button", { name: "Write", exact: true }).click();
     await expect(
       page.getByRole("textbox", { name: "Notes", exact: true }),
     ).toBeVisible();

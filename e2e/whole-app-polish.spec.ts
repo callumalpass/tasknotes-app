@@ -107,7 +107,9 @@ test("phone Scratchpad reserves writing width and keeps conversion in the row me
   });
   await expect(input).toBeVisible();
   expect((await input.boundingBox())!.width).toBeGreaterThanOrEqual(190);
-  const row = input.locator("xpath=../..");
+  const row = input.locator(
+    "xpath=ancestor::*[contains(concat(' ', @class, ' '), ' scratchpad-row ')][1]",
+  );
   for (const selector of [
     ".scratchpad-collapse",
     ".scratchpad-draft-completion",

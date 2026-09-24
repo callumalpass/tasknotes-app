@@ -131,7 +131,6 @@ export function GlobalTaskCapture({
         />
         {snapshot.text.trim() ? (
           <div className="capture-draft-actions">
-            <small>Draft kept while this collection is open.</small>
             <button
               type="button"
               className="text-action"

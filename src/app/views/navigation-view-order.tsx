@@ -163,9 +163,13 @@ export function NavigationViewOrder({
             <h2 id="navigation-view-order-title">Shown in navigation</h2>
             <span>{ordered.length}</span>
           </div>
-          <p>
+          <p className="navigation-order-device-note">
             The first view is Home. Order and visibility are saved for this
             collection on this device.
+          </p>
+          <p className="navigation-order-sidebar-note">
+            Your sidebar, in order.
+            {ordered[0] ? ` ${ordered[0].name} opens first as Home.` : ""}
           </p>
         </div>
         <button

@@ -941,15 +941,6 @@ export function Navigation({
               </button>
             );
           })}
-          <button
-            aria-current={active === "views" ? "page" : undefined}
-            className={active === "views" ? "is-active" : undefined}
-            type="button"
-            onClick={() => onNavigate({ page: "views" })}
-          >
-            <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
-            <span>Manage views</span>
-          </button>
         </div>
       ) : (
         <>
@@ -1027,15 +1018,26 @@ export function Navigation({
         </>
       )}
       {mode === "desktop" ? (
-        <button
-          aria-current={active === "more" ? "page" : undefined}
-          className={active === "more" ? "is-active" : undefined}
-          type="button"
-          onClick={() => onNavigate({ page: "more" })}
-        >
-          <Settings aria-hidden="true" size={22} strokeWidth={1.7} />
-          <span>Settings</span>
-        </button>
+        <div aria-label="Manage" className="navigation-utility" role="group">
+          <button
+            aria-current={active === "views" ? "page" : undefined}
+            className={active === "views" ? "is-active" : undefined}
+            type="button"
+            onClick={() => onNavigate({ page: "views" })}
+          >
+            <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
+            <span>Manage views</span>
+          </button>
+          <button
+            aria-current={active === "more" ? "page" : undefined}
+            className={active === "more" ? "is-active" : undefined}
+            type="button"
+            onClick={() => onNavigate({ page: "more" })}
+          >
+            <Settings aria-hidden="true" size={20} strokeWidth={1.7} />
+            <span>Settings</span>
+          </button>
+        </div>
       ) : null}
     </>
   );

@@ -450,18 +450,16 @@ button:disabled {
 .capture-interpretation > div {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 14px;
-  padding: 5px 0;
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  line-height: 1.45;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--type-supporting);
+  line-height: 1.35;
 }
 
-.capture-interpretation > div > span:not(:last-child)::after {
-  position: relative;
-  left: 7px;
-  color: var(--line-strong);
-  content: "·";
+.capture-interpretation > .text-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .capture-parsing,
@@ -759,6 +757,14 @@ button:disabled {
 
 .task-actions-trigger > svg {
   transform: translateY(-4px);
+}
+
+/* Touch rows keep the 44px target but align the glyph with the page edge. */
+@media (pointer: coarse) {
+  .task-row .task-actions-trigger {
+    justify-items: end;
+    padding-right: 4px;
+  }
 }
 
 .task-actions-menu {
@@ -1083,6 +1089,16 @@ button:disabled {
     background-color 160ms var(--ease-out);
 }
 
+/* A non-default status keeps a shape cue, not only its stored color. */
+.completion-control.has-status span::before {
+  position: absolute;
+  inset: 5px;
+  content: "";
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
 .completion-control[aria-busy="true"] {
   opacity: 0.55;
   cursor: progress;
@@ -1178,7 +1194,9 @@ button:disabled {
   cursor: pointer;
 }
 
-.task-row-meta .is-overdue {
+.task-row-meta .is-overdue,
+.task-row-property.is-overdue > span,
+.task-row-property.is-overdue > strong {
   color: var(--danger);
 }
 
@@ -1457,6 +1475,17 @@ button:disabled {
   font-size: var(--type-control);
   background: transparent;
   border: 0;
+  outline: 0;
+}
+
+/* Focus belongs to the whole field so the icon and text share one boundary. */
+.search-field:focus-within {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 var(--accent);
+}
+
+.search-field input:focus-visible {
   outline: 0;
 }
 
@@ -1861,16 +1890,17 @@ button:disabled {
 }
 
 .save-state {
-  justify-self: center;
+  justify-self: end;
   min-height: var(--control-min-size);
   padding: 0 8px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
-  font-weight: 500;
-  text-transform: uppercase;
+  font-size: var(--type-supporting);
   background: transparent;
   border: 0;
+}
+
+.notes-preview-surface {
+  cursor: text;
 }
 
 .save-state.is-error {
@@ -3267,6 +3297,24 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+/* Without images the section is one row: its heading and add actions. */
+.task-attachments.is-empty {
+  padding: var(--space-sm) 0;
+}
+
+.task-attachments.is-empty > .task-attachments-heading {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.task-attachments.is-empty .task-attachment-add-actions {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .task-attachments-heading h2,
 .task-attachments-heading p {
   margin: 0;
@@ -4242,10 +4290,8 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-document-disclosure time {
   flex: 0 0 auto;
-  font:
-    0.72rem "Azeret Mono",
-    ui-monospace,
-    monospace;
+  font-size: var(--type-supporting);
+  font-weight: 400;
 }
 
 .scratchpad-document-disclosure small {
@@ -4389,10 +4435,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-title-row time {
   color: var(--ink-muted);
-  font:
-    var(--type-label) "Azeret Mono",
-    ui-monospace,
-    monospace;
+  font-size: var(--type-supporting);
 }
 
 .scratchpad-editor-toolbar {
@@ -4484,10 +4527,7 @@ html.scratchpad-route .page-surface {
 
 .scratch-image-card time {
   color: var(--ink-muted);
-  font:
-    var(--type-label) "Azeret Mono",
-    ui-monospace,
-    monospace;
+  font-size: var(--type-supporting);
 }
 
 .scratch-image-card footer button {
@@ -4498,6 +4538,17 @@ html.scratchpad-route .page-surface {
   color: var(--danger);
   border: 0;
   background: transparent;
+}
+
+.scratch-image-actions {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.scratch-image-card footer .scratch-image-menu-trigger {
+  justify-content: center;
+  min-width: 44px;
+  color: var(--ink-muted);
 }
 
 .scratch-image-card footer .scratch-image-disclosure {
@@ -4844,7 +4895,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
   min-height: 48px;
   align-items: start;
   border-bottom: 1px solid var(--line);
@@ -4936,7 +4987,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-kind-controls {
   display: flex;
-  width: 88px;
+  width: 44px;
   min-width: 0;
   min-height: 44px;
   align-items: center;
@@ -4951,6 +5002,26 @@ html.scratchpad-route .page-surface {
   align-items: center;
   justify-content: center;
   color: var(--ink-muted);
+}
+
+/*
+ * The checkbox or note icon already names the row kind; switching kinds
+ * lives in the row menu on every layout.
+ */
+.scratchpad-kind-controls .scratchpad-kind-toggle {
+  display: none !important;
+}
+
+.scratchpad-kind-label span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.scratchpad-kind-label {
+  justify-content: center !important;
 }
 
 .scratchpad-kind-controls .scratchpad-kind-toggle {
@@ -5039,6 +5110,39 @@ html.scratchpad-route .page-surface {
   overflow-wrap: anywhere;
 }
 
+.outline-text-shell {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.outline-text-shell > textarea.has-rendered-links:not(:focus) {
+  color: transparent;
+}
+
+.outline-rendered-text {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 8px 7px 7px 3px;
+  color: var(--ink);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.outline-text-shell:focus-within .outline-rendered-text {
+  display: none;
+}
+
+.outline-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent), transparent 55%);
+  text-underline-offset: 3px;
+}
+
 .scratchpad-row textarea::placeholder {
   color: var(--ink-muted);
   opacity: 0.74;
@@ -5083,7 +5187,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns: 44px 44px 88px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
   margin-top: -1px;
   border-bottom: 1px solid var(--line);
 }
@@ -6686,8 +6790,7 @@ html.scratchpad-route .page-surface {
 .section-title-with-count > span,
 .all-views-heading > span {
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
+  font-size: var(--type-supporting);
   white-space: nowrap;
 }
 
@@ -6742,8 +6845,26 @@ html.scratchpad-route .page-surface {
 
 .navigation-view-order li > span small {
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
+  font-size: var(--type-supporting);
+}
+
+.navigation-order-sidebar-note {
+  display: none;
+}
+
+/*
+ * The desktop sidebar already lists navigation in order, so this page shows
+ * the ordered list only while reordering.
+ */
+@media (min-width: 840px) {
+  .navigation-view-order:not(.is-reordering) ol,
+  .navigation-view-order:not(.is-reordering) .navigation-order-device-note {
+    display: none;
+  }
+
+  .navigation-view-order:not(.is-reordering) .navigation-order-sidebar-note {
+    display: block;
+  }
 }
 
 .navigation-drag-handle {
@@ -8166,6 +8287,35 @@ html.scratchpad-route .page-surface {
   color: var(--accent);
 }
 
+/* Handles recede until a fine pointer reaches the row or keyboard focus lands. */
+@media (pointer: fine) {
+  .manual-order-handle {
+    opacity: 0;
+    transition: opacity 140ms var(--ease-out);
+  }
+
+  .manual-order-row:hover .manual-order-handle,
+  .manual-order-row.is-dragging .manual-order-handle,
+  .manual-order-handle:focus-visible {
+    opacity: 1;
+  }
+
+  .view-option-arrange {
+    display: none !important;
+  }
+}
+
+/* Touch rows keep their width for titles until Arrange tasks is chosen. */
+@media (pointer: coarse) {
+  .view-detail:not(.is-arranging) .manual-order-handle {
+    display: none;
+  }
+
+  .view-detail:not(.is-arranging) .manual-order-list {
+    margin-left: 0;
+  }
+}
+
 .manual-order-handle:active {
   cursor: grabbing;
 }
@@ -9096,12 +9246,48 @@ html.scratchpad-route .page-surface {
     flex-direction: column;
   }
 
-  .navigation-rail > .global-capture-navigation {
+  /* The desktop counterpart of the phone capture button: one filled action. */
+  .navigation-rail > button.global-capture-navigation {
     min-height: 44px;
     margin-bottom: 20px;
-    color: var(--accent);
+    color: var(--paper);
+    font-weight: 700;
+    background: var(--accent);
+    border: 0;
+  }
+
+  .navigation-rail > button.global-capture-navigation:hover {
+    background: color-mix(in srgb, var(--accent), var(--ink) 12%);
+  }
+
+  .navigation-utility {
+    display: flex;
+    flex-direction: column;
+    margin-top: auto;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--line);
+  }
+
+  .navigation-rail .navigation-utility button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    color: var(--ink-muted);
+    font-size: var(--type-supporting);
     background: transparent;
-    border: 1px solid var(--line-strong);
+    border: 0;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+  }
+
+  .navigation-rail .navigation-utility button.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
   }
 
   .task-row .task-actions-trigger {
@@ -9113,8 +9299,8 @@ html.scratchpad-route .page-surface {
     opacity: 1;
   }
 
-  .navigation-rail > .global-capture-navigation kbd {
-    color: var(--ink-muted);
+  .navigation-rail > button.global-capture-navigation kbd {
+    color: var(--paper);
   }
 
   .global-capture-fab {
@@ -9744,31 +9930,47 @@ html.scratchpad-route .page-surface {
   transform: rotate(90deg);
 }
 .capture-title-preview {
-  margin: 8px 0;
-  color: var(--ink-soft);
-  font-size: var(--type-supporting);
+  flex-basis: 100%;
+  color: var(--ink);
+  font-weight: 700;
 }
-.capture-date-token {
+.capture-token {
   display: inline-flex;
   align-items: center;
-  border-radius: 6px;
+  min-height: 32px;
+  padding-left: 10px;
+  color: var(--ink-soft);
   background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
 }
-.capture-date-token > button {
-  min-height: 44px;
-  padding: 4px 8px;
-  color: var(--accent);
+.capture-token > span {
+  padding-right: 10px;
+}
+.capture-token > span:has(+ button) {
+  padding-right: 0;
+}
+.capture-token > button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 32px;
+  padding: 0;
+  color: inherit;
   background: transparent;
   border: 0;
   font: inherit;
   cursor: pointer;
 }
-.capture-date-token > button:last-child {
-  min-width: 44px;
-  font-size: var(--type-control);
+.capture-token > button:first-child {
+  padding-right: 4px;
+  color: var(--accent);
 }
-.capture-interpretation > div > .capture-date-token::after {
-  content: none;
+.capture-token > button:last-child {
+  min-width: 32px;
+  color: var(--ink-muted);
+}
+.capture-token > button:last-child:hover {
+  color: var(--danger);
 }
 .capture-keep-adding {
   display: flex;

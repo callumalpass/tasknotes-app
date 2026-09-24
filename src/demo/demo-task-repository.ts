@@ -950,7 +950,11 @@ function demoViewDocuments(
       documentName: definition.name,
       id: definition.id,
       name: definition.name,
-      properties,
+      // Matches the starter Today view, which also shows each task's project.
+      properties:
+        definition.id === "today"
+          ? [...properties, { key: configuration.fieldMapping.projects }]
+          : properties,
       sort: [{ property: "sortOrder", direction: "desc" as const }],
       source,
       presentation: {

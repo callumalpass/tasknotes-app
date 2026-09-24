@@ -93,7 +93,7 @@ export function taskNotesDefaultBaseDocument(
           filters: {
             and: [...activeTaskFilters(configuration), todayFilter],
           },
-          order: [title, scheduled, due],
+          order: [title, scheduled, due, projects],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: priority, direction: "ASC" },
@@ -190,7 +190,7 @@ export function taskNotesDefaultCanonicalDocument(
           id: "today",
           name: "Today",
           where: `(${sharedWhere}) && (${todayWhere})`,
-          select: selection,
+          select: [...selection, fields.projects],
           order_by: [
             { field: fields.sortOrder, direction: "desc" },
             { field: fields.priority, direction: "asc" },
