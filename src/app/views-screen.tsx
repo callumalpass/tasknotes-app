@@ -22,6 +22,8 @@ import { VirtualTaskList } from "./views/virtual-task-list";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { KanbanColumnJump } from "../components/kanban-column-jump";
+import { basesProperty } from "../domain/default-view-source";
+import { ProjectPropertyOffer } from "./views/project-property-offer";
 import {
   columnLabel,
   kanbanColumnLabel,
@@ -1066,6 +1068,13 @@ export function ViewsScreen({
             reason={error}
             onEdit={() => selected && setEditing({ view: selected })}
             onRetry={() => setExecutionRetry((attempt) => attempt + 1)}
+          />
+        ) : null}
+        {selected && !editing ? (
+          <ProjectPropertyOffer
+            scope={sectionScope}
+            view={selected}
+            onChanged={onViewsChanged}
           />
         ) : null}
         {presentedExecution?.hasMore ? (
@@ -2522,12 +2531,6 @@ interface ViewProps {
   execution: TaskViewExecution;
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
-}
-
-function basesProperty(field: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(field)
-    ? `note.${field}`
-    : `note[${JSON.stringify(field)}]`;
 }
 
 function message(reason: unknown): string {

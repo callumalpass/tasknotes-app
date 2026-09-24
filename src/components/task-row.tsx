@@ -10,6 +10,7 @@ import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
+import { useSwipeActions } from "./use-swipe-actions";
 
 import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -88,9 +89,36 @@ export function TaskRow({
       return true;
     })
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
+  const rowRef = useRef<HTMLDivElement>(null);
+  const swipe = useSwipeActions({
+    disabled: pending,
+    onSwipe: (direction) => {
+      if (direction === "complete") void complete();
+      else
+        rowRef.current
+          ?.querySelector<HTMLButtonElement>(".task-actions-trigger")
+          ?.click();
+    },
+  });
   return (
     <div
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
+      {...swipe.handlers}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      data-swipe-hint={
+        swipe.offset > 0
+          ? displayedTask.completed
+            ? "Reopen"
+            : "Complete"
+          : swipe.offset < 0
+            ? "Actions"
+            : undefined
+      }
+      ref={rowRef}
+      style={
+        swipe.offset
+          ? ({ "--swipe-x": `${swipe.offset}px` } as React.CSSProperties)
+          : undefined
+      }
       onContextMenu={(event) => {
         if ((event.target as HTMLElement).closest(".task-actions-trigger"))
           return;

@@ -219,7 +219,8 @@ export function formatTaskDate(value: string, today = todayString()): string {
 
 /**
  * Compact list label: nearby days read relative to today ("Yesterday",
- * "3 days ago", "Sat"); other dates use a short month and day.
+ * "3 days ago", "Sat"); other dates use a short month and day. Times are
+ * kept for today and future dates only.
  */
 export function formatRelativeTaskDate(
   value: string,
@@ -229,9 +230,10 @@ export function formatRelativeTaskDate(
   const date = dateFromStorage(datePart);
   const todayDate = dateFromStorage(today);
   if (!date || !todayDate) return value;
-  const timePart = taskTimePart(value);
-  const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   const days = Math.round((date.getTime() - todayDate.getTime()) / 86_400_000);
+  // A past day's time no longer helps scanning, so compact rows omit it.
+  const timePart = days < 0 ? "" : taskTimePart(value);
+  const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   const dateLabel =
     days === 0
       ? "Today"

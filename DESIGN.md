@@ -153,10 +153,18 @@ Today             Search       More
   retain the 48px minimum; board cards use the same compact property targets as
   list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
-  "Tomorrow", "Sat") and use a short date beyond it; an overdue date takes the
+  "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
+  time so overdue rows stay compact. An overdue date takes the
   danger color beside its visible label. A non-default status adds a filled dot
   inside the completion circle, so status never relies on color alone. The
-  starter Today view shows each task's project as quiet, unlabelled metadata. Search explains observed non-title matches with
+  starter Today view shows each task's project as quiet, unlabelled metadata.
+  An existing Today view without it gets a one-time, dismissible "Show each
+  task's project on Today?" offer; the saved view changes only if accepted.
+- On touch, swiping a row right completes (or reopens) the task and swiping
+  left opens its actions, which include Schedule today and Schedule tomorrow.
+  The revealed side names the action and fills with accent once the swipe
+  will act. Buttons keep every action available; board cards never claim
+  horizontal swipes. Search explains observed non-title matches with
   concise labels such as “Matched in notes.”
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
@@ -174,7 +182,9 @@ Today             Search       More
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
 - The desktop sidebar leads with a filled New task action, lists navigation
-  destinations, and groups Manage views and Settings at its foot. Because the
+  destinations, and groups Manage views and Settings at its foot. Destinations
+  reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
+  it Home. Because the
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
@@ -287,7 +297,8 @@ Today             Search       More
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
 - Task detail leads with a title-level completion control and the note body.
-  Existing notes open as rendered Markdown; clicking the text or choosing
+  The Schedule and status summary uses the same relative date labels as rows;
+  exact dates remain in its fields. Existing notes open as rendered Markdown; clicking the text or choosing
   Write opens the source. Empty notes open ready for writing. Save status is
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
@@ -304,7 +315,8 @@ Today             Search       More
   viewport above an overlay keyboard.
 - Capture shows the interpreted title above proportional-type chips. Date chips
   open timing details; date, project, context, tag, repeat, and estimate chips
-  are removable. A suggestion list closes once its only match is fully typed,
+  are removable; on touch each chip action has a 44px hit area without larger
+  visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible while saving and survives a rejected write; it clears only
