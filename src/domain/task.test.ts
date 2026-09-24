@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatRelativeTaskDate,
   combineTaskDateTime,
   dateFromStorage,
   isTaskDateOverdue,
@@ -30,5 +31,24 @@ describe("task dates", () => {
     expect(isTaskDateOverdue("2026-08-05T10:30", now)).toBe(false);
     expect(isTaskDateOverdue("2026-08-05", now)).toBe(false);
     expect(isTaskDateOverdue("2026-08-04", now)).toBe(true);
+  });
+});
+
+describe("formatRelativeTaskDate", () => {
+  const today = "2026-09-24";
+  it.each([
+    ["2026-09-24", "Today"],
+    ["2026-09-23", "Yesterday"],
+    ["2026-09-21", "3 days ago"],
+    ["2026-09-25", "Tomorrow"],
+  ])("labels %s relative to today", (value, label) => {
+    expect(formatRelativeTaskDate(value, today)).toBe(label);
+  });
+
+  it("keeps the time and falls back to a short date beyond a week", () => {
+    expect(formatRelativeTaskDate("2026-09-23T09:00", today)).toMatch(
+      /^Yesterday, 9:00/,
+    );
+    expect(formatRelativeTaskDate("2026-08-01", today)).not.toMatch(/ago|day/);
   });
 });

@@ -1,3 +1,4 @@
+import { linkDisplayLabel } from "./completion";
 import { occurrenceTask } from "./task-occurrence";
 import { dateFromStorage } from "./task";
 
@@ -132,6 +133,8 @@ export function formatPropertyValue(
               : "numeric",
         }).format(date);
     }
+    if (/^\[\[[^\]]+\]\]$/.test(value) || /^\[[^\]]+\]\([^)]+\)$/.test(value))
+      return linkDisplayLabel(value);
     if (
       value.includes("<") &&
       value.includes(">") &&

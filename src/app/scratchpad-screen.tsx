@@ -888,9 +888,7 @@ export function ScratchpadScreen({
                         <strong>{document.title}</strong>
                       ) : null}
                       <time dateTime={scratchpadHistoryDate(document)}>
-                        {new Date(
-                          scratchpadHistoryDate(document),
-                        ).toLocaleDateString()}
+                        {formatScratchDate(scratchpadHistoryDate(document))}
                       </time>
                     </span>
                     {!expanded && document.title ? (
@@ -1056,6 +1054,24 @@ function ScratchImageCard({
     repository.files ? "loading" : "missing",
   );
   const [removing, setRemoving] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !menuRef.current?.contains(event.target) &&
+        !menuTriggerRef.current?.contains(event.target)
+      )
+        setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [menuOpen]);
 
   useEffect(() => {
     const store = repository.files;
@@ -1159,18 +1175,51 @@ function ScratchImageCard({
           )}
           <FileImage aria-hidden="true" size={17} />
           <time dateTime={image.dateCreated}>
-            {new Date(image.dateCreated).toLocaleString()}
+            {formatScratchDate(image.dateCreated, true)}
           </time>
         </button>
-        <button
-          aria-label="Remove image card"
-          disabled={removing || !repository.removeScratchImage}
-          type="button"
-          onClick={() => void remove()}
-        >
-          <Trash2 aria-hidden="true" size={17} />{" "}
-          {removing ? "Removing…" : "Remove"}
-        </button>
+        <div className="scratch-image-actions">
+          <button
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label="Image actions"
+            className="scratch-image-menu-trigger"
+            disabled={removing}
+            ref={menuTriggerRef}
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <MoreHorizontal aria-hidden="true" size={18} />
+          </button>
+          {menuOpen ? (
+            <div
+              aria-label="Image actions"
+              className="scratchpad-row-menu opens-up"
+              ref={menuRef}
+              role="menu"
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") return;
+                event.stopPropagation();
+                setMenuOpen(false);
+                menuTriggerRef.current?.focus();
+              }}
+            >
+              <button
+                aria-label="Remove image card"
+                className="danger"
+                disabled={removing || !repository.removeScratchImage}
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  void remove();
+                }}
+              >
+                <Trash2 aria-hidden="true" size={17} /> Remove from Scratchpad
+              </button>
+            </div>
+          ) : null}
+        </div>
       </footer>
     </article>
   );
@@ -2176,9 +2225,7 @@ function ScratchpadDocumentEditor({
         />
         <span className="scratchpad-title-meta">
           {isCurrent ? <small>Current note</small> : null}
-          <time dateTime={displayDate}>
-            {new Date(displayDate).toLocaleDateString()}
-          </time>
+          <time dateTime={displayDate}>{formatScratchDate(displayDate)}</time>
         </span>
       </div>
       <header className="scratchpad-editor-toolbar">
@@ -2953,4 +3000,17 @@ function readScratchpadCollapseState(key: string): {
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+/** Scratchpad dates use the same short month-and-day vocabulary as task rows. */
+function formatScratchDate(value: string, includeTime = false): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    year:
+      date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+    ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
+  }).format(date);
 }

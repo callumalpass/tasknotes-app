@@ -28,6 +28,8 @@ import {
   taskTimePart,
 } from "../domain/task";
 import { successFeedback } from "../native/feedback";
+import { X } from "lucide-react";
+
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
 import { OperationErrorNotice } from "./operation-error-notice";
@@ -39,6 +41,7 @@ import {
 
 import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import { linkDisplayLabel } from "../domain/completion";
 import type {
   FieldCompletion,
   FieldCompletionRequest,
@@ -123,10 +126,21 @@ export function TaskCapture({
         activeToken?.start ?? 0,
       ].join("\0")
     : "";
-  const suggestions =
+  const loadedSuggestions =
     suggestionKey && suggestionResult.key === suggestionKey
       ? suggestionResult.items
       : [];
+  // A fully typed value needs no list; alternatives keep it open.
+  const typedQuery = suggestionRequest?.query?.toLocaleLowerCase();
+  const suggestions =
+    loadedSuggestions.length === 1 &&
+    typedQuery &&
+    [
+      loadedSuggestions[0].value,
+      linkDisplayLabel(loadedSuggestions[0].value),
+    ].some((candidate) => candidate.toLocaleLowerCase() === typedQuery)
+      ? []
+      : loadedSuggestions;
 
   useEffect(() => {
     if (!suggestionRequest || !suggestionKey) return;
@@ -325,7 +339,7 @@ export function TaskCapture({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => chooseSuggestion(suggestion)}
             >
-              <span>{suggestion.label}</span>
+              <span>{linkDisplayLabel(suggestion.label)}</span>
               {suggestion.detail ? <small>{suggestion.detail}</small> : null}
             </button>
           ))}
@@ -337,39 +351,58 @@ export function TaskCapture({
           <div>
             {parsing && parsedText !== text.trim() ? (
               <span className="capture-parsing">Understanding…</span>
-            ) : preview.length ? (
-              preview.map((item) =>
-                item.key === "scheduled" || item.key === "due" ? (
-                  <span className="capture-date-token" key={item.key}>
-                    <button
-                      type="button"
-                      disabled={capturing}
-                      aria-label={`Edit ${item.key}`}
-                      onClick={() => {
-                        setExpanded(true);
-                        setDetailSections((current) => ({
-                          ...current,
-                          timing: true,
-                        }));
-                      }}
-                    >
-                      {item.key === "scheduled" ? "Scheduled " : ""}
-                      {item.label}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={capturing}
-                      aria-label={`Remove ${item.key}`}
-                      onClick={() => change({ [item.key]: undefined })}
-                    >
-                      ×
-                    </button>
+            ) : (
+              <>
+                {result &&
+                parsedText === text.trim() &&
+                result.input.title !== text.trim() ? (
+                  <span className="capture-title-preview">
+                    <span className="visually-hidden">Task: </span>
+                    {result.input.title}
                   </span>
-                ) : (
-                  <span key={item.key}>{item.label}</span>
-                ),
-              )
-            ) : null}
+                ) : null}
+                {preview.map((item) => {
+                  const removal = capturePreviewRemoval(
+                    item.key,
+                    result?.input,
+                  );
+                  const dated = item.key === "scheduled" || item.key === "due";
+                  return (
+                    <span className="capture-token" key={item.key}>
+                      {dated ? (
+                        <button
+                          type="button"
+                          disabled={capturing}
+                          aria-label={`Edit ${item.key}`}
+                          onClick={() => {
+                            setExpanded(true);
+                            setDetailSections((current) => ({
+                              ...current,
+                              timing: true,
+                            }));
+                          }}
+                        >
+                          {item.key === "scheduled" ? "Scheduled " : ""}
+                          {item.label}
+                        </button>
+                      ) : (
+                        <span>{item.label}</span>
+                      )}
+                      {removal ? (
+                        <button
+                          type="button"
+                          disabled={capturing}
+                          aria-label={`Remove ${dated ? item.key : item.label}`}
+                          onClick={() => change(removal)}
+                        >
+                          <X aria-hidden="true" size={14} />
+                        </button>
+                      ) : null}
+                    </span>
+                  );
+                })}
+              </>
+            )}
           </div>
           <button
             className="text-action"
@@ -382,11 +415,6 @@ export function TaskCapture({
         </div>
       ) : null}
 
-      {result &&
-      parsedText === text.trim() &&
-      result.input.title !== text.trim() ? (
-        <p className="capture-title-preview">Task: {result.input.title}</p>
-      ) : null}
       {expanded && result && parsedText === text.trim() ? (
         <CaptureDetails
           configuration={configuration}
@@ -702,4 +730,22 @@ function CaptureList({
       />
     </label>
   );
+}
+
+function capturePreviewRemoval(
+  key: string,
+  input: CreateTaskInput | undefined,
+): Partial<CreateTaskInput> | null {
+  if (!input) return null;
+  const [kind, value] = key.split(/:(.*)/s);
+  if (kind === "project")
+    return { projects: input.projects?.filter((item) => item !== value) };
+  if (kind === "context")
+    return { contexts: input.contexts?.filter((item) => item !== value) };
+  if (kind === "tag")
+    return { tags: input.tags?.filter((item) => item !== value) };
+  if (kind === "scheduled" || kind === "due" || kind === "recurrence")
+    return { [kind]: undefined };
+  if (kind === "estimate") return { timeEstimate: undefined };
+  return null;
 }

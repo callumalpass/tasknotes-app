@@ -217,6 +217,45 @@ export function formatTaskDate(value: string, today = todayString()): string {
   return `${dateLabel}${timeLabel}`;
 }
 
+/**
+ * Compact list label: nearby days read relative to today ("Yesterday",
+ * "3 days ago", "Sat"); other dates use a short month and day.
+ */
+export function formatRelativeTaskDate(
+  value: string,
+  today = todayString(),
+): string {
+  const datePart = taskDatePart(value);
+  const date = dateFromStorage(datePart);
+  const todayDate = dateFromStorage(today);
+  if (!date || !todayDate) return value;
+  const timePart = taskTimePart(value);
+  const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
+  const days = Math.round((date.getTime() - todayDate.getTime()) / 86_400_000);
+  const dateLabel =
+    days === 0
+      ? "Today"
+      : days === -1
+        ? "Yesterday"
+        : days === 1
+          ? "Tomorrow"
+          : days < 0 && days >= -6
+            ? `${-days} days ago`
+            : days > 0 && days <= 6
+              ? new Intl.DateTimeFormat(undefined, {
+                  weekday: "short",
+                }).format(date)
+              : new Intl.DateTimeFormat(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year:
+                    date.getFullYear() === todayDate.getFullYear()
+                      ? undefined
+                      : "numeric",
+                }).format(date);
+  return `${dateLabel}${timeLabel}`;
+}
+
 export function dateFromStorage(value: string): Date | null {
   if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
     const instant = new Date(value);

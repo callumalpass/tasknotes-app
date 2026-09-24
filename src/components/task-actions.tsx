@@ -328,7 +328,11 @@ export function TaskActions({
             openFromPointer(event.clientX, event.clientY);
           }}
         >
-          <MoreHorizontal aria-hidden="true" size={20} strokeWidth={1.7} />
+          <MoreHorizontal
+            aria-hidden="true"
+            size={context === "detail" ? 20 : 18}
+            strokeWidth={context === "detail" ? 1.7 : 1.5}
+          />
         </button>
       ) : null}
       {position

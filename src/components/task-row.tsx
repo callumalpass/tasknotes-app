@@ -3,7 +3,13 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useId, useRef, useState } from "react";
 
-import { activeTimeEntry, formatTaskDate, taskMeta } from "../domain/task";
+import {
+  activeTimeEntry,
+  dateFromStorage,
+  formatRelativeTaskDate,
+  isTaskDateOverdue,
+  taskMeta,
+} from "../domain/task";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -56,9 +62,15 @@ export function TaskRow({
   }
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
-  const statusColor = configuration.statuses.find(
-    (status) => status.value === displayedTask.status,
-  )?.color;
+  const status = configuration.statuses.find(
+    (candidate) => candidate.value === displayedTask.status,
+  );
+  const statusColor = status?.color;
+  const distinctStatus =
+    !displayedTask.completed &&
+    Boolean(status) &&
+    displayedTask.status !== configuration.defaults.status &&
+    displayedTask.status !== "none";
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
   const [editing, setEditing] = useState<{
     detail: TaskRowDetail;
@@ -67,18 +79,20 @@ export function TaskRow({
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const shownDetails = (
     details ?? defaultTaskDetails(displayedTask, metadata, configuration)
-  ).filter((detail) => {
-    const field = detail.key.replace(/^note\./, "");
-    if (field === configuration.fieldMapping.status || field === "status")
-      return detail.rawValue !== configuration.defaults.status;
-    if (field === configuration.fieldMapping.priority || field === "priority")
-      return (
-        detail.rawValue !== configuration.defaults.priority &&
-        detail.rawValue !== "none"
-      );
-    if (field === "archived") return detail.rawValue !== false;
-    return true;
-  });
+  )
+    .filter((detail) => {
+      const field = detail.key.replace(/^note\./, "");
+      if (field === configuration.fieldMapping.status || field === "status")
+        return detail.rawValue !== configuration.defaults.status;
+      if (field === configuration.fieldMapping.priority || field === "priority")
+        return (
+          detail.rawValue !== configuration.defaults.priority &&
+          detail.rawValue !== "none"
+        );
+      if (field === "archived") return detail.rawValue !== false;
+      return true;
+    })
+    .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   return (
     <div
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}`}
@@ -101,18 +115,15 @@ export function TaskRow({
       }}
     >
       <button
-        className="completion-control"
+        className={`completion-control${distinctStatus ? " has-status" : ""}`}
         type="button"
-        aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}`}
+        aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
         aria-pressed={displayedTask.completed}
         aria-busy={pending}
         disabled={pending}
+        title={distinctStatus ? status?.label : undefined}
         style={
-          statusColor &&
-          displayedTask.status !== configuration.defaults.status &&
-          displayedTask.status !== "none"
-            ? { color: statusColor }
-            : undefined
+          distinctStatus && statusColor ? { color: statusColor } : undefined
         }
         onClick={() => void complete()}
       >
@@ -152,7 +163,7 @@ export function TaskRow({
               {tracking ? <TrackingIndicator /> : null}
               {shownDetails.map((detail) => (
                 <button
-                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}`}
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${detail.overdue ? " is-overdue" : ""}`}
                   key={detail.key}
                   title={detail.description}
                   aria-label={`${detail.label}: ${detail.value}`}
@@ -213,7 +224,9 @@ export function TaskRow({
                     }}
                   />
                 ) : null}
-                {detail.label === "Scheduled" ? "Scheduled " : ""}
+                {detail.label === "Scheduled" || detail.label === "Due"
+                  ? `${detail.label} `
+                  : ""}
                 {detail.value}
               </button>
             ))}
@@ -293,6 +306,34 @@ function detailPriorityColor(
   )?.color;
 }
 
+function detailField(key: string): string {
+  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(key);
+  return bracketed?.[1] ?? key.replace(/^note\./, "");
+}
+
+/** Scheduled and due dates read relative to today and flag overdue work. */
+function relativeDateDetail(
+  detail: TaskRowDetail,
+  task: TaskSummary,
+  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
+): TaskRowDetail {
+  const field = detailField(detail.key);
+  const scheduled =
+    field === configuration.fieldMapping.scheduled || field === "scheduled";
+  const due = field === configuration.fieldMapping.due || field === "due";
+  if (
+    (!scheduled && !due) ||
+    typeof detail.rawValue !== "string" ||
+    !dateFromStorage(detail.rawValue)
+  )
+    return detail;
+  return {
+    ...detail,
+    value: formatRelativeTaskDate(detail.rawValue),
+    overdue: !task.completed && isTaskDateOverdue(detail.rawValue),
+  };
+}
+
 function isCompactDetail(
   detail: TaskRowDetail,
   configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
@@ -302,8 +343,10 @@ function isCompactDetail(
   return [
     configuration.fieldMapping.status,
     configuration.fieldMapping.priority,
+    configuration.fieldMapping.projects,
     "status",
     "priority",
+    "projects",
   ].includes(key);
 }
 
@@ -314,20 +357,21 @@ function defaultTaskDetails(
 ): TaskRowDetail[] {
   let index = 0;
   const details: TaskRowDetail[] = [];
-  if (task.scheduled)
+  if (task.scheduled) {
+    index++;
     details.push({
       key: "scheduled",
       label: "Scheduled",
-      value: metadata[index++]?.label ?? task.scheduled,
+      value: task.scheduled,
       rawValue: task.scheduled,
-      overdue: metadata[index - 1]?.overdue,
     });
+  }
   if (task.due) {
     if (!task.scheduled) index++;
     details.push({
       key: "due",
       label: "Due",
-      value: `Due ${formatTaskDate(task.due)}`,
+      value: task.due,
       rawValue: task.due,
     });
   }

@@ -150,7 +150,12 @@ Today             Search       More
   typography. Completion and overflow retain independent 44px targets. Dates
   and other properties remain directly editable, with no overlapping hit areas.
   Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows
-  retain the 48px minimum; kanban cards keep their existing targets. Search explains observed non-title matches with
+  retain the 48px minimum; kanban cards keep their existing targets. Scheduled
+  and Due read relative to today within a week ("Yesterday", "3 days ago",
+  "Tomorrow", "Sat") and use a short date beyond it; an overdue date takes the
+  danger color beside its visible label. A non-default status adds a filled dot
+  inside the completion circle, so status never relies on color alone. The
+  starter Today view shows each task's project as quiet, unlabelled metadata. Search explains observed non-title matches with
   concise labels such as “Matched in notes.”
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
@@ -167,6 +172,10 @@ Today             Search       More
   for keyboard focus.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
+- The desktop sidebar leads with a filled New task action, lists navigation
+  destinations, and groups Manage views and Settings at its foot. Because the
+  sidebar already shows navigation order, desktop Manage views shows the ordered
+  list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
   Browse. Editable focus alone never hides navigation; keyboard-aware changes
   require observed viewport occlusion. Browse contains additional destinations,
@@ -200,6 +209,9 @@ Today             Search       More
   may remain open together. Typing `[[` offers collection-record suggestions in
   both editors; an exact link becomes a linked row only when it resolves to an
   actual task, while links to other record types remain editable note content.
+  Row kind is shown by the checkbox or note icon alone; switching kinds lives
+  in the row menu on every layout. Unfocused rows render `[[path|alias]]` links
+  as their label; focusing the row shows the exact source.
   Create task notes converts only chosen drafts in place; New note preserves the
   exact current outline without creating tasks. An expanded historical note can
   Resume as current: pending edits to both notes save first, the selected note
@@ -208,7 +220,9 @@ Today             Search       More
   Safe raster images added through the compact capture panel, feed-wide drop
   target, file picker, mobile camera picker, or clipboard become independent
   feed cards even when an editor is focused. Image cards resolve lazily, can
-  collapse to a dated summary, and removing one keeps its collection file.
+  collapse to a dated summary, and removing one (from the card's overflow
+  menu) keeps its collection file. Scratchpad dates use the same short
+  month-and-day vocabulary as task rows, never seconds.
   Collection-scoped local UI preferences retain expanded historical notes and
   collapsed images across reloads and New note transitions. Opening Scratchpad
   or starting a new note focuses its trailing current capture row. Expanded
@@ -244,13 +258,17 @@ Today             Search       More
   same chevron treatment across capture, task editing, views, and settings.
 - Every writable saved view exposes a pressed-state Manual order sorting option
   and Edit view in a quiet View options disclosure. Manual sorting directly
-  enables list handles, including when reopening a saved view; there is no
-  separate reorder mode. Switching it off restores the other sort rules without
+  enables list handles, including when reopening a saved view. With a fine
+  pointer, handles appear on row hover or keyboard focus. Touch layouts hide
+  handles so titles keep their width; a pressed-state Arrange tasks option,
+  available only while Manual order is active, reveals them. Switching it off restores the other sort rules without
   deleting stored task ranks. Selecting a different primary sort in the editor
   also hides handles. Partial results expose Load remaining tasks before ordering
   is enabled; stale or incomplete reads never permit rank writes. Boards retain
   direct spatial arrangement.
 - Grouped lists have accessible collapsible sections, expanded by default.
+  Day sections lead with Today, followed by Overdue, Anytime, and Later, so a
+  long overdue backlog never pushes today's work below the fold.
   Explicit collapse choices are local preferences scoped to collection, view,
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
@@ -262,6 +280,10 @@ Today             Search       More
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
 - Task detail leads with a title-level completion control and the note body.
+  Existing notes open as rendered Markdown; clicking the text or choosing
+  Write opens the source. Empty notes open ready for writing. Save status is
+  quiet proportional text beside the task actions. Without images,
+  Attachments collapses to one row holding its heading and add actions.
   Schedule and status have a compact, wrapping disclosure summary; advanced
   properties and the backing Markdown record remain inspectable. Returning to
   the list restores the invoking control and scroll position.
@@ -273,7 +295,10 @@ Today             Search       More
   the phone capture button.
   Keep adding tasks supports consecutive capture. The sheet follows the visual
   viewport above an overlay keyboard.
-- Capture shows the interpreted title and editable/removable date tokens.
+- Capture shows the interpreted title above proportional-type chips. Date chips
+  open timing details; date, project, context, tag, repeat, and estimate chips
+  are removable. A suggestion list closes once its only match is fully typed,
+  and link values show their display label.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible while saving and survives a rejected write; it clears only
   after authority acceptance. Date shortcuts preserve an existing time. Closing
