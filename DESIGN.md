@@ -150,7 +150,8 @@ Today             Search       More
   typography. Completion and overflow retain independent 44px targets. Dates
   and other properties remain directly editable, with no overlapping hit areas.
   Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows
-  retain the 48px minimum; kanban cards keep their existing targets. Scheduled
+  retain the 48px minimum; board cards use the same compact property targets as
+  list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
   "Tomorrow", "Sat") and use a short date beyond it; an overdue date takes the
   danger color beside its visible label. A non-default status adds a filled dot
@@ -191,6 +192,11 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
+- Settings leads with the collection name, its counts, and Refresh now. How
+  tasks are stored, the collection location, and refresh diagnostics sit in a
+  collapsed disclosure. Settings has no capture control of its own.
+- Projects shows a project count beside a compact native "Jump to project"
+  picker rather than a full-width field.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The

@@ -4024,10 +4024,6 @@ button:disabled {
   display: none;
 }
 
-.more-new-task {
-  display: none;
-}
-
 .global-capture-navigation kbd {
   margin-left: auto;
   color: var(--ink-muted);
@@ -8364,22 +8360,28 @@ html.scratchpad-route .page-surface {
   line-height: 1.5;
   padding-bottom: 4px;
 }
+/* A count and a compact jump control; the native picker keeps phones easy. */
 .project-index {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 16px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
 }
 .project-index select {
   min-width: 0;
-  max-width: 100%;
+  max-width: min(100%, 18rem);
   min-height: 44px;
-  flex: 1 1 16rem;
-  padding: 8px;
-  color: var(--ink);
-  background: var(--paper);
+  flex: 0 1 auto;
+  padding: 8px 12px;
+  color: var(--accent);
+  background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--radius-control);
   font: inherit;
+  cursor: pointer;
 }
 .project-group {
   scroll-margin-top: 16px;
@@ -8557,11 +8559,8 @@ html.scratchpad-route .page-surface {
 
 .kanban-column > header h2 {
   margin: 0;
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  font-weight: 600;
-  letter-spacing: 0.035em;
-  text-transform: capitalize;
+  font-size: var(--type-supporting);
+  font-weight: 700;
 }
 
 .kanban-column > header span {
@@ -9238,10 +9237,6 @@ html.scratchpad-route .page-surface {
 }
 
 @media (max-width: 839px) {
-  .more-new-task {
-    display: inline-flex;
-  }
-
   .full-calendar-view .fc-daygrid-event .full-calendar-event-primary > time {
     display: none;
   }
@@ -10285,10 +10280,17 @@ html.scratchpad-route .page-surface {
   padding-block: 4px;
 }
 
-.task-row:not(.kanban-card *) .task-row-property,
-.task-row:not(.kanban-card *) .task-row-meta > button {
+.task-row .task-row-property,
+.task-row .task-row-meta > button {
   min-height: 24px;
   padding-block: 2px;
+}
+
+/* In narrow columns a label and its value wrap together, not side by side. */
+.task-row-property {
+  flex-wrap: wrap;
+  column-gap: 4px;
+  row-gap: 0;
 }
 
 /* Agenda rows retain a ~44px overall minimum without inflating grid events. */

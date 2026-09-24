@@ -366,7 +366,6 @@ export function AppShell() {
           <MoreScreen
             calendarPreferences={calendarPreferences}
             onCalendarPreferencesChange={updateCalendarPreferences}
-            onNewTask={() => setCaptureOpen(true)}
           />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />

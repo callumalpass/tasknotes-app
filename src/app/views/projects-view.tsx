@@ -108,7 +108,9 @@ export function ProjectsView({
   return (
     <div className="projects-view">
       <label className="project-index">
-        <span>{ordered.length} projects · Jump to</span>
+        <span>
+          {ordered.length} {ordered.length === 1 ? "project" : "projects"}
+        </span>
         <select
           aria-label="Jump to project"
           value=""
@@ -123,7 +125,7 @@ export function ProjectsView({
           }}
         >
           <option value="" disabled>
-            Choose a project
+            Jump to project
           </option>
           {ordered.map((project, index) => (
             <option key={project.key} value={index}>

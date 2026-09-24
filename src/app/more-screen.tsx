@@ -6,7 +6,6 @@ import {
   FileText,
   Info,
   Bell,
-  Plus,
   SunMoon,
 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
@@ -37,11 +36,9 @@ import type { CalendarPreferences } from "./calendar-preferences";
 export function MoreScreen({
   calendarPreferences,
   onCalendarPreferencesChange,
-  onNewTask,
 }: {
   calendarPreferences: CalendarPreferences;
   onCalendarPreferencesChange(value: CalendarPreferences): void;
-  onNewTask(): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing, reminderAuthority } =
@@ -129,15 +126,6 @@ export function MoreScreen({
     >
       <header className="screen-header compact-header">
         <h1 id="settings-title">Settings</h1>
-        <button
-          aria-label="New task"
-          className="icon-action more-new-task"
-          title="New task"
-          type="button"
-          onClick={onNewTask}
-        >
-          <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
-        </button>
       </header>
       <SettingsSection label="Collection">
         <div className="setting-row">
@@ -150,21 +138,6 @@ export function MoreScreen({
           </small>
         </div>
         <button
-          className="setting-explanation"
-          type="button"
-          onClick={() => setShowLocation((value) => !value)}
-        >
-          <span>{storageExplanation()}</span>
-          {showLocation ? (
-            <ChevronUp aria-hidden="true" size={17} />
-          ) : (
-            <ChevronDown aria-hidden="true" size={17} />
-          )}
-        </button>
-        {showLocation && info ? (
-          <code className="collection-path">{info.location}</code>
-        ) : null}
-        <button
           className="text-action"
           disabled={refreshing}
           type="button"
@@ -172,11 +145,33 @@ export function MoreScreen({
         >
           {refreshing ? "Refreshing" : "Refresh now"}
         </button>
-        {lastRefresh ? (
-          <p className="refresh-detail">
-            {lastRefresh.scanned.toLocaleString()} records checked in{" "}
-            {lastRefresh.elapsedMs.toLocaleString()} ms.
-          </p>
+        {/* Storage detail and diagnostics stay available without leading the page. */}
+        <button
+          aria-expanded={showLocation}
+          className="setting-explanation"
+          type="button"
+          onClick={() => setShowLocation((value) => !value)}
+        >
+          <span>How tasks are stored</span>
+          {showLocation ? (
+            <ChevronUp aria-hidden="true" size={17} />
+          ) : (
+            <ChevronDown aria-hidden="true" size={17} />
+          )}
+        </button>
+        {showLocation ? (
+          <div className="collection-storage-detail">
+            <p className="section-copy">{storageExplanation()}</p>
+            {info ? (
+              <code className="collection-path">{info.location}</code>
+            ) : null}
+            {lastRefresh ? (
+              <p className="refresh-detail">
+                Last refresh checked {lastRefresh.scanned.toLocaleString()}{" "}
+                records in {lastRefresh.elapsedMs.toLocaleString()} ms.
+              </p>
+            ) : null}
+          </div>
         ) : null}
         <div className="settings-subsection">
           <h3>Connection</h3>
