@@ -1,0 +1,595 @@
+/* Manual ordering, Projects, and kanban boards. */
+
+.manual-order-row {
+  position: relative;
+}
+
+.manual-order-list .manual-order-row {
+  display: block;
+  transition: opacity 140ms var(--ease-out);
+}
+
+.manual-order-row.is-dragging {
+  opacity: 0.42;
+}
+
+.manual-order-row.is-drop-before::before,
+.manual-order-row.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}
+
+.manual-order-row.is-drop-before::before {
+  top: -1px;
+}
+
+.manual-order-row.is-drop-after::after {
+  bottom: -1px;
+}
+
+.manual-order-handle {
+  position: absolute;
+  top: 0;
+  left: -32px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 52px;
+  padding: 0;
+  color: var(--ink-muted);
+  touch-action: none;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.manual-order-handle:hover,
+.manual-order-handle:focus-visible {
+  color: var(--accent);
+}
+
+/* Handles recede until a fine pointer reaches the row or keyboard focus lands. */
+@media (pointer: fine) {
+  .manual-order-handle {
+    opacity: 0;
+    transition: opacity 140ms var(--ease-out);
+  }
+
+  .manual-order-row:hover .manual-order-handle,
+  .manual-order-row.is-dragging .manual-order-handle,
+  .manual-order-handle:focus-visible {
+    opacity: 1;
+  }
+
+  .view-option-arrange {
+    display: none !important;
+  }
+}
+
+/* Touch rows keep their width for titles until Arrange tasks is chosen. */
+@media (pointer: coarse) {
+  .view-detail:not(.is-arranging) .manual-order-handle {
+    display: none;
+  }
+
+  .view-detail:not(.is-arranging) .manual-order-list {
+    margin-left: 0;
+  }
+}
+
+.manual-order-handle:active {
+  cursor: grabbing;
+}
+
+.manual-order-handle:disabled {
+  cursor: wait;
+  opacity: 0.42;
+}
+
+.task-section.is-drop-target {
+  background: color-mix(in srgb, var(--accent-soft), transparent 48%);
+}
+
+.task-section {
+  transition: background-color 160ms var(--ease-out);
+}
+
+.task-list-empty-drop-zone {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+  border-bottom: 1px solid var(--line);
+}
+
+.manual-order-row > .task-row {
+  min-width: 0;
+}
+
+.task-row-context {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  line-height: 1.5;
+  padding-bottom: 4px;
+}
+/* A count and a compact jump control; the native picker keeps phones easy. */
+.project-index {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+.project-index select {
+  min-width: 0;
+  max-width: min(100%, 18rem);
+  min-height: 44px;
+  flex: 0 1 auto;
+  padding: 8px 12px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font: inherit;
+  cursor: pointer;
+}
+.project-group {
+  scroll-margin-top: 16px;
+}
+.project-group > header .project-toggle {
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.project-toggle > svg {
+  flex-shrink: 0;
+}
+.project-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.project-count {
+  font-size: var(--type-label);
+  font-weight: normal;
+  color: var(--ink-muted);
+}
+
+.projects-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 30px;
+}
+.project-index,
+.project-group {
+  min-width: 0;
+}
+.project-toggle > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.project-group > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 48px;
+  padding-bottom: 9px;
+}
+
+.project-group > header h2 {
+  margin: 0;
+  font-size: var(--type-control);
+}
+
+.project-group > header small {
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+}
+
+.project-group > header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--accent);
+  white-space: normal;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.saved-view-groups {
+  padding-top: 0;
+}
+
+.saved-view-groups .saved-task-list {
+  border-top: 0;
+}
+
+.kanban-board {
+  display: flex;
+  gap: var(--space-xl);
+  padding-bottom: 18px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.kanban-board.is-dragging {
+  scroll-snap-type: none;
+}
+
+.kanban-column {
+  flex: 0 0 min(82vw, 310px);
+  scroll-snap-align: start;
+  transition: background-color 140ms var(--ease-out);
+}
+
+.kanban-column-jump {
+  display: none;
+}
+
+/*
+ * Phones show one whole column at a time rather than a sliver of the next
+ * column; the jump bar names every column and marks the visible one.
+ */
+@media (max-width: 839px) {
+  .kanban-board {
+    scroll-snap-type: x mandatory;
+  }
+
+  .kanban-column {
+    flex-basis: 100%;
+  }
+
+  .kanban-column-jump {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .kanban-column-jump button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--control-min-size);
+    padding: 0 12px;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--type-supporting);
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .kanban-column-jump button[aria-current="true"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: transparent;
+  }
+
+  .kanban-column-jump small {
+    color: var(--ink-muted);
+    font-size: var(--type-label);
+  }
+}
+
+/* Desktop columns share the available width before the board scrolls. */
+@media (min-width: 840px) {
+  .kanban-column {
+    flex: 1 0 250px;
+    max-width: 360px;
+  }
+}
+
+.kanban-column.is-drop-target {
+  background: color-mix(in srgb, var(--accent-soft), transparent 42%);
+}
+
+.kanban-column > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 42px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.kanban-column > header h2 {
+  margin: 0;
+  font-size: var(--type-supporting);
+  font-weight: 700;
+}
+
+.kanban-column > header span {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.kanban-column > header > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kanban-column-cards {
+  min-height: 64px;
+}
+
+.kanban-column-add {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.kanban-column-add:hover,
+.kanban-column-add:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.kanban-card {
+  position: relative;
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  transition:
+    opacity 140ms var(--ease-out),
+    background-color 140ms var(--ease-out);
+}
+
+.kanban-card.is-drop-before::before,
+.kanban-card.is-drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}
+
+.kanban-card.is-drop-before::before {
+  top: -1px;
+}
+
+.kanban-card.is-drop-after::after {
+  bottom: -1px;
+}
+
+.kanban-card.is-pending {
+  opacity: 0.68;
+}
+
+.kanban-card.is-dragging {
+  background: color-mix(in srgb, var(--accent-soft), transparent 52%);
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -2px;
+}
+
+.kanban-card.is-dragging .task-row {
+  opacity: 0.2;
+}
+
+.kanban-card.is-movable:focus-visible {
+  z-index: 1;
+  outline: 0;
+  box-shadow: inset 0 -1px var(--ink-muted);
+}
+
+.kanban-drag-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: var(--type-body);
+  font-weight: 650;
+  line-height: 1.25;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 14px 34px var(--color-shadow);
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+  animation: kanban-preview-pickup 140ms var(--ease-out);
+}
+
+.kanban-card .task-row {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.kanban-card .task-row-content {
+  padding-left: 0;
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card.is-movable,
+  .kanban-card.is-movable .task-row-content {
+    cursor: grab;
+  }
+
+  .kanban-card.is-dragging,
+  .kanban-card.is-dragging .task-row-content {
+    cursor: grabbing;
+  }
+}
+
+@keyframes kanban-preview-pickup {
+  from {
+    opacity: 0.58;
+  }
+
+  to {
+    opacity: 0.96;
+  }
+}
+
+.kanban-empty-drop-zone {
+  display: grid;
+  place-items: center;
+  min-height: 68px;
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-mono-micro);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+}
+
+.kanban-empty-drop-zone.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.view-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0 0 16px;
+  padding: 4px 0 4px 12px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  border-left: 2px solid var(--accent);
+}
+
+.view-offer p {
+  margin: 0;
+}
+
+.view-offer > div {
+  display: flex;
+  gap: 8px;
+}
+
+.view-offer .quiet {
+  color: var(--ink-muted);
+}
+
+.view-note {
+  margin: -8px 0 18px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.mini-calendar-toolbar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mini-calendar-toolbar h2 {
+  margin: 0;
+  font-size: var(--type-control);
+  text-align: center;
+}
+
+.mini-calendar-toolbar button {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.mini-calendar-weekdays,
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.mini-calendar-weekdays span {
+  padding: 6px 0;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+  text-align: center;
+}
+
+.mini-calendar-grid {
+  border-top: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line);
+}
+
+.mini-calendar-grid button {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  justify-items: center;
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 2px 5px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.mini-calendar-grid button.outside {
+  color: var(--ink-muted);
+}
+
+.mini-calendar-grid button[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mini-calendar-grid i {
+  min-width: 16px;
+  padding: 0 4px;
+  color: var(--color-on-accent);
+  font-size: var(--type-label);
+  font-style: normal;
+  line-height: 16px;
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}

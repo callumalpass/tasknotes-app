@@ -1,0 +1,609 @@
+/* Screen scaffolding, form fields, and task capture. */
+
+.screen {
+  width: min(100%, var(--content-width));
+  min-height: 100%;
+  margin: 0 auto;
+  padding: calc(20px + env(safe-area-inset-top)) var(--page-inset) 52px;
+}
+
+.screen-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 72px;
+  margin-bottom: 16px;
+}
+
+.screen-header h1 {
+  margin: 1px 0 0;
+  font-size: var(--type-page);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.scratchpad-header h1,
+.scratchpad-header h2,
+.view-header h1 {
+  font-size: var(--type-page);
+  letter-spacing: -0.035em;
+}
+
+.compact-header {
+  min-height: 62px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.detail-header {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.detail-header p {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.eyebrow,
+.section-heading,
+.record-path > span {
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-mono-micro);
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+/* Ordinary labels belong to the form, not the technical metadata scale. */
+.choice-field legend,
+.notes-field > span,
+.form-field > span,
+.form-field > label {
+  font-family: inherit;
+  font-size: var(--type-supporting);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.quick-capture {
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.capture-plus {
+  width: 30px;
+  color: var(--accent);
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.quick-capture input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0;
+  font-size: var(--type-control);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.quick-capture input::placeholder,
+.notes-field textarea::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+.quick-capture button,
+.text-action {
+  min-height: 44px;
+  padding: 0 2px;
+  color: var(--accent);
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.quick-capture button:disabled,
+.text-action:disabled {
+  color: var(--ink-muted);
+}
+
+.primary-action,
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--type-field);
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.primary-action {
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.secondary-action {
+  color: var(--ink-soft);
+  background: transparent;
+}
+
+.primary-action:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent), var(--ink) 12%);
+}
+
+.secondary-action:not(:disabled):hover {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
+.primary-action:disabled,
+.secondary-action:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.view-pagination-action {
+  max-width: 100%;
+  margin-block: var(--space-md);
+  white-space: normal;
+}
+
+.view-pagination-action[aria-disabled="true"] {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+.capture-guide {
+  margin: 0;
+  padding: 9px 0 12px 30px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-suggestions {
+  position: relative;
+  z-index: 2;
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--line-strong);
+  box-shadow: 0 12px 22px var(--color-shadow-soft);
+}
+
+.capture-suggestions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px 8px 30px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.capture-suggestions button:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-suggestions button:is(:hover, :focus-visible, .is-selected) {
+  background: var(--accent-soft);
+  outline: 0;
+}
+
+.capture-suggestions small {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capture-interpretation {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 43px;
+  padding: 8px 0;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-interpretation > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--type-supporting);
+  line-height: 1.35;
+}
+
+.capture-interpretation > .text-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.capture-parsing,
+.capture-plain {
+  color: var(--ink-muted);
+}
+
+.capture-details {
+  padding: 6px 0 4px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.capture-details-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-details-section:last-child {
+  border-bottom: 0;
+}
+
+.capture-details-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 9px 2px;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.capture-details-section > summary > span {
+  display: grid;
+  gap: 3px;
+}
+
+.capture-details-section > summary strong {
+  font-size: var(--type-supporting);
+  font-weight: 650;
+}
+
+.capture-details-section > summary small {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 400;
+}
+
+.capture-details-section-content {
+  padding: 10px 0 22px;
+}
+
+.capture-details-section-content > .dependency-editor,
+.capture-details-section-content > .capture-template-choice {
+  margin-top: 18px;
+}
+
+.capture-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+
+.capture-details .form-field > span {
+  margin-bottom: 7px;
+}
+
+.capture-notes {
+  padding: 20px 0 14px;
+  border-bottom: 0;
+}
+
+.capture-notes textarea {
+  min-height: 74px;
+}
+
+.inline-error {
+  margin: 12px 0;
+  color: var(--danger);
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+
+.operation-error-details {
+  margin: -5px 0 12px;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+
+.operation-error-details summary {
+  width: fit-content;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.operation-error-details p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  line-height: 1.45;
+}
+
+.view-execution-error {
+  margin: 0 var(--page-inset) var(--space-md);
+  color: var(--danger);
+  font-size: var(--type-supporting);
+}
+
+.view-execution-error summary {
+  width: fit-content;
+  min-height: 44px;
+  padding: 6px 0;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.view-execution-error-body {
+  max-width: 68ch;
+  padding: 2px 0 var(--space-sm) 18px;
+  color: var(--ink-soft);
+}
+
+.view-execution-error-body > p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.view-execution-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.view-execution-error-technical {
+  display: grid;
+  gap: 3px;
+  margin-top: var(--space-md) !important;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+  overflow-wrap: anywhere;
+}
+
+.view-record-warning {
+  margin: 0 var(--page-inset) var(--space-md);
+  padding: 10px var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  background: var(--paper-soft);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+}
+
+.capture-warning {
+  margin: 12px 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+}
+
+.capture-pending {
+  margin: 12px 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+}
+
+.capture-follow-up {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 48px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--line);
+}
+
+.capture-follow-up .text-action {
+  flex: 0 0 auto;
+}
+
+.capture-template-choice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.capture-template-choice input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.view-detail > .capture-composer {
+  margin-bottom: 18px;
+}
+
+.view-detail.has-list-capture > .capture-composer {
+  margin-bottom: 0;
+}
+
+.view-detail.has-list-capture > .task-list-view {
+  /* The capture row owns this shared boundary. */
+  border-top: 0;
+}
+
+.view-detail.is-kanban-view {
+  display: flex;
+  height: calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom));
+  min-height: 0;
+  flex-direction: column;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.view-detail.is-kanban-view > .kanban-board {
+  min-height: 0;
+  flex: 1 1 0;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  overflow: auto;
+}
+
+.task-groups {
+  padding-top: 12px;
+}
+
+.task-section + .task-section {
+  margin-top: 28px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  color: var(--ink-muted);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: var(--type-supporting);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  border-bottom: 0;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font: inherit;
+}
+
+.day-task-sections .task-section.is-overdue .section-heading {
+  color: var(--danger);
+}
+.capture-composer .quick-capture input:focus-visible {
+  outline: 0 !important;
+}
+.capture-composer .quick-capture:focus-within {
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--accent),
+    var(--line-strong) 78%
+  );
+}
+.capture-title-preview {
+  flex-basis: 100%;
+  color: var(--ink);
+  font-weight: 700;
+}
+.capture-token {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding-left: 10px;
+  color: var(--ink-soft);
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.capture-token > span {
+  padding-right: 10px;
+}
+.capture-token > span:has(+ button) {
+  padding-right: 0;
+}
+.capture-token > button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 32px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.capture-token > button:first-child {
+  padding-right: 4px;
+  color: var(--accent);
+}
+.capture-token > button:last-child {
+  min-width: 32px;
+  color: var(--ink-muted);
+}
+.capture-token > button:last-child:hover {
+  color: var(--danger);
+} /* Touch keeps compact chips but gives each chip action a 44px hit area. */
+@media (pointer: coarse) {
+  .capture-token > button {
+    position: relative;
+  }
+
+  .capture-token > button::after {
+    position: absolute;
+    inset: -6px 0;
+    content: "";
+  }
+
+  .capture-token > button:last-child::after {
+    inset: -6px;
+  }
+}
+.capture-keep-adding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.capture-keep-adding input {
+  accent-color: var(--accent);
+}
+.task-added-notice {
+  display: flex;
+  flex-wrap: wrap;
+}
+.task-added-notice > span {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.task-added-notice > button {
+  flex: 0 0 auto;
+}
+.task-added-notice > button:last-child {
+  margin-left: auto;
+  min-width: 44px;
+  border-left: 0;
+}
