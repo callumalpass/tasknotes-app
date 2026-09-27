@@ -682,13 +682,14 @@ function useRepositoryTaskQuery<Value>(
     resource.snapshot,
     resource.snapshot,
   );
-  const { status: statusFilter, search, limit, archived } = query;
+  const { status: statusFilter, search, limit, archived, assignedTo } = query;
   // Changing a prefix limit refreshes the same query; changing its meaning clears old results.
   const key = JSON.stringify([
     reader.kind,
     statusFilter ?? "open",
     archived ?? "exclude",
     search ?? "",
+    assignedTo ?? null,
   ]);
   const revision = useRepositoryRevision(`tasks:${key}`);
   useEffect(() => {
@@ -696,13 +697,20 @@ function useRepositoryTaskQuery<Value>(
     resource.load(key, (signal) =>
       reader.load(
         repository,
-        { status: statusFilter, archived, search, limit },
+        {
+          status: statusFilter,
+          archived,
+          search,
+          limit,
+          ...(assignedTo !== undefined ? { assignedTo } : {}),
+        },
         signal,
       ),
     );
     return resource.cancel;
   }, [
     archived,
+    assignedTo,
     key,
     limit,
     repository,

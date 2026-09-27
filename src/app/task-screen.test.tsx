@@ -55,6 +55,21 @@ describe("TaskScreen", () => {
     );
   });
 
+  it("does not write assignments when only other fields changed", async () => {
+    const update = vi.spyOn(repository, "update");
+    const onBack = renderTask();
+    await editTitle();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() => expect(onBack).toHaveBeenCalled());
+    expect(update).toHaveBeenCalledWith(
+      task.id,
+      expect.objectContaining({ title: "Unsaved important draft" }),
+    );
+    expect(update.mock.calls.every(([, input]) => !("assignees" in input))).toBe(
+      true,
+    );
+  });
+
   it("completes from the title after preserving pending notes", async () => {
     renderTask();
     fireEvent.change(await screen.findByLabelText("Notes"), {

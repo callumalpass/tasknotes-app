@@ -40,6 +40,8 @@ export interface TaskSummary {
   tags: string[];
   contexts: string[];
   projects: string[];
+  /** Links to person records, resolved by mdbase; unresolved links are preserved. */
+  assignees?: string[];
   /** Canonical frontmatter links that define attachment membership. */
   attachments: string[];
   blockedBy: TaskDependency[];
@@ -83,6 +85,7 @@ export function summarizeTask(task: Task): TaskSummary {
 }
 
 export interface CreateTaskInput {
+  assignees?: string[];
   title: string;
   status?: TaskStatus;
   priority?: TaskPriority;
@@ -110,6 +113,7 @@ export interface CreateTaskInput {
 }
 
 export interface UpdateTaskInput {
+  assignees?: string[];
   title?: string;
   status?: TaskStatus;
   completed?: boolean;
@@ -172,6 +176,11 @@ export function activeTimeEntry(
 }
 
 export interface TaskListQuery {
+  /**
+   * A person record path: keeps tasks whose assignee links resolve to it,
+   * before sorting and pagination. Only repositories exposing `people` support it.
+   */
+  assignedTo?: string;
   status?: "open" | "completed" | "all";
   archived?: "exclude" | "only" | "include";
   search?: string;

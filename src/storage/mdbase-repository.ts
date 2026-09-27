@@ -41,6 +41,7 @@ import {
   runMdbaseMutation,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
+import { readPeopleDirectory } from "./mdbase-people";
 import {
   activeScratchpad,
   assertActiveScratchpad,
@@ -366,14 +367,88 @@ export class MdbaseTaskRepository implements TaskRepository {
     return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };
   }
 
+  people(signal?: AbortSignal) {
+    return readPeopleDirectory(this.connect, signal);
+  }
+
   async listSummaries(
     query: Omit<TaskListQuery, "search"> = {},
   ): Promise<TaskSummary[]> {
     if (query.limit === 0) return [];
     await this.ensureTaskIndex();
     const { status, archived, limit } = query;
-    return this.cache.list({ status, archived, limit });
+    return this.cache.list(
+      { status, archived, limit },
+      undefined,
+      await this.assignedPathsFor(query),
+    );
   }
+
+  /** Paths for `assignedTo`, resolved by mdbase; undefined when unfiltered. */
+  private async assignedPathsFor(
+    query: Pick<TaskListQuery, "assignedTo">,
+  ): Promise<ReadonlySet<string> | undefined> {
+    return query.assignedTo === undefined
+      ? undefined
+      : this.assignedTaskPaths(query.assignedTo);
+  }
+
+  /** Asks mdbase which tasks' assignee links resolve to the person record. */
+  private async assignedTaskPaths(personPath: string): Promise<Set<string>> {
+    const paths = new Set<string>();
+    for (const [typeName, model] of this.taskProviders) {
+      const field = JSON.stringify(model.config.fieldMapping.assignees);
+      for await (const response of this.connect.queryPages(
+        {
+          types: [typeName],
+          // record[...] works for any local field name. The field must be a
+          // declared link list, so asFile() uses the collection's link rules.
+          where: `${field} in record && record[${field}].exists(a, a.asFile() != null && a.asFile().file.path == ${JSON.stringify(personPath)})`,
+        },
+        { pageSize: PAGE_SIZE, signal: this.operationController.signal },
+      )) {
+        for (const record of validResult(response).results)
+          paths.add(record.path);
+      }
+    }
+    return paths;
+  }
+
+  async resolveAssignees(
+    taskId: string,
+    signal?: AbortSignal,
+  ): Promise<Map<string, string | null>> {
+    const cached = this.cache.get(taskId);
+    if (!cached) throw new Error("The task is no longer available.");
+    const field = JSON.stringify(cached.model.config.fieldMapping.assignees);
+    const result = validResult(
+      await this.connect.query(
+        {
+          types: [cached.typeName],
+          where: `file.path == ${JSON.stringify(cached.task.path)}`,
+          projections: {
+            // Persisted link text, index-aligned with the resolved targets.
+            links: { expression: `${field} in raw ? raw[${field}] : []` },
+            targets: {
+              expression: `${field} in record ? record[${field}].map(a, a.asFile() == null ? null : a.asFile().file.path) : []`,
+            },
+          },
+          select: ["projection.links", "projection.targets"],
+        },
+        { signal },
+      ),
+    );
+    const values = result.results[0]?.values;
+    const links = Array.isArray(values?.links) ? values.links : [];
+    const targets = Array.isArray(values?.targets) ? values.targets : [];
+    return new Map(
+      links.map((link, index) => [
+        String(link),
+        typeof targets[index] === "string" ? (targets[index] as string) : null,
+      ]),
+    );
+  }
+
 
   async list(
     query: TaskListQuery = {},
@@ -388,7 +463,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     const selected = query.search?.trim()
       ? (await this.search(query, { signal })).map((result) => result.task)
-      : this.cache.list(query);
+      : this.cache.list(query, undefined, await this.assignedPathsFor(query));
     return this.hydrateTasks(selected, signal);
   }
 
@@ -410,13 +485,17 @@ export class MdbaseTaskRepository implements TaskRepository {
         (query.search ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean),
       ),
     ];
+    const assigned = await this.assignedPathsFor(query);
+    signal.throwIfAborted();
     if (!tokens.length)
-      return this.cache.list(query).map((task) => ({ task, bodyMatches: [] }));
-    const candidates = this.cache.list({
-      ...query,
-      search: undefined,
-      limit: Number.MAX_SAFE_INTEGER,
-    });
+      return this.cache
+        .list(query, undefined, assigned)
+        .map((task) => ({ task, bodyMatches: [] }));
+    const candidates = this.cache.list(
+      { ...query, search: undefined, limit: Number.MAX_SAFE_INTEGER },
+      undefined,
+      assigned,
+    );
     const observed = new Map<string, string[]>();
     const selected: TaskSearchResult[] = [];
     let position = 0;

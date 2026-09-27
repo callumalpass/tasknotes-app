@@ -566,7 +566,7 @@ export function description(
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.3",
+      candidate.version === "0.3.0-rc.5",
   )!;
   const configuration = structuredClone(implementation.binding);
   if (templating)
@@ -616,7 +616,7 @@ export function description(
       {
         id: "tasknotes.task",
         contractType: "record",
-        version: "0.3.0-rc.3",
+        version: "0.3.0-rc.5",
         digest: TASKNOTES_CONTRACT_DIGEST,
         schema: generated.taskSchema,
         bindingSchema: generated.bindingSchema,

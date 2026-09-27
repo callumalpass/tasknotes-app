@@ -88,6 +88,8 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   list(
     query: TaskListQuery = {},
     bodyMatches?: (task: TaskSummary, token: string) => boolean,
+    /** Restricts results to these paths, e.g. tasks mdbase resolved as assigned. */
+    paths?: ReadonlySet<string>,
   ): TaskSummary[] {
     const limit = query.limit ?? 500;
     if (limit === 0) return [];
@@ -101,6 +103,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       .filter(Boolean);
     const results: TaskSummary[] = [];
     for (const task of this.ordered) {
+      if (paths && !paths.has(task.path)) continue;
       if (!matchesArchiveFilter(task, query)) continue;
       if (query.status === "completed" && !task.completed) continue;
       if (

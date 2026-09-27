@@ -13,6 +13,7 @@ export type Draft = Pick<
   | "tags"
   | "contexts"
   | "projects"
+  | "assignees"
   | "blockedBy"
   | "recurrence"
   | "recurrenceAnchor"
@@ -37,6 +38,7 @@ export function toDraft(task: Task): Draft {
     tags: task.tags ?? [],
     contexts: task.contexts ?? [],
     projects: task.projects ?? [],
+    assignees: task.assignees ?? [],
     blockedBy: task.blockedBy ?? [],
     recurrence: task.recurrence,
     recurrenceAnchor: task.recurrenceAnchor,
@@ -55,6 +57,8 @@ export function organizeSummary(draft: Draft): string {
   const values: string[] = [];
   if (draft.priority !== "normal" && draft.priority !== "none")
     values.push(`${humanizeValue(draft.priority)} priority`);
+  if (draft.assignees?.length)
+    values.push(`${draft.assignees.length} assigned`);
   if (draft.projects.length)
     values.push(listSummary(draft.projects, "project"));
   if (draft.blockedBy.length)
