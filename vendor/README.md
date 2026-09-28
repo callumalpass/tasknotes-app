@@ -8,9 +8,9 @@ their source commit, byte size, and SHA-512 digest.
 Current snapshots were packed from sibling checkouts after their full test
 suites passed:
 
-- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.16`, catalog digest
-  `sha256:02aa8b3b…`, see `vendor/mdbase-contracts`)
-- `../tasknotes-model` (`0.3.0-rc.14`, whose `@tasknotes/model/starter` defines the published starter type)
+- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.17`, catalog digest
+  `sha256:aa03bd09…`, see `vendor/mdbase-contracts`)
+- `../tasknotes-model` (`0.3.0-rc.15`, whose `@tasknotes/model/starter` defines the published starter type)
 - `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
 - `../tasknotes-spec`
 - `../mdbase`
