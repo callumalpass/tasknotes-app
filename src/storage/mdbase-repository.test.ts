@@ -1375,7 +1375,7 @@ describe("mdbase task repository", () => {
     const fixture = mdbaseFixture([]);
     const connect = {
       ...fixture.connect,
-      readViewSource: undefined,
+      read: undefined,
     } as unknown as MdbaseConnection<JsonObject>;
     const repository = new MdbaseTaskRepository(connect);
     await repository.initialize();
@@ -1418,13 +1418,13 @@ describe("mdbase task repository", () => {
       ifRevision: created.revision,
     });
     expect(updated).toMatchObject({ revision: "view-r3" });
-    expect(fixture.updateViewSource).toHaveBeenCalledWith(
+    expect(fixture.update).toHaveBeenCalledWith(
       expect.objectContaining({ ifRevision: "view-r2" }),
       expect.objectContaining({ signal: expect.anything() }),
     );
 
     await repository.deleteViewSource(updated.path, updated.revision);
-    expect(fixture.deleteViewSource).toHaveBeenCalledWith(
+    expect(fixture.remove).toHaveBeenCalledWith(
       {
         path: updated.path,
         ifRevision: "view-r3",
