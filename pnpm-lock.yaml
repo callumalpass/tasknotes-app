@@ -86,8 +86,8 @@ importers:
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.13.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.13.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.14.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.14.tgz
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1067,9 +1067,9 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.13.tgz':
-    resolution: {integrity: sha512-8nhai/jRRVqVvw/EuCmmFRzcdRX1nVs+wsa4pwHKq0YD9H6sbjj9DbnbJ/WRjis2RBhGQr48qFHMBVfsStplEQ==, tarball: file:vendor/tasknotes-model-0.3.0-rc.13.tgz}
-    version: 0.3.0-rc.13
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.14.tgz':
+    resolution: {integrity: sha512-mU22LkvICKlKz5nGznzhiI82fkGF5sJBe1k4UQIuUuvLwSKM5zEllelaTT+hmDsPrYZgns6mQlcC9deS5MWqEQ==, tarball: file:vendor/tasknotes-model-0.3.0-rc.14.tgz}
+    version: 0.3.0-rc.14
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -4918,7 +4918,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.13.tgz':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.14.tgz':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0

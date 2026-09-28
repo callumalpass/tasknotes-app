@@ -64,7 +64,7 @@
     "@mdbase-dev/connect": "0.1.0-beta.114",
     "@mdbase-dev/connect-protocol": "0.1.0-beta.114",
     "@tanstack/react-virtual": "3.14.11",
-    "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.13.tgz",
+    "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.14.tgz",
     "codemirror": "^6.0.2",
     "dexie": "4.4.4",
     "firebase": "12.16.0",
