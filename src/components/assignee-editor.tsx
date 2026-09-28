@@ -30,9 +30,12 @@ export function AssigneeEditor({
     const path = target(value);
     if (path === null) return `${name} (no matching person record)`;
     if (path === undefined || !directory) return name;
-    const person = directory.people.find((candidate) => candidate.path === path);
+    const person = directory.people.find(
+      (candidate) => candidate.path === path,
+    );
     if (!person) return `${name} (not a person record)`;
-    if (person.ambiguousIdentity) return `${person.name} (ambiguous account link)`;
+    if (person.ambiguousIdentity)
+      return `${person.name} (ambiguous account link)`;
     return `${person.name}${person.activeMember === false ? " (not linked to an active member)" : ""}`;
   };
   const assignedPaths = new Set(values.map(target));
@@ -45,7 +48,9 @@ export function AssigneeEditor({
         !assignedPaths.has(person.path),
     ) ?? [];
   const choose = (path: string) => {
-    const person = directory?.people.find((candidate) => candidate.path === path);
+    const person = directory?.people.find(
+      (candidate) => candidate.path === path,
+    );
     if (!person) return;
     const link = recordCompletion(
       { path: person.path, label: person.name, frontmatter: {}, types: [] },
@@ -66,7 +71,9 @@ export function AssigneeEditor({
                 type="button"
                 className="people-action people-action--quiet"
                 aria-label={`Remove assignment to ${label(value)}`}
-                onClick={() => onChange(values.filter((candidate) => candidate !== value))}
+                onClick={() =>
+                  onChange(values.filter((candidate) => candidate !== value))
+                }
               >
                 <X size={16} aria-hidden="true" />
                 Remove

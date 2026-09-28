@@ -65,9 +65,9 @@ describe("TaskScreen", () => {
       task.id,
       expect.objectContaining({ title: "Unsaved important draft" }),
     );
-    expect(update.mock.calls.every(([, input]) => !("assignees" in input))).toBe(
-      true,
-    );
+    expect(
+      update.mock.calls.every(([, input]) => !("assignees" in input)),
+    ).toBe(true);
   });
 
   it("completes from the title after preserving pending notes", async () => {

@@ -47,14 +47,13 @@ it("asks the SDK once, including members only when they were approved", async ()
 
 it("keeps membership unknown when the member directory was declined", () => {
   const view = peopleView(directory({ members: undefined }));
-  expect(view.people.every((person) => !("activeMember" in person))).toBe(
-    true,
-  );
+  expect(view.people.every((person) => !("activeMember" in person))).toBe(true);
 });
 
 it("uses the server-provided settings route, never the issuer", () => {
   expect(peopleView(directory()).settingsUrl).toBeUndefined();
-  const url = "https://editor.example/?collection=c&surface=settings#your-person";
+  const url =
+    "https://editor.example/?collection=c&surface=settings#your-person";
   expect(
     peopleView(
       directory({ account: { ...me, name: "Me", personSettingsUrl: url } }),
@@ -69,7 +68,10 @@ it("marks shared account links without choosing between them", () => {
       people: [record("A", [me], "a.md"), record("B", [me], "b.md")],
     }),
   );
-  expect(view.current).toEqual({ status: "ambiguous", paths: ["a.md", "b.md"] });
+  expect(view.current).toEqual({
+    status: "ambiguous",
+    paths: ["a.md", "b.md"],
+  });
   expect(view.people.every((person) => person.ambiguousIdentity)).toBe(true);
 });
 
@@ -87,9 +89,13 @@ it("surfaces SDK failures instead of an empty directory", async () => {
 
 it("does not judge membership for records without a linked account", () => {
   const view = peopleView(
-    directory({ people: [record("mine"), record("teammate", [other]), record("Bob", [])] }),
+    directory({
+      people: [record("mine"), record("teammate", [other]), record("Bob", [])],
+    }),
   );
-  expect(view.people.map((person) => [person.name, person.activeMember])).toEqual([
+  expect(
+    view.people.map((person) => [person.name, person.activeMember]),
+  ).toEqual([
     ["mine", true],
     ["teammate", false],
     ["Bob", undefined],

@@ -449,7 +449,6 @@ export class MdbaseTaskRepository implements TaskRepository {
     );
   }
 
-
   async list(
     query: TaskListQuery = {},
     options: { signal?: AbortSignal } = {},

@@ -26,7 +26,10 @@ const person = (name: string, path: string, extra = {}) => ({
   ambiguousIdentity: false,
   ...extra,
 });
-function renderEditor(values: string[], linkWriteFormat: "wikilink" | "markdown" = "wikilink") {
+function renderEditor(
+  values: string[],
+  linkWriteFormat: "wikilink" | "markdown" = "wikilink",
+) {
   const change = vi.fn();
   render(
     <AssigneeEditor
@@ -111,7 +114,9 @@ it("writes a link to the chosen person record and offers only unassigned, unambi
 });
 
 it("uses the collection's Markdown link format when configured", () => {
-  state.directory = { people: [person("Alex Rivera", "people/Alex Rivera.md")] };
+  state.directory = {
+    people: [person("Alex Rivera", "people/Alex Rivera.md")],
+  };
   const change = renderEditor([], "markdown");
   fireEvent.click(screen.getByRole("button", { name: "Choose assignees" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Add an assignee" }), {
