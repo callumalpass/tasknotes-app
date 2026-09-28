@@ -3,14 +3,14 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 export const TASKNOTES_CONTRACT_CATALOG_URL =
-  "https://mdbase.dev/contracts/packs/tasknotes.task/0.3.0-rc.15.json";
+  "https://mdbase.dev/contracts/packs/tasknotes.task/0.3.0-rc.16.json";
 export const TASKNOTES_CONTRACT_CATALOG_DIGEST =
-  "sha256:db3b0b28c6fb286bc8c7bbbee9f4b01f567078c208187d17ce049d1e62a9a8cb";
-export const TASKNOTES_APP_TYPE_PACK_VERSION = "0.3.0-rc.15";
+  "sha256:02aa8b3b033dc8144eea4860541ef2d4e32036def264da0c6c19536090843fd6";
+export const TASKNOTES_APP_TYPE_PACK_VERSION = "0.3.0-rc.16";
 
 export const TASKNOTES_CONTRACT_VENDOR_PATH = resolve(
   process.cwd(),
-  "vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.15.json",
+  "vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.16.json",
 );
 
 export async function loadCanonicalTaskNotesTypePack() {
