@@ -1,0 +1,149 @@
+.assignee-editor {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.assignee-editor legend {
+  padding-inline-end: var(--space-sm);
+  font-weight: 600;
+}
+.assignee-editor p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.assignee-editor ul {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+.assignee-editor li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--line);
+}
+.assignee-editor li > span {
+  flex: 1 1 12rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.assignee-editor label {
+  min-width: 0;
+}
+.assignee-editor select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: var(--control-min-size);
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--type-control);
+}
+.assignee-editor select:disabled {
+  color: var(--ink-soft);
+  background: var(--paper-soft);
+  cursor: not-allowed;
+}
+.people-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+:is(.assignee-editor, .people-actions) .people-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: var(--space-sm);
+  min-height: var(--control-min-size);
+  min-width: var(--control-min-size);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-control);
+  line-height: 1.4;
+  text-align: start;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.people-action svg {
+  flex: 0 0 auto;
+}
+:is(.assignee-editor, .people-actions) .people-action--quiet {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+:is(.assignee-editor, .people-actions) .people-profile-link {
+  justify-content: flex-start;
+  color: var(--accent);
+}
+.people-profile-label {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.people-action-caption,
+.assignee-editor .assignee-help {
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+@media (hover: hover) {
+  :is(.assignee-editor, .people-actions) .people-action:hover:not(:disabled) {
+    background: var(--paper-soft);
+    border-color: var(--ink-muted);
+  }
+}
+:is(.assignee-editor, .people-actions) .people-action:focus-visible,
+.assignee-editor select:focus-visible {
+  /* Override the legacy global !important outline reset for these controls. */
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+:is(.assignee-editor, .people-actions) .people-action:disabled {
+  color: var(--ink-muted);
+  background: var(--paper-soft);
+  cursor: not-allowed;
+}
+@media (max-width: 480px) {
+  .people-actions .people-profile-link {
+    width: 100%;
+  }
+}
+.assigned-to-me-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--control-min-size);
+  margin: var(--space-md) 0;
+}
+.assigned-to-me-filter input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}

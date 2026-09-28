@@ -52,6 +52,79 @@ describe("mdbase task repository", () => {
     expect((await repository.get(task.id))?.frontmatter.reminders).toEqual([]);
   });
 
+  it("filters by assignee using mdbase link resolution before limits", async () => {
+    const assigned = taskRecord("assigned", "Assigned task", "r1");
+    assigned.frontmatter.assignees = ["[[Alex Rivera]]", "[[Nobody]]"];
+    const fixture = mdbaseFixture([
+      assigned,
+      ...Array.from({ length: 20 }, (_, index) =>
+        taskRecord(`other-${index}`, `Other ${index}`, "r1"),
+      ),
+    ]);
+    // Stands in for the engine; its real behaviour is pinned in mdbase-rs.
+    const ordinary = fixture.query.getMockImplementation()!;
+    fixture.query.mockImplementation(
+      async (input?: Record<string, unknown>) => {
+        const assignment =
+          typeof input?.where === "string" && input.where.includes("asFile()");
+        // The fixture reads `file.path ==` in where clauses; assignment filters
+        // compare the linked record's path, which it must not treat as the task's.
+        const outcome = await ordinary(
+          assignment ? { ...input, where: undefined } : input,
+        );
+        if (assignment)
+          outcome.result.results = outcome.result.results.filter(
+            (record) => record.path === assigned.path,
+          );
+        const projections = input?.projections as
+          Record<string, unknown> | undefined;
+        if (projections?.targets)
+          outcome.result.results = outcome.result.results
+            .filter((record) => record.path === assigned.path)
+            .map((record) => ({
+              ...record,
+              values: {
+                links: ["[[Alex Rivera]]", "[[Nobody]]"],
+                targets: ["people/Alex Rivera.md", null],
+              },
+            }));
+        return outcome;
+      },
+    );
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const assignedTo = "people/Alex Rivera.md";
+    expect(
+      (
+        await repository.listSummaries({ status: "all", assignedTo, limit: 1 })
+      ).map((task) => task.id),
+    ).toEqual(["assigned"]);
+    expect(
+      (
+        await repository.search({ status: "all", assignedTo, search: "task" })
+      ).map((result) => result.task.id),
+    ).toEqual(["assigned"]);
+    const where = fixture.query.mock.calls
+      .map(([input]) => input?.where)
+      .find((value) => typeof value === "string" && value.includes("asFile()"));
+    expect(where).toBe(
+      '"assignees" in record && record["assignees"].exists(a, a.asFile() != null && a.asFile().file.path == "people/Alex Rivera.md")',
+    );
+    expect(await repository.resolveAssignees("assigned")).toEqual(
+      new Map([
+        ["[[Alex Rivera]]", "people/Alex Rivera.md"],
+        ["[[Nobody]]", null],
+      ]),
+    );
+    const updated = await repository.update("assigned", {
+      title: "Still assigned",
+    });
+    expect(updated.assignees).toEqual(["[[Alex Rivera]]", "[[Nobody]]"]);
+    expect(
+      (await repository.update("assigned", { assignees: [] })).assignees,
+    ).toEqual([]);
+  });
+
   it("loads more than ten thousand tasks through bounded opaque pages", async () => {
     const records = Array.from({ length: 10_005 }, (_, index) =>
       taskRecord(`paged-${index}`, `Paged task ${index}`, `r${index + 1}`),

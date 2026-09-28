@@ -56,6 +56,19 @@ import type { CollectionFileStore } from "./collection-file-store";
 export interface TaskRepository {
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
+  /** Account/person discovery is unavailable in non-account demo repositories. */
+  people?(
+    signal?: AbortSignal,
+  ): Promise<import("../../domain/people").PeopleDirectory>;
+  /**
+   * The person record path each saved assignee link of a task resolves to,
+   * keyed by link value; null for links that do not resolve. Resolution is
+   * the collection's, never reimplemented by the app.
+   */
+  resolveAssignees?(
+    taskId: string,
+    signal?: AbortSignal,
+  ): Promise<Map<string, string | null>>;
   /** Workspace mode opens configuration without waiting for collection-wide indexes. */
   initialize(options?: { deferTaskIndex?: boolean }): Promise<void>;
   refresh(): Promise<RefreshResult>;

@@ -31,6 +31,7 @@ export async function buildTaskNotesManifest({
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
     requirements: {
+      people: { version: 1, optional: ["identity", "members"] },
       contracts: [taskContract],
       capabilities: {
         contract_version: 2,

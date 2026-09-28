@@ -192,6 +192,8 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   async list(query: TaskListQuery = {}): Promise<Task[]> {
+    if (query.assignedTo !== undefined)
+      throw new Error("The demo collection has no people or assignments.");
     const search = query.search?.trim().toLocaleLowerCase();
     const matches = [...this.tasks.values()].filter((task) => {
       if (query.status === "open" && task.completed) return false;

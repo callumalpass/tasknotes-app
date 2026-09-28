@@ -1,7 +1,8 @@
-import { ArrowLeft, Search, X } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
+import { PersonSetupLink } from "../components/person-setup-link";
 import { LoadingRows } from "../components/loading";
 import { taskCompletion } from "../domain/task-completion";
 import { linkDisplayLabel } from "../domain/completion";
@@ -9,6 +10,7 @@ import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTaskSearch } from "./repository-context";
 import { searchMatchContext } from "./search-match-context";
+import { usePeople } from "./use-people";
 
 import type { TaskSummary } from "../domain/task";
 
@@ -20,6 +22,13 @@ export function SearchScreen({
   onOpen(task: TaskSummary): void;
 }) {
   const [query, setQuery] = useState("");
+  const [assignedToMe, setAssignedToMe] = useState(false);
+  const people = usePeople(assignedToMe);
+  const personPath =
+    assignedToMe && people.directory?.current.status === "linked"
+      ? people.directory.current.personPath
+      : undefined;
+  const peopleBlocked = assignedToMe && personPath === undefined;
   const deferred = useDebounced(query, 160);
   const { setTaskCompletion } = useRepository();
   const [limit, setLimit] = useState(300);
@@ -30,13 +39,18 @@ export function SearchScreen({
     error,
     stale,
     retry,
-  } = useTaskSearch({ status: "all", search: deferred, limit: limit + 1 });
+  } = useTaskSearch({
+    status: "all",
+    search: deferred,
+    limit: peopleBlocked ? 0 : limit + 1,
+    ...(personPath ? { assignedTo: personPath } : {}),
+  });
   const tasks = results.slice(0, limit).map((result) => result.task);
   const bodyMatches = new Map(
     results.map((result) => [result.task.id, result.bodyMatches]),
   );
   const hasMore = results.length > limit;
-  const searching = query.trim().length > 0;
+  const searching = assignedToMe || query.trim().length > 0;
   const waiting = query !== deferred;
   const chooseQuery = (value: string) => {
     setQuery(value);
@@ -103,7 +117,20 @@ export function SearchScreen({
           </button>
         ) : null}
       </div>
-      {!waiting && error ? (
+      {people.supported && (
+        <label className="assigned-to-me-filter">
+          <input
+            type="checkbox"
+            checked={assignedToMe}
+            onChange={(event) => {
+              setAssignedToMe(event.target.checked);
+              setLimit(300);
+            }}
+          />
+          Assigned to me
+        </label>
+      )}
+      {!peopleBlocked && !waiting && error ? (
         <div className="operation-error-notice" role="alert">
           <p>Search could not be loaded. {error.message}</p>
           {stale ? <p>Previously loaded results may be out of date.</p> : null}
@@ -112,7 +139,40 @@ export function SearchScreen({
           </button>
         </div>
       ) : null}
-      {waiting || (loading && !error) ? (
+      {peopleBlocked ? (
+        <div
+          className="operation-error-notice"
+          role={people.error ? "alert" : "status"}
+        >
+          <p>
+            {people.error
+              ? `Your person identity could not be loaded. ${people.error.message}`
+              : !people.directory
+                ? "Loading your person identity…"
+                : people.directory.current.status === "ambiguous"
+                  ? `Several person records match your account: ${people.directory.current.paths.join(", ")}. Resolve those duplicates before filtering tasks.`
+                  : people.directory.current.status === "invalid"
+                    ? `Your person record needs fixing before filtering tasks: ${people.directory.current.paths.join(", ")}.`
+                    : "Link your account to a person record before using Assigned to me."}
+          </p>
+          <div className="people-actions">
+            {people.directory?.settingsUrl && (
+              <PersonSetupLink
+                href={people.directory.settingsUrl}
+                onOpen={people.openedSettings}
+              />
+            )}
+            <button
+              className="people-action"
+              type="button"
+              onClick={people.retry}
+            >
+              <RefreshCw size={18} aria-hidden="true" />
+              Reload people
+            </button>
+          </div>
+        </div>
+      ) : waiting || (loading && !error) ? (
         <LoadingRows count={4} />
       ) : error && !tasks.length ? null : !searching ? (
         <>
@@ -154,8 +214,16 @@ export function SearchScreen({
         </>
       ) : (
         <EmptyState
-          title="No tasks matched."
-          body="Try fewer words or another spelling."
+          title={
+            assignedToMe
+              ? "No matching tasks assigned to you."
+              : "No tasks matched."
+          }
+          body={
+            assignedToMe
+              ? "Assignments use your linked person record."
+              : "Try fewer words or another spelling."
+          }
         />
       )}
     </section>

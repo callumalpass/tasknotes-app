@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
-  '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz
-  '@mdbase-dev/connect-sync': file:vendor/mdbase-dev-connect-sync-0.1.0-beta.96-56ed32ffde05.tgz
+  '@mdbase-dev/connect-protocol': 0.1.0-beta.114
+  '@mdbase-dev/connect': 0.1.0-beta.114
+  '@mdbase-dev/connect-sync': 0.1.0-beta.114
 
 importers:
 
@@ -77,17 +77,17 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@mdbase-dev/connect':
-        specifier: file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz
-        version: file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@mdbase-dev/connect-protocol':
-        specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
-        version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@tanstack/react-virtual':
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.11.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.13.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.13.tgz
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -147,11 +147,11 @@ importers:
         specifier: 10.0.1
         version: 10.0.1(eslint@10.7.0)
       '@mdbase-dev/connect-dev':
-        specifier: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.96-56ed32ffde05.tgz
-        version: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.96-56ed32ffde05.tgz
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@mdbase-dev/connect-testing':
-        specifier: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz
-        version: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1
@@ -201,8 +201,8 @@ importers:
         specifier: 3.9.6
         version: 3.9.6
       tasknotes-spec:
-        specifier: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz
-        version: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz
+        specifier: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz
+        version: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -902,22 +902,18 @@ packages:
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
-  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.96-56ed32ffde05.tgz':
-    resolution: {integrity: sha512-pL2RFzHeC0v7eHwweVtC1K9SW3suNJUEJ1rg18zicm5nkwYYwE3OUnlvhEqKPYgcEhZjfO5ZMgPNMK9semWWUA==, tarball: file:vendor/mdbase-dev-connect-dev-0.1.0-beta.96-56ed32ffde05.tgz}
-    version: 0.1.0-beta.96
+  '@mdbase-dev/connect-dev@0.1.0-beta.114':
+    resolution: {integrity: sha512-HlRXwwgPiuKAflaHAMchLOWPBQ+XDTZ9FO///3r9QioSrAQ3CtULHwisAKEGaSJo6S0HxQ3+KflVH8j9Wa3DvA==}
     hasBin: true
 
-  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz':
-    resolution: {integrity: sha512-prz8clP0Vpu8HQ4ucr+ss4am2sLQpFTOjXBSRcaU8/RIdDM7tZurOYHP/y0LdDkViJ9pODfD6R82umpdvMQYhQ==, tarball: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz}
-    version: 0.1.0-beta.96
+  '@mdbase-dev/connect-protocol@0.1.0-beta.114':
+    resolution: {integrity: sha512-t9J7wVdoYjEMpQ7osgyEE/b+KRxo3vY1nAwX7x6cYRd41pD7/t69XufddvY18OnmYf1GopXzv3Mgdql4SjO+JQ==}
 
-  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz':
-    resolution: {integrity: sha512-HFDlVZ8bcNGIcoez532kmdZ7XoXri4axn5n2PmType1zHQ48BbltKG1nR0BejlExMGPr6LopwotgbCNC3GuvEA==, tarball: file:vendor/mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz}
-    version: 0.1.0-beta.96
+  '@mdbase-dev/connect-testing@0.1.0-beta.114':
+    resolution: {integrity: sha512-dWdssxcptoR/mkx4Rv1ZCSZfXKBAfCmfsJJ3zpMGmUIIvpkmJXOJQk/eRIsSsfDl1IKUOOuOx2qXBundXGcb+g==}
 
-  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz':
-    resolution: {integrity: sha512-7k2TL4IVu4IyWSs+1DuSDrY/Vw0vAHlpgL3Zq9R/Bb1I61TMwTTQ2p/aYx400FT69qQGO1CA6SHs7oHNroHh5w==, tarball: file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz}
-    version: 0.1.0-beta.96
+  '@mdbase-dev/connect@0.1.0-beta.114':
+    resolution: {integrity: sha512-NnES3Y3NC5nJTegp6YmaB+FGHIDB3596nc2SlZqTSzg33q6GJ98USn/ua0JB8qrIbeCJVvqHJrsGxRboBw75BA==}
 
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
@@ -1071,9 +1067,9 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.11.tgz':
-    resolution: {integrity: sha512-67Sb9vqmhfXf2wXo7956w4JijzUyMYNngQ8xjjpHl6m02hVnv8H2N9iICaHS4191Ym6pEARuOUO9LYa4NKcB8w==, tarball: file:vendor/tasknotes-model-0.3.0-rc.11.tgz}
-    version: 0.3.0-rc.11
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.13.tgz':
+    resolution: {integrity: sha512-8nhai/jRRVqVvw/EuCmmFRzcdRX1nVs+wsa4pwHKq0YD9H6sbjj9DbnbJ/WRjis2RBhGQr48qFHMBVfsStplEQ==, tarball: file:vendor/tasknotes-model-0.3.0-rc.13.tgz}
+    version: 0.3.0-rc.13
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -3308,9 +3304,9 @@ packages:
   tasknotes-nlp-core@0.1.5:
     resolution: {integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==}
 
-  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.3.tgz:
-    resolution: {integrity: sha512-4ZpddGYNu7I4n566mTA8eeiKlwFcyeR7FN5OQcvECURP2JtscmalhrIDfXAGfRSGTqvsgXToph+COIKEeabDwg==, tarball: file:vendor/tasknotes-spec-0.3.0-rc.3.tgz}
-    version: 0.3.0-rc.3
+  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.5.tgz:
+    resolution: {integrity: sha512-8/Z16QQ58gmBLI7CAwYSkuAL8UwEB7FF04VDFjz2CQhUWfyppZPKtCox4NGz2944PEI0VWo/8JEcvAcSgXuxiA==, tarball: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz}
+    version: 0.3.0-rc.5
 
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
@@ -3739,6 +3735,11 @@ packages:
 
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
     engines: {node: '>= 14.6'}
     hasBin: true
 
@@ -4794,26 +4795,26 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4': {}
 
-  '@mdbase-dev/connect-dev@file:vendor/mdbase-dev-connect-dev-0.1.0-beta.96-56ed32ffde05.tgz':
+  '@mdbase-dev/connect-dev@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
+      '@mdbase-dev/connect': 0.1.0-beta.114
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
       ajv: 8.20.0
-      yaml: 2.9.0
+      yaml: 2.9.1
 
-  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz':
+  '@mdbase-dev/connect-protocol@0.1.0-beta.114':
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
 
-  '@mdbase-dev/connect-testing@file:vendor/mdbase-dev-connect-testing-0.1.0-beta.96-56ed32ffde05.tgz':
+  '@mdbase-dev/connect-testing@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
+      '@mdbase-dev/connect': 0.1.0-beta.114
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
 
-  '@mdbase-dev/connect@file:vendor/mdbase-dev-connect-0.1.0-beta.96-56ed32ffde05.tgz':
+  '@mdbase-dev/connect@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.96-56ed32ffde05.tgz
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
@@ -4917,7 +4918,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.11.tgz':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.13.tgz':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0
@@ -7489,7 +7490,7 @@ snapshots:
       date-fns: 4.4.0
       rrule: 2.8.1
 
-  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.3.tgz: {}
+  tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.5.tgz: {}
 
   teex@1.0.1:
     dependencies:
@@ -7848,6 +7849,8 @@ snapshots:
   yallist@5.0.0: {}
 
   yaml@2.9.0: {}
+
+  yaml@2.9.1: {}
 
   yargs-parser@18.1.3:
     dependencies:

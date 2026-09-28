@@ -22,6 +22,7 @@ import { AttachmentService } from "../application/attachments/attachment-service
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { RecurrenceField } from "../components/recurrence-field";
+import { AssigneeEditor } from "../components/assignee-editor";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateField,
@@ -285,6 +286,10 @@ function TaskEditor({
             tags: value.tags,
             contexts: value.contexts,
             projects: value.projects,
+            // Only an actual assignment edit writes the field.
+            ...(sameIds(value.assignees ?? [], task.assignees ?? [])
+              ? {}
+              : { assignees: value.assignees ?? [] }),
             blockedBy: value.blockedBy,
             recurrence: value.recurrence ?? null,
             recurrenceAnchor: value.recurrenceAnchor,
@@ -320,7 +325,7 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [task.id, updateTask],
+    [task.assignees, task.id, updateTask],
   );
 
   useEffect(() => {
@@ -809,6 +814,12 @@ function TaskEditor({
               onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
+          <AssigneeEditor
+            taskId={task.id}
+            linkWriteFormat={configuration.linkWriteFormat}
+            values={draft.assignees ?? []}
+            onChange={(assignees) => change({ assignees })}
+          />
           <DependencyEditor
             completeField={completeDependencyField}
             dependencies={draft.blockedBy}
@@ -1193,4 +1204,11 @@ function toLocalDateTime(value?: string): string {
   if (Number.isNaN(date.valueOf())) return "";
   const local = new Date(date.valueOf() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
 }
