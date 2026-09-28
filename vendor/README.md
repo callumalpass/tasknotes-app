@@ -8,13 +8,12 @@ their source commit, byte size, and SHA-512 digest.
 Current snapshots were packed from sibling checkouts after their full test
 suites passed:
 
-- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.12`, catalog digest
-  `sha256:7d48494296728ccb227def0ff37e7a32dea0d02efa86b852e87cd1f46284af9b`)
-- `../tasknotes-model` (`0.3.0-rc.11`)
+- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.15`, catalog digest
+  `sha256:db3b0b28…`, see `vendor/mdbase-contracts`)
+- `../tasknotes-model` (`0.3.0-rc.13`)
 - `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
 - `../tasknotes-spec`
 - `../mdbase`
-- `../mdbase-connect`
 
 Refresh the core or Connect SDK snapshots from their source worktrees with:
 
