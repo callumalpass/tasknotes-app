@@ -6,6 +6,7 @@ import {
   TASKNOTES_APP_TYPE_PACK_VERSION,
 } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
+import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
 
 describe("TaskNotes mdbase manifest", () => {
   it("declares content-free runtime criteria without requiring Firebase", async () => {
@@ -151,6 +152,17 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.redirect_uris).toEqual([
       "http://127.0.0.1:4173/tasknotes-app/auth/mdbase/callback",
     ]);
+  });
+
+  it("generates exactly the starter type the pinned pack installs", async () => {
+    const pack = await loadCanonicalTaskNotesTypePack();
+    const typeResource = pack.manifest.resources.find(
+      (resource) => resource.target === "_types/task.md",
+    );
+    const document = pack.resources.find(
+      (resource) => resource.source === typeResource.source,
+    ).document;
+    expect(buildAppTaskNotesResources().typeDocument).toBe(document);
   });
 
   it("provisions TaskNotes-compatible string ranks for manual order", () => {
