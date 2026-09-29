@@ -203,8 +203,6 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
         result = defaultViewDocuments();
       } else if (operation === "execute_view") {
         result = defaultViewExecution([]);
-      } else if (operation === "read" && isViewSourceRead(request.input)) {
-        result = viewSourceRecord(request.input);
       } else if (operation === "read") {
         result = scratchpad;
       } else result = {};
@@ -349,8 +347,6 @@ test("acknowledges slow relay creates and prefetches revisions before delete", a
         };
         records.push(created);
         result = valid(created);
-      } else if (operation === "read" && isViewSourceRead(request.input)) {
-        result = valid(viewSourceRecord(request.input));
       } else if (operation === "read") {
         readRequests += 1;
         await readGate.promise;
@@ -509,9 +505,7 @@ test("edits a contract-defined task without collapsing custom status or fields",
         result = defaultViewDocuments();
       } else if (operation === "execute_view") {
         result = defaultViewExecution([record]);
-      } else if (operation === "read" && isViewSourceRead(request.input))
-        result = viewSourceRecord(request.input);
-      else if (operation === "read") result = record;
+      } else if (operation === "read") result = record;
       else if (operation === "update") {
         updateInput = request.input as {
           patch?: JsonObject;
@@ -649,25 +643,6 @@ function collectionDescription() {
           },
         ],
       },
-      // A set-up collection also carries the saved-view contracts TaskNotes
-      // requires; their packs are installed during collection setup.
-      ...bundledManifest.requirements.contracts
-        .filter((contract) => contract.id !== "tasknotes.task")
-        .map((contract) => ({
-          contract_type: "record" as const,
-          id: contract.id,
-          version: contract.version,
-          digest: contract.digest,
-          schema: { type: "object" },
-          binding_schema: { type: "object" },
-          implementations: [] as Array<{
-            type_name: string;
-            type_version: number;
-            digest: string;
-            fields: Record<string, string>;
-            binding: JsonObject;
-          }>,
-        })),
     ],
   };
 }
@@ -888,28 +863,6 @@ async function fulfillOperation(
     contentType: "application/json",
     body: JSON.stringify({ envelope }),
   });
-}
-
-// Saved views are `.base` records read with the ordinary record operation.
-function isViewSourceRead(input: unknown): input is { path: string } {
-  const path = (input as { path?: unknown }).path;
-  return typeof path === "string" && path.endsWith(".base");
-}
-
-function viewSourceRecord({ path }: { path: string }) {
-  const id = path
-    .split("/")
-    .at(-1)!
-    .replace(/\.base$/u, "");
-  const name = `${id[0].toUpperCase()}${id.slice(1)}`;
-  return {
-    path,
-    types: ["obsidian_base"],
-    revision: "view-r1",
-    frontmatter: { views: [{ type: "tasknotesTaskList", name }] },
-    body: "",
-    document: `views:\n  - type: tasknotesTaskList\n    name: ${name}\n`,
-  };
 }
 
 function defaultViewDocuments() {

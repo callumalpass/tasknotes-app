@@ -19,7 +19,6 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { vi } from "vitest";
-import { stringify } from "yaml";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
@@ -157,28 +156,7 @@ export function mdbaseFixture(
         );
       })(),
   );
-  // Saved views are records; their documents are kept so reads with
-  // includeDocument and whole-document updates round-trip.
-  const viewSources = new Map([
-    [
-      "views/tasks.base",
-      {
-        path: "views/tasks.base",
-        revision: "view-r1",
-        document: "views:\n  - name: Kanban\n    type: tasknotesKanban\n",
-      },
-    ],
-  ]);
-  let viewRevision = 2;
-  const isViewSource = (path: string) =>
-    path.endsWith(".base") || path.startsWith("views/");
-  const viewSource = (path: string) => {
-    const source = viewSources.get(path);
-    if (!source) throw new Error("View source not found.");
-    return source;
-  };
   const read = vi.fn(async ({ path }: { path: string }) => {
-    if (isViewSource(path)) return valid(structuredClone(viewSource(path)));
     const record = records.get(path);
     if (!record) throw new Error("Task not found.");
     return valid(record);
@@ -191,17 +169,6 @@ export function mdbaseFixture(
       body?: string;
     }) => {
       const path = input.path ?? `tasks/${crypto.randomUUID()}.md`;
-      if (isViewSource(path)) {
-        const source = {
-          path,
-          revision: `view-r${viewRevision++}`,
-          document: path.endsWith(".base")
-            ? stringify(input.frontmatter)
-            : serializeMarkdownDocument(input.frontmatter, input.body ?? ""),
-        };
-        viewSources.set(path, source);
-        return valid(structuredClone(source));
-      }
       if (records.has(path)) throw new Error(`Path already exists: ${path}`);
       const record: TestRecord = {
         path,
@@ -217,29 +184,16 @@ export function mdbaseFixture(
   const update = vi.fn(
     async (input: {
       path: string;
-      patch?: JsonObject;
-      document?: string;
+      patch: JsonObject;
       body?: string;
       ifRevision?: string;
     }) => {
-      if (isViewSource(input.path)) {
-        const current = viewSource(input.path);
-        if (input.ifRevision !== current.revision)
-          throw new Error("Revision conflict.");
-        const source = {
-          ...current,
-          revision: `view-r${viewRevision++}`,
-          document: input.document ?? current.document,
-        };
-        viewSources.set(input.path, source);
-        return valid(structuredClone(source));
-      }
       const current = records.get(input.path);
       if (!current) throw new Error("Task not found.");
       if (input.ifRevision !== current.revision)
         throw new Error("Revision conflict.");
       const frontmatter = structuredClone(current.frontmatter);
-      for (const [key, value] of Object.entries(input.patch ?? {})) {
+      for (const [key, value] of Object.entries(input.patch)) {
         if (value === null) delete frontmatter[key];
         else frontmatter[key] = structuredClone(value);
       }
@@ -254,12 +208,6 @@ export function mdbaseFixture(
     },
   );
   const remove = vi.fn(async (input: { path: string; ifRevision?: string }) => {
-    if (isViewSource(input.path)) {
-      if (input.ifRevision !== viewSource(input.path).revision)
-        throw new Error("Revision conflict.");
-      viewSources.delete(input.path);
-      return valid({ path: input.path, deleted: true });
-    }
     const current = records.get(input.path);
     if (!current) throw new Error("Task not found.");
     if (input.ifRevision !== current.revision)
@@ -349,6 +297,77 @@ export function mdbaseFixture(
       );
     })(),
   );
+  const viewSources = new Map<
+    string,
+    {
+      path: string;
+      format: "obsidian.base" | "mdbase.view";
+      revision: string;
+      document: string;
+    }
+  >([
+    [
+      "views/tasks.base",
+      {
+        path: "views/tasks.base",
+        format: "obsidian.base" as const,
+        revision: "view-r1",
+        document: "views:\n  - name: Kanban\n    type: tasknotesKanban\n",
+      },
+    ],
+  ]);
+  let viewRevision = 2;
+  const readViewSource = vi.fn(async ({ path }: { path: string }) => {
+    const source = viewSources.get(path);
+    if (!source) throw new Error("View source not found.");
+    return valid(structuredClone(source));
+  });
+  const createViewSource = vi.fn(
+    async (input: {
+      path?: string;
+      format: "obsidian.base" | "mdbase.view";
+      name: string;
+      document: string;
+    }) => {
+      const extension = input.format === "obsidian.base" ? "base" : "md";
+      const path =
+        input.path ??
+        `views/${input.name.toLowerCase().replaceAll(" ", "-")}.${extension}`;
+      const source = {
+        path,
+        format: input.format,
+        revision: `view-r${viewRevision++}`,
+        document: input.document,
+      };
+      viewSources.set(path, source);
+      return valid(structuredClone(source));
+    },
+  );
+  const updateViewSource = vi.fn(
+    async (input: { path: string; document: string; ifRevision?: string }) => {
+      const current = viewSources.get(input.path);
+      if (!current) throw new Error("View source not found.");
+      if (input.ifRevision !== current.revision)
+        throw new Error("Revision conflict.");
+      const source = {
+        ...current,
+        revision: `view-r${viewRevision++}`,
+        document: input.document,
+      };
+      viewSources.set(input.path, source);
+      return valid(structuredClone(source));
+    },
+  );
+  const deleteViewSource = vi.fn(
+    async (input: { path: string; ifRevision?: string }) => {
+      const current = viewSources.get(input.path);
+      if (!current) throw new Error("View source not found.");
+      if (input.ifRevision !== current.revision)
+        throw new Error("Revision conflict.");
+      viewSources.delete(input.path);
+      return valid({ path: input.path, deleted: true });
+    },
+  );
   const readType = vi.fn(
     async ({ name, path }: { name?: string; path?: string }) => {
       if (name !== typeDocument.name && path !== typeDocument.path)
@@ -417,6 +436,10 @@ export function mdbaseFixture(
     listViews,
     executeView,
     executeViewPages,
+    readViewSource,
+    createViewSource,
+    updateViewSource,
+    deleteViewSource,
     readType,
     updateType,
   } as unknown as MdbaseConnection<JsonObject>;
@@ -454,6 +477,10 @@ export function mdbaseFixture(
     listViews,
     executeView,
     executeViewPages,
+    readViewSource,
+    createViewSource,
+    updateViewSource,
+    deleteViewSource,
     readType,
     updateType,
     stagePendingMutation,

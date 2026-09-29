@@ -40,8 +40,6 @@ describe("TaskNotes mdbase manifest", () => {
         version: "0.3.0-rc.5",
         digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       }),
-      expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
-      expect.objectContaining({ id: "mdbase.view", version: "1.0.0" }),
     ]);
     expect(manifest.requirements.files).toEqual({
       required: ["list", "read", "add", "replace", "move", "delete"],
@@ -56,6 +54,7 @@ describe("TaskNotes mdbase manifest", () => {
         "records.create",
         "records.edit",
         "records.delete",
+        "views.manage",
         "definitions.manage",
         "background.schedule",
       ],
@@ -67,18 +66,6 @@ describe("TaskNotes mdbase manifest", () => {
         predicate: "contains",
         value: "TaskNotes/Views/**/*.base",
       },
-      {
-        id: "tasknotes-markdown-records",
-        path: "/settings/record_extensions",
-        predicate: "contains",
-        value: "md",
-      },
-      {
-        id: "tasknotes-base-records",
-        path: "/settings/record_extensions",
-        predicate: "contains",
-        value: "base",
-      },
     ]);
     expect(manifest.provisions.configuration).toEqual([
       {
@@ -86,18 +73,6 @@ describe("TaskNotes mdbase manifest", () => {
         operation: "set_add",
         path: "/x-obsidian/bases/include",
         value: "TaskNotes/Views/**/*.base",
-      },
-      {
-        requirement: "tasknotes-markdown-records",
-        operation: "set_add",
-        path: "/settings/record_extensions",
-        value: "md",
-      },
-      {
-        requirement: "tasknotes-base-records",
-        operation: "set_add",
-        path: "/settings/record_extensions",
-        value: "base",
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(

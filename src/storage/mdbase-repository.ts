@@ -41,11 +41,6 @@ import {
   runMdbaseMutation,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
-import {
-  newViewSourcePath,
-  viewSourceFormat,
-  viewSourceRecord,
-} from "../domain/default-view-source";
 import { readPeopleDirectory } from "./mdbase-people";
 import {
   activeScratchpad,
@@ -1238,13 +1233,8 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   async readViewSource(path: string): Promise<TaskViewSourceDocument> {
     try {
-      return viewSourceDocument(
-        validResult(
-          await this.connect.read(
-            { path, includeDocument: true },
-            this.requestOptions(),
-          ),
-        ),
+      return validResult(
+        await this.connect.readViewSource({ path }, this.requestOptions()),
       );
     } catch (reason) {
       this.noteOperationFailure(reason);
@@ -1252,19 +1242,11 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
-  /** Saved views are ordinary records: Bases through obsidian.base, others through mdbase.view. */
   async createViewSource(
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    const path =
-      input.path ??
-      newViewSourcePath(input.format ?? "obsidian.base", input.name ?? "view");
-    const operationInput = {
-      path,
-      ...viewSourceRecord(path, input.document),
-      includeDocument: true,
-    };
     try {
+      const operationInput = { ...input };
       const applyCreated = (created: TaskViewSourceDocument) => {
         this.invalidateViewsAfterMutation();
         return created;
@@ -1273,12 +1255,10 @@ export class MdbaseTaskRepository implements TaskRepository {
         this.connect,
         async () =>
           applyCreated(
-            viewSourceDocument(
-              validResult(
-                await this.connect.create(
-                  operationInput,
-                  this.requestOptions(),
-                ),
+            validResult(
+              await this.connect.createViewSource(
+                operationInput,
+                this.requestOptions(),
               ),
             ),
           ),
@@ -1294,7 +1274,6 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
-  /** A whole-document replacement keeps Obsidian's comments and layout. */
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
@@ -1312,12 +1291,10 @@ export class MdbaseTaskRepository implements TaskRepository {
         this.connect,
         async () =>
           applyUpdated(
-            viewSourceDocument(
-              validResult(
-                await this.connect.update(
-                  operationInput,
-                  this.requestOptions(),
-                ),
+            validResult(
+              await this.connect.updateViewSource(
+                operationInput,
+                this.requestOptions(),
               ),
             ),
           ),
@@ -1343,7 +1320,10 @@ export class MdbaseTaskRepository implements TaskRepository {
         this.connect,
         async () => {
           validResult(
-            await this.connect.delete(operationInput, this.requestOptions()),
+            await this.connect.deleteViewSource(
+              operationInput,
+              this.requestOptions(),
+            ),
           );
           applyDeleted();
         },
@@ -2622,17 +2602,4 @@ function connectionErrorMessage(reason: unknown): string {
     return "The computer holding this collection is offline.";
   if (reason instanceof Error && reason.message) return reason.message;
   return "This collection is not reachable right now.";
-}
-
-function viewSourceDocument(record: {
-  path: string;
-  revision: string;
-  document?: string;
-}): TaskViewSourceDocument {
-  return {
-    path: record.path,
-    format: viewSourceFormat(record.path),
-    revision: record.revision,
-    document: record.document ?? "",
-  };
 }

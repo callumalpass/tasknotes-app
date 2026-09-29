@@ -87,6 +87,7 @@ describe("TaskNotes mdbase session", () => {
         "update",
         "rename",
         "delete",
+        "delete_view_source",
         "apply_type_pack",
         "reconcile_timers",
         "assess_collection_setup",
@@ -94,8 +95,6 @@ describe("TaskNotes mdbase session", () => {
       ]),
     );
     expect(expectedOperations).not.toContain("sync");
-    // Saved views are records written with the record operations.
-    expect(expectedOperations).not.toContain("delete_view_source");
   });
 
   it("evaluates required capabilities through the real SDK without throwing", () => {
