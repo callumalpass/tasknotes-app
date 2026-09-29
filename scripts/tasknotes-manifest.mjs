@@ -2,6 +2,8 @@ import { MDBASE_TIMER_FIRED_CONTRACT } from "@mdbase-dev/connect-protocol";
 import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
 import { buildScratchpadTypePack } from "./scratchpad-type.mjs";
 import { buildScratchImageTypePack } from "./scratch-image-type.mjs";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 export { TASKNOTES_APP_TYPE_PACK_VERSION } from "./canonical-task-pack.mjs";
 
@@ -15,6 +17,18 @@ export async function buildTaskNotesManifest({
   // authorization should use a public tunnel and TASKNOTES_APP_URL.
   const identityUrl = appUrl;
   const typePack = await loadCanonicalTaskNotesTypePack();
+  // Saved views are records: Bases through obsidian.base (YAML document
+  // records) and mdbase views through mdbase.view. The published packs are
+  // embedded byte for byte.
+  const viewPack = async (file) =>
+    JSON.parse(
+      await readFile(
+        resolve(process.cwd(), "vendor/mdbase-contracts", file),
+        "utf8",
+      ),
+    );
+  const basePack = await viewPack("obsidian.base-1.0.0.json");
+  const mdbaseViewPack = await viewPack("mdbase.view-1.0.0.json");
   const taskContract = typePack.provides.find(
     (contract) => contract.id === "tasknotes.task",
   );
@@ -32,7 +46,11 @@ export async function buildTaskNotesManifest({
     ],
     requirements: {
       people: { version: 1, optional: ["identity", "members"] },
-      contracts: [taskContract],
+      contracts: [
+        taskContract,
+        ...basePack.provides,
+        ...mdbaseViewPack.provides,
+      ],
       capabilities: {
         contract_version: 2,
         required: [
@@ -40,7 +58,6 @@ export async function buildTaskNotesManifest({
           "records.create",
           "records.edit",
           "records.delete",
-          "views.manage",
           "definitions.manage",
           "background.schedule",
         ],
@@ -57,6 +74,20 @@ export async function buildTaskNotesManifest({
           predicate: "contains",
           value: "TaskNotes/Views/**/*.base",
         },
+        // record_extensions is the complete set, so keep Markdown explicitly
+        // when adding Bases.
+        {
+          id: "tasknotes-markdown-records",
+          path: "/settings/record_extensions",
+          predicate: "contains",
+          value: "md",
+        },
+        {
+          id: "tasknotes-base-records",
+          path: "/settings/record_extensions",
+          predicate: "contains",
+          value: "base",
+        },
       ],
     },
     provisions: {
@@ -64,6 +95,8 @@ export async function buildTaskNotesManifest({
         typePack,
         buildScratchpadTypePack(),
         buildScratchImageTypePack(),
+        basePack,
+        mdbaseViewPack,
       ],
       configuration: [
         {
@@ -71,6 +104,18 @@ export async function buildTaskNotesManifest({
           operation: "set_add",
           path: "/x-obsidian/bases/include",
           value: "TaskNotes/Views/**/*.base",
+        },
+        {
+          requirement: "tasknotes-markdown-records",
+          operation: "set_add",
+          path: "/settings/record_extensions",
+          value: "md",
+        },
+        {
+          requirement: "tasknotes-base-records",
+          operation: "set_add",
+          path: "/settings/record_extensions",
+          value: "base",
         },
       ],
     },
