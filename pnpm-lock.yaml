@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mdbase-dev/connect-protocol': 0.1.0-beta.117
-  '@mdbase-dev/connect': 0.1.0-beta.117
-  '@mdbase-dev/connect-sync': 0.1.0-beta.117
+  '@mdbase-dev/connect-protocol': 0.1.0-beta.114
+  '@mdbase-dev/connect': 0.1.0-beta.114
+  '@mdbase-dev/connect-sync': 0.1.0-beta.114
 
 importers:
 
@@ -77,11 +77,11 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@mdbase-dev/connect':
-        specifier: 0.1.0-beta.117
-        version: 0.1.0-beta.117
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@mdbase-dev/connect-protocol':
-        specifier: 0.1.0-beta.117
-        version: 0.1.0-beta.117
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@tanstack/react-virtual':
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -147,11 +147,11 @@ importers:
         specifier: 10.0.1
         version: 10.0.1(eslint@10.7.0)
       '@mdbase-dev/connect-dev':
-        specifier: 0.1.0-beta.117
-        version: 0.1.0-beta.117
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@mdbase-dev/connect-testing':
-        specifier: 0.1.0-beta.117
-        version: 0.1.0-beta.117
+        specifier: 0.1.0-beta.114
+        version: 0.1.0-beta.114
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1
@@ -902,18 +902,18 @@ packages:
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
-  '@mdbase-dev/connect-dev@0.1.0-beta.117':
-    resolution: {integrity: sha512-liKRrsMkl7fNkJY54wjWKcLDkd0IOWXfYdJAKVmdWbtsfkazg4lXkq6CTi+k4XGTfEuyXT/+6U/qJE4h0FCtqg==}
+  '@mdbase-dev/connect-dev@0.1.0-beta.114':
+    resolution: {integrity: sha512-HlRXwwgPiuKAflaHAMchLOWPBQ+XDTZ9FO///3r9QioSrAQ3CtULHwisAKEGaSJo6S0HxQ3+KflVH8j9Wa3DvA==}
     hasBin: true
 
-  '@mdbase-dev/connect-protocol@0.1.0-beta.117':
-    resolution: {integrity: sha512-4LxZvsMTgmrTP8TtVVqydr2oZQpCOi2kwrMPtC/SF4uHeksbbDmxbjBwGG5Npj5DDxBi2Y+cClHf+HdpPB6zVQ==}
+  '@mdbase-dev/connect-protocol@0.1.0-beta.114':
+    resolution: {integrity: sha512-t9J7wVdoYjEMpQ7osgyEE/b+KRxo3vY1nAwX7x6cYRd41pD7/t69XufddvY18OnmYf1GopXzv3Mgdql4SjO+JQ==}
 
-  '@mdbase-dev/connect-testing@0.1.0-beta.117':
-    resolution: {integrity: sha512-yqPbYbr3a+25MCOvnXnI/sqDs1f7ZRReqMMa3NtrMsLw8y64+oC8u9NCd964FICQ0hpoz6KQJJLyqfipJKCwRw==}
+  '@mdbase-dev/connect-testing@0.1.0-beta.114':
+    resolution: {integrity: sha512-dWdssxcptoR/mkx4Rv1ZCSZfXKBAfCmfsJJ3zpMGmUIIvpkmJXOJQk/eRIsSsfDl1IKUOOuOx2qXBundXGcb+g==}
 
-  '@mdbase-dev/connect@0.1.0-beta.117':
-    resolution: {integrity: sha512-6GyK+6ZWGJQCRsQKg48gU7XS13AHjavJZ7jBj6Q2f9McO/Omo73zWmQlcXQzBNnzz7zhUPhIU3PfTE2z6g21Xg==}
+  '@mdbase-dev/connect@0.1.0-beta.114':
+    resolution: {integrity: sha512-NnES3Y3NC5nJTegp6YmaB+FGHIDB3596nc2SlZqTSzg33q6GJ98USn/ua0JB8qrIbeCJVvqHJrsGxRboBw75BA==}
 
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
@@ -4795,26 +4795,26 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4': {}
 
-  '@mdbase-dev/connect-dev@0.1.0-beta.117':
+  '@mdbase-dev/connect-dev@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect': 0.1.0-beta.117
-      '@mdbase-dev/connect-protocol': 0.1.0-beta.117
+      '@mdbase-dev/connect': 0.1.0-beta.114
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
       ajv: 8.20.0
       yaml: 2.9.1
 
-  '@mdbase-dev/connect-protocol@0.1.0-beta.117':
+  '@mdbase-dev/connect-protocol@0.1.0-beta.114':
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
 
-  '@mdbase-dev/connect-testing@0.1.0-beta.117':
+  '@mdbase-dev/connect-testing@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect': 0.1.0-beta.117
-      '@mdbase-dev/connect-protocol': 0.1.0-beta.117
+      '@mdbase-dev/connect': 0.1.0-beta.114
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
 
-  '@mdbase-dev/connect@0.1.0-beta.117':
+  '@mdbase-dev/connect@0.1.0-beta.114':
     dependencies:
-      '@mdbase-dev/connect-protocol': 0.1.0-beta.117
+      '@mdbase-dev/connect-protocol': 0.1.0-beta.114
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:

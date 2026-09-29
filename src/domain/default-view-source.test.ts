@@ -8,10 +8,7 @@ import {
   taskNotesDefaultBaseDocument,
   taskNotesDefaultBaseSources,
   taskNotesDefaultCanonicalDocument,
-  newViewSourcePath,
   taskNotesViewSourcePath,
-  viewSourceFormat,
-  viewSourceRecord,
 } from "./default-view-source";
 import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 
@@ -398,27 +395,3 @@ function legacyStarterDocument(): TaskViewDocument {
     ),
   };
 }
-
-describe("saved-view records", () => {
-  it("stores Bases as YAML document records and mdbase views as Markdown", () => {
-    const base = newViewSourcePath("obsidian.base", "Focused work");
-    expect(base).toBe("TaskNotes/Views/focused-work.base");
-    expect(viewSourceFormat(base)).toBe("obsidian.base");
-    expect(
-      viewSourceRecord(base, "# kept by Obsidian\nviews:\n  - type: table\n"),
-    ).toEqual({ frontmatter: { views: [{ type: "table" }] } });
-
-    const view = newViewSourcePath("mdbase.view", "Focused work");
-    expect(view).toBe("views/focused-work.md");
-    expect(viewSourceFormat(view)).toBe("mdbase.view");
-    expect(
-      viewSourceRecord(view, "---\ntype: view\n---\nNotes\n"),
-    ).toMatchObject({ frontmatter: { type: "view" }, body: "Notes\n" });
-  });
-
-  it("rejects a Base that is not a YAML mapping", () => {
-    expect(() =>
-      viewSourceRecord("TaskNotes/Views/list.base", "- not a mapping\n"),
-    ).toThrow("A Base must be a YAML mapping.");
-  });
-});

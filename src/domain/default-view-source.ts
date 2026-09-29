@@ -1,7 +1,4 @@
-import {
-  parseFrontmatter,
-  serializeMarkdownDocument,
-} from "@tasknotes/model/frontmatter";
+import { serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
 import { parse, stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
@@ -389,36 +386,4 @@ export function basesProperty(field: string): string {
 
 function literal(value: string): string {
   return JSON.stringify(value);
-}
-
-/** Saved-view sources are records: `.base` Bases and `.md` mdbase views. */
-export function viewSourceFormat(
-  path: string,
-): "obsidian.base" | "mdbase.view" {
-  return path.endsWith(".base") ? "obsidian.base" : "mdbase.view";
-}
-
-/** Where a new saved view is stored when the caller names no path. */
-export function newViewSourcePath(format: string, name: string): string {
-  if (format === "obsidian.base") return taskNotesViewSourcePath(name);
-  return taskNotesViewSourcePath(name)
-    .replace(/^TaskNotes\/Views\//u, "views/")
-    .replace(/\.base$/u, ".md");
-}
-
-/** The record a view source document stores, in the format its path fixes. */
-export function viewSourceRecord(
-  path: string,
-  document: string,
-): {
-  frontmatter: Record<string, unknown>;
-  body?: string;
-} {
-  if (viewSourceFormat(path) === "obsidian.base") {
-    const value: unknown = parse(document);
-    if (!value || typeof value !== "object" || Array.isArray(value))
-      throw new Error("A Base must be a YAML mapping.");
-    return { frontmatter: value as Record<string, unknown> };
-  }
-  return parseFrontmatter(document);
 }
