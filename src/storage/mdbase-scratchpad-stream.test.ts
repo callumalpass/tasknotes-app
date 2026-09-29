@@ -371,7 +371,7 @@ describe("mdbase scratchpad stream", () => {
       if (
         !demotionFailed &&
         input.path === current.path &&
-        input.patch.state === "converted"
+        input.patch?.state === "converted"
       ) {
         demotionFailed = true;
         throw new Error("Second write failed");
