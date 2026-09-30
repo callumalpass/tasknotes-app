@@ -3,12 +3,25 @@ import { afterEach, expect, it, vi } from "vitest";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Task } from "../domain/task";
 import { TaskRow } from "./task-row";
+import { createPortal } from "react-dom";
 vi.mock("../app/repository-context", () => ({
   useRepository: () => ({
     configuration: defaultTaskCollectionConfiguration(),
   }),
 }));
-vi.mock("./task-actions", () => ({ TaskActions: () => null }));
+vi.mock("./task-actions", () => ({
+  TaskActions: () => (
+    <>
+      <button type="button" className="task-actions-trigger">
+        Actions
+      </button>
+      {createPortal(<div data-testid="actions-overlay" />, document.body)}
+    </>
+  ),
+}));
+vi.mock("./task-property-editor", () => ({
+  TaskPropertyEditor: () => <div role="dialog">Edit property</div>,
+}));
 afterEach(cleanup);
 const task = {
   id: "one",
@@ -38,6 +51,44 @@ it("guards repeated completion and offers retry after rejection", async () => {
     "Offline: try again",
   );
   expect(button).toBeEnabled();
+});
+it("opens from blank row space and supporting text, focusing the title", () => {
+  const open = vi.fn();
+  const { container } = render(
+    <TaskRow
+      task={task}
+      onOpen={open}
+      onToggle={vi.fn()}
+      supportingText="Matched in notes"
+    />,
+  );
+  const title = screen.getByRole("button", { name: task.title });
+  for (const target of [
+    container.querySelector(".task-row")!,
+    container.querySelector(".task-row-content")!,
+    container.querySelector(".task-row-meta")!,
+    screen.getByText("Matched in notes"),
+  ]) {
+    fireEvent.click(target);
+    expect(title).toHaveFocus();
+  }
+  expect(open).toHaveBeenCalledTimes(4);
+  expect(open).toHaveBeenLastCalledWith(task, undefined);
+});
+it("keeps title and independent controls from also opening via the row", () => {
+  const open = vi.fn();
+  const toggle = vi.fn();
+  render(<TaskRow task={task} onOpen={open} onToggle={toggle} />);
+  fireEvent.click(screen.getByText(task.title));
+  expect(open).toHaveBeenCalledOnce();
+  open.mockClear();
+  fireEvent.click(screen.getByRole("button", { name: "Complete Write brief" }));
+  expect(toggle).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole("button", { name: /Scheduled/ }));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+  fireEvent.click(screen.getByTestId("actions-overlay"));
+  expect(open).not.toHaveBeenCalled();
 });
 it("shows both scheduled and due dates with explicit meanings", () => {
   render(<TaskRow task={task} onOpen={vi.fn()} onToggle={vi.fn()} />);
