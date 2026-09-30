@@ -119,6 +119,21 @@ export function TaskRow({
           ? ({ "--swipe-x": `${swipe.offset}px` } as React.CSSProperties)
           : undefined
       }
+      onClick={(event) => {
+        const target = event.target as HTMLElement;
+        // Portaled menus/editors bubble through React, but are not row space.
+        if (
+          !event.currentTarget.contains(target) ||
+          target.closest(
+            "button, a, input, textarea, select, [role='button'], [contenteditable]",
+          )
+        )
+          return;
+        event.currentTarget
+          .querySelector<HTMLButtonElement>(".task-row-title")
+          ?.focus({ preventScroll: true });
+        onOpen(task, occurrence?.date);
+      }}
       onContextMenu={(event) => {
         if ((event.target as HTMLElement).closest(".task-actions-trigger"))
           return;
