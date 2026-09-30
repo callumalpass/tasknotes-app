@@ -826,15 +826,30 @@
 .view-header > div {
   min-width: 0;
 }
+.collection-connection-indicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  pointer-events: none;
+}
 .collection-availability {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 20px;
-  padding: 12px var(--page-inset);
+  padding: 4px var(--page-inset);
   color: var(--ink);
   background: var(--paper-soft);
-  border-bottom: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
   font-size: var(--type-supporting);
 }
 .collection-availability p {

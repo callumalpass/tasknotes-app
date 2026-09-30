@@ -42,6 +42,47 @@ it("updates connectivity without reloading data queries on status-only events", 
   await waitFor(() => expect(list).toHaveBeenCalledOnce());
 });
 
+it("refreshes silently when the window becomes visible again", async () => {
+  const repository = createTestMdbaseRepository([
+    taskRecord("one", "One", "r1"),
+  ]);
+  const refresh = vi.spyOn(repository, "refresh");
+  render(
+    <RepositoryProvider
+      repository={repository}
+      mutationJournal={new MemoryMutationJournal()}
+    >
+      <Harness />
+    </RepositoryProvider>,
+  );
+  await screen.findByText("One");
+  await waitFor(() =>
+    expect(screen.getByText("connected")).toBeInTheDocument(),
+  );
+  // Let the opening refresh settle before simulating a new foreground session.
+  await act(async () => {
+    await repository.refresh();
+  });
+  refresh.mockClear();
+  const visibility = vi.spyOn(document, "visibilityState", "get");
+  try {
+    visibility.mockReturnValue("hidden");
+    await act(async () =>
+      document.dispatchEvent(new Event("visibilitychange")),
+    );
+    visibility.mockReturnValue("visible");
+    await act(async () =>
+      document.dispatchEvent(new Event("visibilitychange")),
+    );
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(screen.getByText("connected")).toBeInTheDocument();
+    expect(screen.queryByText("connecting")).toBeNull();
+    expect(screen.queryByText("unavailable")).toBeNull();
+  } finally {
+    visibility.mockRestore();
+  }
+});
+
 function Harness() {
   const { connection } = useRepository();
   const { tasks } = useTasks({ limit: 10 });

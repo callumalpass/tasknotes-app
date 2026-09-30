@@ -102,9 +102,13 @@ computer to remain reachable. A completed write has been accepted by that
 authority. TaskNotes never presents browser or device storage as another copy
 of the collection, and it does not imply offline availability. Portability is
 visible through Markdown paths and collection information without exposing
-transport details in ordinary task flows. Known unavailability stays visible across
-the workspace and detail, even when a cached read succeeds; retry and connection
-settings remain available.
+transport details in ordinary task flows. Routine refreshes, including refreshes
+on returning to the app, preserve the last known connection state and remain
+silent for five seconds. Longer waits show a quiet, non-layout-shifting status
+indicator. Known unavailability stays visible as a compact save warning across
+the workspace and detail, even when a cached read succeeds or a retry is in
+progress; retry and connection settings remain available. Lifecycle cancellation
+is not evidence that the collection is unavailable.
 
 ## Typography
 

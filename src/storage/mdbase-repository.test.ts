@@ -725,12 +725,15 @@ describe("mdbase task repository", () => {
 
     const interrupted = repository.refresh();
     await vi.waitFor(() => expect(activeSignal).toBeDefined());
+    expect(await repository.connectionStatus()).toMatchObject({
+      state: "connected",
+    });
     repository.suspend();
 
     await expect(interrupted).resolves.toMatchObject({ scanned: 0 });
     expect(activeSignal?.aborted).toBe(true);
     expect(await repository.connectionStatus()).toMatchObject({
-      state: "unavailable",
+      state: "connected",
     });
 
     repository.resume();

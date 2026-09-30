@@ -333,8 +333,8 @@ export class MdbaseTaskRepository implements TaskRepository {
     const signal = this.operationController.signal;
     let result = { scanned: 0, changed: 0, removed: 0 };
     let invalidate = false;
-    this.status = { ...this.status, state: "connecting", message: undefined };
-    this.emit({ kind: "status" });
+    // Refreshing a known collection is not a loss of connectivity. Preserve
+    // its last known availability until the authority succeeds or fails.
     try {
       const indexWasReady = this.taskIndexReady;
       const description = validResult(await this.connect.describe({ signal }));
@@ -366,7 +366,8 @@ export class MdbaseTaskRepository implements TaskRepository {
       this.setConnected();
       await this.maintainRollingOccurrencesUnlocked();
     } catch (reason) {
-      this.setOffline(reason);
+      // Lifecycle cancellation says nothing about authority availability.
+      if (!signal.aborted) this.setOffline(reason);
     }
     this.emit({ kind: invalidate ? "data" : "status" });
     return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };

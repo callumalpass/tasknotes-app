@@ -86,10 +86,7 @@ describe("incremental repository refresh", () => {
     });
     expect(fixture.queryPages).not.toHaveBeenCalled();
     expect((await fixture.repository.listSummaries())[0]).toBe(before[0]);
-    expect(listener.mock.calls).toEqual([
-      [{ kind: "status" }],
-      [{ kind: "status" }],
-    ]);
+    expect(listener.mock.calls).toEqual([[{ kind: "status" }]]);
   });
 
   it("reconciles create, edit, delete, rename and task-type removal from exact paths", async () => {

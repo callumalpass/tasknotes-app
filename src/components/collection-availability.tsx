@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRepository } from "../app/repository-context";
 
 export function CollectionAvailability({
@@ -8,23 +8,36 @@ export function CollectionAvailability({
 }) {
   const { connection, refresh, refreshing } = useRepository();
   const [failed, setFailed] = useState(false);
-  if (connection?.state !== "unavailable" && connection?.state !== "connecting")
-    return null;
+  const waiting =
+    connection.state === "connecting" ||
+    (connection.state === "connected" && refreshing);
+  const [prolonged, setProlonged] = useState(false);
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = window.setTimeout(() => setProlonged(true), 5_000);
+    return () => {
+      window.clearTimeout(timer);
+      setProlonged(false);
+    };
+  }, [waiting]);
+
+  if (connection.state !== "unavailable") {
+    return waiting && prolonged ? (
+      <div className="collection-connection-indicator" role="status">
+        {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
+      </div>
+    ) : null;
+  }
   return (
     <section
       className="collection-availability"
       aria-label="Collection connection"
     >
       <div role="status">
-        <strong>
-          {connection.state === "connecting"
-            ? "Connecting to collection…"
-            : "Collection unavailable"}
-        </strong>
-        <p>
-          Showing previously loaded tasks. A connection is needed to save
-          changes.
-        </p>
+        <span>
+          Collection unavailable. Showing previously loaded tasks; changes can’t
+          be saved.
+        </span>
         {failed ? (
           <p>Could not reconnect. Try again or check connection settings.</p>
         ) : null}
