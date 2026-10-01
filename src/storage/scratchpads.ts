@@ -53,6 +53,9 @@ export function newScratchpadValues(now = new Date().toISOString()): {
     frontmatter: {
       type: SCRATCHPAD_TYPE,
       id,
+      // The authority's on_create lifecycle may replace id. This token binds
+      // a reserved path to its recoverable creation intent independently.
+      scratchpadReservationId: id,
       state: "active",
       dateCreated: now,
       dateModified: now,
@@ -84,19 +87,6 @@ export function scratchpadFrontmatter(
   };
 }
 
-export function activeScratchpad(
-  records: readonly ScratchpadRecordLike[],
-): ScratchpadDocument | undefined {
-  const active = records
-    .map(scratchpadFromRecord)
-    .filter((document) => document.state === "active");
-  if (active.length > 1)
-    throw new Error(
-      "More than one active scratchpad was found. Move or merge one before continuing.",
-    );
-  return active[0];
-}
-
 export function assertScratchpadRevision(
   current: ScratchpadDocument,
   input: { id: string; path?: string; revision: string },
@@ -114,11 +104,6 @@ function assertScratchpadIdentity(
 ): void {
   if (current.id !== input.id || (input.path && current.path !== input.path))
     throw new Error("This scratchpad changed. Reload it before saving.");
-}
-
-export function assertActiveScratchpad(current: ScratchpadDocument): void {
-  if (current.state !== "active")
-    throw new Error("Only the current scratchpad can start a new one.");
 }
 
 /**

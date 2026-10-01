@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { mdbaseFixture, type TestRecord } from "../test/mdbase-fixture";
 import { MdbaseTaskRepository } from "./mdbase-repository";
+import { SCRATCHPAD_CURRENT_PATH } from "./scratchpad-current";
 
 function scratchpad(
   id: string,
@@ -32,30 +33,22 @@ describe("mdbase scratchpad stream", () => {
     ]);
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
+    await repository.getActiveScratchpad();
     fixture.query.mockClear();
     fixture.read.mockClear();
 
     const current = await repository.getActiveScratchpad();
 
     expect(current.id).toBe("current");
-    expect(fixture.query).toHaveBeenCalledWith(
-      expect.objectContaining({
-        types: ["tasknotes-scratch"],
-        where: 'note.state == "active"',
-        includeBody: false,
-        frontmatterMode: "persisted",
-        limit: 2,
-      }),
-      expect.anything(),
-    );
-    expect(fixture.read).toHaveBeenCalledOnce();
+    expect(fixture.query).not.toHaveBeenCalled();
+    expect(fixture.read).toHaveBeenCalledTimes(2);
     expect(fixture.read).toHaveBeenCalledWith(
       { path: "scratchpads/Scratchpad.md" },
       expect.anything(),
     );
   });
 
-  it("rejects multiple active notes on the current-note fast path", async () => {
+  it("repairs multiple active notes without changing contents or deleting files", async () => {
     const fixture = mdbaseFixture([
       scratchpad("current-a", "2026-07-02T00:00:00.000Z", "active"),
       {
@@ -66,9 +59,28 @@ describe("mdbase scratchpad stream", () => {
     const repository = new MdbaseTaskRepository(fixture.connect);
     await repository.initialize();
 
-    await expect(repository.getActiveScratchpad()).rejects.toThrow(
-      "More than one active scratchpad was found",
+    const before = [...fixture.records.values()].map((record) =>
+      structuredClone(record),
     );
+    expect((await repository.getActiveScratchpad()).id).toBe("current-b");
+    const page = await repository.listScratchpads();
+    expect(
+      page.documents.filter((note) => note.state === "active"),
+    ).toHaveLength(1);
+    expect(page.documents.find((note) => note.id === "current-a")?.state).toBe(
+      "converted",
+    );
+    for (const note of before) {
+      expect(fixture.records.get(note.path)).toMatchObject({
+        path: note.path,
+        body: note.body,
+        frontmatter: {
+          id: note.frontmatter.id,
+          dateCreated: note.frontmatter.dateCreated,
+        },
+      });
+    }
+    expect(fixture.remove).not.toHaveBeenCalled();
   });
 
   it("pages typed documents in stable creation order and saves history", async () => {
@@ -314,11 +326,18 @@ describe("mdbase scratchpad stream", () => {
       body: current.body,
       dateConverted: expect.any(String),
     });
-    expect(fixture.update).toHaveBeenCalledTimes(2);
-    expect(fixture.update.mock.calls[0]?.[0].patch).not.toHaveProperty(
-      "dateConverted",
+    const noteUpdates = fixture.update.mock.calls.filter(
+      ([input]) => input.path !== SCRATCHPAD_CURRENT_PATH,
     );
-    expect(fixture.create).not.toHaveBeenCalled();
+    expect(noteUpdates).toHaveLength(2);
+    expect(
+      noteUpdates.find(([input]) => input.path === target.path)?.[0].patch,
+    ).not.toHaveProperty("dateConverted");
+    expect(
+      fixture.create.mock.calls.filter(
+        ([input]) => input.type === "tasknotes-scratch",
+      ),
+    ).toHaveLength(0);
     expect(fixture.rename).not.toHaveBeenCalled();
     expect((await repository.getActiveScratchpad()).id).toBe(target.id);
     expect((await repository.listScratchFeed()).items[0]).toMatchObject({
@@ -355,7 +374,7 @@ describe("mdbase scratchpad stream", () => {
     expect(fixture.update).not.toHaveBeenCalled();
   });
 
-  it("rolls back a promoted note when the current-note demotion fails", async () => {
+  it("recovers an accepted reactivation when a note-state write fails", async () => {
     const fixture = mdbaseFixture([
       scratchpad("old", "2026-07-01T00:00:00.000Z"),
       scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
@@ -394,18 +413,23 @@ describe("mdbase scratchpad stream", () => {
       }),
     ).rejects.toThrow("Second write failed");
 
-    expect(fixture.update).toHaveBeenCalledTimes(3);
-    expect(fixture.update.mock.calls[2]?.[0].patch).not.toHaveProperty(
-      "dateConverted",
-    );
-    expect(await repository.getActiveScratchpad()).toMatchObject({
-      id: current.id,
-      state: "active",
-    });
-    expect(await repository.getScratchpad(target.id)).toMatchObject({
+    const reopened = new MdbaseTaskRepository({
+      ...fixture.connect,
+    } as typeof fixture.connect);
+    await reopened.initialize();
+    expect(await reopened.getActiveScratchpad()).toMatchObject({
       id: target.id,
-      state: "converted",
+      state: "active",
+      body: target.body,
     });
+    expect(await reopened.getScratchpad(current.id)).toMatchObject({
+      id: current.id,
+      state: "converted",
+      body: current.body,
+    });
+    expect(
+      fixture.records.get(SCRATCHPAD_CURRENT_PATH)?.frontmatter.pending,
+    ).toBeUndefined();
   });
 
   it("preserves the current document and creates exactly one replacement", async () => {
@@ -437,7 +461,11 @@ describe("mdbase scratchpad stream", () => {
     expect(result.current).toMatchObject({ state: "active", body: "" });
     expect(result.current.path).not.toBe(current.path);
     expect(fixture.query).not.toHaveBeenCalled();
-    expect(fixture.read).toHaveBeenCalledTimes(1);
+    expect(
+      fixture.create.mock.calls.filter(
+        ([input]) => input.type === "tasknotes-scratch",
+      ),
+    ).toHaveLength(1);
     expect(fixture.rename).not.toHaveBeenCalled();
     expect(
       (await repository.listScratchpads({ limit: 20 })).documents.filter(

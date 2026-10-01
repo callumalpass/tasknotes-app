@@ -51,6 +51,18 @@ Obsidian UI at phone scale.
 7. Keep reminders dependable. Mdbase owns reminder delivery so it does not depend on TaskNotes staying open.
 8. Keep capture history available. Scratchpad is a mixed stream of editable Markdown notes and independent image cards, ordered by when notes most recently entered history and when images were created. Its Add image panel accepts drag and drop, multi-file upload, clipboard paste, and the mobile camera picker through one provider-neutral image pipeline. Note titles are optional and explicitly editable; TaskNotes never derives one from outline content, and an untitled historical note shows only its date. Historical notes and image cards can be collapsed, with collection-scoped collapse preferences retained locally across reloads and new-note transitions. A previous note can be resumed as the sole current note without changing either note’s identity, path, title, body, or creation date; the displaced current note becomes the newest history entry. The current note is the final item in the same fixed-height scrolling feed. On wider screens, when it fits, the feed opens with that note vertically centered; long notes fall back to keeping the active capture area near the bottom. On phones, the current note follows the visual viewport and remains immediately above an overlaying onscreen keyboard. Intentional upward scrolling reveals history and loading older items preserves the visible position.
 
+## Scratchpad durability
+
+A collection-owned current-note record coordinates Scratchpad across tabs and
+devices; browser-local locks are not authoritative. New note and Resume commit
+one current identity through a revision-checked write, and reopening completes
+any interrupted note-state updates. Existing duplicate active notes are repaired
+by retaining the most recently modified active note as current (then creation
+date and path break ties) and moving the others into history. Repair never
+changes note bodies, titles, identities, paths, or creation dates, and never
+deletes files. All clients should be updated: older clients do not participate
+in this coordination.
+
 ## Accessibility & Inclusion
 
 Target WCAG AA contrast and platform accessibility conventions. All controls

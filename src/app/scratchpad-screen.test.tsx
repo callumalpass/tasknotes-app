@@ -245,6 +245,7 @@ describe("ScratchpadScreen", () => {
   });
 
   it("shows a generic autosave rejection and clears it after recovery", async () => {
+    await repository.getActiveScratchpad();
     fixture.update.mockRejectedValueOnce(new Error("Temporary save failure"));
     renderScratchpad();
     const input = await screen.findByRole(

@@ -180,7 +180,7 @@ export function mdbaseFixture(
   const read = vi.fn(async ({ path }: { path: string }) => {
     if (isViewSource(path)) return valid(structuredClone(viewSource(path)));
     const record = records.get(path);
-    if (!record) throw new Error("Task not found.");
+    if (!record) throw connectError("file_not_found", "Task not found.");
     return valid(record);
   });
   const create = vi.fn(
@@ -202,12 +202,19 @@ export function mdbaseFixture(
         viewSources.set(path, source);
         return valid(structuredClone(source));
       }
-      if (records.has(path)) throw new Error(`Path already exists: ${path}`);
+      if (records.has(path))
+        throw connectError(
+          "concurrent_modification",
+          `Path already exists: ${path}`,
+        );
       const record: TestRecord = {
         path,
         frontmatter: structuredClone(input.frontmatter),
         body: input.body ?? "",
-        types: [input.type ?? "task"],
+        types:
+          input.frontmatter.kind === "tasknotes.scratchpad-current"
+            ? []
+            : [input.type ?? "task"],
         revision: `r${revision++}`,
       };
       records.set(path, record);
@@ -237,7 +244,7 @@ export function mdbaseFixture(
       const current = records.get(input.path);
       if (!current) throw new Error("Task not found.");
       if (input.ifRevision !== current.revision)
-        throw new Error("Revision conflict.");
+        throw connectError("concurrent_modification", "Revision conflict.");
       const frontmatter = structuredClone(current.frontmatter);
       for (const [key, value] of Object.entries(input.patch ?? {})) {
         if (value === null) delete frontmatter[key];
