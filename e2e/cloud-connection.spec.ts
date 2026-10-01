@@ -180,6 +180,17 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
     types: ["tasknotes-scratch"],
     revision: "scratchpad-revision-1",
   };
+  const currentNote = {
+    path: "TaskNotes/Scratchpad/.current.md",
+    frontmatter: {
+      kind: "tasknotes.scratchpad-current",
+      currentId: scratchpad.frontmatter.id,
+      currentPath: scratchpad.path,
+    },
+    body: "",
+    types: [],
+    revision: "current-note-revision-1",
+  };
 
   await page.route(
     "https://connect.mdbase.dev/v1/authorities/**/operations/**",
@@ -206,7 +217,10 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
       } else if (operation === "read" && isViewSourceRead(request.input)) {
         result = viewSourceRecord(request.input);
       } else if (operation === "read") {
-        result = scratchpad;
+        result =
+          (request.input as { path: string }).path === currentNote.path
+            ? currentNote
+            : scratchpad;
       } else result = {};
       await fulfillOperation(
         route,
