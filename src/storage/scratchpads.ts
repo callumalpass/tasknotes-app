@@ -53,9 +53,6 @@ export function newScratchpadValues(now = new Date().toISOString()): {
     frontmatter: {
       type: SCRATCHPAD_TYPE,
       id,
-      // The authority's on_create lifecycle may replace id. This token binds
-      // a reserved path to its recoverable creation intent independently.
-      scratchpadReservationId: id,
       state: "active",
       dateCreated: now,
       dateModified: now,
@@ -85,6 +82,21 @@ export function scratchpadFrontmatter(
     dateModified: input.dateModified,
     ...(input.dateConverted ? { dateConverted: input.dateConverted } : {}),
   };
+}
+
+/** Select current from the notes themselves; no separate identity record. */
+export function activeScratchpads(
+  records: readonly ScratchpadRecordLike[],
+): ScratchpadDocument[] {
+  return records
+    .map(scratchpadFromRecord)
+    .filter((note) => note.state === "active")
+    .sort(
+      (a, b) =>
+        Date.parse(b.dateModified) - Date.parse(a.dateModified) ||
+        Date.parse(b.dateCreated) - Date.parse(a.dateCreated) ||
+        (a.path < b.path ? -1 : a.path > b.path ? 1 : 0),
+    );
 }
 
 export function assertScratchpadRevision(

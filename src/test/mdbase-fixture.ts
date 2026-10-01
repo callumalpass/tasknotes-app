@@ -214,9 +214,7 @@ export function mdbaseFixture(
         frontmatter: structuredClone(input.frontmatter),
         body: input.body ?? "",
         types:
-          input.frontmatter.kind === "tasknotes.scratchpad-current"
-            ? []
-            : [input.type ?? "task"],
+          input.frontmatter.kind && !input.type ? [] : [input.type ?? "task"],
         revision: `r${revision++}`,
       };
       records.set(path, record);

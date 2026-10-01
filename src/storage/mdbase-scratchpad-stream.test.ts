@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { mdbaseFixture, type TestRecord } from "../test/mdbase-fixture";
 import { MdbaseTaskRepository } from "./mdbase-repository";
-import { SCRATCHPAD_CURRENT_PATH } from "./scratchpad-current";
 
 function scratchpad(
   id: string,
@@ -19,7 +18,7 @@ function scratchpad(
       id,
       state,
       dateCreated,
-      dateModified: "2030-01-01T00:00:00.000Z",
+      dateModified: "2020-01-01T00:00:00.000Z",
     },
     body: `- [ ] ${id}\n`,
   };
@@ -40,8 +39,14 @@ describe("mdbase scratchpad stream", () => {
     const current = await repository.getActiveScratchpad();
 
     expect(current.id).toBe("current");
-    expect(fixture.query).not.toHaveBeenCalled();
-    expect(fixture.read).toHaveBeenCalledTimes(2);
+    expect(fixture.query).toHaveBeenCalledWith(
+      expect.objectContaining({
+        types: ["tasknotes-scratch"],
+        where: 'note.state == "active"',
+        includeBody: false,
+      }),
+    );
+    expect(fixture.read).toHaveBeenCalledOnce();
     expect(fixture.read).toHaveBeenCalledWith(
       { path: "scratchpads/Scratchpad.md" },
       expect.anything(),
@@ -326,9 +331,7 @@ describe("mdbase scratchpad stream", () => {
       body: current.body,
       dateConverted: expect.any(String),
     });
-    const noteUpdates = fixture.update.mock.calls.filter(
-      ([input]) => input.path !== SCRATCHPAD_CURRENT_PATH,
-    );
+    const noteUpdates = fixture.update.mock.calls;
     expect(noteUpdates).toHaveLength(2);
     expect(
       noteUpdates.find(([input]) => input.path === target.path)?.[0].patch,
@@ -427,9 +430,7 @@ describe("mdbase scratchpad stream", () => {
       state: "converted",
       body: current.body,
     });
-    expect(
-      fixture.records.get(SCRATCHPAD_CURRENT_PATH)?.frontmatter.pending,
-    ).toBeUndefined();
+    expect(fixture.create).not.toHaveBeenCalled();
   });
 
   it("preserves the current document and creates exactly one replacement", async () => {
@@ -460,7 +461,7 @@ describe("mdbase scratchpad stream", () => {
     });
     expect(result.current).toMatchObject({ state: "active", body: "" });
     expect(result.current.path).not.toBe(current.path);
-    expect(fixture.query).not.toHaveBeenCalled();
+    expect(fixture.query).toHaveBeenCalled();
     expect(
       fixture.create.mock.calls.filter(
         ([input]) => input.type === "tasknotes-scratch",

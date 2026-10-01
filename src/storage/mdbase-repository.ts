@@ -17,7 +17,10 @@ import {
   type RecordDocument,
 } from "@mdbase-dev/connect";
 
-import { requireConnectOutcome } from "../cloud/outcome";
+import {
+  connectProblemFromError,
+  requireConnectOutcome,
+} from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import { runtimeTimezone } from "../domain/runtime-timezone";
@@ -47,8 +50,8 @@ import {
   viewSourceRecord,
 } from "../domain/default-view-source";
 import { readPeopleDirectory } from "./mdbase-people";
-import { ScratchpadCurrentStore } from "./scratchpad-current";
 import {
+  activeScratchpads,
   assertScratchpadRebase,
   assertScratchpadRevision,
   newScratchpadValues,
@@ -1362,9 +1365,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   listScratchFeed(request: ScratchFeedPageRequest = {}) {
     return this.serializeWrite("scratchpad:active", async () => {
       if (!request.cursor || !this.scratchFeedSnapshot) {
-        const { current } = await this.scratchpadCurrentStore().get(() =>
-          this.scratchpadRecords(),
-        );
+        const current = await this.ensureActiveScratchpad();
         const scratchRecords = await this.scratchpadRecords();
         const images = await this.scratchImageRecords();
         this.scratchFeedSnapshot = {
@@ -1373,9 +1374,7 @@ export class MdbaseTaskRepository implements TaskRepository {
             ...scratchRecords
               .map(scratchpadFromRecord)
               .filter((item) => item.id !== current.id)
-              .map((item) =>
-                scratchpadFeedItem({ ...item, state: "converted" }),
-              ),
+              .map(scratchpadFeedItem),
             ...images.map(scratchImageFromRecord),
           ],
         };
@@ -1466,53 +1465,24 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   listScratchpads(request: ScratchpadPageRequest = {}) {
     return this.serializeWrite("scratchpad:active", async () => {
-      const { current } = await this.scratchpadCurrentStore().get(() =>
-        this.scratchpadRecords(),
-      );
-      const records = await this.scratchpadRecords();
+      await this.ensureActiveScratchpad();
       return scratchpadPage(
-        records.map((record) => ({
-          ...scratchpadFromRecord(record),
-          state:
-            record.frontmatter.id === current.id
-              ? ("active" as const)
-              : ("converted" as const),
-        })),
+        (await this.scratchpadRecords()).map(scratchpadFromRecord),
         request,
       );
     });
   }
 
-  getScratchpad(id: string) {
-    return this.serializeWrite("scratchpad:active", async () => {
-      const { current } = await this.scratchpadCurrentStore().get(() =>
-        this.scratchpadRecords(),
-      );
-      if (id === current.id) return current;
-      const record = (await this.scratchpadRecords()).find(
-        (candidate) => candidate.frontmatter.id === id,
-      );
-      return record
-        ? { ...scratchpadFromRecord(record), state: "converted" as const }
-        : null;
-    });
-  }
-
-  private scratchpadCurrentStore() {
-    return new ScratchpadCurrentStore(this.connect, () =>
-      this.requestOptions(),
+  async getScratchpad(id: string) {
+    const record = (await this.scratchpadRecords()).find(
+      (candidate) => candidate.frontmatter.id === id,
     );
+    return record ? scratchpadFromRecord(record) : null;
   }
 
   getActiveScratchpad() {
-    return this.serializeWrite(
-      "scratchpad:active",
-      async () =>
-        (
-          await this.scratchpadCurrentStore().get(() =>
-            this.scratchpadRecords(),
-          )
-        ).current,
+    return this.serializeWrite("scratchpad:active", () =>
+      this.ensureActiveScratchpad(),
     );
   }
 
@@ -1547,9 +1517,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     return this.serializeWrites(
       ["scratchpad:active", `scratchpad:${input.id}`],
       async () => {
-        const store = this.scratchpadCurrentStore();
-        const snapshot = await store.get(() => this.scratchpadRecords());
-        const current = snapshot.current;
+        const current = await this.ensureActiveScratchpad();
         assertScratchpadRevision(current, input);
         const now = new Date().toISOString();
         const updateInput = {
@@ -1557,27 +1525,20 @@ export class MdbaseTaskRepository implements TaskRepository {
           ifRevision: current.revision,
           patch: asJson(
             scratchpadFrontmatter(current, {
+              state: "converted",
               title: input.title,
               dateModified: now,
+              dateConverted: now,
             }),
           ),
           body: input.body,
         };
-        await this.mutateRecord("scratchpad:prepare-new", updateInput);
-        const values = newScratchpadValues();
-        values.frontmatter.state = "converted";
-        const { current: active } = await store.change(
-          snapshot,
-          {
-            id: String(values.frontmatter.id),
-            path: values.path,
-          },
-          values,
+        const previous = await this.mutateRecord(
+          "scratchpad:convert",
+          updateInput,
         );
-        const previous = await this.requireScratchpadRecord(
-          current.id,
-          current.path,
-        );
+        // Another window may already have created the replacement in the gap.
+        const active = await this.ensureActiveScratchpad();
         this.setConnected();
         this.scratchFeedSnapshot = undefined;
         this.emit();
@@ -1596,9 +1557,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       async () => {
         if (input.current.id === input.target.id)
           throw new Error("The current scratchpad cannot resume itself.");
-        const store = this.scratchpadCurrentStore();
-        const snapshot = await store.get(() => this.scratchpadRecords());
-        const current = snapshot.current;
+        const current = await this.ensureActiveScratchpad();
         const target = scratchpadFromRecord(
           await this.requireScratchpadRecord(
             input.target.id,
@@ -1607,20 +1566,35 @@ export class MdbaseTaskRepository implements TaskRepository {
         );
         assertScratchpadRevision(current, input.current);
         assertScratchpadRevision(target, input.target);
-        if (target.id === current.id)
+        if (target.state !== "converted")
           throw new Error("Only a previous scratchpad can be resumed.");
 
-        const { current: promoted } = await store.change(snapshot, target);
-        const previousRecord = await this.requireScratchpadRecord(
-          current.id,
-          current.path,
+        const now = new Date().toISOString();
+        const promoted = await this.mutateRecord("scratchpad:reactivate", {
+          path: target.path,
+          ifRevision: target.revision,
+          patch: asJson({ state: "active", dateModified: now }),
+        });
+        // Promote first: interruption leaves duplicates that opening the
+        // stream can repair, rather than losing the intended current note.
+        const previousRecord = await this.mutateRecord(
+          "scratchpad:deactivate-current",
+          {
+            path: current.path,
+            ifRevision: current.revision,
+            patch: asJson({
+              state: "converted",
+              dateModified: now,
+              dateConverted: now,
+            }),
+          },
         );
         this.setConnected();
         this.scratchFeedSnapshot = undefined;
         this.emit();
         return {
           previous: scratchpadFromRecord(previousRecord),
-          current: promoted,
+          current: scratchpadFromRecord(promoted),
         };
       },
     );
@@ -1651,6 +1625,92 @@ export class MdbaseTaskRepository implements TaskRepository {
         ),
       ),
     );
+  }
+
+  private async ensureActiveScratchpad() {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let active = activeScratchpads(await this.activeScratchpadRecords());
+      if (!active.length) {
+        const created = await this.createActiveScratchpad();
+        active = activeScratchpads(await this.activeScratchpadRecords());
+        if (!active.length) return created;
+      }
+      const [current, ...duplicates] = active;
+      try {
+        for (const duplicate of duplicates) {
+          await this.mutateRecord("scratchpad:repair-duplicate", {
+            path: duplicate.path,
+            ifRevision: duplicate.revision,
+            // Only lifecycle metadata changes; preserve exact note contents.
+            patch: asJson({
+              state: "converted",
+              dateConverted: new Date().toISOString(),
+            }),
+          });
+        }
+        if (duplicates.length) this.scratchFeedSnapshot = undefined;
+        return current;
+      } catch (reason) {
+        // A real edit may change the winner. Never demote using a stale read.
+        if (connectProblemFromError(reason)?.code !== "concurrent_modification")
+          throw reason;
+      }
+    }
+    throw new Error(
+      "The current note is changing in another window. Reload before continuing.",
+    );
+  }
+
+  private async activeScratchpadRecords(): Promise<
+    RecordDocument<JsonObject>[]
+  > {
+    const records: RecordDocument<JsonObject>[] = [];
+    for await (const outcome of this.connect.queryPages(
+      {
+        timezone: runtimeTimezone(),
+        types: [SCRATCHPAD_TYPE],
+        where: 'note.state == "active"',
+        includeBody: false,
+        frontmatterMode: "persisted",
+      },
+      this.requestOptions(),
+    )) {
+      for (const candidate of validResult(outcome).results) {
+        // Test doubles and some providers may not apply the query filter.
+        if (mdbaseFrontmatter(candidate).state !== "active") continue;
+        records.push(
+          validResult(
+            await this.connect.read(
+              { path: candidate.path },
+              this.requestOptions(),
+            ),
+          ),
+        );
+      }
+    }
+    return records;
+  }
+
+  private async createActiveScratchpad() {
+    const values = newScratchpadValues();
+    const operationInput = {
+      ...values,
+      type: SCRATCHPAD_TYPE,
+      frontmatter: asJson(values.frontmatter),
+    };
+    const created = await runMdbaseMutation(
+      this.connect,
+      async () =>
+        validResult(
+          await this.connect.create(operationInput, this.requestOptions()),
+        ),
+      {
+        key: mdbaseMutationKey("scratchpad:create", operationInput),
+        mapRecovered: (result: RecordDocument<JsonObject>) => result,
+        request: this.requestOptions(),
+      },
+    );
+    return scratchpadFromRecord(created);
   }
 
   private async scratchpadRecords(): Promise<RecordDocument<JsonObject>[]> {

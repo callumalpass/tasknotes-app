@@ -53,15 +53,13 @@ Obsidian UI at phone scale.
 
 ## Scratchpad durability
 
-A collection-owned current-note record coordinates Scratchpad across tabs and
-devices; browser-local locks are not authoritative. New note and Resume commit
-one current identity through a revision-checked write, and reopening completes
-any interrupted note-state updates. Existing duplicate active notes are repaired
-by retaining the most recently modified active note as current (then creation
-date and path break ties) and moving the others into history. Repair never
-changes note bodies, titles, identities, paths, or creation dates, and never
-deletes files. All clients should be updated: older clients do not participate
-in this coordination.
+Scratchpad selects its current note from the notes themselves, without a
+separate coordination record. If concurrent clients or an interrupted operation
+leave multiple active notes, opening the stream retains the most recently
+modified active note as current (then creation date and path break ties) and
+moves the others into history. Repair uses revision checks and never changes
+note bodies, titles, identities, paths, or creation dates, and never deletes
+files. Existing coordination records are ignored and left untouched.
 
 ## Accessibility & Inclusion
 
