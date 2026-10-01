@@ -181,7 +181,7 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
     revision: "scratchpad-revision-1",
   };
   const currentNote = {
-    path: "TaskNotes/Scratchpad/.current.md",
+    path: "TaskNotes/Scratchpad/Current note.md",
     frontmatter: {
       kind: "tasknotes.scratchpad-current",
       currentId: scratchpad.frontmatter.id,

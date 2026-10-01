@@ -53,7 +53,7 @@ test("the mdbase authority supports an untyped, durable CAS current-note record"
       "the creation reservation must survive lifecycle evaluation",
     );
     const input = {
-      path: "TaskNotes/Scratchpad/.current.md",
+      path: "TaskNotes/Scratchpad/Current note.md",
       frontmatter: {
         kind: "tasknotes.scratchpad-current",
         currentId: "one",

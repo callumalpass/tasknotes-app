@@ -23,7 +23,8 @@ import {
 
 // An untyped application record, not a note. Path uniqueness bootstraps the
 // singleton; ifRevision is the authority-side compare-and-swap for transitions.
-export const SCRATCHPAD_CURRENT_PATH = "TaskNotes/Scratchpad/.current.md";
+// Connect forbids hidden filesystem components, including dot-prefixed files.
+export const SCRATCHPAD_CURRENT_PATH = "TaskNotes/Scratchpad/Current note.md";
 const KIND = "tasknotes.scratchpad-current";
 
 type RecordLike = RecordDocument<JsonObject>;

@@ -67,6 +67,41 @@ function ref(
 }
 
 describe("authority-coordinated scratchpad lifecycle", () => {
+  it("uses visible record paths accepted by Connect throughout the lifecycle", async () => {
+    const { fixture, a, b } = await clients();
+    await expect(
+      fixture.connect.read({ path: "TaskNotes/Scratchpad/.current.md" }),
+    ).rejects.toThrow("hidden filesystem components");
+    await expect(
+      fixture.connect.create({
+        path: "TaskNotes/Scratchpad/.current.md",
+        frontmatter: {},
+        body: "",
+      }),
+    ).rejects.toThrow("hidden filesystem components");
+    fixture.read.mockClear();
+    fixture.create.mockClear();
+    const first = await a.getActiveScratchpad();
+    const next = await a.startNewScratchpad(newInput(first));
+    const historical = (await b.getScratchpad(first.id))!;
+    await b.reactivateScratchpad({
+      current: ref(next.current),
+      target: ref(historical),
+    });
+    expect((await a.getActiveScratchpad()).id).toBe(first.id);
+    expect(activeNotes(fixture)).toHaveLength(1);
+    for (const calls of [
+      fixture.read.mock.calls,
+      fixture.create.mock.calls,
+      fixture.update.mock.calls,
+    ]) {
+      for (const [input] of calls)
+        expect(
+          input.path?.split("/").some((component) => component.startsWith(".")),
+        ).toBe(false);
+    }
+  });
+
   it("creates only one note when two clients open an empty collection", async () => {
     const { fixture, a, b } = await clients();
     const [first, second] = await Promise.all([

@@ -178,6 +178,7 @@ export function mdbaseFixture(
     return source;
   };
   const read = vi.fn(async ({ path }: { path: string }) => {
+    assertVisibleRecordPath(path);
     if (isViewSource(path)) return valid(structuredClone(viewSource(path)));
     const record = records.get(path);
     if (!record) throw connectError("file_not_found", "Task not found.");
@@ -191,6 +192,7 @@ export function mdbaseFixture(
       body?: string;
     }) => {
       const path = input.path ?? `tasks/${crypto.randomUUID()}.md`;
+      assertVisibleRecordPath(path);
       if (isViewSource(path)) {
         const source = {
           path,
@@ -229,6 +231,7 @@ export function mdbaseFixture(
       body?: string;
       ifRevision?: string;
     }) => {
+      assertVisibleRecordPath(input.path);
       if (isViewSource(input.path)) {
         const current = viewSource(input.path);
         if (input.ifRevision !== current.revision)
@@ -504,6 +507,15 @@ export function testQueryFile(path: string): QueryRecord<JsonObject>["file"] {
     size: 0,
     mtime: "2026-07-22T00:00:00.000Z",
   };
+}
+
+// The Connect record boundary is stricter than the standalone mdbase engine.
+function assertVisibleRecordPath(path: string) {
+  if (path.split("/").some((component) => component.startsWith(".")))
+    throw connectError(
+      "invalid_path",
+      "Record paths must not use hidden filesystem components.",
+    );
 }
 
 export function deferred<T>() {
