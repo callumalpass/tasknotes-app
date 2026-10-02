@@ -309,7 +309,10 @@ export function TaskCapture({
           }
         />
         {text.trim() ? (
-          <button disabled={capturing} type="submit">
+          <button
+            disabled={capturing || error?.code === "outcome-unknown"}
+            type="submit"
+          >
             {capturing ? "Adding" : "Add"}
           </button>
         ) : null}

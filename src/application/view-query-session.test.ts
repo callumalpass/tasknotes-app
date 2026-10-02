@@ -1,5 +1,8 @@
 import { expect, it, vi } from "vitest";
 import { ViewQuerySession } from "./view-query-session";
+import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
+import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
 import type { TaskRepository } from "./ports/task-repository";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 const view: TaskView = {
@@ -49,6 +52,84 @@ function fixture(iterateView: TaskRepository["iterateView"]) {
     session: new ViewQuerySession(repository, view, observer),
   };
 }
+it("replaces an interrupted partial cursor even when foreground refresh finds no changes", async () => {
+  const f = mdbaseFixture([taskRecord("one", "One", "r1")]);
+  const description = await f.describe();
+  description.operations.push("changes");
+  f.describe.mockResolvedValue(description);
+  Object.assign(f.connect, {
+    changes: vi.fn(async () =>
+      connectSuccess({
+        events: [],
+        cursor: description.changeCursor,
+        hasMore: false,
+        reset: false,
+      }),
+    ),
+  });
+  const repository = new MdbaseTaskRepository(f.connect);
+  await repository.initialize();
+  const selected = (await repository.listViews())[0].views[0];
+  selected.presentation = view.presentation;
+  const execute = f.executeView.getMockImplementation()!;
+  f.executeViewPages.mockImplementation(() =>
+    (async function* () {
+      const first = await execute();
+      yield connectSuccess({
+        ...first.result,
+        meta: { ...first.result.meta, hasMore: true },
+        page: 0,
+        offset: 0,
+        loaded: 1,
+        complete: false,
+      });
+      yield connectSuccess({
+        ...first.result,
+        meta: { ...first.result.meta, hasMore: true },
+        page: 1,
+        offset: 1,
+        loaded: 2,
+        complete: false,
+      });
+      yield connectSuccess({
+        ...first.result,
+        page: 2,
+        offset: 2,
+        loaded: 3,
+        complete: true,
+      });
+    })(),
+  );
+  const observer = { result: vi.fn(), error: vi.fn(), pending: vi.fn() };
+  let session = new ViewQuerySession(repository, selected, observer);
+  let restart = Promise.resolve();
+  const unsubscribe = repository.subscribe((change) => {
+    if (change?.kind === "status") return;
+    const rows = session.currentResult?.rows.length ?? 0;
+    session.close();
+    session = new ViewQuerySession(repository, selected, observer, rows);
+    restart = session.start();
+  });
+  try {
+    await session.start();
+    await session.loadMore();
+    expect(session.currentResult?.rows).toHaveLength(2);
+    repository.suspend();
+    repository.resume();
+    const refreshed = await repository.refresh();
+    expect(refreshed.changed).toBe(0);
+    await restart;
+    expect(session.currentResult?.rows).toHaveLength(2);
+    await session.loadMore();
+    expect(observer.error).not.toHaveBeenCalled();
+    expect(session.currentResult?.hasMore).toBe(false);
+  } finally {
+    unsubscribe();
+    session.close();
+    repository.dispose();
+  }
+});
+
 it("paints the first page without draining later pages, joins load-more, and closes the cursor", async () => {
   let requests = 0,
     released = 0;
@@ -76,6 +157,18 @@ it("paints the first page without draining later pages, joins load-more, and clo
     observer.result.mock.lastCall?.[0].rows.map((row) => row.task.id),
   ).toEqual(["one", "two"]);
 });
+it("does not expose lifecycle cancellation as a view failure", async () => {
+  const { session, observer } = fixture(async function* () {
+    yield page("one", true);
+    throw connectError("operation_cancelled", "Neutral diagnostic");
+  });
+  await session.start();
+  await session.loadMore();
+  expect(observer.error).not.toHaveBeenCalled();
+  expect(session.canLoadMore).toBe(false);
+  session.close();
+});
+
 it("retains partial results as stale and exposes a page failure without replaying the cursor", async () => {
   const { session, observer } = fixture(async function* () {
     yield page("one", true);

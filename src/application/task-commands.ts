@@ -79,9 +79,9 @@ export class TaskCommandService {
     if (outcomeUnknown) {
       this.pendingDeletion = outcomeUnknown;
       this.deletionError = new OperationalError(
-        "unknown",
+        "outcome-unknown",
         "delete-task",
-        true,
+        false,
         "TaskNotes retained the exact mdbase request because the earlier deletion outcome is unknown.",
       );
       this.publish();

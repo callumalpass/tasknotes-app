@@ -1,16 +1,16 @@
-const authorizationErrorCodes = new Set([
-  "authorization_expired",
-  "encryption_binding_stale",
-  "hosted_authorization_changed",
-  "invalid_grant",
-  "not_authorized",
-  "relay_authorization_expired",
-]);
+import { connectProblemFromError } from "../cloud/outcome";
 
 export function isAuthorizationError(reason: unknown): boolean {
-  if (!reason || typeof reason !== "object") return false;
-  const code = "code" in reason ? reason.code : undefined;
-  return typeof code === "string" && authorizationErrorCodes.has(code);
+  const problem = connectProblemFromError(reason);
+  if (
+    !problem ||
+    problem.operation_outcome === "unknown" ||
+    problem.recovery === "resolve_outcome"
+  )
+    return false;
+  return (
+    problem.category === "authorization" || problem.recovery === "reauthorize"
+  );
 }
 
 export function technicalErrorMessage(reason: unknown): string {

@@ -21,7 +21,10 @@ export function OperationErrorNotice({
   return (
     <div className={`operation-error ${className}`.trim()}>
       <p className="inline-error" role="alert">
-        {operationErrorSummary(action, failure.code)} {recovery}
+        {operationErrorSummary(action, failure.code)}{" "}
+        {failure.code === "outcome-unknown"
+          ? "Keep the collection connected and review the earlier change’s exact result before making another change."
+          : recovery}
       </p>
       {technical ? (
         <details className="operation-error-details">
@@ -40,6 +43,10 @@ function operationErrorSummary(
   switch (code) {
     case "unavailable":
       return `${action} could not finish while the collection was unavailable.`;
+    case "outcome-unknown":
+      return `${action} may have been saved, but its result could not be confirmed.`;
+    case "cancelled":
+      return `${action} was cancelled.`;
     case "permission-denied":
       return `${action} needs access to the collection.`;
     case "conflict":

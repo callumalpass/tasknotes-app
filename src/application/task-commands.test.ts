@@ -84,7 +84,9 @@ describe("TaskCommandService", () => {
   it("retains failed deletion intent for retry", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
-    repository.delete.mockRejectedValueOnce(new Error("Storage unavailable"));
+    repository.delete.mockRejectedValueOnce(
+      connectError("hosted_provider_unavailable", "Storage unavailable"),
+    );
     const service = new TaskCommandService({ repository, journal });
     await service.initialize();
     await service.requestDeletion("task-1");
@@ -142,8 +144,8 @@ describe("TaskCommandService", () => {
         authorityRequestId: "delete-request-1",
       },
       deletionError: {
-        code: "unknown",
-        retryable: true,
+        code: "outcome-unknown",
+        retryable: false,
         detail: expect.stringContaining("exact mdbase request"),
       },
     });

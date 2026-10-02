@@ -1,3 +1,4 @@
+import { toOperationalError, type OperationalError } from "./operational-error";
 import {
   parseTaskCapture,
   taskCapturePreview,
@@ -16,7 +17,7 @@ export interface CaptureSnapshot {
   result: TaskCaptureResult | null;
   parsing: boolean;
   status: "editing" | "submitting";
-  error: string | null;
+  error: OperationalError | null;
   pendingTitle: string;
   version: number;
   accepted: { task: Task; version: number; followUp?: string } | null;
@@ -126,6 +127,9 @@ export class CaptureSession {
     refresh?(task: Task): Promise<CaptureFollowUp | void>;
   }): Promise<Task | null> {
     if (this.pending) return this.pending;
+    // An unconfirmed write is recovered by its exact request, never submitted anew.
+    if (this.state.error?.code === "outcome-unknown")
+      return Promise.resolve(null);
     const text = this.state.text.trim();
     if (!text) return Promise.resolve(null);
     const previous = this.state;
@@ -147,13 +151,10 @@ export class CaptureSession {
         this.publish({ pendingTitle: result.input.title.trim() });
         created = await options.create(result.input);
       } catch (reason) {
-        const detail =
-          reason instanceof Error ? reason.message : String(reason);
-        const title = this.state.pendingTitle;
         this.publish({
           status: "editing",
           pendingTitle: "",
-          error: title ? `Could not add “${title}”. ${detail}` : detail,
+          error: toOperationalError(reason, "create-task"),
         });
         return null;
       }

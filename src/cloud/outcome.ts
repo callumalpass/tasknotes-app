@@ -30,16 +30,7 @@ export function requireConnectOutcome<Value, Code extends ConnectProblemCode>(
   return outcome.value;
 }
 
-export function connectProblemFromError(error: unknown): ConnectProblem | null {
-  if (error instanceof TaskNotesConnectOutcomeError) return error.problem;
-  if (!error || typeof error !== "object" || !("problem" in error)) return null;
-  const problem = error.problem;
-  if (!problem || typeof problem !== "object") return null;
-  if (!("code" in problem) || typeof problem.code !== "string") return null;
-  if (!("message" in problem) || typeof problem.message !== "string")
-    return null;
-  return problem as ConnectProblem;
-}
+export { connectProblemFromError } from "../application/connect-problem";
 
 export function noPendingMutationError(): TaskNotesConnectOutcomeError {
   return new TaskNotesConnectOutcomeError({

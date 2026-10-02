@@ -6,6 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+import { connectError } from "@mdbase-dev/connect-testing";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { TaskCapture } from "./task-capture";
@@ -153,9 +154,32 @@ it("returns focus to a retained capture field after creating a task", async () =
   expect(input).toHaveFocus();
 });
 
+it("preserves structured unknown acceptance and asks for exact recovery, not ordinary retry", async () => {
+  const create = vi.fn(async () => {
+    throw connectError("operation_outcome_unknown", "Neutral diagnostic", {
+      operationOutcome: "unknown",
+      details: { request_id: "exact-request" },
+    });
+  });
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Keep this draft" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await screen.findByText("Neutral diagnostic");
+  expect(screen.getByRole("alert")).toHaveTextContent("may have been saved");
+  expect(screen.getByRole("alert")).not.toHaveTextContent("try again");
+  expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+});
+
 it("restores the submitted text when a remote create fails", async () => {
   const create = vi.fn(async () => {
-    throw new Error("The relay is unavailable.");
+    throw connectError("relay_unavailable", "The relay is unavailable.");
   });
 
   render(
@@ -169,9 +193,7 @@ it("restores the submitted text when a remote create fails", async () => {
   fireEvent.change(input, { target: { value: "Keep this draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-  const detail = await screen.findByText(
-    "Could not add “Keep this draft”. The relay is unavailable.",
-  );
+  const detail = await screen.findByText("The relay is unavailable.");
   await act(() => new Promise((resolve) => window.setTimeout(resolve, 120)));
   expect(screen.getByRole("alert")).toHaveTextContent(
     "The task could not finish while the collection was unavailable.",
