@@ -2,20 +2,20 @@
   "node": "v22.22.0",
   "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
   "rounds": 7,
-  "revision": "4c12fac4221338f181e8d7f24571bc733a898634",
-  "connectVersion": "0.1.0-beta.119",
+  "revision": "e32f2c6a31febfd7bf2d4c6485f927d878662fc4",
+  "connectVersion": "0.1.0-beta.123",
   "taskModelVersion": "0.3.0-rc.15",
   "bodyBytesPerRecord": 2048,
   "environment": "synthetic serialized authority; no network or provider query-engine timing",
   "results": [
     {
       "size": 10000,
-      "retainedAfterInitializeMiB": 13.38,
-      "retainedAfterQueriesMiB": 14.66,
+      "retainedAfterInitializeMiB": 13.4,
+      "retainedAfterQueriesMiB": 14.3,
       "measurements": {
         "initialize": {
-          "medianMs": 594.39,
-          "p95Ms": 594.39,
+          "medianMs": 585.27,
+          "p95Ms": 585.27,
           "work": [
             {
               "requests": 11,
@@ -26,8 +26,8 @@
           ]
         },
         "firstDetail": {
-          "medianMs": 0.8,
-          "p95Ms": 0.8,
+          "medianMs": 1.08,
+          "p95Ms": 1.08,
           "work": [
             {
               "requests": 1,
@@ -39,7 +39,7 @@
         },
         "cachedDetail": {
           "medianMs": 0,
-          "p95Ms": 0.01,
+          "p95Ms": 0.02,
           "work": [
             {
               "requests": 0,
@@ -86,49 +86,49 @@
           ]
         },
         "unchangedRefresh": {
-          "medianMs": 0.25,
-          "p95Ms": 0.52,
+          "medianMs": 0.07,
+          "p95Ms": 0.43,
           "work": [
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             }
           ]
@@ -182,8 +182,8 @@
           ]
         },
         "list300": {
-          "medianMs": 0.05,
-          "p95Ms": 3.41,
+          "medianMs": 0.04,
+          "p95Ms": 3.31,
           "work": [
             {
               "requests": 0,
@@ -230,8 +230,8 @@
           ]
         },
         "searchBody": {
-          "medianMs": 17.57,
-          "p95Ms": 20.55,
+          "medianMs": 15.06,
+          "p95Ms": 20.49,
           "work": [
             {
               "requests": 1,
@@ -278,8 +278,8 @@
           ]
         },
         "searchColdRare": {
-          "medianMs": 16.11,
-          "p95Ms": 16.11,
+          "medianMs": 15.66,
+          "p95Ms": 15.66,
           "work": [
             {
               "requests": 1,
@@ -290,8 +290,8 @@
           ]
         },
         "searchRare": {
-          "medianMs": 11.52,
-          "p95Ms": 12.71,
+          "medianMs": 12.64,
+          "p95Ms": 13.47,
           "work": [
             {
               "requests": 1,
@@ -338,49 +338,49 @@
           ]
         },
         "singleRecordRefresh": {
-          "medianMs": 0.62,
-          "p95Ms": 2.4,
+          "medianMs": 0.63,
+          "p95Ms": 1.93,
           "work": [
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             }
           ]
@@ -398,8 +398,8 @@
           ]
         },
         "acceptedMetadataEdit": {
-          "medianMs": 1.34,
-          "p95Ms": 1.34,
+          "medianMs": 1.3,
+          "p95Ms": 1.3,
           "work": [
             {
               "requests": 1,
@@ -413,12 +413,12 @@
     },
     {
       "size": 50000,
-      "retainedAfterInitializeMiB": 62.27,
-      "retainedAfterQueriesMiB": 66.54,
+      "retainedAfterInitializeMiB": 62.26,
+      "retainedAfterQueriesMiB": 66.11,
       "measurements": {
         "initialize": {
-          "medianMs": 2829.15,
-          "p95Ms": 2829.15,
+          "medianMs": 2702.06,
+          "p95Ms": 2702.06,
           "work": [
             {
               "requests": 51,
@@ -429,8 +429,8 @@
           ]
         },
         "firstDetail": {
-          "medianMs": 0.58,
-          "p95Ms": 0.58,
+          "medianMs": 0.65,
+          "p95Ms": 0.65,
           "work": [
             {
               "requests": 1,
@@ -442,7 +442,7 @@
         },
         "cachedDetail": {
           "medianMs": 0,
-          "p95Ms": 0,
+          "p95Ms": 0.01,
           "work": [
             {
               "requests": 0,
@@ -489,49 +489,49 @@
           ]
         },
         "unchangedRefresh": {
-          "medianMs": 0.23,
-          "p95Ms": 0.47,
+          "medianMs": 0.02,
+          "p95Ms": 0.19,
           "work": [
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             },
             {
-              "requests": 2,
+              "requests": 1,
               "records": 0,
-              "responseBytes": 24837,
+              "responseBytes": 91,
               "bodyBytes": 0
             }
           ]
@@ -585,8 +585,8 @@
           ]
         },
         "list300": {
-          "medianMs": 0.02,
-          "p95Ms": 8.2,
+          "medianMs": 0.03,
+          "p95Ms": 8.89,
           "work": [
             {
               "requests": 0,
@@ -633,8 +633,8 @@
           ]
         },
         "searchBody": {
-          "medianMs": 55.43,
-          "p95Ms": 84.58,
+          "medianMs": 50.74,
+          "p95Ms": 80.79,
           "work": [
             {
               "requests": 1,
@@ -681,8 +681,8 @@
           ]
         },
         "searchColdRare": {
-          "medianMs": 72.42,
-          "p95Ms": 72.42,
+          "medianMs": 66.35,
+          "p95Ms": 66.35,
           "work": [
             {
               "requests": 1,
@@ -693,8 +693,8 @@
           ]
         },
         "searchRare": {
-          "medianMs": 59.76,
-          "p95Ms": 66.14,
+          "medianMs": 58.21,
+          "p95Ms": 59.86,
           "work": [
             {
               "requests": 1,
@@ -741,49 +741,49 @@
           ]
         },
         "singleRecordRefresh": {
-          "medianMs": 3.24,
-          "p95Ms": 3.73,
+          "medianMs": 3.02,
+          "p95Ms": 4.03,
           "work": [
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             },
             {
-              "requests": 3,
+              "requests": 2,
               "records": 1,
-              "responseBytes": 25497,
+              "responseBytes": 969,
               "bodyBytes": 0
             }
           ]
@@ -801,8 +801,8 @@
           ]
         },
         "acceptedMetadataEdit": {
-          "medianMs": 1.75,
-          "p95Ms": 1.75,
+          "medianMs": 0.54,
+          "p95Ms": 0.54,
           "work": [
             {
               "requests": 1,

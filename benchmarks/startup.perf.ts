@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { cpus } from "node:os";
 import { expect, it } from "vitest";
 import { connectSuccess } from "@mdbase-dev/connect-testing";
+import { cacheFixtureDescription } from "../src/test/sdk-description-fixture";
 import {
   mdbaseFixture,
   taskRecord,
@@ -47,6 +48,7 @@ it("measures configuration to first usable saved-view page", async () => {
     catalogue.result.views[0].views[0].presentation.type =
       "tasknotes.task-list";
     fixture.describe.mockImplementation(async () => transfer(description));
+    cacheFixtureDescription(fixture);
     fixture.listViews.mockImplementation(async () => transfer(catalogue));
     fixture.queryPages.mockImplementation((input) =>
       (async function* () {
