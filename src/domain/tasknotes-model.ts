@@ -34,6 +34,7 @@ import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
 import { makeTaskPath, normalizeTaskDateTime, todayString } from "./task";
 import { expandTaskTemplate } from "./task-template";
+import { isEmptyFieldValue as isEmptyCustomValue } from "./custom-field-value";
 
 import type {
   CreateTaskInput,
@@ -296,19 +297,7 @@ export class TaskNotesTaskModel {
     input: UpdateTaskInput,
     context: { now?: string; currentDate?: string } = {},
   ): Task {
-    const original = this.completeTaskInfo(
-      mapTaskFromFrontmatter(
-        this.config.fieldMapping,
-        this.canonicalizeAliases(current.frontmatter, false),
-        current.path,
-        this.config.storeTitleInFilename,
-        this.config.userFields,
-        this.config.statuses,
-        this.config.priorities,
-      ),
-      current.path,
-      current.body,
-    );
+    const original = this.taskInfo(current);
     const now = context.now ?? new Date().toISOString();
     const updates: Partial<TaskInfo> & { details?: string } = {};
     if (input.title !== undefined) updates.title = requiredTitle(input.title);
@@ -426,19 +415,7 @@ export class TaskNotesTaskModel {
     context: { now?: string; currentDate?: string } = {},
   ): Task {
     if (current.recurrence) {
-      const original = this.completeTaskInfo(
-        mapTaskFromFrontmatter(
-          this.config.fieldMapping,
-          this.canonicalizeAliases(current.frontmatter, false),
-          current.path,
-          this.config.storeTitleInFilename,
-          this.config.userFields,
-          this.config.statuses,
-          this.config.priorities,
-        ),
-        current.path,
-        current.body,
-      );
+      const original = this.taskInfo(current);
       const now = context.now ?? new Date().toISOString();
       const rawPlan = buildRecurringTaskCompletePlan({
         freshTask: withFloatingTaskTimes(original),
@@ -487,19 +464,7 @@ export class TaskNotesTaskModel {
     context: { now?: string; currentDate?: string } = {},
   ): Task {
     if (!current.recurrence) throw new Error("Task is not recurring.");
-    const original = this.completeTaskInfo(
-      mapTaskFromFrontmatter(
-        this.config.fieldMapping,
-        this.canonicalizeAliases(current.frontmatter, false),
-        current.path,
-        this.config.storeTitleInFilename,
-        this.config.userFields,
-        this.config.statuses,
-        this.config.priorities,
-      ),
-      current.path,
-      current.body,
-    );
+    const original = this.taskInfo(current);
     const now = context.now ?? new Date().toISOString();
     const rawPlan = buildRecurringTaskSkippedPlan({
       freshTask: withFloatingTaskTimes(original),
@@ -708,7 +673,7 @@ export class TaskNotesTaskModel {
       start,
       context.description ?? this.config.timeTracking.defaultSessionDescription,
     );
-    return this.finishTrackingMutation(current, plan.updatedTask);
+    return this.finishPlannedTask(current, plan.updatedTask);
   }
 
   stopTimeTracking(
@@ -729,7 +694,7 @@ export class TaskNotesTaskModel {
         "invalid_time_entry: A session cannot end before it starts.",
       );
     const plan = buildStopTimeTrackingPlan(original, active, now, stop);
-    return this.finishTrackingMutation(current, plan.updatedTask);
+    return this.finishPlannedTask(current, plan.updatedTask);
   }
 
   replaceTimeEntries(
@@ -747,7 +712,7 @@ export class TaskNotesTaskModel {
       normalizeTimeEntries(entries),
       now,
     );
-    return this.finishTrackingMutation(current, updated);
+    return this.finishPlannedTask(current, updated);
   }
 
   removeTimeEntry(
@@ -761,7 +726,7 @@ export class TaskNotesTaskModel {
       original,
     );
     const plan = buildDeleteTimeEntryPlan(original, index, now);
-    return this.finishTrackingMutation(current, plan.updatedTask);
+    return this.finishPlannedTask(current, plan.updatedTask);
   }
 
   private completeTaskInfo(
@@ -997,18 +962,6 @@ export class TaskNotesTaskModel {
     );
   }
 
-  private finishTrackingMutation(current: Task, updated: TaskInfo): Task {
-    this.assertValid(updated);
-    const revision = current.revision + 1;
-    const frontmatter = this.writeFrontmatter(
-      this.canonicalizeAliases(current.frontmatter, true),
-      updated,
-      current.id,
-      revision,
-    );
-    return this.toTask(updated, frontmatter, revision);
-  }
-
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
     this.assertValid(updated);
     const revision = current.revision + 1;
@@ -1224,15 +1177,6 @@ function normalizeDependencies(
       },
     ];
   });
-}
-
-function isEmptyCustomValue(value: unknown): boolean {
-  return (
-    value === undefined ||
-    value === null ||
-    value === "" ||
-    (Array.isArray(value) && value.length === 0)
-  );
 }
 
 function normalizeCollectionFolder(value: string): string {
