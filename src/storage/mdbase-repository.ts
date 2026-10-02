@@ -668,6 +668,9 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   async getSummary(id: string): Promise<TaskSummary | null> {
+    const cached = this.cache.get(id);
+    if (cached && cached.model !== this.taskProviders.get(cached.typeName))
+      await this.ensureTaskIndex();
     if (!this.cache.has(id)) await this.ensureKnownTask(id);
     return this.cache.get(id)?.task ?? null;
   }
@@ -1158,12 +1161,20 @@ export class MdbaseTaskRepository implements TaskRepository {
       });
       this.model = provider.model;
       this.taskProviders.set(this.taskTypeName, provider.model);
-      this.setConnected();
-      this.emit();
+      this.documents.clear();
+      this.viewTaskHints.clear();
+      this.viewExecutionCache.clear();
+      this.completionCache.clear();
+      // Settings change effective frontmatter too, not only the local model.
+      // Requery metadata without materializing inherited defaults into files.
+      this.taskIndexReady = false;
+      this.description = undefined;
+      this.descriptionSignature = undefined;
+      this.changeCursor = undefined;
       return this.model.configuration();
     };
     try {
-      return await runMdbaseMutation(
+      const configuration = await runMdbaseMutation(
         this.connect,
         async () =>
           applyUpdated(
@@ -1180,6 +1191,13 @@ export class MdbaseTaskRepository implements TaskRepository {
           mapRecovered: applyUpdated,
         },
       );
+      // A scan begun under the old schema must not certify a ready index.
+      await this.taskIndexLoading;
+      this.taskIndexReady = false;
+      const previouslyReady = this.taskIndexPreviouslyReady;
+      await this.ensureTaskIndex();
+      if (!previouslyReady) this.emit();
+      return configuration;
     } catch (reason) {
       this.noteOperationFailure(reason);
       throw reason;
