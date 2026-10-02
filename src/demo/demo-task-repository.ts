@@ -749,6 +749,8 @@ export class DemoTaskRepository implements TaskRepository {
       })),
     };
     this.model = new TaskNotesTaskModel(configuration);
+    for (const [id, task] of this.tasks)
+      this.tasks.set(id, this.model.read(task));
     this.changed();
     return this.model.configuration();
   }

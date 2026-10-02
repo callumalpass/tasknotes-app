@@ -27,6 +27,21 @@ describe("DemoTaskRepository", () => {
     );
   });
 
+  it("redecodes inherited occurrence defaults without rewriting demo records", async () => {
+    const repository = new DemoTaskRepository(1);
+    const before = (await repository.list({ status: "all" }))[0]!;
+    expect(before.frontmatter.occurrence_materialization).toBeUndefined();
+    await repository.updateTaskModelSettings({
+      occurrences: { defaultMaterialization: "rolling" },
+    });
+    const summary = await repository.getSummary(before.id);
+    const document = await repository.get(before.id);
+    expect(summary?.occurrenceMaterialization).toBe("rolling");
+    expect(document?.occurrenceMaterialization).toBe("rolling");
+    expect(document?.frontmatter).toEqual(before.frontmatter);
+    expect(document?.body).toBe(before.body);
+  });
+
   it("keeps demo mutations in memory and publishes repository changes", async () => {
     const repository = new DemoTaskRepository(4);
     const listener = vi.fn();

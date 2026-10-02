@@ -176,6 +176,37 @@ describe("mdbase task repository", () => {
     );
   });
 
+  it("rebuilds decoded summaries and hydrated documents after model defaults change", async () => {
+    const inherited = taskRecord("inherited", "Inherited", "r1");
+    delete inherited.frontmatter.priority;
+    const explicit = taskRecord("explicit", "Explicit", "r2");
+    const fixture = mdbaseFixture([inherited, explicit]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    expect((await repository.get("inherited"))?.priority).toBe("normal");
+    const observed: string[] = [];
+    repository.subscribe(() => {
+      void repository
+        .getSummary("inherited")
+        .then((task) => observed.push(task!.priority));
+    });
+    await repository.updateTaskModelSettings({ defaultPriority: "high" });
+    expect((await repository.getSummary("inherited"))?.priority).toBe("high");
+    expect(
+      (await repository.listSummaries()).find((task) => task.id === "inherited")
+        ?.priority,
+    ).toBe("high");
+    expect((await repository.get("inherited"))?.priority).toBe("high");
+    expect((await repository.getSummary("explicit"))?.priority).toBe("normal");
+    expect(observed).toEqual(["high"]);
+    expect(
+      fixture.records.get(inherited.path)?.frontmatter.priority,
+    ).toBeUndefined();
+    expect(fixture.update).not.toHaveBeenCalled();
+    await repository.refresh();
+    expect((await repository.getSummary("inherited"))?.priority).toBe("high");
+  });
+
   it("patches task model settings through revision-guarded type operations", async () => {
     const fixture = mdbaseFixture([]);
     const repository = new MdbaseTaskRepository(fixture.connect);
