@@ -1,34 +1,46 @@
-name: Deploy GitHub Pages
+name: Deploy Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target (validate staging before production)
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# Hold the lock through the smoke checks. Never cancel a live production deploy.
 concurrency:
-  group: github-pages
-  cancel-in-progress: true
+  group: tasknotes-pages-${{ inputs.target || 'staging' }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Pages deployments only run from main (got ${GITHUB_REF})."
+          exit 1
+
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -57,6 +69,67 @@ jobs:
           PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173
           VITE_BASE_PATH: /tasknotes-app/
 
+  deploy-staging:
+    if: github.event_name == 'push' || inputs.target == 'staging'
+    needs: verify
+    environment:
+      name: tasknotes-staging
+      url: https://staging.tasknotes-app.pages.dev/
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::tasknotes-staging needs CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit) and CLOUDFLARE_ACCOUNT_ID secrets."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Existing script builds/validates staging URLs and smokes staging Connect.
+      - name: Deploy and smoke staging
+        run: pnpm deploy:dev
+        env:
+          MDBASE_ENV: staging
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    needs: verify
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build GitHub Pages production application
         run: pnpm build
         env:
@@ -66,39 +139,53 @@ jobs:
           TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
 
       - name: Configure Pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
           include-hidden-files: true
 
       - name: Deploy Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.0
 
       - name: Smoke deployed Pages
-        run: pnpm test:production-smoke
+        run: |
+          pnpm test:production-smoke || {
+            echo "::error::GitHub Pages was deployed but its production smoke failed. Investigate before promoting Cloudflare."
+            exit 1
+          }
         env:
           TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
 
   deploy-cloudflare:
-    if: vars.CLOUDFLARE_PAGES_ENABLED == '1'
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
     needs: deploy
     environment:
       name: cloudflare-pages
       url: https://app.tasknotes.dev/
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::cloudflare-pages needs CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit) and CLOUDFLARE_ACCOUNT_ID secrets."
+            exit 1
+          fi
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -118,13 +205,17 @@ jobs:
         run: node -e 'const manifest = require("./dist/.well-known/mdbase-app.json"); if (manifest.homepage !== "https://app.tasknotes.dev/" || manifest.redirect_uris?.[0] !== "https://app.tasknotes.dev/auth/mdbase/callback" || manifest.redirect_uris?.length !== 1) process.exit(1)'
 
       - name: Deploy Cloudflare Pages
-        run: npx --yes --package wrangler@4.114.0 wrangler pages deploy dist --project-name=tasknotes-app --branch=main
+        run: pnpm dlx wrangler@4.114.0 pages deploy dist --project-name=tasknotes-app --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Mandatory after EVERY successful production deploy; not variable-gated.
       - name: Smoke production domain
-        if: vars.TASKNOTES_PRODUCTION_URL != ''
-        run: pnpm test:production-smoke
+        run: |
+          pnpm test:production-smoke || {
+            echo "::error::app.tasknotes.dev was deployed but its production smoke failed. Production may be unhealthy; investigate or roll back."
+            exit 1
+          }
         env:
-          TASKNOTES_PRODUCTION_URL: ${{ vars.TASKNOTES_PRODUCTION_URL }}
+          TASKNOTES_PRODUCTION_URL: https://app.tasknotes.dev
