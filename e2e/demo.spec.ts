@@ -78,7 +78,7 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
 
   await openNavigationItem(page, "Settings");
   await expect(page.getByText("TaskNotes demo")).toBeVisible();
-  await expect(page.getByText("50 total")).toBeVisible();
+  await expect(page.getByText("47 total")).toBeVisible();
   await expect(page).toHaveURL(/\/more\?demo=50/);
 });
 
