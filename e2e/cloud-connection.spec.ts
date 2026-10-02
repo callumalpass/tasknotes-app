@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { parse } from "yaml";
 import type { JsonObject } from "@mdbase-dev/connect";
 import type { FileCapability } from "@mdbase-dev/connect-protocol";
 import { operationsForApplicationCapabilities } from "@mdbase-dev/connect-protocol";
@@ -586,6 +588,88 @@ test("edits a contract-defined task without collapsing custom status or fields",
   expect(record.frontmatter.status).toBe("doing");
   expect(record.frontmatter.energy).toBe(4);
   expect(record.frontmatter).not.toHaveProperty("client");
+});
+
+test("edits the captured migrated custom numeric property", async ({
+  page,
+}) => {
+  // eslint-disable-next-line prefer-const -- assigned after route registration
+  let authorization!: MdbaseBrowserFixtureController;
+  const fixtureRoot = "tests/fixtures/mdbase-upgrades/app-custom/";
+  const definition = parse(
+    readFileSync(`${fixtureRoot}task.md`, "utf8").split("---")[1],
+  );
+  const captured = JSON.parse(
+    readFileSync(`${fixtureRoot}record.json`, "utf8"),
+  );
+  const description = collectionDescription();
+  description.types[0].schema = definition.schema.value;
+  description.types[0].collection = definition.collection;
+  description.types[0].definition = definition;
+  description.contracts[0].implementations[0].fields =
+    definition.implements[0].fields;
+  description.contracts[0].implementations[0].binding =
+    definition.implements[0].binding;
+  let record = { ...captured, types: ["task"], revision: "revision-1" };
+  let updateInput: { patch?: JsonObject } | undefined;
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
+    async (route) => {
+      const request = await operationRequest(route, authorization);
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1)!;
+      let result: unknown;
+      if (operation === "describe") result = description;
+      else if (operation === "query")
+        result = {
+          results: [record],
+          meta: { total_count: 1, has_more: false },
+        };
+      else if (operation === "list_views") result = defaultViewDocuments();
+      else if (operation === "execute_view")
+        result = defaultViewExecution([record]);
+      else if (operation === "read" && isViewSourceRead(request.input))
+        result = viewSourceRecord(request.input);
+      else if (operation === "read") result = record;
+      else if (operation === "reconcile_timers")
+        result = {
+          namespace: request.input.namespace,
+          timers: [],
+          cancelled_ids: [],
+        };
+      else if (operation === "update") {
+        updateInput = request.input as { patch?: JsonObject };
+        record = {
+          ...record,
+          frontmatter: { ...record.frontmatter, ...updateInput.patch },
+          revision: "revision-2",
+        };
+        result = record;
+      } else result = {};
+      await fulfillOperation(
+        route,
+        request.request_id,
+        operation === "describe" || operation === "reconcile_timers"
+          ? result
+          : valid(result),
+      );
+    },
+  );
+  authorization = await installRelayAuthorization(page);
+  await page.reload();
+  await page
+    .getByRole("button", { name: captured.frontmatter.summary, exact: true })
+    .click();
+  await page
+    .locator("details.task-form-section > summary")
+    .filter({ hasText: /^Organize/ })
+    .click();
+  await expect(page.getByLabel("Effort", { exact: true })).toHaveValue("0.5");
+  await page.getByLabel("Effort", { exact: true }).fill("2");
+  await expect.poll(() => updateInput?.patch?.effort).toBe(2);
+  expect(record.frontmatter.effort).toBe(2);
+  expect(record.body).toBe(captured.body);
 });
 
 function collectionDescription() {
