@@ -1,6 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { appendViewPage } from "../application/view-query-session";
 import { taskCompletion } from "../domain/task-completion";
+import { materializeRollingWindow } from "../application/rolling-occurrences";
+import {
+  DEFAULT_TASK_QUERY_LIMIT,
+  taskSearchTokens,
+} from "../domain/task-query";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -30,7 +35,6 @@ import {
   findOccurrenceParent,
   findMaterializedOccurrenceTask,
   occurrenceRecordId,
-  rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import {
   connectedTaskRelationships,
@@ -591,7 +595,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     query: TaskListQuery,
     options: { signal?: AbortSignal } = {},
   ): Promise<TaskSearchResult[]> {
-    const limit = query.limit ?? 500;
+    const limit = query.limit ?? DEFAULT_TASK_QUERY_LIMIT;
     const target = limit < 0 ? Infinity : Math.max(0, Math.trunc(limit));
     if (target === 0 || Number.isNaN(target)) return [];
     const signal = options.signal
@@ -600,11 +604,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     await this.ensureTaskIndex();
     signal.throwIfAborted();
-    const tokens = [
-      ...new Set(
-        (query.search ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean),
-      ),
-    ];
+    const tokens = taskSearchTokens(query.search);
     const assigned = await this.assignedPathsFor(query);
     signal.throwIfAborted();
     if (!tokens.length)
@@ -2613,25 +2613,9 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 
   private async materializeRollingWindow(task: TaskSummary): Promise<string[]> {
-    let dates: string[];
-    try {
-      dates = rollingOccurrenceDates(task);
-    } catch (reason) {
-      return [
-        `rolling_occurrence_materialization_failed: ${errorMessage(reason)}`,
-      ];
-    }
-    const warnings: string[] = [];
-    for (const date of dates) {
-      try {
-        await this.materializeOccurrenceUnlocked(task.id, date);
-      } catch (reason) {
-        warnings.push(
-          `rolling_occurrence_materialization_failed: ${date}: ${errorMessage(reason)}`,
-        );
-      }
-    }
-    return warnings;
+    return materializeRollingWindow(task, (parentId, date) =>
+      this.materializeOccurrenceUnlocked(parentId, date),
+    );
   }
 
   private serializeWrite<T>(

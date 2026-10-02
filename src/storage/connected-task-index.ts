@@ -1,4 +1,8 @@
-import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
+import {
+  compareTasks,
+  selectTaskSummaries,
+  taskSearchMetadata,
+} from "../domain/task-query";
 import type { TaskSummary, TaskListQuery } from "../domain/task";
 
 type Entry = { task: TaskSummary };
@@ -71,15 +75,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   matchesMetadata(task: TaskSummary, token: string): boolean {
     let text = this.searchMetadata.get(task);
     if (text === undefined) {
-      text = [
-        task.title,
-        ...task.tags,
-        ...task.contexts,
-        ...task.projects,
-        ...task.attachments,
-      ]
-        .join("\n")
-        .toLowerCase();
+      text = taskSearchMetadata(task);
       this.searchMetadata.set(task, text);
     }
     return text.includes(token);
@@ -91,38 +87,17 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     /** Restricts results to these paths, e.g. tasks mdbase resolved as assigned. */
     paths?: ReadonlySet<string>,
   ): TaskSummary[] {
-    const limit = query.limit ?? 500;
-    if (limit === 0) return [];
+    if (query.limit === 0) return [];
     this.ordered ??= [...this.values()]
       .map(({ task }) => task)
       .sort(compareTasks);
-    const tokens = (query.search ?? "")
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-    const results: TaskSummary[] = [];
-    for (const task of this.ordered) {
-      if (paths && !paths.has(task.path)) continue;
-      if (!matchesArchiveFilter(task, query)) continue;
-      if (query.status === "completed" && !task.completed) continue;
-      if (
-        query.status !== "completed" &&
-        query.status !== "all" &&
-        task.completed
-      )
-        continue;
-      if (
-        !tokens.every(
-          (token) =>
-            this.matchesMetadata(task, token) || bodyMatches?.(task, token),
-        )
-      )
-        continue;
-      results.push(task);
-      if (limit > 0 && results.length >= limit) break;
-    }
-    // Preserve Array.slice limit semantics, including negative/fractional limits.
-    return results.slice(0, limit);
+    return selectTaskSummaries(
+      this.ordered,
+      query,
+      (task, token) =>
+        this.matchesMetadata(task, token) ||
+        Boolean(bodyMatches?.(task, token)),
+      paths,
+    );
   }
 }

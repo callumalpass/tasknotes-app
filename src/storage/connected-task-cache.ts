@@ -1,4 +1,5 @@
 import { taskRelationships } from "../domain/task-relationships";
+import { taskStats } from "../domain/task-query";
 
 import type { TaskSummary, TaskStats } from "../domain/task";
 import type { TaskView } from "../domain/view";
@@ -16,20 +17,11 @@ export function connectedTaskRelationships(
 }
 
 export function connectedTaskStats(cached: Iterable<CachedTask>): TaskStats {
-  let archived = 0;
-  let completed = 0;
-  let open = 0;
-  for (const { task } of cached) {
-    if (task.archived) archived += 1;
-    else if (task.completed) completed += 1;
-    else open += 1;
-  }
-  return {
-    total: open + completed,
-    open,
-    completed,
-    archived,
-  };
+  return taskStats(
+    (function* () {
+      for (const { task } of cached) yield task;
+    })(),
+  );
 }
 
 export function sameConnectedTaskMetadata(

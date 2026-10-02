@@ -417,6 +417,15 @@ export function taskRepositoryContract(
       });
     });
 
+    it("does not publish data changes for empty batches or already-missing deletion", async () => {
+      const changed = vi.fn();
+      const unsubscribe = repository.subscribe(changed);
+      await repository.updateMany([]);
+      await repository.delete("missing");
+      expect(changed).not.toHaveBeenCalled();
+      unsubscribe();
+    });
+
     it("converges desired completion, reopens and maintains completion dates", async () => {
       const task = await repository.create({ title: "Complete" });
       const done = await repository.toggle(task.id, undefined, true);
