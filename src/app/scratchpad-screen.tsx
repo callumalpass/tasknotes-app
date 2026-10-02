@@ -91,7 +91,10 @@ import type {
   FieldCompletionRequest,
 } from "../domain/completion";
 import type { TaskSummary } from "../domain/task";
-import type { TaskRepository } from "../application/ports/task-repository";
+import type {
+  TaskRepository,
+  TaskCreateIntent,
+} from "../application/ports/task-repository";
 import type { ScratchFeedItem } from "../domain/scratch-feed";
 import type { ScratchImage } from "../domain/scratch-image";
 import { scratchFeedKey } from "../domain/scratch-feed";
@@ -1245,6 +1248,7 @@ function ScratchpadDocumentEditor({
   onDocumentUpdated(document: ScratchpadDocument): void;
 }) {
   const { repository, configuration, createTask, updateTask } = useRepository();
+  const createIntents = useRef(new WeakMap<ScratchNode, TaskCreateIntent>());
   const [document, setDocument] = useState<ScratchpadDocument | null>(null);
   const [nodes, setNodes] = useState<ScratchNode[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<Map<string, TaskSummary>>(
@@ -1881,12 +1885,14 @@ function ScratchpadDocumentEditor({
     const createInput = {
       ...result.input,
       ...(projects.length ? { projects } : {}),
+      ...(completedStatus ? { status: completedStatus.value } : {}),
     };
-    if (completedStatus) delete createInput.status;
-    const createdTask = await createTask(createInput);
-    const task = completedStatus
-      ? await updateTask(createdTask.id, { status: completedStatus.value })
-      : createdTask;
+    let intent = createIntents.current.get(node);
+    if (!intent) {
+      intent = { id: crypto.randomUUID() };
+      createIntents.current.set(node, intent);
+    }
+    const task = await createTask(createInput, intent);
     setLinkedTasks((current) => new Map(current).set(task.id, task));
     const link = recordCompletion(
       {
