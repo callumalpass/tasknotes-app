@@ -10,6 +10,8 @@ import { connectError } from "@mdbase-dev/connect-testing";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { TaskCapture } from "./task-capture";
+import { CaptureSession } from "../application/capture-session";
+import { parseTaskCapture } from "../domain/task-capture";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
@@ -66,6 +68,47 @@ it("applies view defaults and keeps a created task recoverable when the view exc
   expect(open).toHaveBeenCalledWith(
     expect.objectContaining({ title: "Ship the mobile view" }),
   );
+});
+
+it("submits the current title and explicit fields while the async parser is pending", async () => {
+  const configuration = defaultTaskCollectionConfiguration();
+  const session = new CaptureSession();
+  session.editText("Old title");
+  await session.parse(configuration, {});
+  const pending = deferred<Awaited<ReturnType<typeof parseTaskCapture>>>();
+  vi.mocked(parseTaskCapture).mockReturnValueOnce(pending.promise);
+  const create = vi.fn(async (input: CreateTaskInput) => task(input));
+  render(
+    <TaskCapture
+      session={session}
+      configuration={configuration}
+      createTask={create}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "New title" },
+  });
+  let parsing!: Promise<void>;
+  act(() => {
+    parsing = session.parse(configuration, {});
+    session.editFields({ priority: "high" }, configuration);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() =>
+    expect(create).toHaveBeenCalledWith({
+      title: "New title",
+      priority: "high",
+    }),
+  );
+  await act(async () => {
+    pending.resolve({
+      input: { title: "New title", priority: "low" },
+      preview: [],
+    });
+    await parsing;
+  });
+  expect(screen.getByLabelText("New task title")).toHaveValue("");
+  expect(create).toHaveBeenCalledOnce();
 });
 
 it("acknowledges a task immediately while a remote create is pending", async () => {
