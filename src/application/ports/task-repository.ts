@@ -180,7 +180,9 @@ export interface CollectionInfo {
 
 /** Legacy producers may omit the event; omission means data may have changed. */
 export interface RepositoryChange {
-  kind: "data" | "status";
+  /** lifecycle means foreground cursors were interrupted and must be reopened;
+   * it does not imply collection data or availability changed. */
+  kind: "data" | "status" | "lifecycle";
 }
 
 export interface RepositoryConnectionStatus {
