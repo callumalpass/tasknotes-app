@@ -32,13 +32,21 @@ export class AcceptedTaskEffects {
     task: Task,
     options: { input?: UpdateTaskInput; notify?: boolean } = {},
   ): Promise<Task> {
-    const { input } = options;
-    const warnings: string[] = [];
-    const invalidation = await acceptedWriteEffect(
-      "the view could not be refreshed",
-      () => this.effects.invalidate([task.id]),
+    const tasks = await this.accept(
+      [task],
+      [options.input],
+      options.notify !== false,
     );
-    if (invalidation) warnings.push(invalidation);
+    return tasks[0]!;
+  }
+
+  private async observe(
+    task: Task,
+    input: UpdateTaskInput | undefined,
+    notify: boolean,
+    invalidation: string | null,
+  ): Promise<Task> {
+    const warnings: string[] = invalidation ? [invalidation] : [];
     if (!input || taskUpdateAffectsAutoArchive(input)) {
       const warning = await acceptedWriteEffect(
         "automatic archiving could not be scheduled",
@@ -48,10 +56,7 @@ export class AcceptedTaskEffects {
     }
     // Reminder reconciliation stays background work; report a failure without
     // holding capture open or making an accepted command reject.
-    if (
-      options.notify !== false &&
-      (!input || this.effects.affectsNotifications(input))
-    )
+    if (notify && (!input || this.effects.affectsNotifications(input)))
       void acceptedWriteEffect("reminders could not be reconciled", () =>
         this.effects.notify(task),
       );
@@ -67,10 +72,26 @@ export class AcceptedTaskEffects {
     tasks: readonly Task[],
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]> {
+    return this.accept(
+      tasks,
+      updates.map(({ input }) => input),
+    );
+  }
+
+  private async accept(
+    tasks: readonly Task[],
+    inputs: readonly (UpdateTaskInput | undefined)[],
+    notify = true,
+  ): Promise<Task[]> {
+    if (!tasks.length) return [];
+    const invalidation = await acceptedWriteEffect(
+      "the view could not be refreshed",
+      () => this.effects.invalidate(tasks.map(({ id }) => id)),
+    );
     const accepted: Task[] = [];
     for (let index = 0; index < tasks.length; index++)
       accepted.push(
-        await this.task(tasks[index]!, { input: updates[index]!.input }),
+        await this.observe(tasks[index]!, inputs[index], notify, invalidation),
       );
     return accepted;
   }
