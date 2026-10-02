@@ -9,7 +9,8 @@ import {
   recurrenceRuleSummary,
   recurrenceStartStorageValue,
 } from "./recurrence-rule";
-import { taskDatePart, taskTimePart } from "./task";
+import { taskDatePart, taskTimePart, type Task } from "./task";
+import { taskOccurrencesBetween } from "./task-occurrence";
 
 describe("recurrence rules", () => {
   it("round-trips weekly intervals, weekdays, and a count", () => {
@@ -23,6 +24,43 @@ describe("recurrence rules", () => {
       "DTSTART:20260803T090000Z;FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=3;UNTIL=20270131T235959Z";
     expect(buildRecurrenceRule(parseRecurrenceRule(rule))).toBe(rule);
   });
+
+  it.each(["20260722T090000Z", "20260722", "20261101T053000Z"])(
+    "preserves the exact UNTIL boundary %s during visual edits",
+    (until) => {
+      const input = `DTSTART:20260720T100000Z;FREQ=DAILY;UNTIL=${until}`;
+      const draft = parseRecurrenceRule(input);
+      expect(draft.unsupported).toEqual([]);
+      expect(draft.invalid).toEqual([]);
+      const rebuilt = buildRecurrenceRule(draft);
+      expect(rebuilt).toContain(`UNTIL=${until}`);
+      expect(buildRecurrenceRule({ ...draft, interval: 2 })).toContain(
+        `UNTIL=${until}`,
+      );
+      const task = {
+        id: "series",
+        title: "Series",
+        recurrence: input,
+        scheduled: "2026-07-20T10:00:00Z",
+        completeInstances: [],
+        skippedInstances: [],
+      } as unknown as Task;
+      expect(
+        taskOccurrencesBetween(
+          { ...task, recurrence: rebuilt },
+          "2026-07-20",
+          "2026-11-03",
+        ).map((occurrence) => occurrence.date),
+      ).toEqual(
+        taskOccurrencesBetween(task, "2026-07-20", "2026-11-03").map(
+          (occurrence) => occurrence.date,
+        ),
+      );
+      expect(buildRecurrenceRule({ ...draft, until: "2026-12-01" })).toContain(
+        "UNTIL=20261201T235959Z",
+      );
+    },
+  );
 
   it("preserves weekday-only daily rules when visually edited", () => {
     const rule = "DTSTART:20260803;FREQ=DAILY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR";

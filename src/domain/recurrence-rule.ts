@@ -15,6 +15,8 @@ export interface RecurrenceRuleDraft {
   month: number;
   end: RecurrenceEnd;
   until?: string;
+  /** Original boundary (date or exact time), retained until the end date changes. */
+  untilSource?: string;
   count?: number;
   dtstart?: string;
   weekStart?: RecurrenceWeekday;
@@ -183,7 +185,7 @@ export function parseRecurrenceRule(value?: string): RecurrenceRuleDraft {
     position,
     month: months.values[0] ?? startDateParts(dtstart).month,
     end: count ? "count" : until ? "until" : "never",
-    ...(until ? { until } : {}),
+    ...(until ? { until, untilSource: fields.get("UNTIL") } : {}),
     ...(count ? { count } : {}),
     ...(dtstart ? { dtstart } : {}),
     ...(weekStart ? { weekStart } : {}),
@@ -227,7 +229,13 @@ export function buildRecurrenceRule(draft: RecurrenceRuleDraft): string {
 
   if (draft.weekStart) fields.push(`WKST=${draft.weekStart}`);
   if (draft.end === "until" && draft.until)
-    fields.push(`UNTIL=${draft.until.replaceAll("-", "")}T235959Z`);
+    fields.push(
+      `UNTIL=${
+        draft.untilSource && storageUntil(draft.untilSource) === draft.until
+          ? draft.untilSource
+          : `${draft.until.replaceAll("-", "")}T235959Z`
+      }`,
+    );
   if (draft.end === "count" && draft.count)
     fields.push(`COUNT=${positiveInteger(String(draft.count)) ?? 1}`);
   return fields.filter(Boolean).join(";");
