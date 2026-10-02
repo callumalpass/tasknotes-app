@@ -38,6 +38,21 @@ it("shares the accepted policy between single and bulk updates", async () => {
   expect(effects.notify).toHaveBeenCalledWith(saved);
 });
 
+it("invalidates a bulk update once while observing each accepted task", async () => {
+  const { effects, accepted } = fixture();
+  const second = { ...saved, id: "second" };
+  await accepted.updated(
+    [saved, second],
+    [
+      { id: saved.id, input: { status: "done" } },
+      { id: second.id, input: { status: "done" } },
+    ],
+  );
+  expect(effects.invalidate).toHaveBeenCalledOnce();
+  expect(effects.invalidate).toHaveBeenCalledWith([saved.id, second.id]);
+  expect(effects.observe).toHaveBeenCalledTimes(2);
+});
+
 it("continues other accepted effects when invalidation fails", async () => {
   const { effects, accepted } = fixture();
   effects.invalidate.mockImplementation(() => {
