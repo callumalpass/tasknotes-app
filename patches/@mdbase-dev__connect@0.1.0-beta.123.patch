@@ -1,0 +1,20 @@
+diff --git a/dist/application-session.js b/dist/application-session.js
+index d564f053dcf938157ab17bd9d46af0434ee9648f..aca77a9c648fb7be5f34a3e2a206dcf695dd7570 100644
+--- a/dist/application-session.js
++++ b/dist/application-session.js
+@@ -479,6 +479,15 @@ export class MdbaseApplicationSession {
+                 timeStartupRead("setup-assessment", () => connection.assessCollectionSetup(initialInput, { ...options, signal: controller.signal })), verification
+             ]);
+         }
++        catch (error) {
++            // A route/selection refresh replaces this verification. Its cancelled
++            // assessment must not tear down startup's newer readiness work.
++            if (generation !== this.verificationGeneration && controller.signal.aborted
++                && (error === controller.signal.reason
++                    || (error instanceof MdbaseConnectError && error.code === "operation_cancelled")))
++                return;
++            throw error;
++        }
+         finally {
+             options?.signal?.removeEventListener("abort", abortAssessment);
+             controller.abort();
