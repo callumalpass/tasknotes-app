@@ -80,7 +80,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
-    "@callumalpass/mdbase": "file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz",
+    "@callumalpass/mdbase": "0.3.0-rc.8",
     "@capacitor/android": "8.4.2",
     "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",

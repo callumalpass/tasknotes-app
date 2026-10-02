@@ -70,7 +70,7 @@ try {
 
   const completed = await operations.update({
     path: taskPath,
-    fields: {
+    patch: {
       status: "done",
       completedDate: "2026-07-21",
       mobileRevision: 2,
