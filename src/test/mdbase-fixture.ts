@@ -169,13 +169,57 @@ export function mdbaseFixture(
         );
       })(),
   );
-  // Exercise the real SDK's batching, ordering, errors and cancellation rather
-  // than reimplementing readMany in the application fixture.
-  const queryClient = new MdbaseCollectionClient<JsonObject>({
-    operation: async () => {
-      throw new Error("Unexpected raw fixture operation");
+  // Exercise real SDK negotiation/batching; the fixture supplies authority
+  // responses rather than reimplementing the client's scheduler.
+  const authorityCapabilities = new Set<string>();
+  const supportsAuthorityFeature = vi.fn(
+    async (id: string): Promise<ConnectOutcome<boolean>> =>
+      connectSuccess(authorityCapabilities.has(id)),
+  );
+  const readDocuments = vi.fn(
+    async (input: { paths: string[]; include_body?: boolean }) => ({
+      items: input.paths.map((path) => {
+        const record = records.get(path);
+        return record
+          ? {
+              path,
+              status: "found" as const,
+              record: {
+                path,
+                revision: record.revision,
+                types: record.types,
+                frontmatter: structuredClone(record.frontmatter),
+                effective_frontmatter: structuredClone(
+                  record.effectiveFrontmatter ?? record.frontmatter,
+                ),
+                file: record.file ?? testQueryFile(path),
+                ...(input.include_body ? { body: record.body } : {}),
+              },
+            }
+          : { path, status: "missing" as const };
+      }),
+    }),
+  );
+  const queryClient = new MdbaseCollectionClient<JsonObject>(
+    {
+      operation: async <Result>(
+        operation: string,
+        input: unknown,
+      ): Promise<Result> => {
+        if (operation !== "read")
+          throw new Error("Unexpected raw fixture operation");
+        return valid(
+          await readDocuments(
+            input as { paths: string[]; include_body?: boolean },
+          ),
+        ) as Result;
+      },
     },
-  });
+    null,
+    supportsAuthorityFeature,
+  );
+  // Benchmarks serialize after output shaping, at the authority boundary.
+  const queryTransfer = { serialize: <T>(value: T): T => value };
   function sdkQueryPages(
     input: QueryMetadataInput,
     options?: QueryPagesOptions<JsonObject, QueryMetadataRecord>,
@@ -204,21 +248,27 @@ export function mdbaseFixture(
       options,
     )) {
       if (!outcome.ok || input?.output !== "metadata") {
-        yield outcome;
+        yield queryTransfer.serialize(outcome);
         continue;
       }
-      yield connectSuccess(
-        {
-          ...outcome.value,
-          output: "metadata" as const,
-          results: outcome.value.results.map((record) => ({
-            path: record.path,
-            types: record.types,
-            revision: records.get(record.path)!.revision,
-            values: record.values ?? {},
-          })),
-        },
-        outcome.diagnostics,
+      const selectedValues = testSelectionValues(input);
+      yield queryTransfer.serialize(
+        connectSuccess(
+          {
+            ...outcome.value,
+            output: "metadata" as const,
+            results: outcome.value.results.map((record) => ({
+              path: record.path,
+              types: record.types,
+              revision: records.get(record.path)!.revision,
+              values: {
+                ...record.values,
+                ...selectedValues(records.get(record.path)!),
+              },
+            })),
+          },
+          outcome.diagnostics,
+        ),
       );
     }
   }
@@ -482,9 +532,10 @@ export function mdbaseFixture(
       pendingMutations.get(requestId) ?? null,
     pendingMutations: () => [...pendingMutations.values()],
     readMany,
+    supportsAuthorityFeature,
     describe: describeCollection,
     query,
-    queryPages,
+    queryPages: sdkQueryPages,
     read,
     create,
     update,
@@ -519,6 +570,10 @@ export function mdbaseFixture(
   return {
     connect,
     records,
+    authorityCapabilities,
+    supportsAuthorityFeature,
+    queryTransfer,
+    readDocuments,
     readMany,
     describe: describeCollection,
     query,
@@ -563,6 +618,38 @@ export interface TestRecord {
   types: string[];
   revision: string;
   file?: QueryRecord<JsonObject>["file"];
+}
+
+/** Evaluate only the selection used by TaskNotes' synthetic metadata index.
+ * Production selection semantics remain owned by the authority's CEL engine.
+ */
+function testSelectionValues(
+  input: QueryInput | QueryMetadataInput,
+): (record: TestRecord) => JsonObject {
+  const summary = input.select?.find(
+    (selection) =>
+      typeof selection !== "string" && selection.name === "tasknotes_summary",
+  );
+  if (!summary || typeof summary === "string") return () => ({});
+  const match =
+    /^(\[.*\])\.filter\(key, key in record\)\.map\(key, \[key, record\[key\]\]\)$/.exec(
+      summary.expression,
+    );
+  if (!match) throw new Error("Unsupported synthetic summary selection");
+  const fields: string[] = JSON.parse(match[1]);
+  return (record) => {
+    const frontmatter =
+      input.frontmatterMode === "persisted"
+        ? record.frontmatter
+        : (record.effectiveFrontmatter ?? record.frontmatter);
+    return {
+      tasknotes_summary: fields
+        .filter((field) =>
+          Object.prototype.hasOwnProperty.call(frontmatter, field),
+        )
+        .map((field) => [field, frontmatter[field]]),
+    };
+  };
 }
 
 export function testQueryFile(path: string): QueryRecord<JsonObject>["file"] {

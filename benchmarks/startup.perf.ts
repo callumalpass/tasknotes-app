@@ -49,6 +49,11 @@ it("measures configuration to first usable saved-view page", async () => {
       "tasknotes.task-list";
     fixture.describe.mockImplementation(async () => transfer(description));
     cacheFixtureDescription(fixture);
+    if (process.env.PERF_AUTHORITY === "qualified") {
+      fixture.authorityCapabilities.add("query-metadata-v1");
+      fixture.authorityCapabilities.add("read-many-documents-v1");
+    }
+    fixture.queryTransfer.serialize = transfer;
     fixture.listViews.mockImplementation(async () => transfer(catalogue));
     fixture.queryPages.mockImplementation((input) =>
       (async function* () {
@@ -60,16 +65,14 @@ it("measures configuration to first usable saved-view page", async () => {
             file: testQueryFile(record.path),
             ...(input?.includeBody ? { body: record.body } : {}),
           }));
-          yield transfer(
-            connectSuccess({
-              results: batch,
-              meta: { hasMore: offset + batch.length < size },
-              page: offset / 1000,
-              offset,
-              loaded: offset + batch.length,
-              complete: offset + batch.length >= size,
-            }),
-          );
+          yield connectSuccess({
+            results: batch,
+            meta: { hasMore: offset + batch.length < size },
+            page: offset / 1000,
+            offset,
+            loaded: offset + batch.length,
+            complete: offset + batch.length >= size,
+          });
         }
       })(),
     );

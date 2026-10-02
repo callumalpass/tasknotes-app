@@ -64,6 +64,7 @@ import {
   newScratchpadValues,
   scratchpadFromRecord,
   scratchpadFrontmatter,
+  type ScratchpadRecordLike,
 } from "./scratchpads";
 import {
   scratchImageFromRecord,
@@ -156,6 +157,7 @@ type CurrentTaskDocument = CachedTaskDocument & { revision: string };
 
 interface ReadableMdbaseRecord {
   path: string;
+  revision?: string;
   frontmatter?: JsonObject;
   effectiveFrontmatter?: JsonObject;
   body?: string;
@@ -1770,7 +1772,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     return { archived: result.previous, active: result.current };
   }
 
-  private async scratchImageRecords(): Promise<RecordDocument<JsonObject>[]> {
+  private async scratchImageRecords(): Promise<ScratchpadRecordLike[]> {
     const result = validResult(
       await this.connect.query(
         {
@@ -1872,15 +1874,51 @@ export class MdbaseTaskRepository implements TaskRepository {
     return scratchpadFromRecord(created);
   }
 
-  /** beta.123 query/readMany results have no authority revision token. These
-   * point reads supply revisions for subsequent edits/removal; query bodies
-   * are deliberately omitted. Revision-bearing batches can replace this path.
+  /** History needs paired content/revisions, not exact Markdown documents.
+   * Old authorities retain the four-slot point-read path; advertised batch
+   * failures must surface rather than trigger an error-based downgrade.
    */
   private async readRecordsBounded(
     candidates: readonly { path: string }[],
-  ): Promise<RecordDocument<JsonObject>[]> {
+  ): Promise<ScratchpadRecordLike[]> {
     const options = this.requestOptions();
-    const records: RecordDocument<JsonObject>[] = [];
+    if (!candidates.length) return [];
+    if (
+      validResult(
+        await this.connect.supportsAuthorityFeature(
+          "read-many-documents-v1",
+          options,
+        ),
+      )
+    ) {
+      const batch = validResult(
+        await this.connect.readMany(
+          candidates.map(({ path }) => path),
+          {
+            ...options,
+            includeBody: true,
+            frontmatterMode: "persisted",
+            batchSize: 100,
+            concurrency: RECORD_READ_CONCURRENCY,
+          },
+        ),
+      );
+      options.signal.throwIfAborted();
+      for (const error of batch.errors) validResult(error.failure);
+      return batch.results.map((entry) => {
+        if (entry.status !== "found")
+          throw new Error(
+            `The scratchpad record is no longer available: ${entry.path}`,
+          );
+        const { path, frontmatter, body, types, revision } = entry.record;
+        if (!revision || !frontmatter || typeof body !== "string")
+          throw new Error(
+            "The authority did not return complete scratchpad content and revision.",
+          );
+        return { path, frontmatter, body, types, revision };
+      });
+    }
+    const records: ScratchpadRecordLike[] = [];
     for (
       let offset = 0;
       offset < candidates.length;
@@ -1901,8 +1939,8 @@ export class MdbaseTaskRepository implements TaskRepository {
     return records;
   }
 
-  private async scratchpadRecords(): Promise<RecordDocument<JsonObject>[]> {
-    const records: RecordDocument<JsonObject>[] = [];
+  private async scratchpadRecords(): Promise<ScratchpadRecordLike[]> {
+    const records: ScratchpadRecordLike[] = [];
     for await (const outcome of this.connect.queryPages(
       {
         timezone: runtimeTimezone(),
@@ -1922,7 +1960,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async requireScratchpadRecord(
     id: string,
     path?: string,
-  ): Promise<RecordDocument<JsonObject>> {
+  ): Promise<ScratchpadRecordLike> {
     if (path) {
       const record = validResult(
         await this.connect.read({ path }, this.requestOptions()),
@@ -2083,6 +2121,63 @@ export class MdbaseTaskRepository implements TaskRepository {
             entry.status === "found" ? [entry.record] : [],
           ),
         );
+      } else if (
+        validResult(
+          await this.connect.supportsAuthorityFeature("query-metadata-v1", {
+            signal,
+          }),
+        )
+      ) {
+        const fields = [
+          ...new Set(
+            [...this.taskProviders.values()].flatMap((model) =>
+              model.summaryFields(),
+            ),
+          ),
+        ];
+        for await (const response of this.connect.queryPages(
+          {
+            timezone: runtimeTimezone(),
+            types: [...this.taskProviders.keys()],
+            output: "metadata",
+            frontmatterMode: "effective",
+            // Select only present literal keys. A list of key/value pairs
+            // preserves absent versus null (important for legacy aliases),
+            // and supports custom keys containing dots or CEL punctuation.
+            select: [
+              {
+                name: "tasknotes_summary",
+                expression: `${JSON.stringify(fields)}.filter(key, key in record).map(key, [key, record[key]])`,
+              },
+            ],
+          },
+          { pageSize: PAGE_SIZE, signal },
+        )) {
+          await accept(
+            validResult(response).results.map((record) => {
+              const values = record.values.tasknotes_summary;
+              if (
+                !Array.isArray(values) ||
+                values.some(
+                  (value) =>
+                    !Array.isArray(value) ||
+                    value.length !== 2 ||
+                    typeof value[0] !== "string",
+                )
+              )
+                throw new Error(
+                  "The authority did not return the selected task summary fields.",
+                );
+              return {
+                path: record.path,
+                types: record.types,
+                effectiveFrontmatter: Object.fromEntries(
+                  values as [string, JsonObject[string]][],
+                ),
+              };
+            }),
+          );
+        }
       } else {
         for await (const response of this.connect.queryPages(
           {
@@ -2343,7 +2438,14 @@ export class MdbaseTaskRepository implements TaskRepository {
         results.set(current.task.id, current.task);
         continue;
       }
-      this.documents.set(decoded.task.id, decoded);
+      // Install hydration's content/token together, never its discovery token.
+      // This also reindexes externally changed metadata before any later edit.
+      const previous = before.get(record.path);
+      if (previous && previous.task.id !== decoded.task.id) {
+        this.cache.delete(previous.task.id);
+        this.documents.delete(previous.task.id);
+      }
+      this.storeDocument(decoded);
       results.set(decoded.task.id, decoded.task);
     }
     return tasks.flatMap((task) => {
@@ -2389,6 +2491,7 @@ export class MdbaseTaskRepository implements TaskRepository {
           frontmatter: mdbaseFrontmatter(record),
           body: record.body,
         }),
+        revision: record.revision,
         ...provider,
       };
     } catch {
