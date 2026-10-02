@@ -33,6 +33,12 @@ export class QueryInvalidationStore {
     for (const scope of this.listeners.keys()) this.publish(scope);
   }
 
+  invalidateViews(): void {
+    this.invalidate(
+      [...this.listeners.keys()].filter((scope) => scope.startsWith("view:")),
+    );
+  }
+
   invalidateTasks(taskIds: Iterable<string>): void {
     const scopes: QueryScope[] = ["collection-summary"];
     for (const id of new Set(taskIds))

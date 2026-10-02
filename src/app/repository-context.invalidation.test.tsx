@@ -7,6 +7,7 @@ import {
   RepositoryProvider,
   useRepository,
   useTasks,
+  useRepositoryRevision,
 } from "./repository-context";
 
 it("updates connectivity without reloading data queries on status-only events", async () => {
@@ -35,6 +36,10 @@ it("updates connectivity without reloading data queries on status-only events", 
   await act(async () => notify({ kind: "status" }));
   expect(screen.getByText("unavailable")).toBeInTheDocument();
   expect(list).not.toHaveBeenCalled();
+  const revision = screen.getByTestId("view-revision").textContent;
+  await act(async () => notify({ kind: "lifecycle" }));
+  expect(list).not.toHaveBeenCalled();
+  expect(screen.getByTestId("view-revision").textContent).not.toBe(revision);
   await act(async () => notify({ kind: "data" }));
   await waitFor(() => expect(list).toHaveBeenCalledOnce());
   list.mockClear();
@@ -85,10 +90,12 @@ it("refreshes silently when the window becomes visible again", async () => {
 
 function Harness() {
   const { connection } = useRepository();
+  const viewRevision = useRepositoryRevision("view:test");
   const { tasks } = useTasks({ limit: 10 });
   return (
     <>
       <p>{connection.state}</p>
+      <p data-testid="view-revision">{viewRevision}</p>
       {tasks.map((task) => (
         <p key={task.id}>{task.title}</p>
       ))}

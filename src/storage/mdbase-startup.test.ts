@@ -12,6 +12,33 @@ function setup() {
   return { ...fixture, repository: new MdbaseTaskRepository(fixture.connect) };
 }
 
+it("retries full initialization after an initial index failure and successful refresh", async () => {
+  const fixture = setup();
+  fixture.queryPages.mockImplementationOnce(() =>
+    (async function* () {
+      yield await Promise.reject(new TypeError("Network gone"));
+    })(),
+  );
+  await expect(fixture.repository.initialize()).rejects.toThrow("Network gone");
+  await fixture.repository.refresh();
+  await expect(fixture.repository.initialize()).resolves.toBeUndefined();
+});
+
+it("does not retain a rejected describe promise across refresh", async () => {
+  const fixture = setup();
+  fixture.describe.mockRejectedValueOnce(
+    new TypeError("Offline during describe"),
+  );
+  await expect(
+    fixture.repository.initialize({ deferTaskIndex: true }),
+  ).rejects.toThrow("Offline during describe");
+  await fixture.repository.refresh();
+  await expect(fixture.repository.listSummaries()).resolves.toHaveLength(2);
+  expect(await fixture.repository.connectionStatus()).toMatchObject({
+    state: "connected",
+  });
+});
+
 it("publishes deletion undo while a document-prefetch read is still pending", async () => {
   const fixture = setup();
   await fixture.repository.initialize({ deferTaskIndex: true });

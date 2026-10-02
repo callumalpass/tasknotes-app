@@ -7,7 +7,6 @@ import {
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
-  MdbaseConnectError,
   linksTo,
   type CollectionDescription,
   type ConnectOutcome,
@@ -234,6 +233,8 @@ export class MdbaseTaskRepository implements TaskRepository {
       // repository with the fresh lifecycle signal.
       this.initialization = null;
       this.completeInitialization = undefined;
+      this.refreshInFlight = null;
+      this.emit({ kind: "lifecycle" });
     }
   }
 
@@ -251,14 +252,29 @@ export class MdbaseTaskRepository implements TaskRepository {
   private readonly viewTaskHints = new Map<string, CachedMdbaseTask>();
 
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
-    this.initialization ??= this.initializeUnlocked();
+    if (!this.initialization) {
+      const signal = this.operationController.signal;
+      const opening = this.initializeUnlocked().catch((reason: unknown) => {
+        if (this.initialization === opening) this.initialization = null;
+        if (!signal.aborted) this.noteOperationFailure(reason);
+        throw reason;
+      });
+      this.initialization = opening;
+    }
     await this.initialization;
     if (!options.deferTaskIndex) {
-      this.completeInitialization ??= (async () => {
-        await this.ensureTaskIndex();
-        await this.maintainRollingOccurrencesUnlocked();
-        this.emit();
-      })();
+      if (!this.completeInitialization) {
+        const complete = (async () => {
+          await this.ensureTaskIndex();
+          await this.maintainRollingOccurrencesUnlocked();
+          this.emit();
+        })().catch((reason: unknown) => {
+          if (this.completeInitialization === complete)
+            this.completeInitialization = undefined;
+          throw reason;
+        });
+        this.completeInitialization = complete;
+      }
       await this.completeInitialization;
     }
   }
@@ -326,7 +342,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   refresh(): Promise<RefreshResult> {
     if (this.refreshInFlight) return this.refreshInFlight;
     const run = this.refreshUnlocked().finally(() => {
-      this.refreshInFlight = null;
+      if (this.refreshInFlight === run) this.refreshInFlight = null;
     });
     this.refreshInFlight = run;
     return run;
@@ -401,9 +417,9 @@ export class MdbaseTaskRepository implements TaskRepository {
       await this.maintainRollingOccurrencesUnlocked();
     } catch (reason) {
       // Lifecycle cancellation says nothing about authority availability.
-      if (!signal.aborted) this.setOffline(reason);
+      if (!signal.aborted) this.noteOperationFailure(reason);
     }
-    this.emit({ kind: invalidate ? "data" : "status" });
+    if (!signal.aborted) this.emit({ kind: invalidate ? "data" : "status" });
     return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };
   }
 
@@ -2625,23 +2641,20 @@ function errorMessage(reason: unknown): string {
 }
 
 function isConnectionFailure(reason: unknown): boolean {
-  return (
-    reason instanceof TypeError ||
-    (reason instanceof MdbaseConnectError &&
-      [
-        "connector_offline",
-        "authorization_expired",
-        "not_authorized",
-        "operation_failed",
-      ].includes(reason.code))
-  );
+  const problem = connectProblemFromError(reason);
+  if (problem) {
+    if (
+      problem.operation_outcome === "unknown" ||
+      problem.recovery === "resolve_outcome"
+    )
+      return false;
+    return problem.category === "availability";
+  }
+  return reason instanceof TypeError;
 }
 
 function connectionErrorMessage(reason: unknown): string {
-  if (
-    reason instanceof MdbaseConnectError &&
-    reason.code === "connector_offline"
-  )
+  if (connectProblemFromError(reason)?.code === "connector_offline")
     return "The computer holding this collection is offline.";
   if (reason instanceof Error && reason.message) return reason.message;
   return "This collection is not reachable right now.";

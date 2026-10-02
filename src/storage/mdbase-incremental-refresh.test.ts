@@ -233,7 +233,10 @@ describe("incremental repository refresh", () => {
     fixture.queryPages.mockImplementationOnce((input) =>
       (async function* () {
         yield* pages(input);
-        throw new Error("Disconnected after first page");
+        throw connectError(
+          "connector_offline",
+          "Disconnected after first page",
+        );
       })(),
     );
     await fixture.repository.refresh();
@@ -399,7 +402,9 @@ describe("incremental repository refresh", () => {
 
   it("does not convert a changes transport failure into an expensive full query", async () => {
     const fixture = await setup();
-    fixture.changes.mockRejectedValueOnce(new Error("Offline"));
+    fixture.changes.mockRejectedValueOnce(
+      connectError("connector_offline", "Offline"),
+    );
     await fixture.repository.refresh();
     expect(fixture.queryPages).not.toHaveBeenCalled();
     expect(await fixture.repository.connectionStatus()).toMatchObject({

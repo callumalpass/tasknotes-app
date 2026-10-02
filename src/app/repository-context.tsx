@@ -144,6 +144,10 @@ export function RepositoryProvider({
   const [configuration, setConfiguration] =
     useState<TaskCollectionConfiguration>(defaultTaskCollectionConfiguration);
   const refreshInFlight = useRef<Promise<RefreshResult> | null>(null);
+  const startupRef = useRef<(() => Promise<void>) | null>(null);
+  const interruptStartupRef = useRef<(() => void) | null>(null);
+  const readyRef = useRef(false);
+  const lifecycleRef = useRef(0);
   const configurationRef = useRef(configuration);
   const autoArchiveRef = useRef<AutoArchiveActivity | null>(null);
   const taskCommandsRef = useRef<TaskCommandService | null>(null);
@@ -152,19 +156,31 @@ export function RepositoryProvider({
 
   const bump = useCallback(() => invalidation.invalidateAll(), [invalidation]);
   const loadConnection = useCallback(async () => {
+    const lifecycle = lifecycleRef.current;
     const nextStatus = await repository.connectionStatus();
-    setConnection(nextStatus);
+    if (lifecycle === lifecycleRef.current) setConnection(nextStatus);
   }, [repository]);
   const refresh = useCallback(() => {
     if (refreshInFlight.current) return refreshInFlight.current;
     setRefreshing(true);
-    const run = repository
-      .refresh()
+    const lifecycle = lifecycleRef.current;
+    const run = Promise.resolve()
+      .then(async () => {
+        if (!readyRef.current) await startupRef.current?.();
+        if (lifecycle !== lifecycleRef.current)
+          throw new DOMException(
+            "The foreground refresh was interrupted.",
+            "AbortError",
+          );
+        return repository.refresh();
+      })
       .then(async (result) => {
         const nextConfiguration = await repository.taskConfiguration();
+        if (lifecycle !== lifecycleRef.current) return result;
         configurationRef.current = nextConfiguration;
         setConfiguration(nextConfiguration);
         await autoArchiveRef.current?.reconcile();
+        if (lifecycle !== lifecycleRef.current) return result;
         setLastRefresh(result);
         setError(null);
         void loadConnection().catch(() => undefined);
@@ -176,12 +192,14 @@ export function RepositoryProvider({
       })
       .catch((reason: unknown) => {
         const next = asError(reason);
-        setError(next);
+        if (lifecycle === lifecycleRef.current) setError(next);
         throw next;
       })
       .finally(() => {
-        refreshInFlight.current = null;
-        setRefreshing(false);
+        if (refreshInFlight.current === run) {
+          refreshInFlight.current = null;
+          setRefreshing(false);
+        }
       });
     refreshInFlight.current = run;
     return run;
@@ -190,122 +208,164 @@ export function RepositoryProvider({
   useEffect(() => {
     repository.resume?.();
     let active = true;
-    let unsubscribeCommands: (() => void) | undefined;
-    let resolveTaskCommands: (service: TaskCommandService | null) => void;
-    taskCommandsReadyRef.current = new Promise((resolve) => {
-      resolveTaskCommands = resolve;
-    });
-    repository
-      .initialize({ deferTaskIndex: true })
-      .then(async () => {
-        const nextConfiguration = await repository.taskConfiguration();
-        if (!active) return;
-        configurationRef.current = nextConfiguration;
-        const autoArchive = await createRepositoryAutoArchiveActivity({
-          repository,
-          configuration: () => configurationRef.current,
-          onArchived: (task) => {
-            void syncTaskNotifications(
-              repository,
-              task,
-              reminderAuthority,
-            ).catch(() => undefined);
-          },
-        });
-        if (!active) {
-          autoArchive.dispose();
-          return;
-        }
-        autoArchiveRef.current = autoArchive;
-        // Reconciliation has its own error reporting and must not gate the view.
-        void autoArchive.start().catch(() => undefined);
-        if (!active) return;
-        const taskCommands = new TaskCommandService({
-          repository,
-          journal: mutationJournal,
-          ...(discardPendingRecovery
-            ? {
-                discardPendingRequest: async () => discardPendingRecovery(),
-              }
-            : {}),
-          onDeleted: async (id) => {
-            await autoArchive.forget(id);
-            invalidation.invalidateTasks([id]);
-            if (reminderAuthority === "connect")
-              void removeTaskNotifications(
+    let generation = 0;
+    let opening: Promise<void> | null = null;
+    let disposeStartup: (() => void) | undefined;
+    const start = () => {
+      if (opening) return opening;
+      disposeStartup?.();
+      const attempt = ++generation;
+      const current = () => active && attempt === generation;
+      readyRef.current = false;
+      setStatus("opening");
+      setError(null);
+      let unsubscribeCommands: (() => void) | undefined;
+      let autoArchive: AutoArchiveActivity | undefined;
+      let taskCommands: TaskCommandService | undefined;
+      let resolveTaskCommands!: (service: TaskCommandService | null) => void;
+      taskCommandsReadyRef.current = new Promise((resolve) => {
+        resolveTaskCommands = resolve;
+      });
+      const disposeAttempt = () => {
+        unsubscribeCommands?.();
+        taskCommands?.dispose();
+        autoArchive?.dispose();
+        resolveTaskCommands(null);
+      };
+      disposeStartup = disposeAttempt;
+      const run = repository
+        .initialize({ deferTaskIndex: true })
+        .then(async () => {
+          const nextConfiguration = await repository.taskConfiguration();
+          if (!current()) return;
+          configurationRef.current = nextConfiguration;
+          autoArchive = await createRepositoryAutoArchiveActivity({
+            repository,
+            configuration: () => configurationRef.current,
+            onArchived: (task) => {
+              void syncTaskNotifications(
                 repository,
-                id,
+                task,
                 reminderAuthority,
               ).catch(() => undefined);
-          },
-          onTasksUpdated: async (tasks, updates) => {
-            invalidation.invalidateTasks(updates.map(({ id }) => id));
-            for (let index = 0; index < tasks.length; index += 1) {
-              const input = updates[index]!.input;
-              const task = tasks[index]!;
-              if (taskUpdateAffectsAutoArchive(input))
-                await autoArchive.observe(task);
-              if (
-                reminderAuthority === "connect" &&
-                taskUpdateAffectsNotifications(input)
-              )
-                void syncTaskNotifications(
+            },
+          });
+          if (!current()) {
+            disposeAttempt();
+            return;
+          }
+          autoArchiveRef.current = autoArchive;
+          // Reconciliation has its own error reporting and must not gate the view.
+          void autoArchive.start().catch(() => undefined);
+          if (!current()) return;
+          const archive = autoArchive;
+          taskCommands = new TaskCommandService({
+            repository,
+            journal: mutationJournal,
+            ...(discardPendingRecovery
+              ? {
+                  discardPendingRequest: async () => discardPendingRecovery(),
+                }
+              : {}),
+            onDeleted: async (id) => {
+              await archive.forget(id);
+              invalidation.invalidateTasks([id]);
+              if (reminderAuthority === "connect")
+                void removeTaskNotifications(
                   repository,
-                  task,
+                  id,
                   reminderAuthority,
                 ).catch(() => undefined);
-            }
-          },
-        });
-        taskCommandsRef.current = taskCommands;
-        const publishCommandSnapshot = () => {
-          const snapshot = taskCommands.snapshot();
-          setPendingDeletion(
-            snapshot.pendingDeletion
-              ? {
-                  id: snapshot.pendingDeletion.taskId,
-                  title: snapshot.pendingDeletion.title,
-                  outcomeUnknown: Boolean(
-                    snapshot.pendingDeletion.authorityRequestId,
-                  ),
-                }
-              : null,
+            },
+            onTasksUpdated: async (tasks, updates) => {
+              invalidation.invalidateTasks(updates.map(({ id }) => id));
+              for (let index = 0; index < tasks.length; index += 1) {
+                const input = updates[index]!.input;
+                const task = tasks[index]!;
+                if (taskUpdateAffectsAutoArchive(input))
+                  await archive.observe(task);
+                if (
+                  reminderAuthority === "connect" &&
+                  taskUpdateAffectsNotifications(input)
+                )
+                  void syncTaskNotifications(
+                    repository,
+                    task,
+                    reminderAuthority,
+                  ).catch(() => undefined);
+              }
+            },
+          });
+          const commands = taskCommands;
+          const publishCommandSnapshot = () => {
+            if (!current()) return;
+            const snapshot = commands.snapshot();
+            setPendingDeletion(
+              snapshot.pendingDeletion
+                ? {
+                    id: snapshot.pendingDeletion.taskId,
+                    title: snapshot.pendingDeletion.title,
+                    outcomeUnknown: Boolean(
+                      snapshot.pendingDeletion.authorityRequestId,
+                    ),
+                  }
+                : null,
+            );
+            setDeletionError(snapshot.deletionError);
+          };
+          unsubscribeCommands = taskCommands.subscribe(publishCommandSnapshot);
+          await taskCommands.initialize();
+          publishCommandSnapshot();
+          if (!current()) {
+            disposeAttempt();
+            return;
+          }
+          taskCommandsRef.current = taskCommands;
+          resolveTaskCommands(taskCommands);
+          setConfiguration(nextConfiguration);
+          readyRef.current = true;
+          setStatus("ready");
+          void loadConnection().catch(() => undefined);
+          void reconcileTaskNotifications(repository, reminderAuthority).catch(
+            () => undefined,
           );
-          setDeletionError(snapshot.deletionError);
-        };
-        unsubscribeCommands = taskCommands.subscribe(publishCommandSnapshot);
-        await taskCommands.initialize();
-        publishCommandSnapshot();
-        if (!active) {
-          unsubscribeCommands();
-          taskCommands.dispose();
-          resolveTaskCommands!(null);
-          return;
-        }
-        resolveTaskCommands!(taskCommands);
-        setConfiguration(nextConfiguration);
-        setStatus("ready");
-        void loadConnection().catch(() => undefined);
-        void reconcileTaskNotifications(repository, reminderAuthority).catch(
-          () => undefined,
-        );
-        void refresh().catch(() => undefined);
+        })
+        .catch((reason: unknown) => {
+          disposeAttempt();
+          if (!current()) return;
+          setError(asError(reason));
+          setStatus("error");
+          throw reason;
+        })
+        .finally(() => {
+          if (opening === run) opening = null;
+        });
+      opening = run;
+      return run;
+    };
+    startupRef.current = start;
+    interruptStartupRef.current = () => {
+      if (readyRef.current) return;
+      generation += 1;
+      opening = null;
+      disposeStartup?.();
+    };
+    void start()
+      .then(() => {
+        if (active && readyRef.current) void refresh().catch(() => undefined);
       })
-      .catch((reason: unknown) => {
-        resolveTaskCommands!(null);
-        if (!active) return;
-        setError(asError(reason));
-        setStatus("error");
-      });
+      .catch(() => undefined);
     return () => {
       active = false;
+      readyRef.current = false;
+      lifecycleRef.current += 1;
+      refreshInFlight.current = null;
+      startupRef.current = null;
+      interruptStartupRef.current = null;
       repository.dispose?.();
-      unsubscribeCommands?.();
-      taskCommandsRef.current?.dispose();
+      disposeStartup?.();
       taskCommandsRef.current = null;
       taskCommandsReadyRef.current = null;
-      resolveTaskCommands!(null);
-      autoArchiveRef.current?.dispose();
       autoArchiveRef.current = null;
     };
   }, [
@@ -324,10 +384,14 @@ export function RepositoryProvider({
     return repository.subscribe((change) => {
       void loadConnection().catch(() => undefined);
       if (change?.kind === "status") return;
+      if (change?.kind === "lifecycle") {
+        invalidation.invalidateViews();
+        return;
+      }
       bump();
       void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
-  }, [bump, loadConnection, repository]);
+  }, [bump, invalidation, loadConnection, repository]);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -335,26 +399,32 @@ export function RepositoryProvider({
         "appStateChange",
         ({ isActive }) => {
           if (!isActive) {
+            lifecycleRef.current += 1;
             repository.suspend?.();
+            interruptStartupRef.current?.();
+            refreshInFlight.current = null;
             return;
           }
           repository.resume?.();
-          if (status === "ready") void refresh().catch(() => undefined);
+          void refresh().catch(() => undefined);
         },
       );
       return () => void handle.then((listener) => listener.remove());
     }
     const onVisibility = () => {
       if (document.visibilityState !== "visible") {
+        lifecycleRef.current += 1;
         repository.suspend?.();
+        interruptStartupRef.current?.();
+        refreshInFlight.current = null;
         return;
       }
       repository.resume?.();
-      if (status === "ready") void refresh().catch(() => undefined);
+      void refresh().catch(() => undefined);
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [refresh, repository, status]);
+  }, [refresh, repository]);
 
   useEffect(() => {
     if (status !== "ready" || Capacitor.isNativePlatform()) return;
