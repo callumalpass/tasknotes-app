@@ -1,9 +1,14 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { cpus } from "node:os";
 import { expect, it } from "vitest";
 import { connectSuccess } from "@mdbase-dev/connect-testing";
-import type { CollectionChange, QueryInput } from "@mdbase-dev/connect";
+import {
+  normalizeCollectionChange,
+  type CollectionChange,
+  type QueryInput,
+} from "@mdbase-dev/connect";
+import { cacheFixtureDescription } from "../src/test/sdk-description-fixture";
 import {
   mdbaseFixture,
   taskRecord,
@@ -26,8 +31,10 @@ it("benchmarks large collections", async () => {
     cpu: cpus()[0]?.model,
     rounds,
     revision: process.env.PERF_REVISION ?? "working-tree",
-    connectVersion: "0.1.0-beta.96",
-    taskModelVersion: "0.3.0-rc.11",
+    connectVersion: JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    ).dependencies["@mdbase-dev/connect"],
+    taskModelVersion: "0.3.0-rc.15",
     bodyBytesPerRecord: 2048,
     environment:
       "synthetic serialized authority; no network or provider query-engine timing",
@@ -69,6 +76,7 @@ it("benchmarks large collections", async () => {
         changeCursor: cursor,
       }),
     );
+    cacheFixtureDescription(fixture);
     Object.assign(fixture.connect, {
       changes: async ({ after = 0, limit = 1000 } = {}) => {
         const batch = events
@@ -88,8 +96,8 @@ it("benchmarks large collections", async () => {
     });
     fixture.queryPages.mockImplementation((input?: QueryInput) =>
       (async function* () {
-        // Changed-path queries use exact equality disjunctions, not a fake index
-        // shared with the client. CPU spent selecting rows is not a real engine benchmark.
+        // Support both historical equality disjunctions and SDK path lists.
+        // CPU spent selecting rows is not a real query-engine benchmark.
         const paths = new Set(
           [
             ...(input?.where ?? "").matchAll(
@@ -97,6 +105,9 @@ it("benchmarks large collections", async () => {
             ),
           ].map((match) => JSON.parse(match[1])),
         );
+        const pathList = /file\.path in (\[[^\n]*\])/.exec(input?.where ?? "");
+        if (pathList)
+          for (const path of JSON.parse(pathList[1])) paths.add(path);
         const tokens = [
           ...(input?.where ?? "").matchAll(
             /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/g,
@@ -275,12 +286,14 @@ it("benchmarks large collections", async () => {
         revision: `changed-${++cursor}`,
         body: `Changed ${cursor}. ` + old.body.slice(20),
       });
-      events.push({
-        cursor,
-        type: "mdbase.record.modified",
-        occurredAt: "2026-09-19T00:00:00Z",
-        payload: { path: old.path, types: ["task"] },
-      });
+      events.push(
+        normalizeCollectionChange({
+          cursor,
+          type: "mdbase.record.modified",
+          occurred_at: "2026-09-19T00:00:00Z",
+          payload: { path: old.path, types: ["task"] },
+        }),
+      );
       const result = await repository.refresh();
       expect(result.changed).toBe(1);
     });
