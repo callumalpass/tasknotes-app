@@ -41,6 +41,14 @@ it.each(["retry", "recovery review"])(
     };
     expect(await capture.submit(options)).toBeNull();
     vi.setSystemTime(new Date("2026-10-02T12:00:02Z"));
+    expect(capture.getSnapshot().error).toMatchObject({
+      code: "outcome-unknown",
+      retryable: false,
+    });
+    capture.editText("Must not become a new create");
+    capture.editFields({ status: "done" }, options.configuration);
+    expect(capture.getSnapshot().text).toBe("One capture");
+    expect(capture.discard()).toBe(false);
     if (recovery === "recovery review")
       await recoverPendingChanges(
         fixture.connect.pendingMutations(),
@@ -59,6 +67,63 @@ it.each(["retry", "recovery review"])(
     expect(fixture.records.size).toBe(2);
   },
 );
+
+it("does not adopt an unrelated pending write's receipt as a capture intent", async () => {
+  const fixture = mdbaseFixture([taskRecord("existing", "Existing", "r1")]);
+  const repository = new MdbaseTaskRepository(fixture.connect);
+  await repository.initialize();
+  fixture.update.mockImplementationOnce(async () => {
+    fixture.stagePendingMutation("fixture-request", async () =>
+      connectFailure(unknownOutcome().problem),
+    );
+    throw unknownOutcome();
+  });
+  await expect(
+    repository.update("existing", { title: "Unconfirmed update" }),
+  ).rejects.toMatchObject({ code: "operation_outcome_unknown" });
+  const capture = new CaptureSession();
+  capture.editText("New capture");
+  const options = {
+    configuration: defaultTaskCollectionConfiguration(),
+    defaults: {},
+    create: repository.create.bind(repository),
+  };
+  expect(await capture.submit(options)).toBeNull();
+  expect(capture.getSnapshot().error?.code).toBe("outcome-unknown");
+  expect(capture.canRecover).toBe(false);
+  expect(await capture.submit(options)).toBeNull();
+  expect(fixture.create).not.toHaveBeenCalled();
+});
+
+it("never turns a missing create receipt into a fresh create", async () => {
+  const fixture = mdbaseFixture([]);
+  const repository = new MdbaseTaskRepository(fixture.connect);
+  await repository.initialize();
+  const persist = fixture.create.getMockImplementation()!;
+  fixture.create.mockImplementationOnce(async (input) => {
+    await persist(input);
+    fixture.stagePendingMutation("fixture-request", async () =>
+      connectFailure(unknownOutcome().problem),
+    );
+    throw unknownOutcome();
+  });
+  const capture = new CaptureSession();
+  capture.editText("Only once");
+  const options = {
+    configuration: defaultTaskCollectionConfiguration(),
+    defaults: {},
+    create: repository.create.bind(repository),
+  };
+  await capture.submit(options);
+  vi.spyOn(fixture.connect, "pendingMutation").mockReturnValue(null);
+  vi.spyOn(fixture.connect, "pendingMutations").mockReturnValue([]);
+  expect(await capture.submit(options)).toBeNull();
+  expect(await capture.submit(options)).toBeNull();
+  expect(capture.getSnapshot().error?.code).toBe("outcome-unknown");
+  expect(capture.getSnapshot().text).toBe("Only once");
+  expect(fixture.create).toHaveBeenCalledOnce();
+  expect(fixture.records.size).toBe(1);
+});
 
 it.each(["evicted document", "removed summary", "new repository"])(
   "recovers exact deletion receipts with a %s without reading the deleted file",

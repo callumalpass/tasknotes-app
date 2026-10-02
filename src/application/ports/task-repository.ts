@@ -52,6 +52,8 @@ import type { CollectionFileStore } from "./collection-file-store";
 /** Retain this object for one submission, including uncertain-outcome retries. */
 export interface TaskCreateIntent {
   readonly id: string;
+  /** The adapter pins only this intent's uncertain request; recovery never replays it. */
+  authorityRequestId?: string;
 }
 
 /**

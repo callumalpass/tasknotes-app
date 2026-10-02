@@ -1,4 +1,4 @@
-import { toOperationalError, type OperationalError } from "./operational-error";
+import { toOperationalError, OperationalError } from "./operational-error";
 import {
   parseTaskCapture,
   taskCapturePreview,
@@ -44,6 +44,7 @@ export class CaptureSession {
   private submission: {
     intent: TaskCreateIntent;
     input: CreateTaskInput;
+    outcomeUnknown?: boolean;
   } | null = null;
   private readonly listeners = new Set<() => void>();
   private pending: Promise<Task | null> | null = null;
@@ -56,7 +57,8 @@ export class CaptureSession {
   };
 
   editText(text: string) {
-    if (this.state.status === "submitting") return;
+    if (this.state.status === "submitting" || this.submission?.outcomeUnknown)
+      return;
     if (text !== this.state.text) this.submission = null;
     this.parseGeneration++;
     if (!text.trim()) this.fields = {};
@@ -73,7 +75,8 @@ export class CaptureSession {
     patch: Partial<CreateTaskInput>,
     configuration: TaskCollectionConfiguration,
   ) {
-    if (this.state.status === "submitting") return;
+    if (this.state.status === "submitting" || this.submission?.outcomeUnknown)
+      return;
     this.submission = null;
     this.fields = { ...this.fields, ...patch };
     const input = {
@@ -111,7 +114,8 @@ export class CaptureSession {
   }
 
   discard() {
-    if (this.state.status === "submitting") return false;
+    if (this.state.status === "submitting" || this.submission?.outcomeUnknown)
+      return false;
     this.parseGeneration++;
     this.submission = null;
     this.fields = {};
@@ -135,8 +139,13 @@ export class CaptureSession {
     refresh?(task: Task): Promise<CaptureFollowUp | void>;
   }): Promise<Task | null> {
     if (this.pending) return this.pending;
-    // An unconfirmed write is recovered by its exact request, never submitted anew.
-    if (this.state.error?.code === "outcome-unknown")
+    // An unconfirmed write can only hand off its retained exact intent. Without
+    // a receipt identity, preserve #183's guard against an ordinary retry.
+    if (
+      (this.submission?.outcomeUnknown ||
+        this.state.error?.code === "outcome-unknown") &&
+      !this.canRecover
+    )
       return Promise.resolve(null);
     const text = this.state.text.trim();
     if (!text) return Promise.resolve(null);
@@ -166,10 +175,27 @@ export class CaptureSession {
           this.submission.intent,
         );
       } catch (reason) {
+        let error = toOperationalError(reason, "create-task");
+        if (this.submission && error.code === "outcome-unknown") {
+          this.submission.outcomeUnknown = true;
+          // The repository pins its own request on this intent. An error can
+          // also describe an older, unrelated pending mutation; never adopt
+          // that request as this capture's create receipt.
+        } else if (this.submission?.outcomeUnknown) {
+          // An expired/missing receipt is not evidence that the earlier create
+          // was rejected. Keep the draft in recovery rather than inviting Add.
+          error = new OperationalError(
+            "outcome-unknown",
+            "create-task",
+            false,
+            error.detail,
+            { cause: error },
+          );
+        }
         this.publish({
           status: "editing",
           pendingTitle: "",
-          error: toOperationalError(reason, "create-task"),
+          error,
         });
         return null;
       }
@@ -211,6 +237,13 @@ export class CaptureSession {
       this.pending = null;
     });
     return this.pending;
+  }
+
+  get canRecover() {
+    return Boolean(
+      this.submission?.outcomeUnknown &&
+      this.submission.intent.authorityRequestId,
+    );
   }
 
   canCloseAccepted(version: number) {

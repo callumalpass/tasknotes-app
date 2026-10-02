@@ -6,6 +6,7 @@ import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { ViewQuerySession } from "../application/view-query-session";
 import { deferred, mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
+import { AutoArchiveActivity } from "../application/auto-archive-activity";
 
 it("reopens through Try again and initializes command services after a describe failure", async () => {
   const fixture = mdbaseFixture([
@@ -78,6 +79,62 @@ it("retries command-journal initialization rather than announcing partial readin
   await act(async () => {
     await context.undoTaskDeletion();
   });
+});
+
+it("keeps accepted effects when an interrupted journal startup finishes after the replacement", async () => {
+  const repository = new MdbaseTaskRepository(mdbaseFixture([]).connect);
+  const journal = new MemoryMutationJournal();
+  const started = deferred<void>();
+  const release = deferred<void>();
+  vi.spyOn(journal, "list").mockImplementationOnce(async () => {
+    started.resolve();
+    await release.promise;
+    return [];
+  });
+  let context!: ReturnType<typeof useRepository>;
+  function Probe() {
+    const value = useRepository();
+    useEffect(() => {
+      context = value;
+    }, [value]);
+    return <p>{value.status}</p>;
+  }
+  render(
+    <RepositoryProvider repository={repository} mutationJournal={journal}>
+      <Probe />
+    </RepositoryProvider>,
+  );
+  await act(async () => {
+    await started.promise;
+  });
+  const visibility = vi.spyOn(document, "visibilityState", "get");
+  try {
+    visibility.mockReturnValue("hidden");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    visibility.mockReturnValue("visible");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await screen.findByText("ready");
+    await act(async () => {
+      release.resolve();
+    });
+    vi.spyOn(AutoArchiveActivity.prototype, "observe").mockRejectedValue(
+      new Error("Secondary failed"),
+    );
+    await act(async () => {
+      const task = await context.createTask({ title: "After reopening" });
+      expect(task.operationWarnings).toEqual([
+        expect.stringContaining("Secondary failed"),
+      ]);
+    });
+    expect(context.status).toBe("ready");
+  } finally {
+    visibility.mockRestore();
+    release.resolve();
+  }
 });
 
 it("reopens after backgrounding during describe and ignores the old opening failure", async () => {
