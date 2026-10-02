@@ -169,6 +169,21 @@ describe("capture session lifetime", () => {
     });
     expect(session.canCloseAccepted(session.getSnapshot().version)).toBe(false);
   });
+  it("does not certify the previous title when fields change during reparse", async () => {
+    const session = new CaptureSession();
+    session.editText("Old title");
+    await session.parse(configuration, {});
+    session.editText("New title");
+    session.editFields({ priority: "high" }, configuration);
+    expect(session.getSnapshot().parsedText).toBe("Old title");
+    const create = vi.fn(async () => created);
+    await session.submit({ configuration, defaults: {}, create });
+    expect(create).toHaveBeenCalledWith({
+      title: "New title",
+      priority: "high",
+    });
+  });
+
   it("rejects stale parser responses", async () => {
     const parse = deferred<Awaited<ReturnType<typeof parseTaskCapture>>>();
     vi.mocked(parseTaskCapture).mockReturnValueOnce(parse.promise);

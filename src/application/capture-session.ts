@@ -85,7 +85,7 @@ export class CaptureSession {
     };
     this.publish({
       result: { input, preview: taskCapturePreview(input, configuration) },
-      parsedText: this.state.text.trim(),
+      // Field edits do not change the provenance of the underlying parse.
       version: this.state.version + 1,
     });
   }
