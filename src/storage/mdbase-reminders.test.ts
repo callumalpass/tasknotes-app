@@ -3,8 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import { MdbaseTaskRepository } from "./mdbase-repository";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { deferred, mdbaseFixture } from "../test/mdbase-fixture";
-import type { TaskSummary } from "../domain/task";
-import { reconcileTaskNotifications } from "../native/notifications";
+import type { Task, TaskSummary } from "../domain/task";
+import { AcceptedTaskEffects } from "../application/accepted-task-effects";
+import {
+  reconcileTaskNotifications,
+  removeTaskNotifications,
+  syncTaskNotifications,
+  taskUpdateAffectsNotifications,
+} from "../native/notifications";
 
 const reminderTask = {
   id: "only-a",
@@ -48,6 +54,33 @@ describe("repository-owned reminder reconciliation", () => {
       },
       { timeoutMs: 45_000, signal: expect.any(AbortSignal) },
     );
+  });
+
+  it("keeps accepted command reminders background-only with one repository worker", async () => {
+    const f = fixture();
+    const candidates = deferred<TaskSummary[]>();
+    f.list.mockReturnValueOnce(candidates.promise);
+    const reconcile = vi.spyOn(f.repository, "reconcileReminders");
+    const effects = new AcceptedTaskEffects({
+      invalidate: vi.fn(),
+      observe: () => undefined,
+      forget: () => undefined,
+      notify: (task) => syncTaskNotifications(f.repository, task, "connect"),
+      removeNotifications: (id) =>
+        removeTaskNotifications(f.repository, id, "connect"),
+      affectsNotifications: taskUpdateAffectsNotifications,
+    });
+    expect(await effects.task(reminderTask as Task)).toBe(reminderTask);
+    expect(reconcile).toHaveBeenCalledOnce();
+    expect(f.timers).not.toHaveBeenCalled();
+    candidates.resolve([reminderTask]);
+    await reconcile.mock.results[0]!.value;
+    expect(f.timers).toHaveBeenCalledOnce();
+    await effects.deleted(reminderTask.id);
+    await reconcile.mock.results[1]!.value;
+    expect(reconcile).toHaveBeenCalledTimes(2);
+    expect(f.timers).toHaveBeenCalledTimes(2);
+    expect(f.timers.mock.calls[1]![0].timers).toEqual([]);
   });
 
   it("cancels delayed A candidates on collection replacement without blocking B", async () => {
