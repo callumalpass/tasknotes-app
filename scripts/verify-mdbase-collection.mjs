@@ -68,6 +68,30 @@ try {
     "the portable schema must require completedDate for completed statuses",
   );
 
+  // Exercise the index selection with the real CEL oracle, not just the
+  // synthetic authority. Preserve absent versus explicitly null literal keys.
+  const summary = await operations.query({
+    types: ["task"],
+    select: [
+      {
+        name: "tasknotes_summary",
+        expr: '["title", "mobileRevision", "absent.field"].filter(key, key in record).map(key, [key, record[key]])',
+      },
+    ],
+  });
+  assert.equal(summary.valid, true, JSON.stringify(summary.diagnostics));
+  // The JS oracle exposes CEL lists as iterables; native authorities render
+  // these selected values as ordinary JSON arrays.
+  assert.deepEqual(
+    Array.from(summary.result.results[0].values.tasknotes_summary, (pair) =>
+      Array.from(pair),
+    ),
+    [
+      ["title", "Conformance task"],
+      ["mobileRevision", 1],
+    ],
+  );
+
   const completed = await operations.update({
     path: taskPath,
     patch: {

@@ -1,0 +1,13 @@
+{
+  "revision": "wave-b-legacy",
+  "authority": "legacy",
+  "environment": "synthetic serialized authority; one sample, no network or provider query-engine timing",
+  "notes": 205,
+  "images": 150,
+  "bodyBytesPerNote": 2048,
+  "medianMs": 26.8,
+  "requests": 360,
+  "queries": 3,
+  "pointReads": 357,
+  "documentBatches": 0
+}

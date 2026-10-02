@@ -149,6 +149,23 @@ export class TaskNotesTaskModel {
     );
   }
 
+  /** Persisted/effective fields consumed by the summary decoder, including
+   * configured user fields and legacy aliases. Unmapped properties need a
+   * complete document before mutation, not a place in the collection index.
+   */
+  summaryFields(): string[] {
+    return [
+      ...new Set([
+        "id",
+        "mobileRevision",
+        "tags",
+        ...Object.values(this.config.fieldMapping),
+        ...Object.values(READ_ALIASES).flat(),
+        ...this.config.userFields.map((field) => field.key),
+      ]),
+    ];
+  }
+
   readSummary(input: {
     path: string;
     frontmatter: Record<string, unknown>;

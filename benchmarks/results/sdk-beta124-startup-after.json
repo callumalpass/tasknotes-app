@@ -1,0 +1,45 @@
+{
+  "revision": "wave-b",
+  "node": "v22.22.0",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+  "samples": 1,
+  "environment": "Synthetic serialized authority; repository first page, not React paint, network or real query-engine latency. Full index is requested after the first page to measure deferred work separately.",
+  "results": [
+    {
+      "size": 10000,
+      "configuredMs": 3.16,
+      "firstViewMs": 35.33,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105701,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 758.99,
+      "totalWork": {
+        "requests": 13,
+        "rows": 10200,
+        "responseBytes": 3162739,
+        "bodyBytes": 0
+      }
+    },
+    {
+      "size": 50000,
+      "configuredMs": 4.9,
+      "firstViewMs": 24.5,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105701,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 3151.59,
+      "totalWork": {
+        "requests": 53,
+        "rows": 50200,
+        "responseBytes": 15568779,
+        "bodyBytes": 0
+      }
+    }
+  ]
+}

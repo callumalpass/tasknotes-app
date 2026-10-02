@@ -38,6 +38,7 @@ it("benchmarks large collections", async () => {
     bodyBytesPerRecord: 2048,
     environment:
       "synthetic serialized authority; no network or provider query-engine timing",
+    authority: process.env.PERF_AUTHORITY ?? "legacy",
     results: [],
   };
   for (const size of sizes) {
@@ -77,6 +78,21 @@ it("benchmarks large collections", async () => {
       }),
     );
     cacheFixtureDescription(fixture);
+    if (process.env.PERF_AUTHORITY === "qualified") {
+      fixture.authorityCapabilities.add("query-metadata-v1");
+      fixture.authorityCapabilities.add("read-many-documents-v1");
+    }
+    fixture.queryTransfer.serialize = transfer;
+    const readDocuments = fixture.readDocuments.getMockImplementation()!;
+    fixture.readDocuments.mockImplementation(async (input) => {
+      const response = await readDocuments(input);
+      counters.records += response.items.length;
+      counters.bodyBytes += response.items.reduce(
+        (bytes, item) => bytes + Buffer.byteLength(item.record?.body ?? ""),
+        0,
+      );
+      return transfer(response);
+    });
     Object.assign(fixture.connect, {
       changes: async ({ after = 0, limit = 1000 } = {}) => {
         const batch = events
@@ -159,19 +175,17 @@ it("benchmarks large collections", async () => {
                 : {}),
             };
           });
-          yield transfer(
-            connectSuccess({
-              results,
-              meta: {
-                hasMore: offset + batch.length < matching.length,
-                totalCount: matching.length,
-              },
-              page: offset / 1000,
-              offset,
-              loaded: offset + batch.length,
-              complete: offset + batch.length >= matching.length,
-            }),
-          );
+          yield connectSuccess({
+            results,
+            meta: {
+              hasMore: offset + batch.length < matching.length,
+              totalCount: matching.length,
+            },
+            page: offset / 1000,
+            offset,
+            loaded: offset + batch.length,
+            complete: offset + batch.length >= matching.length,
+          });
         }
       })(),
     );
@@ -300,6 +314,23 @@ it("benchmarks large collections", async () => {
     await measure(
       "listAfterMutation",
       () => list({ status: "all", limit: 300 }),
+      1,
+    );
+    await measure(
+      "hydrate300",
+      async () => {
+        expect(
+          await repository.list({ status: "all", limit: 300 }),
+        ).toHaveLength(Math.min(300, size));
+      },
+      1,
+    );
+    await measure(
+      "editHydrated",
+      async () => {
+        const task = (await list({ status: "all", limit: 300 })).at(-1)!;
+        await repository.update(task.id, { title: "Edit hydrated document" });
+      },
       1,
     );
     await measure(
