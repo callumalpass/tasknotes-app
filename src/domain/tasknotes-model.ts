@@ -32,7 +32,7 @@ import {
 } from "@tasknotes/model/time";
 import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
-import { makeTaskPath, normalizeTaskDateTime } from "./task";
+import { makeTaskPath, normalizeTaskDateTime, todayString } from "./task";
 import { expandTaskTemplate } from "./task-template";
 
 import type {
@@ -219,6 +219,11 @@ export class TaskNotesTaskModel {
       dateModified: now,
       archived: false,
     };
+    if (
+      !info.recurrence &&
+      isCompletedStatus(info.status, this.config.statuses)
+    )
+      info.completedDate = context.currentDate ?? todayString(new Date(now));
     this.assertValid(info);
     this.assertCustomFields(info.customProperties);
     const frontmatter = this.writeFrontmatter({}, info, context.id, 1);

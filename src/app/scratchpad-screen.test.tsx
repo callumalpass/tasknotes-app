@@ -124,7 +124,9 @@ describe("ScratchpadScreen", () => {
     await waitFor(() => expect(openTask).toHaveBeenCalledOnce());
   });
 
-  it("toggles a portable draft checkbox and converts it as completed", async () => {
+  it("toggles a portable draft checkbox and converts it as completed in one write", async () => {
+    const create = vi.spyOn(repository, "create");
+    const update = vi.spyOn(repository, "update");
     renderScratchpad();
     const input = await screen.findByRole(
       "textbox",
@@ -162,6 +164,12 @@ describe("ScratchpadScreen", () => {
         }),
       ]),
     );
+    expect(create).toHaveBeenCalledOnce();
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ status: completedStatus }),
+      expect.objectContaining({ id: expect.any(String) }),
+    );
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("converts a draft task back to a note from the outline", async () => {

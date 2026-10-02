@@ -29,6 +29,51 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it.each(["explicit", "default"])(
+    "derives a completion date for %s completed creation",
+    (selection) => {
+      const completedModel =
+        selection === "default"
+          ? new TaskNotesTaskModel({
+              ...model.config,
+              defaults: { ...model.config.defaults, status: "done" },
+            })
+          : model;
+      const task = completedModel.create(
+        {
+          title: "Already done",
+          ...(selection === "explicit" ? { status: "done" } : {}),
+        },
+        {
+          id: "completed-create",
+          now: "2026-10-02T12:00:00Z",
+          currentDate: "2026-10-01",
+        },
+      );
+      expect(task).toMatchObject({
+        completed: true,
+        completedDate: "2026-10-01",
+      });
+      expect(completedModel.read(task).completedDate).toBe("2026-10-01");
+      const inheritedDate = completedModel.create(
+        { title: "Done", status: "done" },
+        { id: "now", now: "2026-10-02T12:00:00Z" },
+      );
+      expect(inheritedDate.completedDate).toBe("2026-10-02");
+    },
+  );
+
+  it("does not assign a series completion date to completed recurring creation", () => {
+    const task = model.create(
+      { title: "Series", status: "done", recurrence: "FREQ=DAILY" },
+      { id: "series", now: "2026-10-02T12:00:00Z" },
+    );
+    expect(task.completedDate).toBeUndefined();
+    expect(task.frontmatter).not.toHaveProperty(
+      model.config.fieldMapping.completedDate,
+    );
+  });
+
   it.each(["reminders", "alerts"])(
     "retains an empty reminder array in the mapped %s field after removal",
     (field) => {
