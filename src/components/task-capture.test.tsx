@@ -12,6 +12,7 @@ import { defaultTaskCollectionConfiguration } from "../domain/task-configuration
 import { TaskCapture } from "./task-capture";
 
 import type { CreateTaskInput, Task } from "../domain/task";
+import type { TaskRepository } from "../application/ports/task-repository";
 
 vi.mock("../domain/task-capture", async (importOriginal) => {
   const actual =
@@ -176,6 +177,37 @@ it("preserves structured unknown acceptance and asks for exact recovery, not ord
   expect(screen.getByRole("alert")).toHaveTextContent("may have been saved");
   expect(screen.getByRole("alert")).not.toHaveTextContent("try again");
   expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+});
+
+it("hands capture recovery to the retained exact intent instead of a fresh create", async () => {
+  const create = vi
+    .fn<TaskRepository["create"]>(async (input) => task(input))
+    .mockImplementationOnce(async (_input, intent) => {
+      intent!.authorityRequestId = "exact-request";
+      throw connectError("operation_outcome_unknown", "Unconfirmed", {
+        operationOutcome: "unknown",
+        details: { request_id: "exact-request" },
+      });
+    });
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+    />,
+  );
+  const input = screen.getByLabelText("New task title");
+  fireEvent.change(input, { target: { value: "Keep this draft" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await screen.findByText("Unconfirmed");
+  expect(input).toHaveAttribute("readonly");
+  fireEvent.click(screen.getByRole("button", { name: "Recover task" }));
+  await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+  expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
+  expect(create.mock.calls[1]).toEqual([
+    expect.objectContaining({ title: "Keep this draft" }),
+    expect.objectContaining({ authorityRequestId: "exact-request" }),
+  ]);
+  await waitFor(() => expect(input).toHaveValue(""));
 });
 
 it("restores the submitted text when a remote create fails", async () => {

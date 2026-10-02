@@ -233,6 +233,7 @@ export function RepositoryProvider({
       setError(null);
       let unsubscribeCommands: (() => void) | undefined;
       let autoArchive: AutoArchiveActivity | undefined;
+      let acceptedEffects: AcceptedTaskEffects | undefined;
       let taskCommands: TaskCommandService | undefined;
       let resolveTaskCommands!: (service: TaskCommandService | null) => void;
       taskCommandsReadyRef.current = new Promise((resolve) => {
@@ -242,7 +243,8 @@ export function RepositoryProvider({
         unsubscribeCommands?.();
         taskCommands?.dispose();
         autoArchive?.dispose();
-        acceptedEffectsRef.current = null;
+        if (acceptedEffectsRef.current === acceptedEffects)
+          acceptedEffectsRef.current = null;
         resolveTaskCommands(null);
       };
       disposeStartup = disposeAttempt;
@@ -269,7 +271,7 @@ export function RepositoryProvider({
           }
           autoArchiveRef.current = autoArchive;
           const archive = autoArchive;
-          const acceptedEffects = new AcceptedTaskEffects({
+          const effects = new AcceptedTaskEffects({
             invalidate: (ids) => invalidation.invalidateTasks(ids),
             observe: (task) => archive.observe(task),
             forget: (id) => archive.forget(id),
@@ -279,7 +281,8 @@ export function RepositoryProvider({
               removeTaskNotifications(repository, id, reminderAuthority),
             affectsNotifications: taskUpdateAffectsNotifications,
           });
-          acceptedEffectsRef.current = acceptedEffects;
+          acceptedEffects = effects;
+          acceptedEffectsRef.current = effects;
           // Reconciliation has its own error reporting and must not gate the view.
           void autoArchive.start().catch(() => undefined);
           if (!current()) return;
@@ -291,9 +294,8 @@ export function RepositoryProvider({
                   discardPendingRequest: async () => discardPendingRecovery(),
                 }
               : {}),
-            onDeleted: (id) => acceptedEffects.deleted(id),
-            onTasksUpdated: (tasks, updates) =>
-              acceptedEffects.updated(tasks, updates),
+            onDeleted: (id) => effects.deleted(id),
+            onTasksUpdated: (tasks, updates) => effects.updated(tasks, updates),
           });
           const commands = taskCommands;
           const publishCommandSnapshot = () => {

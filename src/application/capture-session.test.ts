@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { connectError } from "@mdbase-dev/connect-testing";
 import { CaptureSession, captureSessionFor } from "./capture-session";
+import { OperationalError } from "./operational-error";
+import type { TaskRepository } from "./ports/task-repository";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { parseTaskCapture } from "../domain/task-capture";
 import type { Task } from "../domain/task";
@@ -77,6 +80,53 @@ describe("capture session lifetime", () => {
     session.editText("After edit");
     await session.submit(options);
     expect(create.mock.calls[4]).not.toEqual(create.mock.calls[3]);
+  });
+
+  it("pins unknown acceptance to recovery and retains that guard after a missing receipt", async () => {
+    const session = new CaptureSession();
+    const create = vi
+      .fn<TaskRepository["create"]>(async () => created)
+      .mockImplementationOnce(async (_input, intent) => {
+        intent!.authorityRequestId = "exact-request";
+        throw connectError("operation_outcome_unknown", "Unconfirmed", {
+          operationOutcome: "unknown",
+          details: { request_id: "exact-request" },
+        });
+      })
+      .mockRejectedValueOnce(new Error("Receipt missing"));
+    const options = { configuration, defaults: {}, create };
+    session.editText("First");
+    await session.submit(options);
+    expect(session.canRecover).toBe(true);
+    session.editText("Different");
+    session.editFields({ priority: "high" }, configuration);
+    expect(session.getSnapshot().text).toBe("First");
+    expect(session.discard()).toBe(false);
+    await session.submit(options);
+    expect(session.getSnapshot().error?.code).toBe("outcome-unknown");
+    await session.submit(options);
+    expect(create.mock.calls[0]).toEqual(create.mock.calls[1]);
+    expect(create.mock.calls[1]).toEqual(create.mock.calls[2]);
+    expect(session.canRecover).toBe(false);
+    expect(session.getSnapshot().text).toBe("");
+  });
+
+  it("keeps the unknown-outcome guard when no exact receipt identity is available", async () => {
+    const session = new CaptureSession();
+    const create = vi.fn(async () => {
+      throw new OperationalError(
+        "outcome-unknown",
+        "create-task",
+        false,
+        "Unconfirmed",
+      );
+    });
+    const options = { configuration, defaults: {}, create };
+    session.editText("First");
+    await session.submit(options);
+    expect(session.canRecover).toBe(false);
+    expect(await session.submit(options)).toBeNull();
+    expect(create).toHaveBeenCalledOnce();
   });
 
   it("never lets a delayed refresh clear or close a newer draft", async () => {

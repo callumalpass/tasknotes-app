@@ -293,7 +293,7 @@ export function TaskCapture({
           enterKeyHint="done"
           placeholder={placeholder}
           value={text}
-          readOnly={capturing}
+          readOnly={capturing || error?.code === "outcome-unknown"}
           onChange={(event) =>
             changeText(
               event.target.value,
@@ -315,6 +315,11 @@ export function TaskCapture({
             type="submit"
           >
             {capturing ? "Adding" : "Add"}
+          </button>
+        ) : null}
+        {session.canRecover ? (
+          <button disabled={capturing} type="submit">
+            Recover task
           </button>
         ) : null}
       </div>

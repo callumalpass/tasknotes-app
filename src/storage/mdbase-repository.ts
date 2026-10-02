@@ -42,6 +42,7 @@ import { changedRecordPaths } from "./mdbase-change-plan";
 import {
   mdbaseMutationKey,
   runMdbaseMutation,
+  unknownOutcomeRequestId,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
 import {
@@ -836,12 +837,17 @@ export class MdbaseTaskRepository implements TaskRepository {
                   ),
                 ),
               );
+            } catch (reason) {
+              const requestId = unknownOutcomeRequestId(reason);
+              if (requestId) intent.authorityRequestId = requestId;
+              throw reason;
             } finally {
               this.reservedTaskPaths.delete(task.path);
             }
           },
           {
             key: mdbaseMutationKey("task:create-intent", intent.id),
+            requestId: intent.authorityRequestId,
             request: this.requestOptions(),
             mapRecovered: accept,
           },
