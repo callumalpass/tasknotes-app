@@ -1,5 +1,6 @@
 import type {
   ConnectRequestOptions,
+  ConnectOutcome,
   PendingMutation,
 } from "@mdbase-dev/connect";
 import { connectProblemFromError, requireConnectOutcome } from "./outcome";
@@ -36,6 +37,11 @@ export async function recoverPendingChanges(
   pending: readonly PendingMutation[],
   options: ConnectRequestOptions,
   onProgress: (entry: PendingRecoveryEntry) => void,
+  recover: (
+    handle: PendingMutation,
+    options: ConnectRequestOptions,
+  ) => Promise<ConnectOutcome<unknown>> = (handle, request) =>
+    handle.recover(request),
 ): Promise<void> {
   for (const handle of pending) {
     const entry = pendingRecoveryEntry(handle);
@@ -45,7 +51,7 @@ export async function recoverPendingChanges(
       message: "Checking the exact saved request…",
     });
     try {
-      requireConnectOutcome(await handle.recover(options));
+      requireConnectOutcome(await recover(handle, options));
       // A successful transport can contain a rejected operation result. Do not
       // infer that a mutation applied from the generic SDK outcome alone.
       onProgress({

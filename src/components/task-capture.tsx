@@ -40,6 +40,7 @@ import {
 } from "./tasknotes-controls";
 
 import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
+import type { TaskCreateIntent } from "../application/ports/task-repository";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import { linkDisplayLabel } from "../domain/completion";
 import type {
@@ -65,7 +66,7 @@ export function TaskCapture({
   onAccepted,
 }: {
   configuration: TaskCollectionConfiguration;
-  createTask(input: CreateTaskInput): Promise<Task>;
+  createTask(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   defaults?: Partial<CreateTaskInput>;
   placeholder?: string;

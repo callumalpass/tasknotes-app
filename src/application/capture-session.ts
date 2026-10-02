@@ -7,6 +7,7 @@ import {
 import { mergeTaskCreationDefaults } from "../domain/view-creation";
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskCreateIntent } from "./ports/task-repository";
 
 export interface CaptureFollowUp {
   message?: string;
@@ -40,6 +41,10 @@ export class CaptureSession {
   };
   private fields: Partial<CreateTaskInput> = {};
   private parseGeneration = 0;
+  private submission: {
+    intent: TaskCreateIntent;
+    input: CreateTaskInput;
+  } | null = null;
   private readonly listeners = new Set<() => void>();
   private pending: Promise<Task | null> | null = null;
   readonly getSnapshot = () => this.state;
@@ -52,6 +57,7 @@ export class CaptureSession {
 
   editText(text: string) {
     if (this.state.status === "submitting") return;
+    if (text !== this.state.text) this.submission = null;
     this.parseGeneration++;
     if (!text.trim()) this.fields = {};
     this.publish({
@@ -68,6 +74,7 @@ export class CaptureSession {
     configuration: TaskCollectionConfiguration,
   ) {
     if (this.state.status === "submitting") return;
+    this.submission = null;
     this.fields = { ...this.fields, ...patch };
     const input = {
       ...(this.state.result?.input ?? { title: this.state.text.trim() }),
@@ -106,6 +113,7 @@ export class CaptureSession {
   discard() {
     if (this.state.status === "submitting") return false;
     this.parseGeneration++;
+    this.submission = null;
     this.fields = {};
     this.publish({
       text: "",
@@ -122,7 +130,7 @@ export class CaptureSession {
   submit(options: {
     configuration: TaskCollectionConfiguration;
     defaults: Partial<CreateTaskInput>;
-    create(input: CreateTaskInput): Promise<Task>;
+    create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
     onAccepted?(task: Task, version: number): void;
     refresh?(task: Task): Promise<CaptureFollowUp | void>;
   }): Promise<Task | null> {
@@ -149,7 +157,14 @@ export class CaptureSession {
         if (!result.input.title.trim())
           throw new Error("Add a title as well as task details.");
         this.publish({ pendingTitle: result.input.title.trim() });
-        created = await options.create(result.input);
+        this.submission ??= {
+          intent: { id: crypto.randomUUID() },
+          input: result.input,
+        };
+        created = await options.create(
+          this.submission.input,
+          this.submission.intent,
+        );
       } catch (reason) {
         this.publish({
           status: "editing",
@@ -158,6 +173,7 @@ export class CaptureSession {
         });
         return null;
       }
+      this.submission = null;
       this.fields = {};
       const version = this.state.version + 1;
       this.publish({

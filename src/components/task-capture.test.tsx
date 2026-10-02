@@ -54,6 +54,7 @@ it("applies view defaults and keeps a created task recoverable when the view exc
         status: "waiting",
         projects: ["mdbase"],
       }),
+      expect.objectContaining({ id: expect.any(String) }),
     ),
   );
   expect(
@@ -277,6 +278,7 @@ it("creates a task with a structured dependency from capture details", async () 
           },
         ],
       }),
+      expect.objectContaining({ id: expect.any(String) }),
     ),
   );
 });
