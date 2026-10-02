@@ -7,6 +7,16 @@ import {
 } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
+import {
+  previousScratchpadTypeDocument,
+  scratchpadTypeDocument,
+} from "./scratchpad-type.mjs";
+import {
+  previousScratchImageTypeDocument,
+  scratchImageTypeDocument,
+} from "./scratch-image-type.mjs";
+import { SCRATCHPAD_TYPE_DOCUMENT } from "../src/domain/scratchpad.ts";
+import { parse } from "yaml";
 
 describe("TaskNotes mdbase manifest", () => {
   it("declares content-free runtime criteria without requiring Firebase", async () => {
@@ -118,7 +128,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
-        version: "1.1.0",
+        version: "1.2.0",
         resources: [
           {
             kind: "type",
@@ -133,7 +143,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[2]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch-image",
-        version: "1.1.0",
+        version: "1.2.0",
         resources: [
           {
             kind: "type",
@@ -150,6 +160,61 @@ describe("TaskNotes mdbase manifest", () => {
         expect(resource.mode).toMatch(/^(managed|seed)$/);
       }
     }
+  });
+
+  it("keeps starter Scratchpad types portable across explicit type keys", async () => {
+    // A collection chooses where explicit types are recorded
+    // (settings.explicit_type_keys), for example mdbase_type. A starter that
+    // declares or requires type would reject records created by naming the
+    // type in such a collection.
+    const manifest = await buildTaskNotesManifest({
+      appUrl: "https://tasks.example",
+      webOnly: true,
+    });
+    const cases = [
+      {
+        id: "tasknotes.scratch",
+        name: "tasknotes-scratch",
+        document: scratchpadTypeDocument,
+        previous: previousScratchpadTypeDocument,
+      },
+      {
+        id: "tasknotes.scratch-image",
+        name: "tasknotes-scratch-image",
+        document: scratchImageTypeDocument,
+        previous: previousScratchImageTypeDocument,
+      },
+    ];
+    for (const { id, name, document, previous } of cases) {
+      const pack = manifest.provisions.type_packs.find(
+        (candidate) => candidate.manifest.id === id,
+      );
+      const [resource] = pack.manifest.resources;
+      expect(pack.resources).toEqual([{ source: resource.source, document }]);
+      expect(resource.digest).toBe(
+        `sha256:${createHash("sha256").update(document).digest("hex")}`,
+      );
+      const type = parse(document.split("---\n")[1]);
+      expect(type).toMatchObject({ name, version: 2 });
+      // Hand-written records that carry type are still recognised.
+      expect(type.match).toEqual({ where: { type: { eq: name } } });
+      const schema = type.schema.value;
+      expect(schema.additionalProperties).toBe(true);
+      for (const key of ["type", "types"]) {
+        expect(schema.properties).not.toHaveProperty(key);
+        expect(schema.required).not.toContain(key);
+      }
+      // Unedited version-1 seeds upgrade; edited copies stay the collection's.
+      expect(resource.upgrade_from).toEqual({
+        digest: `sha256:${createHash("sha256").update(previous).digest("hex")}`,
+        document: previous,
+      });
+      expect(parse(previous.split("---\n")[1])).toMatchObject({
+        name,
+        version: 1,
+      });
+    }
+    expect(SCRATCHPAD_TYPE_DOCUMENT).toBe(scratchpadTypeDocument);
   });
 
   it("adds only the public Firebase project ID when configured", async () => {

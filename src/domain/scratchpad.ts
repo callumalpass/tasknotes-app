@@ -363,7 +363,7 @@ export function scratchpadDocumentPath(now: Date, id: string): string {
 export const SCRATCHPAD_TYPE_DOCUMENT = `---
 kind: mdbase.type
 name: tasknotes-scratch
-version: 1
+version: 2
 description: A working outline managed by TaskNotes.
 match:
   where:
@@ -375,10 +375,8 @@ schema:
     $schema: https://json-schema.org/draft/2020-12/schema
     type: object
     additionalProperties: true
-    required: [type, id, state, dateCreated, dateModified]
+    required: [id, state, dateCreated, dateModified]
     properties:
-      type:
-        const: tasknotes-scratch
       id:
         type: string
         minLength: 1
