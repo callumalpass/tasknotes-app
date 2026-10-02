@@ -7,6 +7,17 @@ import {
   updateViewDocument,
 } from "../domain/view-document";
 import { DemoTaskRepository } from "./demo-task-repository";
+import { taskRepositoryContract } from "../test/task-repository-contract";
+
+taskRepositoryContract("demo", async () => {
+  const repository = new DemoTaskRepository(1);
+  for (const task of await repository.list({
+    status: "all",
+    archived: "include",
+  }))
+    await repository.delete(task.id);
+  return { repository };
+});
 
 describe("DemoTaskRepository", () => {
   it("uses the requested task count and exposes representative saved views", async () => {
@@ -14,7 +25,10 @@ describe("DemoTaskRepository", () => {
 
     await repository.initialize();
 
-    expect(await repository.stats()).toMatchObject({ total: 50 });
+    expect(await repository.stats()).toMatchObject({ total: 47, archived: 3 });
+    expect(
+      await repository.list({ status: "all", archived: "include" }),
+    ).toHaveLength(50);
     expect(
       (await repository.listViews()).flatMap(({ views }) => views),
     ).toEqual(

@@ -23,9 +23,47 @@ import {
 } from "../test/mdbase-fixture";
 import { taskRepositoryContract } from "../test/task-repository-contract";
 
-taskRepositoryContract("direct mdbase", async () => ({
-  repository: new MdbaseTaskRepository(mdbaseFixture([]).connect),
-}));
+taskRepositoryContract("direct mdbase", async () => {
+  const fixture = mdbaseFixture([]);
+  const described = await fixture.describe();
+  described.operations.push("changes");
+  fixture.describe.mockResolvedValue(described);
+  Object.assign(fixture.connect, {
+    changes: vi.fn(async () =>
+      connectSuccess({
+        events: [],
+        cursor: described.changeCursor,
+        hasMore: false,
+        reset: false,
+      }),
+    ),
+  });
+  // Simulate authority pages, not expression evaluation. The shared contract
+  // checks port semantics; real engine conformance is a separate verification.
+  fixture.executeViewPages.mockImplementation(() =>
+    (async function* () {
+      const outcome = await fixture.executeView();
+      const results = outcome.result.results;
+      for (
+        let offset = 0;
+        offset < Math.max(1, results.length);
+        offset += 200
+      ) {
+        const complete = offset + 200 >= results.length;
+        yield connectSuccess({
+          ...outcome.result,
+          results: results.slice(offset, offset + 200),
+          meta: { ...outcome.result.meta, hasMore: !complete },
+          page: offset / 200,
+          offset,
+          loaded: Math.min(offset + 200, results.length),
+          complete,
+        });
+      }
+    })(),
+  );
+  return { repository: new MdbaseTaskRepository(fixture.connect) };
+});
 
 describe("mdbase task repository", () => {
   it("clears the last reminder with an empty array rather than a null patch", async () => {
