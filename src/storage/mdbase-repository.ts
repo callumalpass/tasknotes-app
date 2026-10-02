@@ -8,6 +8,7 @@ import {
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
   MdbaseConnectError,
+  linksTo,
   type CollectionDescription,
   type ConnectOutcome,
   type JsonObject,
@@ -174,6 +175,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private readonly documents = new TaskDocumentCache<CachedTaskDocument>();
   private changeCursor?: number;
   private descriptionSignature?: string;
+  private description?: CollectionDescription;
   private viewCache: TaskViewDocument[] = [];
   private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
   private readonly viewExecutionInFlight = new Map<
@@ -339,22 +341,52 @@ export class MdbaseTaskRepository implements TaskRepository {
     // its last known availability until the authority succeeds or fails.
     try {
       const indexWasReady = this.taskIndexReady;
-      const description = validResult(await this.connect.describe({ signal }));
+      let description = validResult(
+        await this.connect.describe({
+          signal,
+          // A failed/unloaded index must be able to rediscover its decoding schema.
+          fresh: !this.taskIndexReady,
+        }),
+      );
       // Let an existing snapshot settle before changing its decoding models.
       // A failed initial load must not prevent refresh from discovering a new schema.
       await this.taskIndexLoading?.catch(() => undefined);
       signal.throwIfAborted();
-      const configurationChanged = this.configureDescription(description);
+      let configurationChanged = this.configureDescription(description);
       await this.ensureTaskIndex();
       signal.throwIfAborted();
       // Initial metadata loading already supplied a full snapshot. Older
       // authorities without changes must not download it a second time here.
-      const plan =
+      const generation = this.connect.schemaGeneration;
+      let plan =
         !indexWasReady &&
         !configurationChanged &&
         !description.operations.includes("changes")
           ? { paths: new Set<string>(), cursor: undefined, invalidate: false }
           : await this.refreshPlan(description, configurationChanged, signal);
+      // changes() invalidates the SDK description before returning schema/gap
+      // events. Refresh decoding models before consuming their replacement rows.
+      if (
+        this.connect.schemaGeneration !== generation ||
+        (!plan.paths && !configurationChanged)
+      ) {
+        description = validResult(
+          await this.connect.describe({
+            signal,
+            fresh: !plan.paths,
+          }),
+        );
+        signal.throwIfAborted();
+        configurationChanged =
+          this.configureDescription(description) || configurationChanged;
+        if (configurationChanged || !plan.paths)
+          plan = {
+            cursor: description.operations.includes("changes")
+              ? description.changeCursor
+              : undefined,
+            invalidate: true,
+          };
+      }
       signal.throwIfAborted();
       result = await this.reloadCache(plan.paths, signal);
       // Advance only after all pages have been read and committed successfully.
@@ -405,13 +437,12 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async assignedTaskPaths(personPath: string): Promise<Set<string>> {
     const paths = new Set<string>();
     for (const [typeName, model] of this.taskProviders) {
-      const field = JSON.stringify(model.config.fieldMapping.assignees);
       for await (const response of this.connect.queryPages(
         {
           types: [typeName],
-          // record[...] works for any local field name. The field must be a
-          // declared link list, so asFile() uses the collection's link rules.
-          where: `${field} in record && record[${field}].exists(a, a.asFile() != null && a.asFile().file.path == ${JSON.stringify(personPath)})`,
+          where: linksTo(model.config.fieldMapping.assignees, personPath, {
+            multiple: true,
+          }),
         },
         { pageSize: PAGE_SIZE, signal: this.operationController.signal },
       )) {
@@ -1138,12 +1169,6 @@ export class MdbaseTaskRepository implements TaskRepository {
       { path: view.source.path, view: view.id, timezone, render: false },
       { firstPageSize: 200, pageSize: 200, signal },
     );
-    // A generator paused at yield will not notice abort until next(). Release its
-    // authority cursor on suspension even if the person never requests another page.
-    const close = () => {
-      void pages.return(undefined).catch(() => undefined);
-    };
-    signal.addEventListener("abort", close, { once: true });
     try {
       signal.throwIfAborted();
       for await (const outcome of pages) {
@@ -1162,7 +1187,6 @@ export class MdbaseTaskRepository implements TaskRepository {
       if (!signal.aborted) this.noteOperationFailure(reason);
       throw reason;
     } finally {
-      signal.removeEventListener("abort", close);
       await pages.return(undefined).catch(() => undefined);
     }
   }
@@ -1865,46 +1889,56 @@ export class MdbaseTaskRepository implements TaskRepository {
     try {
       let yieldAt = performance.now() + 8;
       let decodedCount = 0;
-      const batches = paths ? chunkPaths([...paths], 100) : [undefined];
-      for (const batch of batches) {
+      const accept = async (records: ReadableMdbaseRecord[]) => {
+        signal.throwIfAborted();
+        result.scanned += records.length;
+        for (const record of records) {
+          if (++decodedCount % 128 === 0 && performance.now() >= yieldAt) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
+            signal.throwIfAborted();
+            yieldAt = performance.now() + 8;
+          }
+          const decoded = this.readSummary(record);
+          if (!decoded) continue;
+          const cached = this.cache.get(decoded.task.id);
+          next.set(
+            decoded.task.id,
+            cached &&
+              cached.model === decoded.model &&
+              sameConnectedTaskMetadata(cached.task, decoded.task)
+              ? cached
+              : decoded,
+          );
+        }
+      };
+      if (paths) {
+        const batch = validResult(
+          await this.connect.readMany([...paths], {
+            types: [...this.taskProviders.keys()],
+            includeBody: false,
+            frontmatterMode: "effective",
+            batchSize: 100,
+            concurrency: 1,
+            signal,
+          }),
+        );
+        for (const error of batch.errors) validResult(error.failure);
+        await accept(
+          batch.results.flatMap((entry) =>
+            entry.status === "found" ? [entry.record] : [],
+          ),
+        );
+      } else {
         for await (const response of this.connect.queryPages(
           {
             timezone: runtimeTimezone(),
             types: [...this.taskProviders.keys()],
             includeBody: false,
             frontmatterMode: "effective",
-            ...(batch
-              ? {
-                  where: batch
-                    .map((path) => `file.path == ${JSON.stringify(path)}`)
-                    .join(" || "),
-                }
-              : {}),
           },
-          { firstPageSize: PAGE_SIZE, pageSize: PAGE_SIZE, signal },
-        )) {
-          signal.throwIfAborted();
-          const page = validResult(response);
-          result.scanned += page.results.length;
-          for (const record of page.results) {
-            if (++decodedCount % 128 === 0 && performance.now() >= yieldAt) {
-              await new Promise<void>((resolve) => setTimeout(resolve, 0));
-              signal.throwIfAborted();
-              yieldAt = performance.now() + 8;
-            }
-            const decoded = this.readSummary(record);
-            if (!decoded) continue;
-            const cached = this.cache.get(decoded.task.id);
-            next.set(
-              decoded.task.id,
-              cached &&
-                cached.model === decoded.model &&
-                sameConnectedTaskMetadata(cached.task, decoded.task)
-                ? cached
-                : decoded,
-            );
-          }
-        }
+          { pageSize: PAGE_SIZE, signal },
+        ))
+          await accept(validResult(response).results);
       }
       signal.throwIfAborted();
       writes.stop();
@@ -2019,6 +2053,9 @@ export class MdbaseTaskRepository implements TaskRepository {
   private configureDescription(description: CollectionDescription): boolean {
     if (this.collectionId && description.collectionId !== this.collectionId)
       throw new Error("The connected mdbase collection changed unexpectedly.");
+    // SDK cache hits share the same read-only object. Compare schema contents
+    // only on a refetch: expiry can refetch without advancing schemaGeneration.
+    if (this.description === description) return false;
     const nextSignature = JSON.stringify([
       description.displayName,
       description.types,
@@ -2026,8 +2063,12 @@ export class MdbaseTaskRepository implements TaskRepository {
       description.configuration,
     ]);
     this.displayName = description.displayName;
-    if (nextSignature === this.descriptionSignature) return false;
+    if (nextSignature === this.descriptionSignature) {
+      this.description = description;
+      return false;
+    }
     const resolved = resolveTaskCollection(description);
+    this.description = description;
     this.descriptionSignature = nextSignature;
     this.changeCursor = undefined;
     this.model = resolved.model;
@@ -2115,42 +2156,40 @@ export class MdbaseTaskRepository implements TaskRepository {
       if (cached) results.set(task.id, cached.task);
       else pending.push(task);
     }
-    for (const paths of chunkPaths(
-      pending.map((task) => task.path),
-      100,
-    )) {
-      const before = new Map(
-        paths.map((path) => [path, this.cache.atPath(path)]),
-      );
-      for await (const outcome of this.connect.queryPages(
-        {
-          timezone: runtimeTimezone(),
-          types: [...this.taskProviders.keys()],
-          where: paths
-            .map((path) => `file.path == ${JSON.stringify(path)}`)
-            .join(" || "),
-          includeBody: true,
-          frontmatterMode: "effective",
-        },
-        { firstPageSize: 100, pageSize: 100, signal },
-      )) {
-        signal.throwIfAborted();
-        for (const record of validResult(outcome).results) {
-          const decoded = this.readRecord(record);
-          if (!decoded) continue;
-          if (this.cache.atPath(record.path) !== before.get(record.path)) {
-            const current = this.documents.get(decoded.task.id);
-            if (!current)
-              throw new Error(
-                "The task changed while its document was loading. Try again.",
-              );
-            results.set(current.task.id, current.task);
-            continue;
-          }
-          this.documents.set(decoded.task.id, decoded);
-          results.set(decoded.task.id, decoded.task);
-        }
+    const paths = pending.map((task) => task.path);
+    const before = new Map(
+      paths.map((path) => [path, this.cache.atPath(path)]),
+    );
+    const hydrated = validResult(
+      await this.connect.readMany(paths, {
+        types: [...this.taskProviders.keys()],
+        includeBody: true,
+        frontmatterMode: "effective",
+        batchSize: 100,
+        concurrency: 1,
+        signal,
+      }),
+    );
+    signal.throwIfAborted();
+    // A successful envelope can contain failed batches. Never treat those as
+    // missing records, or retain a partial hydration after an authority failure.
+    for (const error of hydrated.errors) validResult(error.failure);
+    for (const entry of hydrated.results) {
+      if (entry.status !== "found") continue;
+      const record = entry.record;
+      const decoded = this.readRecord(record);
+      if (!decoded) continue;
+      if (this.cache.atPath(record.path) !== before.get(record.path)) {
+        const current = this.documents.get(decoded.task.id);
+        if (!current)
+          throw new Error(
+            "The task changed while its document was loading. Try again.",
+          );
+        results.set(current.task.id, current.task);
+        continue;
       }
+      this.documents.set(decoded.task.id, decoded);
+      results.set(decoded.task.id, decoded.task);
     }
     return tasks.flatMap((task) => {
       const value = results.get(task.id);
@@ -2536,13 +2575,6 @@ export class MdbaseTaskRepository implements TaskRepository {
       }
     }
   }
-}
-
-function chunkPaths(paths: string[], size: number): string[][] {
-  const batches: string[][] = [];
-  for (let offset = 0; offset < paths.length; offset += size)
-    batches.push(paths.slice(offset, offset + size));
-  return batches;
 }
 
 function validResult<Result>(
