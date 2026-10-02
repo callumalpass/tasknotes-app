@@ -20,6 +20,10 @@ import {
 import { QueryResource } from "../application/query-resource";
 import { TaskCommandService } from "../application/task-commands";
 import {
+  AcceptedTaskEffects,
+  acceptedWriteEffect,
+} from "../application/accepted-task-effects";
+import {
   QueryInvalidationStore,
   type QueryScope,
 } from "../application/query-invalidation";
@@ -55,6 +59,7 @@ import type {
   RefreshResult,
   RepositoryConnectionStatus,
   TaskRepository,
+  TaskCreateIntent,
 } from "../application/ports/task-repository";
 import type { MutationJournal } from "../application/mutation-journal";
 import type { OperationalError } from "../application/operational-error";
@@ -80,7 +85,7 @@ interface RepositoryContextValue {
     outcomeUnknown: boolean;
   } | null;
   deletionError: OperationalError | null;
-  createTask(input: CreateTaskInput): Promise<Task>;
+  createTask(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
   updateTasks(
     updates: readonly { id: string; input: UpdateTaskInput }[],
@@ -153,6 +158,13 @@ export function RepositoryProvider({
   const taskCommandsRef = useRef<TaskCommandService | null>(null);
   const taskCommandsReadyRef =
     useRef<Promise<TaskCommandService | null> | null>(null);
+
+  const acceptedEffectsRef = useRef<AcceptedTaskEffects | null>(null);
+  const acceptTask = useCallback(
+    (task: Task, options?: Parameters<AcceptedTaskEffects["task"]>[1]) =>
+      acceptedEffectsRef.current?.task(task, options) ?? Promise.resolve(task),
+    [],
+  );
 
   const bump = useCallback(() => invalidation.invalidateAll(), [invalidation]);
   const loadConnection = useCallback(async () => {
@@ -230,6 +242,7 @@ export function RepositoryProvider({
         unsubscribeCommands?.();
         taskCommands?.dispose();
         autoArchive?.dispose();
+        acceptedEffectsRef.current = null;
         resolveTaskCommands(null);
       };
       disposeStartup = disposeAttempt;
@@ -255,10 +268,21 @@ export function RepositoryProvider({
             return;
           }
           autoArchiveRef.current = autoArchive;
+          const archive = autoArchive;
+          const acceptedEffects = new AcceptedTaskEffects({
+            invalidate: (ids) => invalidation.invalidateTasks(ids),
+            observe: (task) => archive.observe(task),
+            forget: (id) => archive.forget(id),
+            notify: (task) =>
+              syncTaskNotifications(repository, task, reminderAuthority),
+            removeNotifications: (id) =>
+              removeTaskNotifications(repository, id, reminderAuthority),
+            affectsNotifications: taskUpdateAffectsNotifications,
+          });
+          acceptedEffectsRef.current = acceptedEffects;
           // Reconciliation has its own error reporting and must not gate the view.
           void autoArchive.start().catch(() => undefined);
           if (!current()) return;
-          const archive = autoArchive;
           taskCommands = new TaskCommandService({
             repository,
             journal: mutationJournal,
@@ -267,34 +291,9 @@ export function RepositoryProvider({
                   discardPendingRequest: async () => discardPendingRecovery(),
                 }
               : {}),
-            onDeleted: async (id) => {
-              await archive.forget(id);
-              invalidation.invalidateTasks([id]);
-              if (reminderAuthority === "connect")
-                void removeTaskNotifications(
-                  repository,
-                  id,
-                  reminderAuthority,
-                ).catch(() => undefined);
-            },
-            onTasksUpdated: async (tasks, updates) => {
-              invalidation.invalidateTasks(updates.map(({ id }) => id));
-              for (let index = 0; index < tasks.length; index += 1) {
-                const input = updates[index]!.input;
-                const task = tasks[index]!;
-                if (taskUpdateAffectsAutoArchive(input))
-                  await archive.observe(task);
-                if (
-                  reminderAuthority === "connect" &&
-                  taskUpdateAffectsNotifications(input)
-                )
-                  void syncTaskNotifications(
-                    repository,
-                    task,
-                    reminderAuthority,
-                  ).catch(() => undefined);
-              }
-            },
+            onDeleted: (id) => acceptedEffects.deleted(id),
+            onTasksUpdated: (tasks, updates) =>
+              acceptedEffects.updated(tasks, updates),
           });
           const commands = taskCommands;
           const publishCommandSnapshot = () => {
@@ -367,6 +366,7 @@ export function RepositoryProvider({
       taskCommandsRef.current = null;
       taskCommandsReadyRef.current = null;
       autoArchiveRef.current = null;
+      acceptedEffectsRef.current = null;
     };
   }, [
     bump,
@@ -440,48 +440,15 @@ export function RepositoryProvider({
     };
   }, [refresh, status]);
 
-  // Authority acceptance is final: a secondary scheduling failure must not invite a duplicate write.
-  const observeAcceptedTask = useCallback(async (task: Task): Promise<Task> => {
-    try {
-      await autoArchiveRef.current?.observe(task);
-      return task;
-    } catch (reason) {
-      return {
-        ...task,
-        operationWarnings: [
-          ...(task.operationWarnings ?? []),
-          `Task saved, but automatic archiving could not be scheduled: ${reason instanceof Error ? reason.message : String(reason)}`,
-        ],
-      };
-    }
-  }, []);
   const createTask = useCallback(
-    async (input: CreateTaskInput) => {
-      const task = await observeAcceptedTask(await repository.create(input));
-      if (reminderAuthority === "connect")
-        void syncTaskNotifications(repository, task, reminderAuthority).catch(
-          () => undefined,
-        );
-      return task;
-    },
-    [observeAcceptedTask, reminderAuthority, repository],
+    async (input: CreateTaskInput, intent?: TaskCreateIntent) =>
+      acceptTask(await repository.create(input, intent)),
+    [acceptTask, repository],
   );
   const updateTask = useCallback(
-    async (id: string, input: UpdateTaskInput) => {
-      const task = await repository.update(id, input);
-      invalidation.invalidateTasks([id]);
-      if (taskUpdateAffectsAutoArchive(input))
-        await autoArchiveRef.current?.observe(task);
-      if (
-        reminderAuthority === "connect" &&
-        taskUpdateAffectsNotifications(input)
-      )
-        void syncTaskNotifications(repository, task, reminderAuthority).catch(
-          () => undefined,
-        );
-      return task;
-    },
-    [invalidation, reminderAuthority, repository],
+    async (id: string, input: UpdateTaskInput) =>
+      acceptTask(await repository.update(id, input), { input }),
+    [acceptTask, repository],
   );
   const updateTasks = useCallback(
     async (updates: readonly { id: string; input: UpdateTaskInput }[]) => {
@@ -500,18 +467,11 @@ export function RepositoryProvider({
             completed === undefined
               ? await repository.toggle(id, occurrenceDate)
               : await repository.toggle(id, occurrenceDate, completed);
-          const task = await observeAcceptedTask(saved);
-          if (reminderAuthority === "connect")
-            void syncTaskNotifications(
-              repository,
-              task,
-              reminderAuthority,
-            ).catch(() => undefined);
-          return task;
+          return acceptTask(saved);
         },
         completed === undefined ? "toggle" : String(completed),
       ),
-    [mutations, observeAcceptedTask, reminderAuthority, repository],
+    [mutations, acceptTask, repository],
   );
   const setTaskCompletion = useCallback(
     (command: CompletionCommand) =>
@@ -519,16 +479,9 @@ export function RepositoryProvider({
     [toggleTask],
   );
   const skipTask = useCallback(
-    async (id: string, occurrenceDate: string) => {
-      const task = await repository.skip(id, occurrenceDate);
-      await autoArchiveRef.current?.observe(task);
-      if (reminderAuthority === "connect")
-        void syncTaskNotifications(repository, task, reminderAuthority).catch(
-          () => undefined,
-        );
-      return task;
-    },
-    [reminderAuthority, repository],
+    async (id: string, occurrenceDate: string) =>
+      acceptTask(await repository.skip(id, occurrenceDate)),
+    [acceptTask, repository],
   );
   const materializeOccurrence = useCallback(
     async (parentId: string, occurrenceDate: string) => {
@@ -536,60 +489,47 @@ export function RepositoryProvider({
         parentId,
         occurrenceDate,
       );
-      await autoArchiveRef.current?.observe(result.task);
-      if (reminderAuthority === "connect")
-        void syncTaskNotifications(
-          repository,
-          result.task,
-          reminderAuthority,
-        ).catch(() => undefined);
-      return result;
+      return { ...result, task: await acceptTask(result.task) };
     },
-    [reminderAuthority, repository],
+    [acceptTask, repository],
   );
   const startTimeTracking = useCallback(
     async (id: string, description?: string) => {
-      const task = await repository.startTimeTracking(id, description);
-      await autoArchiveRef.current?.observe(task);
-      return task;
+      return acceptTask(await repository.startTimeTracking(id, description), {
+        notify: false,
+      });
     },
-    [repository],
+    [acceptTask, repository],
   );
   const stopTimeTracking = useCallback(
     async (id: string) => {
-      const task = await repository.stopTimeTracking(id);
-      await autoArchiveRef.current?.observe(task);
-      return task;
+      return acceptTask(await repository.stopTimeTracking(id), {
+        notify: false,
+      });
     },
-    [repository],
+    [acceptTask, repository],
   );
   const replaceTimeEntries = useCallback(
     async (id: string, entries: TaskTimeEntry[]) => {
-      const task = await repository.replaceTimeEntries(id, entries);
-      await autoArchiveRef.current?.observe(task);
-      return task;
+      return acceptTask(await repository.replaceTimeEntries(id, entries), {
+        notify: false,
+      });
     },
-    [repository],
+    [acceptTask, repository],
   );
   const removeTimeEntry = useCallback(
     async (id: string, index: number) => {
-      const task = await repository.removeTimeEntry(id, index);
-      await autoArchiveRef.current?.observe(task);
-      return task;
+      return acceptTask(await repository.removeTimeEntry(id, index), {
+        notify: false,
+      });
     },
-    [repository],
+    [acceptTask, repository],
   );
   const setTaskArchived = useCallback(
     async (id: string, archived: boolean) => {
-      const task = await repository.setArchived(id, archived);
-      await autoArchiveRef.current?.observe(task);
-      if (reminderAuthority === "connect")
-        void syncTaskNotifications(repository, task, reminderAuthority).catch(
-          () => undefined,
-        );
-      return task;
+      return acceptTask(await repository.setArchived(id, archived));
     },
-    [reminderAuthority, repository],
+    [acceptTask, repository],
   );
   const deleteTask = useCallback(async (id: string) => {
     const commands = await taskCommandsReadyRef.current;
@@ -607,7 +547,10 @@ export function RepositoryProvider({
       const next = await repository.updateTaskModelSettings(patch);
       configurationRef.current = next;
       setConfiguration(next);
-      await autoArchiveRef.current?.reconcile();
+      await acceptedWriteEffect(
+        "automatic archiving could not be reconciled",
+        () => autoArchiveRef.current?.reconcile(),
+      );
       return next;
     },
     [repository],
@@ -922,12 +865,6 @@ export function useRepositoryRevision(scope: QueryScope): number {
 
 function asError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
-}
-
-function taskUpdateAffectsAutoArchive(input: UpdateTaskInput): boolean {
-  return ["archived", "completed", "status"].some((property) =>
-    Object.hasOwn(input, property),
-  );
 }
 
 function emptyTaskRelationships(): TaskRelationships {
