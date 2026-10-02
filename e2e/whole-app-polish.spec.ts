@@ -303,9 +303,11 @@ test("Archive capture acknowledges the accepted task without moving the view", a
   page,
 }) => {
   await page.goto(view("archive"));
-  await expect(
-    page.getByRole("heading", { name: "No archived tasks here." }),
-  ).toBeVisible();
+  // The honest demo shows its seeded archived tasks. Capture must leave this
+  // filtered result unchanged, not rely on a demo-only empty archive.
+  const archivedTitles = page.locator(".task-row-title");
+  await expect(archivedTitles).toHaveCount(3);
+  const before = await archivedTitles.allTextContents();
   await page.getByRole("button", { name: "New task", exact: true }).click();
   const capture = page.getByRole("dialog", { name: "New task" });
   await capture
@@ -313,9 +315,7 @@ test("Archive capture acknowledges the accepted task without moving the view", a
     .fill("Archive capture confirmation");
   await capture.getByRole("button", { name: "Add", exact: true }).click();
   await expect(capture).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "No archived tasks here." }),
-  ).toBeVisible();
+  await expect(archivedTitles).toHaveText(before);
   const notice = page.locator(".task-added-notice");
   await expect(notice).toContainText("Archive capture confirmation");
   await notice.getByRole("button", { name: "Open", exact: true }).click();
