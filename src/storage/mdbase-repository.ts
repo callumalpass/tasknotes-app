@@ -163,6 +163,8 @@ interface ReadableMdbaseRecord {
 }
 
 const PAGE_SIZE = 1_000;
+// Match the selected connection coordinator's foreground read slots.
+const RECORD_READ_CONCURRENCY = 4;
 
 /**
  * A live TaskNotes view over the ordinary mdbase collection operation API.
@@ -1781,13 +1783,7 @@ export class MdbaseTaskRepository implements TaskRepository {
         this.requestOptions(),
       ),
     );
-    return Promise.all(
-      result.results.map(async (record) =>
-        validResult(
-          await this.connect.read({ path: record.path }, this.requestOptions()),
-        ),
-      ),
-    );
+    return this.readRecordsBounded(result.results);
   }
 
   private async ensureActiveScratchpad() {
@@ -1876,28 +1872,48 @@ export class MdbaseTaskRepository implements TaskRepository {
     return scratchpadFromRecord(created);
   }
 
+  /** beta.123 query/readMany results have no authority revision token. These
+   * point reads supply revisions for subsequent edits/removal; query bodies
+   * are deliberately omitted. Revision-bearing batches can replace this path.
+   */
+  private async readRecordsBounded(
+    candidates: readonly { path: string }[],
+  ): Promise<RecordDocument<JsonObject>[]> {
+    const options = this.requestOptions();
+    const records: RecordDocument<JsonObject>[] = [];
+    for (
+      let offset = 0;
+      offset < candidates.length;
+      offset += RECORD_READ_CONCURRENCY
+    ) {
+      options.signal.throwIfAborted();
+      records.push(
+        ...(await Promise.all(
+          candidates
+            .slice(offset, offset + RECORD_READ_CONCURRENCY)
+            .map(async ({ path }) =>
+              validResult(await this.connect.read({ path }, options)),
+            ),
+        )),
+      );
+    }
+    options.signal.throwIfAborted();
+    return records;
+  }
+
   private async scratchpadRecords(): Promise<RecordDocument<JsonObject>[]> {
     const records: RecordDocument<JsonObject>[] = [];
     for await (const outcome of this.connect.queryPages(
       {
         timezone: runtimeTimezone(),
         types: [SCRATCHPAD_TYPE],
-        includeBody: true,
+        includeBody: false,
         frontmatterMode: "persisted",
       },
       this.requestOptions(),
     )) {
       records.push(
-        ...(await Promise.all(
-          validResult(outcome).results.map(async (record) =>
-            validResult(
-              await this.connect.read(
-                { path: record.path },
-                this.requestOptions(),
-              ),
-            ),
-          ),
-        )),
+        ...(await this.readRecordsBounded(validResult(outcome).results)),
       );
     }
     return records;
