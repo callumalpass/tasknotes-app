@@ -3,7 +3,7 @@ import { expect, test } from "./local-test";
 test("Scratchpad review owns focus and isolates the background", async ({
   page,
 }) => {
-  await page.goto("/scratchpad?demo=1");
+  await page.goto("scratchpad/?demo=1");
   const input = page.getByRole("textbox", {
     name: "Draft task: empty",
     exact: true,
