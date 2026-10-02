@@ -25,6 +25,7 @@ import {
   removePendingRecoveryCommands,
 } from "../storage/application-journal";
 import { createConnectTaskRepository } from "../storage/connect-repository";
+import { recoverMdbaseMutationHandle } from "../storage/mdbase-mutation-coordinator";
 import { tasknotesMarkUrl } from "./assets";
 import { OpenedCollection } from "./opened-collection";
 
@@ -171,6 +172,7 @@ export default function CloudCollection({
   if (opened && (genericPendingMutations.length > 0 || activeRecovery))
     return (
       <PendingMutationReview
+        connection={opened}
         count={
           activeRecovery
             ? recovery.entries.length
@@ -272,6 +274,7 @@ function ReadyCloudCollection({
 }
 
 function PendingMutationReview({
+  connection,
   count,
   entries,
   recovering,
@@ -281,6 +284,7 @@ function PendingMutationReview({
   onProgress,
   onRecoveryFinished,
 }: {
+  connection: MdbaseConnection;
   count: number;
   entries: PendingRecoveryEntry[];
   recovering: boolean;
@@ -309,6 +313,8 @@ function PendingMutationReview({
           timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationMs,
         },
         onProgress,
+        (handle, request) =>
+          recoverMdbaseMutationHandle(connection, handle, request),
       );
       setConfirming(null);
     } catch (reason) {

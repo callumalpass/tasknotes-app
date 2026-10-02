@@ -18,6 +18,7 @@ import { TaskCapture } from "./task-capture";
 import { useOverlay } from "./overlays/use-overlay";
 
 import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
+import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 export function GlobalTaskCapture({
   open,
@@ -35,7 +36,7 @@ export function GlobalTaskCapture({
   onAdded?(task: TaskSummary): void;
   defaults?: Partial<CreateTaskInput>;
   session?: CaptureSession;
-  createTask?(input: CreateTaskInput): Promise<Task>;
+  createTask?(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   onCreated?(
     task: TaskSummary,
   ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;

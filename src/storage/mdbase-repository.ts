@@ -131,6 +131,7 @@ import type {
   RefreshResult,
   RepositoryConnectionStatus,
   RepositoryChange,
+  TaskCreateIntent,
   TaskRepository,
 } from "../application/ports/task-repository";
 
@@ -187,6 +188,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private emitBatchDepth = 0;
   private emitPending = false;
   private readonly reservedTaskPaths = new Set<string>();
+  private readonly acceptedCreates = new WeakMap<TaskCreateIntent, Task>();
   private readonly revisionReads = new Map<
     string,
     Promise<CurrentTaskDocument>
@@ -785,52 +787,71 @@ export class MdbaseTaskRepository implements TaskRepository {
     });
   }
 
-  create(input: CreateTaskInput): Promise<Task> {
-    const id = crypto.randomUUID();
-    return this.serializeWrite(id, async () => {
-      await this.ensureTaskIndex();
-      const created = await this.model.createWithTemplate(
-        input,
-        { id, now: new Date().toISOString() },
-        async (path) => {
-          const template = validResult(
-            await this.connect.read({ path }, this.requestOptions()),
-          );
-          return serializeMarkdownDocument(template.frontmatter, template.body);
-        },
-      );
-      const task = this.reserveAvailableTaskPath(created);
-      const operationInput = {
-        path: task.path,
-        type: this.taskTypeName,
-        frontmatter: asJson(task.frontmatter),
-        body: task.body,
+  create(
+    input: CreateTaskInput,
+    intent: TaskCreateIntent = { id: crypto.randomUUID() },
+  ): Promise<Task> {
+    return this.serializeWrite(intent.id, async () => {
+      // Recovery may have completed during a refresh/recovery review. Reconnect
+      // that receipt to its capture instead of issuing another create.
+      const accepted = this.acceptedCreates.get(intent);
+      if (accepted) return accepted;
+      const accept = (result: RecordDocument<JsonObject>) => {
+        const task = this.storeResult(result);
+        this.acceptedCreates.set(intent, task);
+        return task;
       };
       try {
         const saved = await runMdbaseMutation(
           this.connect,
-          async () =>
-            this.storeResult(
-              validResult(
-                await this.connect.create(
-                  operationInput,
-                  this.requestOptions(),
+          async () => {
+            // Generated record identity belongs to this operation, not to each
+            // retry. The coordinator recovers the intent before preparing it.
+            await this.ensureTaskIndex();
+            const created = await this.model.createWithTemplate(
+              input,
+              { id: crypto.randomUUID(), now: new Date().toISOString() },
+              async (path) => {
+                const template = validResult(
+                  await this.connect.read({ path }, this.requestOptions()),
+                );
+                return serializeMarkdownDocument(
+                  template.frontmatter,
+                  template.body,
+                );
+              },
+            );
+            const task = this.reserveAvailableTaskPath(created);
+            try {
+              return accept(
+                validResult(
+                  await this.connect.create(
+                    {
+                      path: task.path,
+                      type: this.taskTypeName,
+                      frontmatter: asJson(task.frontmatter),
+                      body: task.body,
+                    },
+                    this.requestOptions(),
+                  ),
                 ),
-              ),
-            ),
+              );
+            } finally {
+              this.reservedTaskPaths.delete(task.path);
+            }
+          },
           {
-            key: mdbaseMutationKey("record:create", operationInput),
+            key: mdbaseMutationKey("task:create-intent", intent.id),
             request: this.requestOptions(),
-            mapRecovered: (result: RecordDocument<JsonObject>) =>
-              this.storeResult(result),
+            mapRecovered: accept,
           },
         );
-        return this.withRollingWarnings(saved);
+        const task = await this.withRollingWarnings(saved);
+        this.acceptedCreates.set(intent, task);
+        return task;
       } catch (reason) {
         this.noteOperationFailure(reason);
         throw reason;
-      } finally {
-        this.reservedTaskPaths.delete(task.path);
       }
     });
   }
@@ -1019,21 +1040,39 @@ export class MdbaseTaskRepository implements TaskRepository {
     options: { authorityRequestId?: string } = {},
   ): Promise<void> {
     return this.serializeWrite(id, async () => {
-      await this.ensureKnownTask(id);
-      const existing = this.cache.get(id);
-      if (!existing) return;
-      const current = await this.requireCurrent(id);
-      const operationInput = {
-        path: current.task.path,
-        ifRevision: current.revision,
-        check_backlinks: true,
+      const applyDeleted = () => {
+        this.cache.delete(id);
+        this.documents.delete(id);
+        this.setConnected();
+        this.emit();
       };
       try {
-        const applyDeleted = () => {
-          this.cache.delete(id);
-          this.documents.delete(id);
-          this.setConnected();
-          this.emit();
+        // Exact receipts remain authoritative even when the deleted document
+        // (or its summary) is gone. Never use file absence as acceptance.
+        if (options.authorityRequestId) {
+          await runMdbaseMutation(
+            this.connect,
+            async () => {
+              throw new Error(
+                "Exact deletion recovery must not replay a delete.",
+              );
+            },
+            {
+              key: mdbaseMutationKey("task:delete-recovery", id),
+              requestId: options.authorityRequestId,
+              request: this.requestOptions(),
+              mapRecovered: applyDeleted,
+            },
+          );
+          return;
+        }
+        await this.ensureKnownTask(id);
+        if (!this.cache.get(id)) return;
+        const current = await this.requireCurrent(id);
+        const operationInput = {
+          path: current.task.path,
+          ifRevision: current.revision,
+          check_backlinks: true,
         };
         await runMdbaseMutation(
           this.connect,
@@ -1047,9 +1086,6 @@ export class MdbaseTaskRepository implements TaskRepository {
             key: mdbaseMutationKey("record:delete", operationInput),
             request: this.requestOptions(),
             mapRecovered: applyDeleted,
-            ...(options.authorityRequestId
-              ? { requestId: options.authorityRequestId }
-              : {}),
           },
         );
       } catch (reason) {

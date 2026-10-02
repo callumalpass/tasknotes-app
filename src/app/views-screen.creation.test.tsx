@@ -109,6 +109,7 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
         status: "open",
         projects: ["mdbase"],
       }),
+      expect.objectContaining({ id: expect.any(String) }),
     ),
   );
   expect(await screen.findByText("Ship saved-view capture")).toBeVisible();

@@ -49,6 +49,11 @@ import type {
 } from "../../domain/view";
 import type { CollectionFileStore } from "./collection-file-store";
 
+/** Retain this object for one submission, including uncertain-outcome retries. */
+export interface TaskCreateIntent {
+  readonly id: string;
+}
+
 /**
  * Application-facing collection boundary. Storage and provider adapters
  * implement this port; React and domain services never depend on an adapter.
@@ -89,7 +94,7 @@ export interface TaskRepository {
   get(id: string): Promise<Task | null>;
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
-  create(input: CreateTaskInput): Promise<Task>;
+  create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
   updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],

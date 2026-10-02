@@ -58,6 +58,27 @@ describe("capture session lifetime", () => {
     expect(session.getSnapshot().result?.input.due).toBe("2026-09-10");
     expect(session.discard()).toBe(true);
   });
+  it("retains submission identity and input on retry, but not for an edited or accepted draft", async () => {
+    const session = new CaptureSession();
+    const create = vi
+      .fn(async () => created)
+      .mockRejectedValueOnce(new Error("Unknown outcome"));
+    const options = { configuration, defaults: {}, create };
+    session.editText("First");
+    await session.submit(options);
+    await session.submit(options);
+    expect(create.mock.calls[0]).toEqual(create.mock.calls[1]);
+    session.editText("First");
+    await session.submit(options);
+    expect(create.mock.calls[2]).not.toEqual(create.mock.calls[0]);
+    create.mockRejectedValueOnce(new Error("Rejected"));
+    session.editText("Before edit");
+    await session.submit(options);
+    session.editText("After edit");
+    await session.submit(options);
+    expect(create.mock.calls[4]).not.toEqual(create.mock.calls[3]);
+  });
+
   it("never lets a delayed refresh clear or close a newer draft", async () => {
     const session = new CaptureSession();
     const refresh = deferred<void>();

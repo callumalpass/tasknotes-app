@@ -820,22 +820,28 @@ export function ViewsScreen({
       });
   }
 
-  async function createTaskForView(input: CreateTaskInput) {
+  async function createTaskForView(
+    input: CreateTaskInput,
+    intent?: import("../application/ports/task-repository").TaskCreateIntent,
+  ) {
     if (selected && manualOrder && presentedExecution?.hasMore) {
       const complete = await repository.executeView(selected);
       if (complete.stale || complete.hasMore || complete.hasSkippedRecords)
         throw new Error(
           "The complete manual order could not be loaded. Your draft is kept; try again.",
         );
-      return createTask({
-        ...input,
-        sortOrder: appendManualOrderRank(
-          complete.rows.map((row) => row.task),
-          manualOrder.direction,
-        ),
-      });
+      return createTask(
+        {
+          ...input,
+          sortOrder: appendManualOrderRank(
+            complete.rows.map((row) => row.task),
+            manualOrder.direction,
+          ),
+        },
+        intent,
+      );
     }
-    return createTask(input);
+    return createTask(input, intent);
   }
 
   async function refreshAfterCreate(task: TaskSummary) {
