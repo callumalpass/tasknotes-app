@@ -168,14 +168,18 @@ it("benchmarks large collections", async () => {
     fixture.read.mockImplementation(async (input) => {
       const response = await read(input);
       counters.records++;
-      counters.bodyBytes += Buffer.byteLength(response.result.body);
+      counters.bodyBytes += Buffer.byteLength(
+        "body" in response.result ? response.result.body : "",
+      );
       return transfer(response);
     });
     const update = fixture.update.getMockImplementation()!;
     fixture.update.mockImplementation(async (input) => {
       const response = await update(input);
       counters.records++;
-      counters.bodyBytes += Buffer.byteLength(response.result.body);
+      counters.bodyBytes += Buffer.byteLength(
+        "body" in response.result ? response.result.body : "",
+      );
       return transfer(response);
     });
     type Repository = InstanceType<typeof MdbaseTaskRepository>;

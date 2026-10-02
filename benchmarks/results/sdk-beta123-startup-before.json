@@ -1,0 +1,45 @@
+{
+  "revision": "4c12fac4221338f181e8d7f24571bc733a898634",
+  "node": "v22.22.0",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+  "samples": 1,
+  "environment": "Synthetic serialized authority; repository first page, not React paint, network or real query-engine latency. Full index is requested after the first page to measure deferred work separately.",
+  "results": [
+    {
+      "size": 10000,
+      "configuredMs": 2.47,
+      "firstViewMs": 30.05,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105701,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 542.4,
+      "totalWork": {
+        "requests": 13,
+        "rows": 10200,
+        "responseBytes": 3931429,
+        "bodyBytes": 0
+      }
+    },
+    {
+      "size": 50000,
+      "configuredMs": 1.09,
+      "firstViewMs": 14.05,
+      "firstViewWork": {
+        "requests": 3,
+        "rows": 200,
+        "responseBytes": 105701,
+        "bodyBytes": 0
+      },
+      "remainingIndexMs": 2631.34,
+      "totalWork": {
+        "requests": 53,
+        "rows": 50200,
+        "responseBytes": 19456669,
+        "bodyBytes": 0
+      }
+    }
+  ]
+}
