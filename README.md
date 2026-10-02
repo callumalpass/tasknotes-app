@@ -117,6 +117,7 @@ To update the native projects, run `pnpm cap:sync`. Android builds require Java 
 
 Contributor documentation:
 
+- [Web deployment and production gate](docs/deployment.md)
 - [Architecture and data invariants](docs/architecture.md)
 - [Contract and conformance claims](docs/conformance.md)
 - [Notification behaviour and setup](docs/notifications.md)
