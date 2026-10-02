@@ -1,9 +1,26 @@
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
+import {
+  buildTaskNotesMdbaseResources,
+  patchTaskNotesMdbaseTypeSettings,
+} from "@tasknotes/model/mdbase";
 import { parse } from "yaml";
 
 import { completeTaskValues } from "../storage/completions";
 import { appendViewPage } from "../application/view-query-session";
+import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
+import {
+  findOccurrenceParent,
+  occurrenceRecordId,
+} from "../domain/task-occurrence";
+import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
+import {
+  compareTasks,
+  selectTaskSummaries,
+  taskSearchMetadata,
+  taskSearchTokens,
+  taskStats,
+} from "../domain/task-query";
 import { taskRelationships } from "../domain/task-relationships";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import {
@@ -19,7 +36,9 @@ import type {
   CollectionInfo,
   RefreshResult,
   RepositoryConnectionStatus,
+  RepositoryChange,
   TaskRepository,
+  TaskCreateIntent,
 } from "../application/ports/task-repository";
 import type {
   CreateTaskInput,
@@ -75,8 +94,14 @@ const MAX_DEMO_TASKS = 5_000;
 
 export class DemoTaskRepository implements TaskRepository {
   readonly files = new DemoFileStore();
-  private model = new TaskNotesTaskModel();
-  private readonly listeners = new Set<() => void>();
+  private modelDefinition: Record<string, unknown> =
+    buildTaskNotesMdbaseResources({ profiles: ["core-lite"] }).type;
+  private model = new TaskNotesTaskModel(
+    resolveTaskCollectionConfiguration(this.modelDefinition),
+  );
+  private readonly listeners = new Set<(change?: RepositoryChange) => void>();
+  private operationController = new AbortController();
+  private readonly acceptedCreates = new WeakMap<TaskCreateIntent, Task>();
   private readonly tasks = new Map<string, Task>();
   private readonly viewExecutions = new Map<string, TaskViewExecution>();
   private readonly sources = new Map<string, TaskViewSourceDocument>();
@@ -111,7 +136,7 @@ export class DemoTaskRepository implements TaskRepository {
         "views:\n  - name: Work board\n    type: tasknotesKanban\n    groupBy:\n      property: status\n    sort:\n      - property: sortOrder\n        direction: DESC\n",
     });
     for (const task of demoTasks(this.model, count))
-      this.tasks.set(task.id, task);
+      this.tasks.set(task.id, this.model.read(task));
 
     const now = new Date().toISOString();
     const current: ScratchpadDocument = {
@@ -167,53 +192,68 @@ export class DemoTaskRepository implements TaskRepository {
       this.scratchpads.set(historical.id, historical);
   }
 
-  async initialize(): Promise<void> {}
+  async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
+    this.operationController.signal.throwIfAborted();
+    if (!options.deferTaskIndex) await this.maintainRollingOccurrences();
+  }
 
   async refresh(): Promise<RefreshResult> {
-    return { scanned: this.tasks.size, changed: 0, removed: 0, elapsedMs: 2 };
+    this.operationController.signal.throwIfAborted();
+    await this.maintainRollingOccurrences();
+    this.emit({ kind: "status" });
+    return { scanned: this.tasks.size, changed: 0, removed: 0, elapsedMs: 0 };
+  }
+
+  suspend(): void {
+    this.operationController.abort(
+      new DOMException("TaskNotes moved to the background.", "AbortError"),
+    );
+  }
+
+  resume(): void {
+    if (!this.operationController.signal.aborted) return;
+    this.operationController = new AbortController();
+    this.emit({ kind: "lifecycle" });
+  }
+
+  dispose(): void {
+    this.operationController.abort(
+      new DOMException("The TaskNotes collection changed.", "AbortError"),
+    );
   }
 
   async listSummaries(query: Omit<TaskListQuery, "search"> = {}) {
     return (await this.list(query)).map(summarizeTask);
   }
 
-  async search(query: TaskListQuery) {
-    const tokens = [
-      ...new Set(
-        (query.search ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean),
-      ),
-    ];
-    return (await this.list(query)).map((task) => ({
+  async search(query: TaskListQuery, options: { signal?: AbortSignal } = {}) {
+    const tokens = taskSearchTokens(query.search);
+    return (await this.list(query, options)).map((task) => ({
       task: summarizeTask(task),
-      bodyMatches: tokens.filter((token) =>
-        task.body.toLowerCase().includes(token),
-      ),
+      bodyMatches: tokens.some(
+        (token) => !taskSearchMetadata(task).includes(token),
+      )
+        ? tokens.filter((token) => task.body.toLowerCase().includes(token))
+        : [],
     }));
   }
 
-  async list(query: TaskListQuery = {}): Promise<Task[]> {
+  async list(
+    query: TaskListQuery = {},
+    options: { signal?: AbortSignal } = {},
+  ): Promise<Task[]> {
+    this.operationController.signal.throwIfAborted();
+    options.signal?.throwIfAborted();
     if (query.assignedTo !== undefined)
       throw new Error("The demo collection has no people or assignments.");
-    const search = query.search?.trim().toLocaleLowerCase();
-    const matches = [...this.tasks.values()].filter((task) => {
-      if (query.status === "open" && task.completed) return false;
-      if (query.status === "completed" && !task.completed) return false;
-      if (query.archived === "exclude" && task.archived) return false;
-      if (query.archived === "only" && !task.archived) return false;
-      if (
-        search &&
-        ![
-          task.title,
-          task.body,
-          ...task.tags,
-          ...task.contexts,
-          ...task.projects,
-        ].some((value) => value.toLocaleLowerCase().includes(search))
-      )
-        return false;
-      return true;
-    });
-    return clone(query.limit ? matches.slice(0, query.limit) : matches);
+    const matches = selectTaskSummaries(
+      [...this.tasks.values()].sort(compareTasks),
+      query,
+      (task, token) =>
+        taskSearchMetadata(task).includes(token) ||
+        this.requireTask(task.id).body.toLowerCase().includes(token),
+    );
+    return clone(matches.map((task) => this.requireTask(task.id)));
   }
 
   async getSummary(id: string) {
@@ -256,14 +296,21 @@ export class DemoTaskRepository implements TaskRepository {
       }));
   }
 
-  async create(input: CreateTaskInput): Promise<Task> {
-    const task = this.model.create(input, {
-      id: crypto.randomUUID(),
-      now: new Date().toISOString(),
-    });
-    this.tasks.set(task.id, task);
-    this.changed();
-    return clone(task);
+  async create(
+    input: CreateTaskInput,
+    intent?: TaskCreateIntent,
+  ): Promise<Task> {
+    const accepted = intent && this.acceptedCreates.get(intent);
+    if (accepted) return clone(accepted);
+    const task = this.persist(
+      this.model.create(input, {
+        id: crypto.randomUUID(),
+        now: new Date().toISOString(),
+      }),
+    );
+    const saved = await this.withRollingWarnings(task);
+    if (intent) this.acceptedCreates.set(intent, saved);
+    return saved;
   }
 
   async update(id: string, input: UpdateTaskInput): Promise<Task> {
@@ -271,23 +318,24 @@ export class DemoTaskRepository implements TaskRepository {
     const task = this.model.update(current, input, {
       now: new Date().toISOString(),
     });
-    this.tasks.set(id, task);
-    this.changed();
-    return clone(task);
+    return this.withRollingWarnings(this.persist(task));
   }
 
   async updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]> {
+    if (!updates.length) return [];
     const result = updates.map(({ id, input }) => {
-      const task = this.model.update(this.requireTask(id), input, {
-        now: new Date().toISOString(),
-      });
+      const task = this.model.read(
+        this.model.update(this.requireTask(id), input, {
+          now: new Date().toISOString(),
+        }),
+      );
       this.tasks.set(id, task);
       return task;
     });
     this.changed();
-    return clone(result);
+    return Promise.all(result.map((task) => this.withRollingWarnings(task)));
   }
 
   async toggle(
@@ -296,6 +344,8 @@ export class DemoTaskRepository implements TaskRepository {
     completed?: boolean,
   ): Promise<Task> {
     const current = this.requireTask(id);
+    if (current.recurrenceParent && current.occurrenceDate)
+      return this.transitionMaterialized(current, "toggle", completed);
     if (
       completed !== undefined &&
       taskCompletion(current, occurrenceDate) === completed
@@ -305,19 +355,53 @@ export class DemoTaskRepository implements TaskRepository {
       now: new Date().toISOString(),
       currentDate: occurrenceDate,
     });
-    this.tasks.set(id, task);
-    this.changed();
-    return clone(task);
+    return this.persist(task);
   }
 
   async skip(id: string, occurrenceDate: string): Promise<Task> {
-    const task = this.model.skip(this.requireTask(id), {
-      now: new Date().toISOString(),
-      currentDate: occurrenceDate,
-    });
-    this.tasks.set(id, task);
+    const current = this.requireTask(id);
+    if (current.recurrenceParent && current.occurrenceDate)
+      return this.transitionMaterialized(current, "skip");
+    return this.persist(
+      this.model.skip(current, {
+        now: new Date().toISOString(),
+        currentDate: occurrenceDate,
+      }),
+    );
+  }
+
+  private async transitionMaterialized(
+    current: Task,
+    action: "toggle" | "skip",
+    completed?: boolean,
+  ): Promise<Task> {
+    const parent = findOccurrenceParent([...this.tasks.values()], current);
+    if (!parent)
+      throw new Error(
+        "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+      );
+    if (
+      action === "toggle" &&
+      completed !== undefined &&
+      current.completed === completed
+    )
+      return clone(current);
+    const transition = this.model.transitionMaterializedOccurrence(
+      current,
+      this.requireTask(parent.id),
+      action,
+      { now: new Date().toISOString() },
+    );
+    const occurrence = this.model.read(transition.occurrence);
+    this.tasks.set(occurrence.id, occurrence);
+    this.tasks.set(parent.id, this.model.read(transition.parent));
     this.changed();
-    return clone(task);
+    if (transition.materializeNextDate)
+      await this.materializeOccurrence(
+        parent.id,
+        transition.materializeNextDate,
+      );
+    return clone(occurrence);
   }
 
   async materializeOccurrence(
@@ -329,13 +413,16 @@ export class DemoTaskRepository implements TaskRepository {
       parent,
       occurrenceDate,
       [...this.tasks.values()].filter(
-        (task) => task.recurrenceParent === parentId,
+        (task) => findOccurrenceParent([parent], task)?.id === parentId,
       ),
-      { id: crypto.randomUUID(), now: new Date().toISOString() },
+      {
+        id: await occurrenceRecordId(parentId, occurrenceDate),
+        now: new Date().toISOString(),
+      },
     );
-    if (result.created) this.tasks.set(result.task.id, result.task);
-    this.changed();
-    return clone(result);
+    if (!result.created) return clone(result);
+    const task = this.persist(result.task);
+    return clone({ ...result, task });
   }
 
   async startTimeTracking(id: string, description?: string): Promise<Task> {
@@ -375,22 +462,21 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   async setArchived(id: string, archived: boolean): Promise<Task> {
-    return this.update(id, { archived });
+    const task = this.model.update(
+      this.requireTask(id),
+      { archived },
+      { now: new Date().toISOString() },
+    );
+    const destination = this.model.archiveDestination(task, archived);
+    return this.persist(destination ? { ...task, path: destination } : task);
   }
 
   async delete(id: string): Promise<void> {
-    this.tasks.delete(id);
-    this.changed();
+    if (this.tasks.delete(id)) this.changed();
   }
 
   async stats(): Promise<TaskStats> {
-    const tasks = [...this.tasks.values()];
-    return {
-      total: tasks.length,
-      open: tasks.filter((task) => !task.completed && !task.archived).length,
-      completed: tasks.filter((task) => task.completed).length,
-      archived: tasks.filter((task) => task.archived).length,
-    };
+    return taskStats(this.tasks.values());
   }
 
   async cachedViews(): Promise<TaskViewDocument[]> {
@@ -409,6 +495,10 @@ export class DemoTaskRepository implements TaskRepository {
     view: TaskView,
     options: { signal?: AbortSignal } = {},
   ): AsyncIterable<TaskViewExecution> {
+    const signal = options.signal
+      ? AbortSignal.any([this.operationController.signal, options.signal])
+      : this.operationController.signal;
+    signal.throwIfAborted();
     const execution = await this.executeView(view);
     let cumulative: TaskViewExecution | null = null;
     for (
@@ -416,7 +506,7 @@ export class DemoTaskRepository implements TaskRepository {
       offset < Math.max(1, execution.rows.length);
       offset += 200
     ) {
-      options.signal?.throwIfAborted();
+      signal.throwIfAborted();
       const page = {
         ...execution,
         rows: execution.rows.slice(offset, offset + 200),
@@ -429,6 +519,7 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
+    this.operationController.signal.throwIfAborted();
     const draft = this.viewDraft(view);
     const tasks = this.tasksForView(view, draft);
     const rows = tasks.map((task) => ({
@@ -714,41 +805,13 @@ export class DemoTaskRepository implements TaskRepository {
   async updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration> {
-    const current = this.model.configuration();
-    const configuration: TaskCollectionConfiguration = {
-      ...current,
-      defaults: {
-        ...current.defaults,
-        status: patch.defaultStatus ?? current.defaults.status,
-        priority: patch.defaultPriority ?? current.defaults.priority,
-      },
-      recurrence: {
-        ...current.recurrence,
-        ...(patch.recurrence ?? {}),
-      },
-      occurrences: {
-        ...current.occurrences,
-        ...(patch.occurrences ?? {}),
-      },
-      timeTracking: {
-        ...current.timeTracking,
-        ...(patch.timeTracking ?? {}),
-      },
-      archive: {
-        ...current.archive,
-        ...(patch.archive ?? {}),
-      },
-      templating: {
-        ...current.templating,
-        ...(patch.templating ?? {}),
-      },
-      linkWriteFormat: patch.links?.writeFormat ?? current.linkWriteFormat,
-      statuses: current.statuses.map((status) => ({
-        ...status,
-        ...(patch.statusAutomation?.[status.value] ?? {}),
-      })),
-    };
-    this.model = new TaskNotesTaskModel(configuration);
+    this.modelDefinition = patchTaskNotesMdbaseTypeSettings(
+      this.modelDefinition,
+      patch,
+    );
+    this.model = new TaskNotesTaskModel(
+      resolveTaskCollectionConfiguration(this.modelDefinition),
+    );
     for (const [id, task] of this.tasks)
       this.tasks.set(id, this.model.read(task));
     this.changed();
@@ -769,7 +832,7 @@ export class DemoTaskRepository implements TaskRepository {
     return { state: "connected", lastReachedAt: new Date().toISOString() };
   }
 
-  subscribe(listener: () => void): () => void {
+  subscribe(listener: (change?: RepositoryChange) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -780,10 +843,32 @@ export class DemoTaskRepository implements TaskRepository {
     return task;
   }
 
-  private persist(task: Task): Task {
-    this.tasks.set(task.id, task);
+  private async maintainRollingOccurrences(): Promise<void> {
+    for (const task of [...this.tasks.values()]) {
+      if (task.recurrence && task.occurrenceMaterialization === "rolling")
+        await this.withRollingWarnings(task);
+    }
+  }
+
+  private async withRollingWarnings(task: Task): Promise<Task> {
+    if (!task.recurrence || task.occurrenceMaterialization !== "rolling")
+      return clone(task);
+    const warnings = await materializeRollingWindow(task, (parentId, date) =>
+      this.materializeOccurrence(parentId, date),
+    );
+    if (!warnings.length) return clone(task);
+    const retained = { ...task, operationWarnings: warnings };
+    this.tasks.set(task.id, retained);
     this.changed();
-    return clone(task);
+    return clone(retained);
+  }
+
+  private persist(task: Task): Task {
+    // Match the real adapter's accepted-record decoding, including membership tags.
+    const accepted = this.model.read(task);
+    this.tasks.set(accepted.id, accepted);
+    this.changed();
+    return clone(accepted);
   }
 
   private storeSource(
@@ -887,7 +972,11 @@ export class DemoTaskRepository implements TaskRepository {
 
   private changed(): void {
     this.viewExecutions.clear();
-    for (const listener of this.listeners) listener();
+    this.emit({ kind: "data" });
+  }
+
+  private emit(change: RepositoryChange): void {
+    for (const listener of this.listeners) listener(change);
   }
 }
 
