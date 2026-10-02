@@ -3,6 +3,11 @@ import {
   type CollectionDescription,
   type CollectionQueryProblemCode,
   type QueryPage,
+  type QueryInput,
+  type QueryMetadataInput,
+  type QueryMetadataPage,
+  type QueryPagesOptions,
+  type QueryMetadataRecord,
   type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
@@ -171,8 +176,53 @@ export function mdbaseFixture(
       throw new Error("Unexpected raw fixture operation");
     },
   });
-  queryClient.queryPages = (input, options) =>
-    queryPages(input as Record<string, unknown>, options);
+  function sdkQueryPages(
+    input: QueryMetadataInput,
+    options?: QueryPagesOptions<JsonObject, QueryMetadataRecord>,
+  ): AsyncGenerator<
+    ConnectOutcome<QueryMetadataPage, CollectionQueryProblemCode>
+  >;
+  function sdkQueryPages(
+    input?: QueryInput,
+    options?: QueryPagesOptions<JsonObject>,
+  ): AsyncGenerator<
+    ConnectOutcome<QueryPage<JsonObject>, CollectionQueryProblemCode>
+  >;
+  async function* sdkQueryPages(
+    input?: QueryInput | QueryMetadataInput,
+    options?:
+      | QueryPagesOptions<JsonObject>
+      | QueryPagesOptions<JsonObject, QueryMetadataRecord>,
+  ): AsyncGenerator<
+    ConnectOutcome<
+      QueryPage<JsonObject> | QueryMetadataPage,
+      CollectionQueryProblemCode
+    >
+  > {
+    for await (const outcome of queryPages(
+      input as Record<string, unknown>,
+      options,
+    )) {
+      if (!outcome.ok || input?.output !== "metadata") {
+        yield outcome;
+        continue;
+      }
+      yield connectSuccess(
+        {
+          ...outcome.value,
+          output: "metadata" as const,
+          results: outcome.value.results.map((record) => ({
+            path: record.path,
+            types: record.types,
+            revision: records.get(record.path)!.revision,
+            values: record.values ?? {},
+          })),
+        },
+        outcome.diagnostics,
+      );
+    }
+  }
+  queryClient.queryPages = sdkQueryPages;
   const readMany = vi.fn(queryClient.readMany.bind(queryClient));
   // Saved views are records; their documents are kept so reads with
   // includeDocument and whole-document updates round-trip.
