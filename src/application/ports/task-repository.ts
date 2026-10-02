@@ -79,6 +79,8 @@ export interface TaskRepository {
   /** Workspace mode opens configuration without waiting for collection-wide indexes. */
   initialize(options?: { deferTaskIndex?: boolean }): Promise<void>;
   refresh(): Promise<RefreshResult>;
+  /** Reconcile durable timer membership using this repository's authority and lifecycle. */
+  reconcileReminders?(): Promise<void>;
   /** Lightweight metadata; no body is fetched or represented as empty. */
   listSummaries(query?: Omit<TaskListQuery, "search">): Promise<TaskSummary[]>;
   /** Metadata plus observed match evidence; never downloads bodies. */
