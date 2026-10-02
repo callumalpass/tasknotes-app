@@ -28,7 +28,7 @@ export async function buildTaskNotesManifest({
       ),
     );
   const basePack = await viewPack("obsidian.base-1.0.0.json");
-  const mdbaseViewPack = await viewPack("mdbase.view-1.0.0.json");
+  const mdbaseViewPack = await viewPack("mdbase.view-1.0.1.json");
   const taskContract = typePack.provides.find(
     (contract) => contract.id === "tasknotes.task",
   );
