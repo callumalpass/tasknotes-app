@@ -134,8 +134,8 @@ importers:
         specifier: ^4.12.1
         version: 4.12.1(playwright-core@1.61.1)
       '@callumalpass/mdbase':
-        specifier: file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz
-        version: file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz
+        specifier: 0.3.0-rc.8
+        version: 0.3.0-rc.8
       '@capacitor/android':
         specifier: 8.4.2
         version: 8.4.2(@capacitor/core@8.4.2)
@@ -325,25 +325,8 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@bufbuild/cel-spec@0.6.0':
-    resolution: {integrity: sha512-tgatB83sggFj5f5JY9UqLKFnQqzvAv+fO3/PbbS+gDOq6liYPdKqIeRRh5C7UqZnvaveZiwvotnrbCey54U4wQ==}
-    peerDependencies:
-      '@bufbuild/protobuf': ^2.6.2
-
-  '@bufbuild/cel@0.6.0':
-    resolution: {integrity: sha512-P01tn9nx134W4ODz1mGbeS0fHCb8Cq/iF4teLrS2qQSp1qnRPQ8tReWjLZBpLPCQjN8oTkVs2oJFaEk8AvyH1Q==}
-    peerDependencies:
-      '@bufbuild/protobuf': ^2.6.2
-
-  '@bufbuild/protobuf@2.13.0':
-    resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
-
-  '@bufbuild/re2@0.6.0':
-    resolution: {integrity: sha512-HrSjnBjk71LpKDlUnbxdN9DD24Hr5O92kCxRVHA0sEa35z6tEUjBS7YQVYBMS9npbllLtPW7tGSAWwfUKBs1Hw==}
-
-  '@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz':
-    resolution: {integrity: sha512-aeQAJjnE/DySJft03g7JQs48OWlJPOZdWl19hs6Aq+UnSnzQzFnsbKRJ9y4xPbbZBBfyg58c+cXdBHdAgoYmrQ==, tarball: file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz}
-    version: 0.3.0-rc.5
+  '@callumalpass/mdbase@0.3.0-rc.8':
+    resolution: {integrity: sha512-fw8S64FaMt9YT/0WKb8mURWRn6wPca4PA7FpNPnDWquj2lm47CoBp+g25yrlJNUqPyCVgSs0lOSx6G/8u9uWJw==}
     hasBin: true
 
   '@capacitor-firebase/messaging@8.3.0':
@@ -903,6 +886,11 @@ packages:
 
   '@lezer/markdown@1.7.2':
     resolution: {integrity: sha512-iTkYvoVcKt3WkeL7qUDyXHONZEwLio4wj8KTNi2dnjQEXBZKMV63BpQrPqfsM+OkvuRbiSTAcycYAsQzLhRNoQ==}
+
+  '@marcbachmann/cel-js@8.0.0':
+    resolution: {integrity: sha512-oaTrAziGr3zDLFiMt/yLU3nZuRMawyWQB5X1a0I7s9eGy3JYzX9l8ZXXHyMd64nzbeVFZTewuUShwsZQdK6UCA==}
+    engines: {node: '>=20.19.0'}
+    hasBin: true
 
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
@@ -3936,24 +3924,9 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@bufbuild/cel-spec@0.6.0(@bufbuild/protobuf@2.13.0)':
+  '@callumalpass/mdbase@0.3.0-rc.8':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
-
-  '@bufbuild/cel@0.6.0(@bufbuild/protobuf@2.13.0)':
-    dependencies:
-      '@bufbuild/cel-spec': 0.6.0(@bufbuild/protobuf@2.13.0)
-      '@bufbuild/protobuf': 2.13.0
-      '@bufbuild/re2': 0.6.0
-
-  '@bufbuild/protobuf@2.13.0': {}
-
-  '@bufbuild/re2@0.6.0': {}
-
-  '@callumalpass/mdbase@file:vendor/callumalpass-mdbase-0.3.0-rc.5-3c9c89b8000b.tgz':
-    dependencies:
-      '@bufbuild/cel': 0.6.0(@bufbuild/protobuf@2.13.0)
-      '@bufbuild/protobuf': 2.13.0
+      '@marcbachmann/cel-js': 8.0.0
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       gray-matter: 4.0.3
@@ -4798,6 +4771,8 @@ snapshots:
     dependencies:
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
+
+  '@marcbachmann/cel-js@8.0.0': {}
 
   '@marijn/find-cluster-break@1.0.4': {}
 
