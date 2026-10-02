@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { CollectionPicker } from "./collection-picker";
+import { registerOverlay } from "../components/overlays/overlay-stack";
 
 const connections = [
   {
@@ -66,7 +67,7 @@ it("contains focus and restores it when the picker closes", async () => {
 
   const buttons = screen.getByRole("dialog").querySelectorAll("button");
   buttons.item(buttons.length - 1).focus();
-  fireEvent.keyDown(window, { key: "Tab" });
+  fireEvent.keyDown(document, { key: "Tab" });
   expect(
     screen.getByRole("button", { name: "Close collection picker" }),
   ).toHaveFocus();
@@ -74,6 +75,41 @@ it("contains focus and restores it when the picker closes", async () => {
   rendered.unmount();
   await waitFor(() => expect(trigger).toHaveFocus());
   trigger.remove();
+});
+
+it("shares topmost dismissal and isolation with an already open overlay", async () => {
+  const parent = document.createElement("section");
+  const trigger = document.createElement("button");
+  parent.append(trigger);
+  document.body.append(parent);
+  const dismissParent = vi.fn();
+  const release = registerOverlay({
+    root: parent,
+    modal: true,
+    dismiss: dismissParent,
+  });
+  trigger.focus();
+  const close = vi.fn();
+  const rendered = renderPicker({ connections, onClose: close });
+  try {
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Hosted tasks/ }),
+      ).toHaveFocus(),
+    );
+    expect(parent.inert).toBe(true);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(close).toHaveBeenCalledOnce();
+    expect(dismissParent).not.toHaveBeenCalled();
+    rendered.unmount();
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(parent.inert).toBeFalsy();
+    expect(document.body.style.overflow).toBe("hidden");
+  } finally {
+    rendered.unmount();
+    release();
+    parent.remove();
+  }
 });
 
 function renderPicker(

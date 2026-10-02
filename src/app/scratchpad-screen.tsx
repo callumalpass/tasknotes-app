@@ -38,6 +38,7 @@ import {
   type CSSProperties,
 } from "react";
 
+import { useOverlay } from "../components/overlays/use-overlay";
 import {
   activeCaptureToken,
   applyCaptureSuggestion,
@@ -1282,6 +1283,9 @@ function ScratchpadDocumentEditor({
   const [menuId, setMenuId] = useState<string>();
   const [drag, setDrag] = useState<DragState | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const reviewRef = useRef<HTMLElement | null>(null);
+  const reviewCloseRef = useRef<HTMLButtonElement | null>(null);
+  const reviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(
     new Set(),
@@ -1290,6 +1294,16 @@ function ScratchpadDocumentEditor({
     Record<string, ReviewResult>
   >({});
   const [reviewProcessing, setReviewProcessing] = useState(false);
+  useOverlay({
+    open: reviewOpen,
+    rootRef: reviewRef,
+    modal: true,
+    returnFocusRef: reviewTriggerRef,
+    initialFocus: () => reviewCloseRef.current,
+    onDismiss: () => {
+      if (!reviewProcessing) setReviewOpen(false);
+    },
+  });
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [convertingId, setConvertingId] = useState<string>();
   const [notice, setNotice] = useState<ScratchpadNotice | null>(null);
@@ -2287,6 +2301,7 @@ function ScratchpadDocumentEditor({
               className="text-action scratchpad-review-action"
               disabled={!drafts}
               type="button"
+              ref={reviewTriggerRef}
               onClick={openReview}
             >
               <ListChecks aria-hidden="true" size={17} /> Create task notes
@@ -2724,19 +2739,14 @@ function ScratchpadDocumentEditor({
         </div>
       )}
       {reviewOpen ? (
-        <div
-          className="scratchpad-dialog-backdrop"
-          role="presentation"
-          onPointerDown={(event) => {
-            if (event.target === event.currentTarget && !reviewProcessing)
-              setReviewOpen(false);
-          }}
-        >
+        <div className="scratchpad-dialog-backdrop" role="presentation">
           <section
             aria-labelledby="review-scratchpad-title"
             aria-modal="true"
             className="scratchpad-dialog scratchpad-review-dialog"
+            ref={reviewRef}
             role="dialog"
+            tabIndex={-1}
           >
             <header>
               <div>
@@ -2745,6 +2755,7 @@ function ScratchpadDocumentEditor({
               </div>
               <button
                 aria-label="Close"
+                ref={reviewCloseRef}
                 disabled={reviewProcessing}
                 type="button"
                 onClick={() => setReviewOpen(false)}
