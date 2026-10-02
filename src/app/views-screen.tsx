@@ -243,7 +243,8 @@ export function ViewsScreen({
   const plannerHref = usePlannerViewLink(repository, selected);
   const needsIdentityTasks =
     selected?.presentation?.type === "tasknotes.calendar" ||
-    selected?.presentation?.type === "tasknotes.mini-calendar";
+    selected?.presentation?.type === "tasknotes.mini-calendar" ||
+    selected?.presentation?.type === "tasknotes.projects";
   const { tasks: identityTasks } = useTasks({
     status: "all",
     limit: needsIdentityTasks ? 50_000 : 0,
