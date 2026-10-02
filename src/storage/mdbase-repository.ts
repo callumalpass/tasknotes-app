@@ -24,6 +24,8 @@ import {
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import { runtimeTimezone } from "../domain/runtime-timezone";
+import { desiredTaskTimers } from "../domain/reminder-timers";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   findOccurrenceParent,
   findMaterializedOccurrenceTask,
@@ -194,6 +196,11 @@ export class MdbaseTaskRepository implements TaskRepository {
     string,
     Promise<CurrentTaskDocument>
   >();
+  private reminderReconciliation?: {
+    signal: AbortSignal;
+    requested: number;
+    promise: Promise<void>;
+  };
   private initialization: Promise<void> | null = null;
   private refreshInFlight: Promise<RefreshResult> | null = null;
   private readonly completionCache = new Map<
@@ -424,6 +431,62 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
     if (!signal.aborted) this.emit({ kind: invalidate ? "data" : "status" });
     return { ...result, elapsedMs: Math.round(performance.now() - startedAt) };
+  }
+
+  reconcileReminders(): Promise<void> {
+    const signal = this.operationController.signal;
+    const active = this.reminderReconciliation;
+    if (active?.signal === signal) {
+      active.requested++;
+      return active.promise;
+    }
+    const scope = { signal, requested: 1, promise: Promise.resolve() };
+    scope.promise = (async () => {
+      let completed = 0;
+      while (completed < scope.requested) {
+        signal.throwIfAborted();
+        const target = scope.requested;
+        const tasks = await this.listSummaries({
+          status: "open",
+          limit: 50_000,
+        });
+        signal.throwIfAborted();
+        const operationInput = {
+          namespace: "task-reminders",
+          criterionId: "task.reminder",
+          timers: await desiredTaskTimers(tasks),
+        };
+        signal.throwIfAborted();
+        const request = {
+          signal,
+          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
+        };
+        await runMdbaseMutation(
+          this.connect,
+          async () => {
+            // The coordinator may have waited behind an active task write.
+            signal.throwIfAborted();
+            validResult(
+              await this.connect.reconcileTimers(operationInput, request),
+            );
+          },
+          {
+            key: mdbaseMutationKey("timers:reconcile", operationInput),
+            mapRecovered: () => {
+              signal.throwIfAborted();
+            },
+            request,
+          },
+        );
+        signal.throwIfAborted();
+        completed = target;
+      }
+    })().finally(() => {
+      if (this.reminderReconciliation === scope)
+        this.reminderReconciliation = undefined;
+    });
+    this.reminderReconciliation = scope;
+    return scope.promise;
   }
 
   people(signal?: AbortSignal) {

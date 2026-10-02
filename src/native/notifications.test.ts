@@ -1,46 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => {
-  const reconcileTimers = vi.fn(async (input: unknown) => ({
-    ok: true as const,
-    value: input,
-  }));
-  return {
-    connection: {
-      pendingMutation: () => null,
-      pendingMutations: () => [],
-      reconcileTimers,
-    },
-    reconcileTimers,
-  };
-});
-
-vi.mock("../cloud/connect", () => ({
-  cloudSession: {
-    getSnapshot: () => ({
-      status: "ready",
-      connection: mocks.connection,
-    }),
-    connection: () => mocks.connection,
-  },
-}));
-
+import { describe, expect, it, vi } from "vitest";
 import {
   desiredTaskTimers,
   reconcileTaskNotifications,
+  removeTaskNotifications,
+  syncTaskNotifications,
   taskUpdateAffectsNotifications,
 } from "./notifications";
-import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
-
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
-import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
 
 describe("mdbase task reminders", () => {
-  beforeEach(() => {
-    mocks.reconcileTimers.mockClear();
-  });
-
   it("projects future absolute and relative reminders into content-free authority timers", async () => {
     const task = {
       id: "task-a",
@@ -54,11 +23,7 @@ describe("mdbase task reminders", () => {
           absoluteTime: "2026-07-26T10:00:00+10:00",
           description: "Private reminder text",
         },
-        {
-          id: "past",
-          type: "absolute",
-          absoluteTime: "2026-07-24T10:00:00Z",
-        },
+        { id: "past", type: "absolute", absoluteTime: "2026-07-24T10:00:00Z" },
         {
           id: "relative",
           type: "relative",
@@ -68,7 +33,6 @@ describe("mdbase task reminders", () => {
         },
       ],
     } as Task;
-
     const timers = await desiredTaskTimers(
       [task],
       Date.parse("2026-07-25T00:00:00Z"),
@@ -90,100 +54,46 @@ describe("mdbase task reminders", () => {
     expect(JSON.stringify(timers)).not.toContain("Another private reminder");
     expect(JSON.stringify(timers)).not.toContain("task-a");
     expect(JSON.stringify(timers)).not.toContain("future");
-  });
-
-  it("keeps connected reminders at the mdbase authority", async () => {
-    const repository = {
-      connectionStatus: vi.fn(async () => ({
-        state: "connected",
-      })),
-      listSummaries: vi.fn(async () => [
-        {
-          id: "task with an imported ID",
-          completed: false,
-          archived: false,
-          reminders: [
-            {
-              id: "reminder with an imported ID",
-              type: "absolute",
-              absoluteTime: "2099-07-26T00:00:00Z",
-            },
-          ],
-        } as Task,
-      ]),
-    } as unknown as TaskRepository;
-
-    await reconcileTaskNotifications(repository, "connect");
-
-    expect(mocks.reconcileTimers).toHaveBeenCalledWith(
-      {
-        namespace: "task-reminders",
-        criterionId: "task.reminder",
-        timers: [
-          {
-            id: expect.stringMatching(/^[a-f0-9]{64}$/),
-            fireAt: "2099-07-26T00:00:00.000Z",
-          },
-        ],
-      },
-      { timeoutMs: 45_000 },
+    expect(await desiredTaskTimers([{ ...task, archived: true }], 0)).toEqual(
+      [],
+    );
+    expect(await desiredTaskTimers([{ ...task, completed: true }], 0)).toEqual(
+      [],
     );
   });
 
-  it("does no reminder work when mdbase reminder delivery is disabled", async () => {
+  it("forwards all enabled reminder work to its repository owner", async () => {
     const repository = {
-      listSummaries: vi.fn(async () => []),
+      reconcileReminders: vi.fn(async () => {}),
     } as unknown as TaskRepository;
+    await reconcileTaskNotifications(repository, "connect");
+    await syncTaskNotifications(repository, {} as Task, "connect");
+    await removeTaskNotifications(repository, "one", "connect");
+    expect(repository.reconcileReminders).toHaveBeenCalledTimes(3);
+  });
 
+  it("does no reminder work when delivery is disabled", async () => {
+    const repository = {
+      reconcileReminders: vi.fn(async () => {}),
+    } as unknown as TaskRepository;
     await reconcileTaskNotifications(repository, "none");
-
-    expect(repository.listSummaries).not.toHaveBeenCalled();
+    await syncTaskNotifications(repository, {} as Task);
+    await removeTaskNotifications(repository, "one");
+    expect(repository.reconcileReminders).not.toHaveBeenCalled();
   });
 
-  it("reconciles reminders for a live connector collection", async () => {
+  it("reports missing authority support and reconciliation failures", async () => {
+    await expect(
+      reconcileTaskNotifications({} as TaskRepository, "connect"),
+    ).rejects.toThrow("cannot reconcile reminders");
     const repository = {
-      connectionStatus: vi.fn(async () => ({
-        state: "connected",
-      })),
-      listSummaries: vi.fn(async () => []),
+      reconcileReminders: vi.fn(async () => {
+        throw new Error("Unavailable");
+      }),
     } as unknown as TaskRepository;
-
-    await reconcileTaskNotifications(repository, "connect");
-
-    expect(repository.listSummaries).toHaveBeenCalledWith({
-      status: "open",
-      limit: 50_000,
-    });
-    expect(mocks.reconcileTimers).toHaveBeenCalledWith(
-      {
-        namespace: "task-reminders",
-        criterionId: "task.reminder",
-        timers: [],
-      },
-      { timeoutMs: 45_000 },
-    );
-  });
-
-  it("waits for an active task write before reconciling reminders", async () => {
-    const repository = {
-      listSummaries: vi.fn(async () => []),
-    } as unknown as TaskRepository;
-    const connection =
-      mocks.connection as unknown as MdbaseConnection<JsonObject>;
-    const activeWrite = deferred<void>();
-    const write = runMdbaseMutation(connection, () => activeWrite.promise, {
-      key: "test:active-write",
-      mapRecovered: () => undefined,
-    });
-
-    const reconciliation = reconcileTaskNotifications(repository, "connect");
-    await Promise.resolve();
-    expect(mocks.reconcileTimers).not.toHaveBeenCalled();
-
-    activeWrite.resolve();
-    await write;
-    await reconciliation;
-    expect(mocks.reconcileTimers).toHaveBeenCalledOnce();
+    await expect(
+      reconcileTaskNotifications(repository, "connect"),
+    ).rejects.toThrow("Unavailable");
   });
 
   it("does not reconcile reminders for manual-order-only updates", () => {
@@ -195,13 +105,3 @@ describe("mdbase task reminders", () => {
     expect(taskUpdateAffectsNotifications({ reminders: [] })).toBe(true);
   });
 });
-
-function deferred<Result>() {
-  let resolve!: (value: Result | PromiseLike<Result>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<Result>((nextResolve, nextReject) => {
-    resolve = nextResolve;
-    reject = nextReject;
-  });
-  return { promise, resolve, reject };
-}
