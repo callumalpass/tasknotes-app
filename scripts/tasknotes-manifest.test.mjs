@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 import {
   buildTaskNotesManifest,
@@ -215,6 +217,60 @@ describe("TaskNotes mdbase manifest", () => {
       });
     }
     expect(SCRATCHPAD_TYPE_DOCUMENT).toBe(scratchpadTypeDocument);
+  });
+
+  it("embeds the published mdbase.view 1.0.1 pack with a portable view starter", async () => {
+    const manifest = await buildTaskNotesManifest({
+      appUrl: "https://tasks.example",
+      webOnly: true,
+    });
+    const published = JSON.parse(
+      await readFile(
+        resolve(
+          process.cwd(),
+          "vendor/mdbase-contracts/mdbase.view-1.0.1.json",
+        ),
+        "utf8",
+      ),
+    );
+    const pack = manifest.provisions.type_packs.find(
+      (candidate) => candidate.manifest.id === "mdbase.view",
+    );
+    expect(pack).toEqual(published);
+    expect(pack.manifest.version).toBe("1.0.1");
+    // The data contract is unchanged; only the starter type moved on.
+    expect(pack.provides).toEqual([
+      expect.objectContaining({ id: "mdbase.view", version: "1.0.0" }),
+    ]);
+    const seed = pack.manifest.resources.find(
+      (resource) => resource.kind === "type",
+    );
+    expect(seed).toMatchObject({ mode: "seed", target: "_types/view.md" });
+    const document = pack.resources.find(
+      (resource) => resource.source === seed.source,
+    ).document;
+    expect(seed.digest).toBe(
+      `sha256:${createHash("sha256").update(document).digest("hex")}`,
+    );
+    // Views created by naming the type must validate whatever the
+    // collection's explicit_type_keys, so the starter neither pins type nor
+    // closes its top level.
+    const type = parse(document.split("---\n")[1]);
+    expect(type).toMatchObject({ name: "view", version: 2 });
+    const schema = type.schema.value;
+    expect(schema.additionalProperties).toBe(true);
+    for (const key of ["type", "types"]) {
+      expect(schema.properties).not.toHaveProperty(key);
+      expect(schema.required).not.toContain(key);
+    }
+    // An unedited 1.0.0 starter upgrades in place.
+    expect(seed.upgrade_from.digest).toBe(
+      `sha256:${createHash("sha256").update(seed.upgrade_from.document).digest("hex")}`,
+    );
+    expect(parse(seed.upgrade_from.document.split("---\n")[1])).toMatchObject({
+      name: "view",
+      version: 1,
+    });
   });
 
   it("adds only the public Firebase project ID when configured", async () => {
