@@ -95,10 +95,10 @@ it("submits the current title and explicit fields while the async parser is pend
   });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
   await waitFor(() =>
-    expect(create).toHaveBeenCalledWith({
-      title: "New title",
-      priority: "high",
-    }),
+    expect(create).toHaveBeenCalledWith(
+      { title: "New title", priority: "high" },
+      expect.objectContaining({ id: expect.any(String) }),
+    ),
   );
   await act(async () => {
     pending.resolve({
