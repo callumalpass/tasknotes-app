@@ -952,6 +952,44 @@ describe("ScratchpadScreen", () => {
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
   });
 
+  it("owns review focus, traps Tab, isolates the outline, and restores the trigger", async () => {
+    renderScratchpad();
+    const input = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(input, { target: { value: "Plan launch" } });
+    const trigger = screen.getByRole("button", { name: "Create task notes" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Create task notes" });
+    const close = within(dialog).getByRole("button", { name: "Close" });
+    expect(close).toHaveFocus();
+    expect(
+      input.closest("[inert]") ??
+        [...document.querySelectorAll("*")].find(
+          (el) => el instanceof HTMLElement && el.inert && el.contains(input),
+        ),
+    ).toBeTruthy();
+    const last = within(dialog).getByRole("button", {
+      name: "Create 1 task notes",
+    });
+    last.focus();
+    fireEvent.keyDown(last, { key: "Tab" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+    fireEvent.keyDown(last, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      [...document.querySelectorAll("*")].some(
+        (el) => el instanceof HTMLElement && el.inert && el.contains(input),
+      ),
+    ).toBe(false);
+  });
+
   it("converts only selected drafts and leaves the rest active", async () => {
     const openTask = renderScratchpad();
     const parent = await screen.findByRole(
