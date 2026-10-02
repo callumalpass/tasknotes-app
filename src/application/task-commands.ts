@@ -2,6 +2,7 @@ import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 import type { CollectionInfo } from "./ports/task-repository";
 import type { MutationJournal, PendingTaskDeletion } from "./mutation-journal";
 import { OperationalError, toOperationalError } from "./operational-error";
+import { acceptedWriteEffect } from "./accepted-task-effects";
 
 const DEFAULT_UNDO_WINDOW_MS = 30_000;
 
@@ -57,7 +58,7 @@ export class TaskCommandService {
       onTasksUpdated?(
         tasks: readonly Task[],
         updates: readonly { id: string; input: UpdateTaskInput }[],
-      ): Promise<void>;
+      ): Promise<Task[] | void>;
       undoWindowMs?: number;
       clock?: TaskCommandClock;
     },
@@ -150,13 +151,25 @@ export class TaskCommandService {
   ): Promise<Task[]> {
     return this.enqueue(async () => {
       if (!updates.length) return [];
+      let tasks: Task[];
       try {
-        const tasks = await this.options.repository.updateMany(updates);
-        await this.options.onTasksUpdated?.(tasks, updates);
-        return tasks;
+        tasks = await this.options.repository.updateMany(updates);
       } catch (reason) {
         throw toOperationalError(reason, "update-tasks");
       }
+      const warning = await acceptedWriteEffect(
+        "update follow-up could not complete",
+        async () => {
+          tasks =
+            (await this.options.onTasksUpdated?.(tasks, updates)) ?? tasks;
+        },
+      );
+      return warning
+        ? tasks.map((task) => ({
+            ...task,
+            operationWarnings: [...(task.operationWarnings ?? []), warning],
+          }))
+        : tasks;
     });
   }
 
@@ -214,8 +227,13 @@ export class TaskCommandService {
           authorityRequestId: command.authorityRequestId,
         });
       else await this.options.repository.delete(command.taskId);
-      await this.options.onDeleted?.(command.taskId);
-      await this.options.journal.remove(command.operationId);
+      await acceptedWriteEffect("deletion follow-up could not complete", () =>
+        this.options.onDeleted?.(command.taskId),
+      );
+      await acceptedWriteEffect(
+        "the accepted deletion's recovery journal could not be cleared",
+        () => this.options.journal.remove(command.operationId),
+      );
       if (this.pendingDeletion?.operationId === command.operationId)
         this.pendingDeletion = null;
       this.deletionError = null;

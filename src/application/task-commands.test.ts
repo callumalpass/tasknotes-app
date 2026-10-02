@@ -60,6 +60,51 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
+  it("does not reject an accepted bulk update when a post-acceptance callback fails", async () => {
+    const repository = taskRepository();
+    const service = new TaskCommandService({
+      repository,
+      journal: new MemoryMutationJournal(),
+      onTasksUpdated: async () => {
+        throw new Error("Secondary failed");
+      },
+    });
+    await service.initialize();
+    await expect(
+      service.updateTasks([{ id: "task-1", input: { title: "Saved" } }]),
+    ).resolves.toMatchObject([
+      { operationWarnings: [expect.stringContaining("Secondary failed")] },
+    ]);
+    expect(repository.updateMany).toHaveBeenCalledOnce();
+    service.dispose();
+  });
+
+  it.each(["callback", "journal"])(
+    "does not replay an accepted deletion after a failed %s cleanup",
+    async (cleanup) => {
+      const journal = new MemoryMutationJournal();
+      const repository = taskRepository();
+      const service = new TaskCommandService({
+        repository,
+        journal,
+        onDeleted: async () => {
+          if (cleanup === "callback") throw new Error("Secondary failed");
+        },
+      });
+      await service.initialize();
+      await service.requestDeletion("task-1");
+      if (cleanup === "journal")
+        vi.spyOn(journal, "remove").mockRejectedValue(
+          new Error("Journal failed"),
+        );
+      await expect(service.retryDeletion()).resolves.toBeUndefined();
+      expect(service.snapshot().pendingDeletion).toBeNull();
+      await service.retryDeletion();
+      expect(repository.delete).toHaveBeenCalledOnce();
+      service.dispose();
+    },
+  );
+
   it("restores a pending deletion after restart", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
