@@ -4,6 +4,7 @@ import {
   connectFailure,
   connectSuccess,
 } from "@mdbase-dev/connect-testing";
+import { normalizeCollectionChange } from "@mdbase-dev/connect";
 import type {
   CollectionChange,
   CollectionChangesPage,
@@ -30,12 +31,14 @@ async function setup(
   description.operations.push("changes");
   const events: CollectionChange[] = [];
   const change = (type: string, payload: CollectionChange["payload"]) => {
-    events.push({
-      cursor: ++description.changeCursor,
-      type,
-      payload,
-      occurredAt: "2026-09-19T00:00:00Z",
-    });
+    events.push(
+      normalizeCollectionChange({
+        cursor: ++description.changeCursor,
+        type,
+        payload,
+        occurred_at: "2026-09-19T00:00:00Z",
+      }),
+    );
   };
   fixture.describe.mockImplementation(async () => structuredClone(description));
   const changes = vi.fn(
@@ -54,19 +57,6 @@ async function setup(
       }),
   );
   Object.assign(fixture.connect, { changes });
-  const query = fixture.query.getMockImplementation()!;
-  fixture.query.mockImplementation(async (input) => {
-    const response = await query(input);
-    if (typeof input?.where === "string") {
-      const paths = [
-        ...input.where.matchAll(/file\.path == ("(?:[^"\\]|\\.)*")/g),
-      ].map((match) => JSON.parse(match[1]));
-      response.result.results = response.result.results.filter((record) =>
-        paths.includes(record.path),
-      );
-    }
-    return response;
-  });
   const repository = new MdbaseTaskRepository(fixture.connect);
   await repository.initialize();
   fixture.queryPages.mockClear();
@@ -330,19 +320,22 @@ describe("incremental repository refresh", () => {
 
   it("coalesces paged events and bounds changed-path query batches", async () => {
     const fixture = await setup();
-    const first = Array.from({ length: 100 }, (_, index): CollectionChange => ({
-      cursor: index + 1,
-      type: "mdbase.record.modified",
-      payload: { path: `notes/${index}.md` },
-      occurredAt: "2026-09-19T00:00:00Z",
-    }));
+    const first = Array.from({ length: 100 }, (_, index): CollectionChange =>
+      normalizeCollectionChange({
+        cursor: index + 1,
+        type: "mdbase.record.modified",
+        payload: { path: `notes/${index}.md` },
+        occurred_at: "2026-09-19T00:00:00Z",
+      }),
+    );
     const second: CollectionChange[] = [
       first[0],
-      {
-        ...first[0],
+      normalizeCollectionChange({
+        type: "mdbase.record.modified",
+        occurred_at: "2026-09-19T00:00:00Z",
         cursor: 101,
         payload: { path: [...fixture.records.keys()][0] },
-      },
+      }),
     ];
     fixture.changes.mockResolvedValueOnce(
       connectSuccess({
@@ -369,9 +362,9 @@ describe("incremental repository refresh", () => {
     ]);
     expect(fixture.queryPages).toHaveBeenCalledTimes(2);
     for (const [input] of fixture.queryPages.mock.calls)
-      expect(String(input?.where).split(" || ").length).toBeLessThanOrEqual(
-        100,
-      );
+      expect(
+        JSON.parse(String(input?.where).slice("file.path in ".length)),
+      ).toHaveLength(input === fixture.queryPages.mock.calls[0][0] ? 100 : 1);
   });
 
   it("bounds a large backlog and rejects a non-progressing change cursor", async () => {

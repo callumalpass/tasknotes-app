@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { connectSuccess } from "@mdbase-dev/connect-testing";
+import { connectFailure, connectSuccess } from "@mdbase-dev/connect-testing";
+import { normalizeCollectionChange } from "@mdbase-dev/connect";
 import { MdbaseTaskRepository } from "./mdbase-repository";
 import { deferred, mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
 
@@ -50,8 +51,67 @@ describe("metadata and complete document boundaries", () => {
     expect(other.read).not.toHaveBeenCalled();
     expect(other.queryPages.mock.calls[1][0]).toMatchObject({
       includeBody: true,
-      where: `file.path == ${JSON.stringify(other.record.path)}`,
+      where: `file.path in ${JSON.stringify([other.record.path])}`,
     });
+  });
+
+  it("hydrates more than 100 paths in caller order and omits only confirmed missing rows", async () => {
+    const records = Array.from({ length: 205 }, (_, index) =>
+      taskRecord(`id-${index}`, `Task ${index}`, `r${index}`),
+    );
+    const fixture = mdbaseFixture(records);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const summaries = await repository.listSummaries({ status: "all" });
+    fixture.records.delete(summaries[10].path);
+    const tasks = await repository.list({ status: "all" });
+    expect(tasks.map((task) => task.id)).toEqual(
+      summaries.filter((_, index) => index !== 10).map((task) => task.id),
+    );
+    expect(fixture.readMany).toHaveBeenCalledWith(
+      summaries.map((task) => task.path),
+      expect.objectContaining({
+        batchSize: 100,
+        concurrency: 1,
+        includeBody: true,
+      }),
+    );
+    expect(fixture.read).not.toHaveBeenCalled();
+    // Revisionless hydration still requires an authoritative revision before editing.
+    await repository.update(tasks[0].id, { title: "Edited" });
+    expect(fixture.read).toHaveBeenCalledOnce();
+    expect(fixture.update.mock.calls[0][0].ifRevision).toBe(
+      records.find((record) => record.path === tasks[0].path)!.revision,
+    );
+  });
+
+  it("does not treat a successful readMany envelope with failed batches as missing or cache partial bodies", async () => {
+    const records = Array.from({ length: 101 }, (_, index) =>
+      taskRecord(`id-${index}`, `Task ${index}`, `r${index}`),
+    );
+    const fixture = mdbaseFixture(records);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const pages = fixture.queryPages.getMockImplementation()!;
+    fixture.queryPages
+      .mockImplementationOnce(pages)
+      .mockImplementationOnce(() =>
+        (async function* () {
+          yield connectFailure({
+            problem_version: 1,
+            code: "temporarily_unavailable",
+            category: "availability",
+            recovery: "retry",
+            message: "Batch unavailable",
+          });
+        })(),
+      );
+    await expect(repository.list({ status: "all" })).rejects.toThrow(
+      "Batch unavailable",
+    );
+    expect((await repository.stats()).total).toBe(101);
+    await repository.get("id-0");
+    expect(fixture.read).toHaveBeenCalledOnce();
   });
 
   it("does not retain a response that completes after collection disposal", async () => {
@@ -142,12 +202,12 @@ describe("metadata and complete document boundaries", () => {
       changes: async () =>
         connectSuccess({
           events: [
-            {
+            normalizeCollectionChange({
               cursor: 1,
               type: "mdbase.record.modified",
-              occurredAt: "2026-09-20T00:00:00Z",
+              occurred_at: "2026-09-20T00:00:00Z",
               payload: { path: fixture.record.path },
-            },
+            }),
           ],
           cursor: 1,
           reset: false,

@@ -108,7 +108,7 @@ describe("mdbase task repository", () => {
       .map(([input]) => input?.where)
       .find((value) => typeof value === "string" && value.includes("asFile()"));
     expect(where).toBe(
-      '"assignees" in record && record["assignees"].exists(a, a.asFile() != null && a.asFile().file.path == "people/Alex Rivera.md")',
+      '"assignees" in record && record["assignees"] != null && record["assignees"].exists(link, link != null && link.asFile() != null && link.asFile().file.path == "people/Alex Rivera.md")',
     );
     expect(await repository.resolveAssignees("assigned")).toEqual(
       new Map([
@@ -172,7 +172,7 @@ describe("mdbase task repository", () => {
     expect(fixture.query).not.toHaveBeenCalled();
     expect(fixture.queryPages).toHaveBeenCalledWith(
       expect.objectContaining({ includeBody: false }),
-      expect.objectContaining({ firstPageSize: 1_000, pageSize: 1_000 }),
+      expect.objectContaining({ pageSize: 1_000 }),
     );
   });
 
@@ -299,7 +299,6 @@ describe("mdbase task repository", () => {
       }),
       expect.objectContaining({
         signal: expect.anything(),
-        firstPageSize: 1_000,
         pageSize: 1_000,
       }),
     );
@@ -1144,8 +1143,8 @@ describe("mdbase task repository", () => {
       expect.anything(),
       expect.objectContaining({ firstPageSize: 200, pageSize: 200 }),
     );
-    repository.suspend();
-    await vi.waitFor(() => expect(released).toBe(true));
+    // Ordinary disposal still closes non-SDK repository iterators. Paused
+    // abort cleanup is exercised with the real SDK in mdbase-sdk-pagination.test.ts.
     await iterator.return?.();
     expect(released).toBe(true);
     expect(requested).toBe(1);

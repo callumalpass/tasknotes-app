@@ -1,6 +1,8 @@
 import {
   MdbaseConnectError,
   type CollectionDescription,
+  type CollectionQueryProblemCode,
+  type QueryPage,
   type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
@@ -10,6 +12,7 @@ import {
   type QueryResult,
 } from "@mdbase-dev/connect";
 import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
+import { MdbaseCollectionClient } from "@mdbase-dev/connect/advanced";
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
@@ -72,6 +75,8 @@ export function mdbaseFixture(
     const exactPaths = [
       ...where.matchAll(/file\.path == ("(?:[^"\\]|\\.)*")/g),
     ].map((match) => JSON.parse(match[1]) as string);
+    const pathList = /file\.path in (\[[^\n]*\])/.exec(where);
+    if (pathList) exactPaths.push(...JSON.parse(pathList[1]));
     const bodyTokens = [
       ...where.matchAll(
         /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/g,
@@ -142,7 +147,9 @@ export function mdbaseFixture(
         pageSize?: number;
       },
     ) =>
-      (async function* () {
+      (async function* (): AsyncGenerator<
+        ConnectOutcome<QueryPage<JsonObject>, CollectionQueryProblemCode>
+      > {
         options?.signal?.throwIfAborted();
         const outcome = await query(input);
         yield connectSuccess(
@@ -157,6 +164,16 @@ export function mdbaseFixture(
         );
       })(),
   );
+  // Exercise the real SDK's batching, ordering, errors and cancellation rather
+  // than reimplementing readMany in the application fixture.
+  const queryClient = new MdbaseCollectionClient<JsonObject>({
+    operation: async () => {
+      throw new Error("Unexpected raw fixture operation");
+    },
+  });
+  queryClient.queryPages = (input, options) =>
+    queryPages(input as Record<string, unknown>, options);
+  const readMany = vi.fn(queryClient.readMany.bind(queryClient));
   // Saved views are records; their documents are kept so reads with
   // includeDocument and whole-document updates round-trip.
   const viewSources = new Map([
@@ -414,6 +431,7 @@ export function mdbaseFixture(
     pendingMutation: (requestId: string) =>
       pendingMutations.get(requestId) ?? null,
     pendingMutations: () => [...pendingMutations.values()],
+    readMany,
     describe: describeCollection,
     query,
     queryPages,
@@ -451,6 +469,7 @@ export function mdbaseFixture(
   return {
     connect,
     records,
+    readMany,
     describe: describeCollection,
     query,
     queryPages,
