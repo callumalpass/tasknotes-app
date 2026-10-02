@@ -55,6 +55,25 @@ describe("RecurrenceField", () => {
     ).toBeVisible();
   });
 
+  it("retains a timed UTC UNTIL when editing an unrelated pattern field", () => {
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        value="DTSTART:20260720T100000Z;FREQ=DAILY;UNTIL=20260722T090000Z"
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit pattern" }));
+    fireEvent.change(
+      screen.getByRole("spinbutton", { name: "Repeat interval" }),
+      { target: { value: "2" } },
+    );
+    expect(changed).toHaveBeenCalledWith(
+      "DTSTART:20260720T100000Z;FREQ=DAILY;INTERVAL=2;UNTIL=20260722T090000Z",
+    );
+  });
+
   it("builds ordinal monthly and yearly patterns", () => {
     function Harness() {
       const [value, setValue] = useState<string | undefined>(
