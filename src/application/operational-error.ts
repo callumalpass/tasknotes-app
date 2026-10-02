@@ -1,6 +1,12 @@
+import type { ConnectProblem } from "@mdbase-dev/connect";
+import { connectProblemFromError } from "./connect-problem";
+import { TaskNotesValidationError } from "../domain/tasknotes-model";
+
 export type OperationalErrorCode =
   | "unavailable"
   | "permission-denied"
+  | "cancelled"
+  | "outcome-unknown"
   | "conflict"
   | "validation"
   | "not-found"
@@ -9,6 +15,7 @@ export type OperationalErrorCode =
 /** A stable failure vocabulary shared by use cases and presentation. */
 export class OperationalError extends Error {
   readonly detail: string;
+  readonly problem: ConnectProblem | null;
 
   constructor(
     readonly code: OperationalErrorCode,
@@ -20,6 +27,8 @@ export class OperationalError extends Error {
     super(`${operation}: ${detail}`, options);
     this.name = "OperationalError";
     this.detail = detail;
+    // Retain exact recovery identity, outcome, policy and diagnostics for callers.
+    this.problem = connectProblemFromError(options.cause);
   }
 }
 
@@ -28,45 +37,47 @@ export function toOperationalError(
   operation: string,
 ): OperationalError {
   if (reason instanceof OperationalError) return reason;
-  const detail = errorDetail(reason);
-  const providerCode = providerErrorCode(reason);
-  const code = classifyError(providerCode, detail);
-  return new OperationalError(code, operation, isRetryable(code), detail, {
+  const problem = connectProblemFromError(reason);
+  const detail = reason instanceof Error ? reason.message : String(reason);
+  const code = problem
+    ? classifyProblem(problem)
+    : reason instanceof DOMException && reason.name === "AbortError"
+      ? "cancelled"
+      : reason instanceof TaskNotesValidationError
+        ? "validation"
+        : reason instanceof TypeError
+          ? "unavailable"
+          : "unknown";
+  const retryable = problem
+    ? code !== "outcome-unknown" &&
+      (problem.recovery === "retry" || problem.recovery === "refresh") &&
+      (code === "unavailable" || code === "conflict")
+    : code === "unavailable";
+  return new OperationalError(code, operation, retryable, detail, {
     cause: reason,
   });
 }
 
-function classifyError(
-  providerCode: string | undefined,
-  detail: string,
-): OperationalErrorCode {
-  const value = `${providerCode ?? ""} ${detail}`;
-  if (/conflict|revision|changed[_ ]elsewhere|precondition/i.test(value))
-    return "conflict";
-  if (/permission|authori[sz]|denied|forbidden|unauthenticated/i.test(value))
-    return "permission-denied";
-  if (/validation|invalid|required|malformed|schema/i.test(value))
-    return "validation";
-  if (/not[_ -]?found|missing record/i.test(value)) return "not-found";
+function classifyProblem(problem: ConnectProblem): OperationalErrorCode {
+  // Unknown acceptance outranks category (often conflict or availability).
   if (
-    /offline|network|fetch|unavailable|connection|timeout|interrupted|storage/i.test(
-      value,
-    )
+    problem.operation_outcome === "unknown" ||
+    problem.recovery === "resolve_outcome"
   )
-    return "unavailable";
-  return "unknown";
-}
-
-function isRetryable(code: OperationalErrorCode): boolean {
-  return code === "unavailable" || code === "conflict" || code === "unknown";
-}
-
-function providerErrorCode(reason: unknown): string | undefined {
-  if (!reason || typeof reason !== "object" || !("code" in reason)) return;
-  const code = reason.code;
-  return typeof code === "string" ? code : undefined;
-}
-
-function errorDetail(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+    return "outcome-unknown";
+  if (problem.code === "file_not_found") return "not-found";
+  switch (problem.category) {
+    case "availability":
+      return "unavailable";
+    case "authorization":
+      return "permission-denied";
+    case "cancellation":
+      return "cancelled";
+    case "validation":
+      return "validation";
+    case "conflict":
+      return "conflict";
+    default:
+      return "unknown";
+  }
 }

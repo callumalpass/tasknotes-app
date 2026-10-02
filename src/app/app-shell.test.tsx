@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { connectError } from "@mdbase-dev/connect-testing";
 
 import { DeletionFeedback, Navigation, StorageErrorScreen } from "./app-shell";
 import {
@@ -44,9 +45,7 @@ it("separates reauthorizing the current collection from choosing another", () =>
     <StorageErrorScreen
       authorizeAnotherCollection={authorizeAnotherCollection}
       changeCollection={vi.fn()}
-      error={Object.assign(new Error("The grant expired."), {
-        code: "authorization_expired",
-      })}
+      error={connectError("authorization_expired", "The grant expired.")}
       reauthorizeCurrentCollection={reauthorizeCurrentCollection}
       retry={vi.fn()}
     />,

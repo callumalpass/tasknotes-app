@@ -1,4 +1,5 @@
 import type { TaskRepository } from "./ports/task-repository";
+import { connectProblemFromError } from "./connect-problem";
 import type {
   TaskView,
   TaskViewExecution,
@@ -158,6 +159,14 @@ export class ViewQuerySession {
       .then(operation)
       .catch((reason) => {
         if (this.controller.signal.aborted) return;
+        if (
+          connectProblemFromError(reason)?.category === "cancellation" ||
+          (reason instanceof DOMException && reason.name === "AbortError")
+        ) {
+          void this.iterator?.return?.().catch(() => undefined);
+          this.iterator = null;
+          return;
+        }
         const previous = this.execution ?? this.cached;
         if (previous) this.observer.result({ ...previous, stale: true });
         this.observer.error(reason);

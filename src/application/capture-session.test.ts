@@ -54,7 +54,7 @@ describe("capture session lifetime", () => {
     write.reject(new Error("Disconnected"));
     await first;
     expect(create).toHaveBeenCalledOnce();
-    expect(session.getSnapshot().error).toContain("Disconnected");
+    expect(session.getSnapshot().error?.detail).toContain("Disconnected");
     expect(session.getSnapshot().result?.input.due).toBe("2026-09-10");
     expect(session.discard()).toBe(true);
   });
