@@ -17,6 +17,7 @@ import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { appPlatform } from "../native/app-platform";
 import { CollectionPicker } from "./collection-picker";
+import { collectionErrorMessage as message } from "./collection-error";
 
 const CloudCollection = lazy(() => import("./cloud-collection"));
 
@@ -196,8 +197,4 @@ function OpeningCollection() {
       <p>Opening mdbase…</p>
     </main>
   );
-}
-
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
 }

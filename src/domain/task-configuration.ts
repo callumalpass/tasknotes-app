@@ -11,6 +11,8 @@ import type {
 } from "@tasknotes/model/types";
 import type { TaskNotesMdbaseTypeSettingsPatch } from "@tasknotes/model/mdbase";
 
+import { editableFieldSchema } from "./editable-field-schema";
+
 export type TaskModelSettingsPatch = TaskNotesMdbaseTypeSettingsPatch;
 
 export interface TaskModelSettingsAccess {
@@ -336,8 +338,9 @@ function inferUserFields(
   return Object.entries(properties).flatMap(([key, rawSchema]) => {
     if (reserved.has(key)) return [];
     const property = record(rawSchema);
-    const type = editableFieldType(property);
-    if (!type) return [];
+    const editable = editableFieldSchema(property);
+    if (!editable) return [];
+    const { type } = editable;
     const defaultValue = editableDefault(property.default, type);
     return [
       enrichUserField(
@@ -361,49 +364,17 @@ function enrichUserField(
   required: ReadonlySet<string>,
 ): TaskUserMappedField {
   const options = enumValues(property);
-  const format =
-    string(property.format) ??
-    (Array.isArray(property.anyOf)
-      ? property.anyOf
-          .map(record)
-          .map((value) => string(value.format))
-          .find(Boolean)
-      : undefined);
+  const editable = editableFieldSchema(property);
   return {
     ...field,
     ...(required.has(field.key) ? { required: true as const } : {}),
     ...(property.readOnly === true ? { readOnly: true as const } : {}),
     ...(options.length
       ? { inputKind: "enum" as const, options }
-      : format === "date-time"
+      : editable?.inputKind === "datetime"
         ? { inputKind: "datetime" as const }
         : {}),
   };
-}
-
-function editableFieldType(
-  property: Record<string, unknown>,
-): UserMappedFieldType | null {
-  if (enumValues(property).length) return "text";
-  if (property.type === "boolean") return "boolean";
-  if (property.type === "number" || property.type === "integer")
-    return "number";
-  if (property.type === "array") {
-    const items = record(property.items);
-    return items.type === "string" ? "list" : null;
-  }
-  if (property.type === "string")
-    return property.format === "date" ? "date" : "text";
-  if (Array.isArray(property.anyOf)) {
-    const variants = property.anyOf.map(record);
-    if (
-      variants.some(
-        (variant) => variant.type === "string" && variant.format === "date",
-      )
-    )
-      return "date";
-  }
-  return null;
 }
 
 function editableDefault(

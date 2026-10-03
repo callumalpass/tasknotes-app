@@ -53,6 +53,10 @@ Task reminders are delivered by mdbase, so TaskNotes does not need to remain
 open. Reminder notifications contain no task titles, descriptions, paths, or
 record content.
 
+For collections upgraded from the Obsidian plugin's v4 release, see
+[Opening a collection upgraded from TaskNotes v4](docs/migration-v4-to-v5.md)
+for first-connection consent and App-version guidance.
+
 ## Trying the demo
 
 The [demo](https://app.tasknotes.dev/?demo=30) opens an in-memory collection

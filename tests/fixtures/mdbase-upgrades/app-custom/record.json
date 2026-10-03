@@ -1,0 +1,39 @@
+{
+  "path": "TaskNotes/Tasks/000.md",
+  "frontmatter": {
+    "alerts": [
+      {
+        "id": "app-custom-0",
+        "offset": "-PT1H",
+        "relatedTo": "due",
+        "type": "relative"
+      }
+    ],
+    "complete_instances": ["2026-10-02"],
+    "created_at": "2026-09-01T10:00:00.000Z",
+    "deadline": "2026-10-01",
+    "effort": 0.5,
+    "estimate_mins": 25,
+    "initiatives": ["[[Projects/Alpha]]"],
+    "locations": ["work", "home"],
+    "occurrence_materialization": "manual",
+    "occurrence_next_trigger": "completion",
+    "recurrence_anchor": "scheduled",
+    "repeat_rule": "DTSTART:20261003T000000Z;FREQ=DAILY",
+    "start_on": "2026-10-03",
+    "state": "todo",
+    "summary": "[test] app custom Task 000",
+    "tags": ["task"],
+    "updated_at": "2026-09-02T10:00:00.000Z",
+    "urgency": "high",
+    "work_log": [
+      {
+        "description": "fixture session",
+        "duration": 25,
+        "endTime": "2026-09-02T10:25:00Z",
+        "startTime": "2026-09-02T10:00:00Z"
+      }
+    ]
+  },
+  "body": "Unchanged captured task frontmatter."
+}

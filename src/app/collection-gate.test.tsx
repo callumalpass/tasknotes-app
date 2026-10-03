@@ -187,6 +187,26 @@ it("retains a failed callback and marks it handled only after retry succeeds", a
   );
 });
 
+it("shows App-update guidance when authorization rejects a newer task contract", async () => {
+  native.callbackUrl =
+    "dev.tasknotes.app://auth/mdbase/callback?code=approved&state=newer";
+  connect.handleAuthorizationCallback.mockResolvedValueOnce({
+    ok: false,
+    problem: {
+      code: "data_contract_version_mismatch",
+      message:
+        "Type 'task' requires data contract 'tasknotes.task' 0.3.0-rc.6, but no registered version satisfies it",
+    },
+  } as never);
+
+  render(<CollectionGate />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "This collection was upgraded by a newer TaskNotes. Update the TaskNotes App, then connect again.",
+  );
+  expect(screen.queryByText(/no registered version/)).not.toBeInTheDocument();
+});
+
 it("completes a web callback without closing a native browser", async () => {
   vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
   history.replaceState(

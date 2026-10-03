@@ -1,0 +1,1 @@
+The staged type pack does not produce a valid collection: Object {"error": Object {"code": String("data_contract_version_mismatch"), "message": String("Type 'task' requires data contract 'tasknotes.task' 0.3.0-rc.5, but no registered version satisfies it")}, "valid": Bool(false)} (mdbase-pack.yaml)

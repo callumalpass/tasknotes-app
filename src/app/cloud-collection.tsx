@@ -27,6 +27,7 @@ import {
 import { createConnectTaskRepository } from "../storage/connect-repository";
 import { recoverMdbaseMutationHandle } from "../storage/mdbase-mutation-coordinator";
 import { tasknotesMarkUrl } from "./assets";
+import { collectionErrorMessage as message } from "./collection-error";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
@@ -143,7 +144,7 @@ export default function CloudCollection({
     return (
       <ConnectionLifecycleProblem
         actionLabel="Retry opening TaskNotes"
-        message={session.problem.message}
+        message={message({ problem: session.problem })}
         onRetry={retryStartup}
       />
     );
@@ -619,7 +620,7 @@ export function CloudConnection({
       ) : null}
       {session.status === "blocked" ? (
         <p className="inline-error" role="alert">
-          {session.problem.message}
+          {message({ problem: session.problem })}
         </p>
       ) : null}
       {session.status === "setup_review_required" ? (
@@ -850,8 +851,4 @@ function ConnectionLifecycleProblem({
       ) : null}
     </main>
   );
-}
-
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
 }
