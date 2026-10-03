@@ -112,9 +112,6 @@ import type {
 import type {
   CreateTaskViewSourceInput,
   TaskView,
-  TaskViewDocument,
-  TaskViewExecution,
-  TaskViewSourceDocument,
   UpdateTaskViewSourceInput,
 } from "../domain/view";
 import type {
@@ -1255,48 +1252,22 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
-  listViews(): Promise<TaskViewDocument[]> {
-    return this.views.listViews();
-  }
-
-  cachedViews(): Promise<TaskViewDocument[]> {
-    return this.views.cachedViews();
-  }
-
-  cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
-    return this.views.cachedViewExecution(view);
-  }
-
-  iterateView(
+  listViews = () => this.views.listViews();
+  cachedViews = () => this.views.cachedViews();
+  cachedViewExecution = (view: TaskView) =>
+    this.views.cachedViewExecution(view);
+  iterateView = (
     view: TaskView,
-    options: { signal?: AbortSignal } = {},
-  ): AsyncIterable<TaskViewExecution> {
-    return this.views.iterateView(view, options);
-  }
-
-  executeView(view: TaskView): Promise<TaskViewExecution> {
-    return this.views.executeView(view);
-  }
-
-  readViewSource(path: string): Promise<TaskViewSourceDocument> {
-    return this.views.readViewSource(path);
-  }
-
-  createViewSource(
-    input: CreateTaskViewSourceInput,
-  ): Promise<TaskViewSourceDocument> {
-    return this.views.createViewSource(input);
-  }
-
-  updateViewSource(
-    input: UpdateTaskViewSourceInput,
-  ): Promise<TaskViewSourceDocument> {
-    return this.views.updateViewSource(input);
-  }
-
-  deleteViewSource(path: string, ifRevision?: string): Promise<void> {
-    return this.views.deleteViewSource(path, ifRevision);
-  }
+    options: { signal?: AbortSignal; cumulative?: boolean } = {},
+  ) => this.views.iterateView(view, options);
+  executeView = (view: TaskView) => this.views.executeView(view);
+  readViewSource = (path: string) => this.views.readViewSource(path);
+  createViewSource = (input: CreateTaskViewSourceInput) =>
+    this.views.createViewSource(input);
+  updateViewSource = (input: UpdateTaskViewSourceInput) =>
+    this.views.updateViewSource(input);
+  deleteViewSource = (path: string, ifRevision?: string) =>
+    this.views.deleteViewSource(path, ifRevision);
 
   listScratchFeed(request: ScratchFeedPageRequest = {}) {
     return this.serializeWrite("scratchpad:active", async () => {

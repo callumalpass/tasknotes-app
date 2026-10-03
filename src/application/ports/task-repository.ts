@@ -125,12 +125,13 @@ export interface TaskRepository {
   listViews(): Promise<TaskViewDocument[]>;
   cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null>;
   executeView(view: TaskView): Promise<TaskViewExecution>;
-  /** Optional caller-driven pages in authority order, with whole-query counts/groups.
+  /** Caller-driven pages in authority order, with whole-query counts/groups.
+   * cumulative returns immutable visible-prefix snapshots, accumulated once by the adapter.
    * Closing/aborting the iterator must release its read cursor. No UI provider branching.
    */
   iterateView?(
     view: TaskView,
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal; cumulative?: boolean },
   ): AsyncIterable<TaskViewExecution>;
   readViewSource(path: string): Promise<TaskViewSourceDocument>;
   createViewSource(

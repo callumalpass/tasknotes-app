@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
 import { CollectionAvailability } from "../components/collection-availability";
 import { TaskAddedNotice } from "../components/task-added-notice";
@@ -741,35 +742,8 @@ export function Navigation({
   });
   useEffect(() => {
     if (!menuPosition) return;
-    const menu = menuRef.current;
-    const keydown = (event: KeyboardEvent) => {
-      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-      const choices = [
-        ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
-          "[role='menuitem']",
-        ) ?? []),
-      ];
-      if (!choices.length) return;
-      const current = choices.indexOf(
-        document.activeElement as HTMLButtonElement,
-      );
-      const next =
-        event.key === "Home"
-          ? 0
-          : event.key === "End"
-            ? choices.length - 1
-            : event.key === "ArrowDown"
-              ? (current + 1) % choices.length
-              : (current - 1 + choices.length) % choices.length;
-      event.preventDefault();
-      choices[next]?.focus();
-    };
-    menu?.addEventListener("keydown", keydown);
     window.addEventListener("resize", closeMenu);
-    return () => {
-      menu?.removeEventListener("keydown", keydown);
-      window.removeEventListener("resize", closeMenu);
-    };
+    return () => window.removeEventListener("resize", closeMenu);
   }, [menuPosition]);
 
   function openMenu() {
@@ -886,6 +860,7 @@ export function Navigation({
                   id={menuId}
                   ref={menuRef}
                   role="menu"
+                  onKeyDown={(event) => moveMenuFocus(event, menuRef.current)}
                   style={menuPosition}
                 >
                   {additionalViews.map((view) => {

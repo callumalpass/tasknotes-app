@@ -31,6 +31,7 @@ import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
 import { DemoFileStore } from "./demo-file-store";
+import { BoundedCache } from "../storage/bounded-cache";
 import { demoTasks } from "./demo-tasks";
 
 import type {
@@ -104,7 +105,11 @@ export class DemoTaskRepository implements TaskRepository {
   private operationController = new AbortController();
   private readonly acceptedCreates = new WeakMap<TaskCreateIntent, Task>();
   private readonly tasks = new Map<string, Task>();
-  private readonly viewExecutions = new Map<string, TaskViewExecution>();
+  private readonly viewExecutions = new BoundedCache<TaskViewExecution>(
+    16,
+    8 * 1024 * 1024,
+    (execution) => 2 * JSON.stringify(execution).length,
+  );
   private readonly sources = new Map<string, TaskViewSourceDocument>();
   private documents: TaskViewDocument[];
   private readonly scratchpads = new Map<string, ScratchpadDocument>();
@@ -489,12 +494,15 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
-    return clone(this.viewExecutions.get(view.key) ?? null);
+    const cached = this.viewExecutions.get(view.key);
+    return cached?.view.source.revision === view.source.revision
+      ? clone(cached)
+      : null;
   }
 
   async *iterateView(
     view: TaskView,
-    options: { signal?: AbortSignal } = {},
+    options: { signal?: AbortSignal; cumulative?: boolean } = {},
   ): AsyncIterable<TaskViewExecution> {
     const signal = options.signal
       ? AbortSignal.any([this.operationController.signal, options.signal])
@@ -515,7 +523,7 @@ export class DemoTaskRepository implements TaskRepository {
       };
       cumulative = appendViewPage(cumulative, page);
       this.viewExecutions.set(view.key, cumulative);
-      yield clone(page);
+      yield clone(options.cumulative ? cumulative : page);
     }
   }
 

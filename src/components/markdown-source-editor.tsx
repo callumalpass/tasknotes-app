@@ -5,6 +5,7 @@ import { Compartment, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup } from "codemirror";
+import { observeTheme, resolveDarkTheme } from "@mdbase-dev/ui/theme";
 import { useEffect, useRef } from "react";
 import { Bold, Italic, Heading2, Quote, Link } from "lucide-react";
 import { writingCommand, type WritingAction } from "./markdown-writing-command";
@@ -44,15 +45,6 @@ const scratchpadHighlightStyle = HighlightStyle.define([
   },
   { tag: tags.comment, color: "var(--ink-muted)" },
 ]);
-
-function isDarkAppearance(): boolean {
-  const theme = document.documentElement.dataset.theme;
-  if (theme) return theme === "dark";
-  return (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
-}
 
 function scratchpadEditorTheme(dark: boolean) {
   return EditorView.theme(
@@ -147,7 +139,7 @@ export function MarkdownSourceEditor({
       () => completeRecordsRef.current,
     );
     const theme = new Compartment();
-    let dark = isDarkAppearance();
+    let dark = resolveDarkTheme();
     const view = new EditorView({
       parent: hostRef.current,
       state: EditorState.create({
@@ -188,26 +180,19 @@ export function MarkdownSourceEditor({
     });
     viewRef.current = view;
 
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     const updateTheme = () => {
-      const nextDark = isDarkAppearance();
+      const nextDark = resolveDarkTheme();
       if (nextDark === dark) return;
       dark = nextDark;
       view.dispatch({
         effects: theme.reconfigure(scratchpadEditorTheme(dark)),
       });
     };
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-    media?.addEventListener("change", updateTheme);
+    const stopObservingTheme = observeTheme(updateTheme);
 
     if (autoFocus) view.contentDOM.focus({ preventScroll: true });
     return () => {
-      observer.disconnect();
-      media?.removeEventListener("change", updateTheme);
+      stopObservingTheme();
       viewRef.current = null;
       view.destroy();
     };
