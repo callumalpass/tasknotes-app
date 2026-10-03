@@ -379,16 +379,6 @@ export function recurrenceLabel(value: string): string {
   return "Repeats";
 }
 
-export function recurrenceRule(value: string): string | undefined {
-  return {
-    daily: "FREQ=DAILY;INTERVAL=1",
-    weekdays: "FREQ=DAILY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR",
-    weekly: "FREQ=WEEKLY;INTERVAL=1",
-    monthly: "FREQ=MONTHLY;INTERVAL=1",
-    yearly: "FREQ=YEARLY;INTERVAL=1",
-  }[value];
-}
-
 export function recurrencePreset(value?: string): string {
   if (!value) return "never";
   const rule = value.toUpperCase();
@@ -409,14 +399,4 @@ export function makeTaskPath(
   if (!title.trim()) throw new Error("A task title is required.");
   const folder = recordsFolder.replace(/^\/+|\/+$/g, "") || "tasks";
   return `${folder}/${id}.md`;
-}
-
-export function normalizeSearchQuery(value: string): string {
-  return value
-    .trim()
-    .split(/\s+/)
-    .map((token) => token.replace(/["*:^(){}[\]]/g, ""))
-    .filter(Boolean)
-    .map((token) => `"${token}"*`)
-    .join(" AND ");
 }

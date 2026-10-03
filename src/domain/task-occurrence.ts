@@ -134,18 +134,6 @@ export function occurrenceTask(value: TaskOccurrence): TaskSummary {
   };
 }
 
-export function occurrenceRange(
-  daysBefore: number,
-  daysAfter: number,
-  now = new Date(),
-): { start: string; end: string } {
-  const start = new Date(now);
-  start.setDate(start.getDate() - daysBefore);
-  const end = new Date(now);
-  end.setDate(end.getDate() + daysAfter);
-  return { start: todayString(start), end: todayString(end) };
-}
-
 export function projectTodayTasks(
   tasks: TaskSummary[],
   start: string,

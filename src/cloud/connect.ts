@@ -65,10 +65,6 @@ export async function startCloudSession(
   requireConnectOutcome(await cloudSession.start(options));
 }
 
-export function cloudControlUrl(): string {
-  return serverUrl;
-}
-
 export function isHostedCloudConnection(
   connection: Pick<MdbaseConnectionInfo, "authority">,
 ): boolean {

@@ -1,4 +1,5 @@
 import { linkDisplayLabel } from "../domain/completion";
+import { isEmptyFieldValue } from "../domain/custom-field-value";
 import { recurrencePreset } from "../domain/recurrence-rule";
 import { activeTimeEntry, type Task } from "../domain/task";
 
@@ -109,14 +110,7 @@ export function repeatSummary(draft: Draft): string {
   return values.join(" · ") || "No repeat or reminder";
 }
 
-export function isEmptyFieldValue(value: unknown): boolean {
-  return (
-    value === undefined ||
-    value === null ||
-    value === "" ||
-    (Array.isArray(value) && value.length === 0)
-  );
-}
+export { isEmptyFieldValue } from "../domain/custom-field-value";
 
 function listSummary(values: string[], singular: string): string {
   return values.length === 1

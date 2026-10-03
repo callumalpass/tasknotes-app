@@ -9,10 +9,6 @@ const LEGACY_STORAGE_KEY = "tasknotes:primary-views:v1";
 export const SCRATCHPAD_NAVIGATION_KEY = "tasknotes:scratchpad";
 export const SEARCH_NAVIGATION_KEY = "tasknotes:search";
 
-export function isSpecialNavigationKey(key: string): boolean {
-  return key === SCRATCHPAD_NAVIGATION_KEY || key === SEARCH_NAVIGATION_KEY;
-}
-
 export function navigationViewScope(info: CollectionInfo): string {
   return `${info.kind}:${info.id ?? info.location}`;
 }

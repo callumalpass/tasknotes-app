@@ -7,16 +7,16 @@ import {
   within,
 } from "@testing-library/react";
 import {
-  MdbaseConnectError,
   type JsonObject,
   type MdbaseConnection,
   type PendingMutation,
 } from "@mdbase-dev/connect";
-import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
+import { connectSuccess } from "@mdbase-dev/connect-testing";
 import { expect, it, vi } from "vitest";
 
 import { shiftTaskDate } from "../domain/task-date-actions";
-import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { taskRepositoryStub } from "../test/task-repository-stub";
+import { deferred, unknownOutcome } from "../test/mdbase-fixture";
 import { todayString } from "../domain/task";
 import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
@@ -32,34 +32,25 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   const update = vi.fn(() => pending.promise);
   const execution = boardExecution();
   const openTask = vi.fn();
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 1,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => [execution.rows[0].task],
-    cachedViewExecution: async () => null,
-    executeView: async () => execution,
-    readViewSource: async () => ({
-      path: execution.view.source.path,
-      format: "obsidian.base",
-      revision: "one",
-      document: `views:
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => [execution.rows[0].task],
+      cachedViewExecution: async () => null,
+      executeView: async () => execution,
+      readViewSource: async () => ({
+        path: execution.view.source.path,
+        format: "obsidian.base",
+        revision: "one",
+        document: `views:
   - type: tasknotesKanban
     name: Board
     groupBy: { property: status, direction: ASC }
 `,
-    }),
-    update,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      }),
+      update,
+    },
+    1,
+  );
 
   render(
     <RepositoryProvider
@@ -309,7 +300,7 @@ it("recovers an uncertain manual board write before sending the queued move", as
       void id;
       void input;
       recoveryActive = true;
-      throw unknownOutcome();
+      throw unknownOutcome("view-test-request");
     },
   );
   const recovery = vi.fn(async () => {
@@ -352,22 +343,16 @@ it("recovers an uncertain manual board write before sending the queued move", as
       return tasks;
     },
   );
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 2,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => execution.rows.map(({ task }) => task),
-    cachedViewExecution: async () => null,
-    executeView: async () => execution,
-    readViewSource: async () => ({
-      path: execution.view.source.path,
-      format: "obsidian.base",
-      revision: "one",
-      document: `views:
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => execution.rows.map(({ task }) => task),
+      cachedViewExecution: async () => null,
+      executeView: async () => execution,
+      readViewSource: async () => ({
+        path: execution.view.source.path,
+        format: "obsidian.base",
+        revision: "one",
+        document: `views:
   - type: tasknotesKanban
     name: Board
     groupBy: { property: status, direction: ASC }
@@ -375,16 +360,13 @@ it("recovers an uncertain manual board write before sending the queued move", as
       - column: note.tasknotes_manual_order
         direction: DESC
 `,
-    }),
-    update,
-    updateMany,
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      }),
+      update,
+      updateMany,
+      collectionInfo: testCollectionInfo,
+    },
+    2,
+  );
 
   render(
     <RepositoryProvider
@@ -472,41 +454,28 @@ it("serializes rapid consecutive board moves without rejecting the second move",
     .mockImplementationOnce(() => first.promise)
     .mockImplementationOnce(() => second.promise);
   const execution = boardExecution();
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 1,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => [execution.rows[0].task],
-    cachedViewExecution: async () => null,
-    executeView: async () => execution,
-    readViewSource: async () => ({
-      path: execution.view.source.path,
-      format: "obsidian.base",
-      revision: "one",
-      document: `views:
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => [execution.rows[0].task],
+      cachedViewExecution: async () => null,
+      executeView: async () => execution,
+      readViewSource: async () => ({
+        path: execution.view.source.path,
+        format: "obsidian.base",
+        revision: "one",
+        document: `views:
   - type: tasknotesKanban
     name: Board
     groupBy: { property: status, direction: ASC }
 `,
-    }),
-    update,
-    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
-      Promise.all(
-        updates.map(({ id, input }) =>
-          update(id, input as { sortOrder?: string }),
-        ),
-      ),
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      }),
+      update,
+      updateMany: async (updates) =>
+        Promise.all(updates.map(({ id, input }) => update(id, input))),
+      collectionInfo: testCollectionInfo,
+    },
+    1,
+  );
 
   render(
     <RepositoryProvider
@@ -588,33 +557,24 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   const fresh = structuredClone(cached);
   fresh.rows[0].task.title = "Fresh board result";
   const pending = deferred<TaskViewExecution>();
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 1,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => [cached.rows[0].task],
-    cachedViewExecution: async () => cached,
-    executeView: () => pending.promise,
-    readViewSource: async () => ({
-      path: cached.view.source.path,
-      format: "obsidian.base",
-      revision: cached.view.source.revision,
-      document: `views:
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => [cached.rows[0].task],
+      cachedViewExecution: async () => cached,
+      executeView: () => pending.promise,
+      readViewSource: async () => ({
+        path: cached.view.source.path,
+        format: "obsidian.base",
+        revision: cached.view.source.revision,
+        document: `views:
   - type: tasknotesKanban
     name: Board
     groupBy: { property: status, direction: ASC }
 `,
-    }),
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      }),
+    },
+    1,
+  );
 
   render(
     <RepositoryProvider
@@ -698,22 +658,16 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
     );
     return task;
   });
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: tasks.length,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => tasks,
-    cachedViewExecution: async () => null,
-    executeView: async () => staleExecution,
-    readViewSource: async () => ({
-      path: view.source.path,
-      format: "obsidian.base",
-      revision: "one",
-      document: `views:
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => tasks,
+      cachedViewExecution: async () => null,
+      executeView: async () => staleExecution,
+      readViewSource: async () => ({
+        path: view.source.path,
+        format: "obsidian.base",
+        revision: "one",
+        document: `views:
   - type: tasknotesTaskList
     name: Manual
     sort:
@@ -721,21 +675,18 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
         direction: DESC
     options: { create: false }
 `,
-    }),
-    update,
-    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
-      Promise.all(
-        updates.map(({ id, input }) =>
-          update(id, input as { sortOrder?: string }),
+      }),
+      update,
+      updateMany: async (updates) =>
+        Promise.all(
+          updates.map(({ id, input }) =>
+            update(id, input as { sortOrder?: string }),
+          ),
         ),
-      ),
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      collectionInfo: testCollectionInfo,
+    },
+    tasks.length,
+  );
 
   render(
     <RepositoryProvider
@@ -817,32 +768,23 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
       return source;
     },
   );
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: tasks.length,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => tasks,
-    cachedViewExecution: async () => null,
-    executeView: async () => ({
-      view,
-      rows: tasks.map((task) => ({ task, values: {} })),
-      totalCount: tasks.length,
-      hasMore: false,
-      groups: [],
-    }),
-    readViewSource: async () => source,
-    updateViewSource,
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => tasks,
+      cachedViewExecution: async () => null,
+      executeView: async () => ({
+        view,
+        rows: tasks.map((task) => ({ task, values: {} })),
+        totalCount: tasks.length,
+        hasMore: false,
+        groups: [],
+      }),
+      readViewSource: async () => source,
+      updateViewSource,
+      collectionInfo: testCollectionInfo,
+    },
+    tasks.length,
+  );
 
   const mounted = renderListView(repository, view);
   await startReordering();
@@ -972,26 +914,17 @@ it("offers manual order from a writable kanban view", async () => {
       return source;
     },
   );
-  const repository = {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 1,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => [execution.rows[0].task],
-    cachedViewExecution: async () => null,
-    executeView: async () => execution,
-    readViewSource: async () => source,
-    updateViewSource,
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => [execution.rows[0].task],
+      cachedViewExecution: async () => null,
+      executeView: async () => execution,
+      readViewSource: async () => source,
+      updateViewSource,
+      collectionInfo: testCollectionInfo,
+    },
+    1,
+  );
 
   renderListView(repository, execution.view);
   await startReordering();
@@ -1007,17 +940,16 @@ it("moves a task between reusable day sections with the shared list move path", 
     { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
     { ...listTask("today", "Today task"), due: today },
   ];
-  const update = vi.fn(
-    async (id: string, input: { due?: string | null; sortOrder?: string }) => {
-      const task = tasks.find((candidate) => candidate.id === id)!;
-      if (input.due !== undefined) task.due = input.due ?? undefined;
-      if (input.sortOrder !== undefined) task.sortOrder = input.sortOrder;
-      tasks.sort((left, right) =>
-        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
-      );
-      return task;
-    },
-  );
+  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+    const task = tasks.find((candidate) => candidate.id === id)!;
+    if (input.due !== undefined) task.due = input.due ?? undefined;
+    if (input.sortOrder !== undefined)
+      task.sortOrder = input.sortOrder ?? undefined;
+    tasks.sort((left, right) =>
+      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+    );
+    return task;
+  });
   const repository = manualListRepository(view, tasks, update, () => ({
     view,
     rows: tasks.map((task) => ({ task, values: {} })),
@@ -1066,17 +998,16 @@ it("moves a grouped list task by mutating the destination property", async () =>
     listTask("open", "Open task"),
     { ...listTask("done", "Done task"), status: "done" },
   ];
-  const update = vi.fn(
-    async (id: string, input: { status?: string; sortOrder?: string }) => {
-      const task = tasks.find((candidate) => candidate.id === id)!;
-      if (input.status !== undefined) task.status = input.status;
-      if (input.sortOrder !== undefined) task.sortOrder = input.sortOrder;
-      tasks.sort((left, right) =>
-        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
-      );
-      return task;
-    },
-  );
+  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+    const task = tasks.find((candidate) => candidate.id === id)!;
+    if (input.status !== undefined) task.status = input.status;
+    if (input.sortOrder !== undefined)
+      task.sortOrder = input.sortOrder ?? undefined;
+    tasks.sort((left, right) =>
+      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+    );
+    return task;
+  });
   const execution = (): TaskViewExecution => ({
     view,
     rows: tasks.map((task) => ({ task, values: { status: task.status } })),
@@ -1204,26 +1135,20 @@ function manualListView(
 function manualListRepository(
   view: TaskView,
   tasks: Task[],
-  update: ReturnType<typeof vi.fn>,
+  update: ReturnType<typeof vi.fn<TaskRepository["update"]>>,
   execution: () => TaskViewExecution,
   options: { groupBy?: string } = {},
 ): TaskRepository {
-  return {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: tasks.length,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
-    listSummaries: async () => tasks,
-    cachedViewExecution: async () => null,
-    executeView: async () => execution(),
-    readViewSource: async () => ({
-      path: view.source.path,
-      format: "obsidian.base",
-      revision: "one",
-      document: `views:
+  return taskRepositoryStub(
+    {
+      listSummaries: async () => tasks,
+      cachedViewExecution: async () => null,
+      executeView: async () => execution(),
+      readViewSource: async () => ({
+        path: view.source.path,
+        format: "obsidian.base",
+        revision: "one",
+        document: `views:
   - type: tasknotesTaskList
     name: ${view.name}
 ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC }\n` : ""}    sort:
@@ -1231,21 +1156,14 @@ ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC
         direction: DESC
     options: ${JSON.stringify(view.presentation?.options ?? {})}
 `,
-    }),
-    update,
-    updateMany: async (updates: Parameters<TaskRepository["updateMany"]>[0]) =>
-      Promise.all(
-        updates.map(({ id, input }) =>
-          (update as unknown as TaskRepository["update"])(id, input),
-        ),
-      ),
-    collectionInfo: testCollectionInfo,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+      }),
+      update,
+      updateMany: async (updates) =>
+        Promise.all(updates.map(({ id, input }) => update(id, input))),
+      collectionInfo: testCollectionInfo,
+    },
+    tasks.length,
+  );
 }
 
 function renderListView(repository: TaskRepository, view: TaskView) {
@@ -1281,7 +1199,7 @@ function renderListView(repository: TaskRepository, view: TaskView) {
 
 async function testCollectionInfo() {
   return {
-    kind: "local" as const,
+    kind: "connect" as const,
     id: "optimistic-view-tests",
     name: "Optimistic view tests",
     location: "memory://optimistic-view-tests",
@@ -1367,27 +1285,6 @@ function listTask(id: string, title: string): Task {
     revision: 1,
     frontmatter: { status: "open" },
   };
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((nextResolve, nextReject) => {
-    resolve = nextResolve;
-    reject = nextReject;
-  });
-  return { promise, resolve, reject };
-}
-
-function unknownOutcome(): MdbaseConnectError {
-  return connectError(
-    "operation_outcome_unknown",
-    "The direct write may have completed.",
-    {
-      operationOutcome: "unknown",
-      details: { request_id: "view-test-request" },
-    },
-  );
 }
 
 function mockPointerCapture(element: HTMLElement) {
