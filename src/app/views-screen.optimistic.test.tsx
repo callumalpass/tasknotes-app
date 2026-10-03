@@ -1082,11 +1082,13 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   };
   const repository = manualListRepository(view, tasks, vi.fn(), () => complete);
   let pages = 0;
-  repository.iterateView = async function* () {
+  repository.iterateView = async function* (_view, options) {
     pages++;
     yield { ...complete, rows: complete.rows.slice(0, 1), hasMore: true };
     pages++;
-    yield { ...complete, rows: complete.rows.slice(1) };
+    yield options?.cumulative
+      ? complete
+      : { ...complete, rows: complete.rows.slice(1) };
   };
   repository.updateViewSource = vi.fn();
   renderListView(repository, view);

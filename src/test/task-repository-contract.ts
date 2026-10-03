@@ -591,6 +591,41 @@ export function taskRepositoryContract(
       expect(
         (await repository.executeView(view)).rows.map((row) => row.task!.id),
       ).toEqual(ids);
+      const snapshots = repository.iterateView!(view, { cumulative: true })[
+        Symbol.asyncIterator
+      ]();
+      const prefix = (await snapshots.next()).value as TaskViewExecution;
+      expect(prefix.rows).toHaveLength(200);
+      const middle = (await snapshots.next()).value as TaskViewExecution;
+      expect(middle.rows).toHaveLength(400);
+      const final = (await snapshots.next()).value as TaskViewExecution;
+      expect(final.rows.map((row) => row.task.id)).toEqual(ids);
+      expect(prefix.rows).toHaveLength(200);
+      const expectedRecords = (await repository.executeView(view)).records;
+      expect(final.records ?? []).toHaveLength(expectedRecords?.length ?? 0);
+      await snapshots.return?.();
+    });
+
+    it("bounds saved-view retention and does not reuse an old source revision", async () => {
+      await repository.create({ title: "Retained" });
+      const view = await listView();
+      const views = Array.from({ length: 32 }, (_, index) => ({
+        ...view,
+        key: `${view.key}-${index}`,
+      }));
+      for (const selected of views) await repository.executeView(selected);
+      const retained = await Promise.all(
+        views.map((selected) => repository.cachedViewExecution(selected)),
+      );
+      expect(retained.filter(Boolean)).toHaveLength(16);
+      const latest = views.at(-1)!;
+      const revised = {
+        ...latest,
+        source: { ...latest.source, revision: "new-revision" },
+      };
+      await repository.executeView(revised);
+      expect(await repository.cachedViewExecution(latest)).toBeNull();
+      expect(await repository.cachedViewExecution(revised)).not.toBeNull();
     });
 
     it("closes/aborts a view cursor without poisoning a fresh read", async () => {

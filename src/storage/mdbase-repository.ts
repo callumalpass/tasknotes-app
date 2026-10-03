@@ -1269,7 +1269,7 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   iterateView(
     view: TaskView,
-    options: { signal?: AbortSignal } = {},
+    options: { signal?: AbortSignal; cumulative?: boolean } = {},
   ): AsyncIterable<TaskViewExecution> {
     return this.views.iterateView(view, options);
   }

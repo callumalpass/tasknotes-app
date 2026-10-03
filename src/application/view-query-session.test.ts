@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { ViewQuerySession } from "./view-query-session";
+import { ViewQuerySession, appendViewPage } from "./view-query-session";
 import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
@@ -38,7 +38,18 @@ function fixture(iterateView: TaskRepository["iterateView"]) {
       ...view.source,
       document: "views:\n  - type: tasknotesTaskList\n    name: Today\n",
     }),
-    iterateView,
+    iterateView: iterateView
+      ? async function* (
+          selected: TaskView,
+          options?: Parameters<NonNullable<TaskRepository["iterateView"]>>[1],
+        ) {
+          let cumulative: TaskViewExecution | null = null;
+          for await (const page of iterateView(selected, options)) {
+            cumulative = appendViewPage(cumulative, page);
+            yield options?.cumulative ? cumulative : page;
+          }
+        }
+      : undefined,
     executeView: vi.fn(async () => page("complete", false)),
   } as unknown as TaskRepository;
   const observer = {

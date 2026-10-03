@@ -90,6 +90,7 @@ export class ViewQuerySession {
       ) {
         const pages = this.repository.iterateView(this.view, {
           signal: this.controller.signal,
+          cumulative: true,
         });
         this.iterator = pages[Symbol.asyncIterator]();
         // Refresh the already-visible prefix without shrinking a warm workspace to page one.
@@ -147,7 +148,7 @@ export class ViewQuerySession {
           "The saved view ended before all remaining results were delivered. Retry the view.",
         );
     } else {
-      this.execution = appendViewPage(this.execution, next.value);
+      this.execution = next.value;
       if (!this.execution.hasMore) await this.iterator!.return?.();
     }
   }
