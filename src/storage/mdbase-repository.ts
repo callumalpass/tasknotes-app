@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
-import { appendViewPage } from "../application/view-query-session";
+import { MdbaseViewAdapter } from "./mdbase-view-adapter";
+import { validResult, operationDiagnostics } from "./mdbase-operation";
 import { taskCompletion } from "../domain/task-completion";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import {
@@ -14,18 +15,12 @@ import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
   linksTo,
   type CollectionDescription,
-  type ConnectOutcome,
   type JsonObject,
   type MdbaseConnection,
-  type MdbaseDiagnostic,
-  type MdbaseOperationEnvelope,
   type RecordDocument,
 } from "@mdbase-dev/connect";
 
-import {
-  connectProblemFromError,
-  requireConnectOutcome,
-} from "../cloud/outcome";
+import { connectProblemFromError } from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import { runtimeTimezone } from "../domain/runtime-timezone";
@@ -40,7 +35,6 @@ import {
   connectedTaskRelationships,
   sameConnectedTaskMetadata,
   connectedTaskStats,
-  connectedViewExecutionKey as viewExecutionKey,
 } from "./connected-task-cache";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { TaskDocumentCache } from "./task-document-cache";
@@ -51,11 +45,6 @@ import {
   unknownOutcomeRequestId,
 } from "./mdbase-mutation-coordinator";
 import { MdbaseCollectionFileStore } from "./mdbase-files";
-import {
-  newViewSourcePath,
-  viewSourceFormat,
-  viewSourceRecord,
-} from "../domain/default-view-source";
 import { readPeopleDirectory } from "./mdbase-people";
 import {
   activeScratchpads,
@@ -99,12 +88,6 @@ import {
   completeTaskValues,
   completionLimit,
 } from "./completions";
-import {
-  normalizeViewDocuments,
-  normalizeViewExecution,
-  type ProviderViewExecution,
-  type ProviderViewList,
-} from "./views";
 
 import type {
   CreateTaskInput,
@@ -187,12 +170,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private changeCursor?: number;
   private descriptionSignature?: string;
   private description?: CollectionDescription;
-  private viewCache: TaskViewDocument[] = [];
-  private readonly viewExecutionCache = new Map<string, TaskViewExecution>();
-  private readonly viewExecutionInFlight = new Map<
-    string,
-    { signal: AbortSignal; promise: Promise<TaskViewExecution> }
-  >();
+  private readonly views: MdbaseViewAdapter;
   private collectionId = "";
   private readonly listeners = new Set<(change?: RepositoryChange) => void>();
   private readonly writeTails = new Map<string, Promise<void>>();
@@ -228,6 +206,12 @@ export class MdbaseTaskRepository implements TaskRepository {
   };
 
   constructor(private readonly connect: MdbaseConnection<JsonObject>) {
+    this.views = new MdbaseViewAdapter(
+      connect,
+      () => this.requestOptions(),
+      (record) => this.readViewSummary(record),
+      (reason) => this.noteOperationFailure(reason),
+    );
     this.files = new MdbaseCollectionFileStore(
       connect,
       () => this.operationController.signal,
@@ -1230,7 +1214,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       this.taskProviders.set(this.taskTypeName, provider.model);
       this.documents.clear();
       this.viewTaskHints.clear();
-      this.viewExecutionCache.clear();
+      this.views.invalidate();
       this.completionCache.clear();
       // Settings change effective frontmatter too, not only the local model.
       // Requery metadata without materializing inherited defaults into files.
@@ -1271,262 +1255,47 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
-  async listViews(): Promise<TaskViewDocument[]> {
-    try {
-      this.viewCache = normalizeViewDocuments(
-        validResult(
-          await this.connect.listViews(this.requestOptions()),
-        ) as ProviderViewList,
-      );
-      return structuredClone(this.viewCache);
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      if (this.viewCache.length) return structuredClone(this.viewCache);
-      throw reason;
-    }
+  listViews(): Promise<TaskViewDocument[]> {
+    return this.views.listViews();
   }
 
-  async cachedViews(): Promise<TaskViewDocument[]> {
-    return structuredClone(this.viewCache);
+  cachedViews(): Promise<TaskViewDocument[]> {
+    return this.views.cachedViews();
   }
 
-  async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
-    const key = this.viewExecutionKey(view, runtimeTimezone());
-    const cached = this.viewExecutionCache.get(key);
-    if (!cached) return null;
-    this.viewExecutionCache.set(key, cached);
-    return structuredClone(cached);
+  cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
+    return this.views.cachedViewExecution(view);
   }
 
-  async *iterateView(
+  iterateView(
     view: TaskView,
     options: { signal?: AbortSignal } = {},
   ): AsyncIterable<TaskViewExecution> {
-    const timezone = runtimeTimezone();
-    const key = this.viewExecutionKey(view, timezone);
-    const signal = options.signal
-      ? AbortSignal.any([this.operationController.signal, options.signal])
-      : this.operationController.signal;
-    let cumulative: TaskViewExecution | null = null;
-    const pages = this.connect.executeViewPages(
-      { path: view.source.path, view: view.id, timezone, render: false },
-      { firstPageSize: 200, pageSize: 200, signal },
-    );
-    try {
-      signal.throwIfAborted();
-      for await (const outcome of pages) {
-        signal.throwIfAborted();
-        const result = validResult(outcome) as ProviderViewExecution;
-        const page = normalizeViewExecution(
-          view,
-          { ...result, diagnostics: operationDiagnostics(outcome) },
-          (record) => this.readViewSummary(record),
-        );
-        cumulative = appendViewPage(cumulative, page);
-        this.viewExecutionCache.set(key, cumulative);
-        yield page;
-      }
-    } catch (reason) {
-      if (!signal.aborted) this.noteOperationFailure(reason);
-      throw reason;
-    } finally {
-      await pages.return(undefined).catch(() => undefined);
-    }
+    return this.views.iterateView(view, options);
   }
 
-  async executeView(view: TaskView): Promise<TaskViewExecution> {
-    const timezone = runtimeTimezone();
-    const key = this.viewExecutionKey(view, timezone);
-    const signal = this.operationController.signal;
-    const pending = this.viewExecutionInFlight.get(key);
-    if (pending?.signal === signal) return pending.promise;
-    const execution = this.executeViewUnlocked(
-      view,
-      timezone,
-      key,
-      signal,
-    ).finally(() => {
-      if (this.viewExecutionInFlight.get(key)?.promise === execution)
-        this.viewExecutionInFlight.delete(key);
-    });
-    this.viewExecutionInFlight.set(key, { signal, promise: execution });
-    return execution;
+  executeView(view: TaskView): Promise<TaskViewExecution> {
+    return this.views.executeView(view);
   }
 
-  private async executeViewUnlocked(
-    view: TaskView,
-    timezone: string,
-    cacheKey: string,
-    signal: AbortSignal,
-  ): Promise<TaskViewExecution> {
-    try {
-      signal.throwIfAborted();
-      let result: ProviderViewExecution | undefined;
-      for await (const outcome of this.connect.executeViewPages(
-        {
-          path: view.source.path,
-          view: view.id,
-          timezone,
-          render: false,
-        },
-        {
-          firstPageSize: PAGE_SIZE,
-          pageSize: PAGE_SIZE,
-          signal,
-        },
-      )) {
-        signal.throwIfAborted();
-        const page = validResult(outcome) as ProviderViewExecution & {
-          page: number;
-        };
-        result ??= { results: [], meta: page.meta, diagnostics: [] };
-        result.results.push(...page.results);
-        result.diagnostics?.push(...operationDiagnostics(outcome));
-        result.meta = {
-          ...page.meta,
-          ...(page.meta.groups === undefined && result.meta.groups
-            ? { groups: result.meta.groups }
-            : {}),
-        };
-      }
-      signal.throwIfAborted();
-      if (!result)
-        throw new Error("Saved view execution completed without a page.");
-      const execution = normalizeViewExecution(view, result, (record) =>
-        this.readViewSummary(record),
-      );
-      signal.throwIfAborted();
-      this.viewExecutionCache.set(cacheKey, execution);
-      return execution;
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      const cached = this.viewExecutionCache.get(cacheKey);
-      if (cached) return { ...structuredClone(cached), stale: true };
-      throw reason;
-    }
+  readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    return this.views.readViewSource(path);
   }
 
-  async readViewSource(path: string): Promise<TaskViewSourceDocument> {
-    try {
-      return viewSourceDocument(
-        validResult(
-          await this.connect.read(
-            { path, includeDocument: true },
-            this.requestOptions(),
-          ),
-        ),
-      );
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      throw reason;
-    }
-  }
-
-  /** Saved views are ordinary records: Bases through obsidian.base, others through mdbase.view. */
-  async createViewSource(
+  createViewSource(
     input: CreateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    const path =
-      input.path ??
-      newViewSourcePath(input.format ?? "obsidian.base", input.name ?? "view");
-    const operationInput = {
-      path,
-      ...viewSourceRecord(path, input.document),
-      includeDocument: true,
-    };
-    try {
-      const applyCreated = (created: TaskViewSourceDocument) => {
-        this.invalidateViewsAfterMutation();
-        return created;
-      };
-      return await runMdbaseMutation(
-        this.connect,
-        async () =>
-          applyCreated(
-            viewSourceDocument(
-              validResult(
-                await this.connect.create(
-                  operationInput,
-                  this.requestOptions(),
-                ),
-              ),
-            ),
-          ),
-        {
-          key: mdbaseMutationKey("view-source:create", operationInput),
-          request: this.requestOptions(),
-          mapRecovered: applyCreated,
-        },
-      );
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      throw reason;
-    }
+    return this.views.createViewSource(input);
   }
 
-  /** A whole-document replacement keeps Obsidian's comments and layout. */
-  async updateViewSource(
+  updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    const operationInput = {
-      path: input.path,
-      document: input.document,
-      ifRevision: input.ifRevision,
-    };
-    try {
-      const applyUpdated = (updated: TaskViewSourceDocument) => {
-        this.invalidateViewsAfterMutation();
-        return updated;
-      };
-      return await runMdbaseMutation(
-        this.connect,
-        async () =>
-          applyUpdated(
-            viewSourceDocument(
-              validResult(
-                await this.connect.update(
-                  operationInput,
-                  this.requestOptions(),
-                ),
-              ),
-            ),
-          ),
-        {
-          key: mdbaseMutationKey("view-source:update", operationInput),
-          request: this.requestOptions(),
-          mapRecovered: applyUpdated,
-        },
-      );
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      throw reason;
-    }
+    return this.views.updateViewSource(input);
   }
 
-  async deleteViewSource(path: string, ifRevision?: string): Promise<void> {
-    const operationInput = { path, ifRevision };
-    try {
-      const applyDeleted = () => {
-        this.invalidateViewsAfterMutation();
-      };
-      await runMdbaseMutation(
-        this.connect,
-        async () => {
-          validResult(
-            await this.connect.delete(operationInput, this.requestOptions()),
-          );
-          applyDeleted();
-        },
-        {
-          key: mdbaseMutationKey("view-source:delete", operationInput),
-          request: this.requestOptions(),
-          mapRecovered: applyDeleted,
-        },
-      );
-    } catch (reason) {
-      this.noteOperationFailure(reason);
-      throw reason;
-    }
+  deleteViewSource(path: string, ifRevision?: string): Promise<void> {
+    return this.views.deleteViewSource(path, ifRevision);
   }
 
   listScratchFeed(request: ScratchFeedPageRequest = {}) {
@@ -1992,10 +1761,6 @@ export class MdbaseTaskRepository implements TaskRepository {
     );
   }
 
-  private invalidateViewsAfterMutation(): void {
-    this.viewExecutionCache.clear();
-  }
-
   async collectionInfo(): Promise<CollectionInfo> {
     return {
       kind: "connect",
@@ -2017,10 +1782,6 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   private requestOptions(): { signal: AbortSignal } {
     return { signal: this.operationController.signal };
-  }
-
-  private viewExecutionKey(view: TaskView, timezone: string): string {
-    return `${timezone}\u0000${viewExecutionKey(view)}`;
   }
 
   private async refreshPlan(
@@ -2819,28 +2580,6 @@ export class MdbaseTaskRepository implements TaskRepository {
   }
 }
 
-function validResult<Result>(
-  envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
-): Result {
-  if ("ok" in envelope) return requireConnectOutcome(envelope);
-  // Test doubles written for the pre-beta.23 describe() shape return the
-  // description directly. Keep that narrow compatibility at this boundary.
-  if (!("valid" in envelope)) return envelope as unknown as Result;
-  if (!envelope.valid)
-    throw new Error(
-      envelope.diagnostics.map((item) => item.message).join(" ") ||
-        "The collection rejected this change.",
-    );
-  return envelope.result;
-}
-
-function operationDiagnostics<Result>(
-  envelope: ConnectOutcome<Result> | MdbaseOperationEnvelope<Result>,
-): MdbaseDiagnostic[] {
-  if ("ok" in envelope) return envelope.ok ? envelope.diagnostics : [];
-  return envelope.diagnostics;
-}
-
 function frontmatterPatch(
   before: Record<string, unknown>,
   after: Record<string, unknown>,
@@ -2884,17 +2623,4 @@ function connectionErrorMessage(reason: unknown): string {
     return "The computer holding this collection is offline.";
   if (reason instanceof Error && reason.message) return reason.message;
   return "This collection is not reachable right now.";
-}
-
-function viewSourceDocument(record: {
-  path: string;
-  revision: string;
-  document?: string;
-}): TaskViewSourceDocument {
-  return {
-    path: record.path,
-    format: viewSourceFormat(record.path),
-    revision: record.revision,
-    document: record.document ?? "",
-  };
 }
