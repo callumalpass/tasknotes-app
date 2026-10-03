@@ -1,5 +1,6 @@
 import type { JsonObject, MdbaseConnection } from "@mdbase-dev/connect";
 import { appendViewPage } from "../application/view-query-session";
+import { BoundedCache } from "./bounded-cache";
 import {
   newViewSourcePath,
   viewSourceFormat,
@@ -29,12 +30,17 @@ import {
 } from "./views";
 
 const PAGE_SIZE = 1_000;
+type ExecutionSlot = { signature: string; execution: TaskViewExecution | null };
 
 // View retention and cursors belong to this instance. Connection cancellation,
 // status, task decoding, and mutation recovery remain shared with the facade.
 export class MdbaseViewAdapter {
   private catalog: TaskViewDocument[] = [];
-  private readonly executions = new Map<string, TaskViewExecution>();
+  private readonly executions = new BoundedCache<ExecutionSlot>(
+    16,
+    8 * 1024 * 1024,
+    (slot) => (slot.execution ? 2 * JSON.stringify(slot.execution).length : 0),
+  );
   private readonly inFlight = new Map<
     string,
     { signal: AbortSignal; promise: Promise<TaskViewExecution> }
@@ -60,6 +66,13 @@ export class MdbaseViewAdapter {
           await this.connect.listViews(this.requestOptions()),
         ) as ProviderViewList,
       );
+      const live = new Set(
+        this.catalog.flatMap((document) =>
+          document.views.map((view) => view.key),
+        ),
+      );
+      for (const key of this.executions.keys())
+        if (!live.has(key)) this.executions.delete(key);
       return structuredClone(this.catalog);
     } catch (reason) {
       this.noteFailure(reason);
@@ -74,18 +87,17 @@ export class MdbaseViewAdapter {
 
   async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
     const key = this.executionKey(view, runtimeTimezone());
-    const cached = this.executions.get(key);
-    if (!cached) return null;
-    this.executions.set(key, cached);
-    return structuredClone(cached);
+    const slot = this.executions.get(view.key);
+    return slot?.signature === key ? structuredClone(slot.execution) : null;
   }
 
   async *iterateView(
     view: TaskView,
-    options: { signal?: AbortSignal } = {},
+    options: { signal?: AbortSignal; cumulative?: boolean } = {},
   ): AsyncIterable<TaskViewExecution> {
     const timezone = runtimeTimezone();
     const key = this.executionKey(view, timezone);
+    const slot = this.beginExecution(view.key, key);
     const ownerSignal = this.requestOptions().signal;
     const signal = options.signal
       ? AbortSignal.any([ownerSignal, options.signal])
@@ -106,8 +118,8 @@ export class MdbaseViewAdapter {
           this.readTask,
         );
         cumulative = appendViewPage(cumulative, page);
-        this.executions.set(key, cumulative);
-        yield page;
+        this.cacheExecution(view.key, slot, cumulative);
+        yield options.cumulative ? cumulative : page;
       }
     } catch (reason) {
       if (!signal.aborted) this.noteFailure(reason);
@@ -123,10 +135,11 @@ export class MdbaseViewAdapter {
     const signal = this.requestOptions().signal;
     const pending = this.inFlight.get(key);
     if (pending?.signal === signal) return pending.promise;
+    const slot = this.beginExecution(view.key, key);
     const execution = this.executeViewUnlocked(
       view,
       timezone,
-      key,
+      slot,
       signal,
     ).finally(() => {
       if (this.inFlight.get(key)?.promise === execution)
@@ -139,7 +152,7 @@ export class MdbaseViewAdapter {
   private async executeViewUnlocked(
     view: TaskView,
     timezone: string,
-    cacheKey: string,
+    slot: ExecutionSlot,
     signal: AbortSignal,
   ): Promise<TaskViewExecution> {
     try {
@@ -168,12 +181,13 @@ export class MdbaseViewAdapter {
         throw new Error("Saved view execution completed without a page.");
       const execution = normalizeViewExecution(view, result, this.readTask);
       signal.throwIfAborted();
-      this.executions.set(cacheKey, execution);
+      this.cacheExecution(view.key, slot, execution);
       return execution;
     } catch (reason) {
       this.noteFailure(reason);
-      const cached = this.executions.get(cacheKey);
-      if (cached) return { ...structuredClone(cached), stale: true };
+      const retained = this.executions.get(view.key);
+      if (retained?.signature === slot.signature && retained.execution)
+        return { ...structuredClone(retained.execution), stale: true };
       throw reason;
     }
   }
@@ -272,6 +286,27 @@ export class MdbaseViewAdapter {
       this.noteFailure(reason);
       throw reason;
     }
+  }
+
+  private beginExecution(key: string, signature: string): ExecutionSlot {
+    const previous = this.executions.get(key);
+    const slot = {
+      signature,
+      execution: previous?.signature === signature ? previous.execution : null,
+    };
+    this.executions.set(key, slot);
+    return slot;
+  }
+
+  private cacheExecution(
+    key: string,
+    slot: ExecutionSlot,
+    execution: TaskViewExecution,
+  ): void {
+    // A newer request, invalidation or eviction owns this identity now.
+    if (this.executions.get(key) !== slot) return;
+    slot.execution = execution;
+    this.executions.set(key, slot);
   }
 
   private executionKey(view: TaskView, timezone: string): string {
