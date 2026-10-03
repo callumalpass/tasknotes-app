@@ -118,15 +118,22 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.17");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.18");
     const taskSeed = manifest.provisions.type_packs[0].manifest.resources.find(
       (resource) => resource.kind === "type",
     );
     expect(taskSeed.mode).toBe("seed");
-    expect(taskSeed.upgrade_from.document).toContain("0.3.0-rc.3");
-    expect(taskSeed.upgrade_from.digest).toBe(
-      `sha256:${createHash("sha256").update(taskSeed.upgrade_from.document).digest("hex")}`,
-    );
+    expect(Array.isArray(taskSeed.upgrade_from)).toBe(true);
+    expect(
+      taskSeed.upgrade_from.map(
+        (baseline) => parse(baseline.document.split("---\n")[1]).version,
+      ),
+    ).toEqual([4, 3, 2, 1]);
+    for (const baseline of taskSeed.upgrade_from) {
+      expect(baseline.digest).toBe(
+        `sha256:${createHash("sha256").update(baseline.document).digest("hex")}`,
+      );
+    }
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",
