@@ -1,13 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
-import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { taskRepositoryStub } from "../test/task-repository-stub";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
 
 import type { CreateTaskInput, Task } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
-import type { TaskRepository } from "../application/ports/task-repository";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 
 it("creates from a saved view with inferred defaults and refreshes the real result", async () => {
@@ -24,8 +23,7 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
     hasMore: false,
     groups: [],
   });
-  const repository = {
-    initialize: async () => undefined,
+  const repository = taskRepositoryStub({
     refresh: async () => ({
       scanned: created ? 1 : 0,
       changed: 0,
@@ -49,12 +47,7 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
         - projects.contains("mdbase")
 `,
     }),
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
-  } as unknown as TaskRepository;
+  });
 
   render(
     <RepositoryProvider

@@ -682,13 +682,15 @@ export function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-export function unknownOutcome(): MdbaseConnectError {
+export function unknownOutcome(
+  requestId = "fixture-request",
+): MdbaseConnectError {
   return connectError(
     "operation_outcome_unknown",
     "The direct write may have completed.",
     {
       operationOutcome: "unknown",
-      details: { request_id: "fixture-request" },
+      details: { request_id: requestId },
     },
   );
 }

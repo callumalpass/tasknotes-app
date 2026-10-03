@@ -8,7 +8,7 @@ import {
 import { parse } from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
+import { taskRepositoryStub } from "../test/task-repository-stub";
 import { suggestedFilterAndSortFields } from "../domain/view-document";
 import { RepositoryProvider } from "./repository-context";
 import { ViewEditor } from "./view-editor";
@@ -526,24 +526,12 @@ function repository(
   const source =
     overrides.source ??
     baseSource("views: [{ type: tasknotesTaskList, name: Work }]\n");
-  return {
-    initialize: async () => undefined,
-    refresh: async () => ({
-      scanned: 0,
-      changed: 0,
-      removed: 0,
-      elapsedMs: 0,
-    }),
+  return taskRepositoryStub({
     listSummaries: async () => [],
     completeField: async () => [],
     readViewSource: async () => source,
-    taskConfiguration: async () => defaultTaskCollectionConfiguration(),
-    connectionStatus: async () => ({
-      state: "connected",
-    }),
-    syncIssues: async () => [],
     ...overrides,
-  } as TaskRepository;
+  });
 }
 
 function savedView(): TaskView {
