@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
-import { ViewQuerySession } from "../application/view-query-session";
+import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty } from "../domain/default-view-source";
@@ -40,11 +40,7 @@ import {
 import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
-import {
-  useRepository,
-  useRepositoryRevision,
-  useTasks,
-} from "./repository-context";
+import { useRepository, useTasks } from "./repository-context";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
 import { readViewDraft, updateViewDocument } from "../domain/view-document";
@@ -86,7 +82,6 @@ import type {
 import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
 
-type ViewExecutionFailure = { key: string; reason: unknown };
 type ViewEditorRequest = {
   view?: TaskView;
   duplicate?: boolean;
@@ -143,21 +138,6 @@ export function ViewsScreen({
       occurrenceDate,
       completed: !taskCompletion(task, occurrenceDate),
     });
-  const viewQueryRef = useRef<ViewQuerySession | null>(null);
-  const queryRowsRef = useRef(new Map<string, number>());
-  const [paging, setPaging] = useState({
-    key: "",
-    available: false,
-    used: false,
-  });
-  const viewRevision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
-  const [execution, setExecution] = useState<TaskViewExecution | null>(null);
-  const [executionError, setExecutionError] =
-    useState<ViewExecutionFailure | null>(null);
-  const [executionRetry, setExecutionRetry] = useState(0);
-  const [refreshingExecution, setRefreshingExecution] = useState<string | null>(
-    null,
-  );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
   const [arrangingViewKey, setArrangingViewKey] = useState<string>();
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
@@ -254,18 +234,6 @@ export function ViewsScreen({
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
-  const calendarMutations = useCalendarMutations(
-    selected,
-    (refreshed) => {
-      if (selectedKeyRef.current !== refreshed.view.key) return;
-      setExecution(refreshed);
-      setExecutionError(null);
-    },
-    (view, reason) => {
-      if (selectedKeyRef.current === view.key)
-        setExecutionError({ key: view.key, reason });
-    },
-  );
   const reconcileOptimisticExecution = useCallback(
     (nextExecution: TaskViewExecution, nextViewKey: string) => {
       const rows = new Map(
@@ -288,56 +256,40 @@ export function ViewsScreen({
     },
     [configuration.fieldMapping.sortOrder],
   );
-  useEffect(() => {
-    if (!viewKey || !selected) return;
-    const executionKey = `${selected.key}:${selected.source.revision}`;
-    const session = new ViewQuerySession(
-      repository,
-      selected,
-      {
-        result: (result) => {
-          setExecution(result);
-          if (!result.stale) {
-            if (queryRowsRef.current.get(selected.key) !== Infinity)
-              queryRowsRef.current.set(selected.key, result.rows.length);
-            reconcileOptimisticExecution(result, selected.key);
-          }
-          setExecutionError(null);
-        },
-        error: (reason) => setExecutionError({ key: selected.key, reason }),
-        pending: (pending) => {
-          setRefreshingExecution(pending ? executionKey : null);
-          setPaging((previous) => ({
-            key: selected.key,
-            available: session.canLoadMore,
-            used:
-              session.canLoadMore ||
-              (previous.key === selected.key && previous.used),
-          }));
-        },
-      },
-      queryRowsRef.current.get(selected.key) ?? 0,
-    );
-    viewQueryRef.current = session;
-    void session.start();
-    return () => {
-      if (viewQueryRef.current === session) viewQueryRef.current = null;
-      session.close();
-    };
-  }, [
-    configuration.fieldMapping.sortOrder,
-    reconcileOptimisticExecution,
+  const {
+    currentSession,
+    rememberAllRows,
+    retryExecution,
+    execution,
+    setExecution,
+    executionError,
+    setExecutionError,
+    refreshingExecution,
+    paging,
+  } = useViewExecution(
     repository,
     selected,
     viewKey,
-    viewRevision,
-    executionRetry,
-  ]);
+    configuration.fieldMapping.sortOrder,
+    reconcileOptimisticExecution,
+  );
+  const calendarMutations = useCalendarMutations(
+    selected,
+    (refreshed) => {
+      if (selectedKeyRef.current !== refreshed.view.key) return;
+      setExecution(refreshed);
+      setExecutionError(null);
+    },
+    (view, reason) => {
+      if (selectedKeyRef.current === view.key)
+        setExecutionError({ key: view.key, reason });
+    },
+  );
   useEffect(() => {
     if (!viewKey || !selected) return;
     let active = true;
     void (
-      viewQueryRef.current?.readSource() ??
+      currentSession()?.readSource() ??
       repository.readViewSource(selected.source.path)
     )
       .then((source) => {
@@ -368,7 +320,7 @@ export function ViewsScreen({
     return () => {
       active = false;
     };
-  }, [configuration, repository, selected, viewKey]);
+  }, [configuration, repository, selected, viewKey, currentSession]);
   const visibleExecution =
     execution?.view.key === selected?.key ? execution : null;
   const currentSort =
@@ -847,7 +799,7 @@ export function ViewsScreen({
 
   async function refreshAfterCreate(task: TaskSummary) {
     if (!selected) return;
-    const session = viewQueryRef.current;
+    const session = currentSession();
     const draftVersion = captureSession.getSnapshot().version;
     await session?.start();
     const refreshed = session?.currentResult;
@@ -1052,7 +1004,7 @@ export function ViewsScreen({
             canEdit={Boolean(selected?.source.writable)}
             reason={error}
             onEdit={() => selected && setEditing({ view: selected })}
-            onRetry={() => setExecutionRetry((attempt) => attempt + 1)}
+            onRetry={retryExecution}
           />
         ) : null}
         {selected && !editing ? (
@@ -1077,9 +1029,11 @@ export function ViewsScreen({
             disabled={currentExecutionRefreshing}
             onClick={() => {
               const key = selected?.key;
-              void viewQueryRef.current?.loadAll().then((complete) => {
-                if (complete && key) queryRowsRef.current.set(key, Infinity);
-              });
+              void currentSession()
+                ?.loadAll()
+                .then((complete) => {
+                  if (complete && key) rememberAllRows(key);
+                });
             }}
           >
             {currentExecutionRefreshing
@@ -1302,7 +1256,7 @@ export function ViewsScreen({
             aria-disabled={currentExecutionRefreshing || !paging.available}
             onClick={() => {
               if (!currentExecutionRefreshing && paging.available)
-                void viewQueryRef.current?.loadMore();
+                void currentSession()?.loadMore();
             }}
           >
             {currentExecutionRefreshing
