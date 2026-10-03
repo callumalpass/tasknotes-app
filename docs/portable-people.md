@@ -60,7 +60,7 @@ queries omit `includeBody`; the semantic query API rejects that concrete-record 
 
 - Durable application access goes through `TaskRepository`; Connect metadata and
   projected records use the pinned provider-neutral SDK, not direct provider URLs.
-- Canonical candidates: task contract rc.5, task pack rc.17/type v4, model rc.13,
+- Canonical candidates: task contract rc.5, task pack rc.18/type v4, model rc.13,
   spec rc.5, `mdbase.person` 2.0.0. Published predecessor artifacts are unchanged.
 - SDK: `@mdbase-dev/connect` 0.1.0-beta.114 from the registry (Connect `62242c21`).
 - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:conformance` and
