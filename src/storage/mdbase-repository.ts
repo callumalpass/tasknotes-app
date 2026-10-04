@@ -24,6 +24,7 @@ import { connectProblemFromError } from "../cloud/outcome";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { archiveMoveWarning } from "../domain/task-archive";
 import { runtimeTimezone } from "../domain/runtime-timezone";
+import type { ReminderTimerAuthority } from "./reminder-timers";
 import { desiredTaskTimers } from "../domain/reminder-timers";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
@@ -202,7 +203,13 @@ export class MdbaseTaskRepository implements TaskRepository {
     state: "connecting",
   };
 
-  constructor(private readonly connect: MdbaseConnection<JsonObject>) {
+  constructor(
+    private readonly connect: MdbaseConnection<JsonObject>,
+    private readonly options: {
+      /** mdbase-next: reconcile opaque timers with the control plane's timer service. */
+      reminderTimers?: ReminderTimerAuthority;
+    } = {},
+  ) {
     this.views = new MdbaseViewAdapter(
       connect,
       () => this.requestOptions(),
@@ -450,6 +457,15 @@ export class MdbaseTaskRepository implements TaskRepository {
           signal,
           timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
         };
+        const reminderTimers = this.options.reminderTimers;
+        if (reminderTimers) {
+          // The timer service is outside the collection: no record mutation
+          // to coordinate, and it works while no replica is online.
+          await reminderTimers.reconcile(operationInput, request);
+          signal.throwIfAborted();
+          completed = target;
+          continue;
+        }
         await runMdbaseMutation(
           this.connect,
           async () => {
