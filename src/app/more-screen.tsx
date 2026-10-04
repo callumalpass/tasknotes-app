@@ -1,7 +1,5 @@
 import {
   ChevronDown,
-  ChevronUp,
-  Cloud,
   Download,
   FileText,
   Info,
@@ -27,9 +25,9 @@ import {
   saveThemePreference,
   type ThemePreference,
 } from "../theme";
-import { useCollectionGate } from "./collection-context";
+import { CollectionSettings } from "./collection-settings";
 import { changeNotificationLabel } from "./notification-label";
-import { useCollectionSummary, useRepository } from "./repository-context";
+import { useRepository } from "./repository-context";
 import { storageExplanation } from "./storage-trust";
 import type { CalendarPreferences } from "./calendar-preferences";
 
@@ -40,12 +38,8 @@ export function MoreScreen({
   calendarPreferences: CalendarPreferences;
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
-  const { info, stats, loading } = useCollectionSummary();
-  const { connection, lastRefresh, refresh, refreshing, reminderAuthority } =
-    useRepository();
+  const { reminderAuthority } = useRepository();
   const deliversReminders = reminderAuthority !== "none";
-  const { changeCollection } = useCollectionGate();
-  const [showLocation, setShowLocation] = useState(false);
   const [changeNotifications, setChangeNotifications] =
     useState<MdbaseNotificationStatus>({
       state: "checking",
@@ -127,75 +121,7 @@ export function MoreScreen({
       <header className="screen-header compact-header">
         <h1 id="settings-title">Settings</h1>
       </header>
-      <SettingsSection label="Collection">
-        <div className="setting-row">
-          <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>{info?.name ?? "mdbase collection"}</span>
-          <small>
-            {loading
-              ? "Opening"
-              : `${stats?.open ?? 0} open · ${stats?.total ?? 0} total`}
-          </small>
-        </div>
-        <button
-          className="text-action"
-          disabled={refreshing}
-          type="button"
-          onClick={() => void refresh()}
-        >
-          {refreshing ? "Refreshing" : "Refresh now"}
-        </button>
-        {/* Storage detail and diagnostics stay available without leading the page. */}
-        <button
-          aria-expanded={showLocation}
-          className="setting-explanation"
-          type="button"
-          onClick={() => setShowLocation((value) => !value)}
-        >
-          <span>How tasks are stored</span>
-          {showLocation ? (
-            <ChevronUp aria-hidden="true" size={17} />
-          ) : (
-            <ChevronDown aria-hidden="true" size={17} />
-          )}
-        </button>
-        {showLocation ? (
-          <div className="collection-storage-detail">
-            <p className="section-copy">{storageExplanation()}</p>
-            {info ? (
-              <code className="collection-path">{info.location}</code>
-            ) : null}
-            {lastRefresh ? (
-              <p className="refresh-detail">
-                Last refresh checked {lastRefresh.scanned.toLocaleString()}{" "}
-                records in {lastRefresh.elapsedMs.toLocaleString()} ms.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="settings-subsection">
-          <h3>Connection</h3>
-          <div className="setting-row">
-            <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
-            <span>mdbase</span>
-            <small>{connectionLabel(connection)}</small>
-          </div>
-          {connection.message ? (
-            <p className="section-copy" role="status">
-              {connection.message}
-            </p>
-          ) : null}
-          <div className="cloud-actions">
-            <button
-              className="text-action"
-              type="button"
-              onClick={changeCollection}
-            >
-              Change collection
-            </button>
-          </div>
-        </div>
-      </SettingsSection>
+      <CollectionSettings />
 
       <SettingsSection label="Notifications">
         <div className="setting-row">
@@ -382,14 +308,6 @@ function ThemeSelect() {
       }}
     />
   );
-}
-
-function connectionLabel(
-  connection: ReturnType<typeof useRepository>["connection"],
-): string {
-  if (connection.state === "connecting") return "Connecting";
-  if (connection.state === "unavailable") return "Collection unavailable";
-  return "Connected";
 }
 
 function SettingsSection({

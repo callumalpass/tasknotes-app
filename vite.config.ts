@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import { lingui } from "@lingui/vite-plugin";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
@@ -10,7 +11,11 @@ const { version } = JSON.parse(
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: process.env.VITE_BASE_PATH ?? "/",
-  plugins: [androidNotificationSmokeEntry(), react()],
+  plugins: [
+    androidNotificationSmokeEntry(),
+    react(),
+    lingui({ macroTransform: true }),
+  ],
   optimizeDeps: {
     include: [
       "@fullcalendar/react",

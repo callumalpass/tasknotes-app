@@ -6,3 +6,5 @@ node_modules/
 pnpm-lock.yaml
 playwright-report/
 test-results/
+# Deterministic Lingui compile output; formatting is owned by the compiler.
+src/i18n/locales/*/messages.json
