@@ -1,6 +1,7 @@
 import { offlineShellPlugin } from "@mdbase-dev/sdk/offline-shell/build";
 import react from "@vitejs/plugin-react";
 import { readdirSync, readFileSync } from "node:fs";
+import { lingui } from "@lingui/vite-plugin";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
@@ -30,6 +31,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     androidNotificationSmokeEntry(),
     react(),
+    lingui({ macroTransform: true }),
     offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
   ],
   worker: { format: "es" },

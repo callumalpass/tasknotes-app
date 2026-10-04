@@ -19,3 +19,5 @@ vendor/native-publish/staging/
 vendor/native-publish/staging-eaa4e697/
 # Canonical signed production trust bytes; formatting would change its digest.
 vendor/production-trust.json
+# Deterministic Lingui compile output; formatting is owned by the compiler.
+src/i18n/locales/*/messages.json

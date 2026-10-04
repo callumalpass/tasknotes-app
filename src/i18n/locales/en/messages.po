@@ -1,0 +1,72 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-05 00:33+1100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/app/collection-settings.tsx
+msgid "{open} open · {total} total"
+msgstr "{open} open · {total} total"
+
+#: src/app/collection-settings.tsx
+msgid "Change collection"
+msgstr "Change collection"
+
+#. The selected mdbase collection, not a group of interface controls.
+#: src/app/collection-settings.tsx
+msgctxt "settings section title"
+msgid "Collection"
+msgstr "Collection"
+
+#: src/app/collection-settings.tsx
+msgid "Collection unavailable"
+msgstr "Collection unavailable"
+
+#: src/app/collection-settings.tsx
+msgid "Connected"
+msgstr "Connected"
+
+#: src/app/collection-settings.tsx
+msgid "Connecting"
+msgstr "Connecting"
+
+#: src/app/collection-settings.tsx
+msgctxt "mdbase authority status"
+msgid "Connection"
+msgstr "Connection"
+
+#: src/i18n/pilot-fixture.tsx
+msgctxt "translation pilot rich-text example"
+msgid "Hello {name}. Read <0>the documentation</0>."
+msgstr "Hello {name}. Read <0>the documentation</0>."
+
+#: src/app/collection-settings.tsx
+msgid "How tasks are stored"
+msgstr "How tasks are stored"
+
+#: src/app/collection-settings.tsx
+msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
+msgstr "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
+
+#: src/app/collection-settings.tsx
+msgid "mdbase collection"
+msgstr "mdbase collection"
+
+#: src/app/collection-settings.tsx
+msgid "mdbase is the source of truth. Changes require a connection."
+msgstr "mdbase is the source of truth. Changes require a connection."
+
+#: src/app/collection-settings.tsx
+msgid "Opening"
+msgstr "Opening"
+
+#: src/app/collection-settings.tsx
+msgid "Refresh now"
+msgstr "Refresh now"
+
+#: src/app/collection-settings.tsx
+msgid "Refreshing"
+msgstr "Refreshing"

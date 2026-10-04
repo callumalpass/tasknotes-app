@@ -111,3 +111,4 @@
 - TaskNotes setup now installs Scratchpad note and image types. Existing collections can add missing definitions in a separate setup round without replacing their earlier setup history.
 - Disable reminder reconciliation in the next app until its timer service is available.
 - Previously loaded saved views can show cached rows immediately while refreshing. Cached rows remain marked stale and are cleared when collection data changes.
+- Added a scoped English/French translation pilot for the Collection settings panel, including correctly pluralized refresh counts and localized accessible controls. Normal release UI remains English while the pilot is reviewed.
