@@ -1,0 +1,12 @@
+{
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "sourceRepository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "d81ff8614ed95695368452f2e2d404f369f3840c",
+  "artifact": "mdbase-dev-sdk-0.0.0-d81ff861.tgz",
+  "bytes": 143225,
+  "sha256": "b3a102f8ab66d0443dd1868b9fa03e6ba6182ebe3e7945283d5686fdbb6c0c39",
+  "sha512": "81234fb5a88e2ff870b5589487d1f89f2bd0bf1ccbde077263982178f184b7a2b1e5d46532c116e215a829327e1724d88c6ff3d558a06388bf50dde375c2ffb0",
+  "developmentOnly": true,
+  "releaseQualified": false
+}

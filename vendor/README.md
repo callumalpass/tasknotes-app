@@ -5,7 +5,19 @@ repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing
 their source commit, byte size, and SHA-512 digest.
 
-Current snapshots were packed from sibling checkouts after their full test
+## Dormant next-SDK development snapshot
+
+`mdbase-dev-sdk-0.0.0-d81ff861.tgz` pins the unpublished next SDK by source
+revision and artifact integrity; the adjacent JSON records both hashes. This
+snapshot is **development-only, not release-qualified**. Its TaskNotes record
+projection tests use the SDK's protocol stand-in, not a real collection. The
+application does not import or activate the next path yet. Replace the snapshot
+with the SDK owner's qualified release pin before creating store candidates.
+Do not interpret `0.0.0` as a released v2 package version.
+
+## Existing package snapshots
+
+Current TaskNotes snapshots were packed from sibling checkouts after their full test
 suites passed:
 
 - `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.18`, catalog digest
