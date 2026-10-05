@@ -130,8 +130,10 @@ manual responsibilities. The script never invents or changes those answers.
 The public job waits up to 30 minutes for the **exact version and build number**
 to finish processing. It creates/reuses the store version, preserves the
 inherited listing/screenshots, updates release/review notes, attaches the build,
-and submits it for App Review. Release is automatic after Apple approval, for
-all users immediately (no phased rollout). Tags and ordinary uploads remain
+and submits it for App Review. Release is **manual after Apple approval**:
+the approved version remains held until Callum explicitly releases it in App
+Store Connect. The submission script never releases an approved version and
+refuses an already submitted version using automatic release. Tags and ordinary uploads remain
 **TestFlight-only**; `submit_public` defaults to false.
 
 ```sh
@@ -172,8 +174,11 @@ build. Resolve such conflicts in App Store Connect, then rerun deliberately.
 ### Verification and limits
 
 The Actions summary reports the exact source and Apple's resulting state.
-`WAITING_FOR_REVIEW` means **submitted, not live**. Verify `READY_FOR_SALE` and
-Apple's public listing after approval; approval timing remains Apple's decision.
+`WAITING_FOR_REVIEW` means **submitted, not live**. After approval,
+`PENDING_DEVELOPER_RELEASE` means **approved but held**. Only after Callum's
+separate release approval, release that exact version/build manually in App
+Store Connect, then verify `READY_FOR_SALE` and Apple's public listing. Review
+timing remains Apple's decision.
 
 Local tests require only Node 22 or newer:
 

@@ -63,6 +63,32 @@ code:
 The script has no track or production override. A production path must be added
 and reviewed separately.
 
+## Prepare a signed candidate without publishing
+
+Run **Android** manually on the exact reviewed candidate branch with
+`signed_candidate=true`. This runs the existing verification/debug build, then
+builds signed APK/AAB artifacts using repository signing secrets. It does not
+upload to Play or create a GitHub release; the downstream publisher accepts
+only successful **tag push** runs, not manual dispatches.
+
+```sh
+gh workflow run android.yml --ref feat/dual-backend -f signed_candidate=true
+```
+
+Record the source commit, workflow run ID, package version and generated
+`versionCode` from the Actions summary. Download the candidate artifact named
+`tasknotes-android-candidate-<commit>-<run-number>`. **Do not create an
+`android-v*` tag for candidate preparation**: tags trigger publication.
+
+For a release intended to clear review but remain held, Callum must upload the
+exact candidate AAB through Play Console with **Managed publishing** enabled,
+verify that the change will remain held after review, and send it for review
+only after explicit submission approval. Releasing the held change requires
+separate approval. The existing tag publisher marks `alpha` releases completed;
+it is not the manual-release route and must not be used for this cutover.
+Production-track submission requires Callum's suitably authorized Play Console
+account; the CI service account has testing-track permissions only.
+
 ## Publish a closed-test build
 
 1. Set `package.json` to the intended version and merge the verified commit to
