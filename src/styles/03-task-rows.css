@@ -5,7 +5,6 @@
   grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-height: 48px;
   background: transparent;
-  border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 35%);
   transition:
     opacity 180ms var(--ease-out),
     background-color 180ms var(--ease-out);
@@ -87,6 +86,17 @@
 
 .task-actions-trigger > svg {
   transform: translateY(-4px);
+}
+
+/* A row's overflow recedes until it is hovered, focused, or open. */
+.task-row .task-actions-trigger {
+  color: var(--ink-faint);
+}
+
+.task-row .task-actions-trigger:hover,
+.task-row .task-actions-trigger:focus-visible,
+.task-row .task-actions-trigger[aria-expanded="true"] {
+  color: var(--ink-soft);
 }
 
 /* Touch rows keep the 44px target but align the glyph with the page edge. */
@@ -420,14 +430,14 @@
     background-color 160ms var(--ease-out);
 }
 
-/* A non-default status keeps a shape cue, not only its stored color. */
+/* A non-default status keeps a shape cue, not only its stored color. The
+   stored color is a swatch inside the ring, never the control's ink. */
 .completion-control.has-status span::before {
   position: absolute;
   inset: 5px;
   content: "";
-  background: currentColor;
+  background: var(--status-color, currentColor);
   border-radius: 50%;
-  opacity: 0.85;
 }
 
 .completion-control[aria-busy="true"] {

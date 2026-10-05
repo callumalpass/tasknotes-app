@@ -1,20 +1,12 @@
-import {
-  CalendarDays,
-  ChartNoAxesGantt,
-  ChevronDown,
-  ChevronUp,
-  Columns3,
-  FolderKanban,
-  GripVertical,
-  List,
-} from "lucide-react";
-import { useRef, useState } from "react";
+import { ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { createElement, useRef, useState } from "react";
 
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import type { TaskView } from "../../domain/view";
 import { selectionFeedback } from "../../native/feedback";
+import { taskViewIcon } from "./view-icon";
 
 type NavigationDropPlacement = "before" | "after";
 type NavigationDragState = {
@@ -297,16 +289,9 @@ function moveIsValid(
 }
 
 export function ViewIcon({ view }: { view: TaskView }) {
-  const type = view.presentation?.type;
-  const Icon =
-    type === "tasknotes.projects"
-      ? FolderKanban
-      : type === "tasknotes.planner"
-        ? ChartNoAxesGantt
-        : type === "tasknotes.kanban"
-          ? Columns3
-          : type === "tasknotes.calendar" || type === "tasknotes.mini-calendar"
-            ? CalendarDays
-            : List;
-  return <Icon aria-hidden="true" size={21} strokeWidth={1.55} />;
+  return createElement(taskViewIcon(view), {
+    "aria-hidden": true,
+    size: 21,
+    strokeWidth: 1.55,
+  });
 }

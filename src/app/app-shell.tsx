@@ -1,13 +1,10 @@
 import {
-  CalendarDays,
-  ChartNoAxesGantt,
-  CheckCircle2,
   Columns3,
   FilePenLine,
-  List,
   Plus,
   Search,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -18,6 +15,7 @@ import { TaskAddedNotice } from "../components/task-added-notice";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
+import { taskViewIcon } from "./views/view-icon";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
@@ -675,7 +673,7 @@ export function Navigation({
     key: string;
     navigationKey: string;
     label: string;
-    icon: typeof CheckCircle2;
+    icon: LucideIcon;
     route: Route;
   }[] = [];
   for (const key of navigationKeys) {
@@ -705,7 +703,7 @@ export function Navigation({
         key: `view:${view.key}`,
         navigationKey: key,
         label: view.name,
-        icon: navigationViewIcon(view),
+        icon: taskViewIcon(view),
         route:
           view.key === homeKey
             ? { page: "home" }
@@ -930,15 +928,4 @@ export function Navigation({
       ) : null}
     </>
   );
-}
-
-function navigationViewIcon(view: TaskView): typeof CheckCircle2 {
-  if (view.presentation?.type === "tasknotes.planner") return ChartNoAxesGantt;
-  if (view.presentation?.type === "tasknotes.kanban") return Columns3;
-  if (
-    view.presentation?.type === "tasknotes.calendar" ||
-    view.presentation?.type === "tasknotes.mini-calendar"
-  )
-    return CalendarDays;
-  return List;
 }
