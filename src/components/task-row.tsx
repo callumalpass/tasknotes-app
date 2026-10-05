@@ -161,7 +161,10 @@ export function TaskRow({
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
         style={
-          distinctStatus && statusColor ? { color: statusColor } : undefined
+          // The stored colour fills only the status dot; the ring stays ink.
+          distinctStatus && statusColor
+            ? ({ "--status-color": statusColor } as React.CSSProperties)
+            : undefined
         }
         onClick={() => void complete()}
       >

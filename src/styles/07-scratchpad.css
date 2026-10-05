@@ -64,8 +64,8 @@ html.scratchpad-route .page-surface {
   gap: 6px;
   color: var(--ink-soft);
   font-weight: 650;
-  border: 1px solid var(--line);
-  border-radius: 9px;
+  border: 0;
+  border-radius: var(--radius-control);
 }
 
 .scratchpad-image-action {
@@ -78,19 +78,16 @@ html.scratchpad-route .page-surface {
 .scratchpad-image-action[aria-expanded="true"] {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
 }
 
 .scratchpad-new-action {
   padding: 0 12px;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 68%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: transparent;
 }
 
 .scratchpad-new-action:hover {
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
 }
 
 .scratchpad-drop-overlay {
@@ -144,10 +141,9 @@ html.scratchpad-route .page-surface {
 .scratchpad-document,
 .scratchpad-current-document {
   overflow: visible;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--paper);
-  box-shadow: 0 1px 2px var(--color-shadow-soft);
 }
 
 .scratchpad-document-disclosure {
@@ -314,7 +310,7 @@ html.scratchpad-route .page-surface {
   flex: 0 0 auto;
   background: var(--paper-raised);
   border-color: var(--line-strong);
-  box-shadow: 0 8px 28px var(--color-shadow-soft);
+  box-shadow: 0 1px 2px var(--color-shadow-soft);
 }
 
 .scratchpad-load-older {
@@ -333,7 +329,6 @@ html.scratchpad-route .page-surface {
   min-height: 46px;
   align-items: center;
   gap: 16px;
-  border-bottom: 1px solid var(--line);
 }
 
 .scratchpad-title-row input {
@@ -362,12 +357,9 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-title-meta small {
-  padding: 3px 7px;
   color: var(--accent);
   font-size: var(--type-label);
   font-weight: 700;
-  background: var(--accent-soft);
-  border-radius: 999px;
 }
 
 .scratchpad-title-row time {
@@ -824,7 +816,7 @@ html.scratchpad-route .page-surface {
   bottom: 10px;
   left: -13px;
   width: 1px;
-  background: var(--line-strong);
+  background: var(--line);
   content: "";
   opacity: clamp(0, var(--scratch-depth), 1);
 }
@@ -835,7 +827,8 @@ html.scratchpad-route .page-surface {
   grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
   min-height: 48px;
   align-items: start;
-  border-bottom: 1px solid var(--line);
+  /* Rows are told apart by their leading control, not by rules. */
+  border-radius: var(--radius-control);
   transition: background 150ms ease;
 }
 
@@ -887,6 +880,17 @@ html.scratchpad-route .page-surface {
   color: var(--ink-muted);
   background: transparent;
   border: 0;
+}
+
+/* Like task rows, an outline row's overflow recedes until it is used. */
+.scratchpad-row-menu-trigger {
+  color: var(--ink-faint);
+}
+
+.scratchpad-row-menu-trigger:hover,
+.scratchpad-row-menu-trigger:focus-visible,
+.scratchpad-row-menu-trigger[aria-expanded="true"] {
+  color: var(--ink-soft);
 }
 
 .scratchpad-collapse,
@@ -1125,8 +1129,6 @@ html.scratchpad-route .page-surface {
 .scratchpad-nlp-preview {
   display: grid;
   grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
-  margin-top: -1px;
-  border-bottom: 1px solid var(--line);
 }
 
 .scratchpad-nlp-preview > div {
@@ -1635,7 +1637,6 @@ html.scratchpad-route .page-surface {
     flex-wrap: wrap;
     gap: 4px;
     padding: 5px 0 7px;
-    border-bottom: 1px solid var(--line);
   }
   .scratchpad-mobile-move {
     touch-action: none;
@@ -1652,7 +1653,7 @@ html.scratchpad-route .page-surface {
     color: var(--ink-soft);
     font-size: var(--type-label);
     background: var(--paper-soft);
-    border: 1px solid var(--line);
+    border: 0;
     border-radius: var(--radius-control);
   }
 

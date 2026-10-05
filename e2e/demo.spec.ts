@@ -620,7 +620,7 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
     .locator(".scratchpad-current-document")
     .evaluate((card) => {
       const probe = document.createElement("div");
-      probe.style.boxShadow = "0 8px 28px var(--color-shadow-soft)";
+      probe.style.boxShadow = "0 1px 2px var(--color-shadow-soft)";
       document.body.append(probe);
       const expected = getComputedStyle(probe).boxShadow;
       probe.remove();

@@ -2,26 +2,26 @@
 name: TaskNotes mobile
 description: A quiet mobile task surface derived from the mdbase standards-document visual system.
 colors:
-  paper: "#FFFFFF"
-  paper-soft: "#FAFBFC"
-  ink: "#20242C"
-  ink-soft: "#505965"
-  ink-muted: "#77818E"
-  line: "#E6EAF0"
-  line-strong: "#CDD3DC"
-  accent: "#356F96"
-  danger: "#974D4A"
-  success: "#4F735D"
+  paper: "#FCFDFE"
+  paper-soft: "#F5F7FA"
+  ink: "#182029"
+  ink-soft: "#49515A"
+  ink-muted: "#687077"
+  line: "#E4E6E9"
+  line-strong: "#C6CBD0"
+  accent: "#1D66A7"
+  danger: "#A04038"
+  success: "#2A7449"
 dark-colors:
-  paper: "oklch(17.5% 0.012 255)"
-  paper-soft: "oklch(20% 0.013 255)"
-  paper-raised: "oklch(21.5% 0.014 255)"
-  ink: "oklch(92% 0.008 255)"
-  ink-soft: "oklch(78% 0.01 255)"
-  ink-muted: "oklch(67% 0.012 255)"
-  line: "oklch(29% 0.012 255)"
-  line-strong: "oklch(40% 0.014 255)"
-  accent: "oklch(73% 0.09 238)"
+  paper: "oklch(17.5% 0.012 250)"
+  paper-soft: "oklch(20% 0.013 250)"
+  paper-raised: "oklch(21.5% 0.014 250)"
+  ink: "oklch(92% 0.008 250)"
+  ink-soft: "oklch(78% 0.01 250)"
+  ink-muted: "oklch(67% 0.012 250)"
+  line: "oklch(29% 0.012 250)"
+  line-strong: "oklch(40% 0.014 250)"
+  accent: "oklch(74% 0.11 250)"
 typography:
   title:
     fontFamily: "Atkinson Hyperlegible"
@@ -72,16 +72,24 @@ requires a high-clarity surface with stable controls and no visual ceremony.
 
 Use paper across the application. Paper-soft may distinguish a true secondary
 surface such as the navigation bar or read-only metadata region. Lines group
-rows and fields. Accent is reserved for focus, selection, links, and active
+sections and fields. Accent is reserved for focus, selection, links, and active
 navigation. Semantic colors always appear with a word, icon, or position.
+
+The palette is one hue family plus two semantic colors. Ink, paper, lines,
+and the accent blue share hue 250; neutrals carry almost no chroma, so paper
+reads as white rather than tinted, and the accent is the only blue the
+interface itself draws. Danger is a plain red and success a plain green, both
+at the accent's lightness. Do not introduce a second blue or a tinted surface.
 
 Dark mode uses deep blue-black paper rather than pure black. Raised surfaces
 remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA
 contrast.
 
-Stored priority colors decorate a swatch, not the label's ink. Keep selected and
-unselected text legible without rewriting users' colors.
+Stored status and priority colors decorate a swatch, not the label's ink or a
+control's outline: a non-default status fills the dot inside an ink-colored
+completion ring. Keep selected and unselected text legible without rewriting
+users' colors.
 
 `#808080` is a data-layer compatibility value used when parsing legacy task
 color metadata and in its fixtures. It is not an interface color.
@@ -128,8 +136,10 @@ the capture plus; ordinary component text uses the nearest semantic token.
 ## Layout
 
 Views are edge-to-edge pages with 20-point horizontal insets. Repeated tasks
-are rows separated by one-pixel rules, not cards. Section spacing is generous;
-row spacing is compact. The bottom navigation is flat and separated by one
+are rows, not cards, and are told apart by their completion circle and metadata
+line rather than by rules between them. One-pixel rules are reserved for
+section, field, and surface boundaries. Section spacing is generous; row
+spacing is compact. The bottom navigation is flat and separated by one
 rule. Detail editing uses an ordinary scrolling form instead of nested panels.
 
 ```text
@@ -137,9 +147,7 @@ TODAY                         Tue 21
 
 ○  Prepare project brief
    10:00 · work
-──────────────────────────────────
 ○  Review mobile storage plan
-──────────────────────────────────
 
 +  Add a task
 ──────────────────────────────────
@@ -185,6 +193,14 @@ Today             Search       More
   for keyboard focus.
 - Loading uses skeleton rows that preserve the final layout.
 - Empty states name the next useful action in one sentence.
+- Row overflow triggers (task rows and Scratchpad outline rows) use faint ink
+  at no less than 3:1 against paper and darken on hover, focus, or when open,
+  so a column of them recedes behind titles without losing its 44px target.
+- Every navigation destination has its own glyph. A saved view's icon follows
+  its layout (day-sectioned list, agenda, month calendar, board, planner,
+  projects, plain list); the starter Projects and Archive views, which share
+  the plain list layout, are distinguished by name. The sidebar, phone tab
+  bar, Browse menu, and Manage views use the same mapping.
 - The desktop sidebar leads with a filled New task action, lists navigation
   destinations, and groups Manage views and Settings at its foot. Destinations
   reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
@@ -220,8 +236,11 @@ Today             Search       More
   bottom. On phones, the current card follows the Visual Viewport boundary so
   it stays immediately above an overlaying onscreen keyboard without returning
   to vertical re-centering. Intentional upward scrolling reveals history, and
-  loading older items preserves the visible position. Each file is a lightweight note card;
-  this boundary stays stronger than the rules between rows inside it. Explanatory
+  loading older items preserves the visible position. Each file is a lightweight note card with
+  a hairline border and no rules between its outline rows; the current note
+  alone takes the stronger border and a minimal shadow. A note's title and
+  toolbar form one header above a single rule. New note and Add image are
+  borderless text actions, and Current note is plain accent text, not a pill. Explanatory
   chrome and separate Add task/Add note buttons are omitted: the trailing outline
   row is the capture affordance. Every card can switch between the structured
   Outline editor and its exact Markdown source through a visible Outline / Write
