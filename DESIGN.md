@@ -238,6 +238,11 @@ Today             Search       More
   Resume as current: pending edits to both notes save first, the selected note
   retains its identity and contents, and the displaced current note becomes the
   newest history entry.
+  Each previous note card carries a quiet Note actions overflow menu, available
+  collapsed or expanded, whose Delete note action needs no confirmation: the
+  card leaves the feed, focus moves to Undo in the notice, and the record is
+  deleted after 30 seconds, on Dismiss, or when the screen is left. The current
+  note has no such menu.
   Safe raster images added through the compact capture panel, feed-wide drop
   target, file picker, mobile camera picker, or clipboard become independent
   feed cards even when an editor is focused. Image cards resolve lazily, can

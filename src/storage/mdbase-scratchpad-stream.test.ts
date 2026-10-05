@@ -209,7 +209,7 @@ describe("mdbase scratchpad stream", () => {
     expect(fixture.query).toHaveBeenCalledWith(
       expect.objectContaining({
         types: ["tasknotes-scratch"],
-        where: 'note.state == "active"',
+        where: 'record.state == "active"',
         includeBody: false,
       }),
     );
@@ -218,6 +218,89 @@ describe("mdbase scratchpad stream", () => {
       { path: "scratchpads/Scratchpad.md" },
       expect.anything(),
     );
+  });
+
+  it("selects from every note when the authority cannot evaluate the active filter", async () => {
+    const fixture = mdbaseFixture([
+      scratchpad("old", "2026-07-01T00:00:00.000Z"),
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const query = fixture.query.getMockImplementation()!;
+    // Observed from an authority without the expression's namespace: every
+    // record is reported as a warning and the valid result is empty.
+    fixture.query.mockImplementation(async (input) => {
+      if (
+        Array.isArray(input?.types) &&
+        input.types.includes("tasknotes-scratch") &&
+        typeof input.where === "string"
+      )
+        return {
+          valid: true,
+          result: { results: [] },
+          diagnostics: [...fixture.records.values()].map((record) => ({
+            severity: "warning" as const,
+            code: "expression_evaluation_error",
+            field: "where",
+            message: "No such overload",
+            path: record.path,
+          })),
+        } as unknown as Awaited<ReturnType<typeof query>>;
+      return query(input);
+    });
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+
+    expect((await repository.getActiveScratchpad()).id).toBe("current");
+    expect((await repository.listScratchFeed()).current.id).toBe("current");
+    expect(
+      fixture.create.mock.calls.filter(
+        ([input]) => input.type === "tasknotes-scratch",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("deletes a previous note only at the revision the caller holds", async () => {
+    const fixture = mdbaseFixture([
+      scratchpad("old", "2026-07-01T00:00:00.000Z"),
+      scratchpad("current", "2026-07-03T00:00:00.000Z", "active"),
+    ]);
+    const repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    const current = await repository.getActiveScratchpad();
+    const old = (await repository.listScratchFeed()).items.find(
+      (item) => item.id === "old",
+    )!;
+
+    await expect(
+      repository.deleteScratchpad({
+        id: current.id,
+        path: current.path,
+        revision: current.revision,
+      }),
+    ).rejects.toThrow("Only a previous note can be deleted.");
+    await expect(
+      repository.deleteScratchpad({
+        id: old.id,
+        path: old.path,
+        revision: "stale",
+      }),
+    ).rejects.toThrow("Reload it before deleting.");
+    expect(fixture.remove).not.toHaveBeenCalled();
+
+    await repository.deleteScratchpad({
+      id: old.id,
+      path: old.path,
+      revision: old.revision,
+    });
+
+    expect(fixture.remove).toHaveBeenCalledWith(
+      { path: old.path, ifRevision: old.revision },
+      expect.anything(),
+    );
+    expect(fixture.records.has(old.path)).toBe(false);
+    const page = await repository.listScratchFeed();
+    expect(page.current.id).toBe("current");
+    expect(page.items.map(({ id }) => id)).not.toContain("old");
   });
 
   it("repairs multiple active notes without changing contents or deleting files", async () => {

@@ -130,6 +130,9 @@ interface ScratchpadNotice {
   tasks?: TaskSummary[];
 }
 
+/** Matches the recovery window of deleted tasks. */
+const SCRATCHPAD_DELETE_UNDO_MS = 30_000;
+
 export function ScratchpadScreen({
   onOpenTask,
 }: {
@@ -157,6 +160,11 @@ export function ScratchpadScreen({
   const [error, setError] = useState("");
   const [streamNotice, setStreamNotice] = useState("");
   const [resumeUndo, setResumeUndo] = useState<ScratchpadDocument>();
+  const [pendingDeletion, setPendingDeletion] = useState<ScratchpadDocument>();
+  const pendingDeletionRef = useRef<
+    { document: ScratchpadDocument; timer: number } | undefined
+  >(undefined);
+  const deletionUndoRef = useRef<HTMLButtonElement | null>(null);
   const flushers = useRef(new Map<string, () => Promise<unknown>>());
   const imageActionRef = useRef<HTMLButtonElement | null>(null);
   const screenRef = useRef<HTMLElement | null>(null);
@@ -366,7 +374,99 @@ export function ScratchpadScreen({
     }
   }
 
-  const historicalItems = [...historyItems].reverse();
+  // The delete is sent only when its undo window closes. A note's type assigns
+  // a new id and creation date on create, so a deleted note cannot be restored
+  // as itself; until then the card is only hidden.
+  const commitDeletion = useCallback(async () => {
+    const pending = pendingDeletionRef.current;
+    if (!pending || !repository.deleteScratchpad) return;
+    pendingDeletionRef.current = undefined;
+    window.clearTimeout(pending.timer);
+    const { document } = pending;
+    try {
+      await repository.deleteScratchpad({
+        id: document.id,
+        path: document.path,
+        revision: document.revision,
+      });
+      setHistoryItems((items) =>
+        items.filter(
+          (item) => item.kind === "image" || item.id !== document.id,
+        ),
+      );
+      setExpandedIds((current) => {
+        if (!current.has(document.id)) return current;
+        const next = new Set(current);
+        next.delete(document.id);
+        return next;
+      });
+    } catch (reason) {
+      setError(`The note was not deleted. ${message(reason)}`);
+    } finally {
+      setPendingDeletion((current) =>
+        current?.id === document.id ? undefined : current,
+      );
+    }
+  }, [repository]);
+
+  useEffect(() => {
+    // Leaving the screen or the page accepts a pending deletion.
+    const commit = () => void commitDeletion();
+    window.addEventListener("pagehide", commit);
+    return () => {
+      window.removeEventListener("pagehide", commit);
+      commit();
+    };
+  }, [commitDeletion]);
+
+  useEffect(() => {
+    // The deleted card took focus with it; Undo is the nearest useful target.
+    if (pendingDeletion) deletionUndoRef.current?.focus();
+  }, [pendingDeletion]);
+
+  async function requestDeletion(document: ScratchpadDocument) {
+    if (
+      !repository.deleteScratchpad ||
+      startingNew ||
+      reactivatingId !== undefined
+    )
+      return;
+    setError("");
+    let latest: ScratchpadDocument;
+    try {
+      // Only one undo window is open at a time.
+      await commitDeletion();
+      const flushed = (await flushers.current.get(document.id)?.()) as
+        ScratchpadDocument | undefined;
+      latest = flushed ?? document;
+    } catch (reason) {
+      setError(message(reason));
+      return;
+    }
+    setResumeUndo(undefined);
+    setStreamNotice("");
+    pendingDeletionRef.current = {
+      document: latest,
+      timer: window.setTimeout(
+        () => void commitDeletion(),
+        SCRATCHPAD_DELETE_UNDO_MS,
+      ),
+    };
+    setPendingDeletion(latest);
+  }
+
+  function undoDeletion() {
+    const pending = pendingDeletionRef.current;
+    // Without a pending entry the delete has already been sent.
+    if (!pending) return;
+    window.clearTimeout(pending.timer);
+    pendingDeletionRef.current = undefined;
+    setPendingDeletion(undefined);
+  }
+
+  const historicalItems = [...historyItems]
+    .reverse()
+    .filter((item) => item.kind === "image" || item.id !== pendingDeletion?.id);
 
   useLayoutEffect(() => {
     const surface = screenRef.current;
@@ -724,7 +824,33 @@ export function ScratchpadScreen({
           <strong>Drop images to add them</strong>
         </div>
       ) : null}
-      {streamNotice ? (
+      {pendingDeletion ? (
+        <div className="scratchpad-notice" role="status">
+          <span className="scratchpad-notice-title">
+            {pendingDeletion.title?.trim()
+              ? `Deleted “${pendingDeletion.title.trim()}”`
+              : "Note deleted"}
+            <span className="visually-hidden">
+              . Undo is available for 30 seconds.
+            </span>
+          </span>
+          <button
+            className="scratchpad-notice-action"
+            ref={deletionUndoRef}
+            type="button"
+            onClick={undoDeletion}
+          >
+            Undo
+          </button>
+          <button
+            aria-label="Dismiss"
+            type="button"
+            onClick={() => void commitDeletion()}
+          >
+            <X aria-hidden="true" size={16} />
+          </button>
+        </div>
+      ) : streamNotice ? (
         <div className="scratchpad-notice" role="status">
           <span>{streamNotice}</span>
           {resumeUndo ? (
@@ -881,37 +1007,45 @@ export function ScratchpadScreen({
                   data-feed-key={scratchFeedKey(item)}
                   key={scratchFeedKey(item)}
                 >
-                  <button
-                    className={`scratchpad-document-disclosure${document.title && !expanded ? " has-title" : ""}`}
-                    type="button"
-                    aria-expanded={expanded}
-                    onClick={() => void toggleDocument(document)}
-                  >
-                    <span>
-                      {document.title && !expanded ? (
-                        <strong>{document.title}</strong>
+                  <div className="scratchpad-document-header">
+                    <button
+                      className={`scratchpad-document-disclosure${document.title && !expanded ? " has-title" : ""}`}
+                      type="button"
+                      aria-expanded={expanded}
+                      onClick={() => void toggleDocument(document)}
+                    >
+                      <span>
+                        {document.title && !expanded ? (
+                          <strong>{document.title}</strong>
+                        ) : null}
+                        <time dateTime={scratchpadHistoryDate(document)}>
+                          {formatScratchDate(scratchpadHistoryDate(document))}
+                        </time>
+                      </span>
+                      {!expanded && document.title ? (
+                        <small>{scratchpadPreview(document)}</small>
                       ) : null}
-                      <time dateTime={scratchpadHistoryDate(document)}>
-                        {formatScratchDate(scratchpadHistoryDate(document))}
-                      </time>
-                    </span>
-                    {!expanded && document.title ? (
-                      <small>{scratchpadPreview(document)}</small>
+                      {expanded ? (
+                        <ChevronDown
+                          aria-hidden="true"
+                          className="scratchpad-document-chevron"
+                          size={18}
+                        />
+                      ) : (
+                        <ChevronRight
+                          aria-hidden="true"
+                          className="scratchpad-document-chevron"
+                          size={18}
+                        />
+                      )}
+                    </button>
+                    {repository.deleteScratchpad ? (
+                      <ScratchNoteActions
+                        disabled={startingNew || reactivatingId !== undefined}
+                        onDelete={() => void requestDeletion(document)}
+                      />
                     ) : null}
-                    {expanded ? (
-                      <ChevronDown
-                        aria-hidden="true"
-                        className="scratchpad-document-chevron"
-                        size={18}
-                      />
-                    ) : (
-                      <ChevronRight
-                        aria-hidden="true"
-                        className="scratchpad-document-chevron"
-                        size={18}
-                      />
-                    )}
-                  </button>
+                  </div>
                   {expanded ? editor(document) : null}
                 </article>
               );
@@ -1037,6 +1171,94 @@ export function ScratchpadScreen({
         </div>
       </div>
     </section>
+  );
+}
+
+function ScratchNoteActions({
+  disabled,
+  onDelete,
+}: {
+  disabled: boolean;
+  onDelete(): void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !menuRef.current?.contains(event.target) &&
+        !menuTriggerRef.current?.contains(event.target)
+      )
+        setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [menuOpen]);
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    const trigger = menuTriggerRef.current;
+    if (!menuOpen || !menu || !trigger) return;
+    const bounds = trigger.getBoundingClientRect();
+    const scrollBounds = trigger
+      .closest(".scratchpad-history-scroll")
+      ?.getBoundingClientRect();
+    const roomAbove = bounds.top - Math.max(0, scrollBounds?.top ?? 0);
+    const roomBelow =
+      Math.min(window.innerHeight, scrollBounds?.bottom ?? window.innerHeight) -
+      bounds.bottom;
+    menu.classList.toggle(
+      "opens-up",
+      roomBelow < menu.offsetHeight + 8 && roomAbove > roomBelow,
+    );
+  }, [menuOpen]);
+
+  return (
+    <div className="scratchpad-document-actions">
+      <button
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-label="Note actions"
+        className="scratchpad-document-menu-trigger"
+        disabled={disabled}
+        ref={menuTriggerRef}
+        type="button"
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <MoreHorizontal aria-hidden="true" size={18} />
+      </button>
+      {menuOpen ? (
+        <div
+          aria-label="Note actions"
+          className="scratchpad-row-menu"
+          ref={menuRef}
+          role="menu"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.stopPropagation();
+            setMenuOpen(false);
+            menuTriggerRef.current?.focus();
+          }}
+        >
+          <button
+            className="danger"
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onDelete();
+            }}
+          >
+            <Trash2 aria-hidden="true" size={17} /> Delete note
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

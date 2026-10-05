@@ -69,6 +69,7 @@ import type {
   ScratchpadDocument,
   ScratchpadPage,
   ScratchpadPageRequest,
+  ScratchpadReference,
   StartNewScratchpadInput,
   StartNewScratchpadResult,
 } from "../domain/scratchpad";
@@ -791,6 +792,20 @@ export class DemoTaskRepository implements TaskRepository {
     this.scratchpads.set(resumed.id, resumed);
     this.changed();
     return clone({ previous, current: resumed });
+  }
+
+  async deleteScratchpad(input: ScratchpadReference): Promise<void> {
+    const current = this.scratchpads.get(input.id);
+    if (!current || current.path !== input.path)
+      throw new Error("The scratchpad is no longer available.");
+    if (current.revision !== input.revision)
+      throw new Error(
+        "This note changed after it was opened. Reload it before deleting.",
+      );
+    if (current.state !== "converted")
+      throw new Error("Only a previous note can be deleted.");
+    this.scratchpads.delete(current.id);
+    this.changed();
   }
 
   async archiveScratchpad(

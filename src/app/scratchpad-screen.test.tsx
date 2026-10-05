@@ -40,15 +40,21 @@ describe("ScratchpadScreen", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  let leaveScratchpad: () => void;
+
   function renderScratchpad(onOpenTask = vi.fn()) {
-    render(
+    const mutationJournal = new MemoryMutationJournal();
+    const tree = (visible: boolean) => (
       <RepositoryProvider
-        mutationJournal={new MemoryMutationJournal()}
+        mutationJournal={mutationJournal}
         repository={repository}
       >
-        <ScratchpadScreen onOpenTask={onOpenTask} />
-      </RepositoryProvider>,
+        {visible ? <ScratchpadScreen onOpenTask={onOpenTask} /> : null}
+      </RepositoryProvider>
     );
+    const { rerender } = render(tree(true));
+    // Navigation unmounts the screen while the collection stays connected.
+    leaveScratchpad = () => rerender(tree(false));
     return onOpenTask;
   }
 
@@ -1340,6 +1346,111 @@ describe("ScratchpadScreen", () => {
     });
   });
 
+  async function renderWithEarlierNote() {
+    const original = await repository.getActiveScratchpad();
+    const { previous } = await repository.startNewScratchpad({
+      id: original.id,
+      path: original.path,
+      revision: original.revision,
+      baseBody: original.body,
+      body: "- [ ] Historical draft\n",
+      title: "Earlier notes",
+    });
+    const timeouts = vi.spyOn(window, "setTimeout");
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    await screen.findByRole("button", { name: /Earlier notes/ });
+    const requestDeletion = async () => {
+      // Only previous notes offer the menu; the current note cannot be deleted.
+      fireEvent.click(screen.getByRole("button", { name: "Note actions" }));
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Delete note" }),
+      );
+      await screen.findByText("Deleted “Earlier notes”");
+    };
+    const closeUndoWindow = () =>
+      act(async () => {
+        const call = timeouts.mock.calls.find(([, delay]) => delay === 30_000);
+        expect(call).toBeDefined();
+        (call![0] as () => void)();
+      });
+    return { previous, requestDeletion, closeUndoWindow };
+  }
+
+  it("hides a deleted previous note and restores it untouched on Undo", async () => {
+    const { previous, requestDeletion } = await renderWithEarlierNote();
+    const deleteScratchpad = vi.spyOn(repository, "deleteScratchpad");
+
+    await requestDeletion();
+
+    expect(screen.queryByRole("button", { name: /Earlier notes/ })).toBeNull();
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect(undo).toHaveFocus());
+    fireEvent.click(undo);
+
+    expect(
+      await screen.findByRole("button", { name: /Earlier notes/ }),
+    ).toBeVisible();
+    expect(screen.queryByText("Deleted “Earlier notes”")).toBeNull();
+    expect(deleteScratchpad).not.toHaveBeenCalled();
+    expect(await repository.getScratchpad(previous.id)).toMatchObject({
+      path: previous.path,
+      revision: previous.revision,
+      body: previous.body,
+    });
+  });
+
+  it("deletes the previous note once its undo window closes", async () => {
+    const { previous, requestDeletion, closeUndoWindow } =
+      await renderWithEarlierNote();
+
+    await requestDeletion();
+    expect(await repository.getScratchpad(previous.id)).not.toBeNull();
+    await closeUndoWindow();
+
+    await waitFor(async () =>
+      expect(await repository.getScratchpad(previous.id)).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("Deleted “Earlier notes”")).toBeNull(),
+    );
+    expect(screen.queryByRole("button", { name: /Earlier notes/ })).toBeNull();
+    expect((await repository.getActiveScratchpad()).state).toBe("active");
+  });
+
+  it("accepts a pending deletion when the screen is left", async () => {
+    const { previous, requestDeletion } = await renderWithEarlierNote();
+
+    await requestDeletion();
+    leaveScratchpad();
+
+    await waitFor(async () =>
+      expect(await repository.getScratchpad(previous.id)).toBeNull(),
+    );
+  });
+
+  it("returns the note and says so when the collection rejects its deletion", async () => {
+    const { previous, requestDeletion } = await renderWithEarlierNote();
+    vi.spyOn(repository, "deleteScratchpad").mockRejectedValueOnce(
+      new Error("The collection is unavailable."),
+    );
+
+    await requestDeletion();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The note was not deleted. The collection is unavailable.",
+    );
+    expect(
+      await screen.findByRole("button", { name: /Earlier notes/ }),
+    ).toBeVisible();
+    expect(await repository.getScratchpad(previous.id)).not.toBeNull();
+  });
+
   it("does not change lifecycle state when a pending note cannot save", async () => {
     const original = await repository.getActiveScratchpad();
     const saved = await repository.saveScratchpad({
@@ -1421,7 +1532,7 @@ describe("ScratchpadScreen", () => {
     const storageKey = `tasknotes:scratchpad-collapse:${collection.id}`;
     const historyDisclosure = () =>
       document.querySelector<HTMLButtonElement>(
-        `[data-feed-key="scratchpad:${saved.id}"] > .scratchpad-document-disclosure`,
+        `[data-feed-key="scratchpad:${saved.id}"] .scratchpad-document-disclosure`,
       )!;
 
     renderScratchpad();
