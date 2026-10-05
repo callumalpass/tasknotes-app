@@ -77,6 +77,7 @@ import {
   type ReactivateScratchpadInput,
   type SaveScratchpadInput,
   type ScratchpadPageRequest,
+  type ScratchpadReference,
   type StartNewScratchpadInput,
 } from "../domain/scratchpad";
 import {
@@ -796,7 +797,9 @@ export class MdbaseTaskRepository implements TaskRepository {
               where: [
                 `file.path.lower().contains(${JSON.stringify(query)})`,
                 `file.basename.lower().contains(${JSON.stringify(query)})`,
-                `note.title.lower().contains(${JSON.stringify(query)})`,
+                // Standard CEL has no note namespace, and a missing title must
+                // not fail the whole filter for that record.
+                `(has(record.title) && record.title.lower().contains(${JSON.stringify(query)}))`,
               ].join(" || "),
             }
           : {}),
@@ -1507,6 +1510,44 @@ export class MdbaseTaskRepository implements TaskRepository {
     );
   }
 
+  deleteScratchpad(input: ScratchpadReference) {
+    return this.serializeWrites(
+      ["scratchpad:active", `scratchpad:${input.id}`],
+      async () => {
+        const current = scratchpadFromRecord(
+          await this.requireScratchpadRecord(input.id, input.path),
+        );
+        if (current.revision !== input.revision)
+          throw new Error(
+            "This note changed after it was opened. Reload it before deleting.",
+          );
+        // Deleting the current note would leave the stream without one.
+        if (current.state !== "converted")
+          throw new Error("Only a previous note can be deleted.");
+        const operationInput = {
+          path: current.path,
+          ifRevision: current.revision,
+        };
+        await runMdbaseMutation(
+          this.connect,
+          async () => {
+            validResult(
+              await this.connect.delete(operationInput, this.requestOptions()),
+            );
+          },
+          {
+            key: mdbaseMutationKey("scratchpad:delete", operationInput),
+            mapRecovered: () => undefined,
+            request: this.requestOptions(),
+          },
+        );
+        this.setConnected();
+        this.scratchFeedSnapshot = undefined;
+        this.emit();
+      },
+    );
+  }
+
   async archiveScratchpad(input: ArchiveScratchpadInput) {
     const result = await this.startNewScratchpad(input);
     return { archived: result.previous, active: result.current };
@@ -1565,17 +1606,38 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async activeScratchpadRecords(): Promise<
     RecordDocument<JsonObject>[]
   > {
+    const narrowed = await this.queryActiveScratchpadRecords(
+      'record.state == "active"',
+    );
+    // An authority that cannot evaluate the filter reports each record as a
+    // warning and returns none of them. That is not an empty collection:
+    // select from every note instead, so a missing current note is never
+    // inferred from a query the authority did not complete.
+    return narrowed ?? (await this.queryActiveScratchpadRecords()) ?? [];
+  }
+
+  /** Returns undefined when the authority could not evaluate the filter. */
+  private async queryActiveScratchpadRecords(
+    where?: string,
+  ): Promise<RecordDocument<JsonObject>[] | undefined> {
     const records: RecordDocument<JsonObject>[] = [];
     for await (const outcome of this.connect.queryPages(
       {
         timezone: runtimeTimezone(),
         types: [SCRATCHPAD_TYPE],
-        where: 'note.state == "active"',
+        ...(where ? { where } : {}),
         includeBody: false,
         frontmatterMode: "persisted",
       },
       this.requestOptions(),
     )) {
+      if (
+        where &&
+        operationDiagnostics(outcome).some(
+          (diagnostic) => diagnostic.code === "expression_evaluation_error",
+        )
+      )
+        return undefined;
       for (const candidate of validResult(outcome).results) {
         // Test doubles and some providers may not apply the query filter.
         if (mdbaseFrontmatter(candidate).state !== "active") continue;

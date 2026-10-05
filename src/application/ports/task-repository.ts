@@ -24,6 +24,7 @@ import type {
   ScratchpadDocument,
   ScratchpadPage,
   ScratchpadPageRequest,
+  ScratchpadReference,
   StartNewScratchpadInput,
   StartNewScratchpadResult,
 } from "../../domain/scratchpad";
@@ -160,6 +161,11 @@ export interface TaskRepository {
   reactivateScratchpad?(
     input: ReactivateScratchpadInput,
   ): Promise<ReactivateScratchpadResult>;
+  /**
+   * Permanently deletes a previous note's record. The current note is never
+   * deletable; callers own any undo window before invoking this.
+   */
+  deleteScratchpad?(input: ScratchpadReference): Promise<void>;
   /** @deprecated Compatibility alias for startNewScratchpad. */
   archiveScratchpad?(
     input: ArchiveScratchpadInput,

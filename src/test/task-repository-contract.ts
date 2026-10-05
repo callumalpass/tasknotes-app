@@ -701,6 +701,42 @@ export function taskRepositoryContract(
       ).rejects.toThrow("The scratchpad feed page is invalid. Reload it.");
     });
 
+    it("deletes a previous Scratchpad note but never the current one", async () => {
+      const current = await repository.getActiveScratchpad!();
+      const { previous, current: next } = await repository.startNewScratchpad!({
+        id: current.id,
+        path: current.path,
+        revision: current.revision,
+        baseBody: current.body,
+        body: current.body,
+      });
+      await expect(
+        repository.deleteScratchpad!({
+          id: next.id,
+          path: next.path,
+          revision: next.revision,
+        }),
+      ).rejects.toThrow("Only a previous note can be deleted.");
+      await expect(
+        repository.deleteScratchpad!({
+          id: previous.id,
+          path: previous.path,
+          revision: "stale",
+        }),
+      ).rejects.toThrow("Reload it before deleting.");
+
+      await repository.deleteScratchpad!({
+        id: previous.id,
+        path: previous.path,
+        revision: previous.revision,
+      });
+
+      const page = await repository.listScratchFeed!({ limit: 100 });
+      expect(page.current.id).toBe(next.id);
+      expect(page.items.map((item) => item.id)).not.toContain(previous.id);
+      expect(await repository.getScratchpad!(previous.id)).toBeNull();
+    });
+
     it("preserves caller cancellation for document and search reads", async () => {
       const controller = new AbortController();
       controller.abort();

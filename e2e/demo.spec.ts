@@ -254,6 +254,55 @@ test("resumes a historical Scratchpad as the current note", async ({
   await expect(page.getByText("Planning notes resumed")).toBeVisible();
 });
 
+test("deletes a previous Scratchpad note behind an Undo window", async ({
+  page,
+}, testInfo) => {
+  await page.goto("scratchpad/?demo=12");
+  const planning = page.getByRole("button", { name: /Planning notes/ });
+  await expect(planning).toBeVisible();
+  const current = page.locator(".scratchpad-current-document");
+  await expect(
+    current.getByRole("button", { name: "Note actions" }),
+  ).toHaveCount(0);
+  const card = page.locator(".scratchpad-document", { has: planning });
+  const actions = card.getByRole("button", { name: "Note actions" });
+  // The trigger sits beside the disclosure without overlapping it.
+  const [disclosureBox, actionsBox] = await Promise.all([
+    planning.boundingBox(),
+    actions.boundingBox(),
+  ]);
+  expect(actionsBox!.width).toBeGreaterThanOrEqual(44);
+  expect(actionsBox!.height).toBeGreaterThanOrEqual(44);
+  expect(actionsBox!.x).toBeGreaterThanOrEqual(
+    disclosureBox!.x + disclosureBox!.width - 1,
+  );
+
+  await actions.click();
+  const remove = page.getByRole("menuitem", { name: "Delete note" });
+  await expect(remove).toBeFocused();
+  await expect(remove).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: testInfo.outputPath("note-menu.png") });
+  await remove.click();
+
+  await expect(planning).toHaveCount(0);
+  await expect(page.getByText("Deleted “Planning notes”")).toBeVisible();
+  const undo = page.getByRole("button", { name: "Undo" });
+  await expect(undo).toBeFocused();
+  await page.screenshot({ path: testInfo.outputPath("note-deleted.png") });
+  await undo.click();
+  await expect(planning).toBeVisible();
+  await expect(page.getByText("Deleted “Planning notes”")).toHaveCount(0);
+
+  await actions.click();
+  await remove.click();
+  await page.getByRole("button", { name: "Dismiss" }).click();
+  await expect(page.getByText("Deleted “Planning notes”")).toHaveCount(0);
+  await expect(planning).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Editor for current scratchpad" }),
+  ).toBeVisible();
+});
+
 test("moves the centered current Scratchpad down after an intentional upward scroll", async ({
   page,
 }) => {
