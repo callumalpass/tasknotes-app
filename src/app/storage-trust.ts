@@ -1,3 +1,6 @@
+import { t } from "@lingui/core/macro";
 export function storageExplanation(): string {
-  return "mdbase is the source of truth. Changes require a connection.";
+  return t({
+    message: "mdbase is the source of truth. Changes require a connection.",
+  });
 }

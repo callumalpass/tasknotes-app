@@ -10,9 +10,11 @@ export default defineConfig({
     {
       path: "<rootDir>/src/i18n/locales/{locale}/messages",
       include: [
-        "<rootDir>/src/app/collection-settings.tsx",
-        "<rootDir>/src/i18n/pilot-fixture.tsx",
+        "<rootDir>/src/app",
+        "<rootDir>/src/components",
+        "<rootDir>/src/i18n",
       ],
+      exclude: ["**/*.test.ts", "**/*.test.tsx"],
     },
   ],
   compileNamespace: "json",

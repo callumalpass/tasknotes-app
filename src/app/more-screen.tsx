@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ArrowLeft,
   Bell,
@@ -171,7 +172,9 @@ export function MoreScreen({
       aria-labelledby="settings-title"
     >
       <header className="screen-header compact-header">
-        <h1 id="settings-title">Settings</h1>
+        <h1 id="settings-title">
+          <Trans>Settings</Trans>
+        </h1>
       </header>
       <InstallBanner install={install} />
       {narrow ? (
@@ -604,7 +607,7 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             type="button"
             onClick={reminders.reviewAccess}
           >
-            Review notification access
+            <Trans>Review notification access</Trans>
           </button>
         </div>
       ) : null}
@@ -790,15 +793,21 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
       <div className="settings-group">
         <h3>Help</h3>
         <details className="help-topic">
-          <summary>Does TaskNotes work offline?</summary>
+          <summary>
+            <Trans>Does TaskNotes work offline?</Trans>
+          </summary>
           <p>
-            No. TaskNotes reads and writes the authoritative mdbase collection
-            directly. Hosted collections need a network connection; a computer
-            collection also needs that computer to be reachable.
+            <Trans>
+              No. TaskNotes reads and writes the authoritative mdbase collection
+              directly. Hosted collections need a network connection; a computer
+              collection also needs that computer to be reachable.
+            </Trans>
           </p>
         </details>
         <details className="help-topic">
-          <summary>Can I change collections later?</summary>
+          <summary>
+            <Trans>Can I change collections later?</Trans>
+          </summary>
           <p>
             Yes. Use Change collection under Collection to open another mdbase
             collection. Changing collections does not move records between them.
@@ -810,6 +819,7 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
 }
 
 function ThemeSelect() {
+  const { t } = useLingui();
   const [preference, setPreference] =
     useState<ThemePreference>(loadThemePreference);
   useEffect(() => {
@@ -823,12 +833,12 @@ function ThemeSelect() {
   }, [preference]);
   return (
     <TaskNotesSelect
-      ariaLabel="Color theme"
+      ariaLabel={t({ message: "Color theme" })}
       className="theme-picker"
       options={[
-        { value: "system", label: "System" },
-        { value: "light", label: "Light" },
-        { value: "dark", label: "Dark" },
+        { value: "system", label: t({ message: "System" }) },
+        { value: "light", label: t({ message: "Light" }) },
+        { value: "dark", label: t({ message: "Dark" }) },
       ]}
       value={preference}
       onChange={(value) => {

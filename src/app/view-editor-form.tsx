@@ -1,3 +1,7 @@
+import { countLabel, builtInFieldLabel } from "../i18n/default-labels";
+import { appLocale } from "../i18n/app";
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ArrowDown,
   ArrowUp,
@@ -64,6 +68,7 @@ export function ViewEditorForm({
   onFilterValidityChange,
   onComputedValidityChange,
 }: ViewEditorFormProps) {
+  const { t } = useLingui();
   const [propertyInput, setPropertyInput] = useState("");
   const [sortPropertyInput, setSortPropertyInput] = useState("");
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -112,11 +117,15 @@ export function ViewEditorForm({
       />
 
       <EditorSection
-        description="Choose which tasks belong in this view."
+        description={t({ message: "Choose which tasks belong in this view." })}
         id="view-filter"
         open={openSection === "view-filter"}
-        summary={draft.filter ? "Custom filter" : "All tasks"}
-        title="Filter"
+        summary={
+          draft.filter
+            ? t({ message: "Custom filter" })
+            : t({ message: "All tasks" })
+        }
+        title={t({ message: "Filter" })}
         onOpenChange={(open) => setOpenSection(open ? "view-filter" : null)}
       >
         <ExpressionBuilder
@@ -129,11 +138,13 @@ export function ViewEditorForm({
       </EditorSection>
 
       <EditorSection
-        description="Choose how tasks are grouped and ordered."
+        description={t({
+          message: "Choose how tasks are grouped and ordered.",
+        })}
         id="view-group-sort"
         open={openSection === "view-group-sort"}
         summary={groupSortSummary(draft)}
-        title="Group & sort"
+        title={t({ message: "Group & sort" })}
         onOpenChange={(open) => setOpenSection(open ? "view-group-sort" : null)}
       >
         <div className="view-editor-grid">
@@ -142,20 +153,20 @@ export function ViewEditorForm({
               <div className="view-editor-control-field">
                 <span>
                   {draft.renderer === "tasknotes.kanban"
-                    ? "Board column"
-                    : "Group by"}
+                    ? t({ message: "Board column" })
+                    : t({ message: "Group by" })}
                 </span>
                 <TaskNotesCombobox
                   ariaLabel={
                     draft.renderer === "tasknotes.kanban"
-                      ? "Board column"
-                      : "Group by"
+                      ? t({ message: "Board column" })
+                      : t({ message: "Group by" })
                   }
                   options={fieldOptions(fields)}
                   placeholder={
                     draft.renderer === "tasknotes.kanban"
-                      ? "Choose a property"
-                      : "No grouping"
+                      ? t({ message: "Choose a property" })
+                      : t({ message: "No grouping" })
                   }
                   value={draft.groupProperty ?? ""}
                   onChange={(groupProperty) =>
@@ -164,13 +175,15 @@ export function ViewEditorForm({
                 />
               </div>
               <div className="view-editor-control-field">
-                <span>Group direction</span>
+                <span>
+                  <Trans>Group direction</Trans>
+                </span>
                 <TaskNotesSelect
-                  ariaLabel="Group direction"
+                  ariaLabel={t({ message: "Group direction" })}
                   disabled={!draft.groupProperty}
                   options={[
-                    { value: "asc", label: "Ascending" },
-                    { value: "desc", label: "Descending" },
+                    { value: "asc", label: t({ message: "Ascending" }) },
+                    { value: "desc", label: t({ message: "Descending" }) },
                   ]}
                   value={draft.groupDirection}
                   onChange={(groupDirection) =>
@@ -187,8 +200,12 @@ export function ViewEditorForm({
         <div className="view-editor-subsection view-editor-subsection-first">
           <div className="view-editor-subsection-heading">
             <div>
-              <h3>Sort</h3>
-              <p>Earlier rules take priority.</p>
+              <h3>
+                <Trans>Sort</Trans>
+              </h3>
+              <p>
+                <Trans>Earlier rules take priority.</Trans>
+              </p>
             </div>
             <span className="view-editor-count">{draft.sort.length}</span>
           </div>
@@ -209,15 +226,21 @@ export function ViewEditorForm({
                 draft.sort[0].property,
                 configuration.fieldMapping.sortOrder,
               )
-                ? "Manual order is active. Drag handles will appear on tasks."
-                : "Move Manual order to the first position to enable drag handles."}
+                ? t({
+                    message:
+                      "Manual order is active. Drag handles will appear on tasks.",
+                  })
+                : t({
+                    message:
+                      "Move Manual order to the first position to enable drag handles.",
+                  })}
             </p>
           ) : null}
           <div className="add-view-property">
             <TaskNotesCombobox
-              ariaLabel="Property to sort"
+              ariaLabel={t({ message: "Property to sort" })}
               options={fieldOptions(filterAndSortFields)}
-              placeholder="Add a sort rule"
+              placeholder={t({ message: "Add a sort rule" })}
               value={sortPropertyInput}
               onChange={setSortPropertyInput}
             />
@@ -247,25 +270,31 @@ export function ViewEditorForm({
                 setSortPropertyInput("");
               }}
             >
-              <Plus aria-hidden="true" size={16} /> Add
+              <Plus aria-hidden="true" size={16} /> <Trans>Add</Trans>
             </button>
           </div>
         </div>
       </EditorSection>
 
       <EditorSection
-        description="Choose the information shown beneath each task."
+        description={t({
+          message: "Choose the information shown beneath each task.",
+        })}
         id="view-fields"
         open={openSection === "view-fields"}
         summary={fieldsSummary(draft)}
-        title="Fields shown"
+        title={t({ message: "Fields shown" })}
         onOpenChange={(open) => setOpenSection(open ? "view-fields" : null)}
       >
         <div className="view-editor-subsection view-editor-subsection-first">
           <div className="view-editor-subsection-heading">
             <div>
-              <h3>Displayed properties</h3>
-              <p>Shown in this order below each item.</p>
+              <h3>
+                <Trans>Displayed properties</Trans>
+              </h3>
+              <p>
+                <Trans>Shown in this order below each item.</Trans>
+              </p>
             </div>
             <span className="view-editor-count">{draft.properties.length}</span>
           </div>
@@ -284,9 +313,9 @@ export function ViewEditorForm({
           />
           <div className="add-view-property">
             <TaskNotesCombobox
-              ariaLabel="Property to display"
+              ariaLabel={t({ message: "Property to display" })}
               options={fieldOptions(fields)}
-              placeholder="Add a property"
+              placeholder={t({ message: "Add a property" })}
               value={propertyInput}
               onChange={setPropertyInput}
             />
@@ -303,7 +332,7 @@ export function ViewEditorForm({
                 setPropertyInput("");
               }}
             >
-              <Plus aria-hidden="true" size={16} /> Add
+              <Plus aria-hidden="true" size={16} /> <Trans>Add</Trans>
             </button>
           </div>
         </div>
@@ -354,33 +383,45 @@ function ComputedPropertiesSection({
   onChange(draft: EditableViewDraft): void;
   onOpenChange(open: boolean): void;
 }) {
+  const { t } = useLingui();
   const noun = draft.dialect === "obsidian-bases" ? "formula" : "projection";
 
   return (
     <EditorSection
-      description="Formulas and source details for this saved view."
+      description={t({
+        message: "Formulas and source details for this saved view.",
+      })}
       id="view-advanced"
       open={open}
       summary={[
         draft.computedProperties.length
-          ? `${draft.computedProperties.length} ${draft.computedProperties.length === 1 ? noun : `${noun}s`}`
-          : `No ${noun}s`,
-        sourcePath ? "Source file" : "",
+          ? countLabel(draft.computedProperties.length, noun)
+          : noun === "formula"
+            ? t`No formulas`
+            : t`No projections`,
+        sourcePath ? t`Source file` : "",
       ]
         .filter(Boolean)
         .join(" · ")}
-      title="Advanced"
+      title={t({ message: "Advanced" })}
       onOpenChange={onOpenChange}
     >
       <div className="view-editor-subsection-heading">
         <div>
           <h3>
-            {draft.dialect === "obsidian-bases" ? "Formulas" : "Projections"}
+            {draft.dialect === "obsidian-bases"
+              ? t({ message: "Formulas" })
+              : t({ message: "Projections" })}
           </h3>
           <p>
             {draft.dialect === "obsidian-bases"
-              ? "Reusable values for filters, grouping, sorting, and fields."
-              : "Reusable values for grouping and displayed fields."}
+              ? t({
+                  message:
+                    "Reusable values for filters, grouping, sorting, and fields.",
+                })
+              : t({
+                  message: "Reusable values for grouping and displayed fields.",
+                })}
           </p>
         </div>
         <span className="view-editor-count">
@@ -400,9 +441,11 @@ function ComputedPropertiesSection({
                 key={`${property.scope}:${property.originalName ?? "new"}:${index}`}
               >
                 <label>
-                  <span>Name</span>
+                  <span>
+                    <Trans>Name</Trans>
+                  </span>
                   <input
-                    aria-label={`Computed property name ${index + 1}`}
+                    aria-label={t`Computed property name ${index + 1}`}
                     spellCheck={false}
                     value={property.name}
                     onChange={(event) =>
@@ -419,12 +462,17 @@ function ComputedPropertiesSection({
                 </label>
                 {draft.dialect === "mdbase-cel" ? (
                   <label>
-                    <span>Available in</span>
+                    <span>
+                      <Trans>Available in</Trans>
+                    </span>
                     <TaskNotesSelect
-                      ariaLabel={`Computed property scope ${index + 1}`}
+                      ariaLabel={t`Computed property scope ${index + 1}`}
                       options={[
-                        { value: "view", label: "This view" },
-                        { value: "source", label: "Every view in this file" },
+                        { value: "view", label: t({ message: "This view" }) },
+                        {
+                          value: "source",
+                          label: t({ message: "Every view in this file" }),
+                        },
                       ]}
                       value={property.scope}
                       onChange={(scope) =>
@@ -444,9 +492,11 @@ function ComputedPropertiesSection({
                   </label>
                 ) : null}
                 <label className="view-computed-expression">
-                  <span>Expression</span>
+                  <span>
+                    <Trans>Expression</Trans>
+                  </span>
                   <textarea
-                    aria-label={`Computed property expression ${index + 1}`}
+                    aria-label={t`Computed property expression ${index + 1}`}
                     rows={2}
                     spellCheck={false}
                     value={property.expression}
@@ -465,7 +515,7 @@ function ComputedPropertiesSection({
                 <div className="view-computed-property-footer">
                   <code>{reference}</code>
                   <button
-                    aria-label={`Remove computed property ${property.name || index + 1}`}
+                    aria-label={t`Remove computed property ${property.name || index + 1}`}
                     className="quiet-icon"
                     type="button"
                     onClick={() =>
@@ -485,7 +535,9 @@ function ComputedPropertiesSection({
           })}
         </div>
       ) : (
-        <p className="view-editor-empty-row">No computed properties.</p>
+        <p className="view-editor-empty-row">
+          <Trans>No computed properties.</Trans>
+        </p>
       )}
       <div className="view-computed-actions">
         <button
@@ -504,11 +556,14 @@ function ComputedPropertiesSection({
             })
           }
         >
-          <Plus aria-hidden="true" size={15} /> Add {noun}
+          <Plus aria-hidden="true" size={15} /> <Trans>Add </Trans>
+          {noun}
         </button>
         {draft.dialect === "obsidian-bases" ? (
           <small>
-            These formulas are shared by views in the same source file.
+            <Trans>
+              These formulas are shared by views in the same source file.
+            </Trans>
           </small>
         ) : null}
       </div>
@@ -518,12 +573,14 @@ function ComputedPropertiesSection({
       >
         {error ||
           (draft.computedProperties.length
-            ? "Computed properties are valid"
+            ? t({ message: "Computed properties are valid" })
             : "")}
       </p>
       {sourcePath ? (
         <div className="view-source-details">
-          <span>Source file</span>
+          <span>
+            <Trans>Source file</Trans>
+          </span>
           <code>{sourcePath}</code>
         </div>
       ) : null}
@@ -540,6 +597,7 @@ function ViewIdentitySection({
   draft: EditableViewDraft;
   onChange(draft: EditableViewDraft): void;
 }) {
+  const { t } = useLingui();
   const [layoutOpen, setLayoutOpen] = useState(
     () => !window.matchMedia?.("(max-width: 839px)").matches,
   );
@@ -549,13 +607,19 @@ function ViewIdentitySection({
   return (
     <section className="view-identity" aria-labelledby="view-identity-title">
       <div className="view-identity-heading">
-        <h2 id="view-identity-title">View details</h2>
-        <p>Name this view and choose its layout.</p>
+        <h2 id="view-identity-title">
+          <Trans>View details</Trans>
+        </h2>
+        <p>
+          <Trans>Name this view and choose its layout.</Trans>
+        </p>
       </div>
       <label className="view-name-field">
-        <span>View name</span>
+        <span>
+          <Trans>View name</Trans>
+        </span>
         <input
-          aria-label="View name"
+          aria-label={t({ message: "View name" })}
           autoFocus={autoFocusName}
           value={draft.name}
           onChange={(event) => onChange({ ...draft, name: event.target.value })}
@@ -567,11 +631,17 @@ function ViewIdentitySection({
         onToggle={(event) => setLayoutOpen(event.currentTarget.open)}
       >
         <summary>
-          Layout: {layoutLabel}
-          {draft.renderer === "tasknotes.planner" ? " (external app)" : ""}
+          <Trans>
+            Layout: {layoutLabel}
+            {draft.renderer === "tasknotes.planner"
+              ? t({ message: " (external app)" })
+              : ""}
+          </Trans>
         </summary>
         <fieldset className="view-kind-field">
-          <legend className="visually-hidden">Layout</legend>
+          <legend className="visually-hidden">
+            <Trans>Layout</Trans>
+          </legend>
           <div className="view-kind-options">
             {layouts.map(({ value, label, description, icon: Icon }) => (
               <label key={value}>
@@ -595,8 +665,10 @@ function ViewIdentitySection({
       </details>
       {draft.renderer === "tasknotes.planner" ? (
         <p className="view-planner-explanation">
-          Planner is a separate app. Save this view, then choose Open in
-          Planner.
+          <Trans>
+            Planner is a separate app. Save this view, then choose Open in
+            Planner.
+          </Trans>
         </p>
       ) : null}
     </section>
@@ -614,6 +686,7 @@ function CalendarOptionsSection({
   onChange(draft: EditableViewDraft): void;
   onOpenChange(open: boolean): void;
 }) {
+  const { t } = useLingui();
   function option(key: string, value: unknown) {
     onChange({
       ...draft,
@@ -623,24 +696,28 @@ function CalendarOptionsSection({
 
   return (
     <EditorSection
-      description="Choose the calendar mode and which task dates become events."
+      description={t({
+        message: "Choose the calendar mode and which task dates become events.",
+      })}
       id="view-calendar"
       open={open}
       summary={calendarSummary(draft)}
-      title="Calendar"
+      title={t({ message: "Calendar" })}
       onOpenChange={onOpenChange}
     >
       {draft.renderer === "tasknotes.calendar" ? (
         <div className="view-editor-control-field">
-          <span>Opens as</span>
+          <span>
+            <Trans>Opens as</Trans>
+          </span>
           <TaskNotesSelect
-            ariaLabel="Opens as"
+            ariaLabel={t({ message: "Opens as" })}
             options={[
-              { value: "dayGridMonth", label: "Month" },
-              { value: "timeGridWeek", label: "Week" },
-              { value: "timeGridThreeDay", label: "3 days" },
-              { value: "timeGridDay", label: "Day" },
-              { value: "listWeek", label: "Agenda" },
+              { value: "dayGridMonth", label: t({ message: "Month" }) },
+              { value: "timeGridWeek", label: t({ message: "Week" }) },
+              { value: "timeGridThreeDay", label: t({ message: "3 days" }) },
+              { value: "timeGridDay", label: t({ message: "Day" }) },
+              { value: "listWeek", label: t({ message: "Agenda" }) },
             ]}
             value={string(draft.options.calendarView) || "dayGridMonth"}
             onChange={(calendarView) => option("calendarView", calendarView)}
@@ -651,36 +728,36 @@ function CalendarOptionsSection({
       <div className="view-toggle-list">
         <ViewToggle
           checked={draft.options.showScheduled !== false}
-          description="Use the configured scheduled field."
-          label="Scheduled dates"
+          description={t({ message: "Use the configured scheduled field." })}
+          label={t({ message: "Scheduled dates" })}
           onChange={(checked) => option("showScheduled", checked)}
         />
         <ViewToggle
           checked={draft.options.showDue !== false}
-          description="Use the configured due field."
-          label="Due dates"
+          description={t({ message: "Use the configured due field." })}
+          label={t({ message: "Due dates" })}
           onChange={(checked) => option("showDue", checked)}
         />
         {draft.renderer === "tasknotes.calendar" ? (
           <>
             <ViewToggle
               checked={draft.options.showRecurring !== false}
-              description="Show future virtual occurrences."
-              label="Upcoming recurring instances"
+              description={t({ message: "Show future virtual occurrences." })}
+              label={t({ message: "Upcoming recurring instances" })}
               onChange={(checked) => option("showRecurring", checked)}
             />
             <ViewToggle
               checked={draft.options.showCompletedRecurringInstances === true}
-              description="Include completed occurrences."
-              label="Completed recurring instances"
+              description={t({ message: "Include completed occurrences." })}
+              label={t({ message: "Completed recurring instances" })}
               onChange={(checked) =>
                 option("showCompletedRecurringInstances", checked)
               }
             />
             <ViewToggle
               checked={draft.options.showSkippedRecurringInstances === true}
-              description="Include skipped occurrences."
-              label="Skipped recurring instances"
+              description={t({ message: "Include skipped occurrences." })}
+              label={t({ message: "Skipped recurring instances" })}
               onChange={(checked) =>
                 option("showSkippedRecurringInstances", checked)
               }
@@ -707,32 +784,37 @@ function NewTaskSection({
   onChange(draft: EditableViewDraft): void;
   onOpenChange(open: boolean): void;
 }) {
+  const { t } = useLingui();
   const enabled = draft.options.create !== false;
   const defaults = createDefaults(draft);
 
   return (
     <EditorSection
-      description="Set what happens when a task is added from this view."
+      description={t({
+        message: "Set what happens when a task is added from this view.",
+      })}
       id="view-new-tasks"
       open={open}
       summary={newTaskSummary(enabled, defaults)}
-      title="New tasks"
+      title={t({ message: "New tasks" })}
       onOpenChange={onOpenChange}
     >
       <ViewToggle
         checked={enabled}
-        description="Keep the quick-add field on this view."
-        label="Allow task creation"
+        description={t({ message: "Keep the quick-add field on this view." })}
+        label={t({ message: "Allow task creation" })}
         onChange={(checked) => onChange(updateCreateEnabled(draft, checked))}
       />
       {enabled ? (
         <div className="view-create-defaults-fields">
           <div className="view-editor-control-field">
-            <span>Status</span>
+            <span>
+              <Trans>Status</Trans>
+            </span>
             <TaskNotesSelect
-              ariaLabel="Default status"
+              ariaLabel={t({ message: "Default status" })}
               options={[
-                { value: "", label: "From the task form" },
+                { value: "", label: t({ message: "From the task form" }) },
                 ...configuration.statuses,
               ]}
               value={string(defaults.status)}
@@ -744,11 +826,13 @@ function NewTaskSection({
             />
           </div>
           <div className="view-editor-control-field">
-            <span>Priority</span>
+            <span>
+              <Trans>Priority</Trans>
+            </span>
             <TaskNotesSelect
-              ariaLabel="Default priority"
+              ariaLabel={t({ message: "Default priority" })}
               options={[
-                { value: "", label: "From the task form" },
+                { value: "", label: t({ message: "From the task form" }) },
                 ...configuration.priorities,
               ]}
               value={string(defaults.priority)}
@@ -763,17 +847,22 @@ function NewTaskSection({
             [
               [
                 "projects",
-                "Projects",
+                t({ message: "Projects" }),
                 configuration.fieldMapping.projects,
-                "Add a project",
+                t({ message: "Add a project" }),
               ],
               [
                 "contexts",
-                "Contexts",
+                t({ message: "Contexts" }),
                 configuration.fieldMapping.contexts,
-                "Add a context",
+                t({ message: "Add a context" }),
               ],
-              ["tags", "Tags", "tags", "Add a tag"],
+              [
+                "tags",
+                t({ message: "Tags" }),
+                "tags",
+                t({ message: "Add a tag" }),
+              ],
             ] as const
           ).map(([key, label, fieldKey, placeholder]) => (
             <MultiValueField
@@ -792,8 +881,10 @@ function NewTaskSection({
             />
           ))}
           <p className="view-editor-hint">
-            Defaults inferred from simple filter conditions are added when the
-            task is created.
+            <Trans>
+              Defaults inferred from simple filter conditions are added when the
+              task is created.
+            </Trans>
           </p>
         </div>
       ) : null}
@@ -810,14 +901,19 @@ function SortRules({
   rules: EditableViewSort[];
   onChange(rules: EditableViewSort[]): void;
 }) {
+  const { t } = useLingui();
   if (!rules.length)
-    return <p className="view-editor-empty-row">Collection order is used.</p>;
+    return (
+      <p className="view-editor-empty-row">
+        <Trans>Collection order is used.</Trans>
+      </p>
+    );
   return (
     <div className="view-sort-rules">
       {rules.map((rule, index) => (
         <div key={`${rule.property}:${index}`}>
           <TaskNotesCombobox
-            ariaLabel={`Sort property ${index + 1}`}
+            ariaLabel={t`Sort property ${index + 1}`}
             options={fieldOptions(fields)}
             value={rule.property}
             onChange={(property) =>
@@ -831,10 +927,10 @@ function SortRules({
             }
           />
           <TaskNotesSelect
-            ariaLabel={`Sort direction ${index + 1}`}
+            ariaLabel={t`Sort direction ${index + 1}`}
             options={[
-              { value: "asc", label: "Ascending" },
-              { value: "desc", label: "Descending" },
+              { value: "asc", label: t({ message: "Ascending" }) },
+              { value: "desc", label: t({ message: "Descending" }) },
             ]}
             value={rule.direction}
             onChange={(direction) =>
@@ -878,7 +974,9 @@ function PropertyOrder({
 }) {
   if (!fields.length)
     return (
-      <p className="view-editor-empty-row">Only the task title is shown.</p>
+      <p className="view-editor-empty-row">
+        <Trans>Only the task title is shown.</Trans>
+      </p>
     );
   return (
     <div className="selected-view-properties">
@@ -913,10 +1011,11 @@ function OrderButtons({
   onMove(to: number): void;
   onRemove(): void;
 }) {
+  const { t } = useLingui();
   return (
     <div className="view-order-actions">
       <button
-        aria-label={`Move ${label} up`}
+        aria-label={t`Move ${label} up`}
         disabled={index === 0}
         type="button"
         onClick={() => onMove(index - 1)}
@@ -924,14 +1023,14 @@ function OrderButtons({
         <ArrowUp aria-hidden="true" size={15} />
       </button>
       <button
-        aria-label={`Move ${label} down`}
+        aria-label={t`Move ${label} down`}
         disabled={index === count - 1}
         type="button"
         onClick={() => onMove(index + 1)}
       >
         <ArrowDown aria-hidden="true" size={15} />
       </button>
-      <button aria-label={`Remove ${label}`} type="button" onClick={onRemove}>
+      <button aria-label={t`Remove ${label}`} type="button" onClick={onRemove}>
         <Trash2 aria-hidden="true" size={15} />
       </button>
     </div>
@@ -1031,73 +1130,95 @@ const layouts: Array<{
 }> = [
   {
     value: "tasknotes.task-list",
-    label: "List",
-    description: "Compact rows",
+    get label() {
+      return t({ message: "List" });
+    },
+    get description() {
+      return t({ message: "Compact rows" });
+    },
     icon: List,
   },
   {
     value: "tasknotes.kanban",
-    label: "Board",
-    description: "Grouped columns",
+    get label() {
+      return t({ message: "Board" });
+    },
+    get description() {
+      return t({ message: "Grouped columns" });
+    },
     icon: Columns3,
   },
   {
     value: "tasknotes.calendar",
-    label: "Calendar",
-    description: "Full schedule",
+    get label() {
+      return t({ message: "Calendar" });
+    },
+    get description() {
+      return t({ message: "Full schedule" });
+    },
     icon: CalendarDays,
   },
   {
     value: "tasknotes.mini-calendar",
-    label: "Mini calendar",
-    description: "Date and agenda",
+    get label() {
+      return t({ message: "Mini calendar" });
+    },
+    get description() {
+      return t({ message: "Date and agenda" });
+    },
     icon: CalendarRange,
   },
   {
     value: "tasknotes.planner",
-    label: "Planner",
-    description: "External app",
+    get label() {
+      return t({ message: "Planner" });
+    },
+    get description() {
+      return t({ message: "External app" });
+    },
     icon: ChartNoAxesGantt,
   },
 ];
 
 function groupSortSummary(draft: EditableViewDraft): string {
   const parts = [
-    draft.groupProperty ? `Grouped by ${humanize(draft.groupProperty)}` : "",
+    draft.groupProperty ? t`Grouped by ${humanize(draft.groupProperty)}` : "",
     draft.sort.length
-      ? `${draft.sort.length} ${draft.sort.length === 1 ? "sort" : "sorts"}`
-      : "Collection order",
+      ? countLabel(draft.sort.length, "sort")
+      : t({ message: "Collection order" }),
   ].filter(Boolean);
   return parts.join(" · ");
 }
 
 function fieldsSummary(draft: EditableViewDraft): string {
   return draft.properties.length
-    ? `${draft.properties.length} ${draft.properties.length === 1 ? "field" : "fields"}`
-    : "Title only";
+    ? countLabel(draft.properties.length, "field")
+    : t({ message: "Title only" });
 }
 
 function calendarSummary(draft: EditableViewDraft): string {
   const dates = [
-    draft.options.showDue !== false ? "due" : "",
-    draft.options.showScheduled !== false ? "scheduled" : "",
+    draft.options.showDue !== false ? t`due` : "",
+    draft.options.showScheduled !== false ? t`scheduled` : "",
   ].filter(Boolean);
   const mode =
     draft.renderer === "tasknotes.calendar"
       ? calendarModeLabel(string(draft.options.calendarView))
-      : "Mini calendar";
-  return dates.length ? `${mode} · ${dates.join(" and ")}` : mode;
+      : t({ message: "Mini calendar" });
+  return dates.length
+    ? `${mode} · ${new Intl.ListFormat(appLocale(), { style: "long", type: "conjunction" }).format(dates)}`
+    : mode;
 }
 
 function calendarModeLabel(value: string): string {
   return (
     {
-      dayGridMonth: "Month",
-      timeGridWeek: "Week",
-      timeGridThreeDay: "3 days",
-      timeGridDay: "Day",
-      listWeek: "Agenda",
-    }[value || "dayGridMonth"] ?? "Month"
+      dayGridMonth: t`Month`,
+      timeGridWeek: t`Week`,
+      timeGridThreeDay: t`3 days`,
+      timeGridDay: t`Day`,
+      listWeek: t`Agenda`,
+    }[value || "dayGridMonth"] ?? t({ message: "Month" })
   );
 }
 
@@ -1105,11 +1226,11 @@ function newTaskSummary(
   enabled: boolean,
   defaults: Record<string, unknown>,
 ): string {
-  if (!enabled) return "Task creation off";
+  if (!enabled) return t({ message: "Task creation off" });
   const count = Object.keys(defaults).length;
   return count
-    ? `${count} ${count === 1 ? "default" : "defaults"}`
-    : "Task creation on";
+    ? countLabel(count, "default")
+    : t({ message: "Task creation on" });
 }
 
 function changeRenderer(

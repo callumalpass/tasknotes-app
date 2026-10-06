@@ -8,6 +8,7 @@ export function CollectionAvailability({
 }: {
   onSettings?: () => void;
 }) {
+  const { t } = useLingui();
   const { connection, refresh, refreshing } = useRepository();
   const waitingForComputer =
     useContext(ConnectionNoticeContext) === "waiting_for_computer";

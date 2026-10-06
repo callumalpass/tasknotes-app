@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "../test/render";
 import { useKeyboardOcclusion } from "./use-keyboard-occlusion";
 
 afterEach(() => {

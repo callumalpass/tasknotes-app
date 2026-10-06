@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import { FeedbackNotice } from "./workspace-feedback";
 import type { TaskSummary } from "../domain/task";
@@ -54,7 +55,7 @@ export function TaskAddedNotice({
           ) : null}
           <button
             type="button"
-            aria-label="Dismiss task added confirmation"
+            aria-label={t({ message: "Dismiss task added confirmation" })}
             onClick={() => {
               onDismiss();
               document

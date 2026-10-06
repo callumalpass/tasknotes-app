@@ -52,6 +52,7 @@ const linkFormatOptions = [
 ] as const;
 
 export function TaskModelSettingsEditor() {
+  const { t } = useLingui();
   const { configuration, repository, updateTaskModelSettings } =
     useRepository();
   const [access, setAccess] = useState<{
@@ -384,7 +385,10 @@ export function TaskModelSettingsEditor() {
         <OperationErrorNotice
           action="Saving collection behavior"
           message={error}
-          recovery="Your unsaved choices are still here. Review them and retry."
+          recovery={t({
+            message:
+              "Your unsaved choices are still here. Review them and retry.",
+          })}
         />
       ) : null}
       {writable && (dirty || saveState !== "idle") ? (

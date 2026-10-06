@@ -40,7 +40,7 @@ export function valueKey(value: unknown): string {
 }
 
 export function columnLabel(value: unknown): string {
-  if (value === null || value === "") return "No value";
+  if (value === null || value === "") return t({ message: "No value" });
   return String(value).replaceAll("-", " ");
 }
 
@@ -54,7 +54,7 @@ export function kanbanColumnLabel(
 ): string {
   const empty =
     column.value === null || column.value === "" || column.value === "none";
-  if (empty && (propertyName === "status" || propertyName === "priority"))
-    return `No ${propertyName}`;
+  if (empty && propertyName === "status") return t`No status`;
+  if (empty && propertyName === "priority") return t`No priority`;
   return column.label ?? columnLabel(column.value);
 }

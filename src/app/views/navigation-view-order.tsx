@@ -29,6 +29,7 @@ export function NavigationViewOrder({
   views: TaskView[];
   onMove(key: string, direction: -1 | 1): void;
 }) {
+  const { t } = useLingui();
   const [reordering, setReordering] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [drag, setDrag] = useState<NavigationDragState | null>(null);
@@ -54,7 +55,7 @@ export function NavigationViewOrder({
     onMove(view.key, direction);
     const adjacent = ordered[index + direction];
     setAnnouncement(
-      `${view.name} moved ${direction < 0 ? "before" : "after"} ${adjacent?.name}.`,
+      t`${view.name} moved ${direction < 0 ? t({ message: "before" }) : t({ message: "after" })} ${adjacent?.name}.`,
     );
   }
 
@@ -68,7 +69,7 @@ export function NavigationViewOrder({
     event.preventDefault();
     let active: NavigationDragState = { sourceKey: source.key };
     setDrag(active);
-    setAnnouncement(`Moving ${source.name}.`);
+    setAnnouncement(t`Moving ${source.name}.`);
 
     const movePointer = (pointer: PointerEvent) => {
       const element = document.elementFromPoint(
@@ -133,7 +134,7 @@ export function NavigationViewOrder({
       }
       const target = ordered[targetIndex];
       setAnnouncement(
-        `${source.name} moved ${active.placement} ${target?.name}.`,
+        t`${source.name} moved ${active.placement} ${target?.name}.`,
       );
       selectionFeedback();
     };
@@ -152,16 +153,22 @@ export function NavigationViewOrder({
       <header>
         <div>
           <div className="section-title-with-count">
-            <h2 id="navigation-view-order-title">Shown in navigation</h2>
+            <h2 id="navigation-view-order-title">
+              <Trans>Shown in navigation</Trans>
+            </h2>
             <span>{ordered.length}</span>
           </div>
           <p className="navigation-order-device-note">
-            The first view is Home. Order and visibility are saved for this
-            collection on this device.
+            <Trans>
+              The first view is Home. Order and visibility are saved for this
+              collection on this device.
+            </Trans>
           </p>
           <p className="navigation-order-sidebar-note">
-            Your sidebar, in order.
-            {ordered[0] ? ` ${ordered[0].name} opens first as Home.` : ""}
+            <Trans>
+              Your sidebar, in order.
+              {ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""}
+            </Trans>
           </p>
         </div>
         <button
@@ -174,7 +181,7 @@ export function NavigationViewOrder({
             setDrag(null);
           }}
         >
-          {reordering ? "Done" : "Reorder"}
+          {reordering ? t({ message: "Done" }) : t({ message: "Reorder" })}
         </button>
       </header>
       <ol ref={listRef}>
@@ -190,7 +197,7 @@ export function NavigationViewOrder({
             >
               {reordering ? (
                 <button
-                  aria-label={`Move ${view.name}. Drag, or use up and down arrow keys.`}
+                  aria-label={t`Move ${view.name}. Drag, or use up and down arrow keys.`}
                   className="navigation-drag-handle"
                   type="button"
                   onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
@@ -213,12 +220,16 @@ export function NavigationViewOrder({
               )}
               <span>
                 {view.name}
-                {index === 0 ? <small>Home</small> : null}
+                {index === 0 ? (
+                  <small>
+                    <Trans>Home</Trans>
+                  </small>
+                ) : null}
               </span>
               {reordering ? (
                 <div className="navigation-order-actions">
                   <button
-                    aria-label={`Move ${view.name} earlier`}
+                    aria-label={t`Move ${view.name} earlier`}
                     disabled={!canMove(index, -1)}
                     type="button"
                     onClick={() => move(index, -1)}
@@ -226,7 +237,7 @@ export function NavigationViewOrder({
                     <ChevronUp aria-hidden="true" size={17} />
                   </button>
                   <button
-                    aria-label={`Move ${view.name} later`}
+                    aria-label={t`Move ${view.name} later`}
                     disabled={!canMove(index, 1)}
                     type="button"
                     onClick={() => move(index, 1)}

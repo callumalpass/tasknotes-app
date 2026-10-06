@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
 
 export function changeNotificationLabel(
@@ -5,22 +6,22 @@ export function changeNotificationLabel(
 ): string {
   switch (status.state) {
     case "checking":
-      return "Checking";
+      return t({ message: "Checking" });
     case "enabled":
-      return "On";
+      return t({ message: "On" });
     case "off":
-      return "Off";
+      return t({ message: "Off" });
     case "denied":
-      return "Disabled in system settings";
+      return t({ message: "Disabled in system settings" });
     case "not_connected":
       return "Open a collection first";
     case "not_configured":
-      return "Firebase setup required";
+      return t({ message: "Firebase setup required" });
     case "reauthorization_required":
-      return "Approval required";
+      return t({ message: "Approval required" });
     case "unavailable":
-      return "Not available in this browser";
+      return t({ message: "Not available in this browser" });
     case "error":
-      return "Setup needs attention";
+      return t({ message: "Setup needs attention" });
   }
 }

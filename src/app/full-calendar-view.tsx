@@ -1,4 +1,9 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import FullCalendar from "@fullcalendar/react";
+import frLocale from "@fullcalendar/core/locales/fr";
+import { countLabel } from "../i18n/default-labels";
+import { appLocale } from "../i18n/app";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, {
   type DateClickArg,
@@ -37,7 +42,7 @@ import {
   relativeDateDetail,
   viewPropertyDetails,
   type ViewPropertyDetail,
-} from "../domain/view-values";
+} from "../i18n/view-presentation";
 import { useRepository } from "./repository-context";
 import {
   calendarEventTimeFormat,
@@ -110,6 +115,7 @@ export function FullCalendarView({
     entries: TaskTimeEntry[],
   ): Promise<void>;
 }) {
+  const { t } = useLingui();
   const rootRef = useRef<HTMLDivElement>(null);
   const closeOverflow = useCalendarOverflow(rootRef);
   function onOpen(task: TaskSummary, occurrenceDate?: string) {
@@ -241,7 +247,8 @@ export function FullCalendarView({
         holdMove(id, { ...move, settledWith: executionRef.current });
         return;
       }
-      if (!metadata.dateField) throw new Error("The task date is unavailable.");
+      if (!metadata.dateField)
+        throw new Error(t({ message: "The task date is unavailable." }));
       const input: UpdateTaskInput = {
         [metadata.dateField]: calendarStorageValue(
           info.event.start,
@@ -507,13 +514,13 @@ export function FullCalendarView({
           ) : null}
         </div>
         {!listMode ? (
-          <aside className="full-calendar-inspector" aria-label="Selected day">
+          <aside
+            className="full-calendar-inspector"
+            aria-label={t({ message: "Selected day" })}
+          >
             <header>
               <h2>{agendaLabel(selected)}</h2>
-              <span>
-                {selectedEntries.length}{" "}
-                {selectedEntries.length === 1 ? "task" : "tasks"}
-              </span>
+              <span>{countLabel(selectedEntries.length, "task")}</span>
             </header>
             {selectedEntries.length ? (
               <div className="full-calendar-day-tasks">
@@ -529,7 +536,11 @@ export function FullCalendarView({
                 ))}
               </div>
             ) : (
-              <p>No tasks on this day. Use Add task to schedule one.</p>
+              <p>
+                <Trans>
+                  No tasks on this day. Use Add task to schedule one.
+                </Trans>
+              </p>
             )}
           </aside>
         ) : null}
@@ -554,11 +565,41 @@ const calendarModes: Array<{
   label: string;
   compact: boolean;
 }> = [
-  { value: "dayGridMonth", label: "Month", compact: true },
-  { value: "timeGridWeek", label: "Week", compact: false },
-  { value: "timeGridThreeDay", label: "3 days", compact: true },
-  { value: "timeGridDay", label: "Day", compact: false },
-  { value: "listWeek", label: "Agenda", compact: true },
+  {
+    value: "dayGridMonth",
+    get label() {
+      return t({ message: "Month" });
+    },
+    compact: true,
+  },
+  {
+    value: "timeGridWeek",
+    get label() {
+      return t({ message: "Week" });
+    },
+    compact: false,
+  },
+  {
+    value: "timeGridThreeDay",
+    get label() {
+      return t({ message: "3 days" });
+    },
+    compact: true,
+  },
+  {
+    value: "timeGridDay",
+    get label() {
+      return t({ message: "Day" });
+    },
+    compact: false,
+  },
+  {
+    value: "listWeek",
+    get label() {
+      return t({ message: "Agenda" });
+    },
+    compact: true,
+  },
 ];
 
 function fullCalendarEvents(
@@ -600,7 +641,7 @@ function fullCalendarEvents(
               timeEntryIndex: entry.timeEntryIndex,
             } satisfies CalendarEventMetadata,
             details: [],
-            kind: "Tracked time",
+            kind: t`Tracked time`,
           },
         });
         continue;
@@ -659,7 +700,10 @@ function fullCalendarEvents(
           details,
           // A task can appear on its scheduled and its due day; name the
           // reason on the due-day entry so the repeat is not a mystery.
-          kind: dateField === "due" && displayed.scheduled ? "Due" : undefined,
+          kind:
+            dateField === "due" && displayed.scheduled
+              ? t({ message: "Due" })
+              : undefined,
         },
       });
     }
@@ -779,15 +823,15 @@ function calendarEventLabel(info: EventContentArg): string {
   if (!start) return info.event.title;
   const date =
     todayString(start) === todayString()
-      ? "Today"
-      : new Intl.DateTimeFormat(undefined, {
+      ? t({ message: "Today" })
+      : new Intl.DateTimeFormat(appLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
         }).format(start);
   const time = info.event.allDay
     ? ""
-    : `, ${new Intl.DateTimeFormat(undefined, {
+    : `, ${new Intl.DateTimeFormat(appLocale(), {
         hour: "numeric",
         minute: "2-digit",
       }).format(start)}`;
@@ -873,13 +917,13 @@ function calendarStorageValue(date: Date, allDay: boolean): string {
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
   if (allDay) return day;
-  return `${day}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return t`${day}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function agendaLabel(value: string): string {
   const date = dateFromStorage(value);
   return date
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat(appLocale(), {
         weekday: "long",
         day: "numeric",
         month: "long",

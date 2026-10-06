@@ -36,6 +36,7 @@ export function SearchScreen({
   onBack?: () => void;
   onOpen(task: TaskSummary): void;
 }) {
+  const { t } = useLingui();
   const [query, setQuery] = useState("");
   const [assignedToMe, setAssignedToMe] = useState(false);
   const people = usePeople(assignedToMe);
@@ -114,9 +115,9 @@ export function SearchScreen({
       <header className="screen-header compact-header detail-header search-header">
         {onBack ? (
           <button
-            aria-label="Back"
+            aria-label={t({ message: "Back" })}
             className="icon-action"
-            title="Back"
+            title={t({ message: "Back" })}
             type="button"
             onClick={onBack}
           >
@@ -124,14 +125,18 @@ export function SearchScreen({
           </button>
         ) : null}
         <div>
-          <h1 id="search-title">Search</h1>
-          <p>Across this collection</p>
+          <h1 id="search-title">
+            <Trans>Search</Trans>
+          </h1>
+          <p>
+            <Trans>Across this collection</Trans>
+          </p>
         </div>
       </header>
       <div className="search-field">
         <Search aria-hidden="true" size={19} strokeWidth={1.7} />
         <label className="visually-hidden" htmlFor="task-search">
-          Search tasks
+          <Trans>Search tasks</Trans>
         </label>
         <input
           id="task-search"
@@ -139,7 +144,7 @@ export function SearchScreen({
           autoFocus
           autoCapitalize="none"
           autoCorrect="off"
-          placeholder="Tasks, tags, projects"
+          placeholder={t({ message: "Tasks, tags, projects" })}
           type="search"
           value={query}
           onChange={(event) => chooseQuery(event.target.value)}
@@ -150,8 +155,8 @@ export function SearchScreen({
         />
         {query ? (
           <button
-            aria-label="Clear search"
-            title="Clear search"
+            aria-label={t({ message: "Clear search" })}
+            title={t({ message: "Clear search" })}
             type="button"
             onClick={() => chooseQuery("")}
           >
@@ -169,15 +174,21 @@ export function SearchScreen({
               setLimit(300);
             }}
           />
-          Assigned to me
+          <Trans>Assigned to me</Trans>
         </label>
       )}
       {!peopleBlocked && !waiting && error ? (
         <div className="operation-error-notice" role="alert">
-          <p>Search could not be loaded. {error.message}</p>
-          {stale ? <p>Previously loaded results may be out of date.</p> : null}
+          <p>
+            <Trans>Search could not be loaded. {error.message}</Trans>
+          </p>
+          {stale ? (
+            <p>
+              <Trans>Previously loaded results may be out of date.</Trans>
+            </p>
+          ) : null}
           <button type="button" onClick={retry}>
-            Retry search
+            <Trans>Retry search</Trans>
           </button>
         </div>
       ) : null}
@@ -190,12 +201,15 @@ export function SearchScreen({
             {people.error
               ? "Your person record could not be loaded. Check your connection, then reload people to try again."
               : !people.directory
-                ? "Loading your person identity…"
+                ? t({ message: "Loading your person identity…" })
                 : people.directory.current.status === "ambiguous"
-                  ? `Several person records match your account: ${people.directory.current.paths.join(", ")}. Resolve those duplicates before filtering tasks.`
+                  ? t`Several person records match your account: ${people.directory.current.paths.join(", ")}. Resolve those duplicates before filtering tasks.`
                   : people.directory.current.status === "invalid"
-                    ? `Your person record needs fixing before filtering tasks: ${people.directory.current.paths.join(", ")}.`
-                    : "Link your account to a person record before using Assigned to me."}
+                    ? t`Your person record needs fixing before filtering tasks: ${people.directory.current.paths.join(", ")}.`
+                    : t({
+                        message:
+                          "Link your account to a person record before using Assigned to me.",
+                      })}
           </p>
           <div className="people-actions">
             {people.directory?.settingsUrl && (
@@ -210,7 +224,7 @@ export function SearchScreen({
               onClick={people.retry}
             >
               <RefreshCw size={18} aria-hidden="true" />
-              Reload people
+              <Trans>Reload people</Trans>
             </button>
           </div>
         </div>
@@ -231,7 +245,9 @@ export function SearchScreen({
           <BrowseFields tasks={tasks} onChoose={chooseQuery} />
           {hasMore ? (
             <p role="status">
-              Suggestions from the first {limit} tasks. Search to find others.
+              <Trans>
+                Suggestions from the first {limit} tasks. Search to find others.
+              </Trans>
             </p>
           ) : null}
         </>
@@ -239,8 +255,8 @@ export function SearchScreen({
         <>
           <p className="search-result-count" role="status">
             {refreshing
-              ? "Refreshing results…"
-              : `${tasks.length}${hasMore ? "+" : ""} ${tasks.length === 1 ? "task" : "tasks"}${stale ? " — previously loaded" : ""}`}
+              ? t({ message: "Refreshing results…" })
+              : `${hasMore ? t`${tasks.length}+ tasks` : countLabel(tasks.length, "task")}${stale ? t({ message: " — previously loaded" }) : ""}`}
           </p>
           <div className="task-list search-results">
             {tasks.length > 100 ? (
@@ -260,7 +276,9 @@ export function SearchScreen({
               disabled={refreshing}
               onClick={() => setLimit((value) => value + 300)}
             >
-              {refreshing ? "Loading more…" : "Show more results"}
+              {refreshing
+                ? t({ message: "Loading more…" })
+                : t({ message: "Show more results" })}
             </button>
           ) : null}
         </>
@@ -268,13 +286,13 @@ export function SearchScreen({
         <EmptyState
           title={
             assignedToMe
-              ? "No matching tasks assigned to you."
-              : "No tasks matched."
+              ? t({ message: "No matching tasks assigned to you." })
+              : t({ message: "No tasks matched." })
           }
           body={
             assignedToMe
-              ? "Assignments use your linked person record."
-              : "Try fewer words or another spelling."
+              ? t({ message: "Assignments use your linked person record." })
+              : t({ message: "Try fewer words or another spelling." })
           }
         />
       )}
@@ -430,27 +448,38 @@ function BrowseFields({
   tasks: TaskSummary[];
   onChoose(value: string): void;
 }) {
+  const { t } = useLingui();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(),
   );
   const groups = useMemo(
     () => [
-      { label: "Projects", prefix: "+", values: collect(tasks, "projects") },
-      { label: "Contexts", prefix: "@", values: collect(tasks, "contexts") },
       {
-        label: "Tags",
+        label: t({ message: "Projects" }),
+        prefix: "+",
+        values: collect(tasks, "projects"),
+      },
+      {
+        label: t({ message: "Contexts" }),
+        prefix: "@",
+        values: collect(tasks, "contexts"),
+      },
+      {
+        label: t({ message: "Tags" }),
         prefix: "#",
         values: collect(tasks, "tags").filter((value) => value !== "task"),
       },
     ],
-    [tasks],
+    [t, tasks],
   );
   const available = groups.filter((group) => group.values.length);
   if (!available.length)
     return (
       <EmptyState
-        title="Find a task."
-        body="Search titles, notes, projects, contexts, and tags."
+        title={t({ message: "Find a task." })}
+        body={t({
+          message: "Search titles, notes, projects, contexts, and tags.",
+        })}
       />
     );
   return (
@@ -485,8 +514,8 @@ function BrowseFields({
                 }
               >
                 {expandedGroups.has(group.label)
-                  ? "Show fewer"
-                  : `Show all ${group.values.length}`}
+                  ? t({ message: "Show fewer" })
+                  : t`Show all ${group.values.length}`}
               </button>
             ) : null}
           </div>

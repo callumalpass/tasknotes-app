@@ -1,3 +1,6 @@
+import { appLocale } from "../../i18n/app";
+import { countLabel } from "../../i18n/default-labels";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -34,6 +37,7 @@ export function MiniCalendarView({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
+  const { t } = useLingui();
   const initial = dateFromStorage(todayString()) ?? new Date();
   const [month, setMonth] = useState(
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
@@ -53,7 +57,7 @@ export function MiniCalendarView({
     [days, execution, identityTasks],
   );
   const selectedTasks = events.get(selected) ?? [];
-  const monthLabel = new Intl.DateTimeFormat(undefined, {
+  const monthLabel = new Intl.DateTimeFormat(appLocale(), {
     month: "long",
     year: "numeric",
   }).format(month);
@@ -89,7 +93,7 @@ export function MiniCalendarView({
     <div className="mini-calendar-view">
       <div className="mini-calendar-toolbar">
         <button
-          aria-label="Previous month"
+          aria-label={t({ message: "Previous month" })}
           type="button"
           onClick={() => changeMonth(-1)}
         >
@@ -97,14 +101,14 @@ export function MiniCalendarView({
         </button>
         <h2>{monthLabel}</h2>
         <button
-          aria-label="Next month"
+          aria-label={t({ message: "Next month" })}
           type="button"
           onClick={() => changeMonth(1)}
         >
           <ChevronRight aria-hidden="true" size={20} />
         </button>
         <button
-          aria-label={`Add task on ${agendaLabel(selected)}`}
+          aria-label={t`Add task on ${agendaLabel(selected)}`}
           className="mini-calendar-create"
           type="button"
           onClick={() => onCreate(selected)}
@@ -126,7 +130,7 @@ export function MiniCalendarView({
               const count = entries.length;
               return (
                 <button
-                  aria-label={`${day.toLocaleDateString()}, ${count} ${count === 1 ? "task" : "tasks"}`}
+                  aria-label={`${day.toLocaleDateString(appLocale())}, ${countLabel(count, "task")}`}
                   aria-selected={selected === date}
                   className={
                     day.getMonth() === month.getMonth() ? "" : "outside"
@@ -183,7 +187,11 @@ export function MiniCalendarView({
                           {entry.task.title}
                         </span>
                       ))}
-                      {count > 3 ? <small>+{count - 3} more</small> : null}
+                      {count > 3 ? (
+                        <small>
+                          <Trans>+{count - 3} more</Trans>
+                        </small>
+                      ) : null}
                     </span>
                   ) : null}
                   {count ? <i aria-hidden="true">{count}</i> : null}
@@ -208,7 +216,9 @@ export function MiniCalendarView({
             />
           ))
         ) : (
-          <p>No tasks on this day. Use Add task to schedule one.</p>
+          <p>
+            <Trans>No tasks on this day. Use Add task to schedule one.</Trans>
+          </p>
         )}
       </section>
     </div>
@@ -245,7 +255,7 @@ function storageDate(date: Date): string {
 function agendaLabel(value: string): string {
   const date = dateFromStorage(value);
   return date
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat(appLocale(), {
         weekday: "long",
         day: "numeric",
         month: "long",

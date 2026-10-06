@@ -1,3 +1,5 @@
+import { useLingui, Trans } from "@lingui/react/macro";
+import { daySectionLabel } from "../../i18n/default-labels";
 import { GripVertical } from "lucide-react";
 import {
   useContext,
@@ -32,7 +34,7 @@ import {
 } from "../../domain/manual-order";
 import { groupTaskViewRows } from "../../domain/view-grouping";
 import { sectionTaskViewRows } from "../../domain/task-list-sections";
-import { groupLabel } from "../../domain/view-values";
+import { groupLabel } from "../../i18n/view-presentation";
 import { ViewTaskRow } from "./view-task-row";
 import { ViewEmptyState } from "../view-empty-state";
 import {
@@ -84,6 +86,7 @@ export function TaskListView({
     placement: ManualOrderPlacement,
   ): void;
 }) {
+  const { t } = useLingui();
   if (!execution.rows.length)
     return (
       emptyState ?? (
@@ -100,7 +103,7 @@ export function TaskListView({
       key: `group:${group.key}`,
       label: Object.keys(group.values).length
         ? groupLabel(Object.entries(group.values))
-        : "Other",
+        : t({ message: "Other" }),
       rows: group.rows,
       mutation: { type: "group", values: group.values },
     }));
@@ -117,7 +120,7 @@ export function TaskListView({
       daySections = sectionMode === "day";
       lanes = sections.map((section) => ({
         key: `section:${section.key}`,
-        label: section.label,
+        label: daySectionLabel(section.key, section.label),
         className: `is-${section.key}`,
         rows: section.rows,
         mutation: {
@@ -229,6 +232,7 @@ function ManualTaskRows({
   ): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
+  const { t } = useLingui();
   const [dragging, setDragging] = useState<{
     taskId: string;
     sourceLaneKey: string;
@@ -388,7 +392,7 @@ function ManualTaskRows({
           );
     if (!input) {
       setAnnouncement(
-        `${destinationLane.label ?? "That section"} is read-only.`,
+        t`${destinationLane.label ?? t({ message: "That section" })} is read-only.`,
       );
       return;
     }
@@ -405,10 +409,12 @@ function ManualTaskRows({
       : undefined;
     setAnnouncement(
       sourceLane.key !== destinationLane.key
-        ? `Moved ${row.task.title} to ${destinationLane.label ?? "the destination section"}.`
+        ? t`Moved ${row.task.title} to ${destinationLane.label ?? t`the destination section`}.`
         : target
-          ? `Moved ${row.task.title} ${destination.placement} ${target.title}.`
-          : `Moved ${row.task.title}.`,
+          ? destination.placement === "before"
+            ? t`Moved ${row.task.title} before ${target.title}.`
+            : t`Moved ${row.task.title} after ${target.title}.`
+          : t`Moved ${row.task.title}.`,
     );
   }
 
@@ -468,8 +474,10 @@ function ManualTaskRows({
     );
     setAnnouncement(
       crossesLane
-        ? `Moved ${row.task.title} to ${destinationLane.label ?? "the destination section"}.`
-        : `Moved ${row.task.title} ${direction < 0 ? "up" : "down"}.`,
+        ? t`Moved ${row.task.title} to ${destinationLane.label ?? t`the destination section`}.`
+        : direction < 0
+          ? t`Moved ${row.task.title} up.`
+          : t`Moved ${row.task.title} down.`,
     );
   }
 
@@ -749,8 +757,10 @@ function ManualTaskRows({
       </div>
       {manualOrder && grouped && !canMoveAcrossLanes ? (
         <p className="view-note">
-          These sections are calculated, so tasks can only be reordered within
-          them.
+          <Trans>
+            These sections are calculated, so tasks can only be reordered within
+            them.
+          </Trans>
         </p>
       ) : null}
       <p className="visually-hidden" aria-live="polite">

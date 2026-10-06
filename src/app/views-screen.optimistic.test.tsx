@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
   within,
-} from "@testing-library/react";
+} from "../test/render";
 import {
   type JsonObject,
   type MdbaseConnection,

@@ -1,8 +1,10 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, type RefObject } from "react";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 
 /** Bridge FullCalendar's imperative popover into the application's overlay owner. */
 export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
+  const { t } = useLingui();
   const closeRef = useRef<() => void>(() => {});
   useEffect(() => {
     const root = rootRef.current;
@@ -41,10 +43,13 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
       if (!popup.hasAttribute("aria-labelledby"))
         popup.setAttribute(
           "aria-label",
-          `Tasks for ${popup.querySelector(".fc-popover-title")?.textContent ?? "selected day"}`,
+          t`Tasks for ${popup.querySelector(".fc-popover-title")?.textContent ?? t({ message: "selected day" })}`,
         );
       closeButton?.setAttribute("role", "button");
-      closeButton?.setAttribute("aria-label", "Close additional tasks");
+      closeButton?.setAttribute(
+        "aria-label",
+        t({ message: "Close additional tasks" }),
+      );
       if (closeButton) closeButton.tabIndex = 0;
       closeButton?.addEventListener("keydown", activateClose);
       fitCalendarPopup(popup);
@@ -83,7 +88,7 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
       detach(false);
       closeRef.current = () => {};
     };
-  }, [rootRef]);
+  }, [rootRef, t]);
   // Navigation owns its new focus; don't restore the calendar trigger over it.
   return () => closeRef.current();
 }

@@ -1,19 +1,13 @@
+import { appLocale } from "../i18n/app";
 import { ChevronDown, ChevronUp, Cloud } from "lucide-react";
 import { useState } from "react";
 import { useLingui, Trans, Plural } from "@lingui/react/macro";
-import { I18nProvider } from "@lingui/react";
-import { createPilotI18n, requestedPilotLocale } from "../i18n/pilot";
 import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
-/** Scope the experiment to one settings panel; all other application copy remains unchanged. */
+/** Uses the application provider, including the existing partial French preview. */
 export function CollectionSettings() {
-  const [i18n] = useState(() => createPilotI18n(requestedPilotLocale()));
-  return (
-    <I18nProvider i18n={i18n}>
-      <CollectionSettingsContent />
-    </I18nProvider>
-  );
+  return <CollectionSettingsContent />;
 }
 
 export function CollectionSettingsContent() {
@@ -25,7 +19,7 @@ export function CollectionSettingsContent() {
   const open = stats?.open ?? 0;
   const total = stats?.total ?? 0;
   const scanned = lastRefresh?.scanned ?? 0;
-  const elapsed = lastRefresh?.elapsedMs.toLocaleString() ?? "0";
+  const elapsed = lastRefresh?.elapsedMs.toLocaleString(appLocale()) ?? "0";
   const connectionLabel =
     connection.state === "connecting"
       ? t`Connecting`

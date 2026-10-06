@@ -1,8 +1,10 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PeopleDirectory } from "../domain/people";
 import { useRepository, useRepositoryRevision } from "./repository-context";
 
 export function usePeople(enabled = true) {
+  const { t } = useLingui();
   const { repository, invalidation } = useRepository();
   const [revision, setRevision] = useState(0);
   const request = useMemo(
@@ -50,12 +52,12 @@ export function usePeople(enabled = true) {
               error:
                 reason instanceof Error
                   ? reason
-                  : new Error("People could not be loaded."),
+                  : new Error(t({ message: "People could not be loaded." })),
             });
         });
     }
     return () => controller.abort();
-  }, [request]);
+  }, [request, t]);
   const current = state?.request === request ? state : undefined;
   return {
     directory: current?.directory,

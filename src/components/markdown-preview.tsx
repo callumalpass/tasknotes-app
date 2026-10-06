@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useEffect, useState } from "react";
@@ -9,10 +10,11 @@ export function MarkdownPreview({
   source: string;
   resolveImage?: (source: string) => Promise<Blob | null>;
 }) {
+  const { t } = useLingui();
   if (!source.trim())
     return (
       <p className="markdown-preview-empty">
-        Nothing to preview yet. Choose Write to add notes.
+        <Trans>Nothing to preview yet. Choose Write to add notes.</Trans>
       </p>
     );
   return (
@@ -38,7 +40,7 @@ export function MarkdownPreview({
               return <img alt={alt ?? ""} src={src} />;
             return (
               <ResolvedMarkdownImage
-                alt={alt ?? "Attached image"}
+                alt={alt ?? t`Attached image`}
                 key={attachmentImageSource(src)}
                 resolveImage={resolveImage}
                 source={attachmentImageSource(src)}
@@ -62,6 +64,7 @@ function ResolvedMarkdownImage({
   source: string;
   resolveImage(source: string): Promise<Blob | null>;
 }) {
+  const { t } = useLingui();
   const [url, setUrl] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -92,10 +95,10 @@ function ResolvedMarkdownImage({
   return (
     <span className="markdown-image-placeholder" role="img" aria-label={alt}>
       {missing
-        ? "Image unavailable offline"
+        ? t({ message: "Image unavailable offline" })
         : failed
-          ? "Image preview unavailable"
-          : "Loading image…"}
+          ? t({ message: "Image preview unavailable" })
+          : t({ message: "Loading image…" })}
     </span>
   );
 }

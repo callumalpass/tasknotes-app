@@ -4,6 +4,7 @@ import "@fontsource/azeret-mono/500.css";
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
+import { AppI18nProvider } from "./i18n/app-provider";
 import { TaskNotesApp } from "./app/tasknotes-app";
 import {
   deliverAppGrantReturn,

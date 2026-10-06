@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { ArrowUpRight, UserRound } from "lucide-react";
 import { personSettingsUrl } from "../cloud/person-settings-url";
 

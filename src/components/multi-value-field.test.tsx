@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "../test/render";
 import { useState, type ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 

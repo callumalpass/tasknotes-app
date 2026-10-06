@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, type RefObject } from "react";
 
 /**
@@ -11,6 +12,7 @@ export function KanbanColumnJump({
   boardRef: RefObject<HTMLDivElement | null>;
   columns: { key: string; label: string; count: number }[];
 }) {
+  const { t } = useLingui();
   const [activeKey, setActiveKey] = useState(columns[0]?.key);
   useEffect(() => {
     const board = boardRef.current;
@@ -34,7 +36,10 @@ export function KanbanColumnJump({
 
   if (columns.length < 2) return null;
   return (
-    <nav aria-label="Board columns" className="kanban-column-jump">
+    <nav
+      aria-label={t({ message: "Board columns" })}
+      className="kanban-column-jump"
+    >
       {columns.map((column) => (
         <button
           aria-current={column.key === activeKey ? "true" : undefined}
