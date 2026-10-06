@@ -10,10 +10,12 @@ No dual-backend store candidate has been built or submitted.
 - Grant-only apps use authenticated `GET /v1/account/backend`, returning
   `{account_id, backend}` for the consenting account, not the collection owner.
   Receiver source is Connect #626 at `568dd23d`; getter source is Connect #625 at
-  `3f2b9cd9`. Both client and protocol archives are pinned for development only.
+  `23ac9d06`. Receiver source has merged with CI and scoped metadata-pair review;
+  deployment, ordinary next consent/key delivery and LAB qualification remain
+  separate. All three client/protocol/native-SDK archives are development-only
+  pins, currently Connect composition `f578ed55` and SDK `5ff45292`.
   The optional `@mdbase-dev/connect/control` getter owns credentials and proof;
-  TaskNotes never obtains a token or signer. Security/CI and LAB qualification
-  are pending.
+  TaskNotes never obtains a token or signer.
 - Unknown/missing backend values fail closed. Authentication, reachability,
   target kind and errors never select another backend.
 - Legacy accounts continue through the existing application session and
@@ -57,7 +59,17 @@ beta.129 metadata is not a registry release. Unit tests cover pre-data opening,
 strict selection, cancellation, portable/native identity separation, native
 CRUD/CAS and receipt recovery against SDK stand-ins. They do not establish
 actual account detection, ordinary consent, LAB routing, reminders or mobile
-readiness. Complete view metadata remains explicitly unsupported pending the
+readiness. Native parent creation/edits and missing rolling-window occurrences
+are prepared before admission and submitted atomically; a rejected window
+rejects that parent change too. Receipt recovery never recreates children.
+Background window advancement on open/refresh is not implemented yet.
+The corrected timer factory remains unused until authoritative original-operation
+receipt recovery exists. Whole-collection change-feed readiness is also absent;
+query subscription readiness does not establish whole-collection freshness.
+Binary files still require actual timestamps, stable new-upload targets and
+implemented upload/read RPCs. Hello capabilities, even from a corrected producer,
+are point-in-time UI hints, not current folder/path authorization.
+Complete view metadata remains explicitly unsupported pending the
 canonical native producer and bounded driver.
 
 Before release, pin the actual app commit, qualified SDK and Connect artifacts,

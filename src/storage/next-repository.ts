@@ -83,6 +83,7 @@ import { taskSearchTokens } from "../domain/task-query";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
+  rollingOccurrenceDates,
 } from "../domain/task-occurrence";
 import {
   newViewSourcePath,
@@ -104,6 +105,26 @@ import {
   completeRecords,
   completionLimit,
 } from "./completions";
+
+function createRecordOp(
+  id: string,
+  type: string,
+  record: { path: string; frontmatter: Record<string, unknown>; body: string },
+): wire.Op {
+  return {
+    kind: "create",
+    id,
+    type,
+    path: record.path,
+    frontmatter: new Map(
+      Object.entries(record.frontmatter).map(([field, value]) => [
+        field,
+        toValue(value as PlainValue),
+      ]),
+    ),
+    body: record.body,
+  };
+}
 
 function taskChanges(
   record: wire.RecordView,
@@ -624,19 +645,7 @@ export class NextTaskRepository implements TaskRepository {
               body: captured.body,
               ifRevision: record.revision,
             }),
-            {
-              kind: "create",
-              id: next.nativeId,
-              type: SCRATCHPAD_TYPE,
-              path: values.path,
-              frontmatter: new Map(
-                Object.entries(values.frontmatter).map(([field, value]) => [
-                  field,
-                  toValue(value as PlainValue),
-                ]),
-              ),
-              body: values.body,
-            },
+            createRecordOp(next.nativeId, SCRATCHPAD_TYPE, values),
           ];
           return async () =>
             (
@@ -1138,6 +1147,7 @@ export class NextTaskRepository implements TaskRepository {
     if (accepted) return accepted;
     await this.initialize({ deferTaskIndex: true });
     owner.throwIfAborted();
+    let rollingWarnings: string[] = [];
     const task = await this.mutations
       .run(
         {
@@ -1153,19 +1163,36 @@ export class NextTaskRepository implements TaskRepository {
               ),
               signal,
             );
+            const rolling = await this.rollingCreates(
+              task,
+              provider.model,
+              provider.typeName,
+              signal,
+            );
+            rollingWarnings = rolling.warnings;
             signal.throwIfAborted();
-            return () => {
+            return async () => {
               intent.authorityRequestId = mutationId;
-              return this.client.create(
-                {
-                  id: intent.id,
-                  type: provider.typeName,
-                  path: task.path,
-                  frontmatter: task.frontmatter as Record<string, PlainValue>,
-                  body: task.body,
-                },
-                { mutationId, signal },
-              );
+              if (!rolling.ops.length)
+                return this.client.create(
+                  {
+                    id: intent.id,
+                    type: provider.typeName,
+                    path: task.path,
+                    frontmatter: task.frontmatter as Record<string, PlainValue>,
+                    body: task.body,
+                  },
+                  { mutationId, signal },
+                );
+              return (
+                await this.client.submit(
+                  [
+                    createRecordOp(intent.id, provider.typeName, task),
+                    ...rolling.ops,
+                  ],
+                  { mutationId, signal },
+                )
+              )[0]!;
             };
           },
           confirmed: async (_receipt, signal) => {
@@ -1175,7 +1202,12 @@ export class NextTaskRepository implements TaskRepository {
               signal,
             );
             signal.throwIfAborted();
-            return this.remember(record);
+            const saved = this.remember(record);
+            if (saved.occurrenceMaterialization === "rolling")
+              this.indexReady = false;
+            return rollingWarnings.length
+              ? { ...saved, operationWarnings: rollingWarnings }
+              : saved;
           },
         },
         this.scope.signal,
@@ -1195,11 +1227,58 @@ export class NextTaskRepository implements TaskRepository {
     return task;
   }
 
+  private async rollingCreates(
+    parent: Task,
+    model: TaskNotesTaskModel,
+    typeName: string,
+    signal: AbortSignal,
+  ): Promise<{ ops: wire.Op[]; warnings: string[] }> {
+    const ops: wire.Op[] = [];
+    const warnings: string[] = [];
+    let dates: string[];
+    try {
+      dates = rollingOccurrenceDates(parent);
+    } catch (reason) {
+      return {
+        ops,
+        warnings: [
+          `rolling_occurrence_materialization_failed: ${reason instanceof Error ? reason.message : String(reason)}`,
+        ],
+      };
+    }
+    if (!dates.length) return { ops, warnings };
+    await this.ensureIndex();
+    signal.throwIfAborted();
+    const existing = [...this.cache].map(([, entry]) => entry.task);
+    // Occupancy includes the not-yet-submitted parent and sibling creates.
+    const paths = new Set([parent.path]);
+    const now = new Date().toISOString();
+    for (const date of dates) {
+      const id = await occurrenceRecordId(parent.id, date);
+      signal.throwIfAborted();
+      const result = await model.materializeOccurrence(
+        parent,
+        date,
+        existing,
+        { id, now },
+        (path) => this.template(path, signal),
+      );
+      warnings.push(...result.warnings);
+      if (!result.created) continue;
+      const task = await this.availableTaskPath(result.task, signal, paths);
+      paths.add(task.path);
+      ops.push(createRecordOp(id, typeName, task));
+    }
+    return { ops, warnings };
+  }
+
   private async availableTaskPath(
     task: Task,
     signal: AbortSignal,
+    plannedPaths: ReadonlySet<string> = new Set(),
   ): Promise<Task> {
     for (const path of taskPathCandidates(task.path)) {
+      if (plannedPaths.has(path)) continue;
       const occupied = await this.client.find({ path }, undefined, signal);
       signal.throwIfAborted();
       if (!occupied) return path === task.path ? task : { ...task, path };
@@ -1223,6 +1302,7 @@ export class NextTaskRepository implements TaskRepository {
     mutate: (task: Task, model: TaskNotesTaskModel) => Task,
   ): Promise<Task> {
     let recordId: string | undefined = this.cache.get(id)?.recordId;
+    let rollingWarnings: string[] = [];
     return this.mutations.run(
       {
         key,
@@ -1231,12 +1311,29 @@ export class NextTaskRepository implements TaskRepository {
           recordId = current.record.id;
           const next = mutate(current.task, current.model);
           if (next === current.task) return { value: current.task };
-          return () =>
-            this.client.update(
+          const rolling = await this.rollingCreates(
+            next,
+            current.model,
+            this.cache.get(id)!.typeName,
+            signal,
+          );
+          rollingWarnings = rolling.warnings;
+          if (!rolling.ops.length)
+            return () =>
+              this.client.update(
+                current.record,
+                taskChanges(current.record, current.task, next),
+                { mutationId, signal },
+              );
+          const ops = [
+            this.client.updateOp(
               current.record,
               taskChanges(current.record, current.task, next),
-              { mutationId, signal },
-            );
+            ),
+            ...rolling.ops,
+          ];
+          return async () =>
+            (await this.client.submit(ops, { mutationId, signal }))[0]!;
         },
         confirmed: async (_receipt, signal) => {
           if (!recordId)
@@ -1250,8 +1347,12 @@ export class NextTaskRepository implements TaskRepository {
           );
           signal.throwIfAborted();
           const task = this.remember(record);
+          if (task.occurrenceMaterialization === "rolling")
+            this.indexReady = false;
           this.emit("data");
-          return task;
+          return rollingWarnings.length
+            ? { ...task, operationWarnings: rollingWarnings }
+            : task;
         },
       },
       this.scope.signal,
@@ -1372,19 +1473,13 @@ export class NextTaskRepository implements TaskRepository {
               if (next.created) {
                 const task = await this.availableTaskPath(next.task, signal);
                 targets.push(nextId);
-                ops.push({
-                  kind: "create",
-                  id: nextId,
-                  type: this.cache.get(reference.id)!.typeName,
-                  path: task.path,
-                  frontmatter: new Map(
-                    Object.entries(task.frontmatter).map(([field, value]) => [
-                      field,
-                      toValue(value as PlainValue),
-                    ]),
+                ops.push(
+                  createRecordOp(
+                    nextId,
+                    this.cache.get(reference.id)!.typeName,
+                    task,
                   ),
-                  body: task.body,
-                });
+                );
               }
             }
           } else {
