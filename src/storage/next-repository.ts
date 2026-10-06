@@ -44,6 +44,40 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../domain/view";
 import { taskViewKey } from "../domain/view";
+import {
+  SCRATCHPAD_TYPE,
+  scratchpadPage,
+  type ScratchpadDocument,
+  type ScratchpadPageRequest,
+  type SaveScratchpadInput,
+  type StartNewScratchpadInput,
+  type ReactivateScratchpadInput,
+  type ScratchpadReference,
+  type ArchiveScratchpadInput,
+} from "../domain/scratchpad";
+import {
+  SCRATCH_IMAGE_TYPE,
+  type CreateScratchImageInput,
+  type ScratchImage,
+} from "../domain/scratch-image";
+import {
+  scratchImageFromRecord,
+  scratchImageFrontmatter,
+} from "./scratch-images";
+import {
+  scratchFeedPage,
+  scratchpadFeedItem,
+  type ScratchFeedPage,
+  type ScratchFeedPageRequest,
+} from "../domain/scratch-feed";
+import {
+  activeScratchpads,
+  assertScratchpadRebase,
+  assertScratchpadRevision,
+  newScratchpadValues,
+  scratchpadFromRecord,
+  scratchpadFrontmatter,
+} from "./scratchpads";
 import { taskCompletion } from "../domain/task-completion";
 import { taskSearchTokens } from "../domain/task-query";
 import {
@@ -139,6 +173,8 @@ export class NextTaskRepository implements TaskRepository {
   private readonly stopLink: () => void;
   private status: RepositoryConnectionStatus = { state: "connecting" };
   private viewCatalog: TaskViewDocument[] = [];
+  private scratchFeedSnapshot?: ScratchFeedPage;
+  private dataRevision = 0;
 
   constructor(
     private readonly client: MdbaseClient,
@@ -331,6 +367,585 @@ export class NextTaskRepository implements TaskRepository {
     const paths = await this.assignedPaths(query.assignedTo, signal);
     signal.throwIfAborted();
     return this.cache.list(query, undefined, paths);
+  }
+
+  private scratchpad(record: wire.RecordView): ScratchpadDocument {
+    if (record.body === undefined)
+      throw new Error("Mdbase did not return the complete scratchpad body.");
+    return scratchpadFromRecord({
+      path: record.path,
+      revision: record.revision,
+      types: record.types,
+      frontmatter: plainFields(record.frontmatter),
+      body: record.body,
+    });
+  }
+
+  private async scratchpadRecords(
+    signal: AbortSignal,
+  ): Promise<wire.RecordView[]> {
+    const records: wire.RecordView[] = [];
+    const identities = new Set<string>();
+    // Query every note: an incomplete narrowed answer must never create a note.
+    for await (const page of this.client.pages(
+      { types: [SCRATCHPAD_TYPE], limit: 1000 },
+      { body: true },
+      signal,
+    )) {
+      signal.throwIfAborted();
+      if (!page.complete)
+        throw nativeUnsupported(
+          "The replica has not supplied a complete scratchpad stream.",
+        );
+      for (const record of page.records) {
+        const note = this.scratchpad(record);
+        if (identities.has(note.id))
+          throw new Error(
+            "Two native notes have the same portable Scratchpad identity. Resolve the duplicate before opening this stream.",
+          );
+        identities.add(note.id);
+        records.push(record);
+      }
+    }
+    signal.throwIfAborted();
+    return records;
+  }
+
+  private findScratchpad(
+    records: wire.RecordView[],
+    reference: { id: string; path?: string },
+  ): wire.RecordView {
+    const record = records.find(
+      (record) => this.scratchpad(record).id === reference.id,
+    );
+    if (!record) throw new Error("The scratchpad is no longer available.");
+    const note = this.scratchpad(record);
+    if (reference.path && note.path !== reference.path)
+      throw new Error("This scratchpad changed. Reload it before saving.");
+    return record;
+  }
+
+  private currentScratchpad(records: wire.RecordView[]): wire.RecordView {
+    const notes = records.map((record) => ({
+      path: record.path,
+      revision: record.revision,
+      types: record.types,
+      frontmatter: plainFields(record.frontmatter),
+      body: record.body,
+    }));
+    const current = activeScratchpads(notes)[0];
+    if (!current)
+      throw new Error(
+        "The current note is no longer available. Reload before continuing.",
+      );
+    return this.findScratchpad(records, current);
+  }
+
+  private async savedScratchpad(
+    nativeId: string,
+    portableId: string,
+    signal: AbortSignal,
+  ): Promise<ScratchpadDocument> {
+    const note = this.scratchpad(
+      await this.client.get(nativeId, { body: true }, signal),
+    );
+    signal.throwIfAborted();
+    if (note.id !== portableId)
+      throw new Error(
+        "The saved scratchpad's portable identity changed. Reload before continuing.",
+      );
+    return note;
+  }
+
+  getActiveScratchpad(): Promise<ScratchpadDocument> {
+    const signal = this.signal();
+    let target: { nativeId: string; portableId: string };
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:active"]),
+        prepare: async (mutationId, requestSignal) => {
+          const records = await this.scratchpadRecords(requestSignal);
+          if (
+            !records.some(
+              (record) => this.scratchpad(record).state === "active",
+            )
+          ) {
+            const values = newScratchpadValues();
+            target = {
+              nativeId: crypto.randomUUID(),
+              portableId: values.frontmatter.id as string,
+            };
+            return () =>
+              this.client.create(
+                {
+                  id: target.nativeId,
+                  type: SCRATCHPAD_TYPE,
+                  ...values,
+                  frontmatter: values.frontmatter as Record<string, PlainValue>,
+                },
+                { mutationId, signal: requestSignal },
+              );
+          }
+          const current = this.currentScratchpad(records);
+          const duplicates = records.filter(
+            (record) =>
+              record.id !== current.id &&
+              this.scratchpad(record).state === "active",
+          );
+          if (!duplicates.length) return { value: this.scratchpad(current) };
+          target = {
+            nativeId: current.id,
+            portableId: this.scratchpad(current).id,
+          };
+          const now = new Date().toISOString();
+          // CAS the selected winner as well as every duplicate, so a concurrent
+          // edit cannot silently change the basis of the repair.
+          const ops = [
+            this.client.updateOp(current, { ifRevision: current.revision }),
+            ...duplicates.map((record) =>
+              this.client.updateOp(record, {
+                patch: { state: "converted", dateConverted: now },
+                ifRevision: record.revision,
+              }),
+            ),
+          ];
+          return async () =>
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal: requestSignal,
+              })
+            )[0]!;
+        },
+        confirmed: async (_, requestSignal) => {
+          const current = await this.savedScratchpad(
+            target.nativeId,
+            target.portableId,
+            requestSignal,
+          );
+          this.reached();
+          this.emit("data");
+          return current;
+        },
+      },
+      signal,
+    );
+  }
+
+  async getScratchpad(id: string): Promise<ScratchpadDocument | null> {
+    const records = await this.scratchpadRecords(this.signal());
+    const record = records.find((record) => this.scratchpad(record).id === id);
+    return record ? this.scratchpad(record) : null;
+  }
+
+  async listScratchpads(request: ScratchpadPageRequest = {}) {
+    await this.getActiveScratchpad();
+    const records = await this.scratchpadRecords(this.signal());
+    return scratchpadPage(
+      records.map((record) => this.scratchpad(record)),
+      request,
+    );
+  }
+
+  saveScratchpad(input: SaveScratchpadInput): Promise<ScratchpadDocument> {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    let nativeId: string;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:save", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          const record = this.findScratchpad(
+            await this.scratchpadRecords(requestSignal),
+            captured,
+          );
+          const current = this.scratchpad(record);
+          assertScratchpadRebase(current, captured);
+          nativeId = record.id;
+          const op = this.client.updateOp(record, {
+            patch: scratchpadFrontmatter(current, {
+              title: captured.title,
+              dateModified: new Date().toISOString(),
+            }) as Record<string, PlainValue>,
+            body: captured.body,
+            ifRevision: record.revision,
+          });
+          return async () =>
+            (
+              await this.client.submit([op], {
+                mutationId,
+                signal: requestSignal,
+              })
+            )[0]!;
+        },
+        confirmed: async (_, requestSignal) => {
+          const note = await this.savedScratchpad(
+            nativeId,
+            captured.id,
+            requestSignal,
+          );
+          this.reached();
+          this.emit("data");
+          return note;
+        },
+      },
+      signal,
+    );
+  }
+
+  startNewScratchpad(input: StartNewScratchpadInput) {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    let previousId: string;
+    let next: { nativeId: string; portableId: string };
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:new", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          const records = await this.scratchpadRecords(requestSignal);
+          const record = this.currentScratchpad(records);
+          const current = this.scratchpad(record);
+          assertScratchpadRevision(current, captured);
+          const now = new Date().toISOString();
+          const values = newScratchpadValues(now);
+          previousId = record.id;
+          next = {
+            nativeId: crypto.randomUUID(),
+            portableId: values.frontmatter.id as string,
+          };
+          const ops: wire.Op[] = [
+            this.client.updateOp(record, {
+              patch: scratchpadFrontmatter(current, {
+                state: "converted",
+                title: captured.title,
+                dateModified: now,
+                dateConverted: now,
+              }) as Record<string, PlainValue>,
+              body: captured.body,
+              ifRevision: record.revision,
+            }),
+            {
+              kind: "create",
+              id: next.nativeId,
+              type: SCRATCHPAD_TYPE,
+              path: values.path,
+              frontmatter: new Map(
+                Object.entries(values.frontmatter).map(([field, value]) => [
+                  field,
+                  toValue(value as PlainValue),
+                ]),
+              ),
+              body: values.body,
+            },
+          ];
+          return async () =>
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal: requestSignal,
+              })
+            )[0]!;
+        },
+        confirmed: async (_, requestSignal) => {
+          const previous = await this.savedScratchpad(
+            previousId,
+            captured.id,
+            requestSignal,
+          );
+          const current = await this.savedScratchpad(
+            next.nativeId,
+            next.portableId,
+            requestSignal,
+          );
+          this.reached();
+          this.emit("data");
+          return { previous, current };
+        },
+      },
+      signal,
+    );
+  }
+
+  reactivateScratchpad(input: ReactivateScratchpadInput) {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    let previousId: string;
+    let currentId: string;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:reactivate", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          if (captured.current.id === captured.target.id)
+            throw new Error("The current scratchpad cannot resume itself.");
+          const records = await this.scratchpadRecords(requestSignal);
+          const previous = this.currentScratchpad(records);
+          const current = this.findScratchpad(records, captured.target);
+          assertScratchpadRevision(this.scratchpad(previous), captured.current);
+          assertScratchpadRevision(this.scratchpad(current), captured.target);
+          if (this.scratchpad(current).state !== "converted")
+            throw new Error("Only a previous scratchpad can be resumed.");
+          previousId = previous.id;
+          currentId = current.id;
+          const now = new Date().toISOString();
+          const ops = [
+            this.client.updateOp(previous, {
+              patch: {
+                state: "converted",
+                dateModified: now,
+                dateConverted: now,
+              },
+              ifRevision: previous.revision,
+            }),
+            this.client.updateOp(current, {
+              patch: { state: "active", dateModified: now },
+              ifRevision: current.revision,
+            }),
+          ];
+          return async () =>
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal: requestSignal,
+              })
+            )[0]!;
+        },
+        confirmed: async (_, requestSignal) => {
+          const previous = await this.savedScratchpad(
+            previousId,
+            captured.current.id,
+            requestSignal,
+          );
+          const current = await this.savedScratchpad(
+            currentId,
+            captured.target.id,
+            requestSignal,
+          );
+          this.reached();
+          this.emit("data");
+          return { previous, current };
+        },
+      },
+      signal,
+    );
+  }
+
+  deleteScratchpad(input: ScratchpadReference): Promise<void> {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:delete", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          const record = this.findScratchpad(
+            await this.scratchpadRecords(requestSignal),
+            captured,
+          );
+          const note = this.scratchpad(record);
+          assertScratchpadRevision(note, captured);
+          if (note.state !== "converted")
+            throw new Error("Only a previous note can be deleted.");
+          const op: wire.Op = {
+            kind: "delete",
+            id: record.id,
+            ifRevision: record.revision,
+          };
+          return async () =>
+            (
+              await this.client.submit([op], {
+                mutationId,
+                signal: requestSignal,
+              })
+            )[0]!;
+        },
+        confirmed: async (_, requestSignal) => {
+          requestSignal.throwIfAborted();
+          this.reached();
+          this.emit("data");
+        },
+      },
+      signal,
+    );
+  }
+
+  async archiveScratchpad(input: ArchiveScratchpadInput) {
+    const result = await this.startNewScratchpad(input);
+    return { archived: result.previous, active: result.current };
+  }
+
+  private scratchImage(record: wire.RecordView): ScratchImage {
+    return scratchImageFromRecord({
+      path: record.path,
+      revision: record.revision,
+      types: record.types,
+      frontmatter: plainFields(record.frontmatter),
+    });
+  }
+
+  private async scratchImageRecords(
+    signal: AbortSignal,
+  ): Promise<wire.RecordView[]> {
+    const records: wire.RecordView[] = [];
+    const identities = new Set<string>();
+    for await (const page of this.client.pages(
+      { types: [SCRATCH_IMAGE_TYPE], limit: 1000 },
+      undefined,
+      signal,
+    )) {
+      signal.throwIfAborted();
+      if (!page.complete)
+        throw nativeUnsupported(
+          "The replica has not supplied complete Scratchpad image metadata.",
+        );
+      for (const record of page.records) {
+        const image = this.scratchImage(record);
+        if (identities.has(image.id))
+          throw new Error(
+            "Two native images have the same portable Scratchpad identity. Resolve the duplicate before opening this stream.",
+          );
+        identities.add(image.id);
+        records.push(record);
+      }
+    }
+    signal.throwIfAborted();
+    return records;
+  }
+
+  async listScratchFeed(
+    request: ScratchFeedPageRequest = {},
+  ): Promise<ScratchFeedPage> {
+    const signal = this.signal();
+    signal.throwIfAborted();
+    if (!request.cursor || !this.scratchFeedSnapshot) {
+      const current = await this.getActiveScratchpad();
+      const revision = this.dataRevision;
+      const records = await this.scratchpadRecords(signal);
+      const images = await this.scratchImageRecords(signal);
+      signal.throwIfAborted();
+      const snapshot = {
+        current,
+        items: [
+          ...records.map((record) =>
+            scratchpadFeedItem(this.scratchpad(record)),
+          ),
+          ...images.map((record) => this.scratchImage(record)),
+        ].filter((item) => item.kind === "image" || item.id !== current.id),
+      };
+      // A write can finish while either query is awaiting the authority. The
+      // returned read is still an observed snapshot, but must not reinstall a
+      // continuation that a newer data event already invalidated.
+      if (revision === this.dataRevision) this.scratchFeedSnapshot = snapshot;
+      return scratchFeedPage(snapshot.current, snapshot.items, request);
+    }
+    return scratchFeedPage(
+      this.scratchFeedSnapshot.current,
+      this.scratchFeedSnapshot.items,
+      request,
+    );
+  }
+
+  async getScratchImage(
+    id: string,
+    path?: string,
+  ): Promise<ScratchImage | null> {
+    const records = await this.scratchImageRecords(this.signal());
+    const record = records.find(
+      (record) =>
+        this.scratchImage(record).id === id &&
+        (path === undefined || record.path === path),
+    );
+    return record ? this.scratchImage(record) : null;
+  }
+
+  createScratchImage(input: CreateScratchImageInput): Promise<ScratchImage> {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    let nativeId: string;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratch-image:create", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          const fields = scratchImageFrontmatter(captured);
+          // Validate the portable metadata before entering the submission boundary.
+          scratchImageFromRecord({
+            path: captured.path,
+            revision: "",
+            frontmatter: fields,
+          });
+          const records = await this.scratchImageRecords(requestSignal);
+          if (
+            records.some(
+              (record) => this.scratchImage(record).id === captured.id,
+            )
+          )
+            throw new Error("This Scratchpad image identity already exists.");
+          nativeId = crypto.randomUUID();
+          return () =>
+            this.client.create(
+              {
+                id: nativeId,
+                type: SCRATCH_IMAGE_TYPE,
+                path: captured.path,
+                frontmatter: fields,
+                body: "",
+              },
+              { mutationId, signal: requestSignal },
+            );
+        },
+        confirmed: async (_, requestSignal) => {
+          const image = this.scratchImage(
+            await this.client.get(nativeId, undefined, requestSignal),
+          );
+          requestSignal.throwIfAborted();
+          if (image.id !== captured.id)
+            throw new Error(
+              "The saved image's portable identity changed. Reload before continuing.",
+            );
+          this.reached();
+          this.emit("data");
+          return image;
+        },
+      },
+      signal,
+    );
+  }
+
+  removeScratchImage(
+    input: Pick<ScratchImage, "id" | "path" | "revision">,
+  ): Promise<void> {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratch-image:remove", captured]),
+        prepare: async (mutationId, requestSignal) => {
+          const records = await this.scratchImageRecords(requestSignal);
+          const record = records.find(
+            (record) =>
+              this.scratchImage(record).id === captured.id &&
+              record.path === captured.path,
+          );
+          if (!record)
+            throw new Error("The image feed record is no longer available.");
+          if (record.revision !== captured.revision)
+            throw new Error(
+              "This image record changed after it was opened. Reload it before removing.",
+            );
+          // Metadata membership only: never delete the independent binary asset.
+          return () =>
+            this.client.delete(record, {
+              ifRevision: record.revision,
+              mutationId,
+              signal: requestSignal,
+            });
+        },
+        confirmed: async (_, requestSignal) => {
+          requestSignal.throwIfAborted();
+          this.reached();
+          this.emit("data");
+        },
+      },
+      signal,
+    );
   }
 
   private async assignedPaths(
@@ -1264,6 +1879,7 @@ export class NextTaskRepository implements TaskRepository {
       this.initialization = null;
       this.indexReady = false;
       this.indexLoading = null;
+      this.scratchFeedSnapshot = undefined;
       this.emit("lifecycle");
     }
   }
@@ -1274,6 +1890,7 @@ export class NextTaskRepository implements TaskRepository {
     this.client.close();
     this.cache.clear();
     this.viewCatalog = [];
+    this.scratchFeedSnapshot = undefined;
     this.listeners.clear();
   }
   private reached() {
@@ -1283,6 +1900,10 @@ export class NextTaskRepository implements TaskRepository {
     };
   }
   private emit(kind: RepositoryChange["kind"]) {
+    if (kind === "data") {
+      this.dataRevision++;
+      this.scratchFeedSnapshot = undefined;
+    }
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }
