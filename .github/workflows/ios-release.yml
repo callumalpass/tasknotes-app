@@ -266,7 +266,7 @@ jobs:
       - name: Test App Store publication policy
         run: node --test scripts/submit-app-store.node-test.mjs
 
-      - name: Prepare listing and submit for automatic release after Apple approval
+      - name: Prepare listing and submit for review with manual release after Apple approval
         env:
           APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
           APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
