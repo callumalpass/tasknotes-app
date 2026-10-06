@@ -5,10 +5,10 @@ import { createHash } from "node:crypto";
 
 const root = new URL("../", import.meta.url);
 
-test("combined development getter/timers pins all actual archives in one graph", async () => {
+test("combined development getter/timers/watch pins all actual archives in one graph", async () => {
   const provenance = JSON.parse(
     await readFile(
-      new URL("vendor/mdbase-dev-control-timers-f578ed55-5ff45292.json", root),
+      new URL("vendor/mdbase-dev-control-watch-f578ed55-1f00edca.json", root),
       "utf8",
     ),
   );
@@ -24,9 +24,10 @@ test("combined development getter/timers pins all actual archives in one graph",
     connectBase: "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
     getter: "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
     timerFactory: "7c2f20eab6f899ad9586395c856fc27f01379d3c",
-    sdkComposition: "5ff4529250aa62f695ddeebee5f9007ab906d007",
+    sdkComposition: "1f00edca4692bc076433df03ce560233f59f4bf3",
     sdkBridgeBase: "d81ff8614ed95695368452f2e2d404f369f3840c",
     sdkTimerFacade: "fbe42a22cd59f745484c3fc028f1843dc7509c6a",
+    sdkWatch: "b8e5bb47ebbd5b42cff844807bc0666adad5399a",
   });
   assert.deepEqual(provenance.artifacts.map((a) => a.package).sort(), [
     "@mdbase-dev/connect",

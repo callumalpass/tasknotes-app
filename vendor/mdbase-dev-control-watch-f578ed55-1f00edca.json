@@ -6,9 +6,10 @@
     "connectBase": "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
     "getter": "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
     "timerFactory": "7c2f20eab6f899ad9586395c856fc27f01379d3c",
-    "sdkComposition": "5ff4529250aa62f695ddeebee5f9007ab906d007",
+    "sdkComposition": "1f00edca4692bc076433df03ce560233f59f4bf3",
     "sdkBridgeBase": "d81ff8614ed95695368452f2e2d404f369f3840c",
-    "sdkTimerFacade": "fbe42a22cd59f745484c3fc028f1843dc7509c6a"
+    "sdkTimerFacade": "fbe42a22cd59f745484c3fc028f1843dc7509c6a",
+    "sdkWatch": "b8e5bb47ebbd5b42cff844807bc0666adad5399a"
   },
   "artifacts": [
     {
@@ -26,8 +27,8 @@
     {
       "package": "@mdbase-dev/sdk",
       "sourceFile": "mdbase-dev-sdk-0.0.0.tgz",
-      "file": "mdbase-dev-sdk-0.0.0-5ff45292.tgz",
-      "sha256": "1df667a5e69ed1e691144ce8dfbc20effc14cedaaa224296a17167a79e5131a2"
+      "file": "mdbase-dev-sdk-0.0.0-1f00edca.tgz",
+      "sha256": "47c26e0480009308c70cb29ea996a00402125a42e5aa3f27dd0e152ec49f1a81"
     }
   ],
   "excluded": [
@@ -37,7 +38,8 @@
     "Canonical native query metadata and live integration",
     "Live next-private timer permission and delivery qualification",
     "Authoritative original timer-operation receipt and read-only recovery",
-    "Whole-collection change-feed readiness and error contract",
+    "Whole-collection cache catchup and freshness qualification",
+    "SDK316/337 native query metadata and SDK346 trusted-profile bootstrap",
     "Canonical native file timestamps, new-upload targets and binary RPCs"
   ]
 }

@@ -13,7 +13,9 @@ No dual-backend store candidate has been built or submitted.
   `23ac9d06`. Receiver source has merged with CI and scoped metadata-pair review;
   deployment, ordinary next consent/key delivery and LAB qualification remain
   separate. All three client/protocol/native-SDK archives are development-only
-  pins, currently Connect composition `f578ed55` and SDK `5ff45292`.
+  pins, currently Connect composition `f578ed55` and watch-only SDK `1f00edca`.
+  Watch readiness is subscription acknowledgement, not collection-cache catchup;
+  query/live metadata and trusted-profile changes 316/337/346 are excluded.
   The optional `@mdbase-dev/connect/control` getter owns credentials and proof;
   TaskNotes never obtains a token or signer.
 - Unknown/missing backend values fail closed. Authentication, reachability,

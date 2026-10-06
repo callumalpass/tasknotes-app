@@ -5,17 +5,21 @@ repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing
 their source commit and artifact hashes; the pnpm lock records SHA-512 integrity.
 
-## Combined dormant getter/timers development snapshots
+## Combined dormant getter/timers/watch development snapshots
 
-Connect and protocol `0.1.0-beta.129-f578ed55` plus native SDK `0.0.0-5ff45292`
+Connect and protocol `0.1.0-beta.129-f578ed55` plus native SDK `0.0.0-1f00edca`
 are isolated, revision-stamped development archives. The shared
-`mdbase-dev-control-timers-f578ed55-5ff45292.json` records component revisions,
+`mdbase-dev-control-watch-f578ed55-1f00edca.json` records component revisions,
 original filenames and SHA-256 hashes; the lock records SHA-512 integrity.
 Dependencies and overrides pin all three archives to one graph. This replaces
-305ad941 with the delivered corrected timer factory source 7c2f20ea. Protocol
-and SDK bytes are unchanged. Source review is not runtime qualification;
-whole-collection watch readiness and original timer-operation recovery remain
-unavailable, and timers stay unwired.
+305ad941 with the delivered corrected timer factory source 7c2f20ea, then SDK
+5ff45292 with the delivered watch-only 1f00edca composition. Connect/protocol
+bytes are unchanged in the latter delivery. Watch readiness proves a current
+subscription acknowledgement, including an empty one, not whole-cache catchup
+or authority freshness. Source review is not runtime qualification. Original
+timer-operation recovery remains unavailable in these SDK pins; timers stay
+unwired. Query metadata/live metadata and trusted-profile bootstrap changes
+316/337/346 are explicitly excluded.
 
 This composition provides SDK-owned `accountBackend`, optional Connect
 `appTimers(connection)` and native SDK `newTimersApi`. Credentials, keys and
