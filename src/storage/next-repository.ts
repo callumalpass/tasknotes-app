@@ -4,6 +4,7 @@ import {
   toPlain,
   toValue,
   type MdbaseClient,
+  type ChangesWatch,
   type PlainValue,
   type UpdateInput as NativeUpdateInput,
   type wire,
@@ -196,6 +197,7 @@ export class NextTaskRepository implements TaskRepository {
   private viewCatalog: TaskViewDocument[] = [];
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
+  private changesWatch: ChangesWatch | null = null;
 
   constructor(
     private readonly client: MdbaseClient,
@@ -204,7 +206,13 @@ export class NextTaskRepository implements TaskRepository {
   ) {
     this.mutations = new NextMutations(client);
     this.stopLink = client.onLink((state, reason) => {
-      if (this.disposed) return;
+      if (this.disposed || this.scope.signal.aborted) return;
+      if (
+        state === "open" &&
+        this.changesWatch &&
+        this.changesWatch.state !== "active"
+      )
+        return;
       this.status =
         state === "open"
           ? { state: "connected", lastReachedAt: new Date().toISOString() }
@@ -226,13 +234,82 @@ export class NextTaskRepository implements TaskRepository {
     ]);
   }
 
+  private assertCurrentData(revision: number) {
+    if (revision !== this.dataRevision)
+      throw new MdbaseError({
+        code: "conflict",
+        recovery: "refresh",
+        reason: "collection_changed",
+        message:
+          "The collection changed while data was loading. Refresh to read the current collection.",
+      });
+  }
+
+  private invalidateRemoteData() {
+    this.initialization = null;
+    this.indexReady = false;
+    this.viewCatalog = [];
+    this.emit("data");
+  }
+
+  private async observeChanges(signal: AbortSignal): Promise<void> {
+    if (!this.changesWatch) {
+      const scope = this.scope;
+      const current = () =>
+        !this.disposed &&
+        !scope.signal.aborted &&
+        scope === this.scope &&
+        this.changesWatch === watch;
+      const watch = this.client.watchChanges(undefined, () => {
+        if (current()) this.invalidateRemoteData();
+      });
+      this.changesWatch = watch;
+      watch.subscribe((state, error) => {
+        if (!current()) return;
+        if (state === "stale" || state === "failed") {
+          this.status = {
+            state: "unavailable",
+            message: error?.message ?? "Mdbase is not reachable.",
+          };
+          this.invalidateRemoteData();
+          this.emit("status");
+        }
+      });
+    }
+    const watch = this.changesWatch;
+    signal.throwIfAborted();
+    let aborted!: () => void;
+    const cancellation = new Promise<never>((_, reject) => {
+      aborted = () => reject(signal.reason);
+      signal.addEventListener("abort", aborted, { once: true });
+    });
+    try {
+      await Promise.race([watch.ready, cancellation]);
+      signal.throwIfAborted();
+      if (watch.state !== "active")
+        throw (
+          watch.error ??
+          new MdbaseError({
+            code: "unavailable",
+            recovery: "retry",
+            message: "The collection change subscription is not active.",
+          })
+        );
+    } finally {
+      signal.removeEventListener("abort", aborted);
+    }
+  }
+
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
     const signal = this.signal();
     signal.throwIfAborted();
+    await this.observeChanges(signal);
     if (!this.initialization) {
+      const revision = this.dataRevision;
       const loading = (async () => {
         const providers = await nextTaskProviders(this.client, signal);
         signal.throwIfAborted();
+        this.assertCurrentData(revision);
         this.providers = providers;
         this.models = new Map(providers.map((p) => [p.typeName, p.model]));
         this.reached();
@@ -254,6 +331,7 @@ export class NextTaskRepository implements TaskRepository {
     if (this.indexReady) return;
     if (this.indexLoading) return this.indexLoading;
     const writes = this.cache.trackWrites();
+    const revision = this.dataRevision;
     const loading = (async () => {
       const snapshot = new Map<string, CachedTask>();
       for await (const page of this.client.pages(
@@ -279,6 +357,7 @@ export class NextTaskRepository implements TaskRepository {
         }
       }
       signal.throwIfAborted();
+      this.assertCurrentData(revision);
       for (const [id, existing] of this.cache) {
         if (!writes.paths.has(existing.task.path) && !snapshot.has(id))
           this.cache.delete(id);
@@ -359,6 +438,13 @@ export class NextTaskRepository implements TaskRepository {
     );
     await this.indexLoading;
     signal.throwIfAborted();
+    if (
+      this.changesWatch &&
+      ["failed", "closed"].includes(this.changesWatch.state)
+    ) {
+      this.changesWatch();
+      this.changesWatch = null;
+    }
     this.initialization = null;
     this.indexReady = false;
     await this.initialize();
@@ -1801,8 +1887,11 @@ export class NextTaskRepository implements TaskRepository {
   }
   async listViews(): Promise<TaskViewDocument[]> {
     const signal = this.signal();
+    await this.initialize({ deferTaskIndex: true });
+    const revision = this.dataRevision;
     const result = await this.client.views.list(undefined, signal);
     signal.throwIfAborted();
+    this.assertCurrentData(revision);
     if (!result.complete)
       throw nativeUnsupported(
         "The replica did not supply a complete view catalog.",
@@ -1962,6 +2051,8 @@ export class NextTaskRepository implements TaskRepository {
     return () => this.listeners.delete(listener);
   }
   suspend() {
+    this.changesWatch?.();
+    this.changesWatch = null;
     this.scope.abort(
       new DOMException("TaskNotes moved to the background.", "AbortError"),
     );
@@ -1981,6 +2072,8 @@ export class NextTaskRepository implements TaskRepository {
   dispose() {
     this.disposed = true;
     this.scope.abort();
+    this.changesWatch?.();
+    this.changesWatch = null;
     this.stopLink();
     this.client.close();
     this.cache.clear();
@@ -1989,6 +2082,8 @@ export class NextTaskRepository implements TaskRepository {
     this.listeners.clear();
   }
   private reached() {
+    if (this.scope.signal.aborted || this.changesWatch?.state !== "active")
+      return;
     this.status = {
       state: "connected",
       lastReachedAt: new Date().toISOString(),
