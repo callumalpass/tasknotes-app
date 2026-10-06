@@ -5,6 +5,13 @@ import {
   type ScratchImage,
 } from "../../domain/scratch-image";
 
+interface PendingSource {
+  readonly size: number;
+  /** Rejects when the bytes are not a supported raster image. */
+  readonly digest: Promise<`sha256:${string}`>;
+  operation: Promise<ScratchImage>;
+}
+
 const EXTENSIONS: Record<string, string> = {
   "image/avif": ".avif",
   "image/gif": ".gif",
@@ -17,30 +24,51 @@ const EXTENSIONS: Record<string, string> = {
 
 /** Bounded, session-only upload coordinator. It does not claim crash recovery. */
 export class ScratchImageService {
-  private readonly inFlight = new Map<string, Promise<ScratchImage>>();
+  /**
+   * Every admitted source, registered synchronously (before any byte is read) in
+   * arrival order. A later identical paste joins the earlier source's upload by
+   * comparing digests, so two rapid pastes never upload twice regardless of how the
+   * asynchronous signature and digest reads interleave.
+   */
+  private readonly pending: PendingSource[] = [];
 
   constructor(private readonly repository: TaskRepository) {}
 
-  async add(source: Blob): Promise<ScratchImage> {
+  add(source: Blob): Promise<ScratchImage> {
     if (!this.repository.files || !this.repository.createScratchImage)
-      throw new Error("Image storage is not available for this collection.");
+      return Promise.reject(
+        new Error("Image storage is not available for this collection."),
+      );
     const mediaType = source.type.toLowerCase().split(";", 1)[0]!.trim();
     const extension = EXTENSIONS[mediaType];
     if (!extension)
-      throw new Error("Add an AVIF, GIF, HEIC, JPEG, PNG, or WebP image.");
-    if (!source.size) throw new Error("The image is empty.");
-    await assertRasterSignature(source, mediaType);
-    const digest = await sha256(source);
-    const existing = this.inFlight.get(digest);
-    if (existing) return existing;
-    const operation = this.upload(source, mediaType, extension, digest).finally(
-      () => {
-        if (this.inFlight.get(digest) === operation)
-          this.inFlight.delete(digest);
-      },
-    );
-    this.inFlight.set(digest, operation);
-    return operation;
+      return Promise.reject(
+        new Error("Add an AVIF, GIF, HEIC, JPEG, PNG, or WebP image."),
+      );
+    if (!source.size) return Promise.reject(new Error("The image is empty."));
+    const earlier = this.pending.filter((p) => p.size === source.size);
+    const entry: PendingSource = {
+      size: source.size,
+      digest: assertRasterSignature(source, mediaType).then(() =>
+        sha256(source),
+      ),
+      operation: Promise.resolve(undefined as unknown as ScratchImage),
+    };
+    entry.operation = (async () => {
+      const digest = await entry.digest;
+      for (const other of earlier) {
+        if ((await other.digest.catch(() => null)) === digest)
+          return other.operation;
+      }
+      return this.upload(source, mediaType, extension, digest);
+    })();
+    this.pending.push(entry);
+    const settled = () => {
+      const i = this.pending.indexOf(entry);
+      if (i >= 0) this.pending.splice(i, 1);
+    };
+    entry.operation.then(settled, settled);
+    return entry.operation;
   }
 
   private async upload(

@@ -82,6 +82,31 @@ describe("ScratchImageService", () => {
     expect(upload).toHaveBeenCalledOnce();
   });
 
+  it("coalesces identical bytes from distinct blobs and keeps admitting after a rejection", async () => {
+    const { service, upload } = setup();
+    const bytes = await png(2).arrayBuffer();
+    const results = await Promise.allSettled([
+      service.add(new Blob([bytes], { type: "image/png" })),
+      service.add(new Blob(["not an image"], { type: "image/png" })),
+      service.add(new Blob([bytes], { type: "image/png" })),
+      service.add(new Blob([bytes], { type: "image/png" })),
+    ]);
+    expect(results.map((r) => r.status)).toEqual([
+      "fulfilled",
+      "rejected",
+      "fulfilled",
+      "fulfilled",
+    ]);
+    const ids = results.flatMap((r) =>
+      r.status === "fulfilled" ? [r.value.id] : [],
+    );
+    expect(new Set(ids).size).toBe(1);
+    expect(upload).toHaveBeenCalledOnce();
+    // After the first upload settles, the same bytes are a new upload again.
+    await service.add(new Blob([bytes], { type: "image/png" }));
+    expect(upload).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects bytes that merely claim an image media type", async () => {
     const { service, upload } = setup();
     await expect(
