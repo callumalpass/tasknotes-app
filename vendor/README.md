@@ -5,6 +5,23 @@ repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing
 their source commit and artifact hashes; the pnpm lock records SHA-512 integrity.
 
+## Shared TaskNotes query compiler intake
+
+`tasknotes-query-6bec1906.browser.mjs` and its `.d.mts` are exact publisher
+artifacts from Obsidian's canonical `./tasknotes-query` export. The adjacent
+manifest records compiler/parser provenance and hashes; the browser metafile
+proves only the compiler and parser frontend contribute to the standalone
+output. This avoids unused Obsidian host, crypto and sqlite dependencies.
+Generated artifacts are excluded from rewriting/linting and integrity-tested.
+The parser's MIT notice is retained in `tasknotes-query-6bec1906-parser.LICENSE`.
+
+Native invocation remains gated on authoritative native Timestamp/Bases-context
+typing and replica query metadata. All starter views currently fail explicitly;
+there is no app translator or native JavaScript all-record fallback. The existing
+rc.1 parser remains solely for legacy consumers; the shared compiler contains
+its independently pinned rc.4 parser. Remove that split only after legacy
+compatibility is qualified.
+
 ## Combined dormant getter/timers/watch development snapshots
 
 Connect and protocol `0.1.0-beta.129-f578ed55` plus native SDK `0.0.0-1f00edca`
