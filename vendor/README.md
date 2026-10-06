@@ -5,26 +5,22 @@ repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing
 their source commit and artifact hashes; the pnpm lock records SHA-512 integrity.
 
-## Dormant next-SDK development snapshot
+## Combined dormant getter/timers development snapshots
 
-`mdbase-dev-sdk-0.0.0-d81ff861.tgz` pins the unpublished next SDK by source
-revision and artifact integrity; the adjacent JSON records both hashes. This
-snapshot is **development-only, not release-qualified**. Its TaskNotes record
-projection tests use the SDK's protocol stand-in, not a real collection. The
-application does not import or activate the next path yet. Replace the snapshot
-with the SDK owner's qualified release pin before creating store candidates.
-Do not interpret `0.0.0` as a released v2 package version.
+Connect and protocol `0.1.0-beta.129-305ad941` plus native SDK `0.0.0-5ff45292`
+are isolated, revision-stamped development archives. The shared
+`mdbase-dev-control-timers-305ad941-5ff45292.json` records component revisions,
+original filenames and SHA-256 hashes; the lock records SHA-512 integrity.
+Dependencies and overrides pin all three archives to one graph.
 
-## Development account getter
-
-`mdbase-dev-connect-0.1.0-beta.129-3f2b9cd9.tgz` and its matching protocol archive
-pin SDK-owned `accountBackend` from source `3f2b9cd9`. Their shared JSON provenance
-records original filenames and SHA-256 hashes. Both dependency overrides use
-these files, keeping one Connect/protocol graph rather than mixing proof APIs.
-Package metadata remains beta.129; this is **not a registry release or qualified
-store dependency**. The app's getter opening seam remains dormant. It supplies
-no next Noise bridge, timers factory or transport qualification. Replace these
-pins with qualified release artifacts before store candidates.
+This composition provides SDK-owned `accountBackend`, optional Connect
+`appTimers(connection)` and native SDK `newTimersApi`. Credentials, keys and
+proofs stay inside Connect. The native repository and account opener remain
+**dormant and not release-qualified**. Protocol stand-ins do not prove real
+collection, consent, transport or timer delivery qualification. These pins do
+not include the ordinary next consent/route bridge or native query metadata.
+Replace them with qualified release artifacts before store candidates.
+Package metadata remains beta.129 and 0.0.0; neither is a registry publication.
 
 ## Existing package snapshots
 
