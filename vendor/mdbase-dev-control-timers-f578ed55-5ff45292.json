@@ -2,10 +2,10 @@
   "purpose": "isolated development source/type integration only",
   "releaseQualified": false,
   "sources": {
-    "connectComposition": "305ad941d3b20188715ab6a1043274fe2fe07737",
+    "connectComposition": "f578ed555e49eab5e40667fb40e7b1f91af3b563",
     "connectBase": "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
     "getter": "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
-    "timerFactory": "e5d948bd66d7a4718b1e0be0a41c3179a6e16230",
+    "timerFactory": "7c2f20eab6f899ad9586395c856fc27f01379d3c",
     "sdkComposition": "5ff4529250aa62f695ddeebee5f9007ab906d007",
     "sdkBridgeBase": "d81ff8614ed95695368452f2e2d404f369f3840c",
     "sdkTimerFacade": "fbe42a22cd59f745484c3fc028f1843dc7509c6a"
@@ -14,13 +14,13 @@
     {
       "package": "@mdbase-dev/connect",
       "sourceFile": "mdbase-dev-connect-0.1.0-beta.129.tgz",
-      "file": "mdbase-dev-connect-0.1.0-beta.129-305ad941.tgz",
-      "sha256": "fa6dfb3dc1e9c96a3a26f78a8b002d7342f2c73e92a877157a3e6a82e8fa12f9"
+      "file": "mdbase-dev-connect-0.1.0-beta.129-f578ed55.tgz",
+      "sha256": "91fcdbeb96aaa7ca52c34fd35ffa21dee003cf6f065d3206b83aa5af6a8c7eb2"
     },
     {
       "package": "@mdbase-dev/connect-protocol",
       "sourceFile": "mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-305ad941.tgz",
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-f578ed55.tgz",
       "sha256": "4b2fefaef4755c18643dcae981034abdac5bf4399b22c3a33ea39c5fc8733bd8"
     },
     {
@@ -35,6 +35,9 @@
     "Ordinary next consent and route bridge",
     "Transport qualification",
     "Canonical native query metadata and live integration",
-    "Live next-private timer permission and delivery qualification"
+    "Live next-private timer permission and delivery qualification",
+    "Authoritative original timer-operation receipt and read-only recovery",
+    "Whole-collection change-feed readiness and error contract",
+    "Canonical native file timestamps, new-upload targets and binary RPCs"
   ]
 }

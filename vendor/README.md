@@ -7,11 +7,15 @@ their source commit and artifact hashes; the pnpm lock records SHA-512 integrity
 
 ## Combined dormant getter/timers development snapshots
 
-Connect and protocol `0.1.0-beta.129-305ad941` plus native SDK `0.0.0-5ff45292`
+Connect and protocol `0.1.0-beta.129-f578ed55` plus native SDK `0.0.0-5ff45292`
 are isolated, revision-stamped development archives. The shared
-`mdbase-dev-control-timers-305ad941-5ff45292.json` records component revisions,
+`mdbase-dev-control-timers-f578ed55-5ff45292.json` records component revisions,
 original filenames and SHA-256 hashes; the lock records SHA-512 integrity.
-Dependencies and overrides pin all three archives to one graph.
+Dependencies and overrides pin all three archives to one graph. This replaces
+305ad941 with the delivered corrected timer factory source 7c2f20ea. Protocol
+and SDK bytes are unchanged. Source review is not runtime qualification;
+whole-collection watch readiness and original timer-operation recovery remain
+unavailable, and timers stay unwired.
 
 This composition provides SDK-owned `accountBackend`, optional Connect
 `appTimers(connection)` and native SDK `newTimersApi`. Credentials, keys and
