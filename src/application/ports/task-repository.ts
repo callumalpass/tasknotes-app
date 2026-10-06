@@ -177,6 +177,8 @@ export interface TaskRepository {
   ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   connectionStatus(): Promise<RepositoryConnectionStatus>;
+  /** Resolve a held edit; absent on backends without holds. The choice is an ordinary change. */
+  resolveHeldEdit?(id: string, how: HeldEditResolution): Promise<void>;
   subscribe(listener: (change?: RepositoryChange) => void): () => void;
   /** Cancel active foreground authority work without discarding local UI state. */
   suspend?(): void;
@@ -205,6 +207,35 @@ export interface RepositoryConnectionStatus {
   state: "connecting" | "connected" | "unavailable";
   lastReachedAt?: string;
   message?: string;
+  /** Sync position, when the backend reports one: "Confirmed through N, plus P pending, plus H held". */
+  sync?: { text: string; pending: number; held: number };
+  /** Edits the backend protected rather than synced; each waits for the user's choice. */
+  heldEdits?: HeldEdit[];
+}
+
+/** What the user can do about a held edit; values are the backend's own vocabulary. */
+export type HeldEditResolution =
+  "keep_mine" | "take_theirs" | "keep_both" | "delete" | "use";
+
+export interface HeldEditAction {
+  action: HeldEditResolution;
+  label: string;
+  description: string;
+  /** True when the user's held bytes are kept nowhere by this action (offer "keep both" beside it). */
+  discardsMine: boolean;
+}
+
+/** "mdbase protected your edit": a plain-language cause and the applicable actions. */
+export interface HeldEdit {
+  id: string;
+  path: string;
+  title: string;
+  cause: string;
+  detail: string;
+  reversibleNote: string;
+  since: string;
+  saves: number;
+  actions: HeldEditAction[];
 }
 
 export interface RefreshResult {

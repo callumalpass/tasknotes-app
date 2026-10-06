@@ -1,6 +1,7 @@
 import { type PlainValue, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTaskFixture } from "../test/next-task-fixture";
+import { heldEditFromHold } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
@@ -569,5 +570,54 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       (await f.repository.create({ title: "No replay" }, intent)).title,
     ).toBe("Backgrounded capture");
     expect(create).toHaveBeenCalledOnce();
+  });
+});
+
+describe("protected edits and sync position (hold UX)", () => {
+  it("reports the backend's sync position in the connection status", async () => {
+    const f = await fixture({ confirmDelayMs: null });
+    await f.repository.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const status = await f.repository.connectionStatus();
+    expect(status.sync?.text).toMatch(/plus \d+ pending, plus \d+ held$/);
+    expect(status.heldEdits).toBeUndefined();
+    await expect(
+      f.repository.resolveHeldEdit(
+        "018f6d2e-1c3a-7b4d-9e1f-2a3b4c5d6e7f",
+        "keep_mine",
+      ),
+    ).rejects.toThrow(/no longer waiting/);
+  });
+  it("projects a hold as 'mdbase protected your edit' with the backend's own resolutions", () => {
+    const edit = heldEditFromHold({
+      id: "018f6d2e-1c3a-7b4d-9e1f-2a3b4c5d6e7f",
+      path: "Tasks/plan.md",
+      reason: "conflict",
+      since: 1_700_000_000_000,
+      mine: "mine",
+      theirs: "theirs",
+      saves: 2,
+    });
+    expect(edit.title).toBe("mdbase protected your edit");
+    expect(edit.cause).not.toMatch(/stuck/i);
+    expect(edit.actions.map((a) => a.action)).toEqual([
+      "keep_mine",
+      "take_theirs",
+      "keep_both",
+    ]);
+    expect(
+      edit.actions.find((a) => a.action === "take_theirs")?.discardsMine,
+    ).toBe(true);
+    expect(edit.saves).toBe(2);
+    expect(edit.since).toBe("2023-11-14T22:13:20.000Z");
+    const gone = heldEditFromHold({
+      id: "018f6d2e-1c3a-7b4d-9e1f-2a3b4c5d6e7f",
+      path: "Tasks/plan.md",
+      reason: "deleted_elsewhere",
+      since: 1,
+      mine: "mine",
+      saves: 0,
+    });
+    expect(gone.actions.map((a) => a.action)).toEqual(["keep_mine", "delete"]);
   });
 });

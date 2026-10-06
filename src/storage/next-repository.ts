@@ -8,6 +8,10 @@ import {
   type PlainValue,
   type UpdateInput as NativeUpdateInput,
   type wire,
+  describeHold,
+  syncStatusText,
+  type Hold,
+  type SyncStatus,
 } from "@mdbase-dev/sdk";
 import { linksTo } from "@mdbase-dev/connect";
 import {
@@ -20,6 +24,8 @@ import type {
   TaskCreateIntent,
   RepositoryChange,
   RepositoryConnectionStatus,
+  HeldEdit,
+  HeldEditResolution,
   RefreshResult,
 } from "../application/ports/task-repository";
 import type {
@@ -194,6 +200,11 @@ export class NextTaskRepository implements TaskRepository {
   private readonly listeners = new Set<(change?: RepositoryChange) => void>();
   private readonly stopLink: () => void;
   private status: RepositoryConnectionStatus = { state: "connecting" };
+  /** The backend's sync position and protected edits, pushed by the client; merged into `connectionStatus()`. */
+  private sync: RepositoryConnectionStatus["sync"];
+  private heldEdits: HeldEdit[] = [];
+  private readonly stopStatus: () => void;
+  private readonly stopHolds: () => void;
   private viewCatalog: TaskViewDocument[] = [];
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
@@ -205,6 +216,20 @@ export class NextTaskRepository implements TaskRepository {
     private readonly accountId: string,
   ) {
     this.mutations = new NextMutations(client);
+    this.stopStatus = client.onStatus((status: SyncStatus) => {
+      if (this.disposed) return;
+      this.sync = {
+        text: syncStatusText(status),
+        pending: status.pending,
+        held: status.holds,
+      };
+      this.emit("status");
+    });
+    this.stopHolds = client.onHolds((holds: Hold[]) => {
+      if (this.disposed) return;
+      this.heldEdits = holds.map((hold) => heldEditFromHold(hold));
+      this.emit("status");
+    });
     this.stopLink = client.onLink((state, reason) => {
       if (this.disposed || this.scope.signal.aborted) return;
       if (
@@ -2043,8 +2068,19 @@ export class NextTaskRepository implements TaskRepository {
         : ("browser" as const),
     };
   }
-  async connectionStatus() {
-    return this.status;
+  async connectionStatus(): Promise<RepositoryConnectionStatus> {
+    return {
+      ...this.status,
+      ...(this.sync ? { sync: this.sync } : {}),
+      ...(this.heldEdits.length ? { heldEdits: this.heldEdits } : {}),
+    };
+  }
+  /** The user's choice for a protected edit: an ordinary change; the list refreshes from the backend's push. */
+  async resolveHeldEdit(id: string, how: HeldEditResolution): Promise<void> {
+    if (!this.heldEdits.some((edit) => edit.id === id))
+      throw new Error("This protected edit is no longer waiting.");
+    await this.client.resolveHold(id, how);
+    this.invalidateRemoteData();
   }
   subscribe(listener: (change?: RepositoryChange) => void) {
     this.listeners.add(listener);
@@ -2075,6 +2111,8 @@ export class NextTaskRepository implements TaskRepository {
     this.changesWatch?.();
     this.changesWatch = null;
     this.stopLink();
+    this.stopStatus();
+    this.stopHolds();
     this.client.close();
     this.cache.clear();
     this.viewCatalog = [];
@@ -2097,4 +2135,38 @@ export class NextTaskRepository implements TaskRepository {
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }
+}
+
+/**
+ * The SDK's hold presentation, projected onto the app port. The app has no merge view,
+ * so "compare" is not offered; "keep both" stands in for it. The compare deep link is a
+ * desktop (daemon tray / Obsidian) hand-off and needs no collection id here.
+ */
+export function heldEditFromHold(hold: Hold): HeldEdit {
+  const presented = describeHold(hold, {
+    collectionId: "00000000-0000-0000-0000-000000000000",
+    canCompare: false,
+  });
+  return {
+    id: presented.id,
+    path: presented.path,
+    title: presented.title,
+    cause: presented.cause,
+    detail: presented.detail,
+    reversibleNote: presented.reversibleNote,
+    since: new Date(presented.since).toISOString(),
+    saves: presented.saves,
+    actions: presented.actions.flatMap((option) =>
+      option.resolution
+        ? [
+            {
+              action: option.resolution,
+              label: option.label,
+              description: option.description,
+              discardsMine: option.discardsMine,
+            },
+          ]
+        : [],
+    ),
+  };
 }
