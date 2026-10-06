@@ -1,0 +1,36 @@
+{
+  "purpose": "isolated development source/type integration only",
+  "sourceRepository": "mdbase-dev/mdbase-connect",
+  "sourceHead": "3f2b9cd920e036221457c2e0c370b4e258aaea7c",
+  "sourceBase": "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
+  "sourcePr": 625,
+  "runtime": "Node v24.21.0",
+  "artifacts": [
+    {
+      "sourceFile": "mdbase-dev-connect-0.1.0-beta.129.tgz",
+      "file": "mdbase-dev-connect-0.1.0-beta.129-3f2b9cd9.tgz",
+      "sha256": "8a93d1f033c7b181aac224a4ba5a9b2931cf3c6362f091ece12ea739ad2360a8"
+    },
+    {
+      "sourceFile": "mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-3f2b9cd9.tgz",
+      "sha256": "4b2fefaef4755c18643dcae981034abdac5bf4399b22c3a33ea39c5fc8733bd8"
+    }
+  ],
+  "versions": "package metadata retained; not a registry release or released artifact replacement",
+  "exports": [
+    "@mdbase-dev/connect/control:accountBackend",
+    "@mdbase-dev/connect/control:AccountBackendInfo"
+  ],
+  "verification": "24 public-connection/proof-verifier tests, 740 client tests, typecheck/build, public/packed APIs, architecture",
+  "receiverHead": "568dd23d06fefbcc46da9b7cc0ed915fe921dc4e",
+  "security": "scoped client/server reviews queued",
+  "excluded": [
+    "next optional grant bridge",
+    "Noise consent composition",
+    "timers port",
+    "corrected SDK293",
+    "LAB activation",
+    "registry publish"
+  ]
+}

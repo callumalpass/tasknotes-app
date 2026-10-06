@@ -38,14 +38,10 @@ export function nextTaskSummary(
 ): TaskSummary | null {
   const model = modelFor(record, models);
   if (!model) return null;
-  return {
-    ...model.readSummary({
-      path: record.path,
-      frontmatter: frontmatter(record),
-    }),
-    // Replica identity is independent of an optional portable TaskNotes ID.
-    id: record.id,
-  };
+  return model.readSummary({
+    path: record.path,
+    frontmatter: frontmatter(record),
+  });
 }
 
 export function nextTaskDocument(
@@ -56,12 +52,9 @@ export function nextTaskDocument(
   if (!model) return null;
   if (record.body === undefined)
     throw new Error("Mdbase did not return the complete task body.");
-  return {
-    ...model.read({
-      path: record.path,
-      frontmatter: frontmatter(record),
-      body: record.body,
-    }),
-    id: record.id,
-  };
+  return model.read({
+    path: record.path,
+    frontmatter: frontmatter(record),
+    body: record.body,
+  });
 }

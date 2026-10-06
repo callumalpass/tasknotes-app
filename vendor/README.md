@@ -3,7 +3,7 @@
 These tarballs keep coordinated prerelease packages installable without sibling
 repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing
-their source commit, byte size, and SHA-512 digest.
+their source commit and artifact hashes; the pnpm lock records SHA-512 integrity.
 
 ## Dormant next-SDK development snapshot
 
@@ -14,6 +14,17 @@ projection tests use the SDK's protocol stand-in, not a real collection. The
 application does not import or activate the next path yet. Replace the snapshot
 with the SDK owner's qualified release pin before creating store candidates.
 Do not interpret `0.0.0` as a released v2 package version.
+
+## Development account getter
+
+`mdbase-dev-connect-0.1.0-beta.129-3f2b9cd9.tgz` and its matching protocol archive
+pin SDK-owned `accountBackend` from source `3f2b9cd9`. Their shared JSON provenance
+records original filenames and SHA-256 hashes. Both dependency overrides use
+these files, keeping one Connect/protocol graph rather than mixing proof APIs.
+Package metadata remains beta.129; this is **not a registry release or qualified
+store dependency**. The app's getter opening seam remains dormant. It supplies
+no next Noise bridge, timers factory or transport qualification. Replace these
+pins with qualified release artifacts before store candidates.
 
 ## Existing package snapshots
 

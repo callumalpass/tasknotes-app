@@ -7,11 +7,13 @@ No dual-backend store candidate has been built or submitted.
 
 - Control owns an explicit persisted per-account `backend: "legacy" | "next"`,
   defaulting to `legacy`. Its account endpoint is `GET /v1/account`.
-- Grant-only apps use the proposed authenticated `GET /v1/account/backend` response
-  `{account_id, backend}`. It binds to the consenting account, not the collection
-  creator or connector. The Connect SDK owns the retained-grant credential and
-  client proof; TaskNotes never obtains a raw token or signer. Implementation and
-  an exact Connect artifact pin are pending.
+- Grant-only apps use authenticated `GET /v1/account/backend`, returning
+  `{account_id, backend}` for the consenting account, not the collection owner.
+  Receiver source is Connect #626 at `568dd23d`; getter source is Connect #625 at
+  `3f2b9cd9`. Both client and protocol archives are pinned for development only.
+  The optional `@mdbase-dev/connect/control` getter owns credentials and proof;
+  TaskNotes never obtains a token or signer. Security/CI and LAB qualification
+  are pending.
 - Unknown/missing backend values fail closed. Authentication, reachability,
   target kind and errors never select another backend.
 - Legacy accounts continue through the existing application session and
@@ -50,9 +52,13 @@ actual supported methods; task/type/query semantics remain in mdbase.
 ## Qualification and removal
 
 The current vendored next SDK is a dormant development snapshot, not an approved
-store dependency. Unit tests cover strict backend selection and native record
-projection; they do not establish actual account detection, ordinary consent,
-LAB routing, reminders or mobile readiness.
+store dependency. The Connect getter snapshot is also development-only: its
+beta.129 metadata is not a registry release. Unit tests cover pre-data opening,
+strict selection, cancellation, portable/native identity separation, native
+CRUD/CAS and receipt recovery against SDK stand-ins. They do not establish
+actual account detection, ordinary consent, LAB routing, reminders or mobile
+readiness. Complete view metadata remains explicitly unsupported pending the
+canonical native producer and bounded driver.
 
 Before release, pin the actual app commit, qualified SDK and Connect artifacts,
 and record LAB tests for legacy plus next cloud-copy/private, task CRUD and

@@ -39,13 +39,13 @@ async function fixture() {
 }
 
 describe("native v2 TaskNotes record projection (protocol stand-in, not LAB)", () => {
-  it("decodes SDK maps into a task and uses replica identity", async () => {
+  it("decodes SDK maps and preserves portable TaskNotes identity separately from replica identity", async () => {
     const f = await fixture();
     const record = await f.client.get(f.id, { body: true });
     const task = nextTaskDocument(record, f.models)!;
     expect(record.frontmatter).toBeInstanceOf(Map);
-    expect(task.id).toBe(f.id);
-    expect(task.id).not.toBe(f.portableId);
+    expect(task.id).toBe(f.portableId);
+    expect(task.id).not.toBe(f.id);
     expect(task.path).toBe(f.source.path);
     expect(task.title).toBe("Native SDK task");
     expect(task.body).toBe("Do not discard this body");

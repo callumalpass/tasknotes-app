@@ -10,10 +10,14 @@ import {
 /** Load app-specific models from the native replica catalog and exact sources.
  * No classic describe adapter, inferred task type, or default-schema fallback.
  */
+export interface NextTaskProvider extends ResolvedTaskProvider {
+  sourcePath: string;
+}
+
 export async function nextTaskProviders(
   client: MdbaseClient,
   signal: AbortSignal,
-): Promise<ResolvedTaskProvider[]> {
+): Promise<NextTaskProvider[]> {
   const catalog = await client.describe(signal);
   signal.throwIfAborted();
   const contract = catalog.contracts.find(
@@ -26,7 +30,7 @@ export async function nextTaskProviders(
     throw new Error(
       `This collection does not provide tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
     );
-  const providers: ResolvedTaskProvider[] = [];
+  const providers: NextTaskProvider[] = [];
   for (const type of catalog.types) {
     const implementations = type.implements.filter(
       (item) =>
@@ -53,13 +57,14 @@ export async function nextTaskProviders(
       throw new Error(
         `The type ${type.name} has an invalid TaskNotes binding.`,
       );
-    providers.push(
-      resolveTaskTypeDefinition(definition, {
+    providers.push({
+      ...resolveTaskTypeDefinition(definition, {
         typeName: type.name,
         fields: Object.fromEntries(implementation.fields),
         configuration: binding,
       }),
-    );
+      sourcePath: type.path,
+    });
   }
   if (!providers.length)
     throw new Error("The TaskNotes contract has no implementing types.");
