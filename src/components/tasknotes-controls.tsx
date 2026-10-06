@@ -1,3 +1,6 @@
+import { appLocale } from "../i18n/app";
+import { t as translate } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   CalendarDays,
   Check,
@@ -35,7 +38,7 @@ export function TaskNotesSelect({
   ariaLabelledBy,
   ariaDescribedBy,
   disabled = false,
-  placeholder = "Choose",
+  placeholder = translate({ message: "Choose" }),
   className,
 }: {
   value: string;
@@ -48,6 +51,7 @@ export function TaskNotesSelect({
   placeholder?: string;
   className?: string;
 }) {
+  const { t } = useLingui();
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
@@ -129,7 +133,7 @@ export function TaskNotesSelect({
       {open ? (
         <>
           <PopoverScrim
-            label={`Close ${ariaLabel ?? "options"}`}
+            label={t`Close ${ariaLabel ?? t({ message: "options" })}`}
             onClose={() => setOpen(false)}
           />
           <div
@@ -211,6 +215,7 @@ export function TaskNotesCombobox({
   ariaLabel: string;
   placeholder?: string;
 }) {
+  const { t } = useLingui();
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const { open, rootRef, setOpen } = useDismissablePopover(inputRef);
@@ -284,7 +289,7 @@ export function TaskNotesCombobox({
       />
       {open && filtered.length ? (
         <div
-          aria-label={`${ariaLabel} suggestions`}
+          aria-label={t`${ariaLabel} suggestions`}
           className="tasknotes-popover tasknotes-combobox-popover"
           id={`${id}-options`}
           role="listbox"
@@ -326,19 +331,20 @@ export function TaskNotesDateTimeField({
   splitValue?(value?: string): { date?: string; time?: string };
   combineValue?(date?: string, time?: string): string | undefined;
 }) {
+  const { t } = useLingui();
   const { date, time } = splitValue(value);
   return (
     <div className="form-field date-time-field tasknotes-control-field">
       <span>{label}</span>
       <div>
         <TaskNotesDatePicker
-          ariaLabel={`${label} date`}
+          ariaLabel={t`${label} date`}
           disabled={disabled}
           value={date}
           onChange={(next) => onChange(combineValue(next, time))}
         />
         <TaskNotesTimePicker
-          ariaLabel={`${label} time`}
+          ariaLabel={t`${label} time`}
           disabled={disabled || !date}
           value={time}
           onChange={(next) => onChange(combineValue(date, next))}
@@ -381,7 +387,7 @@ export function TaskNotesDatePicker({
   ariaLabel,
   ariaLabelledBy,
   disabled = false,
-  placeholder = "No date",
+  placeholder = translate({ message: "No date" }),
 }: {
   value?: string;
   onChange(value?: string): void;
@@ -390,6 +396,7 @@ export function TaskNotesDatePicker({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
   const selected = parseDateValue(value);
@@ -399,7 +406,7 @@ export function TaskNotesDatePicker({
   );
   const [focusedDate, setFocusedDate] = useState(() => selected ?? today);
   const dateRefs = useRef(new Map<string, HTMLButtonElement>());
-  const accessibleName = ariaLabel ?? "Date";
+  const accessibleName = ariaLabel ?? t({ message: "Date" });
 
   function openCalendar() {
     const next = selected ?? today;
@@ -458,17 +465,17 @@ export function TaskNotesDatePicker({
       {open ? (
         <>
           <PopoverScrim
-            label={`Close ${accessibleName} calendar`}
+            label={t`Close ${accessibleName} calendar`}
             onClose={() => setOpen(false)}
           />
           <div
-            aria-label={`${accessibleName} calendar`}
+            aria-label={t`${accessibleName} calendar`}
             className="tasknotes-popover tasknotes-calendar-popover"
             role="dialog"
           >
             <div className="tasknotes-calendar-heading">
               <button
-                aria-label="Previous month"
+                aria-label={t({ message: "Previous month" })}
                 type="button"
                 onClick={() =>
                   setVisibleMonth(
@@ -484,7 +491,7 @@ export function TaskNotesDatePicker({
               </button>
               <strong>{monthLabel(visibleMonth)}</strong>
               <button
-                aria-label="Next month"
+                aria-label={t({ message: "Next month" })}
                 type="button"
                 onClick={() =>
                   setVisibleMonth(
@@ -577,14 +584,14 @@ export function TaskNotesDatePicker({
                   triggerRef.current?.focus();
                 }}
               >
-                Clear
+                <Trans>Clear</Trans>
               </button>
               <button
                 className="text-action"
                 type="button"
                 onClick={() => choose(today)}
               >
-                Today
+                <Trans>Today</Trans>
               </button>
             </div>
           </div>
@@ -599,7 +606,7 @@ export function TaskNotesTimePicker({
   onChange,
   ariaLabel,
   disabled = false,
-  placeholder = "Any time",
+  placeholder = translate({ message: "Any time" }),
 }: {
   value?: string;
   onChange(value?: string): void;
@@ -607,6 +614,7 @@ export function TaskNotesTimePicker({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
   const parsed = parseTimeValue(value);
@@ -663,7 +671,7 @@ export function TaskNotesTimePicker({
       {open ? (
         <>
           <PopoverScrim
-            label={`Close ${ariaLabel}`}
+            label={t`Close ${ariaLabel}`}
             onClose={() => setOpen(false)}
           />
           <div
@@ -672,19 +680,21 @@ export function TaskNotesTimePicker({
             role="dialog"
           >
             <div className="tasknotes-time-heading">
-              <span>Time</span>
+              <span>
+                <Trans>Time</Trans>
+              </span>
               <strong>{timeLabel(hour, minute)}</strong>
             </div>
             <div className="tasknotes-time-columns">
               <TimeColumn
-                label="Hour"
+                label={t({ message: "Hour" })}
                 max={23}
                 refs={hourRefs}
                 value={hour}
                 onChange={(next) => updateSelection(next, minute)}
               />
               <TimeColumn
-                label="Minute"
+                label={t({ message: "Minute" })}
                 max={59}
                 refs={minuteRefs}
                 value={minute}
@@ -701,7 +711,7 @@ export function TaskNotesTimePicker({
                   triggerRef.current?.focus();
                 }}
               >
-                Clear
+                <Trans>Clear</Trans>
               </button>
               <button
                 className="text-action"
@@ -711,7 +721,7 @@ export function TaskNotesTimePicker({
                   updateSelection(current.getHours(), current.getMinutes());
                 }}
               >
-                Now
+                <Trans>Now</Trans>
               </button>
               <button
                 className="text-action"
@@ -722,7 +732,7 @@ export function TaskNotesTimePicker({
                   triggerRef.current?.focus();
                 }}
               >
-                Done
+                <Trans>Done</Trans>
               </button>
             </div>
           </div>
@@ -874,7 +884,7 @@ function timeValue(hour: number, minute: number): string {
 }
 
 function timeLabel(hour: number, minute: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(2000, 0, 1, hour, minute));
@@ -889,7 +899,7 @@ function calendarDays(month: Date): Date[] {
 function weekdayLabels(): string[] {
   const start = new Date(2026, 0, 4);
   return Array.from({ length: 7 }, (_, index) =>
-    new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(
+    new Intl.DateTimeFormat(appLocale(), { weekday: "narrow" }).format(
       addDays(start, index),
     ),
   );
@@ -928,14 +938,14 @@ function dateValue(date: Date): string {
 }
 
 function monthLabel(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     month: "long",
     year: "numeric",
   }).format(date);
 }
 
 function shortDate(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -943,7 +953,7 @@ function shortDate(date: Date): string {
 }
 
 function longDate(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     day: "numeric",
     month: "long",

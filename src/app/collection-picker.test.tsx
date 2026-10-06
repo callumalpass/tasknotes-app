@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "../test/render";
 
 import { CollectionPicker } from "./collection-picker";
 import { registerOverlay } from "../components/overlays/overlay-stack";

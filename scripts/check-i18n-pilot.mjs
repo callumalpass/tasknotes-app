@@ -7,21 +7,46 @@ import { validateCatalogues } from "./lib/pilot-catalogue.mjs";
 const load = async (locale) =>
   JSON.parse(await readFile(`src/i18n/locales/${locale}/messages.json`, "utf8"))
     .messages;
-validateCatalogues(await load("en"), await load("fr"));
+const english = await load("en");
+validateCatalogues(english, await load("fr"));
+const policy = JSON.parse(
+  await readFile("src/i18n/locale-policy.json", "utf8"),
+);
+assert.deepEqual(
+  policy.productionLocales,
+  ["en"],
+  "Partial preview must not become a production locale",
+);
+const parsed = {};
 for (const locale of ["en", "fr"]) {
   const entries = formatter({}).parse(
     await readFile(`src/i18n/locales/${locale}/messages.po`, "utf8"),
     { locale },
   );
+  parsed[locale] = entries;
   for (const [id, entry] of Object.entries(entries)) {
     if (entry.obsolete) continue;
     assert.equal(
       id,
       generateMessageId(entry.message, entry.context),
-      "Pilot requires IDs generated from source + semantic context",
+      "Messages require IDs generated from source + semantic context",
     );
   }
 }
+for (const [locale, required] of Object.entries(policy.requiredTranslations)) {
+  for (const id of required) {
+    assert.ok(english[id], `Required source message disappeared: ${id}`);
+    const entry = parsed[locale][id];
+    assert.ok(
+      entry && !entry.obsolete && entry.translation?.trim(),
+      `Required ${locale} translation missing before fallback: ${id}`,
+    );
+  }
+}
+const active = Object.entries(parsed.fr).filter(([, entry]) => !entry.obsolete);
+const translated = active.filter(([, entry]) =>
+  entry.translation?.trim(),
+).length;
 console.log(
-  "Pilot JSON, generated IDs and ICU interpolation/markup contracts validated (en/fr).",
+  `Application ICU/IDs validated; French PREVIEW: ${translated}/${active.length} authored, ${active.length - translated} pending (English fallback). Required pilot translations checked before fallback.`,
 );

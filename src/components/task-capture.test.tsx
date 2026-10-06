@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { expect, it, vi } from "vitest";
 import { connectError } from "@mdbase-dev/connect-testing";
 

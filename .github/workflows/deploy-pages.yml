@@ -52,7 +52,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Verify application
-        run: pnpm i18n:check && git diff --exit-code -- src/i18n/locales && pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm test:conformance
+        run: pnpm i18n:check && git diff --exit-code -- src/i18n/locales && pnpm format:check && pnpm typecheck && pnpm lint && pnpm test:release && pnpm test && pnpm test:conformance
 
       - name: Build GitHub Pages test application
         run: pnpm build:e2e

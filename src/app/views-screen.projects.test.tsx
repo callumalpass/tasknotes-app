@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "../test/render";
 import { expect, it, vi } from "vitest";
 
 import { DemoTaskRepository } from "../demo/demo-task-repository";

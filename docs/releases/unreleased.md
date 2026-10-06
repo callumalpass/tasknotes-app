@@ -1,3 +1,3 @@
 # Unreleased
 
-- Added a scoped English/French translation pilot for the Collection settings panel, including correctly pluralized refresh counts and localized accessible controls. Normal release UI remains English while the pilot is reviewed.
+- Expanded Lingui to the whole application interface with one app-level provider, reviewable generated-ID PO catalogues, localized accessible controls and announcements, ICU counts, and presentation-only date/recurrence/editor labels. Normal releases remain English; French is an incomplete development/e2e preview with English fallback, not an app-wide French translation. User content, saved labels, identifiers and collection/repository behavior are unchanged.

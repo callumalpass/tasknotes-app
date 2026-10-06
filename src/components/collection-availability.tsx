@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { useEffect, useState } from "react";
 import { useRepository } from "../app/repository-context";
 
@@ -6,6 +7,7 @@ export function CollectionAvailability({
 }: {
   onSettings?: () => void;
 }) {
+  const { t } = useLingui();
   const { connection, refresh, refreshing } = useRepository();
   const [failed, setFailed] = useState(false);
   const waiting =
@@ -24,22 +26,30 @@ export function CollectionAvailability({
   if (connection.state !== "unavailable") {
     return waiting && prolonged ? (
       <div className="collection-connection-indicator" role="status">
-        {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
+        {connection.state === "connecting"
+          ? t({ message: "Connecting…" })
+          : t({ message: "Refreshing…" })}
       </div>
     ) : null;
   }
   return (
     <section
       className="collection-availability"
-      aria-label="Collection connection"
+      aria-label={t({ message: "Collection connection" })}
     >
       <div role="status">
         <span>
-          Collection unavailable. Showing previously loaded tasks; changes can’t
-          be saved.
+          <Trans>
+            Collection unavailable. Showing previously loaded tasks; changes
+            can’t be saved.
+          </Trans>
         </span>
         {failed ? (
-          <p>Could not reconnect. Try again or check connection settings.</p>
+          <p>
+            <Trans>
+              Could not reconnect. Try again or check connection settings.
+            </Trans>
+          </p>
         ) : null}
       </div>
       <div className="availability-actions">
@@ -52,11 +62,13 @@ export function CollectionAvailability({
             void refresh().catch(() => setFailed(true));
           }}
         >
-          {refreshing ? "Reconnecting…" : "Retry connection"}
+          {refreshing
+            ? t({ message: "Reconnecting…" })
+            : t({ message: "Retry connection" })}
         </button>
         {onSettings ? (
           <button className="text-action" type="button" onClick={onSettings}>
-            Connection settings
+            <Trans>Connection settings</Trans>
           </button>
         ) : null}
       </div>

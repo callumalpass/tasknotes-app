@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
@@ -43,6 +44,7 @@ export function VirtualTaskList({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void | Promise<unknown>;
 }) {
+  const { t } = useLingui();
   const [choices, setChoices] = useState<Map<string, boolean>>(() => new Map());
   const preferenceKey = useCallback(
     (lane: Lane) =>
@@ -105,7 +107,7 @@ export function VirtualTaskList({
             headingOnly
             className={entry.lane.className}
             laneKey={entry.lane.key}
-            label={entry.lane.label ?? "Other"}
+            label={entry.lane.label ?? t({ message: "Other" })}
             count={entry.lane.rows.length}
             preferenceKey={preferenceKey(entry.lane)}
             collapsed={isCollapsed(entry.lane)}

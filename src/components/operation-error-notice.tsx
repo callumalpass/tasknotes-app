@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { cleanOperationError } from "../app/operation-error";
 import {
   toOperationalError,
@@ -15,6 +17,7 @@ export function OperationErrorNotice({
   recovery: string;
   className?: string;
 }) {
+  const { t } = useLingui();
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
   const technical = cleanOperationError(failure.detail).trim();
@@ -23,12 +26,17 @@ export function OperationErrorNotice({
       <p className="inline-error" role="alert">
         {operationErrorSummary(action, failure.code)}{" "}
         {failure.code === "outcome-unknown"
-          ? "Keep the collection connected and review the earlier change’s exact result before making another change."
+          ? t({
+              message:
+                "Keep the collection connected and review the earlier change’s exact result before making another change.",
+            })
           : recovery}
       </p>
       {technical ? (
         <details className="operation-error-details">
-          <summary>Technical details</summary>
+          <summary>
+            <Trans>Technical details</Trans>
+          </summary>
           <p>{technical}</p>
         </details>
       ) : null}
@@ -42,20 +50,20 @@ function operationErrorSummary(
 ): string {
   switch (code) {
     case "unavailable":
-      return `${action} could not finish while the collection was unavailable.`;
+      return t`${action} could not finish while the collection was unavailable.`;
     case "outcome-unknown":
-      return `${action} may have been saved, but its result could not be confirmed.`;
+      return t`${action} may have been saved, but its result could not be confirmed.`;
     case "cancelled":
-      return `${action} was cancelled.`;
+      return t`${action} was cancelled.`;
     case "permission-denied":
-      return `${action} needs access to the collection.`;
+      return t`${action} needs access to the collection.`;
     case "conflict":
-      return `${action} could not finish because the task changed elsewhere.`;
+      return t`${action} could not finish because the task changed elsewhere.`;
     case "validation":
-      return `${action} contains a value the collection cannot accept.`;
+      return t`${action} contains a value the collection cannot accept.`;
     case "not-found":
-      return `${action} could not finish because the record no longer exists.`;
+      return t`${action} could not finish because the record no longer exists.`;
     default:
-      return `${action} could not finish.`;
+      return t`${action} could not finish.`;
   }
 }

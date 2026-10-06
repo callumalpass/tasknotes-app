@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "../test/render";
 import { describe, expect, it } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";

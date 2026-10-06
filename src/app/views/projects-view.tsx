@@ -1,3 +1,5 @@
+import { useLingui, Trans } from "@lingui/react/macro";
+import { countLabel } from "../../i18n/default-labels";
 import { ChevronRight, Plus } from "lucide-react";
 import { useId, useState } from "react";
 import {
@@ -35,6 +37,7 @@ export function ProjectsView({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
+  const { t } = useLingui();
   const id = useId();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const preferenceKey = (key: string) =>
@@ -101,18 +104,20 @@ export function ProjectsView({
   if (!ordered.length)
     return (
       <div className="plain-empty">
-        <h2>No active projects</h2>
-        <p>Add a project to a task and it will appear here.</p>
+        <h2>
+          <Trans>No active projects</Trans>
+        </h2>
+        <p>
+          <Trans>Add a project to a task and it will appear here.</Trans>
+        </p>
       </div>
     );
   return (
     <div className="projects-view">
       <label className="project-index">
-        <span>
-          {ordered.length} {ordered.length === 1 ? "project" : "projects"}
-        </span>
+        <span>{countLabel(ordered.length, "project")}</span>
         <select
-          aria-label="Jump to project"
+          aria-label={t({ message: "Jump to project" })}
           value=""
           onChange={(event) => {
             const index = Number(event.target.value);
@@ -125,7 +130,7 @@ export function ProjectsView({
           }}
         >
           <option value="" disabled>
-            Jump to project
+            <Trans>Jump to project</Trans>
           </option>
           {ordered.map((project, index) => (
             <option key={project.key} value={index}>
@@ -160,20 +165,19 @@ export function ProjectsView({
                     <ChevronRight aria-hidden="true" size={16} />
                     <span>{project.label}</span>
                     <span className="project-count">
-                      {project.tasks.length}{" "}
-                      {project.tasks.length === 1 ? "task" : "tasks"}
+                      {countLabel(project.tasks.length, "task")}
                     </span>
                   </button>
                 </h2>
                 {project.path ? <small>{project.path}</small> : null}
               </div>
               <button
-                aria-label={`Add task to ${project.label}`}
+                aria-label={t`Add task to ${project.label}`}
                 type="button"
                 onClick={() => onCreate(project.value, project.label)}
               >
                 <Plus aria-hidden="true" size={16} />
-                Add task
+                <Trans>Add task</Trans>
               </button>
             </header>
             <div id={listId} className="saved-task-list" hidden={isCollapsed}>

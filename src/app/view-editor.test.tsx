@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "../test/render";
 import { parse } from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

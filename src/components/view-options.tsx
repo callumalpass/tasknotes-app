@@ -1,8 +1,10 @@
+import { useLingui } from "@lingui/react/macro";
 import { Ellipsis } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /** Native disclosure containing ordinary buttons, not a partially implemented ARIA menu. */
 export function ViewOptions({ children }: { children: ReactNode }) {
+  const { t } = useLingui();
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -24,7 +26,10 @@ export function ViewOptions({ children }: { children: ReactNode }) {
         }
       }}
     >
-      <summary aria-label="View options" title="View options">
+      <summary
+        aria-label={t({ message: "View options" })}
+        title={t({ message: "View options" })}
+      >
         <Ellipsis aria-hidden="true" size={20} />
       </summary>
       <div

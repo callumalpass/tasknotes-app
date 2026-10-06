@@ -1,4 +1,4 @@
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Task } from "../domain/task";

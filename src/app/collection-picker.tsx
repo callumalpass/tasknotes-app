@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
 import { ArrowRight, Check, Cloud, Monitor, Plus, X } from "lucide-react";
 import { useRef } from "react";
@@ -19,6 +20,7 @@ export function CollectionPicker({
   onClose(): void;
   onSelect(collectionId: string): void;
 }) {
+  const { t } = useLingui();
   const closeRef = useRef<HTMLButtonElement>(null);
   const firstCollectionRef = useRef<HTMLButtonElement>(null);
   const selectedCollectionRef = useRef<HTMLButtonElement>(null);
@@ -46,16 +48,24 @@ export function CollectionPicker({
       >
         <header className="collection-picker-header">
           <div>
-            <p className="eyebrow">TaskNotes collection</p>
-            <h2 id="collection-picker-title">Choose where to work</h2>
-            <p>TaskNotes opens the collection at its authoritative location.</p>
+            <p className="eyebrow">
+              <Trans>TaskNotes collection</Trans>
+            </p>
+            <h2 id="collection-picker-title">
+              <Trans>Choose where to work</Trans>
+            </h2>
+            <p>
+              <Trans>
+                TaskNotes opens the collection at its authoritative location.
+              </Trans>
+            </p>
           </div>
           <button
-            aria-label="Close collection picker"
+            aria-label={t({ message: "Close collection picker" })}
             className="icon-action"
             onClick={onClose}
             ref={closeRef}
-            title="Close collections"
+            title={t({ message: "Close collections" })}
             type="button"
           >
             <X aria-hidden="true" size={20} />
@@ -63,7 +73,9 @@ export function CollectionPicker({
         </header>
         <div className="collection-picker-content">
           <div className="collection-picker-group">
-            <h3>Available collections</h3>
+            <h3>
+              <Trans>Available collections</Trans>
+            </h3>
             <div>
               {connections.map((connection, index) => {
                 const active = connection.collectionId === selectedCollectionId;
@@ -90,19 +102,26 @@ export function CollectionPicker({
                     <span>
                       <strong>{connection.displayName}</strong>
                       <small>
-                        {hosted ? "Hosted by mdbase" : "Connected computer"}
+                        {hosted
+                          ? t({ message: "Hosted by mdbase" })
+                          : t({ message: "Connected computer" })}
                       </small>
                     </span>
                     <span className="collection-picker-row-state">
                       {active ? <Check aria-hidden="true" size={16} /> : null}
-                      {active ? "Current" : "Open"}
+                      {active
+                        ? t({ message: "Current" })
+                        : t({ message: "Open" })}
                     </span>
                   </button>
                 );
               })}
               {!connections.length ? (
                 <p className="collection-picker-empty">
-                  No collections are connected to TaskNotes on this device yet.
+                  <Trans>
+                    No collections are connected to TaskNotes on this device
+                    yet.
+                  </Trans>
                 </p>
               ) : null}
             </div>
@@ -118,8 +137,12 @@ export function CollectionPicker({
               <Plus aria-hidden="true" size={19} />
             </span>
             <span>
-              <strong>Connect another collection</strong>
-              <small>Open mdbase to choose and approve access.</small>
+              <strong>
+                <Trans>Connect another collection</Trans>
+              </strong>
+              <small>
+                <Trans>Open mdbase to choose and approve access.</Trans>
+              </small>
             </span>
             <ArrowRight aria-hidden="true" size={18} />
           </button>

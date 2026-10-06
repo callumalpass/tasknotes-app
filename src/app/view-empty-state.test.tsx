@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "../test/render";
 import { afterEach, expect, it } from "vitest";
 import { ViewEmptyState } from "./view-empty-state";
 afterEach(cleanup);

@@ -1,3 +1,7 @@
+import { t, plural } from "@lingui/core/macro";
+import { nestedItemCount } from "../i18n/default-labels";
+import { appLocale } from "../i18n/app";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   Camera,
   Check,
@@ -135,6 +139,7 @@ export function ScratchpadScreen({
 }: {
   onOpenTask(task: TaskSummary): void;
 }) {
+  const { t } = useLingui();
   const { repository } = useRepository();
   const [currentDocument, setCurrentDocument] = useState<ScratchpadDocument>();
   const [historyItems, setHistoryItems] = useState<ScratchFeedItem[]>([]);
@@ -192,7 +197,10 @@ export function ScratchpadScreen({
         const current = page.documents.find(
           (document) => document.state === "active",
         );
-        if (!current) throw new Error("The current scratchpad is unavailable.");
+        if (!current)
+          throw new Error(
+            t({ message: "The current scratchpad is unavailable." }),
+          );
         items = page.documents
           .filter((document) => document.id !== current.id)
           .map((document) => ({ kind: "scratchpad", ...document }));
@@ -211,11 +219,11 @@ export function ScratchpadScreen({
       setNextCursor(cursor);
       setHistoryLoaded(true);
     } catch (reason) {
-      setError(`Previous notes could not be loaded. ${message(reason)}`);
+      setError(t`Previous notes could not be loaded. ${message(reason)}`);
     } finally {
       setLoadingHistory(false);
     }
-  }, [repository]);
+  }, [repository, t]);
 
   const loadStream = useCallback(async () => {
     if (
@@ -223,7 +231,11 @@ export function ScratchpadScreen({
       !repository.listScratchFeed &&
       !repository.listScratchpads
     ) {
-      setError("Scratchpad storage is not available for this collection.");
+      setError(
+        t({
+          message: "Scratchpad storage is not available for this collection.",
+        }),
+      );
       setLoading(false);
       return;
     }
@@ -246,7 +258,10 @@ export function ScratchpadScreen({
         const current = page.documents.find(
           (document) => document.state === "active",
         );
-        if (!current) throw new Error("The current scratchpad is unavailable.");
+        if (!current)
+          throw new Error(
+            t({ message: "The current scratchpad is unavailable." }),
+          );
         setCurrentDocument(current);
         setHistoryItems(
           page.documents
@@ -262,7 +277,7 @@ export function ScratchpadScreen({
     } finally {
       setLoading(false);
     }
-  }, [loadHistory, repository]);
+  }, [loadHistory, repository, t]);
 
   useEffect(() => {
     globalThis.document.documentElement.classList.add("scratchpad-route");
@@ -494,7 +509,10 @@ export function ScratchpadScreen({
       setResumeUndo(undefined);
       setError("");
       setStreamNotice(
-        files.length === 1 ? "Adding image…" : `Adding ${files.length} images…`,
+        plural(files.length, {
+          one: "Adding image…",
+          other: "Adding # images…",
+        }),
       );
       const results = await Promise.allSettled(
         files.map((file) => imageService.add(file)),
@@ -522,15 +540,16 @@ export function ScratchpadScreen({
       }
       setStreamNotice(
         created.length
-          ? created.length === 1
-            ? "Image added"
-            : `${created.length} images added`
+          ? plural(created.length, {
+              one: "Image added",
+              other: "# images added",
+            })
           : "",
       );
       if (failures.length) {
         setImageCaptureOpen(true);
         setError(
-          `${message(failures[0])}${created.length ? ` ${created.length} ${created.length === 1 ? "image was" : "images were"} added.` : ""}`,
+          `${message(failures[0])}${created.length ? ` ${plural(created.length, { one: "# image was added.", other: "# images were added." })}` : ""}`,
         );
       } else if (created.length) {
         setImageCaptureOpen(false);
@@ -607,7 +626,7 @@ export function ScratchpadScreen({
     return (
       <section className="screen scratchpad-screen" aria-busy="true">
         <span className="visually-hidden" role="status">
-          Opening current note…
+          <Trans>Opening current note…</Trans>
         </span>
       </section>
     );
@@ -657,7 +676,7 @@ export function ScratchpadScreen({
       setNextCursor(undefined);
       setResumeUndo(offerUndo ? result.previous : undefined);
       setStreamNotice(
-        `${result.current.title?.trim() || "Previous note"} resumed`,
+        t`${result.current.title?.trim() || t({ message: "Previous note" })} resumed`,
       );
       if (repository.listScratchFeed) {
         try {
@@ -666,7 +685,7 @@ export function ScratchpadScreen({
           setNextCursor(page.nextCursor);
         } catch (reason) {
           setError(
-            `The note was resumed, but history could not refresh. ${message(reason)}`,
+            t`The note was resumed, but history could not refresh. ${message(reason)}`,
           );
         }
       }
@@ -721,7 +740,9 @@ export function ScratchpadScreen({
       {draggingImages ? (
         <div className="scratchpad-drop-overlay" role="status">
           <ImagePlus aria-hidden="true" size={30} />
-          <strong>Drop images to add them</strong>
+          <strong>
+            <Trans>Drop images to add them</Trans>
+          </strong>
         </div>
       ) : null}
       {streamNotice ? (
@@ -739,11 +760,11 @@ export function ScratchpadScreen({
                 void reactivate(target, false);
               }}
             >
-              Undo
+              <Trans>Undo</Trans>
             </button>
           ) : null}
           <button
-            aria-label="Dismiss"
+            aria-label={t({ message: "Dismiss" })}
             type="button"
             onClick={() => {
               setResumeUndo(undefined);
@@ -758,7 +779,7 @@ export function ScratchpadScreen({
         <div className="scratchpad-error" role="alert">
           {error}
           <button type="button" onClick={() => void loadStream()}>
-            Reload
+            <Trans>Reload</Trans>
           </button>
         </div>
       ) : null}
@@ -834,17 +855,19 @@ export function ScratchpadScreen({
                   .finally(() => setLoadingOlder(false));
               }}
             >
-              {loadingOlder ? "Loading…" : "Load older"}
+              {loadingOlder
+                ? t({ message: "Loading…" })
+                : t({ message: "Load older" })}
             </button>
           ) : null}
           <div
             aria-busy={loadingHistory}
-            aria-label="Scratchpad history"
+            aria-label={t({ message: "Scratchpad history" })}
             className={`scratchpad-history${historyLoaded ? " is-loaded" : ""}`}
           >
             {loadingHistory ? (
               <span className="visually-hidden" role="status">
-                Loading previous notes…
+                <Trans>Loading previous notes…</Trans>
               </span>
             ) : null}
             {historicalItems.map((item) => {
@@ -922,24 +945,24 @@ export function ScratchpadScreen({
           ) : null}
           <header className="scratchpad-stream-header">
             <h1 className="visually-hidden" id="scratchpad-stream-title">
-              Scratchpad
+              <Trans>Scratchpad</Trans>
             </h1>
             <div className="scratchpad-stream-actions">
               <button
-                aria-label="Add image"
+                aria-label={t({ message: "Add image" })}
                 aria-expanded={imageCaptureOpen}
                 aria-controls="scratchpad-image-capture"
                 className="text-action scratchpad-image-action"
                 disabled={!repository.files || !repository.createScratchImage}
                 ref={imageActionRef}
-                title="Add image"
+                title={t({ message: "Add image" })}
                 type="button"
                 onClick={() => setImageCaptureOpen((open) => !open)}
               >
                 <ImagePlus aria-hidden="true" size={18} />
               </button>
               <button
-                aria-label="New note"
+                aria-label={t({ message: "New note" })}
                 className="text-action scratchpad-new-action"
                 type="button"
                 onClick={() => void startNew()}
@@ -951,7 +974,11 @@ export function ScratchpadScreen({
                 }
               >
                 <Plus aria-hidden="true" size={18} />
-                <span>{startingNew ? "Starting…" : "New note"}</span>
+                <span>
+                  {startingNew
+                    ? t({ message: "Starting…" })
+                    : t({ message: "New note" })}
+                </span>
               </button>
             </div>
           </header>
@@ -963,13 +990,18 @@ export function ScratchpadScreen({
             >
               <header>
                 <div>
-                  <strong id="scratchpad-image-capture-title">Add image</strong>
+                  <strong id="scratchpad-image-capture-title">
+                    <Trans>Add image</Trans>
+                  </strong>
                   <p>
-                    Drop images here, paste them, upload files, or take a photo.
+                    <Trans>
+                      Drop images here, paste them, upload files, or take a
+                      photo.
+                    </Trans>
                   </p>
                 </div>
                 <button
-                  aria-label="Close image capture"
+                  aria-label={t({ message: "Close image capture" })}
                   className="icon-action"
                   disabled={addingImages}
                   type="button"
@@ -987,7 +1019,9 @@ export function ScratchpadScreen({
                   className="outline-action scratchpad-image-picker"
                 >
                   <Upload aria-hidden="true" size={18} />
-                  {addingImages ? "Adding…" : "Upload images"}
+                  {addingImages
+                    ? t({ message: "Adding…" })
+                    : t({ message: "Upload images" })}
                   <input
                     accept="image/*"
                     className="visually-hidden"
@@ -1004,7 +1038,8 @@ export function ScratchpadScreen({
                   aria-disabled={addingImages}
                   className="outline-action scratchpad-image-picker scratchpad-camera-picker"
                 >
-                  <Camera aria-hidden="true" size={18} /> Take photo
+                  <Camera aria-hidden="true" size={18} />{" "}
+                  <Trans>Take photo</Trans>
                   <input
                     accept="image/*"
                     capture="environment"
@@ -1053,6 +1088,7 @@ function ScratchImageCard({
   onCollapsedChange(collapsed: boolean): void;
   onRemoved(): void;
 }) {
+  const { t } = useLingui();
   const [source, setSource] = useState<string>();
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">(
     repository.files ? "loading" : "missing",
@@ -1116,7 +1152,10 @@ function ScratchImageCard({
     if (!repository.removeScratchImage || removing) return;
     if (
       !window.confirm(
-        "Remove this image card from Scratchpad? The image file will be kept.",
+        t({
+          message:
+            "Remove this image card from Scratchpad? The image file will be kept.",
+        }),
       )
     )
       return;
@@ -1146,7 +1185,7 @@ function ScratchImageCard({
         >
           {state === "ready" && source ? (
             <img
-              alt={image.caption || "Pasted Scratchpad image"}
+              alt={image.caption || t`Pasted Scratchpad image`}
               src={source}
             />
           ) : (
@@ -1156,10 +1195,10 @@ function ScratchImageCard({
             >
               <FileImage aria-hidden="true" size={24} />
               {state === "loading"
-                ? "Loading image…"
+                ? t({ message: "Loading image…" })
                 : state === "missing"
-                  ? "Image file is unavailable"
-                  : "Image could not be loaded"}
+                  ? t({ message: "Image file is unavailable" })
+                  : t({ message: "Image could not be loaded" })}
             </div>
           )}
         </div>
@@ -1167,7 +1206,11 @@ function ScratchImageCard({
       <footer>
         <button
           aria-expanded={!collapsed}
-          aria-label={collapsed ? "Expand image" : "Collapse image"}
+          aria-label={
+            collapsed
+              ? t({ message: "Expand image" })
+              : t({ message: "Collapse image" })
+          }
           className="scratch-image-disclosure"
           type="button"
           onClick={() => onCollapsedChange(!collapsed)}
@@ -1186,7 +1229,7 @@ function ScratchImageCard({
           <button
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            aria-label="Image actions"
+            aria-label={t({ message: "Image actions" })}
             className="scratch-image-menu-trigger"
             disabled={removing}
             ref={menuTriggerRef}
@@ -1197,7 +1240,7 @@ function ScratchImageCard({
           </button>
           {menuOpen ? (
             <div
-              aria-label="Image actions"
+              aria-label={t({ message: "Image actions" })}
               className="scratchpad-row-menu opens-up"
               ref={menuRef}
               role="menu"
@@ -1209,7 +1252,7 @@ function ScratchImageCard({
               }}
             >
               <button
-                aria-label="Remove image card"
+                aria-label={t({ message: "Remove image card" })}
                 className="danger"
                 disabled={removing || !repository.removeScratchImage}
                 role="menuitem"
@@ -1219,7 +1262,8 @@ function ScratchImageCard({
                   void remove();
                 }}
               >
-                <Trash2 aria-hidden="true" size={17} /> Remove from Scratchpad
+                <Trash2 aria-hidden="true" size={17} />{" "}
+                <Trans>Remove from Scratchpad</Trans>
               </button>
             </div>
           ) : null}
@@ -1248,6 +1292,7 @@ function ScratchpadDocumentEditor({
   registerFlusher(flush: (() => Promise<unknown>) | null): void;
   onDocumentUpdated(document: ScratchpadDocument): void;
 }) {
+  const { t } = useLingui();
   const { repository, configuration, createTask, updateTask } = useRepository();
   const createIntents = useRef(new WeakMap<ScratchNode, TaskCreateIntent>());
   const [document, setDocument] = useState<ScratchpadDocument | null>(null);
@@ -1382,14 +1427,17 @@ function ScratchpadDocumentEditor({
     (body: string, nextTitle = titleRef.current) => {
       const current = documentRef.current;
       if (!current || !repository.saveScratchpad)
-        return Promise.reject(new Error("Scratchpad storage is unavailable."));
+        return Promise.reject(
+          new Error(t({ message: "Scratchpad storage is unavailable." })),
+        );
       const normalizedTitle = nextTitle.trim();
       setSaveState("saving");
       const operation = saveTail.current
         .catch(() => undefined)
         .then(async () => {
           const latest = documentRef.current;
-          if (!latest) throw new Error("The scratchpad is not open.");
+          if (!latest)
+            throw new Error(t({ message: "The scratchpad is not open." }));
           if (
             body === latest.body &&
             normalizedTitle === (latest.title?.trim() ?? "")
@@ -1425,7 +1473,7 @@ function ScratchpadDocumentEditor({
       saveTail.current = operation;
       return operation;
     },
-    [onDocumentUpdated, repository],
+    [onDocumentUpdated, repository, t],
   );
 
   const persist = useCallback(
@@ -1861,7 +1909,7 @@ function ScratchpadDocumentEditor({
       await linkExistingChildren(converted.nodes, id, converted.task);
       successFeedback();
       setNotice({
-        message: `Created “${converted.task.title}”`,
+        message: t`Created “${converted.task.title}”`,
         tasks: [converted.task],
       });
     } catch (reason) {
@@ -1875,8 +1923,9 @@ function ScratchpadDocumentEditor({
     const index = source.findIndex((node) => node.id === id);
     const node = source[index];
     if (!node || node.kind !== "draft")
-      throw new Error("Only draft items can become TaskNotes.");
-    if (!node.text.trim()) throw new Error("Add a task title first.");
+      throw new Error(t({ message: "Only draft items can become TaskNotes." }));
+    if (!node.text.trim())
+      throw new Error(t({ message: "Add a task title first." }));
     const result: TaskCaptureResult = await parseTaskCapture(
       node.text,
       configuration,
@@ -1894,7 +1943,9 @@ function ScratchpadDocumentEditor({
       : undefined;
     if (node.completed && !completedStatus)
       throw new Error(
-        "This collection does not define a completed task status.",
+        t({
+          message: "This collection does not define a completed task status.",
+        }),
       );
     const createInput = {
       ...result.input,
@@ -1990,7 +2041,10 @@ function ScratchpadDocumentEditor({
   async function openLinkedNode(node: ScratchNode) {
     try {
       const task = await resolveLinkedTask(node);
-      if (!task) throw new Error("The linked TaskNote could not be found.");
+      if (!task)
+        throw new Error(
+          t({ message: "The linked TaskNote could not be found." }),
+        );
       onOpenTask(task);
     } catch (reason) {
       setError(message(reason));
@@ -2064,10 +2118,14 @@ function ScratchpadDocumentEditor({
         } else if (currentNode?.kind === "task") {
           createdTask ??= (await resolveLinkedTask(currentNode)) ?? undefined;
         } else {
-          throw new Error("This draft is no longer in the scratchpad.");
+          throw new Error(
+            t({ message: "This draft is no longer in the scratchpad." }),
+          );
         }
         if (!createdTask)
-          throw new Error("The created TaskNote could not be found.");
+          throw new Error(
+            t({ message: "The created TaskNote could not be found." }),
+          );
         await persist(working);
         await linkExistingChildren(working, item.id, createdTask);
         completed.set(createdTask.id, createdTask);
@@ -2097,7 +2155,10 @@ function ScratchpadDocumentEditor({
     setReviewOpen(false);
     const tasks = [...completed.values()];
     setNotice({
-      message: `Created ${tasks.length} task ${tasks.length === 1 ? "note" : "notes"}`,
+      message: plural(tasks.length, {
+        one: "Created # task note",
+        other: "Created # task notes",
+      }),
       tasks,
     });
     successFeedback();
@@ -2121,7 +2182,10 @@ function ScratchpadDocumentEditor({
       const latest = await persistBody(transitionSource);
       if (!isOutlineCompatible(latest.body)) {
         setError(
-          "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown.",
+          t({
+            message:
+              "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown.",
+          }),
         );
         return;
       }
@@ -2224,13 +2288,13 @@ function ScratchpadDocumentEditor({
   return (
     <section
       className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
-      aria-label={`Editor for ${document?.title || (document?.state === "active" ? "current scratchpad" : "scratchpad")}`}
+      aria-label={t`Editor for ${document?.title || (document?.state === "active" ? t({ message: "current scratchpad" }) : t({ message: "scratchpad" }))}`}
     >
       <div className="scratchpad-title-row">
         <input
-          aria-label="Note title"
+          aria-label={t({ message: "Note title" })}
           maxLength={160}
-          placeholder="Add title"
+          placeholder={t({ message: "Add title" })}
           type="text"
           value={title}
           onBlur={() => {
@@ -2244,33 +2308,37 @@ function ScratchpadDocumentEditor({
           }}
         />
         <span className="scratchpad-title-meta">
-          {isCurrent ? <small>Current note</small> : null}
+          {isCurrent ? (
+            <small>
+              <Trans>Current note</Trans>
+            </small>
+          ) : null}
           <time dateTime={displayDate}>{formatScratchDate(displayDate)}</time>
         </span>
       </div>
       <header className="scratchpad-editor-toolbar">
         <div
-          aria-label="Scratchpad editing mode"
+          aria-label={t({ message: "Scratchpad editing mode" })}
           className="scratchpad-mode-switch"
           role="group"
         >
           <button
-            aria-label="Outline"
+            aria-label={t({ message: "Outline" })}
             aria-pressed={editorMode === "outline"}
-            title="Outline"
+            title={t({ message: "Outline" })}
             type="button"
             onClick={() => void changeEditorMode("outline")}
           >
-            Outline
+            <Trans>Outline</Trans>
           </button>
           <button
-            aria-label="Write"
+            aria-label={t({ message: "Write" })}
             aria-pressed={editorMode === "markdown"}
-            title="Write"
+            title={t({ message: "Write" })}
             type="button"
             onClick={() => void changeEditorMode("markdown")}
           >
-            Write
+            <Trans>Write</Trans>
           </button>
         </div>
         <div className="scratchpad-header-actions">
@@ -2279,10 +2347,10 @@ function ScratchpadDocumentEditor({
             role="status"
           >
             {saveState === "saving"
-              ? "Saving"
+              ? t({ message: "Saving" })
               : saveState === "error"
-                ? "Not saved"
-                : "Saved"}
+                ? t({ message: "Not saved" })
+                : t({ message: "Saved" })}
           </span>
           {onReactivate ? (
             <button
@@ -2292,19 +2360,22 @@ function ScratchpadDocumentEditor({
               onClick={onReactivate}
             >
               <RotateCcw aria-hidden="true" size={17} />
-              {reactivating ? "Resuming…" : "Resume as current"}
+              {reactivating
+                ? t({ message: "Resuming…" })
+                : t({ message: "Resume as current" })}
             </button>
           ) : null}
           {editorMode === "outline" ? (
             <button
-              aria-label="Create task notes"
+              aria-label={t({ message: "Create task notes" })}
               className="text-action scratchpad-review-action"
               disabled={!drafts}
               type="button"
               ref={reviewTriggerRef}
               onClick={openReview}
             >
-              <ListChecks aria-hidden="true" size={17} /> Create task notes
+              <ListChecks aria-hidden="true" size={17} />{" "}
+              <Trans>Create task notes</Trans>
             </button>
           ) : null}
         </div>
@@ -2313,14 +2384,14 @@ function ScratchpadDocumentEditor({
         <div className="scratchpad-error" role="alert">
           <span>{error}</span>
           <button type="button" onClick={() => void load()}>
-            Reload
+            <Trans>Reload</Trans>
           </button>
         </div>
       ) : null}
       {editorMode === "markdown" ? (
         <Suspense fallback={<div className="scratchpad-loading" />}>
           <MarkdownSourceEditor
-            ariaLabel="Scratchpad Markdown"
+            ariaLabel={t({ message: "Scratchpad Markdown" })}
             autoFocus={isCurrent}
             completeRecords={completeRecords}
             value={source}
@@ -2331,7 +2402,7 @@ function ScratchpadDocumentEditor({
         <div
           className="scratchpad-outline"
           role="tree"
-          aria-label="Scratchpad outline"
+          aria-label={t({ message: "Scratchpad outline" })}
         >
           {visibleNodes.map(({ node, descendantCount }) => {
             const linkedTask = node.taskId
@@ -2362,7 +2433,7 @@ function ScratchpadDocumentEditor({
                   {descendantCount ? (
                     <button
                       aria-expanded={!collapsedIds.has(node.id)}
-                      aria-label={`${collapsedIds.has(node.id) ? "Expand" : "Collapse"} ${node.text || "item"}, ${descendantCount} nested ${descendantCount === 1 ? "item" : "items"}`}
+                      aria-label={t`${collapsedIds.has(node.id) ? t({ message: "Expand" }) : t({ message: "Collapse" })} ${node.text || t({ message: "item" })}, ${nestedItemCount(descendantCount)}`}
                       className="scratchpad-collapse"
                       type="button"
                       onClick={() =>
@@ -2384,7 +2455,7 @@ function ScratchpadDocumentEditor({
                     <span className="scratchpad-collapse-spacer" />
                   )}
                   <button
-                    aria-label={`Move ${node.text || "empty item"}`}
+                    aria-label={t`Move ${node.text || t({ message: "empty item" })}`}
                     className="scratchpad-drag-handle"
                     type="button"
                     onPointerDown={(event) => beginDrag(event, node.id)}
@@ -2394,17 +2465,21 @@ function ScratchpadDocumentEditor({
                   {node.kind === "task" ? (
                     <span className="scratchpad-kind-label is-linked">
                       <Link2 aria-hidden="true" size={14} />
-                      <span>Linked</span>
+                      <span>
+                        <Trans>Linked</Trans>
+                      </span>
                     </span>
                   ) : (
                     <div className="scratchpad-kind-controls">
                       {node.kind === "draft" ? (
                         <button
-                          aria-label={`${node.completed ? "Mark incomplete" : "Mark complete"} ${node.text || "empty task"}`}
+                          aria-label={`${node.completed ? t({ message: "Mark incomplete" }) : t({ message: "Mark complete" })} ${node.text || t({ message: "empty task" })}`}
                           aria-pressed={Boolean(node.completed)}
                           className="scratchpad-draft-completion"
                           title={
-                            node.completed ? "Completed draft" : "Task draft"
+                            node.completed
+                              ? t({ message: "Completed draft" })
+                              : t({ message: "Task draft" })
                           }
                           type="button"
                           onClick={() =>
@@ -2428,12 +2503,14 @@ function ScratchpadDocumentEditor({
                       <button
                         aria-label={
                           node.kind === "draft"
-                            ? `Convert ${node.text || "empty task"} to note`
-                            : "Make a task"
+                            ? t`Convert ${node.text || t({ message: "empty task" })} to note`
+                            : t({ message: "Make a task" })
                         }
                         className="scratchpad-kind-toggle"
                         title={
-                          node.kind === "draft" ? "Convert to note" : "Note"
+                          node.kind === "draft"
+                            ? t({ message: "Convert to note" })
+                            : t({ message: "Note" })
                         }
                         type="button"
                         onClick={() =>
@@ -2443,7 +2520,9 @@ function ScratchpadDocumentEditor({
                           })
                         }
                       >
-                        {node.kind === "draft" ? "Task" : "Note"}
+                        {node.kind === "draft"
+                          ? t({ message: "Task" })
+                          : t({ message: "Note" })}
                       </button>
                     </div>
                   )}
@@ -2466,13 +2545,13 @@ function ScratchpadDocumentEditor({
                       aria-controls={
                         suggestionsOpen ? suggestionListId : undefined
                       }
-                      aria-label={`${node.kind === "draft" ? "Draft task" : "Note"}: ${node.text || "empty"}`}
+                      aria-label={`${node.kind === "draft" ? t({ message: "Draft task" }) : t({ message: "Note" })}: ${node.text || t({ message: "empty" })}`}
                       autoComplete="off"
                       data-scratch-input={`${document?.id ?? initialDocument.id}:${node.id}`}
                       placeholder={
                         node.kind === "draft"
-                          ? "What needs doing?"
-                          : "Add context…"
+                          ? t({ message: "What needs doing?" })
+                          : t({ message: "Add context…" })
                       }
                       value={node.text}
                       onChange={(event) => {
@@ -2521,10 +2600,10 @@ function ScratchpadDocumentEditor({
                   )}
                   {node.kind === "draft" && node.text.trim() ? (
                     <button
-                      aria-label={`Create task for ${node.text}`}
+                      aria-label={t`Create task for ${node.text}`}
                       className="scratchpad-convert-line"
                       disabled={Boolean(convertingId) || reviewProcessing}
-                      title="Create task"
+                      title={t({ message: "Create task" })}
                       type="button"
                       onClick={() => void convertNode(node.id)}
                     >
@@ -2553,7 +2632,7 @@ function ScratchpadDocumentEditor({
                     <button
                       aria-expanded={menuId === node.id}
                       aria-haspopup="menu"
-                      aria-label={`Actions for ${node.text || "empty item"}`}
+                      aria-label={t`Actions for ${node.text || t({ message: "empty item" })}`}
                       className="scratchpad-row-menu-trigger"
                       type="button"
                       onClick={() =>
@@ -2569,7 +2648,7 @@ function ScratchpadDocumentEditor({
                 {node.kind === "draft" && activePreview.length ? (
                   <div
                     className="scratchpad-nlp-preview"
-                    aria-label="Recognized task details"
+                    aria-label={t({ message: "Recognized task details" })}
                     aria-live="polite"
                   >
                     <div>
@@ -2581,16 +2660,17 @@ function ScratchpadDocumentEditor({
                 ) : null}
                 {activeId === node.id ? (
                   <div
-                    aria-label={`Outline controls for ${node.text || "empty item"}`}
+                    aria-label={t`Outline controls for ${node.text || t({ message: "empty item" })}`}
                     className="scratchpad-mobile-depth-actions"
                   >
                     <button
-                      aria-label="Move focused item"
+                      aria-label={t({ message: "Move focused item" })}
                       className="scratchpad-mobile-move"
                       type="button"
                       onPointerDown={(event) => beginDrag(event, node.id)}
                     >
-                      <GripVertical aria-hidden="true" size={15} /> Move
+                      <GripVertical aria-hidden="true" size={15} />{" "}
+                      <Trans>Move</Trans>
                     </button>
                     <button
                       disabled={node.depth === 0}
@@ -2598,7 +2678,8 @@ function ScratchpadDocumentEditor({
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => changeDepth(node, -1)}
                     >
-                      <CornerUpLeft aria-hidden="true" size={15} /> Outdent
+                      <CornerUpLeft aria-hidden="true" size={15} />{" "}
+                      <Trans>Outdent</Trans>
                     </button>
                     <button
                       disabled={!canIndent(node)}
@@ -2606,14 +2687,15 @@ function ScratchpadDocumentEditor({
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => changeDepth(node, 1)}
                     >
-                      <CornerDownRight aria-hidden="true" size={15} /> Indent
+                      <CornerDownRight aria-hidden="true" size={15} />{" "}
+                      <Trans>Indent</Trans>
                     </button>
                     <button
                       type="button"
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => addChild(node)}
                     >
-                      <Plus aria-hidden="true" size={15} /> Child
+                      <Plus aria-hidden="true" size={15} /> <Trans>Child</Trans>
                     </button>
                   </div>
                 ) : null}
@@ -2622,7 +2704,7 @@ function ScratchpadDocumentEditor({
                     className="scratchpad-suggestions"
                     id={suggestionListId}
                     role="listbox"
-                    aria-label="Suggestions"
+                    aria-label={t({ message: "Suggestions" })}
                   >
                     {suggestions.map((suggestion, index) => (
                       <button
@@ -2652,7 +2734,7 @@ function ScratchpadDocumentEditor({
                     className="scratchpad-row-menu"
                     ref={rowMenuRef}
                     role="menu"
-                    aria-label={`Actions for ${node.text || "item"}`}
+                    aria-label={t`Actions for ${node.text || t({ message: "item" })}`}
                   >
                     {node.kind === "draft" && node.text.trim() ? (
                       <button
@@ -2663,7 +2745,8 @@ function ScratchpadDocumentEditor({
                           void convertNode(node.id);
                         }}
                       >
-                        <FileCheck2 aria-hidden="true" size={17} /> Create task
+                        <FileCheck2 aria-hidden="true" size={17} />{" "}
+                        <Trans>Create task</Trans>
                       </button>
                     ) : null}
                     {node.kind !== "task" ? (
@@ -2683,7 +2766,9 @@ function ScratchpadDocumentEditor({
                         ) : (
                           <ListTodo aria-hidden="true" size={17} />
                         )}
-                        {node.kind === "draft" ? "Keep as note" : "Make a task"}
+                        {node.kind === "draft"
+                          ? t({ message: "Keep as note" })
+                          : t({ message: "Make a task" })}
                       </button>
                     ) : null}
                     <button
@@ -2695,7 +2780,8 @@ function ScratchpadDocumentEditor({
                         setMenuId(undefined);
                       }}
                     >
-                      <CornerUpLeft aria-hidden="true" size={17} /> Outdent
+                      <CornerUpLeft aria-hidden="true" size={17} />{" "}
+                      <Trans>Outdent</Trans>
                     </button>
                     <button
                       disabled={!canIndent(node)}
@@ -2706,7 +2792,8 @@ function ScratchpadDocumentEditor({
                         setMenuId(undefined);
                       }}
                     >
-                      <CornerDownRight aria-hidden="true" size={17} /> Indent
+                      <CornerDownRight aria-hidden="true" size={17} />{" "}
+                      <Trans>Indent</Trans>
                     </button>
                     <button
                       role="menuitem"
@@ -2716,7 +2803,8 @@ function ScratchpadDocumentEditor({
                         setMenuId(undefined);
                       }}
                     >
-                      <Plus aria-hidden="true" size={17} /> Add child
+                      <Plus aria-hidden="true" size={17} />{" "}
+                      <Trans>Add child</Trans>
                     </button>
                     <button
                       className="danger"
@@ -2729,7 +2817,8 @@ function ScratchpadDocumentEditor({
                         setMenuId(undefined);
                       }}
                     >
-                      <Trash2 aria-hidden="true" size={17} /> Delete item
+                      <Trash2 aria-hidden="true" size={17} />{" "}
+                      <Trans>Delete item</Trans>
                     </button>
                   </div>
                 ) : null}
@@ -2750,11 +2839,15 @@ function ScratchpadDocumentEditor({
           >
             <header>
               <div>
-                <p className="eyebrow">Choose what becomes a task</p>
-                <h2 id="review-scratchpad-title">Create task notes</h2>
+                <p className="eyebrow">
+                  <Trans>Choose what becomes a task</Trans>
+                </p>
+                <h2 id="review-scratchpad-title">
+                  <Trans>Create task notes</Trans>
+                </h2>
               </div>
               <button
-                aria-label="Close"
+                aria-label={t({ message: "Close" })}
                 ref={reviewCloseRef}
                 disabled={reviewProcessing}
                 type="button"
@@ -2764,12 +2857,16 @@ function ScratchpadDocumentEditor({
               </button>
             </header>
             <p>
-              Selected drafts become linked TaskNotes in place. Everything else
-              stays in this scratchpad so you can keep working.
+              <Trans>
+                Selected drafts become linked TaskNotes in place. Everything
+                else stays in this scratchpad so you can keep working.
+              </Trans>
             </p>
             <div className="scratchpad-review-toolbar">
               <span>
-                {selectedReviewCount} of {reviewItems.length} selected
+                <Trans>
+                  {selectedReviewCount} of {reviewItems.length} selected
+                </Trans>
               </span>
               <button
                 disabled={reviewProcessing}
@@ -2790,12 +2887,12 @@ function ScratchpadDocumentEditor({
                 }
               >
                 {selectedReviewCount === reviewItems.length
-                  ? "Clear selection"
-                  : "Select all"}
+                  ? t({ message: "Clear selection" })
+                  : t({ message: "Select all" })}
               </button>
             </div>
             <div
-              aria-label="Task drafts"
+              aria-label={t({ message: "Task drafts" })}
               className="scratchpad-review-list"
               role="list"
             >
@@ -2851,17 +2948,18 @@ function ScratchpadDocumentEditor({
                         type="button"
                         onClick={() => toggleReviewBranch(item.id)}
                       >
-                        Select branch
+                        <Trans>Select branch</Trans>
                       </button>
                     ) : null}
                     {result?.state === "creating" ? (
                       <span className="scratchpad-review-status">
-                        Creating…
+                        <Trans>Creating…</Trans>
                       </span>
                     ) : null}
                     {result?.state === "created" ? (
                       <span className="scratchpad-review-status is-success">
-                        <Check aria-hidden="true" size={14} /> Created
+                        <Check aria-hidden="true" size={14} />{" "}
+                        <Trans>Created</Trans>
                       </span>
                     ) : null}
                     {result?.state === "error" ? (
@@ -2881,7 +2979,7 @@ function ScratchpadDocumentEditor({
                 type="button"
                 onClick={() => setReviewOpen(false)}
               >
-                Keep writing
+                <Trans>Keep writing</Trans>
               </button>
               <button
                 className="outline-action"
@@ -2895,10 +2993,10 @@ function ScratchpadDocumentEditor({
                   <FileCheck2 aria-hidden="true" size={17} />
                 )}{" "}
                 {reviewProcessing
-                  ? "Creating…"
+                  ? t({ message: "Creating…" })
                   : failedReviewCount
-                    ? `Retry ${selectedReviewCount} task notes`
-                    : `Create ${selectedReviewCount} task notes`}
+                    ? t`Retry ${selectedReviewCount} task notes`
+                    : t`Create ${selectedReviewCount} task notes`}
               </button>
             </div>
           </section>
@@ -2916,11 +3014,13 @@ function ScratchpadDocumentEditor({
                 setNotice(null);
               }}
             >
-              {notice.tasks.length === 1 ? "Open task" : "Open first"}
+              {notice.tasks.length === 1
+                ? t({ message: "Open task" })
+                : t({ message: "Open first" })}
             </button>
           ) : null}
           <button
-            aria-label="Dismiss"
+            aria-label={t({ message: "Dismiss" })}
             type="button"
             onClick={() => setNotice(null)}
           >
@@ -2942,7 +3042,9 @@ async function transitionToNewScratchpad(
     const result = await repository.archiveScratchpad(input);
     return { previous: result.archived, current: result.active };
   }
-  throw new Error("Scratchpad storage is not available for this collection.");
+  throw new Error(
+    t({ message: "Scratchpad storage is not available for this collection." }),
+  );
 }
 
 function isOutlineCompatible(body: string): boolean {
@@ -3023,7 +3125,7 @@ function message(reason: unknown): string {
 function formatScratchDate(value: string, includeTime = false): string {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     day: "numeric",
     month: "short",
     year:

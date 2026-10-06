@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import type { TaskSummary } from "../domain/task";
 
@@ -12,16 +13,19 @@ export function TaskAddedNotice({
   onDismiss(): void;
   aboveMobileControls: boolean;
 }) {
+  const { t } = useLingui();
   return (
     <>
       <span role="status" className="visually-hidden">
-        {task ? `Task added: ${task.title}` : ""}
+        {task ? t`Task added: ${task.title}` : ""}
       </span>
       {task ? (
         <div
           className={`undo-toast task-added-notice${aboveMobileControls ? " is-above-mobile-controls" : ""}`}
         >
-          <span>Task added: {task.title}</span>
+          <span>
+            <Trans>Task added: {task.title}</Trans>
+          </span>
           <button
             type="button"
             onClick={() => {
@@ -29,11 +33,11 @@ export function TaskAddedNotice({
               onOpen(task);
             }}
           >
-            Open
+            <Trans>Open</Trans>
           </button>
           <button
             type="button"
-            aria-label="Dismiss task added confirmation"
+            aria-label={t({ message: "Dismiss task added confirmation" })}
             onClick={() => {
               onDismiss();
               document

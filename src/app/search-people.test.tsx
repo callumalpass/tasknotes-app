@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { SearchScreen } from "./search-screen";
 const fixture = vi.hoisted(() => ({

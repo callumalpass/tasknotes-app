@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { TaskSummary } from "../domain/task";
 
 /** Explain observed non-title matches without fetching or changing search semantics. */
@@ -17,11 +18,11 @@ export function searchMatchContext(
     .filter((token) => token && !title.includes(token));
   if (!outsideTitle.length) return undefined;
   const fields: [string, string[]][] = [
-    ["notes", [...bodyMatches]],
-    ["projects", task.projects],
-    ["contexts", task.contexts],
-    ["tags", task.tags],
-    ["attachments", task.attachments],
+    [t`notes`, [...bodyMatches]],
+    [t`projects`, task.projects],
+    [t`contexts`, task.contexts],
+    [t`tags`, task.tags],
+    [t`attachments`, task.attachments],
   ];
   const matches = fields
     .filter(([, values]) =>
@@ -30,5 +31,5 @@ export function searchMatchContext(
       ),
     )
     .map(([label]) => label);
-  return matches.length ? `Matched in ${matches.join(", ")}` : undefined;
+  return matches.length ? t`Matched in ${matches.join(", ")}` : undefined;
 }

@@ -1,3 +1,12 @@
+import {
+  monthName,
+  recurrenceRuleSummary,
+  weekdayName,
+} from "../i18n/presentation";
+import { t, plural } from "@lingui/core/macro";
+import { appLocale } from "../i18n/app";
+import { ordinal as localizedOrdinal } from "../i18n/presentation";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { generateRecurringInstances } from "@tasknotes/model/recurrence";
 import { useMemo, useState } from "react";
 
@@ -9,14 +18,11 @@ import {
 } from "./tasknotes-controls";
 import {
   buildRecurrenceRule,
-  monthName,
   parseRecurrenceRule,
   recurrenceDtstartValue,
   recurrencePreset,
   recurrenceRuleForPreset,
-  recurrenceRuleSummary,
   recurrenceStartStorageValue,
-  weekdayName,
   type RecurrenceFrequency,
   type RecurrencePattern,
   type RecurrenceRuleDraft,
@@ -38,23 +44,57 @@ const WEEKDAYS: Array<{
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
-  label: monthName(index + 1),
+  get label() {
+    return monthName(index + 1);
+  },
 }));
 
 const MONTH_DAYS = [
   ...Array.from({ length: 31 }, (_, index) => ({
     value: String(index + 1),
-    label: ordinal(index + 1),
+    get label() {
+      return ordinal(index + 1);
+    },
   })),
-  { value: "-1", label: "Last day" },
+  {
+    value: "-1",
+    get label() {
+      return t({ message: "Last day" });
+    },
+  },
 ];
 
 const POSITIONS = [
-  { value: "1", label: "First" },
-  { value: "2", label: "Second" },
-  { value: "3", label: "Third" },
-  { value: "4", label: "Fourth" },
-  { value: "-1", label: "Last" },
+  {
+    value: "1",
+    get label() {
+      return t({ message: "First" });
+    },
+  },
+  {
+    value: "2",
+    get label() {
+      return t({ message: "Second" });
+    },
+  },
+  {
+    value: "3",
+    get label() {
+      return t({ message: "Third" });
+    },
+  },
+  {
+    value: "4",
+    get label() {
+      return t({ message: "Fourth" });
+    },
+  },
+  {
+    value: "-1",
+    get label() {
+      return t({ message: "Last" });
+    },
+  },
 ];
 
 export function RecurrenceField({
@@ -70,6 +110,7 @@ export function RecurrenceField({
   onChange(value?: string): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
+  const { t } = useLingui();
   const rule = useMemo(() => parseRecurrenceRule(value), [value]);
   const visualRule = useMemo(
     () => ({
@@ -123,16 +164,16 @@ export function RecurrenceField({
     <div className="repeat-fields recurrence-field">
       <div className="repeat-heading">
         <TaskNotesSelectField
-          label="Repeat"
+          label={t({ message: "Repeat" })}
           options={[
-            { value: "never", label: "Never" },
-            { value: "daily", label: "Daily" },
-            { value: "weekdays", label: "Weekdays" },
-            { value: "weekly", label: "Weekly" },
-            { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly" },
+            { value: "never", label: t({ message: "Never" }) },
+            { value: "daily", label: t({ message: "Daily" }) },
+            { value: "weekdays", label: t({ message: "Weekdays" }) },
+            { value: "weekly", label: t({ message: "Weekly" }) },
+            { value: "monthly", label: t({ message: "Monthly" }) },
+            { value: "yearly", label: t({ message: "Yearly" }) },
             ...(preset === "advanced"
-              ? [{ value: "advanced", label: "Advanced rule" }]
+              ? [{ value: "advanced", label: t({ message: "Advanced rule" }) }]
               : []),
           ]}
           value={preset}
@@ -155,7 +196,7 @@ export function RecurrenceField({
             type="button"
             onClick={() => setExpanded((current) => !current)}
           >
-            {expanded ? "Done" : "Edit pattern"}
+            {expanded ? t({ message: "Done" }) : t({ message: "Edit pattern" })}
           </button>
         ) : null}
       </div>
@@ -164,11 +205,17 @@ export function RecurrenceField({
         <div className="recurrence-overview" aria-live="polite">
           <strong>{recurrenceRuleSummary(rule)}</strong>
           {preview.length ? (
-            <span>Next: {preview.join(" · ")}</span>
+            <span>
+              <Trans>Next: {preview.join(" · ")}</Trans>
+            </span>
           ) : rule.invalid.length ? (
-            <span>Correct the rule before it can be scheduled.</span>
+            <span>
+              <Trans>Correct the rule before it can be scheduled.</Trans>
+            </span>
           ) : (
-            <span>No upcoming dates in this pattern.</span>
+            <span>
+              <Trans>No upcoming dates in this pattern.</Trans>
+            </span>
           )}
         </div>
       ) : null}
@@ -184,22 +231,26 @@ export function RecurrenceField({
           <div className="recurrence-builder">
             <div className="recurrence-start">
               <TaskNotesDateTimeField
-                label="Pattern starts"
+                label={t({ message: "Pattern starts" })}
                 value={recurrenceStartStorageValue(visualRule.dtstart)}
                 onChange={(start) =>
                   update({ dtstart: recurrenceDtstartValue(start) })
                 }
               />
               <p>
-                This anchors the pattern. Scheduled remains the next date you
-                plan to do the task.
+                <Trans>
+                  This anchors the pattern. Scheduled remains the next date you
+                  plan to do the task.
+                </Trans>
               </p>
             </div>
 
             <div className="recurrence-interval">
-              <span>Every</span>
+              <span>
+                <Trans>Every</Trans>
+              </span>
               <input
-                aria-label="Repeat interval"
+                aria-label={t({ message: "Repeat interval" })}
                 inputMode="numeric"
                 min="1"
                 type="number"
@@ -209,7 +260,7 @@ export function RecurrenceField({
                 }
               />
               <TaskNotesSelect
-                ariaLabel="Repeat frequency"
+                ariaLabel={t({ message: "Repeat frequency" })}
                 options={[
                   { value: "DAILY", label: unitLabel("DAILY", rule.interval) },
                   {
@@ -253,11 +304,14 @@ export function RecurrenceField({
 
             <div className="recurrence-end">
               <TaskNotesSelectField
-                label="Ends"
+                label={t({ message: "Ends" })}
                 options={[
-                  { value: "never", label: "Never" },
-                  { value: "until", label: "On a date" },
-                  { value: "count", label: "After a number of times" },
+                  { value: "never", label: t({ message: "Never" }) },
+                  { value: "until", label: t({ message: "On a date" }) },
+                  {
+                    value: "count",
+                    label: t({ message: "After a number of times" }),
+                  },
                 ]}
                 value={rule.end}
                 onChange={(end) =>
@@ -270,13 +324,15 @@ export function RecurrenceField({
               />
               {rule.end === "until" ? (
                 <TaskNotesDateField
-                  label="Last date"
+                  label={t({ message: "Last date" })}
                   value={rule.until}
                   onChange={(until) => update({ until })}
                 />
               ) : rule.end === "count" ? (
                 <label className="form-field recurrence-count">
-                  <span>Occurrences</span>
+                  <span>
+                    <Trans>Occurrences</Trans>
+                  </span>
                   <input
                     inputMode="numeric"
                     min="1"
@@ -292,17 +348,21 @@ export function RecurrenceField({
 
             <TaskNotesSelectField
               className="recurrence-anchor"
-              label="Repeat from"
+              label={t({ message: "Repeat from" })}
               options={[
                 {
                   value: "scheduled",
-                  label: "Fixed schedule",
-                  description: "Keep dates anchored to the pattern.",
+                  label: t({ message: "Fixed schedule" }),
+                  description: t({
+                    message: "Keep dates anchored to the pattern.",
+                  }),
                 },
                 {
                   value: "completion",
-                  label: "Completion date",
-                  description: "Start the next interval when this is finished.",
+                  label: t({ message: "Completion date" }),
+                  description: t({
+                    message: "Start the next interval when this is finished.",
+                  }),
                 },
               ]}
               value={anchor ?? "scheduled"}
@@ -316,7 +376,7 @@ export function RecurrenceField({
               type="button"
               onClick={() => setAdvanced(true)}
             >
-              Edit RRULE
+              <Trans>Edit RRULE</Trans>
             </button>
           </div>
         )
@@ -334,7 +394,9 @@ function WeekdayField({
 }) {
   return (
     <fieldset className="recurrence-weekdays">
-      <legend>On</legend>
+      <legend>
+        <Trans>On</Trans>
+      </legend>
       <div>
         {WEEKDAYS.map(({ value, short }) => (
           <button
@@ -355,7 +417,11 @@ function WeekdayField({
           </button>
         ))}
       </div>
-      {!values.length ? <small>The pattern start day is used.</small> : null}
+      {!values.length ? (
+        <small>
+          <Trans>The pattern start day is used.</Trans>
+        </small>
+      ) : null}
     </fieldset>
   );
 }
@@ -377,28 +443,33 @@ function CalendarPatternField({
   month: number;
   onChange(patch: Partial<RecurrenceRuleDraft>): void;
 }) {
+  const { t } = useLingui();
   return (
     <div className="recurrence-calendar-pattern">
       {frequency === "YEARLY" ? (
         <TaskNotesSelectField
-          label="Month"
+          label={t({ message: "Month" })}
           options={MONTHS}
           value={String(month)}
           onChange={(next) => onChange({ month: Number(next) })}
         />
       ) : null}
       <TaskNotesSelectField
-        label={frequency === "MONTHLY" ? "Each month" : "On"}
+        label={
+          frequency === "MONTHLY"
+            ? t({ message: "Each month" })
+            : t({ message: "On" })
+        }
         options={[
-          { value: "date", label: "A calendar date" },
-          { value: "weekday", label: "A weekday position" },
+          { value: "date", label: t({ message: "A calendar date" }) },
+          { value: "weekday", label: t({ message: "A weekday position" }) },
         ]}
         value={pattern}
         onChange={(next) => onChange({ pattern: next as RecurrencePattern })}
       />
       {pattern === "date" ? (
         <TaskNotesSelectField
-          label="Date"
+          label={t({ message: "Date" })}
           options={MONTH_DAYS}
           value={String(monthDay)}
           onChange={(next) => onChange({ monthDay: Number(next) })}
@@ -406,13 +477,13 @@ function CalendarPatternField({
       ) : (
         <>
           <TaskNotesSelectField
-            label="Which"
+            label={t({ message: "Which" })}
             options={POSITIONS}
             value={String(position)}
             onChange={(next) => onChange({ position: Number(next) })}
           />
           <TaskNotesSelectField
-            label="Weekday"
+            label={t({ message: "Weekday" })}
             options={WEEKDAYS.map(({ value }) => ({
               value,
               label: weekdayName(value),
@@ -444,13 +515,19 @@ function AdvancedRuleEditor({
   return (
     <div className="custom-rule-warning">
       <div>
-        <strong>Advanced recurrence</strong>
+        <strong>
+          <Trans>Advanced recurrence</Trans>
+        </strong>
         <p>
-          The rule is kept exactly as written. Apply only after it is valid.
+          <Trans>
+            The rule is kept exactly as written. Apply only after it is valid.
+          </Trans>
         </p>
       </div>
       <label className="form-field custom-rule-field">
-        <span>Recurrence rule</span>
+        <span>
+          <Trans>Recurrence rule</Trans>
+        </span>
         <textarea
           aria-invalid={Boolean(parsed.invalid.length)}
           rows={3}
@@ -465,11 +542,15 @@ function AdvancedRuleEditor({
         </p>
       ) : parsed.unsupported.length ? (
         <p>
-          Visual editing is unavailable because this rule uses{" "}
-          {parsed.unsupported.join(", ")}.
+          <Trans>
+            Visual editing is unavailable because this rule uses{" "}
+            {parsed.unsupported.join(", ")}.
+          </Trans>
         </p>
       ) : (
-        <p>This rule can also be edited with the visual controls.</p>
+        <p>
+          <Trans>This rule can also be edited with the visual controls.</Trans>
+        </p>
       )}
       <div className="recurrence-rule-actions">
         {!parsed.invalid.length && !parsed.unsupported.length ? (
@@ -478,7 +559,7 @@ function AdvancedRuleEditor({
             type="button"
             onClick={onVisualEditor}
           >
-            Use visual editor
+            <Trans>Use visual editor</Trans>
           </button>
         ) : null}
         <button
@@ -486,7 +567,7 @@ function AdvancedRuleEditor({
           type="button"
           onClick={() => onApply(raw.trim())}
         >
-          Apply rule
+          <Trans>Apply rule</Trans>
         </button>
       </div>
     </div>
@@ -518,7 +599,7 @@ function recurrencePreview(
 }
 
 function formatPreviewDate(value: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -533,22 +614,21 @@ function startOfUtcDay(value: Date): Date {
 }
 
 function unitLabel(frequency: RecurrenceFrequency, interval: number): string {
-  const unit = {
-    DAILY: "day",
-    WEEKLY: "week",
-    MONTHLY: "month",
-    YEARLY: "year",
-  }[frequency];
-  return Math.max(1, Math.round(interval)) === 1 ? unit : `${unit}s`;
+  const count = Math.max(1, Math.round(interval));
+  switch (frequency) {
+    case "DAILY":
+      return plural(count, { one: "day", other: "days" });
+    case "WEEKLY":
+      return plural(count, { one: "week", other: "weeks" });
+    case "MONTHLY":
+      return plural(count, { one: "month", other: "months" });
+    case "YEARLY":
+      return plural(count, { one: "year", other: "years" });
+  }
 }
 
 function ordinal(value: number): string {
-  const remainder = value % 100;
-  const suffix =
-    remainder >= 11 && remainder <= 13
-      ? "th"
-      : ({ 1: "st", 2: "nd", 3: "rd" }[value % 10] ?? "th");
-  return `${value}${suffix}`;
+  return localizedOrdinal(value);
 }
 
 function today(): string {

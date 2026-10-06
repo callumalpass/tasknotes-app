@@ -1,3 +1,6 @@
+import { appLocale } from "../i18n/app";
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { CalendarClock } from "lucide-react";
 
 import {
@@ -13,6 +16,7 @@ export function CalendarPreferencesEditor({
   value: CalendarPreferences;
   onChange(value: CalendarPreferences): void;
 }) {
+  const { t } = useLingui();
   function change(patch: Partial<CalendarPreferences>) {
     onChange({ ...value, ...patch });
   }
@@ -21,16 +25,22 @@ export function CalendarPreferencesEditor({
     <div className="calendar-preferences">
       <div className="setting-row">
         <CalendarClock aria-hidden="true" size={20} strokeWidth={1.6} />
-        <span>Calendar display</span>
-        <small>On this device</small>
+        <span>
+          <Trans>Calendar display</Trans>
+        </span>
+        <small>
+          <Trans>On this device</Trans>
+        </small>
       </div>
       <p className="section-copy">
-        These choices affect calendar layout here without changing the shared
-        collection.
+        <Trans>
+          These choices affect calendar layout here without changing the shared
+          collection.
+        </Trans>
       </p>
       <div className="task-model-settings-grid">
         <TaskNotesSelectField
-          label="Week starts"
+          label={t({ message: "Week starts" })}
           options={orderedWeekdays(0, undefined, "short").map(
             (label, value) => ({
               value: String(value),
@@ -41,11 +51,11 @@ export function CalendarPreferencesEditor({
           onChange={(firstDay) => change({ firstDay: Number(firstDay) })}
         />
         <TaskNotesSelectField
-          label="Time format"
+          label={t({ message: "Time format" })}
           options={[
-            { value: "locale", label: "Device setting" },
-            { value: "12", label: "12 hour" },
-            { value: "24", label: "24 hour" },
+            { value: "locale", label: t({ message: "Device setting" }) },
+            { value: "12", label: t({ message: "12 hour" }) },
+            { value: "24", label: t({ message: "24 hour" }) },
           ]}
           value={value.hourFormat}
           onChange={(hourFormat) =>
@@ -55,23 +65,23 @@ export function CalendarPreferencesEditor({
           }
         />
         <TaskNotesSelectField
-          label="Day begins"
+          label={t({ message: "Day begins" })}
           options={timeOptions()}
           value={value.slotMinTime}
           onChange={(slotMinTime) => change({ slotMinTime })}
         />
         <TaskNotesSelectField
-          label="Day ends"
+          label={t({ message: "Day ends" })}
           options={timeOptions(true)}
           value={value.slotMaxTime}
           onChange={(slotMaxTime) => change({ slotMaxTime })}
         />
         <TaskNotesSelectField
-          label="Time slot size"
+          label={t({ message: "Time slot size" })}
           options={[
-            { value: "00:15:00", label: "15 minutes" },
-            { value: "00:30:00", label: "30 minutes" },
-            { value: "01:00:00", label: "1 hour" },
+            { value: "00:15:00", label: t({ message: "15 minutes" }) },
+            { value: "00:30:00", label: t({ message: "30 minutes" }) },
+            { value: "01:00:00", label: t({ message: "1 hour" }) },
           ]}
           value={value.slotDuration}
           onChange={(slotDuration) => change({ slotDuration })}
@@ -80,22 +90,22 @@ export function CalendarPreferencesEditor({
       <div className="task-model-toggles">
         <Toggle
           checked={value.weekends}
-          label="Show weekends"
+          label={t({ message: "Show weekends" })}
           onChange={(weekends) => change({ weekends })}
         />
         <Toggle
           checked={value.allDaySlot}
-          label="Show all-day area"
+          label={t({ message: "Show all-day area" })}
           onChange={(allDaySlot) => change({ allDaySlot })}
         />
         <Toggle
           checked={value.nowIndicator}
-          label="Show current time"
+          label={t({ message: "Show current time" })}
           onChange={(nowIndicator) => change({ nowIndicator })}
         />
         <Toggle
           checked={value.showTimeEntries}
-          label="Show tracked time"
+          label={t({ message: "Show tracked time" })}
           onChange={(showTimeEntries) => change({ showTimeEntries })}
         />
       </div>
@@ -127,10 +137,11 @@ function Toggle({
 function timeOptions(includeMidnight = false) {
   const result = Array.from({ length: 24 }, (_, hour) => ({
     value: `${String(hour).padStart(2, "0")}:00:00`,
-    label: new Intl.DateTimeFormat(undefined, { hour: "numeric" }).format(
+    label: new Intl.DateTimeFormat(appLocale(), { hour: "numeric" }).format(
       new Date(2024, 0, 1, hour),
     ),
   }));
-  if (includeMidnight) result.push({ value: "24:00:00", label: "Midnight" });
+  if (includeMidnight)
+    result.push({ value: "24:00:00", label: t({ message: "Midnight" }) });
   return result;
 }

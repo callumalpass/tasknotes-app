@@ -1,10 +1,13 @@
+import { taskMeta } from "../i18n/presentation";
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { Square } from "lucide-react";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useId, useRef, useState } from "react";
 
-import { activeTimeEntry, taskMeta } from "../domain/task";
-import { relativeDateDetail } from "../domain/view-values";
+import { activeTimeEntry } from "../domain/task";
+import { relativeDateDetail } from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -30,6 +33,7 @@ export function TaskRow({
   occurrence?: TaskOccurrence;
   supportingText?: string;
 }) {
+  const { t } = useLingui();
   const supportingId = useId();
   const { configuration, mutations } = useRepository();
   const command = useMutationState(
@@ -107,10 +111,10 @@ export function TaskRow({
       data-swipe-hint={
         swipe.offset > 0
           ? displayedTask.completed
-            ? "Reopen"
-            : "Complete"
+            ? t({ message: "Reopen" })
+            : t({ message: "Complete" })
           : swipe.offset < 0
-            ? "Actions"
+            ? t({ message: "Actions" })
             : undefined
       }
       ref={rowRef}
@@ -155,7 +159,7 @@ export function TaskRow({
       <button
         className={`completion-control${distinctStatus ? " has-status" : ""}`}
         type="button"
-        aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
+        aria-label={`${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
         aria-pressed={displayedTask.completed}
         aria-busy={pending}
         disabled={pending}
@@ -176,7 +180,7 @@ export function TaskRow({
               disabled={pending}
               onClick={() => void complete()}
             >
-              Retry
+              <Trans>Retry</Trans>
             </button>
           </p>
         ) : null}
@@ -262,9 +266,7 @@ export function TaskRow({
                     }}
                   />
                 ) : null}
-                {detail.label === "Scheduled" || detail.label === "Due"
-                  ? `${detail.label} `
-                  : ""}
+                {isDateDetail(detail, configuration) ? `${detail.label} ` : ""}
                 {detail.value}
               </button>
             ))}
@@ -316,7 +318,7 @@ function TrackingIndicator() {
   return (
     <span className="task-row-tracking">
       <Square aria-hidden="true" fill="currentColor" size={8} strokeWidth={0} />
-      Timer running
+      <Trans>Timer running</Trans>
     </span>
   );
 }
@@ -342,6 +344,20 @@ function detailPriorityColor(
   return configuration.priorities.find(
     (option) => option.value === detail.rawValue,
   )?.color;
+}
+
+function isDateDetail(
+  detail: TaskRowDetail,
+  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
+): boolean {
+  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
+  const key = bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+  return [
+    "scheduled",
+    "due",
+    configuration.fieldMapping.scheduled,
+    configuration.fieldMapping.due,
+  ].includes(key);
 }
 
 function isCompactDetail(
@@ -371,7 +387,7 @@ function defaultTaskDetails(
     index++;
     details.push({
       key: "scheduled",
-      label: "Scheduled",
+      label: t({ message: "Scheduled" }),
       value: task.scheduled,
       rawValue: task.scheduled,
     });
@@ -380,7 +396,7 @@ function defaultTaskDetails(
     if (!task.scheduled) index++;
     details.push({
       key: "due",
-      label: "Due",
+      label: t({ message: "Due" }),
       value: task.due,
       rawValue: task.due,
     });
@@ -397,7 +413,7 @@ function defaultTaskDetails(
   )
     details.push({
       key: "priority",
-      label: "Priority",
+      label: t({ message: "Priority" }),
       value: metadata[index]?.label ?? task.priority,
       rawValue: task.priority,
     });

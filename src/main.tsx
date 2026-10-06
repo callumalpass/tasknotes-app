@@ -4,6 +4,7 @@ import "@fontsource/azeret-mono/500.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import { AppI18nProvider } from "./i18n/app-provider";
 import { TaskNotesApp } from "./app/tasknotes-app";
 import { AppErrorBoundary } from "./components/app-error-boundary";
 import { initializePwaInstall } from "./pwa/install";
@@ -25,9 +26,11 @@ const demoCount =
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppErrorBoundary>
-      <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
-    </AppErrorBoundary>
+    <AppI18nProvider>
+      <AppErrorBoundary>
+        <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+      </AppErrorBoundary>
+    </AppI18nProvider>
   </StrictMode>,
 );
 

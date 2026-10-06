@@ -1,5 +1,5 @@
 import { StrictMode, useEffect, useState } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen } from "../test/render";
 import { expect, it, vi } from "vitest";
 import { RepositoryProvider, useRepository } from "./repository-context";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";

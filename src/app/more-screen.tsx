@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ChevronDown,
   Download,
@@ -38,6 +39,7 @@ export function MoreScreen({
   calendarPreferences: CalendarPreferences;
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
+  const { t } = useLingui();
   const { reminderAuthority } = useRepository();
   const deliversReminders = reminderAuthority !== "none";
   const [changeNotifications, setChangeNotifications] =
@@ -89,7 +91,7 @@ export function MoreScreen({
       setInstallError(
         reason instanceof Error
           ? reason.message
-          : "TaskNotes could not open the install prompt.",
+          : t({ message: "TaskNotes could not open the install prompt." }),
       );
     } finally {
       setInstallBusy(false);
@@ -119,24 +121,34 @@ export function MoreScreen({
       aria-labelledby="settings-title"
     >
       <header className="screen-header compact-header">
-        <h1 id="settings-title">Settings</h1>
+        <h1 id="settings-title">
+          <Trans>Settings</Trans>
+        </h1>
       </header>
       <CollectionSettings />
 
-      <SettingsSection label="Notifications">
+      <SettingsSection label={t({ message: "Notifications" })}>
         <div className="setting-row">
           <Bell aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Task reminders</span>
+          <span>
+            <Trans>Task reminders</Trans>
+          </span>
           <small>
             {deliversReminders
               ? changeNotificationLabel(changeNotifications)
-              : "Not in the demo"}
+              : t({ message: "Not in the demo" })}
           </small>
         </div>
         <p className="section-copy">
           {deliversReminders
-            ? "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-            : "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."}
+            ? t({
+                message:
+                  "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content.",
+              })
+            : t({
+                message:
+                  "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them.",
+              })}
         </p>
         {changeNotifications.state === "off" ||
         changeNotifications.state === "enabled" ||
@@ -149,10 +161,10 @@ export function MoreScreen({
             onClick={() => void toggleChangeNotifications()}
           >
             {changeNotificationsBusy
-              ? "Updating"
+              ? t({ message: "Updating" })
               : changeNotifications.optedIn
-                ? "Turn off reminders"
-                : "Turn on reminders"}
+                ? t({ message: "Turn off reminders" })
+                : t({ message: "Turn on reminders" })}
           </button>
         ) : null}
         {changeNotifications.state === "reauthorization_required" ? (
@@ -170,7 +182,7 @@ export function MoreScreen({
                 )
             }
           >
-            Review notification access
+            <Trans>Review notification access</Trans>
           </button>
         ) : null}
         {changeNotificationsError ? (
@@ -180,36 +192,44 @@ export function MoreScreen({
         ) : null}
       </SettingsSection>
 
-      <SettingsSection label="Appearance">
+      <SettingsSection label={t({ message: "Appearance" })}>
         <div className="setting-row">
           <SunMoon aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Color theme</span>
+          <span>
+            <Trans>Color theme</Trans>
+          </span>
           <ThemeSelect />
         </div>
       </SettingsSection>
 
-      <SettingsSection label="Scratchpad">
+      <SettingsSection label={t({ message: "Scratchpad" })}>
         <div className="setting-row">
           <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Default mode for new notes</span>
+          <span>
+            <Trans>Default mode for new notes</Trans>
+          </span>
           <ScratchpadModePreference />
         </div>
       </SettingsSection>
 
-      <SettingsSection label="Calendar">
+      <SettingsSection label={t({ message: "Calendar" })}>
         <CalendarPreferencesEditor
           value={calendarPreferences}
           onChange={onCalendarPreferencesChange}
         />
       </SettingsSection>
 
-      <SettingsSection label="About & portability">
+      <SettingsSection label={t({ message: "About & portability" })}>
         {installAvailable ? (
           <>
             <div className="setting-row">
               <Download aria-hidden="true" size={20} strokeWidth={1.6} />
-              <span>Install TaskNotes</span>
-              <small>Open it from your home screen</small>
+              <span>
+                <Trans>Install TaskNotes</Trans>
+              </span>
+              <small>
+                <Trans>Open it from your home screen</Trans>
+              </small>
             </div>
             <button
               className="text-action"
@@ -218,16 +238,19 @@ export function MoreScreen({
               onClick={() => void installTaskNotes()}
             >
               {installBusy
-                ? "Opening install prompt…"
+                ? t({ message: "Opening install prompt…" })
                 : installState === "ios-instructions"
                   ? showInstallInstructions
-                    ? "Hide installation steps"
-                    : "How to install"
-                  : "Install app"}
+                    ? t({ message: "Hide installation steps" })
+                    : t({ message: "How to install" })
+                  : t({ message: "Install app" })}
             </button>
             {showInstallInstructions ? (
               <p className="section-copy" role="status">
-                Open your browser’s Share menu, then choose Add to Home Screen.
+                <Trans>
+                  Open your browser’s Share menu, then choose Add to Home
+                  Screen.
+                </Trans>
               </p>
             ) : null}
             {installError ? (
@@ -239,39 +262,57 @@ export function MoreScreen({
         ) : null}
         <div className="setting-row">
           <FileText aria-hidden="true" size={20} strokeWidth={1.6} />
-          <span>Portable Markdown</span>
-          <small>mdbase v0.3</small>
+          <span>
+            <Trans>Portable Markdown</Trans>
+          </span>
+          <small>
+            <Trans>mdbase v0.3</Trans>
+          </small>
         </div>
-        <p className="section-copy">Tasks remain portable Markdown records.</p>
+        <p className="section-copy">
+          <Trans>Tasks remain portable Markdown records.</Trans>
+        </p>
         <div className="setting-row">
           <Info aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>TaskNotes</span>
-          <small>Version {__APP_VERSION__}</small>
+          <small>
+            <Trans>Version {__APP_VERSION__}</Trans>
+          </small>
         </div>
       </SettingsSection>
 
-      <SettingsSection collapsible label="Task model">
+      <SettingsSection collapsible label={t({ message: "Task model" })}>
         <TaskModelSettingsEditor />
       </SettingsSection>
 
-      <SettingsSection collapsible label="Help">
+      <SettingsSection collapsible label={t({ message: "Help" })}>
         <details className="help-topic">
-          <summary>Where are my tasks saved?</summary>
+          <summary>
+            <Trans>Where are my tasks saved?</Trans>
+          </summary>
           <p>{storageExplanation()}</p>
         </details>
         <details className="help-topic">
-          <summary>Does TaskNotes work offline?</summary>
+          <summary>
+            <Trans>Does TaskNotes work offline?</Trans>
+          </summary>
           <p>
-            No. TaskNotes reads and writes the authoritative mdbase collection
-            directly. Hosted collections need a network connection; a computer
-            collection also needs that computer to be reachable.
+            <Trans>
+              No. TaskNotes reads and writes the authoritative mdbase collection
+              directly. Hosted collections need a network connection; a computer
+              collection also needs that computer to be reachable.
+            </Trans>
           </p>
         </details>
         <details className="help-topic">
-          <summary>Can I change collections later?</summary>
+          <summary>
+            <Trans>Can I change collections later?</Trans>
+          </summary>
           <p>
-            Yes. Use Collection above to open another mdbase collection.
-            Changing collections does not move records between them.
+            <Trans>
+              Yes. Use Collection above to open another mdbase collection.
+              Changing collections does not move records between them.
+            </Trans>
           </p>
         </details>
       </SettingsSection>
@@ -280,6 +321,7 @@ export function MoreScreen({
 }
 
 function ThemeSelect() {
+  const { t } = useLingui();
   const [preference, setPreference] =
     useState<ThemePreference>(loadThemePreference);
   useEffect(() => {
@@ -293,12 +335,12 @@ function ThemeSelect() {
   }, [preference]);
   return (
     <TaskNotesSelect
-      ariaLabel="Color theme"
+      ariaLabel={t({ message: "Color theme" })}
       className="theme-picker"
       options={[
-        { value: "system", label: "System" },
-        { value: "light", label: "Light" },
-        { value: "dark", label: "Dark" },
+        { value: "system", label: t({ message: "System" }) },
+        { value: "light", label: t({ message: "Light" }) },
+        { value: "dark", label: t({ message: "Dark" }) },
       ]}
       value={preference}
       onChange={(value) => {

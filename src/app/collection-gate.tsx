@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
   lazy,
   Suspense,
@@ -193,7 +194,9 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
 function OpeningCollection() {
   return (
     <main className="opening-screen">
-      <p>Opening mdbase…</p>
+      <p>
+        <Trans>Opening mdbase…</Trans>
+      </p>
     </main>
   );
 }

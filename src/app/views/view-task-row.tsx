@@ -1,5 +1,5 @@
 import { TaskRow } from "../../components/task-row";
-import { viewPropertyDetails } from "../../domain/view-values";
+import { viewPropertyDetails } from "../../i18n/view-presentation";
 
 import type { TaskSummary } from "../../domain/task";
 import type { TaskOccurrence } from "../../domain/task-occurrence";

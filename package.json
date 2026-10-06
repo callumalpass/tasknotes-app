@@ -7,7 +7,7 @@
   "scripts": {
     "i18n:extract": "lingui extract",
     "i18n:compile": "lingui compile --strict",
-    "i18n:check": "lingui check sync && lingui check missing --mode catalog && lingui compile --strict && node scripts/check-i18n-pilot.mjs",
+    "i18n:check": "lingui check sync && lingui check missing --mode catalog --locale en && pnpm i18n:compile && node scripts/check-i18n-pilot.mjs && node scripts/check-i18n-source.mjs",
     "contracts:sync": "node scripts/sync-canonical-task-pack.mjs",
     "manifest": "node scripts/write-manifest.mjs",
     "manifest:dev": "node scripts/write-manifest.mjs --development",

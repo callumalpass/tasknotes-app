@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { connectProblemFromError } from "../cloud/outcome";
 
 export function isAuthorizationError(reason: unknown): boolean {
@@ -16,5 +17,5 @@ export function isAuthorizationError(reason: unknown): boolean {
 export function technicalErrorMessage(reason: unknown): string {
   return reason instanceof Error && reason.message
     ? reason.message
-    : "The collection could not be opened.";
+    : t({ message: "The collection could not be opened." });
 }

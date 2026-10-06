@@ -9,3 +9,8 @@ All durable collection access goes through the provider-neutral mdbase
 connected-computer storage. TaskNotes does not open device folders and does not
 maintain an IndexedDB task replica; IndexedDB is permitted only for bounded
 application state such as a delayed deletion's undo window.
+
+Interface copy uses Lingui; read `docs/translations.md` before changing it. Mark
+English source copy with macros, keep generated JSON compiler-owned, and never
+translate CSS, identifiers, repository data or authority diagnostics. English is
+the only production locale; partial preview catalogues are not release-ready.

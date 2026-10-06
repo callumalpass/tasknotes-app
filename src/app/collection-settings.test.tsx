@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "../test/render";
 import { I18nProvider } from "@lingui/react";
 import { createPilotI18n } from "../i18n/pilot";
 import { PilotRichText } from "../i18n/pilot-fixture";

@@ -1,3 +1,5 @@
+import { t as translate } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   useEffect,
   useId,
@@ -56,7 +58,11 @@ export function TaskCapture({
   createTask,
   completeField,
   defaults,
-  placeholder = "Add a task — tomorrow 9am, #tag, +project",
+  placeholder = translate({
+    message: "Add a task — tomorrow 9am, #tag, +project",
+    comment:
+      "Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.",
+  }),
   showGuide = false,
   retainFocusAfterCreate = false,
   focusRequest,
@@ -78,6 +84,7 @@ export function TaskCapture({
   session?: CaptureSession;
   onAccepted?(task: TaskSummary, version: number): void;
 }) {
+  const { t } = useLingui();
   const [localSession] = useState(() => new CaptureSession());
   const session = providedSession ?? localSession;
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
@@ -275,7 +282,7 @@ export function TaskCapture({
           +
         </span>
         <label className="visually-hidden" htmlFor={inputId}>
-          New task title
+          <Trans>New task title</Trans>
         </label>
         <input
           id={inputId}
@@ -314,19 +321,21 @@ export function TaskCapture({
             disabled={capturing || error?.code === "outcome-unknown"}
             type="submit"
           >
-            {capturing ? "Adding" : "Add"}
+            {capturing ? t({ message: "Adding" }) : t({ message: "Add" })}
           </button>
         ) : null}
         {session.canRecover ? (
           <button disabled={capturing} type="submit">
-            Recover task
+            <Trans>Recover task</Trans>
           </button>
         ) : null}
       </div>
 
       {showGuide && !text.trim() ? (
         <p className="capture-guide">
-          Add dates and tags naturally — try “Call Sam tomorrow 9am #work”.
+          <Trans>
+            Add dates and tags naturally — try “Call Sam tomorrow 9am #work”.
+          </Trans>
         </p>
       ) : null}
 
@@ -335,7 +344,7 @@ export function TaskCapture({
           id={suggestionsId}
           className="capture-suggestions"
           role="listbox"
-          aria-label="Task field suggestions"
+          aria-label={t({ message: "Task field suggestions" })}
         >
           {suggestions.map((suggestion, index) => (
             <button
@@ -359,14 +368,18 @@ export function TaskCapture({
         <div className="capture-interpretation" aria-live="polite">
           <div>
             {parsing && parsedText !== text.trim() ? (
-              <span className="capture-parsing">Understanding…</span>
+              <span className="capture-parsing">
+                <Trans>Understanding…</Trans>
+              </span>
             ) : (
               <>
                 {result &&
                 parsedText === text.trim() &&
                 result.input.title !== text.trim() ? (
                   <span className="capture-title-preview">
-                    <span className="visually-hidden">Task: </span>
+                    <span className="visually-hidden">
+                      <Trans>Task: </Trans>
+                    </span>
                     {result.input.title}
                   </span>
                 ) : null}
@@ -382,7 +395,7 @@ export function TaskCapture({
                         <button
                           type="button"
                           disabled={capturing}
-                          aria-label={`Edit ${item.key}`}
+                          aria-label={t`Edit ${item.key}`}
                           onClick={() => {
                             setExpanded(true);
                             setDetailSections((current) => ({
@@ -391,7 +404,9 @@ export function TaskCapture({
                             }));
                           }}
                         >
-                          {item.key === "scheduled" ? "Scheduled " : ""}
+                          {item.key === "scheduled"
+                            ? t({ message: "Scheduled " })
+                            : ""}
                           {item.label}
                         </button>
                       ) : (
@@ -401,7 +416,7 @@ export function TaskCapture({
                         <button
                           type="button"
                           disabled={capturing}
-                          aria-label={`Remove ${dated ? item.key : item.label}`}
+                          aria-label={t`Remove ${dated ? item.key : item.label}`}
                           onClick={() => change(removal)}
                         >
                           <X aria-hidden="true" size={14} />
@@ -419,7 +434,9 @@ export function TaskCapture({
             aria-expanded={expanded}
             onClick={() => setExpanded((value) => !value)}
           >
-            {expanded ? "Hide details" : "Add details"}
+            {expanded
+              ? t({ message: "Hide details" })
+              : t({ message: "Add details" })}
           </button>
         </div>
       ) : null}
@@ -439,14 +456,16 @@ export function TaskCapture({
 
       {error ? (
         <OperationErrorNotice
-          action="The task"
+          action={t({ message: "The task" })}
           message={error}
-          recovery="Your draft is still here. Check it and try again."
+          recovery={t({
+            message: "Your draft is still here. Check it and try again.",
+          })}
         />
       ) : null}
       {pendingTitle ? (
         <p className="capture-pending" role="status">
-          Adding “{pendingTitle}”…
+          <Trans>Adding “{pendingTitle}”…</Trans>
         </p>
       ) : null}
       {warning ? (
@@ -463,7 +482,7 @@ export function TaskCapture({
               type="button"
               onClick={() => onOpenCreated(followUp.task)}
             >
-              Open task
+              <Trans>Open task</Trans>
             </button>
           ) : null}
         </div>
@@ -487,27 +506,30 @@ function CaptureDetails({
   onChange(patch: Partial<CreateTaskInput>): void;
   onToggleSection(section: CaptureDetailSection, open: boolean): void;
 }) {
+  const { t } = useLingui();
   return (
     <div className="capture-details">
       <CaptureDetailGroup
-        description="Dates and estimate"
-        label="Timing"
+        description={t({ message: "Dates and estimate" })}
+        label={t({ message: "Timing" })}
         open={openSections.timing}
         onToggle={(open) => onToggleSection("timing", open)}
       >
         <div className="capture-details-grid">
           <CaptureDateTime
-            label="Scheduled"
+            label={t({ message: "Scheduled" })}
             value={input.scheduled}
             onChange={(scheduled) => onChange({ scheduled })}
           />
           <CaptureDateTime
-            label="Due"
+            label={t({ message: "Due" })}
             value={input.due}
             onChange={(due) => onChange({ due })}
           />
           <label className="form-field">
-            <span>Estimate (minutes)</span>
+            <span>
+              <Trans>Estimate (minutes)</Trans>
+            </span>
             <input
               inputMode="numeric"
               min="0"
@@ -525,27 +547,27 @@ function CaptureDetails({
         </div>
       </CaptureDetailGroup>
       <CaptureDetailGroup
-        description="Status, priority, and relationships"
-        label="Organize"
+        description={t({ message: "Status, priority, and relationships" })}
+        label={t({ message: "Organize" })}
         open={openSections.organize}
         onToggle={(open) => onToggleSection("organize", open)}
       >
         <div className="capture-details-grid">
           <TaskNotesSelectField
-            label="Status"
+            label={t({ message: "Status" })}
             options={configuration.statuses}
             value={input.status ?? configuration.defaults.status}
             onChange={(status) => onChange({ status })}
           />
           <TaskNotesSelectField
-            label="Priority"
+            label={t({ message: "Priority" })}
             options={configuration.priorities}
             value={input.priority ?? configuration.defaults.priority}
             onChange={(priority) => onChange({ priority })}
           />
           <CaptureList
             field={configuration.fieldMapping.projects}
-            label="Projects"
+            label={t({ message: "Projects" })}
             value={input.projects}
             completion={
               configuration.fieldCompletions[
@@ -557,7 +579,7 @@ function CaptureDetails({
           />
           <CaptureList
             field={configuration.fieldMapping.contexts}
-            label="Contexts"
+            label={t({ message: "Contexts" })}
             value={input.contexts}
             completion={
               configuration.fieldCompletions[
@@ -569,7 +591,7 @@ function CaptureDetails({
           />
           <CaptureList
             field="tags"
-            label="Tags"
+            label={t({ message: "Tags" })}
             value={input.tags}
             completion={
               configuration.fieldCompletions.tags ?? { kind: "values" }
@@ -586,8 +608,8 @@ function CaptureDetails({
         />
       </CaptureDetailGroup>
       <CaptureDetailGroup
-        description="Recurrence and template"
-        label="Repeat"
+        description={t({ message: "Recurrence and template" })}
+        label={t({ message: "Repeat" })}
         open={openSections.repeat}
         onToggle={(open) => onToggleSection("repeat", open)}
       >
@@ -608,25 +630,29 @@ function CaptureDetails({
               }
             />
             <span>
-              Use template
-              {configuration.templating.templatePath
-                ? ` · ${configuration.templating.templatePath}`
-                : ""}
+              <Trans>
+                Use template
+                {configuration.templating.templatePath
+                  ? ` · ${configuration.templating.templatePath}`
+                  : ""}
+              </Trans>
             </span>
           </label>
         ) : null}
       </CaptureDetailGroup>
       <CaptureDetailGroup
-        description="Extra context for the task"
-        label="Notes"
+        description={t({ message: "Extra context for the task" })}
+        label={t({ message: "Notes" })}
         open={openSections.notes}
         onToggle={(open) => onToggleSection("notes", open)}
       >
         <label className="notes-field capture-notes">
-          <span className="visually-hidden">Notes</span>
+          <span className="visually-hidden">
+            <Trans>Notes</Trans>
+          </span>
           <textarea
-            aria-label="Notes"
-            placeholder="Add notes"
+            aria-label={t({ message: "Notes" })}
+            placeholder={t({ message: "Add notes" })}
             rows={3}
             value={input.body ?? ""}
             onChange={(event) => onChange({ body: event.target.value })}
@@ -669,8 +695,11 @@ function CaptureDetailGroup({
 
 function cleanTemplateWarning(value: string): string {
   return value
-    .replace(/^template_missing:\s*/i, "Template unavailable. ")
-    .replace(/^template_parse_failed:\s*/i, "Template could not be read. ");
+    .replace(/^template_missing:\s*/i, () => translate`Template unavailable. `)
+    .replace(
+      /^template_parse_failed:\s*/i,
+      () => translate`Template could not be read. `,
+    );
 }
 
 function CaptureDateTime({
@@ -711,6 +740,7 @@ function CaptureList({
   completeField?(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   onChange(value: string[]): void;
 }) {
+  const { t } = useLingui();
   if (completeField)
     return (
       <MultiValueField
@@ -718,7 +748,7 @@ function CaptureList({
         completeField={completeField}
         field={field}
         label={label}
-        placeholder={`Add ${label.toLocaleLowerCase()}`}
+        placeholder={t`Add ${label.toLocaleLowerCase()}`}
         values={value}
         onChange={onChange}
       />

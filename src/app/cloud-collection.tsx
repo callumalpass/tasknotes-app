@@ -1,3 +1,5 @@
+import { appLocale } from "../i18n/app";
+import { useLingui, Trans, Plural } from "@lingui/react/macro";
 import type { MdbaseConnection, PendingMutation } from "@mdbase-dev/connect";
 import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
 import {
@@ -48,6 +50,7 @@ export default function CloudCollection({
   retryStartup(): void;
   onTryDemo?(): void;
 }) {
+  const { t } = useLingui();
   const session = useCloudSessionSnapshot();
   const [recoveryRevision, pendingMutationChanged] = useReducer(
     (value) => value + 1,
@@ -124,7 +127,7 @@ export default function CloudCollection({
       operation: pending.operation,
       createdAt: pending.createdAt,
       status: "waiting",
-      message: "Waiting to check the exact saved request.",
+      message: t({ message: "Waiting to check the exact saved request." }),
     }),
   );
   const opened = session.status === "ready" ? connection : null;
@@ -132,7 +135,7 @@ export default function CloudCollection({
   if (session.status === "not_started" && authorizationError)
     return (
       <ConnectionLifecycleProblem
-        actionLabel="Retry opening TaskNotes"
+        actionLabel={t({ message: "Retry opening TaskNotes" })}
         message={authorizationError}
         onRetry={retryStartup}
       />
@@ -142,7 +145,7 @@ export default function CloudCollection({
   if (session.status === "start_failed")
     return (
       <ConnectionLifecycleProblem
-        actionLabel="Retry opening TaskNotes"
+        actionLabel={t({ message: "Retry opening TaskNotes" })}
         message={session.problem.message}
         onRetry={retryStartup}
       />
@@ -155,7 +158,7 @@ export default function CloudCollection({
   if (opened && recoveryLoadError && !activeRecovery)
     return (
       <ConnectionLifecycleProblem
-        actionLabel="Retry recovery review"
+        actionLabel={t({ message: "Retry recovery review" })}
         message={`TaskNotes could not inspect its saved recovery mappings: ${recoveryLoadError}`}
         onRetry={pendingMutationChanged}
       />
@@ -294,6 +297,7 @@ function PendingMutationReview({
   onProgress(entry: PendingRecoveryEntry): void;
   onRecoveryFinished(): void;
 }) {
+  const { t } = useLingui();
   const [confirming, setConfirming] = useState<"recover" | "discard" | null>(
     null,
   );
@@ -343,17 +347,23 @@ function PendingMutationReview({
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Review unconfirmed changes</h1>
+        <h1>
+          <Trans>Review unconfirmed changes</Trans>
+        </h1>
         <p>
-          Mdbase retained {count} change{count === 1 ? "" : "s"} from an earlier
-          session whose outcome could not be confirmed. TaskNotes will not
-          replay {count === 1 ? "it" : "them"} automatically.
+          <Plural
+            value={count}
+            one="Mdbase retained # change from an earlier session whose outcome could not be confirmed. TaskNotes will not replay it automatically."
+            other="Mdbase retained # changes from an earlier session whose outcome could not be confirmed. TaskNotes will not replay them automatically."
+          />
         </p>
         <p>
-          Recover checks each exact saved request, even if another check fails.
-          An earlier change may already have applied. Discard removes the saved
-          recovery, its grant keys, and disconnects this collection; it cannot
-          undo a change.
+          <Trans>
+            Recover checks each exact saved request, even if another check
+            fails. An earlier change may already have applied. Discard removes
+            the saved recovery, its grant keys, and disconnects this collection;
+            it cannot undo a change.
+          </Trans>
         </p>
       </div>
       {error ? (
@@ -361,16 +371,21 @@ function PendingMutationReview({
           {error}
         </p>
       ) : null}
-      <ul aria-label="Saved change recovery" aria-live="polite">
+      <ul
+        aria-label={t({ message: "Saved change recovery" })}
+        aria-live="polite"
+      >
         {entries.map((entry) => (
           <li key={entry.requestId}>
             <strong>{entry.operation}</strong>{" "}
-            <span>Request {entry.requestId.slice(0, 8)}</span>
+            <span>
+              <Trans>Request {entry.requestId.slice(0, 8)}</Trans>
+            </span>
             {" · "}
             <span>
               {Number.isNaN(Date.parse(entry.createdAt))
-                ? "Unknown time"
-                : new Date(entry.createdAt).toLocaleString()}
+                ? t({ message: "Unknown time" })
+                : new Date(entry.createdAt).toLocaleString(appLocale())}
             </span>
             <p>{entry.message}</p>
           </li>
@@ -379,14 +394,18 @@ function PendingMutationReview({
       <div className="welcome-actions">
         {confirming === "recover" ? (
           <>
-            <p>Recover all {count} saved changes now?</p>
+            <p>
+              <Trans>Recover all {count} saved changes now?</Trans>
+            </p>
             <button
               className="outline-action"
               disabled={working}
               onClick={() => void recover()}
               type="button"
             >
-              {working ? "Recovering…" : "Confirm recovery"}
+              {working
+                ? t({ message: "Recovering…" })
+                : t({ message: "Confirm recovery" })}
             </button>
             <button
               className="text-action"
@@ -394,14 +413,16 @@ function PendingMutationReview({
               onClick={() => setConfirming(null)}
               type="button"
             >
-              Keep saved recovery
+              <Trans>Keep saved recovery</Trans>
             </button>
           </>
         ) : confirming === "discard" ? (
           <>
             <p>
-              Discard all saved recovery and disconnect this collection? This
-              does not reverse changes that may already have reached mdbase.
+              <Trans>
+                Discard all saved recovery and disconnect this collection? This
+                does not reverse changes that may already have reached mdbase.
+              </Trans>
             </p>
             <button
               className="outline-action"
@@ -409,7 +430,9 @@ function PendingMutationReview({
               onClick={() => void discard()}
               type="button"
             >
-              {working ? "Discarding…" : "Confirm discard and disconnect"}
+              {working
+                ? t({ message: "Discarding…" })
+                : t({ message: "Confirm discard and disconnect" })}
             </button>
             <button
               className="text-action"
@@ -417,7 +440,7 @@ function PendingMutationReview({
               onClick={() => setConfirming(null)}
               type="button"
             >
-              Keep saved recovery
+              <Trans>Keep saved recovery</Trans>
             </button>
           </>
         ) : (
@@ -428,7 +451,7 @@ function PendingMutationReview({
               onClick={() => setConfirming("recover")}
               type="button"
             >
-              Recover saved changes
+              <Trans>Recover saved changes</Trans>
             </button>
             <button
               className="text-action"
@@ -436,7 +459,7 @@ function PendingMutationReview({
               onClick={() => setConfirming("discard")}
               type="button"
             >
-              Discard recovery and disconnect
+              <Trans>Discard recovery and disconnect</Trans>
             </button>
           </>
         )}
@@ -459,6 +482,7 @@ export function CloudConnection({
   onTryDemo?(): void;
   retryAuthorization?(): void;
 }) {
+  const { t } = useLingui();
   const [opening, setOpening] = useState<"another" | "reconnect" | null>(null);
   const [openingCollectionId, setOpeningCollectionId] = useState<string | null>(
     null,
@@ -571,28 +595,38 @@ export function CloudConnection({
         <img alt="" src={tasknotesMarkUrl} />
         <h1>
           {reviewingCollection
-            ? "Finish opening TaskNotes"
+            ? t({ message: "Finish opening TaskNotes" })
             : firstVisit
-              ? "Connect TaskNotes to your tasks"
-              : "Welcome back"}
+              ? t({ message: "Connect TaskNotes to your tasks" })
+              : t({ message: "Welcome back" })}
         </h1>
         <p>
           {reviewingCollection
-            ? "Complete this collection’s setup, or choose a different collection."
+            ? t({
+                message:
+                  "Complete this collection’s setup, or choose a different collection.",
+              })
             : firstVisit
-              ? "TaskNotes works with collections managed by mdbase."
-              : "Choose a collection to open your tasks."}
+              ? t({
+                  message:
+                    "TaskNotes works with collections managed by mdbase.",
+                })
+              : t({ message: "Choose a collection to open your tasks." })}
         </p>
         <details className="mdbase-explainer">
           <summary>
-            <span>What is mdbase?</span>
+            <span>
+              <Trans>What is mdbase?</Trans>
+            </span>
             <ChevronDown aria-hidden="true" size={16} />
           </summary>
           <p>
-            mdbase keeps your tasks as portable Markdown files while giving
-            compatible apps a shared way to understand them. mdbase Connect lets
-            you choose a collection and approve TaskNotes’ access—whether it’s
-            hosted by mdbase or available from a connected computer.
+            <Trans>
+              mdbase keeps your tasks as portable Markdown files while giving
+              compatible apps a shared way to understand them. mdbase Connect
+              lets you choose a collection and approve TaskNotes’ access—whether
+              it’s hosted by mdbase or available from a connected computer.
+            </Trans>
           </p>
         </details>
       </div>
@@ -607,14 +641,14 @@ export function CloudConnection({
               onClick={retryAuthorization}
               type="button"
             >
-              Retry authorization
+              <Trans>Retry authorization</Trans>
             </button>
           ) : null}
         </>
       ) : null}
       {session.status === "checking_setup" ? (
         <p className="connection-status" role="status">
-          Checking this collection’s TaskNotes setup…
+          <Trans>Checking this collection’s TaskNotes setup…</Trans>
         </p>
       ) : null}
       {session.status === "blocked" ? (
@@ -627,10 +661,15 @@ export function CloudConnection({
           className="connection-update"
           aria-labelledby="collection-setup-title"
         >
-          <h2 id="collection-setup-title">Review TaskNotes setup</h2>
+          <h2 id="collection-setup-title">
+            <Trans>Review TaskNotes setup</Trans>
+          </h2>
           <p>
-            TaskNotes needs the following collection settings and definitions.
-            Your task records and unrelated collection settings will not change.
+            <Trans>
+              TaskNotes needs the following collection settings and definitions.
+              Your task records and unrelated collection settings will not
+              change.
+            </Trans>
           </p>
           <ul>
             {session.update.configuration
@@ -639,20 +678,23 @@ export function CloudConnection({
                 <li key={configuration.requirement}>
                   {configuration.action === "conflict"
                     ? configuration.conflict?.message
-                    : `Allow TaskNotes Base views at ${String(configuration.value)}`}
+                    : t`Allow TaskNotes Base views at ${String(configuration.value)}`}
                 </li>
               ))}
             {session.update.typePacks.map((update) => (
               <li key={update.id}>
-                {update.name}: {update.currentVersion ?? "not installed"} →{" "}
+                {update.name}:{" "}
+                {update.currentVersion ?? t({ message: "not installed" })} →{" "}
                 {update.desiredVersion}
               </li>
             ))}
           </ul>
           <p>
-            If you do not approve this setup, TaskNotes cannot create its
-            portable views in this collection. You can choose another collection
-            below.
+            <Trans>
+              If you do not approve this setup, TaskNotes cannot create its
+              portable views in this collection. You can choose another
+              collection below.
+            </Trans>
           </p>
           <button
             className="outline-action"
@@ -660,7 +702,7 @@ export function CloudConnection({
             onClick={() => void applyCollectionSetup()}
             type="button"
           >
-            Apply reviewed setup
+            <Trans>Apply reviewed setup</Trans>
           </button>
         </section>
       ) : null}
@@ -669,10 +711,14 @@ export function CloudConnection({
           className="connection-update"
           aria-labelledby="access-review-title"
         >
-          <h2 id="access-review-title">Review updated access</h2>
+          <h2 id="access-review-title">
+            <Trans>Review updated access</Trans>
+          </h2>
           <p>
-            TaskNotes needs you to review its updated collection access in
-            mdbase before this collection can open.
+            <Trans>
+              TaskNotes needs you to review its updated collection access in
+              mdbase before this collection can open.
+            </Trans>
           </p>
           <button
             className="outline-action"
@@ -681,8 +727,8 @@ export function CloudConnection({
             type="button"
           >
             {opening === "reconnect"
-              ? "Opening mdbase…"
-              : "Review updated access"}
+              ? t({ message: "Opening mdbase…" })
+              : t({ message: "Review updated access" })}
           </button>
         </section>
       ) : null}
@@ -693,16 +739,20 @@ export function CloudConnection({
             className="welcome-collections"
           >
             <h2 id="recent-collections-title">
-              {reviewingCollection ? "Other collections" : "Recent collections"}
+              {reviewingCollection
+                ? t({ message: "Other collections" })
+                : t({ message: "Recent collections" })}
             </h2>
             <div className="welcome-collection-list">
               {availableConnections.map((connection) => {
                 const hosted = isHostedCloudConnection(connection);
                 const authorityLabel = hosted
-                  ? "Hosted by mdbase"
-                  : "Connected computer";
+                  ? t({ message: "Hosted by mdbase" })
+                  : t({ message: "Connected computer" });
                 const action =
-                  session.status === "setup_review_required" ? "Use" : "Open";
+                  session.status === "setup_review_required"
+                    ? t({ message: "Use" })
+                    : t({ message: "Open" });
                 return (
                   <button
                     aria-label={`${action} ${connection.displayName}, ${authorityLabel}`}
@@ -725,7 +775,7 @@ export function CloudConnection({
                     </span>
                     <span className="welcome-collection-open">
                       {openingCollectionId === connection.collectionId ? (
-                        "Opening…"
+                        t({ message: "Opening…" })
                       ) : (
                         <ArrowRight aria-hidden="true" size={18} />
                       )}
@@ -748,16 +798,18 @@ export function CloudConnection({
             onClick={() => void connect("another")}
           >
             {opening === "another" ? (
-              <span className="welcome-opening-label">Opening mdbase…</span>
+              <span className="welcome-opening-label">
+                <Trans>Opening mdbase…</Trans>
+              </span>
             ) : (
               <>
                 <Plus aria-hidden="true" size={18} />
                 <span>
                   {reviewingCollection
-                    ? "Choose a different collection in mdbase"
+                    ? t({ message: "Choose a different collection in mdbase" })
                     : firstVisit
-                      ? "Choose a collection"
-                      : "Choose another collection in mdbase"}
+                      ? t({ message: "Choose a collection" })
+                      : t({ message: "Choose another collection in mdbase" })}
                 </span>
                 <ArrowRight aria-hidden="true" size={18} />
               </>
@@ -765,8 +817,11 @@ export function CloudConnection({
           </button>
           <p role={authorizationPending ? "status" : undefined}>
             {authorizationPending
-              ? "Complete your selection in the mdbase window."
-              : "mdbase will open so you can choose a collection and approve access."}
+              ? t({ message: "Complete your selection in the mdbase window." })
+              : t({
+                  message:
+                    "mdbase will open so you can choose a collection and approve access.",
+                })}
           </p>
         </div>
         {selectedCollectionId &&
@@ -779,8 +834,8 @@ export function CloudConnection({
             onClick={() => void connect("reconnect")}
           >
             {opening === "reconnect"
-              ? "Opening mdbase…"
-              : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
+              ? t({ message: "Opening mdbase…" })
+              : t`Reconnect ${selectedConnection?.displayName ?? t({ message: "selected collection" })}`}
           </button>
         ) : null}
         {authorizationPending ? (
@@ -789,7 +844,7 @@ export function CloudConnection({
             onClick={cancelAuthorization}
             type="button"
           >
-            Cancel
+            <Trans>Cancel</Trans>
           </button>
         ) : null}
         {onTryDemo ? (
@@ -799,7 +854,7 @@ export function CloudConnection({
             onClick={onTryDemo}
             type="button"
           >
-            Try a disposable demo
+            <Trans>Try a disposable demo</Trans>
           </button>
         ) : null}
       </div>
@@ -810,7 +865,9 @@ export function CloudConnection({
 function OpeningConnection() {
   return (
     <main className="opening-screen">
-      <p>Opening TaskNotes…</p>
+      <p>
+        <Trans>Opening TaskNotes…</Trans>
+      </p>
     </main>
   );
 }
@@ -824,19 +881,26 @@ function ConnectionLifecycleProblem({
   message: string;
   onRetry?(): void;
 }) {
+  const { t } = useLingui();
   return (
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
         <img alt="" src={tasknotesMarkUrl} />
-        <h1>Open TaskNotes</h1>
+        <h1>
+          <Trans>Open TaskNotes</Trans>
+        </h1>
         <p className="inline-error" role="alert">
           {onRetry
-            ? "TaskNotes couldn’t open right now. Please try again."
+            ? t({
+                message: "TaskNotes couldn’t open right now. Please try again.",
+              })
             : message}
         </p>
         {onRetry ? (
           <details className="connection-technical-details">
-            <summary>Technical details</summary>
+            <summary>
+              <Trans>Technical details</Trans>
+            </summary>
             <p>{message}</p>
           </details>
         ) : null}

@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { Save, Settings2 } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 
@@ -32,6 +34,7 @@ interface TaskModelSettingsDraft {
 }
 
 export function TaskModelSettingsEditor() {
+  const { t } = useLingui();
   const { configuration, repository, updateTaskModelSettings } =
     useRepository();
   const [access, setAccess] = useState<{
@@ -124,16 +127,20 @@ export function TaskModelSettingsEditor() {
     >
       <div className="setting-row task-model-setting-row">
         <Settings2 aria-hidden="true" size={20} strokeWidth={1.6} />
-        <span>Task behavior</span>
+        <span>
+          <Trans>Task behavior</Trans>
+        </span>
         <small>
           {access
             ? taskSettingsSource(access.source)
-            : "Checking collection settings"}
+            : t({ message: "Checking collection settings" })}
         </small>
       </div>
       <p className="section-copy">
-        These settings are saved with the collection and travel with its
-        Markdown tasks.
+        <Trans>
+          These settings are saved with the collection and travel with its
+          Markdown tasks.
+        </Trans>
       </p>
       {access && !access.writable ? (
         <p className="settings-read-only" role="status">
@@ -141,26 +148,31 @@ export function TaskModelSettingsEditor() {
         </p>
       ) : null}
       <fieldset disabled={!writable || saveState === "saving"}>
-        <legend className="visually-hidden">Task model settings</legend>
+        <legend className="visually-hidden">
+          <Trans>Task model settings</Trans>
+        </legend>
         <div className="task-model-settings-grid">
           <TaskNotesSelectField
-            label="Default status"
+            label={t({ message: "Default status" })}
             options={configuration.statuses}
             value={draft.defaultStatus}
             onChange={(defaultStatus) => change({ defaultStatus })}
           />
           <TaskNotesSelectField
-            label="Default priority"
+            label={t({ message: "Default priority" })}
             options={configuration.priorities}
             value={draft.defaultPriority}
             onChange={(defaultPriority) => change({ defaultPriority })}
           />
           <TaskNotesSelectField
-            label="New recurring tasks"
+            label={t({ message: "New recurring tasks" })}
             options={[
-              { value: "manual", label: "Virtual occurrences" },
-              { value: "on_completion", label: "Create after completion" },
-              { value: "rolling", label: "Rolling window" },
+              { value: "manual", label: t({ message: "Virtual occurrences" }) },
+              {
+                value: "on_completion",
+                label: t({ message: "Create after completion" }),
+              },
+              { value: "rolling", label: t({ message: "Rolling window" }) },
             ]}
             value={draft.defaultMaterialization}
             onChange={(value) =>
@@ -171,12 +183,15 @@ export function TaskModelSettingsEditor() {
             }
           />
           <TaskNotesSelectField
-            label="Create next occurrence"
+            label={t({ message: "Create next occurrence" })}
             options={[
-              { value: "completion", label: "After completion" },
+              {
+                value: "completion",
+                label: t({ message: "After completion" }),
+              },
               {
                 value: "completion_or_skip",
-                label: "After completion or skip",
+                label: t({ message: "After completion or skip" }),
               },
             ]}
             value={draft.defaultNextTrigger}
@@ -188,20 +203,20 @@ export function TaskModelSettingsEditor() {
             }
           />
           <DurationField
-            label="Past occurrence horizon"
+            label={t({ message: "Past occurrence horizon" })}
             value={draft.pastHorizon}
             onChange={(pastHorizon) => change({ pastHorizon })}
           />
           <DurationField
-            label="Future occurrence horizon"
+            label={t({ message: "Future occurrence horizon" })}
             value={draft.futureHorizon}
             onChange={(futureHorizon) => change({ futureHorizon })}
           />
           <TaskNotesSelectField
-            label="Record links"
+            label={t({ message: "Record links" })}
             options={[
-              { value: "wikilink", label: "Wikilinks" },
-              { value: "markdown", label: "Markdown links" },
+              { value: "wikilink", label: t({ message: "Wikilinks" }) },
+              { value: "markdown", label: t({ message: "Markdown links" }) },
             ]}
             value={draft.writeFormat}
             onChange={(value) =>
@@ -211,9 +226,11 @@ export function TaskModelSettingsEditor() {
             }
           />
           <label className="form-field">
-            <span>Archive folder</span>
+            <span>
+              <Trans>Archive folder</Trans>
+            </span>
             <input
-              aria-label="Archive folder"
+              aria-label={t({ message: "Archive folder" })}
               value={draft.archiveFolder}
               onChange={(event) =>
                 change({ archiveFolder: event.target.value })
@@ -221,10 +238,12 @@ export function TaskModelSettingsEditor() {
             />
           </label>
           <label className="form-field">
-            <span>Task template</span>
+            <span>
+              <Trans>Task template</Trans>
+            </span>
             <input
-              aria-label="Task template"
-              placeholder="Templates/Task.md"
+              aria-label={t({ message: "Task template" })}
+              placeholder={t({ message: "Templates/Task.md" })}
               value={draft.templatePath}
               onChange={(event) => change({ templatePath: event.target.value })}
             />
@@ -233,31 +252,35 @@ export function TaskModelSettingsEditor() {
         <div className="task-model-toggles">
           <SettingToggle
             checked={draft.maintainDueDateOffset}
-            label="Keep due-date offset when a task repeats"
+            label={t({ message: "Keep due-date offset when a task repeats" })}
             onChange={(maintainDueDateOffset) =>
               change({ maintainDueDateOffset })
             }
           />
           <SettingToggle
             checked={draft.resetCheckboxesOnRecurrence}
-            label="Reset note checkboxes when a task repeats"
+            label={t({ message: "Reset note checkboxes when a task repeats" })}
             onChange={(resetCheckboxesOnRecurrence) =>
               change({ resetCheckboxesOnRecurrence })
             }
           />
           <SettingToggle
             checked={draft.autoStopOnComplete}
-            label="Stop a running timer when its task completes"
+            label={t({
+              message: "Stop a running timer when its task completes",
+            })}
             onChange={(autoStopOnComplete) => change({ autoStopOnComplete })}
           />
           <SettingToggle
             checked={draft.moveOnArchive}
-            label="Move archived task files into the archive folder"
+            label={t({
+              message: "Move archived task files into the archive folder",
+            })}
             onChange={(moveOnArchive) => change({ moveOnArchive })}
           />
           <SettingToggle
             checked={draft.templatingEnabled}
-            label="Use the task template for new tasks"
+            label={t({ message: "Use the task template for new tasks" })}
             onChange={(templatingEnabled) => change({ templatingEnabled })}
           />
         </div>
@@ -266,10 +289,14 @@ export function TaskModelSettingsEditor() {
           className="status-automation-settings"
         >
           <div>
-            <h3 id="auto-archive-settings-title">Auto archive</h3>
+            <h3 id="auto-archive-settings-title">
+              <Trans>Auto archive</Trans>
+            </h3>
             <p className="section-copy">
-              Archive tasks after they enter a selected status. Recurring series
-              are always excluded.
+              <Trans>
+                Archive tasks after they enter a selected status. Recurring
+                series are always excluded.
+              </Trans>
             </p>
           </div>
           <div className="status-automation-list">
@@ -301,9 +328,11 @@ export function TaskModelSettingsEditor() {
                     <label htmlFor={inputId}>{status.label}</label>
                   </div>
                   <label className="auto-archive-delay">
-                    <span>Delay</span>
+                    <span>
+                      <Trans>Delay</Trans>
+                    </span>
                     <input
-                      aria-label={`${status.label} auto-archive delay in minutes`}
+                      aria-label={t`${status.label} auto-archive delay in minutes`}
                       disabled={!automation.autoArchive}
                       min="0"
                       step="1"
@@ -324,7 +353,9 @@ export function TaskModelSettingsEditor() {
                         })
                       }
                     />
-                    <span>min</span>
+                    <span>
+                      <Trans>min</Trans>
+                    </span>
                   </label>
                 </div>
               );
@@ -334,9 +365,12 @@ export function TaskModelSettingsEditor() {
       </fieldset>
       {error ? (
         <OperationErrorNotice
-          action="Task settings"
+          action={t({ message: "Task settings" })}
           message={error}
-          recovery="Your unsaved choices are still here. Review them and retry."
+          recovery={t({
+            message:
+              "Your unsaved choices are still here. Review them and retry.",
+          })}
         />
       ) : null}
       {writable ? (
@@ -347,10 +381,14 @@ export function TaskModelSettingsEditor() {
             type="submit"
           >
             <Save aria-hidden="true" size={16} />
-            {saveState === "saving" ? "Saving" : "Save task settings"}
+            {saveState === "saving"
+              ? t({ message: "Saving" })
+              : t({ message: "Save task settings" })}
           </button>
           {saveState === "saved" ? (
-            <span role="status">Saved with the collection.</span>
+            <span role="status">
+              <Trans>Saved with the collection.</Trans>
+            </span>
           ) : null}
         </div>
       ) : null}
@@ -359,7 +397,9 @@ export function TaskModelSettingsEditor() {
 }
 
 function taskSettingsSource(source: string): string {
-  return /contract/i.test(source) ? "Collection settings" : source;
+  return /contract/i.test(source)
+    ? t({ message: "Collection settings" })
+    : source;
 }
 
 function changedStatusAutomation(
@@ -410,8 +450,9 @@ function settingsDraft(
       configuration.recurrence.resetCheckboxesOnRecurrence,
     defaultMaterialization: configuration.occurrences.defaultMaterialization,
     defaultNextTrigger: configuration.occurrences.defaultNextTrigger,
-    pastHorizon: configuration.occurrences.pastHorizon ?? "P0D",
-    futureHorizon: configuration.occurrences.futureHorizon ?? "P14D",
+    pastHorizon: configuration.occurrences.pastHorizon ?? t({ message: "P0D" }),
+    futureHorizon:
+      configuration.occurrences.futureHorizon ?? t({ message: "P14D" }),
     autoStopOnComplete: configuration.timeTracking.autoStopOnComplete,
     writeFormat: configuration.linkWriteFormat,
     moveOnArchive: configuration.archive.moveOnArchive,
