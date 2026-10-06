@@ -22,24 +22,25 @@ rc.1 parser remains solely for legacy consumers; the shared compiler contains
 its independently pinned rc.4 parser. Remove that split only after legacy
 compatibility is qualified.
 
-## Combined dormant getter/timers/watch development snapshots
+## Combined dormant getter/timer recovery/watch development snapshots
 
-Connect and protocol `0.1.0-beta.129-f578ed55` plus native SDK `0.0.0-1f00edca`
+Connect and protocol `0.1.0-beta.129-38f456ec` plus native SDK `0.0.0-26abbb60`
 are isolated, revision-stamped development archives. The shared
-`mdbase-dev-control-watch-f578ed55-1f00edca.json` records component revisions,
+`mdbase-dev-control-recovery-38f456ec-26abbb60.json` records component revisions,
 original filenames and SHA-256 hashes; the lock records SHA-512 integrity.
 Dependencies and overrides pin all three archives to one graph. This replaces
-305ad941 with the delivered corrected timer factory source 7c2f20ea, then SDK
-5ff45292 with the delivered watch-only 1f00edca composition. Connect/protocol
-bytes are unchanged in the latter delivery. Watch readiness proves a current
-subscription acknowledgement, including an empty one, not whole-cache catchup
-or authority freshness. Source review is not runtime qualification. Original
-timer-operation recovery remains unavailable in these SDK pins; timers stay
-unwired. Query metadata/live metadata and trusted-profile bootstrap changes
-316/337/346 are explicitly excluded.
+f578ed55/1f00edca with original timer-operation receipt/lookup sources95431115
+and5b690ec6; protocol bytes are unchanged. Caller-owned original UUIDv7,
+expected revision, desired snapshot and result reader must be retained before
+dispatch; missing revisions and receipt lookups are never proof of no effect.
+Timers remain unwired pending application-intent journal ownership.
+Watch readiness is a current subscription acknowledgement, including an empty
+one, not whole-cache catchup or authority freshness. Query metadata/live
+metadata and trusted-profile bootstrap changes316/337/346, attachment RPCs and
+account-key/password/recovery/strict enrollment APIs are explicitly excluded.
 
 This composition provides SDK-owned `accountBackend`, optional Connect
-`appTimers(connection)` and native SDK `newTimersApi`. Credentials, keys and
+`appTimers(connection)` and native SDK `new TimersApi(appTimers(connection))`. Credentials, keys and
 proofs stay inside Connect. The native repository and account opener remain
 **dormant and not release-qualified**. Protocol stand-ins do not prove real
 collection, consent, transport or timer delivery qualification. These pins do

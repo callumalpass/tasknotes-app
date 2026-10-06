@@ -2,33 +2,35 @@
   "purpose": "isolated development source/type integration only",
   "releaseQualified": false,
   "sources": {
-    "connectComposition": "f578ed555e49eab5e40667fb40e7b1f91af3b563",
+    "connectComposition": "38f456ec44304cd7cd880fafa139140e27eda271",
     "connectBase": "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
     "getter": "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
     "timerFactory": "7c2f20eab6f899ad9586395c856fc27f01379d3c",
-    "sdkComposition": "1f00edca4692bc076433df03ce560233f59f4bf3",
+    "sdkComposition": "26abbb6030a52c8d69ca1b62a7d9d7febd8479e3",
     "sdkBridgeBase": "d81ff8614ed95695368452f2e2d404f369f3840c",
     "sdkTimerFacade": "fbe42a22cd59f745484c3fc028f1843dc7509c6a",
-    "sdkWatch": "b8e5bb47ebbd5b42cff844807bc0666adad5399a"
+    "sdkWatch": "b8e5bb47ebbd5b42cff844807bc0666adad5399a",
+    "connectRecovery": "95431115fbc5c12ae4ff83c8e2a14fd9dfbe843c",
+    "sdkRecovery": "5b690ec6e872fcfde1f549d2f31ee2e43d1717ef"
   },
   "artifacts": [
     {
       "package": "@mdbase-dev/connect",
       "sourceFile": "mdbase-dev-connect-0.1.0-beta.129.tgz",
-      "file": "mdbase-dev-connect-0.1.0-beta.129-f578ed55.tgz",
-      "sha256": "91fcdbeb96aaa7ca52c34fd35ffa21dee003cf6f065d3206b83aa5af6a8c7eb2"
+      "file": "mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz",
+      "sha256": "a29b9581d2a79b8ac24d470e54d0f7f9ae3264322bebab9c0702d50242e8c8df"
     },
     {
       "package": "@mdbase-dev/connect-protocol",
       "sourceFile": "mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
-      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-f578ed55.tgz",
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz",
       "sha256": "4b2fefaef4755c18643dcae981034abdac5bf4399b22c3a33ea39c5fc8733bd8"
     },
     {
       "package": "@mdbase-dev/sdk",
       "sourceFile": "mdbase-dev-sdk-0.0.0.tgz",
-      "file": "mdbase-dev-sdk-0.0.0-1f00edca.tgz",
-      "sha256": "47c26e0480009308c70cb29ea996a00402125a42e5aa3f27dd0e152ec49f1a81"
+      "file": "mdbase-dev-sdk-0.0.0-26abbb60.tgz",
+      "sha256": "4d226b3bc0e18229db8125bec621c1a5b94b84fb383511b46b44e5aa0090180e"
     }
   ],
   "excluded": [
@@ -37,7 +39,8 @@
     "Transport qualification",
     "Canonical native query metadata and live integration",
     "Live next-private timer permission and delivery qualification",
-    "Authoritative original timer-operation receipt and read-only recovery",
+    "Application timer-intent journal and scheduling integration",
+    "Account-key/password/recovery/strict enrollment SDK APIs",
     "Whole-collection cache catchup and freshness qualification",
     "SDK316/337 native query metadata and SDK346 trusted-profile bootstrap",
     "Canonical native file timestamps, new-upload targets and binary RPCs"

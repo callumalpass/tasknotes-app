@@ -13,7 +13,8 @@ No dual-backend store candidate has been built or submitted.
   `23ac9d06`. Receiver source has merged with CI and scoped metadata-pair review;
   deployment, ordinary next consent/key delivery and LAB qualification remain
   separate. All three client/protocol/native-SDK archives are development-only
-  pins, currently Connect composition `f578ed55` and watch-only SDK `1f00edca`.
+  pins, currently Connect composition `38f456ec` and SDK `26abbb60` with
+  original timer-operation receipt/lookup support.
   Watch readiness is subscription acknowledgement, not collection-cache catchup;
   query/live metadata and trusted-profile changes 316/337/346 are excluded.
   The optional `@mdbase-dev/connect/control` getter owns credentials and proof;
@@ -65,9 +66,13 @@ readiness. Native parent creation/edits and missing rolling-window occurrences
 are prepared before admission and submitted atomically; a rejected window
 rejects that parent change too. Receipt recovery never recreates children.
 Background window advancement on open/refresh is not implemented yet.
-The corrected timer factory remains unused until authoritative original-operation
-receipt recovery exists. Whole-collection change-feed readiness is also absent;
-query subscription readiness does not establish whole-collection freshness.
+The recovery-capable timer factory remains unused until the application owns
+original timer intents durably before dispatch (UUIDv7, namespace, expected
+revision, exact desired snapshot and original result reader). Receipt lookup is
+read-only; missing revisions or lookup failures remain unknown, never permission
+to replay or adopt a replacement operation. The scope-owned changes watch
+invalidates ephemeral caches; subscription acknowledgement does not establish
+whole-collection cache catchup or freshness.
 Binary files still require actual timestamps, stable new-upload targets and
 implemented upload/read RPCs. Hello capabilities, even from a corrected producer,
 are point-in-time UI hints, not current folder/path authorization.
