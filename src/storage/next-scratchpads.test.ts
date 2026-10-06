@@ -386,7 +386,11 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     seed(f, "portable-note", "active", "2026-08-01T12:00:00Z", "- Replacement");
     spy.mockClear();
     await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
-      code: "not_found",
+      problem: {
+        code: "operation_outcome_unknown",
+        details: { request_id: expect.any(String) },
+      },
+      cause: { code: "not_found" },
     });
     expect(spy).not.toHaveBeenCalled();
     expect((await f.repository.getScratchpad(current.id))!.body).toBe(

@@ -286,7 +286,13 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     await f.repository.refresh();
     await expect(
       f.repository.update(s.portableId, { title: "Original edit" }),
-    ).rejects.toMatchObject({ code: "not_found" });
+    ).rejects.toMatchObject({
+      problem: {
+        code: "operation_outcome_unknown",
+        details: { request_id: spy.mock.calls[0]![2]!.mutationId },
+      },
+      cause: { code: "not_found" },
+    });
     expect(spy).toHaveBeenCalledOnce();
     expect((await f.client.get(replacementId, { body: true })).body).toBe(
       "Replacement",
@@ -327,6 +333,55 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       await f.repository.create({ title: "Not another capture" }, intent),
     ).toBe(saved);
     expect(create).toHaveBeenCalledOnce();
+  });
+
+  it("a failed confirmed create read keeps exact capture recovery instead of inviting a replacement create", async () => {
+    const f = await fixture();
+    await f.repository.initialize({ deferTaskIndex: true });
+    const create = vi.spyOn(f.client, "create");
+    const intent = {
+      id: crypto.randomUUID(),
+      authorityRequestId: undefined as string | undefined,
+    };
+    const get = f.client.get.bind(f.client);
+    let interrupted = false;
+    const read = vi
+      .spyOn(f.client, "get")
+      .mockImplementation(async (...args) => {
+        if (args[0] === intent.id && !interrupted) {
+          interrupted = true;
+          throw new Error("Confirmed record read interrupted");
+        }
+        return get(...args);
+      });
+    const failure = await f.repository
+      .create({ title: "Original captured title" }, intent)
+      .catch((reason: unknown) => reason);
+    const requestId = create.mock.calls[0]![1]!.mutationId;
+    expect(failure).toMatchObject({
+      problem: {
+        code: "operation_outcome_unknown",
+        recovery: "resolve_outcome",
+        details: { request_id: requestId },
+      },
+      cause: { message: "Confirmed record read interrupted" },
+    });
+    expect(intent.authorityRequestId).toBe(requestId);
+    const lookup = vi.spyOn(f.client, "receipt");
+    const saved = await f.repository.create(
+      { title: "Must not replace original input" },
+      intent,
+    );
+    expect(saved.id).toBe(intent.id);
+    expect(saved.title).toBe("Original captured title");
+    expect(create).toHaveBeenCalledOnce();
+    expect(
+      read.mock.calls
+        .filter(([target]) => target === intent.id)
+        .map(([target]) => target),
+    ).toEqual([intent.id, intent.id]);
+    expect(lookup).not.toHaveBeenCalled();
+    expect(intent.authorityRequestId).toBeUndefined();
   });
 
   it("recovers a lost create ACK with the original mutation and record ID", async () => {

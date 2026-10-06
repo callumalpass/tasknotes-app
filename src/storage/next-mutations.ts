@@ -128,8 +128,15 @@ export class NextMutations {
       // repeat only that read on retry, not the accepted mutation.
       // Retain the original result reader and native target, rather than
       // resolving a portable ID against a newer cache after an uncertain write.
-      const value = await pending.confirmed(receipt, signal);
-      signal.throwIfAborted();
+      let value: unknown;
+      try {
+        value = await pending.confirmed(receipt, signal);
+        signal.throwIfAborted();
+      } catch (reason) {
+        // Result processing is past admission too. Keep the caller's recovery
+        // identity even for a missing record or cancellation after confirmation.
+        throw pendingRecoveryError(pending.id, reason);
+      }
       this.pending = null;
       return value as Result;
     });

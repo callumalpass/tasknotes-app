@@ -194,18 +194,85 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
       .fn(async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => receipt)
       .mockRejectedValueOnce(new Error("Read unavailable"));
     const operation = { key: "accepted", prepare: prepared, confirmed: read };
-    await expect(f.mutations.run(operation, f.signal)).rejects.toThrow(
-      "Read unavailable",
-    );
+    const failure = await f.mutations
+      .run(operation, f.signal)
+      .catch((reason: unknown) => reason);
+    expect(failure).toMatchObject({
+      problem: {
+        code: "operation_outcome_unknown",
+        recovery: "resolve_outcome",
+        details: { request_id: submit.mock.calls[0]![0] },
+      },
+      cause: { message: "Read unavailable" },
+    });
+    expect(read.mock.calls[0]![0].mutation).toBe(submit.mock.calls[0]![0]);
+    const replacement = create(f.client, "blocked-after-read-failure.md");
+    await expect(
+      run(f.mutations, "different", replacement, f.signal),
+    ).rejects.toMatchObject({
+      code: "conflict",
+      reason: "earlier_mutation_pending",
+      details: submit.mock.calls[0]![0],
+    });
+    expect(replacement).not.toHaveBeenCalled();
+    const receiptLookup = vi.spyOn(f.client, "receipt");
     expect((await f.mutations.run(operation, f.signal)).state).toBe(
       "confirmed",
     );
     expect(prepared).toHaveBeenCalledOnce();
     expect(submit).toHaveBeenCalledOnce();
     expect(read).toHaveBeenCalledTimes(2);
+    expect(receiptLookup).not.toHaveBeenCalled();
     expect(read.mock.calls[0]![0].mutation).toBe(
       read.mock.calls[1]![0].mutation,
     );
+  });
+
+  it("cancellation after a confirmed result retains its identity and original reader", async () => {
+    const f = await fixture();
+    const controller = new AbortController();
+    const submit = create(f.client, "confirmed-before-abort.md");
+    const original = vi.fn(
+      async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => {
+        if (!controller.signal.aborted) controller.abort();
+        return receipt;
+      },
+    );
+    const operation = {
+      key: "confirmed-before-abort",
+      prepare: async (id: string, signal: AbortSignal) => () =>
+        submit(id, signal),
+      confirmed: original,
+    };
+    const failure = await f.mutations
+      .run(operation, controller.signal)
+      .catch((reason: unknown) => reason);
+    const id = submit.mock.calls[0]![0];
+    expect(failure).toMatchObject({
+      problem: {
+        code: "operation_outcome_unknown",
+        details: { request_id: id },
+      },
+      cause: { name: "AbortError" },
+    });
+    const prepare = vi.fn(operation.prepare);
+    const replacementReader = vi.fn(
+      async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => receipt,
+    );
+    const lookup = vi.spyOn(f.client, "receipt");
+    expect(
+      (
+        await f.mutations.run(
+          { ...operation, prepare, confirmed: replacementReader },
+          f.signal,
+        )
+      ).mutation,
+    ).toBe(id);
+    expect(original).toHaveBeenCalledTimes(2);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(replacementReader).not.toHaveBeenCalled();
+    expect(lookup).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledOnce();
   });
 
   it("retains the original result reader and native target during recovery", async () => {
