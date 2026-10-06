@@ -14,6 +14,7 @@ const submittedStates = new Set([
   "WAITING_FOR_REVIEW",
   "IN_REVIEW",
   "PENDING_APPLE_RELEASE",
+  "PENDING_DEVELOPER_RELEASE",
 ]);
 
 function requireValue(value, label) {
@@ -230,7 +231,7 @@ export async function submitAppStore({
       if (
         !linked ||
         (!releasedStates.has(state(target)) &&
-          target.attributes.releaseType !== "AFTER_APPROVAL")
+          target.attributes.releaseType !== "MANUAL")
       ) {
         throw new Error(
           "Existing submitted version does not match the expected release policy",
@@ -325,7 +326,7 @@ export async function submitAppStore({
           platform: "IOS",
           versionString: version,
           copyright: metadata.copyright,
-          releaseType: "AFTER_APPROVAL",
+          releaseType: "MANUAL",
         },
         relationships: { app: relation("apps", APP_ID) },
       })
@@ -337,7 +338,7 @@ export async function submitAppStore({
       id: target.id,
       attributes: {
         copyright: metadata.copyright,
-        releaseType: "AFTER_APPROVAL",
+        releaseType: "MANUAL",
         earliestReleaseDate: null,
       },
       relationships: { build: relation("builds", build.id) },
@@ -386,7 +387,7 @@ export async function submitAppStore({
   assertLocales(savedLocales, metadata);
   if (
     attached?.id !== build.id ||
-    prepared.attributes.releaseType !== "AFTER_APPROVAL" ||
+    prepared.attributes.releaseType !== "MANUAL" ||
     prepared.attributes.earliestReleaseDate ||
     savedLocales.some(
       (item) =>
@@ -404,7 +405,7 @@ export async function submitAppStore({
   );
   if (phased.data)
     throw new Error(
-      "A phased release is configured; remove it manually to release to everyone after approval",
+      "A phased release is configured; remove it manually before submitting a manual release",
     );
   if (!submission) {
     submission = (

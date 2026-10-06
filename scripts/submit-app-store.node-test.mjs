@@ -166,7 +166,7 @@ test("creates version, saves metadata, attaches exact build and submits", async 
   assert.equal(f.attached.id, "build");
   assert.equal(f.locales[0].attributes.whatsNew, "Bug fixes.");
   assert.equal(f.review.attributes.notes, metadata.reviewNotes);
-  assert.equal(f.versions[1].attributes.releaseType, "AFTER_APPROVAL");
+  assert.equal(f.versions[1].attributes.releaseType, "MANUAL");
   assert.equal(f.writes.at(-1).data.attributes.submitted, true);
   assert.ok(!f.writes.some((w) => w.method === "DELETE"));
 });
@@ -190,6 +190,26 @@ for (const failAfter of [
     assert.equal(f.submissions.length, 1);
   });
 }
+
+test("approved manual release stays held and rerun is read-only", async () => {
+  const f = fixture();
+  await f.run({ commit: true });
+  f.versions[1].attributes.appStoreState = "PENDING_DEVELOPER_RELEASE";
+  f.writes = [];
+  const result = await f.run({ commit: true });
+  assert.equal(result.state, "PENDING_DEVELOPER_RELEASE");
+  assert.equal(result.alreadySubmitted, true);
+  assert.equal(f.writes.length, 0);
+});
+
+test("refuses an already submitted automatic release", async () => {
+  const f = fixture();
+  await f.run({ commit: true });
+  f.versions[1].attributes.releaseType = "AFTER_APPROVAL";
+  f.writes = [];
+  await assert.rejects(f.run({ commit: true }), /release policy/);
+  assert.equal(f.writes.length, 0);
+});
 
 test("already submitted same build is a read-only success", async () => {
   const f = fixture();

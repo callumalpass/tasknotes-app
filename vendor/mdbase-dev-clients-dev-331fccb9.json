@@ -1,0 +1,47 @@
+{
+  "purpose": "isolated development source/type integration only",
+  "releaseQualified": false,
+  "sources": {
+    "connectComposition": "38f456ec44304cd7cd880fafa139140e27eda271",
+    "connectBase": "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
+    "getter": "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
+    "timerFactory": "7c2f20eab6f899ad9586395c856fc27f01379d3c",
+    "connectRecovery": "95431115fbc5c12ae4ff83c8e2a14fd9dfbe843c",
+    "sdkComposition": "331fccb9 (ws/clients-dev-20261006 on main 7115b748)",
+    "sdkMembers": {
+      "#327": "7f457272",
+      "#366": "9306bf8a",
+      "#390": "84cb43c4",
+      "#395": "aff43741",
+      "#400": "706a1a71",
+      "timer-checkpoint": "1fff217b"
+    },
+    "delivery": ".coord/sdk-tnapp-artifacts/clients-dev-331fccb9/provenance.json"
+  },
+  "artifacts": [
+    {
+      "package": "@mdbase-dev/connect",
+      "sourceFile": "mdbase-dev-connect-0.1.0-beta.129.tgz",
+      "file": "mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz",
+      "sha256": "a29b9581d2a79b8ac24d470e54d0f7f9ae3264322bebab9c0702d50242e8c8df"
+    },
+    {
+      "package": "@mdbase-dev/connect-protocol",
+      "sourceFile": "mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
+      "file": "mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz",
+      "sha256": "4b2fefaef4755c18643dcae981034abdac5bf4399b22c3a33ea39c5fc8733bd8"
+    },
+    {
+      "package": "@mdbase-dev/sdk",
+      "sourceFile": "mdbase-dev-sdk-0.0.0.tgz",
+      "file": "mdbase-dev-sdk-0.0.0-331fccb9.tgz",
+      "sha256": "8c5003fc50a3ef840159806382392f7c6969992efc970133fd3ed5fa5f39301a"
+    }
+  ],
+  "excluded": [
+    "Registry release or store qualification",
+    "Replica implementation of describe_typing / account_key_* (docs #394 only; MemoryReplica stand-in)",
+    "Connect client ports for PrivateAccount and timer checkpoints (app adapters against Connect #635/#639 routes)",
+    "Native activation, scheduling, security verdict on the composition"
+  ]
+}

@@ -6,3 +6,7 @@ node_modules/
 pnpm-lock.yaml
 playwright-report/
 test-results/
+# Immutable publisher-generated artifacts; their exact bytes are hash-tested.
+vendor/tasknotes-query-6bec1906.browser.mjs
+vendor/tasknotes-query-6bec1906.browser.d.mts
+vendor/tasknotes-query-6bec1906.browser-metafile.json

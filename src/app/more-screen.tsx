@@ -30,6 +30,10 @@ import {
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
+import type {
+  HeldEdit,
+  HeldEditAction,
+} from "../application/ports/task-repository";
 import { storageExplanation } from "./storage-trust";
 import type { CalendarPreferences } from "./calendar-preferences";
 
@@ -180,10 +184,18 @@ export function MoreScreen({
             <span>mdbase</span>
             <small>{connectionLabel(connection)}</small>
           </div>
+          {connection.sync ? (
+            <p className="section-copy" role="status">
+              {connection.sync.text}
+            </p>
+          ) : null}
           {connection.message ? (
             <p className="section-copy" role="status">
               {connection.message}
             </p>
+          ) : null}
+          {connection.heldEdits?.length ? (
+            <HeldEdits edits={connection.heldEdits} />
           ) : null}
           <div className="cloud-actions">
             <button
@@ -381,6 +393,66 @@ function ThemeSelect() {
         saveThemePreference(next);
       }}
     />
+  );
+}
+
+/**
+ * Protected edits ("mdbase protected your edit"): the cause in plain language, the
+ * choices in the backend's own vocabulary, and the note that the choice is reversible.
+ * Actions that would discard the user's bytes are placed after "keep both".
+ */
+function HeldEdits({ edits }: { edits: HeldEdit[] }) {
+  const { repository, refresh } = useRepository();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const choose = async (edit: HeldEdit, action: HeldEditAction) => {
+    if (!repository.resolveHeldEdit) return;
+    setBusy(edit.id);
+    setProblem(null);
+    try {
+      await repository.resolveHeldEdit(edit.id, action.action);
+      void refresh().catch(() => undefined);
+    } catch (error) {
+      setProblem(
+        error instanceof Error ? error.message : "The choice was not applied.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="held-edits" role="region" aria-label="Protected edits">
+      {edits.map((edit) => (
+        <article className="held-edit" key={edit.id}>
+          <h4>{edit.title}</h4>
+          <p className="held-edit-path">{edit.path}</p>
+          <p>{edit.cause}</p>
+          <p className="section-copy">{edit.detail}</p>
+          <div className="held-edit-actions">
+            {[...edit.actions]
+              .sort((a, b) => Number(a.discardsMine) - Number(b.discardsMine))
+              .map((action) => (
+                <button
+                  className="text-action"
+                  disabled={busy !== null || !repository.resolveHeldEdit}
+                  key={action.action}
+                  title={action.description}
+                  type="button"
+                  onClick={() => void choose(edit, action)}
+                >
+                  {busy === edit.id ? "Applying…" : action.label}
+                </button>
+              ))}
+          </div>
+          <p className="section-copy">{edit.reversibleNote}</p>
+        </article>
+      ))}
+      {problem ? (
+        <p className="section-copy" role="alert">
+          {problem}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

@@ -6,7 +6,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["android", "dist", "coverage", "ios/App/App/public"],
+    ignores: [
+      "android",
+      "dist",
+      "coverage",
+      "ios/App/App/public",
+      // Exact publisher bytes are integrity-tested, not locally rewritten.
+      "vendor/tasknotes-query-6bec1906.browser.mjs",
+      "vendor/tasknotes-query-6bec1906.browser.d.mts",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

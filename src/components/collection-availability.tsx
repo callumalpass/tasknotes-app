@@ -21,12 +21,36 @@ export function CollectionAvailability({
     };
   }, [waiting]);
 
+  const held = connection.heldEdits?.length ?? 0;
   if (connection.state !== "unavailable") {
-    return waiting && prolonged ? (
-      <div className="collection-connection-indicator" role="status">
-        {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
-      </div>
-    ) : null;
+    return (
+      <>
+        {held ? (
+          <div className="collection-held-notice" role="status">
+            <span>
+              mdbase protected your edit:{" "}
+              {held === 1
+                ? `${connection.heldEdits![0]!.path} is waiting for your choice.`
+                : `${held} files are waiting for your choice.`}
+            </span>
+            {onSettings ? (
+              <button
+                className="text-action"
+                type="button"
+                onClick={onSettings}
+              >
+                Review
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {waiting && prolonged ? (
+          <div className="collection-connection-indicator" role="status">
+            {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
+          </div>
+        ) : null}
+      </>
+    );
   }
   return (
     <section

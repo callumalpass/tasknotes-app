@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { taskPathCandidates } from "../domain/task-path-policy";
 import { MdbaseViewAdapter } from "./mdbase-view-adapter";
 import { validResult, operationDiagnostics } from "./mdbase-operation";
 import { taskCompletion } from "../domain/task-completion";
@@ -2411,25 +2412,14 @@ export class MdbaseTaskRepository implements TaskRepository {
       ...this.reservedTaskPaths,
       ...[...this.cache.values()].map(({ task: cached }) => cached.path),
     ]);
-    let path = task.path;
-    if (occupied.has(path)) {
-      const extension = /\.md$/i.test(path) ? ".md" : "";
-      const stem = extension ? path.slice(0, -extension.length) : path;
-      let allocated = "";
-      for (let index = 2; index < 10_000; index += 1) {
-        const candidate = `${stem}-${index}${extension}`;
-        if (occupied.has(candidate)) continue;
-        allocated = candidate;
-        break;
-      }
-      if (!allocated)
-        throw new Error(
-          "task_path_collision: Could not allocate a unique task path.",
-        );
-      path = allocated;
+    for (const path of taskPathCandidates(task.path)) {
+      if (occupied.has(path)) continue;
+      this.reservedTaskPaths.add(path);
+      return path === task.path ? task : { ...task, path };
     }
-    this.reservedTaskPaths.add(path);
-    return path === task.path ? task : { ...task, path };
+    throw new Error(
+      "task_path_collision: Could not allocate a unique task path.",
+    );
   }
 
   private async transitionMaterializedUnlocked(
