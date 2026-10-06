@@ -5,13 +5,10 @@ import { createHash } from "node:crypto";
 
 const root = new URL("../", import.meta.url);
 
-test("combined development getter/timer recovery/watch pins all actual archives in one graph", async () => {
+test("composed development SDK (clients-dev 331fccb9) with the retained Connect graph pins all archives", async () => {
   const provenance = JSON.parse(
     await readFile(
-      new URL(
-        "vendor/mdbase-dev-control-recovery-38f456ec-26abbb60.json",
-        root,
-      ),
+      new URL("vendor/mdbase-dev-clients-dev-331fccb9.json", root),
       "utf8",
     ),
   );
@@ -27,12 +24,17 @@ test("combined development getter/timer recovery/watch pins all actual archives 
     connectBase: "c9bf0cf4ced7d8f4f4402409df706eb5887068c1",
     getter: "23ac9d061a01d062b4197ae424d1dfd4c96d3771",
     timerFactory: "7c2f20eab6f899ad9586395c856fc27f01379d3c",
-    sdkComposition: "26abbb6030a52c8d69ca1b62a7d9d7febd8479e3",
-    sdkBridgeBase: "d81ff8614ed95695368452f2e2d404f369f3840c",
-    sdkTimerFacade: "fbe42a22cd59f745484c3fc028f1843dc7509c6a",
-    sdkWatch: "b8e5bb47ebbd5b42cff844807bc0666adad5399a",
     connectRecovery: "95431115fbc5c12ae4ff83c8e2a14fd9dfbe843c",
-    sdkRecovery: "5b690ec6e872fcfde1f549d2f31ee2e43d1717ef",
+    sdkComposition: "331fccb9 (ws/clients-dev-20261006 on main 7115b748)",
+    sdkMembers: {
+      "#327": "7f457272",
+      "#366": "9306bf8a",
+      "#390": "84cb43c4",
+      "#395": "aff43741",
+      "#400": "706a1a71",
+      "timer-checkpoint": "1fff217b",
+    },
+    delivery: ".coord/sdk-tnapp-artifacts/clients-dev-331fccb9/provenance.json",
   });
   assert.deepEqual(provenance.artifacts.map((a) => a.package).sort(), [
     "@mdbase-dev/connect",

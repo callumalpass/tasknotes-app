@@ -7,7 +7,7 @@ settings:
 overrides:
   '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
   '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz
-  '@mdbase-dev/sdk': file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz
+  '@mdbase-dev/sdk': file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
   '@mdbase-dev/connect-sync': 0.1.0-beta.125
 
 importers:
@@ -84,8 +84,8 @@ importers:
         specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
       '@mdbase-dev/sdk':
-        specifier: file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz
-        version: file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz
+        specifier: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
+        version: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
       '@mdbase-dev/ui':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)
@@ -912,8 +912,8 @@ packages:
     resolution: {integrity: sha512-B5MjTqGVbdxlGWKvvmfGB149oUHuZhhTjClewaiD3Uiqp4PBg5f+uAVvazldwLZduXFa5ys2yztV/c8t3p6lsA==, tarball: file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz}
     version: 0.1.0-beta.129
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz':
-    resolution: {integrity: sha512-Nbeycph4C0/JpEdz12JR7FJte6zw4M7tLK7OjeFqQoBlvAVm0od3hypXpW9grtzRAgRwrcFGmsa37y2AHfIC7A==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz}
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz':
+    resolution: {integrity: sha512-Y9tHD9wpknB51/8oRaLSjazLY27ucYf2VMSuIwyxaty+NG/SfSyqFZ6+e4bw8iXvnmEYFu2QdhzXZ6zFJoOHOg==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 
@@ -4824,7 +4824,7 @@ snapshots:
     dependencies:
       '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-26abbb60.tgz':
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
