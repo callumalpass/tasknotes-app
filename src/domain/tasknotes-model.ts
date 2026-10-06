@@ -842,6 +842,15 @@ export class TaskNotesTaskModel {
       ...(info.reminders?.length === 0
         ? { [this.config.fieldMapping.reminders]: [] }
         : {}),
+      // The portable mapper omits an empty skipped history. A patch over an
+      // existing history must explicitly clear it instead of retaining base.
+      ...(info.skipped_instances?.length === 0 &&
+      Object.prototype.hasOwnProperty.call(
+        base,
+        this.config.fieldMapping.skippedInstances,
+      )
+        ? { [this.config.fieldMapping.skippedInstances]: [] }
+        : {}),
       id,
       mobileRevision: revision,
     };

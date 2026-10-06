@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import {
   MdbaseError,
   toPlain,
+  toValue,
   type MdbaseClient,
   type PlainValue,
   type UpdateInput as NativeUpdateInput,
@@ -657,49 +658,173 @@ export class NextTaskRepository implements TaskRepository {
     return out;
   }
 
-  async toggle(
+  toggle(
     id: string,
     occurrenceDate?: string,
     completed?: boolean,
   ): Promise<Task> {
-    const task = await this.get(id);
-    if (!task) throw new Error("The task is no longer available.");
-    if (task.recurrenceParent && task.occurrenceDate)
-      throw nativeUnsupported(
-        "Materialized occurrence transitions need the native atomic recurrence adapter.",
-      );
-    if (
-      completed !== undefined &&
-      taskCompletion(task, occurrenceDate) === completed
-    )
-      return task;
-    return this.mutateTask(
-      id,
-      JSON.stringify(["task:toggle", id, occurrenceDate, completed]),
-      (current, model) =>
-        completed !== undefined &&
-        taskCompletion(current, occurrenceDate) === completed
-          ? current
-          : model.toggle(current, {
-              now: new Date().toISOString(),
-              currentDate: occurrenceDate,
-            }),
-    );
+    return this.transitionTask(id, "toggle", occurrenceDate, completed);
   }
-  async skip(id: string, occurrenceDate: string): Promise<Task> {
-    const task = await this.get(id);
-    if (task?.recurrenceParent)
-      throw nativeUnsupported(
-        "Materialized occurrence transitions need the native atomic recurrence adapter.",
-      );
-    return this.mutateTask(
-      id,
-      JSON.stringify(["task:skip", id, occurrenceDate]),
-      (current, model) =>
-        model.skip(current, {
-          now: new Date().toISOString(),
-          currentDate: occurrenceDate,
-        }),
+
+  skip(id: string, occurrenceDate: string): Promise<Task> {
+    return this.transitionTask(id, "skip", occurrenceDate);
+  }
+
+  private transitionTask(
+    id: string,
+    action: "toggle" | "skip",
+    occurrenceDate?: string,
+    completed?: boolean,
+  ): Promise<Task> {
+    const targets: string[] = [];
+    const warnings: string[] = [];
+    return this.mutations.run(
+      {
+        key: JSON.stringify([
+          "task:transition",
+          id,
+          action,
+          occurrenceDate,
+          completed,
+        ]),
+        prepare: async (mutationId, signal) => {
+          const current = await this.current(id, signal);
+          const now = new Date().toISOString();
+          targets.push(current.record.id);
+          const ops: wire.Op[] = [];
+          if (current.task.recurrenceParent && current.task.occurrenceDate) {
+            const summaries = [...this.cache.values()].map(
+              (entry) => entry.task,
+            );
+            const reference = findOccurrenceParent(summaries, current.task);
+            if (!reference || reference.id === id)
+              throw new Error(
+                "invalid_recurrence_parent: The occurrence parent could not be resolved.",
+              );
+            const parent = await this.current(reference.id, signal);
+            if (
+              this.cache.get(id)!.typeName !==
+              this.cache.get(reference.id)!.typeName
+            )
+              throw new Error(
+                "A materialized occurrence and its parent must use the same TaskNotes implementation type.",
+              );
+            if (
+              action === "toggle" &&
+              completed !== undefined &&
+              current.task.completed === completed
+            )
+              return { value: current.task };
+            const transition = parent.model.transitionMaterializedOccurrence(
+              current.task,
+              parent.task,
+              action,
+              { now },
+            );
+            targets.push(parent.record.id);
+            ops.push(
+              this.client.updateOp(
+                current.record,
+                taskChanges(
+                  current.record,
+                  current.task,
+                  transition.occurrence,
+                ),
+              ),
+              this.client.updateOp(
+                parent.record,
+                taskChanges(parent.record, parent.task, transition.parent),
+              ),
+            );
+            if (transition.materializeNextDate) {
+              const nextId = await occurrenceRecordId(
+                parent.task.id,
+                transition.materializeNextDate,
+              );
+              const existing = summaries.filter(
+                (task) =>
+                  findOccurrenceParent([parent.task], task)?.id ===
+                  parent.task.id,
+              );
+              const next = await parent.model.materializeOccurrence(
+                transition.parent,
+                transition.materializeNextDate,
+                existing,
+                { id: nextId, now },
+                (path) => this.template(path, signal),
+              );
+              warnings.push(...next.warnings);
+              if (next.created) {
+                const task = await this.availableTaskPath(next.task, signal);
+                targets.push(nextId);
+                ops.push({
+                  kind: "create",
+                  id: nextId,
+                  type: this.cache.get(reference.id)!.typeName,
+                  path: task.path,
+                  frontmatter: new Map(
+                    Object.entries(task.frontmatter).map(([field, value]) => [
+                      field,
+                      toValue(value as PlainValue),
+                    ]),
+                  ),
+                  body: task.body,
+                });
+              }
+            }
+          } else {
+            if (
+              action === "toggle" &&
+              completed !== undefined &&
+              taskCompletion(current.task, occurrenceDate) === completed
+            )
+              return { value: current.task };
+            const next =
+              action === "toggle"
+                ? current.model.toggle(current.task, {
+                    now,
+                    currentDate: occurrenceDate,
+                  })
+                : current.model.skip(current.task, {
+                    now,
+                    currentDate: occurrenceDate,
+                  });
+            ops.push(
+              this.client.updateOp(
+                current.record,
+                taskChanges(current.record, current.task, next),
+              ),
+            );
+          }
+          signal.throwIfAborted();
+          // Related task updates and the requested next occurrence are one atomic
+          // native mutation, not a partially acknowledged multi-request cascade.
+          return async () =>
+            (await this.client.submit(ops, { mutationId, signal }))[0]!;
+        },
+        confirmed: async (_receipt, signal) => {
+          const records = await Promise.all(
+            targets.map((recordId) =>
+              this.client.get(
+                recordId,
+                { body: true, effective: true },
+                signal,
+              ),
+            ),
+          );
+          signal.throwIfAborted();
+          const tasks = records.map((record) => this.remember(record));
+          if (!tasks[0])
+            throw new Error(
+              "The original native transition target was not retained.",
+            );
+          this.emit("data");
+          return warnings.length
+            ? { ...tasks[0], operationWarnings: warnings }
+            : tasks[0];
+        },
+      },
+      this.scope.signal,
     );
   }
   async materializeOccurrence(

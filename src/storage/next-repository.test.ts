@@ -2,6 +2,7 @@ import { type PlainValue, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
@@ -58,6 +59,190 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect((await f.client.get(s.nativeId)).frontmatter.get("id")).toBe(
       s.portableId,
     );
+  });
+
+  it("completes and reopens a materialized occurrence with its parent atomically", async () => {
+    const f = await fixture();
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    expect(
+      (await f.repository.toggle(occurrence.task.id, undefined, true))
+        .completed,
+    ).toBe(true);
+    expect((await f.repository.get(parent.id))!.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(submit).toHaveBeenCalledOnce();
+    expect(submit.mock.calls[0]![0].map((op) => op.kind)).toEqual([
+      "update",
+      "update",
+    ]);
+    const ops = submit.mock.calls[0]![0];
+    expect(ops.every((op) => op.kind === "update" && op.ifRevision)).toBe(true);
+    expect(
+      (await f.repository.toggle(occurrence.task.id, undefined, false))
+        .completed,
+    ).toBe(false);
+    expect(
+      (await f.repository.get(parent.id))!.completeInstances,
+    ).not.toContain("2026-08-05");
+  });
+
+  it("skips and unskips a materialized occurrence with its parent", async () => {
+    const base = defaultTaskCollectionConfiguration();
+    const f = await fixture({}, false, {
+      statuses: [
+        ...base.statuses,
+        {
+          ...base.statuses[0]!,
+          id: "skipped",
+          value: "skipped",
+          label: "Skipped",
+          isCompleted: false,
+          isSkipped: true,
+        },
+      ],
+    });
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    expect(
+      (await f.repository.skip(occurrence.task.id, "2026-08-05")).skipped,
+    ).toBe(true);
+    expect((await f.repository.get(parent.id))!.skippedInstances).toContain(
+      "2026-08-05",
+    );
+    expect(
+      (await f.repository.skip(occurrence.task.id, "2026-08-05")).skipped,
+    ).toBe(false);
+    expect((await f.repository.get(parent.id))!.skippedInstances).not.toContain(
+      "2026-08-05",
+    );
+  });
+
+  it("refuses a missing skipped status before submitting a transition", async () => {
+    const f = await fixture();
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(
+      f.repository.skip(occurrence.task.id, "2026-08-05"),
+    ).rejects.toThrow("missing_skipped_status");
+    expect(submit).not.toHaveBeenCalled();
+    expect(
+      (await f.repository.toggle(occurrence.task.id, undefined, true))
+        .completed,
+    ).toBe(true);
+  });
+
+  it("a rejected transition leaves both occurrence and parent unchanged", async () => {
+    const f = await fixture();
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    f.replica.setOnline(false);
+    const transition = f.repository.toggle(occurrence.task.id, undefined, true);
+    await vi.waitFor(async () =>
+      expect((await f.client.pendingWrites()).length).toBe(1),
+    );
+    const pending = (await f.client.pendingWrites())[0]!;
+    f.replica.reject(pending.receipt.mutation, {
+      code: "conflict",
+      recovery: "refresh",
+      message: "Parent revision changed",
+    });
+    await expect(transition).rejects.toMatchObject({ code: "conflict" });
+    expect((await f.repository.get(occurrence.task.id))!.completed).toBe(false);
+    expect(
+      (await f.repository.get(parent.id))!.completeInstances,
+    ).not.toContain("2026-08-05");
+  });
+
+  it("creates a requested next occurrence in the same atomic transition", async () => {
+    const f = await fixture();
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+      occurrenceMaterialization: "on_completion",
+      occurrenceNextTrigger: "completion",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    await f.repository.toggle(occurrence.task.id, undefined, true);
+    expect(submit).toHaveBeenCalledOnce();
+    expect(submit.mock.calls[0]![0].map((op) => op.kind)).toEqual([
+      "update",
+      "update",
+      "create",
+    ]);
+    const tasks = await f.repository.listSummaries();
+    expect(
+      tasks.filter((task) => task.occurrenceDate === "2026-08-06"),
+    ).toHaveLength(1);
+    expect(
+      tasks.find((task) => task.occurrenceDate === "2026-08-06")!.completed,
+    ).toBe(false);
+  });
+
+  it("recovers a lost occurrence transition ACK without another toggle or batch", async () => {
+    const f = await fixture();
+    const parent = await f.repository.create({
+      title: "Series",
+      scheduled: "2026-08-05",
+      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    });
+    const occurrence = await f.repository.materializeOccurrence(
+      parent.id,
+      "2026-08-05",
+    );
+    const submit = f.client.submit.bind(f.client);
+    const spy = vi
+      .spyOn(f.client, "submit")
+      .mockImplementationOnce(async (...args) => {
+        await submit(...args);
+        throw new Error("Lost transition ACK");
+      });
+    await expect(f.repository.toggle(occurrence.task.id)).rejects.toMatchObject(
+      { problem: { code: "operation_outcome_unknown" } },
+    );
+    expect((await f.repository.toggle(occurrence.task.id)).completed).toBe(
+      true,
+    );
+    expect((await f.repository.get(parent.id))!.completeInstances).toContain(
+      "2026-08-05",
+    );
+    expect(spy).toHaveBeenCalledOnce();
   });
 
   it("namespaces persisted intents by backend, consenting account and collection", async () => {

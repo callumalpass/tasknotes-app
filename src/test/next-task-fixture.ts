@@ -6,6 +6,7 @@ import {
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
+  type TaskNotesMdbaseOptions,
 } from "@tasknotes/model/mdbase";
 import {
   parseFrontmatter,
@@ -21,9 +22,13 @@ import { NextTaskRepository } from "../storage/next-repository";
 export async function nextTaskFixture(
   options: MemoryReplicaOptions = {},
   archive = false,
+  modelConfig?: TaskNotesMdbaseOptions["modelConfig"],
 ) {
   const replica = new MemoryReplica(options);
-  const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
+  const generated = buildTaskNotesMdbaseResources({
+    profiles: ["core-lite"],
+    modelConfig,
+  });
   const type = structuredClone(generated.type) as unknown as {
     implements: Array<{
       contract: string;
