@@ -1,0 +1,53 @@
+{
+  "format": 1,
+  "source": {
+    "repository": "https://github.com/mdbase-dev/mdbase-next",
+    "commit": "b3e605acb28139fdb5c5d6024be78ff48876e9b3",
+    "mergedFoundations": [429, 510, 512, 513]
+  },
+  "sdk": {
+    "file": "mdbase-dev-sdk-0.0.0-b3e605ac.tgz",
+    "sha256": "d61c9db85382b8cf52f0d2a5cb2285fb393c687b935a28ebdaf9abf6cc33313b",
+    "thinGzipBytesCeiling": 65536,
+    "thinGzipKiBObserved": 48.2
+  },
+  "storage": {
+    "file": "mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz",
+    "sha256": "3135e84eff46642b267d355fc601880f8285b9db32ba29c1d934b4e4aed5590e",
+    "entry": "@mdbase-dev/obsidian-runtime/app-storage",
+    "sqliteWasmVersion": "3.53.4-build2",
+    "durability": "Disposable",
+    "workerOnly": true
+  },
+  "wasm": {
+    "file": "mdbase-app-runtime-b3e605ac.wasm",
+    "sha256": "801d8d0dc07c631efb7f0e3ca582b729e082c1b1ad7bb96454898b67fed1da3b",
+    "features": ["app-runtime"],
+    "profile": "wasm-release",
+    "binaryenVersion": "132.0.0",
+    "optimization": "-Oz --converge, existing xtask feature/strip flags",
+    "bytes": 2600280,
+    "gzipBytes": 1044739,
+    "brotliBytes": 768317,
+    "ceilings": { "raw": 3000000, "gzip": 1250000, "brotli": 950000 }
+  },
+  "qualification": {
+    "nativeSqlAbiSmoke": true,
+    "actualChromiumWorkerCoreOfficialOpfs": true,
+    "actualInstalledSdkStorageAndWorkerIntegrityLoader": true,
+    "chromiumVersion": "149.0.7827.55",
+    "freshUncleanExistingReopens": true,
+    "sameNoiseTuple": true,
+    "noPersistedKeyring": true,
+    "pendingRpcRejectedBeforeTerminationUnlock": true,
+    "registrationAndMetadataAreHostFixtures": true,
+    "actualCpAuthentication": false,
+    "appliedPolicy": false,
+    "taskAcceptance": false,
+    "saved": false,
+    "platformCustody": false,
+    "physicalDurability": false,
+    "labAccess": false
+  },
+  "activation": "dormant: genuine protected cloud-copy producer and native read gates required"
+}
