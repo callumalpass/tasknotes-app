@@ -841,26 +841,54 @@ export function useCollectionSummary(): {
   info: CollectionInfo | null;
   stats: TaskStats | null;
   loading: boolean;
+  error: Error | null;
+  retry(): void;
 } {
-  const { repository, status } = useRepository();
+  const { repository, status, error: repositoryError } = useRepository();
   const revision = useRepositoryRevision("collection-summary");
-  const [info, setInfo] = useState<CollectionInfo | null>(null);
-  const [stats, setStats] = useState<TaskStats | null>(null);
+  const [infoResource] = useState(() => new QueryResource<CollectionInfo>());
+  const [statsResource] = useState(() => new QueryResource<TaskStats>());
+  const info = useSyncExternalStore(
+    infoResource.subscribe,
+    infoResource.snapshot,
+    infoResource.snapshot,
+  );
+  const stats = useSyncExternalStore(
+    statsResource.subscribe,
+    statsResource.snapshot,
+    statsResource.snapshot,
+  );
   useEffect(() => {
     if (status !== "ready") return;
-    let active = true;
-    void Promise.all([repository.collectionInfo(), repository.stats()])
-      .then(([nextInfo, nextStats]) => {
-        if (!active) return;
-        setInfo(nextInfo);
-        setStats(nextStats);
-      })
-      .catch(() => undefined);
+    // Statistics may scan the collection. Its failure must not hide the name
+    // and location or leave either read masquerading as an unfinished opening.
+    infoResource.load("collection-info", () => repository.collectionInfo());
+    statsResource.load("collection-stats", () => repository.stats());
     return () => {
-      active = false;
+      infoResource.cancel();
+      statsResource.cancel();
     };
-  }, [repository, revision, status]);
-  return { info, stats, loading: status !== "ready" || !info || !stats };
+  }, [repository, revision, status, infoResource, statsResource]);
+  const retry = useCallback(() => {
+    if (status !== "ready") return;
+    infoResource.retry();
+    statsResource.retry();
+  }, [status, infoResource, statsResource]);
+  return {
+    info: info.data,
+    stats: stats.data,
+    loading:
+      status === "opening" ||
+      (status === "ready" &&
+        [info.status, stats.status].some(
+          (state) => state === "idle" || state === "loading",
+        )),
+    error:
+      (status === "error" ? repositoryError : null) ??
+      info.error ??
+      stats.error,
+    retry,
+  };
 }
 
 export function useRepositoryRevision(scope: QueryScope): number {
