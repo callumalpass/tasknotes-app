@@ -22,7 +22,7 @@ export function CalendarPreferencesEditor({
       <div className="task-model-settings-grid">
         <TaskNotesSelectField
           label={t({ message: "Week starts" })}
-          options={orderedWeekdays(0, undefined, "short").map(
+          options={orderedWeekdays(0, appLocale(), "short").map(
             (label, value) => ({
               value: String(value),
               label,

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPortal } from "react-dom";
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { act, render, screen } from "../test/render";
 import { initializeAppI18n, appLocale } from "./app";
 import { AppI18nProvider } from "./app-provider";
@@ -22,6 +22,7 @@ import {
   viewPropertyDetails,
 } from "./view-presentation";
 import { editorPhrases } from "./editor-phrases";
+import { uiCopy } from "./ui-copy";
 import { parseRecurrenceRule } from "../domain/recurrence-rule";
 import type { TaskViewRow } from "../domain/view";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -60,10 +61,14 @@ afterEach(() => {
 });
 
 function ControlsAndPortal() {
+  const { t } = useLingui();
   return (
     <>
       <button>
         <Trans>Refresh now</Trans>
+      </button>
+      <button aria-label={t`Actions for ${uiCopy("empty item")}`}>
+        <Trans>Actions</Trans>
       </button>
       {createPortal(
         <aside>
@@ -104,6 +109,9 @@ describe("application localization", () => {
       "Actualiser maintenant",
     );
     expect(document.documentElement.lang).toBe("fr");
+    expect(
+      screen.getByRole("button", { name: "Actions pour élément vide" }),
+    ).toBeVisible();
   });
 
   it("falls back for unsupported locales", () => {
@@ -111,7 +119,7 @@ describe("application localization", () => {
     expect(appLocale()).toBe("en");
   });
 
-  it("never enables the partial locale in an ordinary production build", () => {
+  it("never enables the preview locale in an ordinary production build", () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("MODE", "production");
     expect(initializeAppI18n("fr").locale).toBe("en");
@@ -119,16 +127,18 @@ describe("application localization", () => {
   });
 
   it.each(["en", "fr"])(
-    "preserves English zero/one/many fallback in %s",
+    "renders authored zero/one/many copy in %s",
     (locale) => {
       initializeAppI18n(locale);
-      expect([0, 1, 2].map((count) => countLabel(count, "task"))).toEqual([
-        "0 tasks",
-        "1 task",
-        "2 tasks",
-      ]);
+      expect([0, 1, 2].map((count) => countLabel(count, "task"))).toEqual(
+        locale === "fr"
+          ? ["0 tâches", "1 tâche", "2 tâches"]
+          : ["0 tasks", "1 task", "2 tasks"],
+      );
       expect([0, 1, 2].map((count) => countLabel(count, "dependency"))).toEqual(
-        ["0 dependencies", "1 dependency", "2 dependencies"],
+        locale === "fr"
+          ? ["0 dépendances", "1 dépendance", "2 dépendances"]
+          : ["0 dependencies", "1 dependency", "2 dependencies"],
       );
     },
   );
@@ -214,6 +224,31 @@ describe("application localization", () => {
       "Every 2 weeks on Monday and Wednesday",
     );
     expect(draft.weekdays).toEqual(["MO", "WE"]);
+  });
+
+  it("renders French field, recurrence, date and editor copy while preserving syntax", () => {
+    initializeAppI18n("fr");
+    expect(builtInFieldLabel("due")).toBe("Échéance");
+    expect(daySectionLabel("anytime", "ignored")).toBe("Sans date");
+    expect(formatTaskDate("2026-07-24", "2026-07-24")).toBe("Aujourd’hui");
+    expect(formatRelativeTaskDate("2026-07-22", "2026-07-24")).toBe(
+      "Il y a 2 jours",
+    );
+    const rule = "FREQ=MONTHLY;BYDAY=2MO";
+    expect(recurrenceRuleSummary(parseRecurrenceRule(rule))).toBe(
+      "Tous les mois, le deuxième lundi",
+    );
+    expect(
+      recurrenceRuleSummary(
+        parseRecurrenceRule("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE"),
+      ),
+    ).toBe("Toutes les 2 semaines, les jours suivants : lundi et mercredi");
+    const phrases = editorPhrases();
+    expect(phrases["Go to line"]).toBe("Aller à la ligne");
+    expect(phrases["replaced match on line $"]).toBe(
+      "correspondance remplacée à la ligne $",
+    );
+    expect(phrases["replaced $ matches"]).toBe("$ correspondances remplacées");
   });
 
   it("preserves editor phrase lookup keys and substitution tokens", () => {

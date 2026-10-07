@@ -17,7 +17,7 @@ if (import.meta.env.DEV || import.meta.env.MODE === "e2e") {
 i18n.activate("en");
 
 export function initializeAppI18n(locale = requestedPilotLocale()) {
-  // French is a partial preview, never a production language switch.
+  // The complete French catalogue remains preview-only, not a production language switch.
   const preview = import.meta.env.DEV || import.meta.env.MODE === "e2e";
   const selected = preview && locale === "fr" ? "fr" : "en";
   if (i18n.locale !== selected) i18n.activate(selected);

@@ -556,8 +556,8 @@ function ComputedPropertiesSection({
             })
           }
         >
-          <Plus aria-hidden="true" size={15} /> <Trans>Add </Trans>
-          {noun}
+          <Plus aria-hidden="true" size={15} />
+          {noun === "formula" ? t`Add formula` : t`Add projection`}
         </button>
         {draft.dialect === "obsidian-bases" ? (
           <small>

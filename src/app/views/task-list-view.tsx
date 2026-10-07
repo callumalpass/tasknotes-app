@@ -1,4 +1,5 @@
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
 import { daySectionLabel } from "../../i18n/default-labels";
 import { GripVertical } from "lucide-react";
 import {
@@ -392,7 +393,7 @@ function ManualTaskRows({
           );
     if (!input) {
       setAnnouncement(
-        t`${destinationLane.label ?? t({ message: "That section" })} is read-only.`,
+        t`${destinationLane.label ?? uiCopy("That section")} is read-only.`,
       );
       return;
     }
@@ -409,7 +410,7 @@ function ManualTaskRows({
       : undefined;
     setAnnouncement(
       sourceLane.key !== destinationLane.key
-        ? t`Moved ${row.task.title} to ${destinationLane.label ?? t`the destination section`}.`
+        ? t`Moved ${row.task.title} to ${destinationLane.label ?? uiCopy("the destination section")}.`
         : target
           ? destination.placement === "before"
             ? t`Moved ${row.task.title} before ${target.title}.`
@@ -474,7 +475,7 @@ function ManualTaskRows({
     );
     setAnnouncement(
       crossesLane
-        ? t`Moved ${row.task.title} to ${destinationLane.label ?? t`the destination section`}.`
+        ? t`Moved ${row.task.title} to ${destinationLane.label ?? uiCopy("the destination section")}.`
         : direction < 0
           ? t`Moved ${row.task.title} up.`
           : t`Moved ${row.task.title} down.`,

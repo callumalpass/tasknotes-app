@@ -1,5 +1,5 @@
-import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
 import { Plus } from "lucide-react";
 import {
   useContext,
@@ -121,14 +121,17 @@ export function KanbanView({
         label:
           propertyName === "archived"
             ? t({ message: "Active" })
-            : t({ message: "Open" }),
+            : t({ message: "Open", context: "board column: open tasks" }),
       },
       {
         value: true,
         label:
           propertyName === "archived"
             ? t({ message: "Archived" })
-            : t({ message: "Complete" }),
+            : t({
+                message: "Complete",
+                context: "board column: completed tasks",
+              }),
       },
     ])
       columns.set(valueKey(configured.value), {
@@ -693,7 +696,7 @@ export function KanbanView({
       placement: vertical < 0 ? "before" : "after",
     });
     setAnnouncement(
-      t`Moved ${row.task.title} ${vertical < 0 ? t({ message: "up" }) : t({ message: "down" })}.`,
+      t`Moved ${row.task.title} ${vertical < 0 ? uiCopy("up") : uiCopy("down")}.`,
     );
   }
 
@@ -910,7 +913,7 @@ function kanbanPreviewTransform(
     Math.max(pointerY - offsetY, inset),
     Math.max(inset, window.innerHeight - height - inset),
   );
-  return t`translate3d(${x}px, ${y}px, 0)`;
+  return `translate3d(${x}px, ${y}px, 0)`;
 }
 
 /**

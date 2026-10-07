@@ -1,6 +1,7 @@
 {
   "productionLocales": ["en"],
   "previewLocales": ["fr"],
+  "completeCatalogLocales": ["en", "fr"],
   "requiredTranslations": {
     "fr": [
       "-Ic4C5",

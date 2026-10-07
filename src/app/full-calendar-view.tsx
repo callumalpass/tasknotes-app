@@ -917,7 +917,7 @@ function calendarStorageValue(date: Date, allDay: boolean): string {
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
   if (allDay) return day;
-  return t`${day}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `${day}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function agendaLabel(value: string): string {

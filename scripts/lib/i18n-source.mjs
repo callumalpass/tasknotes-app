@@ -168,6 +168,13 @@ export function inspectUiSource(source, file = "component.tsx") {
       )
         add(node, "translation in count-kind identifier", node.getText(ast));
       for (let p = node.parent; p; p = p.parent) {
+        if (
+          ts.isTaggedTemplateExpression(p) &&
+          ["t", "translate"].includes(p.tag.getText(ast))
+        ) {
+          add(node, "uncompiled nested translation macro", node.getText(ast));
+          break;
+        }
         if (ts.isJsxAttribute(p) && identifiers.has(p.name.getText(ast)))
           add(node, "translation in identifier attribute", p.name.getText(ast));
         if (ts.isPropertyAssignment(p) && identifiers.has(p.name.getText(ast)))

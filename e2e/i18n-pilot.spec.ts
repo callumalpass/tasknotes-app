@@ -7,9 +7,18 @@ for (const locale of ["en", "fr"]) {
   }) => {
     await page.goto(`more?demo=12&i18n-pilot=${locale}`);
     await expect(
-      page.getByRole("heading", { name: "Settings", exact: true }),
+      page.getByRole("heading", {
+        name: locale === "fr" ? "Paramètres" : "Settings",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    await expect(
+      page.getByRole("combobox", {
+        name: locale === "fr" ? "Début de la semaine" : "Week starts",
+        exact: true,
+      }),
+    ).toContainText(locale === "fr" ? "dim." : "Sun");
     const panel = page.getByRole("region", { name: "Collection", exact: true });
     await expect(panel).toContainText("TaskNotes demo");
     await expect(panel).toContainText(locale === "fr" ? "au total" : "total");
@@ -49,7 +58,7 @@ for (const locale of ["en", "fr"]) {
   });
 }
 
-test("application-wide partial preview preserves English fallbacks and user edits", async ({
+test("complete French preview preserves user edits and stored English view names", async ({
   page,
 }) => {
   await page.goto("?demo=12&i18n-pilot=fr");
@@ -60,26 +69,29 @@ test("application-wide partial preview preserves English fallbacks and user edit
       exact: true,
     })
     .click();
-  const title = page.getByRole("textbox", { name: "Task title", exact: true });
+  const title = page.getByRole("textbox", {
+    name: "Titre de la tâche",
+    exact: true,
+  });
   await expect(title).toHaveValue("Prepare quarterly planning session");
   await expect(
-    page.getByRole("button", { name: "Complete task", exact: true }),
+    page.getByRole("button", { name: "Terminer la tâche", exact: true }),
   ).toBeVisible();
   const results = await new AxeBuilder({ page })
     .include(".task-screen")
     .analyze();
   expect(results.violations).toEqual([]);
   await title.fill("Ma tâche — untouched user content");
-  await expect(page.locator(".save-state")).toHaveText("Saved");
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator(".save-state")).toHaveText("Enregistré");
+  await page.getByRole("button", { name: "Retour", exact: true }).click();
   await expect(
     page.getByRole("button", {
       name: "Ma tâche — untouched user content",
       exact: true,
     }),
   ).toBeVisible();
-  await openNavigationItem(page, "Search");
-  const search = page.getByRole("searchbox", { name: "Search tasks" });
+  await openNavigationItem(page, "Rechercher");
+  const search = page.getByRole("searchbox", { name: "Rechercher des tâches" });
   await search.fill("Ma tâche");
   await expect(
     page.getByRole("button", {
@@ -88,14 +100,14 @@ test("application-wide partial preview preserves English fallbacks and user edit
     }),
   ).toBeVisible();
   await search.blur();
-  await openNavigationItem(page, "Scratchpad");
+  await openNavigationItem(page, "Bloc-notes");
   await expect(
-    page.getByRole("heading", { name: "Scratchpad", exact: true }),
+    page.getByRole("heading", { name: "Bloc-notes", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "New note", exact: true }),
+    page.getByRole("button", { name: "Nouvelle note", exact: true }),
   ).toBeVisible();
-  await openNavigationItem(page, "Settings");
+  await openNavigationItem(page, "Paramètres");
   await expect(
     page.getByRole("button", { name: "Actualiser maintenant", exact: true }),
   ).toBeVisible();
@@ -107,12 +119,123 @@ test("application-wide partial preview preserves English fallbacks and user edit
   });
 });
 
+test("French capture, accepted-write notice and task actions", async ({
+  page,
+}) => {
+  await page.goto("?demo=12&i18n-pilot=fr");
+  // Saved view names and enum-backed collection status labels remain data.
+  await expect(
+    page.getByRole("heading", { name: "Today", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Nouvelle tâche", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Nouvelle tâche",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Continuer à ajouter des tâches");
+  await expect(dialog).toContainText("Call Sam tomorrow 9am #work");
+  await dialog
+    .getByRole("combobox", { name: "Titre de la nouvelle tâche" })
+    .fill("Une tâche française #work");
+  await dialog.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const notice = page.locator(".task-added-notice");
+  await expect(notice).toContainText("Tâche ajoutée : Une tâche française");
+  await notice.getByRole("button", { name: "Ouvrir", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Titre de la tâche" }),
+  ).toHaveValue("Une tâche française");
+  await page
+    .getByRole("button", { name: "Autres actions de tâche", exact: true })
+    .click();
+  const actions = page.locator(".task-actions-menu");
+  await expect(
+    actions
+      .getByRole("button", { name: "Supprimer", exact: true })
+      .or(actions.getByRole("menuitem", { name: "Supprimer", exact: true })),
+  ).toBeVisible();
+  await actions.getByText("Dates", { exact: true }).click();
+  await expect(actions).toContainText("Planifier pour aujourd’hui");
+  await expect(actions).toContainText("Échéance demain");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("French view editor and Scratchpad writing controls", async ({ page }) => {
+  await page.goto("views?demo=12&i18n-pilot=fr");
+  await expect(
+    page.getByRole("heading", { name: "Gérer les vues", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Créer une vue", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Nom de la vue", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Nom de la vue", exact: true })
+    .fill("");
+  await expect(
+    page.getByRole("button", { name: "Enregistrer la vue", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("heading", { name: "Détails de la vue", exact: true }),
+  ).toBeVisible();
+  expect(
+    (await new AxeBuilder({ page }).include(".view-editor").analyze())
+      .violations,
+  ).toEqual([]);
+  await page.getByRole("button", { name: "Annuler", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Abandonner les modifications", exact: true })
+    .click();
+  await openNavigationItem(page, "Bloc-notes");
+  await page
+    .getByRole("button", { name: "Nouvelle note", exact: true })
+    .click();
+  const current = page.getByRole("region", {
+    name: "Éditeur de bloc-notes actuel",
+    exact: true,
+  });
+  await current.getByRole("button", { name: "Écrire", exact: true }).click();
+  await current
+    .getByRole("textbox", { name: "Markdown du Bloc-notes", exact: true })
+    .fill("- [ ] Texte personnel **inchangé**\n");
+  await expect(current.getByRole("status")).toHaveText("Enregistré");
+  await expect(
+    current.getByRole("button", { name: "Gras", exact: true }),
+  ).toBeVisible();
+  await current.getByRole("button", { name: "Plan", exact: true }).click();
+  await expect(
+    current.getByRole("tree", { name: "Plan du Bloc-notes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    current.getByRole("button", {
+      name: "Actions pour élément vide",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    current.getByRole("textbox", {
+      name: "Brouillon de tâche: Texte personnel **inchangé**",
+      exact: true,
+    }),
+  ).toHaveValue("Texte personnel **inchangé**");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: `test-results/i18n-fr-writing-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+});
+
 async function openNavigationItem(page: Page, name: string): Promise<void> {
   const direct = page.getByRole("button", { name, exact: true });
   if (await direct.isVisible()) {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: "Parcourir", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }

@@ -2,6 +2,7 @@ import { appLocale } from "../i18n/app";
 import { t } from "@lingui/core/macro";
 import { countLabel } from "../i18n/default-labels";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import { Clock3, Play, Square, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -43,7 +44,7 @@ export function TimeTrackingField({
         <div>
           <h2 id="time-tracking-title">
             <Clock3 aria-hidden="true" size={16} strokeWidth={1.7} />{" "}
-            <Trans>Time</Trans>
+            <Trans context="time tracking duration">Time</Trans>
           </h2>
           <p>
             {active
@@ -148,7 +149,7 @@ export function TimeTrackingField({
                   <span>{formatSessionRange(entry, now)}</span>
                 </button>
                 <button
-                  aria-label={t`Remove ${entry.description || t({ message: "session" })}`}
+                  aria-label={t`Remove ${entry.description || uiCopy("session")}`}
                   className="icon-action"
                   disabled={busy}
                   type="button"

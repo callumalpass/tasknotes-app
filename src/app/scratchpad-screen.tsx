@@ -2,6 +2,7 @@ import { t, plural } from "@lingui/core/macro";
 import { nestedItemCount } from "../i18n/default-labels";
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import {
   Camera,
   Check,
@@ -779,7 +780,7 @@ export function ScratchpadScreen({
       setNextCursor(undefined);
       setResumeUndo(offerUndo ? result.previous : undefined);
       setStreamNotice(
-        t`${result.current.title?.trim() || t({ message: "Previous note" })} resumed`,
+        t`${result.current.title?.trim() || uiCopy("Previous note")} resumed`,
       );
       if (repository.listScratchFeed) {
         try {
@@ -2650,7 +2651,7 @@ function ScratchpadDocumentEditor({
   return (
     <section
       className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
-      aria-label={t`Editor for ${document?.title || (document?.state === "active" ? t({ message: "current scratchpad" }) : t({ message: "scratchpad" }))}`}
+      aria-label={t`Editor for ${document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))}`}
     >
       <div className="scratchpad-title-row">
         <input
@@ -2717,7 +2718,6 @@ function ScratchpadDocumentEditor({
             className={`scratchpad-save-state is-${saveState}`}
             role={saveState === "error" ? "status" : undefined}
           >
-<<<<<<< HEAD
             {saveState === "error"
               ? nativeSaveState
                 ? "Save needs review"
@@ -2725,13 +2725,6 @@ function ScratchpadDocumentEditor({
               : saveState === "saving" || nativeSaveState
                 ? ""
                 : "Saved"}
-=======
-            {saveState === "saving"
-              ? t({ message: "Saving" })
-              : saveState === "error"
-                ? t({ message: "Not saved" })
-                : t({ message: "Saved" })}
->>>>>>> 5eb5a95 (feat(i18n): catalogue interface copy across the TaskNotes app)
           </span>
           {onReactivate ? (
             <button
@@ -2814,7 +2807,7 @@ function ScratchpadDocumentEditor({
                   {descendantCount ? (
                     <button
                       aria-expanded={!collapsedIds.has(node.id)}
-                      aria-label={t`${collapsedIds.has(node.id) ? t({ message: "Expand" }) : t({ message: "Collapse" })} ${node.text || t({ message: "item" })}, ${nestedItemCount(descendantCount)}`}
+                      aria-label={t`${collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")} ${node.text || uiCopy("item")}, ${nestedItemCount(descendantCount)}`}
                       className="scratchpad-collapse"
                       type="button"
                       onClick={() =>
@@ -2836,7 +2829,7 @@ function ScratchpadDocumentEditor({
                     <span className="scratchpad-collapse-spacer" />
                   )}
                   <button
-                    aria-label={t`Move ${node.text || t({ message: "empty item" })}`}
+                    aria-label={t`Move ${node.text || uiCopy("empty item")}`}
                     className="scratchpad-drag-handle"
                     type="button"
                     onPointerDown={(event) => beginDrag(event, node.id)}
@@ -2884,7 +2877,7 @@ function ScratchpadDocumentEditor({
                       <button
                         aria-label={
                           node.kind === "draft"
-                            ? t`Convert ${node.text || t({ message: "empty task" })} to note`
+                            ? t`Convert ${node.text || uiCopy("empty task")} to note`
                             : t({ message: "Make a task" })
                         }
                         className="scratchpad-kind-toggle"
@@ -3013,7 +3006,7 @@ function ScratchpadDocumentEditor({
                     <button
                       aria-expanded={menuId === node.id}
                       aria-haspopup="menu"
-                      aria-label={t`Actions for ${node.text || t({ message: "empty item" })}`}
+                      aria-label={t`Actions for ${node.text || uiCopy("empty item")}`}
                       className="scratchpad-row-menu-trigger"
                       type="button"
                       onClick={() =>
@@ -3041,7 +3034,7 @@ function ScratchpadDocumentEditor({
                 ) : null}
                 {activeId === node.id ? (
                   <div
-                    aria-label={t`Outline controls for ${node.text || t({ message: "empty item" })}`}
+                    aria-label={t`Outline controls for ${node.text || uiCopy("empty item")}`}
                     className="scratchpad-mobile-depth-actions"
                   >
                     <button
@@ -3115,7 +3108,7 @@ function ScratchpadDocumentEditor({
                     className="scratchpad-row-menu"
                     ref={rowMenuRef}
                     role="menu"
-                    aria-label={t`Actions for ${node.text || t({ message: "item" })}`}
+                    aria-label={t`Actions for ${node.text || uiCopy("item")}`}
                   >
                     {node.kind === "draft" && node.text.trim() ? (
                       <button

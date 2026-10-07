@@ -405,7 +405,7 @@ function WeekdayField({
         <Trans>On</Trans>
       </legend>
       <div>
-        {WEEKDAYS.map(({ value, short }) => (
+        {WEEKDAYS.map(({ value }) => (
           <button
             aria-label={weekdayName(value)}
             aria-pressed={values.includes(value)}
@@ -420,7 +420,7 @@ function WeekdayField({
               )
             }
           >
-            {short}
+            {weekdayName(value, "narrow")}
           </button>
         ))}
       </div>
