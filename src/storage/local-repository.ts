@@ -37,7 +37,7 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu;
  * asynchronous Worker shutdown retains its leases. Call whenDisposed() when a
  * caller needs completion/error evidence, not just React's synchronous cleanup.
  */
-export class LocalTaskRepository extends NextTaskRepository {
+class LocalTaskRepository extends NextTaskRepository {
   private closing: Promise<void> | undefined;
   constructor(
     client: MdbaseClient,
@@ -65,6 +65,8 @@ export class LocalTaskRepository extends NextTaskRepository {
     await this.closing;
   }
 }
+
+export type { LocalTaskRepository };
 
 function cancellable<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return work;
