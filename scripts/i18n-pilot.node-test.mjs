@@ -4,6 +4,7 @@ import test from "node:test";
 import { formatter } from "@lingui/format-po";
 import { generateMessageId } from "@lingui/message-utils/generateMessageId";
 import { messageContract, validateCatalogues } from "./lib/pilot-catalogue.mjs";
+import { assertCompleteCatalogue } from "./lib/catalogue-completeness.mjs";
 
 const en = JSON.parse(
   await readFile(
@@ -32,6 +33,76 @@ test("real committed PO source/context pairs compile to generated JSON IDs", asy
         id === generateMessageId(entry.message, entry.context),
     );
   validateCatalogues(en, fr);
+});
+
+test("French policy requires complete authored PO before compiler fallback", async () => {
+  const policy = JSON.parse(
+    await readFile(
+      new URL("../src/i18n/locale-policy.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(policy.productionLocales, ["en"]);
+  assert.deepEqual(policy.completeCatalogLocales, ["en", "fr"]);
+  const po = formatter({}).parse(
+    await readFile(
+      new URL("../src/i18n/locales/fr/messages.po", import.meta.url),
+      "utf8",
+    ),
+    { locale: "fr" },
+  );
+  assert.equal(assertCompleteCatalogue(po, "fr"), Object.keys(en).length);
+  const required = policy.requiredTranslations.fr[0];
+  assert.ok(po[required].translation);
+  po[required].translation = "";
+  // The already compiled fallback-capable JSON is still structurally valid.
+  validateCatalogues(en, fr);
+  assert.throws(
+    () => assertCompleteCatalogue(po, "fr"),
+    /missing before fallback/,
+  );
+  assert.equal(
+    assertCompleteCatalogue(
+      {
+        retired: { obsolete: true, translation: "" },
+        active: { translation: "Bonjour" },
+      },
+      "fr",
+    ),
+    1,
+  );
+});
+
+test("selector cases, explicit zero and pound markers cannot disappear", () => {
+  const source = {
+    id: [
+      [
+        "count",
+        "plural",
+        { 0: ["No tasks"], one: ["# task"], other: ["# tasks"] },
+      ],
+    ],
+  };
+  assert.throws(
+    () =>
+      validateCatalogues(source, {
+        id: [["count", "plural", { one: ["# tâche"], other: ["# tâches"] }]],
+      }),
+    /contract changed/,
+  );
+  assert.throws(
+    () =>
+      validateCatalogues(source, {
+        id: [
+          [
+            "count",
+            "plural",
+            { 0: ["Aucune tâche"], one: ["une tâche"], other: ["# tâches"] },
+          ],
+        ],
+      }),
+    /contract changed/,
+  );
 });
 
 test("source/context changes produce new IDs; translator guidance is not part of identity", () => {

@@ -1,4 +1,5 @@
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
 import { countLabel } from "../../i18n/default-labels";
 import {
   Check,
@@ -399,7 +400,7 @@ function NavigationMembershipButton({
     : t({ message: "Add" });
   const label = disabled
     ? t`${name} must remain in navigation until another view is added`
-    : t`${action} ${name} ${inNavigation ? t({ message: "from" }) : t({ message: "to" })} navigation`;
+    : t`${action} ${name} ${inNavigation ? uiCopy("from") : uiCopy("to")} navigation`;
   return (
     <button
       aria-label={label}

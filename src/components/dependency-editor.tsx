@@ -174,7 +174,10 @@ export function RelatedWork({
                     <span>{task.title}</span>
                     <small>
                       {task.completed
-                        ? t({ message: "Complete" })
+                        ? t({
+                            message: "Complete",
+                            context: "related task completion state",
+                          })
                         : task.status}
                     </small>
                   </li>

@@ -1,6 +1,7 @@
 import { appLocale } from "../i18n/app";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import {
   CalendarDays,
   Check,
@@ -133,7 +134,7 @@ export function TaskNotesSelect({
       {open ? (
         <>
           <PopoverScrim
-            label={t`Close ${ariaLabel ?? t({ message: "options" })}`}
+            label={t`Close ${ariaLabel ?? uiCopy("options")}`}
             onClose={() => setOpen(false)}
           />
           <div

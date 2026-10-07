@@ -341,7 +341,13 @@ export function TaskActions({
       ) : null}
       {position
         ? createPortal(
-            <div className="task-actions-layer">
+            <div
+              aria-label={
+                rootRole === "menu" ? t`Actions for ${task.title}` : undefined
+              }
+              className="task-actions-layer"
+              role={rootRole === "menu" ? "region" : undefined}
+            >
               {mobile ? (
                 <button
                   aria-hidden="true"
@@ -388,6 +394,7 @@ export function TaskActions({
                     <button
                       aria-label={t({ message: "Back to previous actions" })}
                       data-panel-back
+                      role={rootRole === "menu" ? "menuitem" : undefined}
                       type="button"
                       onClick={goBack}
                     >

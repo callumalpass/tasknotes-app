@@ -8,7 +8,7 @@ export function changeNotificationLabel(
     case "checking":
       return t({ message: "Checking" });
     case "enabled":
-      return t({ message: "On" });
+      return t({ message: "On", context: "notifications enabled state" });
     case "off":
       return t({ message: "Off" });
     case "denied":

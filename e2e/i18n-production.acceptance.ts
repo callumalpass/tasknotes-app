@@ -1,7 +1,7 @@
 import { expect, test } from "./local-test";
 
 // Deliberately outside default *.spec.ts discovery. Run with playwright.production-i18n.config.ts.
-test("normal production artifact ignores the partial French preview query", async ({
+test("normal production artifact ignores the French preview query", async ({
   page,
 }) => {
   await page.goto("more?demo=12&i18n-pilot=fr");

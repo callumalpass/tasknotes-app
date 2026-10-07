@@ -1,5 +1,6 @@
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans, Plural } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import type { MdbaseConnection, PendingMutation } from "@mdbase-dev/connect";
 import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
 import {
@@ -835,7 +836,7 @@ export function CloudConnection({
           >
             {opening === "reconnect"
               ? t({ message: "Opening mdbase…" })
-              : t`Reconnect ${selectedConnection?.displayName ?? t({ message: "selected collection" })}`}
+              : t`Reconnect ${selectedConnection?.displayName ?? uiCopy("selected collection")}`}
           </button>
         ) : null}
         {authorizationPending ? (

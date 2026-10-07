@@ -44,6 +44,16 @@ for (const [name, source, kind] of [
     "translation in count-kind identifier",
   ],
   [
+    "nested descriptor macro",
+    'function label() { return t`Editor for ${t({message:"scratchpad"})}` }',
+    "uncompiled nested translation macro",
+  ],
+  [
+    "nested tagged macro",
+    "function label() { return t`Editor for ${t`scratchpad`}` }",
+    "uncompiled nested translation macro",
+  ],
+  [
     "eager label",
     'const options = [{label:t({message:"Today"})}];',
     "eager module-level translation",
@@ -81,6 +91,10 @@ for (const [name, source] of [
   [
     "plural macro",
     'function Panel() { return <Plural value={count} one="# task" other="# tasks" /> }',
+  ],
+  [
+    "lazy translated interpolation",
+    'function label() { return t`Editor for ${uiCopy("scratchpad")}` }',
   ],
   [
     "lazy labels",

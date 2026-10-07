@@ -1,4 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import { useEffect, useRef, type RefObject } from "react";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 
@@ -43,7 +44,7 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
       if (!popup.hasAttribute("aria-labelledby"))
         popup.setAttribute(
           "aria-label",
-          t`Tasks for ${popup.querySelector(".fc-popover-title")?.textContent ?? t({ message: "selected day" })}`,
+          t`Tasks for ${popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")}`,
         );
       closeButton?.setAttribute("role", "button");
       closeButton?.setAttribute(

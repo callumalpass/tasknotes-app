@@ -117,7 +117,7 @@ export function MiniCalendarView({
         </button>
       </div>
       <div className="mini-calendar-weekdays" aria-hidden="true">
-        {orderedWeekdays(firstDay).map((day, index) => (
+        {orderedWeekdays(firstDay, appLocale()).map((day, index) => (
           <span key={`${day}:${index}`}>{day}</span>
         ))}
       </div>

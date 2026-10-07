@@ -1,5 +1,6 @@
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import {
   Check,
   ChevronLeft,
@@ -596,7 +597,7 @@ export function ViewsScreen({
         if (selectedKeyRef.current === view.key) {
           setViewActionError({
             viewKey: view.key,
-            message: t`Could not ${Object.keys(additionalInput).length ? t({ message: "move" }) : t({ message: "reorder" })} “${dragged.task.title}”. ${message(reason)}`,
+            message: t`Could not ${Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")} “${dragged.task.title}”. ${message(reason)}`,
           });
           void repository
             .executeView(view)
@@ -789,7 +790,7 @@ export function ViewsScreen({
     if (!input) {
       setViewActionError({
         viewKey: selected.key,
-        message: t`“${destination.label ?? t({ message: "This section" })}” is calculated and cannot accept moved tasks.`,
+        message: t`“${destination.label ?? uiCopy("This section")}” is calculated and cannot accept moved tasks.`,
       });
       return;
     }
@@ -1183,7 +1184,7 @@ export function ViewsScreen({
             placeholder={
               currentCreationContext
                 ? t`Add to ${currentCreationContext.label}`
-                : t`Add to ${selected?.name ?? t({ message: "this view" })}`
+                : t`Add to ${selected?.name ?? uiCopy("this view")}`
             }
             onCreated={refreshAfterCreate}
             onOpenCreated={onOpenTask}

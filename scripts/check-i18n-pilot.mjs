@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { formatter } from "@lingui/format-po";
 import { generateMessageId } from "@lingui/message-utils/generateMessageId";
 import { validateCatalogues } from "./lib/pilot-catalogue.mjs";
+import { assertCompleteCatalogue } from "./lib/catalogue-completeness.mjs";
 
 const load = async (locale) =>
   JSON.parse(await readFile(`src/i18n/locales/${locale}/messages.json`, "utf8"))
@@ -15,7 +16,7 @@ const policy = JSON.parse(
 assert.deepEqual(
   policy.productionLocales,
   ["en"],
-  "Partial preview must not become a production locale",
+  "Production locale enablement is a separate decision",
 );
 const parsed = {};
 for (const locale of ["en", "fr"]) {
@@ -33,6 +34,10 @@ for (const locale of ["en", "fr"]) {
     );
   }
 }
+assert.deepEqual(policy.completeCatalogLocales, ["en", "fr"]);
+for (const locale of policy.completeCatalogLocales) {
+  assertCompleteCatalogue(parsed[locale], locale);
+}
 for (const [locale, required] of Object.entries(policy.requiredTranslations)) {
   for (const id of required) {
     assert.ok(english[id], `Required source message disappeared: ${id}`);
@@ -48,5 +53,5 @@ const translated = active.filter(([, entry]) =>
   entry.translation?.trim(),
 ).length;
 console.log(
-  `Application ICU/IDs validated; French PREVIEW: ${translated}/${active.length} authored, ${active.length - translated} pending (English fallback). Required pilot translations checked before fallback.`,
+  `Application ICU/IDs validated; French PREVIEW: ${translated}/${active.length} authored, ${active.length - translated} missing before fallback. Complete catalogue and original French contracts checked; linguistic quality requires separate review.`,
 );

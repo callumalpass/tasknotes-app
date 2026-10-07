@@ -24,11 +24,11 @@ msgstr " (not linked to an active member)"
 msgid " {0} opens first as Home."
 msgstr " {0} opens first as Home."
 
-#: src/app/use-sidebar-reorder.ts
+#: src/i18n/ui-copy.ts
 msgid ", now Home"
 msgstr ", now Home"
 
-#. placeholder {0}: destination.label ?? t({ message: "This section" })
+#. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}” is calculated and cannot accept moved tasks."
@@ -62,8 +62,8 @@ msgstr "{0, plural, one {Image added} other {# images added}}"
 msgid "{0} (ambiguous account link)"
 msgstr "{0} (ambiguous account link)"
 
-#. placeholder {0}: collapsedIds.has(node.id) ? t({ message: "Expand" }) : t({ message: "Collapse" })
-#. placeholder {1}: node.text || t({ message: "item" })
+#. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
+#. placeholder {1}: node.text || uiCopy("item")
 #. placeholder {2}: nestedItemCount(descendantCount)
 #: src/app/scratchpad-screen.tsx
 msgid "{0} {1}, {2}"
@@ -94,15 +94,15 @@ msgstr "{0} board"
 msgid "{0} is calculated by this view and cannot be changed here."
 msgstr "{0} is calculated by this view and cannot be changed here."
 
-#. placeholder {0}: destinationLane.label ?? t({ message: "That section" })
+#. placeholder {0}: destinationLane.label ?? uiCopy("That section")
 #: src/app/views/task-list-view.tsx
 msgid "{0} is read-only."
 msgstr "{0} is read-only."
 
 #. placeholder {0}: source.name
 #. placeholder {0}: view.name
-#. placeholder {1}: active.placement
-#. placeholder {1}: direction < 0 ? t({ message: "before" }) : t({ message: "after" })
+#. placeholder {1}: active.placement === "before" ? uiCopy("before") : uiCopy("after")
+#. placeholder {1}: direction < 0 ? uiCopy("before") : uiCopy("after")
 #. placeholder {2}: adjacent?.name
 #. placeholder {2}: target?.name
 #: src/app/views/navigation-view-order.tsx
@@ -120,7 +120,7 @@ msgstr "{0} priority"
 msgid "{0} removed"
 msgstr "{0} removed"
 
-#. placeholder {0}: result.current.title?.trim() || t({ message: "Previous note" })
+#. placeholder {0}: result.current.title?.trim() || uiCopy("Previous note")
 #: src/app/scratchpad-screen.tsx
 msgid "{0} resumed"
 msgstr "{0} resumed"
@@ -154,7 +154,7 @@ msgstr "{0}+ tasks"
 msgid "{accessibleName} calendar"
 msgstr "{accessibleName} calendar"
 
-#. placeholder {0}: inNavigation ? t({ message: "from" }) : t({ message: "to" })
+#. placeholder {0}: inNavigation ? uiCopy("from") : uiCopy("to")
 #: src/app/views/view-catalog.tsx
 msgid "{action} {name} {0} navigation"
 msgstr "{action} {name} {0} navigation"
@@ -295,12 +295,6 @@ msgstr "{count, plural, one {week} other {weeks}}"
 msgid "{count, plural, one {year} other {years}}"
 msgstr "{count, plural, one {year} other {years}}"
 
-#. placeholder {0}: String(date.getHours()).padStart(2, "0")
-#. placeholder {1}: String(date.getMinutes()).padStart(2, "0")
-#: src/app/full-calendar-view.tsx
-msgid "{day}T{0}:{1}"
-msgstr "{day}T{0}:{1}"
-
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "{estimate}m estimate"
@@ -341,8 +335,8 @@ msgstr "{label} column"
 msgid "{label} date"
 msgstr "{label} date"
 
-#. placeholder {0}: direction < 0 ? t({ message: "up" }) : t({ message: "down" })
-#. placeholder {1}: next === 0 ? t({ message: ", now Home" }) : ""
+#. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
+#. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved {0}{1}."
 msgstr "{label} moved {0}{1}."
@@ -478,8 +472,8 @@ msgstr "Across this collection"
 msgid "Actions"
 msgstr "Actions"
 
-#. placeholder {0}: node.text || t({ message: "empty item" })
-#. placeholder {0}: node.text || t({ message: "item" })
+#. placeholder {0}: node.text || uiCopy("empty item")
+#. placeholder {0}: node.text || uiCopy("item")
 #. placeholder {0}: task.title
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
@@ -496,10 +490,6 @@ msgstr "Active"
 #: src/components/task-capture.tsx
 msgid "Add"
 msgstr "Add"
-
-#: src/app/view-editor-form.tsx
-msgid "Add "
-msgstr "Add "
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
@@ -604,6 +594,10 @@ msgstr "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
 msgid "Add details"
 msgstr "Add details"
 
+#: src/app/view-editor-form.tsx
+msgid "Add formula"
+msgstr "Add formula"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
 msgstr "Add image"
@@ -611,6 +605,10 @@ msgstr "Add image"
 #: src/components/task-capture.tsx
 msgid "Add notes"
 msgstr "Add notes"
+
+#: src/app/view-editor-form.tsx
+msgid "Add projection"
+msgstr "Add projection"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -650,7 +648,7 @@ msgid "Add title"
 msgstr "Add title"
 
 #. placeholder {0}: currentCreationContext.label
-#. placeholder {0}: selected?.name ?? t({ message: "this view" })
+#. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
 msgstr "Add to {0}"
@@ -709,7 +707,7 @@ msgstr "Advanced repeat"
 msgid "Advanced rule"
 msgstr "Advanced rule"
 
-#: src/app/views/navigation-view-order.tsx
+#: src/i18n/ui-copy.ts
 msgid "after"
 msgstr "after"
 
@@ -885,7 +883,7 @@ msgstr "Back"
 msgid "Back to previous actions"
 msgstr "Back to previous actions"
 
-#: src/app/views/navigation-view-order.tsx
+#: src/i18n/ui-copy.ts
 msgid "before"
 msgstr "before"
 
@@ -1106,7 +1104,7 @@ msgstr "close"
 msgid "Close"
 msgstr "Close"
 
-#. placeholder {0}: ariaLabel ?? t({ message: "options" })
+#. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
 msgstr "Close {0}"
@@ -1147,7 +1145,7 @@ msgstr "Close property editor"
 msgid "Close view editor"
 msgstr "Close view editor"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "Collapse"
 msgstr "Collapse"
 
@@ -1198,10 +1196,18 @@ msgid "Compact rows"
 msgstr "Compact rows"
 
 #: src/app/task-screen.tsx
-#: src/app/views/kanban-view.tsx
-#: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
+msgid "Complete"
+msgstr "Complete"
+
+#: src/app/views/kanban-view.tsx
+msgctxt "board column: completed tasks"
+msgid "Complete"
+msgstr "Complete"
+
+#: src/components/dependency-editor.tsx
+msgctxt "related task completion state"
 msgid "Complete"
 msgstr "Complete"
 
@@ -1348,7 +1354,7 @@ msgstr "Continue on the timeline"
 msgid "Control character"
 msgstr "Control character"
 
-#. placeholder {0}: node.text || t({ message: "empty task" })
+#. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
 msgstr "Convert {0} to note"
@@ -1382,7 +1388,7 @@ msgstr "Copy title"
 msgid "Correct the rule before it can be scheduled."
 msgstr "Correct the rule before it can be scheduled."
 
-#. placeholder {0}: Object.keys(additionalInput).length ? t({ message: "move" }) : t({ message: "reorder" })
+#. placeholder {0}: Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")
 #. placeholder {1}: dragged.task.title
 #. placeholder {2}: message(reason)
 #: src/app/views-screen.tsx
@@ -1474,7 +1480,7 @@ msgstr "current match"
 msgid "Current note"
 msgstr "Current note"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "current scratchpad"
 msgstr "current scratchpad"
 
@@ -1708,8 +1714,7 @@ msgstr "Done"
 msgid "Done choosing assignees"
 msgstr "Done choosing assignees"
 
-#: src/app/use-sidebar-reorder.ts
-#: src/app/views/kanban-view.tsx
+#: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "down"
 
@@ -1841,7 +1846,7 @@ msgstr "Edit view"
 msgid "Editable"
 msgstr "Editable"
 
-#. placeholder {0}: document?.title || (document?.state === "active" ? t({ message: "current scratchpad" }) : t({ message: "scratchpad" }))
+#. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
 msgstr "Editor for {0}"
@@ -1854,11 +1859,12 @@ msgstr "Editor mode"
 msgid "empty"
 msgstr "empty"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "empty item"
 
 #: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "empty task"
 msgstr "empty task"
 
@@ -1891,7 +1897,7 @@ msgstr "Every task will be included"
 msgid "Every view in this file"
 msgstr "Every view in this file"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "Expand"
 msgstr "Expand"
 
@@ -2043,7 +2049,7 @@ msgstr "fourth"
 msgid "Fourth"
 msgstr "Fourth"
 
-#: src/app/views/view-catalog.tsx
+#: src/i18n/ui-copy.ts
 msgid "from"
 msgstr "from"
 
@@ -2255,7 +2261,7 @@ msgstr "ISO 8601 value"
 msgid "Italic"
 msgstr "Italic"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "item"
 msgstr "item"
 
@@ -2568,7 +2574,7 @@ msgstr "More actions for {0}"
 msgid "More task actions"
 msgstr "More task actions"
 
-#: src/app/views-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "move"
 msgstr "move"
 
@@ -2576,7 +2582,7 @@ msgstr "move"
 msgid "Move"
 msgstr "Move"
 
-#. placeholder {0}: node.text || t({ message: "empty item" })
+#. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
 msgstr "Move {0}"
@@ -2621,7 +2627,7 @@ msgid "Move Manual order to the first position to enable drag handles."
 msgstr "Move Manual order to the first position to enable drag handles."
 
 #. placeholder {0}: row.task.title
-#. placeholder {1}: vertical < 0 ? t({ message: "up" }) : t({ message: "down" })
+#. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
 msgstr "Moved {0} {1}."
@@ -2645,7 +2651,7 @@ msgstr "Moved {0} down."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
-#. placeholder {1}: destinationLane.label ?? t`the destination section`
+#. placeholder {1}: destinationLane.label ?? uiCopy("the destination section")
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
@@ -2947,8 +2953,12 @@ msgstr "Occurrences"
 msgid "Off"
 msgstr "Off"
 
-#: src/app/notification-label.ts
 #: src/components/recurrence-field.tsx
+msgid "On"
+msgstr "On"
+
+#: src/app/notification-label.ts
+msgctxt "notifications enabled state"
 msgid "On"
 msgstr "On"
 
@@ -2974,8 +2984,12 @@ msgstr "Only the task title is shown."
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
-#: src/app/views/kanban-view.tsx
 #: src/components/task-added-notice.tsx
+msgid "Open"
+msgstr "Open"
+
+#: src/app/views/kanban-view.tsx
+msgctxt "board column: open tasks"
 msgid "Open"
 msgstr "Open"
 
@@ -3078,7 +3092,7 @@ msgstr "Optional"
 msgid "Optional notification text"
 msgstr "Optional notification text"
 
-#: src/components/tasknotes-controls.tsx
+#: src/i18n/ui-copy.ts
 msgid "options"
 msgstr "options"
 
@@ -3106,7 +3120,7 @@ msgstr "Outdent"
 msgid "Outline"
 msgstr "Outline"
 
-#. placeholder {0}: node.text || t({ message: "empty item" })
+#. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Outline controls for {0}"
 msgstr "Outline controls for {0}"
@@ -3195,7 +3209,7 @@ msgstr "previous"
 msgid "Previous month"
 msgstr "Previous month"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "Previous note"
 msgstr "Previous note"
 
@@ -3283,7 +3297,7 @@ msgstr "Recent collections"
 msgid "Recognized task details"
 msgstr "Recognized task details"
 
-#. placeholder {0}: selectedConnection?.displayName ?? t({ message: "selected collection" })
+#. placeholder {0}: selectedConnection?.displayName ?? uiCopy("selected collection")
 #: src/app/cloud-collection.tsx
 msgid "Reconnect {0}"
 msgstr "Reconnect {0}"
@@ -3408,7 +3422,7 @@ msgid "Remove"
 msgstr "Remove"
 
 #. placeholder {0}: dated ? item.key : item.label
-#. placeholder {0}: entry.description || t({ message: "session" })
+#. placeholder {0}: entry.description || uiCopy("session")
 #. placeholder {0}: labelFor(value)
 #: src/app/task-time-tracking.tsx
 #: src/components/multi-value-field.tsx
@@ -3467,7 +3481,7 @@ msgstr "Reopen"
 msgid "Reopen task"
 msgstr "Reopen task"
 
-#: src/app/views-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "reorder"
 msgstr "reorder"
 
@@ -3663,7 +3677,7 @@ msgstr "Save a fixed or relative reminder in this task."
 msgid "Save failed · Retry"
 msgstr "Save failed · Retry"
 
-#. placeholder {0}: saveError ?? t({ message: "Tap to retry." })
+#. placeholder {0}: saveError ?? uiCopy("Tap to retry.")
 #: src/app/task-screen.tsx
 msgid "Save failed. {0}"
 msgstr "Save failed. {0}"
@@ -3756,7 +3770,7 @@ msgstr "Scheduled {0}"
 msgid "Scheduled dates"
 msgstr "Scheduled dates"
 
-#: src/app/scratchpad-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "scratchpad"
 msgstr "scratchpad"
 
@@ -3831,11 +3845,11 @@ msgstr "Select all"
 msgid "Select branch"
 msgstr "Select branch"
 
-#: src/app/cloud-collection.tsx
+#: src/i18n/ui-copy.ts
 msgid "selected collection"
 msgstr "selected collection"
 
-#: src/app/use-calendar-overflow.ts
+#: src/i18n/ui-copy.ts
 msgid "selected day"
 msgstr "selected day"
 
@@ -3851,7 +3865,7 @@ msgstr "Selected drafts become linked TaskNotes in place. Everything else stays 
 msgid "Selection deleted"
 msgstr "Selection deleted"
 
-#: src/app/task-time-tracking.tsx
+#: src/i18n/ui-copy.ts
 msgid "session"
 msgstr "session"
 
@@ -4068,7 +4082,7 @@ msgstr "Tags"
 msgid "Take photo"
 msgstr "Take photo"
 
-#: src/app/task-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "Tap to retry."
 msgstr "Tap to retry."
 
@@ -4199,7 +4213,7 @@ msgstr "TaskNotes tools"
 msgid "TaskNotes works with collections managed by mdbase."
 msgstr "TaskNotes works with collections managed by mdbase."
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? t({ message: "selected day" })
+#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "Tasks for {0}"
@@ -4236,7 +4250,7 @@ msgstr "Templates/Occurrence.md"
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
 
-#: src/app/views/task-list-view.tsx
+#: src/i18n/ui-copy.ts
 msgid "That section"
 msgstr "That section"
 
@@ -4276,7 +4290,7 @@ msgstr "The deletion"
 msgid "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."
 msgstr "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."
 
-#: src/app/views/task-list-view.tsx
+#: src/i18n/ui-copy.ts
 msgid "the destination section"
 msgstr "the destination section"
 
@@ -4403,7 +4417,7 @@ msgstr "This removes the saved view only. Your tasks won’t be deleted."
 msgid "This rule can also be edited with the visual controls."
 msgstr "This rule can also be edited with the visual controls."
 
-#: src/app/views-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "This section"
 
@@ -4416,7 +4430,7 @@ msgid "This value is calculated by the view and cannot be edited here."
 msgstr "This value is calculated by the view and cannot be edited here."
 
 #: src/app/view-editor.tsx
-#: src/app/views-screen.tsx
+#: src/i18n/ui-copy.ts
 msgid "this view"
 msgstr "this view"
 
@@ -4433,10 +4447,14 @@ msgstr "This view couldn’t load."
 msgid "This view uses an unavailable sort."
 msgstr "This view uses an unavailable sort."
 
-#: src/app/task-screen.tsx
-#: src/app/task-time-tracking.tsx
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
+msgid "Time"
+msgstr "Time"
+
+#: src/app/task-screen.tsx
+#: src/app/task-time-tracking.tsx
+msgctxt "time tracking duration"
 msgid "Time"
 msgstr "Time"
 
@@ -4473,8 +4491,8 @@ msgstr "Title only"
 msgid "Title required"
 msgstr "Title required"
 
-#: src/app/views/view-catalog.tsx
 #: src/i18n/editor-phrases.ts
+#: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "to"
 
@@ -4494,10 +4512,6 @@ msgstr "Tomorrow"
 #: src/app/full-calendar-view.tsx
 msgid "Tracked time"
 msgstr "Tracked time"
-
-#: src/app/views/kanban-view.tsx
-msgid "translate3d({x}px, {y}px, 0)"
-msgstr "translate3d({x}px, {y}px, 0)"
 
 #: src/app/cloud-collection.tsx
 msgid "Try a disposable demo"
@@ -4573,8 +4587,7 @@ msgstr "Unskip"
 msgid "Unskip occurrence"
 msgstr "Unskip occurrence"
 
-#: src/app/use-sidebar-reorder.ts
-#: src/app/views/kanban-view.tsx
+#: src/i18n/ui-copy.ts
 msgid "up"
 msgstr "up"
 

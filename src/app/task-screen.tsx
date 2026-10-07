@@ -1,6 +1,7 @@
 import { appLocale } from "../i18n/app";
 import { formatRelativeTaskDate } from "../i18n/presentation";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import { ArrowLeft } from "lucide-react";
 import {
   lazy,
@@ -508,7 +509,7 @@ function TaskEditor({
           }
           aria-label={
             saveState === "error"
-              ? t`Save failed. ${saveError ?? t({ message: "Tap to retry." })}`
+              ? t`Save failed. ${saveError ?? uiCopy("Tap to retry.")}`
               : undefined
           }
         >
@@ -887,7 +888,7 @@ function TaskEditor({
         <TaskFormSection
           defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
           summary={timeSummary(task, draft.timeEstimate)}
-          title={t({ message: "Time" })}
+          title={t({ message: "Time", context: "time tracking duration" })}
         >
           <label className="form-field time-estimate-field">
             <span>

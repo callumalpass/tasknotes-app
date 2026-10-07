@@ -1,4 +1,5 @@
 import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
 import {
   CalendarDays,
   ChartNoAxesGantt,
@@ -64,7 +65,7 @@ export function NavigationViewOrder({
     onMove(view.key, direction);
     const adjacent = ordered[index + direction];
     setAnnouncement(
-      t`${view.name} moved ${direction < 0 ? t({ message: "before" }) : t({ message: "after" })} ${adjacent?.name}.`,
+      t`${view.name} moved ${direction < 0 ? uiCopy("before") : uiCopy("after")} ${adjacent?.name}.`,
     );
   }
 
@@ -143,7 +144,7 @@ export function NavigationViewOrder({
       }
       const target = ordered[targetIndex];
       setAnnouncement(
-        t`${source.name} moved ${active.placement} ${target?.name}.`,
+        t`${source.name} moved ${active.placement === "before" ? uiCopy("before") : uiCopy("after")} ${target?.name}.`,
       );
       selectionFeedback();
     };
