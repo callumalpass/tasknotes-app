@@ -1,0 +1,51 @@
+.private-account-settings fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.private-account-settings legend,
+.private-account-settings h3 {
+  margin: 16px 0 8px;
+  font-size: var(--type-body);
+}
+.private-account-settings label {
+  display: grid;
+  gap: 4px;
+  margin: 16px 0;
+  color: var(--ink-soft);
+}
+.private-account-settings input:not([type="checkbox"]),
+.private-account-settings textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+}
+.private-account-settings textarea {
+  min-height: 100px;
+  overflow-wrap: anywhere;
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-supporting);
+}
+.private-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.private-account-settings .private-account-consent {
+  grid-template-columns: 24px minmax(0, 1fr);
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+}
+.private-account-consent input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}

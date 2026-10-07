@@ -1,0 +1,10 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "956c80d9bf27f8c87cc8d208a79af27aa73a4bd1",
+  "sourcePr": 390,
+  "package": "@mdbase-dev/sdk",
+  "artifact": "mdbase-dev-sdk-0.0.0-956c80d9.tgz",
+  "sha256": "2feb957e7d69bb83edf008d1b8fd24b067e188bbf6d8579f1297f2e7a7b4bde6",
+  "consumerEntry": "@mdbase-dev/sdk/account",
+  "purpose": "Private-account UI facade types and tests; authenticated host injection remains required. No next-backend factory or production deployment activation."
+}
