@@ -14,6 +14,7 @@ import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
 import { PrivateAccountSettings } from "../components/private-account-settings";
+import { HeldEditsReview } from "../components/held-edits";
 import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import {
   mdbaseNotifications,
@@ -192,6 +193,14 @@ export function MoreScreen({
               {connection.message}
             </p>
           ) : null}
+          {connection.sync ? (
+            <p className="section-copy" role="status">
+              {connection.sync.text}
+              {connection.sync.pending > 0
+                ? ". Pending edits are not yet synced."
+                : null}
+            </p>
+          ) : null}
           <div className="cloud-actions">
             <button
               className="text-action"
@@ -203,6 +212,12 @@ export function MoreScreen({
           </div>
         </div>
       </SettingsSection>
+
+      {connection.heldEdits?.length ? (
+        <SettingsSection label="Protected edits">
+          <HeldEditsReview edits={connection.heldEdits} />
+        </SettingsSection>
+      ) : null}
 
       {privateAccount ? (
         <PrivateAccountSettings account={privateAccount} />
