@@ -29,7 +29,10 @@
     "bytes": 2600280,
     "gzipBytes": 1044739,
     "brotliBytes": 768317,
-    "ceilings": { "raw": 3000000, "gzip": 1250000, "brotli": 950000 }
+    "ceilings": { "raw": 3000000, "gzip": 1250000, "brotli": 950000 },
+    "targets": { "raw": 1500000, "gzip": 600000, "brotli": 450000 },
+    "withinCeilings": true,
+    "withinTargets": false
   },
   "qualification": {
     "nativeSqlAbiSmoke": true,
