@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
+import { PrivateAccountSettings } from "../components/private-account-settings";
 import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import {
   mdbaseNotifications,
@@ -41,8 +42,14 @@ export function MoreScreen({
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
   const { info, stats, loading } = useCollectionSummary();
-  const { connection, lastRefresh, refresh, refreshing, reminderAuthority } =
-    useRepository();
+  const {
+    connection,
+    lastRefresh,
+    refresh,
+    refreshing,
+    reminderAuthority,
+    privateAccount,
+  } = useRepository();
   const deliversReminders = reminderAuthority !== "none";
   const { changeCollection } = useCollectionGate();
   const [showLocation, setShowLocation] = useState(false);
@@ -196,6 +203,10 @@ export function MoreScreen({
           </div>
         </div>
       </SettingsSection>
+
+      {privateAccount ? (
+        <PrivateAccountSettings account={privateAccount} />
+      ) : null}
 
       <SettingsSection label="Notifications">
         <div className="setting-row">

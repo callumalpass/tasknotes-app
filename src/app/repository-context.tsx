@@ -63,11 +63,14 @@ import type {
 } from "../application/ports/task-repository";
 import type { MutationJournal } from "../application/mutation-journal";
 import type { OperationalError } from "../application/operational-error";
+import type { PrivateAccountUi } from "../components/private-account-settings";
 
 type StorageStatus = "opening" | "ready" | "error";
 
 interface RepositoryContextValue {
   repository: TaskRepository;
+  /** Authenticated SDK account facade, injected only by a qualified private host. */
+  privateAccount?: PrivateAccountUi;
   status: StorageStatus;
   error: Error | null;
   refreshing: boolean;
@@ -118,12 +121,14 @@ export function RepositoryProvider({
   reminderAuthority = "none",
   mutationJournal: suppliedMutationJournal,
   discardPendingRecovery,
+  privateAccount,
 }: {
   children: ReactNode;
   repository: TaskRepository;
   reminderAuthority?: ReminderAuthority;
   mutationJournal: MutationJournal;
   discardPendingRecovery?(): Promise<void>;
+  privateAccount?: PrivateAccountUi;
 }) {
   const [repository] = useState<TaskRepository>(() => supplied);
   const [mutationJournal] = useState<MutationJournal>(
@@ -561,6 +566,7 @@ export function RepositoryProvider({
   const value = useMemo<RepositoryContextValue>(
     () => ({
       repository,
+      privateAccount,
       mutations,
       setTaskCompletion,
       status,
@@ -592,6 +598,7 @@ export function RepositoryProvider({
     }),
     [
       repository,
+      privateAccount,
       mutations,
       setTaskCompletion,
       status,
