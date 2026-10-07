@@ -74,10 +74,34 @@ describe("ScratchImageService", () => {
       service.add(new Blob(["svg"], { type: "image/svg+xml" })),
     ).rejects.toThrow(/Add an/);
     const blob = png(1);
-    const [left, right] = await Promise.all([
-      service.add(blob),
-      service.add(blob),
-    ]);
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      await blob.arrayBuffer(),
+    );
+    const hashing = vi.spyOn(crypto.subtle, "digest").mockResolvedValue(digest);
+    let releaseUpload!: () => void;
+    const pendingUpload = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    const originalUpload = upload.getMockImplementation()!;
+    upload.mockImplementation(async (path, source) => {
+      await pendingUpload;
+      return originalUpload(path, source);
+    });
+    // This coordinator coalesces in-flight uploads, not completed pastes. Keep
+    // the authority upload pending until both inputs have finished hashing;
+    // real crypto workers can otherwise finish the first upload before the
+    // second input reaches the coordinator, especially on the macOS runner.
+    const images = Promise.all([service.add(blob), service.add(blob)]);
+    try {
+      await vi.waitFor(() => {
+        expect(hashing).toHaveBeenCalledTimes(2);
+        expect(upload).toHaveBeenCalledOnce();
+      });
+    } finally {
+      releaseUpload();
+    }
+    const [left, right] = await images;
     expect(left.id).toBe(right.id);
     expect(upload).toHaveBeenCalledOnce();
   });
