@@ -177,6 +177,8 @@ export interface TaskRepository {
   ): Promise<TaskCollectionConfiguration>;
   collectionInfo(): Promise<CollectionInfo>;
   connectionStatus(): Promise<RepositoryConnectionStatus>;
+  /** Submit a protected-edit choice. Returning is not a log-confirmed save. */
+  resolveHeldEdit?(id: string, how: HeldEditResolution): Promise<void>;
   subscribe(listener: (change?: RepositoryChange) => void): () => void;
   /** Cancel active foreground authority work without discarding local UI state. */
   suspend?(): void;
@@ -205,6 +207,32 @@ export interface RepositoryConnectionStatus {
   state: "connecting" | "connected" | "unavailable";
   lastReachedAt?: string;
   message?: string;
+  sync?: { text: string; pending: number; held: number };
+  heldEdits?: HeldEdit[];
+}
+
+/** The backend's resolve_hold vocabulary, not a second resolution protocol. */
+export type HeldEditResolution =
+  "keep_mine" | "take_theirs" | "keep_both" | "delete" | "use";
+export interface HeldEditAction {
+  action: HeldEditResolution;
+  label: string;
+  description: string;
+  discardsMine: boolean;
+}
+export interface HeldEdit {
+  id: string;
+  path: string;
+  title: string;
+  cause: string;
+  detail: string;
+  reversibleNote: string;
+  since: string;
+  saves: number;
+  actions: HeldEditAction[];
+  /** Read-only, bounded text previews; never submitted as a merged document. */
+  comparison?: { mine: string; theirs: string; shortened: boolean };
+  comparisonUnavailable?: string;
 }
 
 export interface RefreshResult {

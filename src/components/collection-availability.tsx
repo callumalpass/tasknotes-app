@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRepository } from "../app/repository-context";
+import { HeldEditsNotice } from "./held-edits";
 
 export function CollectionAvailability({
   onSettings,
@@ -21,45 +22,60 @@ export function CollectionAvailability({
     };
   }, [waiting]);
 
+  const protectedEdits = (
+    <HeldEditsNotice
+      edits={connection.heldEdits ?? []}
+      count={connection.sync?.held}
+      onReview={onSettings}
+    />
+  );
   if (connection.state !== "unavailable") {
-    return waiting && prolonged ? (
-      <div className="collection-connection-indicator" role="status">
-        {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
-      </div>
-    ) : null;
+    return (
+      <>
+        {protectedEdits}
+        {waiting && prolonged ? (
+          <div className="collection-connection-indicator" role="status">
+            {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
+          </div>
+        ) : null}
+      </>
+    );
   }
   return (
-    <section
-      className="collection-availability"
-      aria-label="Collection connection"
-    >
-      <div role="status">
-        <span>
-          Collection unavailable. Showing previously loaded tasks; changes can’t
-          be saved.
-        </span>
-        {failed ? (
-          <p>Could not reconnect. Try again or check connection settings.</p>
-        ) : null}
-      </div>
-      <div className="availability-actions">
-        <button
-          className="text-action"
-          type="button"
-          disabled={refreshing}
-          onClick={() => {
-            setFailed(false);
-            void refresh().catch(() => setFailed(true));
-          }}
-        >
-          {refreshing ? "Reconnecting…" : "Retry connection"}
-        </button>
-        {onSettings ? (
-          <button className="text-action" type="button" onClick={onSettings}>
-            Connection settings
+    <>
+      {protectedEdits}
+      <section
+        className="collection-availability"
+        aria-label="Collection connection"
+      >
+        <div role="status">
+          <span>
+            Collection unavailable. Showing previously loaded tasks; changes
+            can’t be saved.
+          </span>
+          {failed ? (
+            <p>Could not reconnect. Try again or check connection settings.</p>
+          ) : null}
+        </div>
+        <div className="availability-actions">
+          <button
+            className="text-action"
+            type="button"
+            disabled={refreshing}
+            onClick={() => {
+              setFailed(false);
+              void refresh().catch(() => setFailed(true));
+            }}
+          >
+            {refreshing ? "Reconnecting…" : "Retry connection"}
           </button>
-        ) : null}
-      </div>
-    </section>
+          {onSettings ? (
+            <button className="text-action" type="button" onClick={onSettings}>
+              Connection settings
+            </button>
+          ) : null}
+        </div>
+      </section>
+    </>
   );
 }
