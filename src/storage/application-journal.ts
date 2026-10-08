@@ -19,7 +19,9 @@ class TaskCommandDatabase extends Dexie {
 export class IndexedDbMutationJournal implements MutationJournal {
   private readonly database: TaskCommandDatabase;
 
-  constructor(name = "tasknotes-commands-v2") {
+  // Same-origin cutover must never consume/replay the frozen classic journal.
+  // tasknotes-commands-v2 is retained for held-item review/export, not migration.
+  constructor(name = "tasknotes-next-commands-v1") {
     this.database = new TaskCommandDatabase(name);
   }
 
