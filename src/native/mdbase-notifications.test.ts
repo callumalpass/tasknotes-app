@@ -38,6 +38,84 @@ describe("mdbase native notifications", () => {
     });
   });
 
+  it.each(["native", "web"] as const)(
+    "bounds a stalled %s permission check and permits retry without prompting",
+    async (runtime) => {
+      vi.useFakeTimers();
+      let finish!: (permission: { receive: string }) => void;
+      const stalled = new Promise<{ receive: string }>((resolve) => {
+        finish = resolve;
+      });
+      const check = vi
+        .fn()
+        .mockReturnValueOnce(stalled)
+        .mockResolvedValue({ receive: "prompt" });
+      const fixture = manager({
+        isNative: vi.fn(() => runtime === "native"),
+        webPushSupported: vi.fn(() => true),
+        checkPermissions: check,
+        webPushCheckPermissions: check,
+      });
+      try {
+        const failure = expect(fixture.subject.status()).rejects.toThrow(
+          "Checking notification permission timed out. Try again.",
+        );
+        await vi.advanceTimersByTimeAsync(10_000);
+        await failure;
+        expect(await fixture.subject.status()).toEqual({
+          state: "off",
+          optedIn: false,
+        });
+        expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
+        expect(fixture.webPush.requestPermissions).not.toHaveBeenCalled();
+        expect(vi.getTimerCount()).toBe(0);
+        finish({ receive: "granted" });
+        await stalled;
+        expect(
+          fixture.storage.getItem("tasknotes:mdbase-notifications:v1"),
+        ).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("cleans up the permission deadline when a check rejects", async () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = manager({
+        checkPermissions: vi.fn().mockRejectedValue(new Error("Bridge failed")),
+      });
+      await expect(fixture.subject.status()).rejects.toThrow("Bridge failed");
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not start native listeners in an unconfigured build", () => {
+    const fixture = manager({ isConfigured: vi.fn(() => false) });
+    fixture.subject.listen(vi.fn())();
+    expect(fixture.messaging.addListener).not.toHaveBeenCalled();
+  });
+
+  it("handles listener failures and removes listeners that arrive after disposal", async () => {
+    const fixture = manager();
+    const remove = vi.fn(async () => undefined);
+    let finish!: (handle: { remove: typeof remove }) => void;
+    const pending = new Promise<{ remove: typeof remove }>((resolve) => {
+      finish = resolve;
+    });
+    fixture.messaging.addListener.mockRejectedValueOnce(
+      new Error("Bridge failed"),
+    );
+    fixture.messaging.addListener.mockReturnValueOnce(pending);
+    const dispose = fixture.subject.listen(vi.fn());
+    dispose();
+    finish({ remove });
+    await vi.waitFor(() => expect(remove).toHaveBeenCalledOnce());
+  });
+
   it("removes the Connect channel before deleting the local token", async () => {
     const order: string[] = [];
     const fixture = manager({

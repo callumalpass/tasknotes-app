@@ -8,8 +8,9 @@ import {
   Bell,
   SunMoon,
 } from "lucide-react";
+import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
@@ -22,6 +23,7 @@ import {
 } from "../native/mdbase-notifications";
 import { cloudSession } from "../cloud/connect";
 import { requireConnectOutcome } from "../cloud/outcome";
+import { useCloudSessionSnapshot } from "../cloud/use-session";
 import { requestPwaInstall, usePwaInstall } from "../pwa/install";
 import {
   applyThemePreference,
@@ -42,7 +44,14 @@ export function MoreScreen({
   calendarPreferences: CalendarPreferences;
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
-  const { info, stats, loading } = useCollectionSummary();
+  const {
+    info,
+    stats,
+    loading,
+    error: summaryError,
+    retry: retrySummary,
+  } = useCollectionSummary();
+  const session = useCloudSessionSnapshot();
   const {
     connection,
     lastRefresh,
@@ -60,9 +69,18 @@ export function MoreScreen({
       optedIn: false,
     });
   const [changeNotificationsBusy, setChangeNotificationsBusy] = useState(false);
+  const notificationBusy = useRef(false);
+  const notificationOperation = useRef(0);
+  const [notificationRevision, setNotificationRevision] = useState(0);
   const [changeNotificationsError, setChangeNotificationsError] = useState<
     string | null
   >(null);
+  const retryNotificationStatus = useCallback(() => {
+    if (notificationBusy.current) return;
+    setChangeNotifications((current) => ({ ...current, state: "checking" }));
+    setChangeNotificationsError(null);
+    setNotificationRevision((revision) => revision + 1);
+  }, []);
   const installState = usePwaInstall();
   const [installBusy, setInstallBusy] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
@@ -71,15 +89,20 @@ export function MoreScreen({
     !Capacitor.isNativePlatform() &&
     (installState === "available" || installState === "ios-instructions");
   useEffect(() => {
+    if (notificationBusy.current) return;
     let active = true;
+    const operation = ++notificationOperation.current;
     void mdbaseNotifications
       .status()
       .then((next) => {
-        if (active) setChangeNotifications(next);
+        if (active && operation === notificationOperation.current) {
+          setChangeNotifications(next);
+          setChangeNotificationsError(null);
+        }
       })
       .catch((reason: unknown) => {
-        if (active) {
-          setChangeNotifications({ state: "error", optedIn: false });
+        if (active && operation === notificationOperation.current) {
+          setChangeNotifications((current) => ({ ...current, state: "error" }));
           setChangeNotificationsError(
             reason instanceof Error ? reason.message : String(reason),
           );
@@ -87,6 +110,26 @@ export function MoreScreen({
       });
     return () => {
       active = false;
+    };
+  }, [session, notificationRevision]);
+
+  useEffect(() => {
+    const recheck = () => {
+      if (!notificationBusy.current)
+        setNotificationRevision((revision) => revision + 1);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") recheck();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const listener = Capacitor.isNativePlatform()
+      ? App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) recheck();
+        }).catch(() => null)
+      : null;
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      void listener?.then((handle) => handle?.remove()).catch(() => undefined);
     };
   }, []);
 
@@ -111,6 +154,9 @@ export function MoreScreen({
   }
 
   async function toggleChangeNotifications() {
+    // An older passive check must not overwrite explicit enable/disable results.
+    notificationOperation.current += 1;
+    notificationBusy.current = true;
     setChangeNotificationsBusy(true);
     setChangeNotificationsError(null);
     try {
@@ -123,6 +169,7 @@ export function MoreScreen({
         reason instanceof Error ? reason.message : String(reason),
       );
     } finally {
+      notificationBusy.current = false;
       setChangeNotificationsBusy(false);
     }
   }
@@ -140,19 +187,37 @@ export function MoreScreen({
           <Cloud aria-hidden="true" size={20} strokeWidth={1.6} />
           <span>{info?.name ?? "mdbase collection"}</span>
           <small>
-            {loading
-              ? "Opening"
-              : `${stats?.open ?? 0} open · ${stats?.total ?? 0} total`}
+            {summaryError
+              ? "Details need attention"
+              : loading
+                ? "Opening"
+                : stats
+                  ? `${stats.open} open · ${stats.total} total`
+                  : "Counts unavailable"}
           </small>
         </div>
         <button
           className="text-action"
           disabled={refreshing}
           type="button"
-          onClick={() => void refresh()}
+          onClick={() => void refresh().catch(() => undefined)}
         >
           {refreshing ? "Refreshing" : "Refresh now"}
         </button>
+        {summaryError ? (
+          <>
+            <p className="inline-error" role="alert">
+              Collection details could not be loaded. {summaryError.message}
+            </p>
+            <button
+              className="text-action"
+              type="button"
+              onClick={retrySummary}
+            >
+              Retry collection details
+            </button>
+          </>
+        ) : null}
         {/* Storage detail and diagnostics stay available without leading the page. */}
         <button
           aria-expanded={showLocation}
@@ -271,6 +336,16 @@ export function MoreScreen({
             }
           >
             Review notification access
+          </button>
+        ) : null}
+        {changeNotifications.state === "error" ? (
+          <button
+            className="text-action"
+            disabled={changeNotificationsBusy}
+            type="button"
+            onClick={retryNotificationStatus}
+          >
+            Retry notification check
           </button>
         ) : null}
         {changeNotificationsError ? (
