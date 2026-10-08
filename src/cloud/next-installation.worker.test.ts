@@ -1,4 +1,3 @@
-import { webcrypto, createHash } from "node:crypto";
 import type { NextInstallationRequest } from "./next-installation-protocol";
 const methods = vi.hoisted(() => ({
   open: vi.fn(),
@@ -20,7 +19,6 @@ async function opened() {
   vi.resetAllMocks();
   const post = vi.fn(),
     stop = vi.fn();
-  vi.stubGlobal("crypto", webcrypto);
   vi.stubGlobal("navigator", { locks: undefined });
   vi.stubGlobal("postMessage", post);
   vi.stubGlobal("close", stop);
@@ -30,7 +28,8 @@ async function opened() {
   methods.renewExpiredPairing.mockResolvedValue(view);
   await import("./next-installation.worker");
   async function send(id: number, command: NextInstallationRequest["command"]) {
-    globalThis.onmessage!(
+    globalThis.onmessage!.call(
+      window,
       new MessageEvent("message", { data: { version: 1, id, command } }),
     );
     await vi.waitFor(() =>
@@ -46,7 +45,10 @@ async function opened() {
       appOrigin: "http://127.0.0.1:48218",
       release: {} as never,
       runtime: artifact,
-      runtimeSha256: createHash("sha256").update(artifact).digest("hex"),
+      runtimeSha256: Array.from(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", artifact)),
+        (byte) => byte.toString(16).padStart(2, "0"),
+      ).join(""),
     },
   });
   return { send, post, stop };

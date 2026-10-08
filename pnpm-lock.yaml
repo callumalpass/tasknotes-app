@@ -910,7 +910,7 @@ packages:
     resolution: {integrity: sha512-vEH4NQfu3dBQgMw0YQxG7LDtOOLxDyxET4DQhrWuHqtgr9qoch/H0QLzel9tFSqkyH+QWxuvW3Bet6ae1+qVyQ==}
 
   '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
-    resolution: {integrity: sha512-BvPSZn4gxrMGd7Vj+kabg6IHkkeRwE7C/Mr4jJkiItN/jpjM3VMG5GLBngMF9q8GEQz5YanOeBXRc27aG9HqjA==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz}
+    resolution: {integrity: sha512-XzIxsn5imyV9Lqb6226tlcn2D77oj+J7x1M8YIS5QjWR4bkKRxo42DmeoiMrme3Hdn0Df9jFj806O4c07nqAmg==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 
