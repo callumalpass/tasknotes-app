@@ -221,6 +221,10 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
           Your password unlocks private collections on approved devices. It is
           processed on this device, not sent to mdbase.
         </p>
+        <p className="section-copy">
+          Strict mode cannot be turned off yet. Setting up or unlocking password
+          recovery does not turn off strict mode on a device.
+        </p>
         {!status ? (
           <p role="status">
             {problem
