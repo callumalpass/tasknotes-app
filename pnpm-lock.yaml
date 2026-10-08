@@ -7,7 +7,7 @@ settings:
 overrides:
   '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
   '@mdbase-dev/connect': file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz
-  '@mdbase-dev/sdk': file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
+  '@mdbase-dev/sdk': file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz
   '@mdbase-dev/connect-sync': 0.1.0-beta.125
 
 importers:
@@ -83,9 +83,12 @@ importers:
       '@mdbase-dev/connect-protocol':
         specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
+      '@mdbase-dev/obsidian-runtime':
+        specifier: file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz
+        version: file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz
       '@mdbase-dev/sdk':
-        specifier: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
-        version: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz
+        specifier: file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz
+        version: file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz
       '@mdbase-dev/ui':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)
@@ -912,8 +915,13 @@ packages:
     resolution: {integrity: sha512-B5MjTqGVbdxlGWKvvmfGB149oUHuZhhTjClewaiD3Uiqp4PBg5f+uAVvazldwLZduXFa5ys2yztV/c8t3p6lsA==, tarball: file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz}
     version: 0.1.0-beta.129
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz':
-    resolution: {integrity: sha512-Y9tHD9wpknB51/8oRaLSjazLY27ucYf2VMSuIwyxaty+NG/SfSyqFZ6+e4bw8iXvnmEYFu2QdhzXZ6zFJoOHOg==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz}
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz':
+    resolution: {integrity: sha512-E1CJnslQt8U9Pi2+n704q+eQLSyeryERzSX5I+aBQwrNv6av3R8yu3vVJJOahpl7+QMUJbpE5Y09t8+Kap7pew==, tarball: file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz}
+    version: 0.0.0
+    engines: {node: '>=20'}
+
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz':
+    resolution: {integrity: sha512-VwhoyFtiRv3aelSyDxZNAbedz9Vm/exhDeEk+CmrFQfqCyQAO4of2Y9c6eCSN7XWhtssvYJ0gXqFYaP5rO7LSw==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 
@@ -1073,6 +1081,10 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2':
+    resolution: {integrity: sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==}
+    engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -2816,6 +2828,9 @@ packages:
 
   obsidian-bases-expression@0.3.0-rc.1:
     resolution: {integrity: sha512-NPuZ4RYaW4C94yUgbR3QVM1EwUUxQiWKPk1vYqDxBt8voXe1zDo0Qc/67nKRD005/R4J/0qxn9XqWhYq6XbaeQ==}
+
+  obsidian-bases-expression@0.3.0-rc.4:
+    resolution: {integrity: sha512-3/6+27UNts+YVgISbfuSe92i+ybISRfOgnm3KD85PWNmr5V/axwVO9hkp9FngqMIsVi+AGz3ZKkZ7S8jXjo8iw==}
 
   obug@2.1.4:
     resolution: {integrity: sha512-4a+OsYv9UktOJKE+l1A4OufDgdRF9PifWj+tJnHURo/P+WOxpG4GzUFL9qCalmWauao6ogiG+QvnCovwPoyAWA==}
@@ -4824,7 +4839,14 @@ snapshots:
     dependencies:
       '@mdbase-dev/connect-protocol': file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz':
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz':
+    dependencies:
+      '@noble/curves': 2.4.0
+      '@noble/hashes': 2.4.0
+      '@sqlite.org/sqlite-wasm': 3.53.4-build2
+      obsidian-bases-expression: 0.3.0-rc.4
+
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
@@ -4934,6 +4956,8 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -6907,6 +6931,10 @@ snapshots:
       boolbase: 1.0.0
 
   obsidian-bases-expression@0.3.0-rc.1:
+    dependencies:
+      moment: 2.30.1
+
+  obsidian-bases-expression@0.3.0-rc.4:
     dependencies:
       moment: 2.30.1
 

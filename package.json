@@ -63,7 +63,8 @@
     "@lezer/highlight": "^1.2.3",
     "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz",
     "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz",
-    "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz",
+    "@mdbase-dev/obsidian-runtime": "file:vendor/mdbase-dev-obsidian-runtime-0.0.0-b3e605ac.tgz",
+    "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz",
     "@mdbase-dev/ui": "0.1.0-beta.125",
     "@tanstack/react-virtual": "3.14.11",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.15.tgz",
@@ -116,7 +117,7 @@
     "overrides": {
       "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-38f456ec.tgz",
       "@mdbase-dev/connect": "file:vendor/mdbase-dev-connect-0.1.0-beta.129-38f456ec.tgz",
-      "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-331fccb9.tgz",
+      "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-b3e605ac.tgz",
       "@mdbase-dev/connect-sync": "0.1.0-beta.125"
     }
   }

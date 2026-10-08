@@ -2130,6 +2130,12 @@ export class NextTaskRepository implements TaskRepository {
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") {
       this.dataRevision++;
+      // Every data event, including accepted local writes, invalidates in-flight
+      // snapshot promises. New readers must not join an obsolete generation.
+      // The old revision guards remain; identity-checked cleanup cannot erase
+      // a newer load. Existing remembered task data still needs native reads.
+      this.initialization = null;
+      this.indexLoading = null;
       this.scratchFeedSnapshot = undefined;
     }
     if (!this.disposed)

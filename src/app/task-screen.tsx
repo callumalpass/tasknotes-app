@@ -358,6 +358,7 @@ function TaskEditor({
     });
     dirtyRef.current = true;
     setDirty(true);
+    setSaveState("saving");
   }
 
   function changeCustomProperty(key: string, value: unknown) {
