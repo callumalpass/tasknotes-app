@@ -47,10 +47,25 @@ import type {
 } from "../domain/completion";
 import type {
   TaskViewDocument,
+  TaskView,
+  TaskViewExecution,
   CreateTaskViewSourceInput,
   UpdateTaskViewSourceInput,
 } from "../domain/view";
 import { taskViewKey } from "../domain/view";
+import type {
+  AppBasesDescriptor,
+  AppBasesWindow,
+} from "@mdbase-dev/sdk/app-host";
+import { runtimeTimezone } from "../domain/runtime-timezone";
+import {
+  iterateNativeDiscovery,
+  nativeViewSelection,
+} from "./next-bases-discovery";
+import { readNativeRows } from "./next-bases-rows";
+import { nativeCellValue } from "./next-bases-values";
+import { nativePresentation } from "./next-bases-presentation";
+import { normalizeViewExecution } from "./views";
 import {
   SCRATCHPAD_TYPE,
   scratchpadPage,
@@ -206,6 +221,7 @@ export class NextTaskRepository implements TaskRepository {
   private readonly stopStatus: () => void;
   private readonly stopHolds: () => void;
   private viewCatalog: TaskViewDocument[] = [];
+  private nativeViews = new Map<string, AppBasesDescriptor>();
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
   private changesWatch: ChangesWatch | null = null;
@@ -274,6 +290,7 @@ export class NextTaskRepository implements TaskRepository {
     this.initialization = null;
     this.indexReady = false;
     this.viewCatalog = [];
+    this.nativeViews.clear();
     this.emit("data");
   }
 
@@ -1914,70 +1931,226 @@ export class NextTaskRepository implements TaskRepository {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });
     const revision = this.dataRevision;
-    const result = await this.client.views.list(undefined, signal);
+    const descriptors = new Map<string, AppBasesDescriptor>();
+    const documents = new Map<string, TaskViewDocument>();
+    const timezone = runtimeTimezone();
+    for await (const views of iterateNativeDiscovery(async (continuation) => {
+      const result = await this.client.listAppBasesViews(
+        { captureTimezone: timezone, limit: 128, continuation },
+        signal,
+      );
+      if (result.kind === "refusal") throw new MdbaseError(result.problem);
+      return result;
+    }, signal)) {
+      this.assertCurrentData(revision);
+      for (const descriptor of views) {
+        const key = taskViewKey(descriptor.record, String(descriptor.ordinal));
+        descriptors.set(key, structuredClone(descriptor));
+        let document = documents.get(descriptor.record);
+        if (!document) {
+          document = {
+            id: descriptor.record,
+            name: descriptor.path,
+            source: {
+              path: descriptor.path,
+              revision: descriptor.sourceRevision,
+              format: "obsidian.base",
+              writable: false,
+            },
+            views: [],
+          };
+          documents.set(descriptor.record, document);
+        }
+        document.views.push({
+          key,
+          documentId: descriptor.record,
+          documentName: descriptor.path,
+          id: String(descriptor.ordinal),
+          name: descriptor.name ?? "",
+          properties: [],
+          source: { ...document.source },
+          presentation: {
+            type: normalizePresentationType(descriptor.viewType),
+            mappings: {},
+            options: {},
+          },
+        });
+      }
+    }
     signal.throwIfAborted();
     this.assertCurrentData(revision);
-    if (!result.complete)
-      throw nativeUnsupported(
-        "The replica did not supply a complete view catalog.",
-      );
-    this.viewCatalog = result.sources.map((source) => ({
-      id: source.id,
-      name: source.name,
-      source: { ...source.source },
-      views: source.views.map((view) => {
-        const raw =
-          view.presentation === undefined
-            ? undefined
-            : toPlain(view.presentation);
-        if (
-          raw !== undefined &&
-          (!raw || typeof raw !== "object" || Array.isArray(raw))
-        )
-          throw new Error("The replica returned an invalid view presentation.");
-        const presentation = raw as
-          | {
-              type?: string;
-              fallback?: string;
-              mappings?: Record<string, string>;
-              options?: Record<string, unknown>;
-            }
-          | undefined;
-        return {
-          key: taskViewKey(source.source.path, view.id),
-          documentId: source.id,
-          documentName: source.name,
-          id: view.id,
-          name: view.name,
-          properties: structuredClone(view.properties),
-          source: { ...source.source },
-          ...(presentation
-            ? {
-                presentation: {
-                  type: normalizePresentationType(presentation.type ?? ""),
-                  ...(presentation.fallback
-                    ? { fallback: presentation.fallback }
-                    : {}),
-                  mappings: presentation.mappings ?? {},
-                  options: presentation.options ?? {},
-                },
-              }
-            : {}),
-        };
-      }),
-    }));
+    this.nativeViews = descriptors;
+    this.viewCatalog = [...documents.values()];
     return structuredClone(this.viewCatalog);
   }
   async cachedViewExecution() {
     return null;
   }
-  async executeView(): Promise<never> {
-    throw nativeUnsupported(
-      "Native complete view counts, groups and summaries are not available in the pinned SDK/backend.",
+  private nativeView(view: TaskView): AppBasesDescriptor {
+    const descriptor = this.nativeViews.get(view.key);
+    if (
+      !descriptor ||
+      descriptor.record !== view.documentId ||
+      String(descriptor.ordinal) !== view.id ||
+      descriptor.path !== view.source.path ||
+      descriptor.sourceRevision !== view.source.revision
+    )
+      throw nativeUnsupported(
+        "Refresh the native view catalog before selecting this source.",
+      );
+    return structuredClone(descriptor);
+  }
+  private async executeNativeView(
+    view: TaskView,
+    signal: AbortSignal,
+    window?: AppBasesWindow,
+  ): Promise<TaskViewExecution> {
+    await this.initialize({ deferTaskIndex: true });
+    signal.throwIfAborted();
+    const revision = this.dataRevision;
+    const descriptor = this.nativeView(view);
+    const timezone = runtimeTimezone();
+    const selected = await this.client.readAppBasesViewSource(
+      { ...nativeViewSelection(descriptor), captureTimezone: timezone },
+      signal,
     );
+    if (selected.kind === "refusal") throw new MdbaseError(selected.problem);
+    if (selected.view.path !== descriptor.path)
+      throw new Error("Native view source moved. Refresh the catalog.");
+    this.assertCurrentData(revision);
+    const result = await this.client.executeAppBases(
+      {
+        ...nativeViewSelection(descriptor),
+        hints: new Map(),
+        captureTimezone: timezone,
+        ...(window === undefined ? {} : { window }),
+      },
+      signal,
+    );
+    if (result.kind === "refusal") throw new MdbaseError(result.problem);
+    if (
+      result.view.record !== descriptor.record ||
+      result.view.sourceRevision !== descriptor.sourceRevision ||
+      result.view.ordinal !== descriptor.ordinal ||
+      result.view.path !== descriptor.path
+    )
+      throw new Error("Native execution changed its selected source identity.");
+    const metadata = nativePresentation(
+      selected.source,
+      result.view,
+      result.columns,
+    );
+    if (result.groups.length && metadata.groupProperty === undefined)
+      throw nativeUnsupported(
+        "The native grouped view did not declare its group property.",
+      );
+    const records = await readNativeRows(
+      result.rows,
+      (id, current) => this.client.get(id, { effective: true }, current),
+      signal,
+    );
+    signal.throwIfAborted();
+    this.assertCurrentData(revision);
+    const totalCount = result.window?.totalMatchedRows ?? result.rows.length;
+    let rowIndex = 0;
+    const normalized = normalizeViewExecution(
+      {
+        ...view,
+        properties: metadata.properties,
+        presentation: metadata.presentation,
+      },
+      {
+        results: records.map((record, index) => ({
+          path: record.path,
+          effectiveFrontmatter: Object.fromEntries(
+            [...(record.effective ?? record.frontmatter)].map(
+              ([key, value]) => [key, toPlain(value)],
+            ),
+          ),
+          types: [...record.types],
+          values: Object.fromEntries(
+            result.columns.map((column, cell) => [
+              column,
+              nativeCellValue(result.rows[index]!.cells[cell]!),
+            ]),
+          ),
+        })),
+        meta: {
+          totalCount,
+          hasMore:
+            result.window !== undefined &&
+            result.window.offset + result.rows.length < totalCount,
+          groups: result.groups.map((group, index) => ({
+            values: { [metadata.groupProperty!]: nativeCellValue(group.key) },
+            count:
+              result.window?.groupPlacements[index]?.totalGroupRows ??
+              group.rowIndices.length,
+            summaries: {},
+          })),
+        },
+      },
+      () => nextTaskSummary(records[rowIndex++]!, this.models),
+    );
+    return normalized;
+  }
+  async executeView(view: TaskView): Promise<TaskViewExecution> {
+    return this.executeNativeView(view, this.signal());
+  }
+  async *iterateView(
+    view: TaskView,
+    options: { signal?: AbortSignal; cumulative?: boolean } = {},
+  ): AsyncIterable<TaskViewExecution> {
+    const signal = this.signal(options.signal);
+    if (!options.cumulative) {
+      yield await this.executeNativeView(view, signal);
+      return;
+    }
+    const first = await this.executeNativeView(view, signal, {
+      offset: 0,
+      limit: 200,
+    });
+    yield first;
+    if (first.hasMore) {
+      // Independent window requests are not leases. Replace, never append a
+      // different cut: the full-load result is one complete native execution.
+      yield await this.executeNativeView(view, signal);
+    }
   }
   async readViewSource(path: string) {
-    return this.client.views.readSource({ path }, this.signal());
+    const descriptor = [...this.nativeViews.values()].find(
+      (view) => view.path === path,
+    );
+    if (!descriptor)
+      throw nativeUnsupported(
+        "Refresh the native view catalog before reading this source.",
+      );
+    const samePath = [...this.nativeViews.values()].filter(
+      (view) => view.path === path,
+    );
+    if (
+      samePath.some(
+        (view) =>
+          view.record !== descriptor.record ||
+          view.sourceRevision !== descriptor.sourceRevision,
+      )
+    )
+      throw new Error("Native view path has ambiguous source identities.");
+    const result = await this.client.readAppBasesViewSource(
+      {
+        ...nativeViewSelection(descriptor),
+        captureTimezone: runtimeTimezone(),
+      },
+      this.signal(),
+    );
+    if (result.kind === "refusal") throw new MdbaseError(result.problem);
+    if (result.view.path !== path)
+      throw new Error("Native view source moved. Refresh the catalog.");
+    return {
+      path: result.view.path,
+      format: "obsidian.base",
+      revision: result.view.sourceRevision,
+      document: result.source,
+    };
   }
   async createViewSource(input: CreateTaskViewSourceInput) {
     const format =
