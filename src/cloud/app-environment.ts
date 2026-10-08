@@ -8,7 +8,7 @@ export interface TaskNotesAppEnvironment {
   readonly appOrigin: string;
 }
 /** No authority or runtime trust is inferred here. The authenticated release
- * module/artifact and old-storage hold gate must precede next host startup. */
+ * module/artifact must precede next host startup. No old-data inspection gate. */
 export function requireTaskNotesAppEnvironment(
   configuredEnvironment: unknown,
   configuredLabOrigin: unknown,

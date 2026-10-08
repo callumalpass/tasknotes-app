@@ -79,6 +79,9 @@ export class NextTaskNotesInstallation {
           mode: options.mode,
           signal: controller.flowLifetime.signal,
           locks: options.locks,
+          // Native browser/Worker fetch requires its GlobalScope receiver; the
+          // SDK retains this callback as an instance member. No network proxy.
+          fetch: (input, init) => globalThis.fetch(input, init),
           ...(options.requestedCreateCollections === undefined
             ? {}
             : {

@@ -148,6 +148,20 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     expect(app.view()).not.toHaveProperty("token");
     await app.close();
   });
+  it("provides native fetch with its original GlobalScope receiver, not an SDK instance receiver", async () => {
+    const s = setup();
+    const request = vi.spyOn(globalThis, "fetch").mockImplementation(function (
+      this: unknown,
+    ) {
+      expect(this).toBe(globalThis);
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+    const app = await NextTaskNotesInstallation.open(s.options);
+    const captured = s.open.mock.calls[0]![0];
+    await captured.fetch!(`${release.cpOrigin}/health`);
+    expect(request).toHaveBeenCalledOnce();
+    await app.close();
+  });
   it("requires explicit account confirmation and ownership before native device", async () => {
     const s = setup(),
       app = await NextTaskNotesInstallation.open(s.options);
