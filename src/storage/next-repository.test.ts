@@ -542,7 +542,22 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
   it("refuses missing native view metadata without calling a placeholder executor", async () => {
     const f = await fixture();
     const execute = vi.spyOn(f.client.views, "execute");
-    await expect(f.repository.executeView()).rejects.toMatchObject({
+    await expect(
+      f.repository.executeView({
+        key: "unadmitted#0",
+        documentId: "unadmitted",
+        documentName: "unadmitted",
+        id: "0",
+        name: "unadmitted",
+        properties: [],
+        source: {
+          path: "unadmitted.base",
+          format: "obsidian.base",
+          revision: "sha256:" + "00".repeat(32),
+          writable: false,
+        },
+      }),
+    ).rejects.toMatchObject({
       reason: "unsupported",
     });
     expect(execute).not.toHaveBeenCalled();
