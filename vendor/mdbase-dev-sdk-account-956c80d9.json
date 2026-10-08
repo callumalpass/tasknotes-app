@@ -1,21 +1,21 @@
 {
   "repository": "mdbase-dev/mdbase-next",
-  "sourceCommit": "05d8b62f491c1a45f6019ae80e8deb9465720d79",
-  "sourceIncludesPrs": [659, 657, 660],
+  "sourceCommit": "15aa3e5f49aacb41cbac0ddbefca5f9b3d30b533",
+  "sourceIncludesPrs": [659, 657, 660, 670, 672, 675],
   "package": "@mdbase-dev/sdk",
   "version": "0.0.0",
   "artifact": "mdbase-dev-sdk-0.0.0-956c80d9.tgz",
   "artifactPathNote": "Historical filename retained as an opaque dependency path so the lockfile changes only integrity. sourceCommit above is the authoritative source pin, not the filename suffix.",
-  "sha256": "7b84cbc077308c3c8d4b1ffe323f3deccf1fb0ae7e1f7a156ddb9435ed78b05a",
-  "buildCommand": "cd packages/sdk && npm run typecheck && npm run build && npm test && npm run size && npm pack --ignore-scripts --pack-destination ../../target/clients-review/sdk-current-pack",
+  "sha256": "1917023cc3dcbcd2feb0a7e6901bf9431e30ab06778d35f754b82aeaf2365aa3",
+  "buildCommand": "cd packages/sdk && npm run typecheck && npm run build && npm test && npm run size && npm pack --ignore-scripts --pack-destination ../../target/clients-review/sdk-fetch-pack",
   "qualification": {
     "typecheck": "PASS",
     "build": "PASS",
-    "testsPassed": 1074,
+    "testsPassed": 1136,
     "testsSkipped": 2,
-    "gzipKiB": 53.1,
+    "gzipKiB": 54.0,
     "gzipCeilingKiB": 64,
-    "log": "ws-clients-views-read-review/target/clients-review/sdk-current-pack.log"
+    "log": "ws-clients-views-read-review/target/clients-review/sdk-fetch-pack.log"
   },
   "consumerEntries": [
     "@mdbase-dev/sdk",
