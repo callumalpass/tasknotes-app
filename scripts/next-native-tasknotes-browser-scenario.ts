@@ -31,7 +31,9 @@ export async function qualifyNativeTaskNotes(options: {
   try {
     if (mode === "fresh") {
       requireTest(!offline, "new catalog must not be installed offline");
-      const generated = buildTaskNotesMdbaseResources({profiles: ["core-lite"]});
+      // Native rc.5 schemas are resources beneath the configured type folder;
+      // use the real generator's supported placement option, not rewritten docs.
+      const generated = buildTaskNotesMdbaseResources({profiles: ["core-lite"], schemasFolder: "_types/tasknotes"});
       for (const [path, document] of [
         [generated.paths.config, generated.configDocument],
         [generated.paths.taskSchema, generated.taskSchemaDocument],
