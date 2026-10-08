@@ -33,7 +33,7 @@ export async function qualifyNativeTaskNotes(options: {
       requireTest(!offline, "new catalog must not be installed offline");
       // Native rc.5 schemas are resources beneath the configured type folder;
       // use the real generator's supported placement option, not rewritten docs.
-      const generated = buildTaskNotesMdbaseResources({profiles: ["core-lite"], schemasFolder: "_types/tasknotes"});
+      const generated = buildTaskNotesMdbaseResources({profiles: ["core-lite"], schemasFolder: "_types/tasknotes", stableId: true});
       for (const [path, document] of [
         [generated.paths.config, generated.configDocument],
         [generated.paths.taskSchema, generated.taskSchemaDocument],
@@ -52,24 +52,41 @@ export async function qualifyNativeTaskNotes(options: {
     requireTest(catalog.types.some(t => t.implements.some(i => i.contract === contract!.id && i.version === contract!.version)), "real catalog lacks an implementing task type");
     repository = new NextTaskRepository(client, "Owned native TaskNotes", accountId);
     await repository.initialize();
-    let createdConfirmed = false, editedConfirmed = false;
+    let createdConfirmed = false, editedConfirmed = false, portableId: string | null = null;
     if (mode === "fresh") {
+      const beforeCreate = submitted.length;
       const intent = {id: TASK, authorityRequestId: undefined as string | undefined};
       const created = await driven(repository.create({title: "Native create", body: "Original native task body"}, intent), true);
-      requireTest(created.id === TASK && created.title === "Native create", "created task differs from original intent");
-      requireTest(intent.authorityRequestId, "create lost its original mutation identity");
-      const receipt = await client.receipt(intent.authorityRequestId!, AbortSignal.timeout(5000));
+      // TASK is the original native record ID; the real catalog's on_create
+      // lifecycle assigns the portable frontmatter ID. Preserve both identities.
+      const originalRecord = await client.get(TASK, {body: true, effective: true}, AbortSignal.timeout(5000));
+      requireTest(originalRecord.id === TASK && originalRecord.path === created.path && created.id && created.title === "Native create" && created.body === "Original native task body", "created task differs from original native record/intent");
+      portableId = created.id;
+      // The repository clears its recovery request ID only after confirmation.
+      // Retain the one original SDK submission, not a new retry identifier.
+      requireTest(submitted.length === beforeCreate + 1, "create was resubmitted or no original SDK mutation recorded");
+      const createMutation = submitted[beforeCreate]!;
+      requireTest(createMutation, "create lost its original SDK mutation identity");
+      const receipt = await client.receipt(createMutation, AbortSignal.timeout(5000));
       requireTest(receipt.state === "confirmed", "TaskRepository create returned before confirmed receipt"); createdConfirmed = true;
       const before = submitted.length;
-      const edited = await driven(repository.update(TASK, {title: "Native edited", body: "Confirmed native task body"}), true);
-      requireTest(edited.id === TASK && edited.title === "Native edited" && edited.body === "Confirmed native task body", "edited task mismatch");
+      const edited = await driven(repository.update(created.id, {title: "Native edited", body: "Confirmed native task body"}), true);
+      requireTest(edited.id === portableId && edited.title === "Native edited" && edited.body === "Confirmed native task body", "edited task mismatch");
       requireTest(submitted.length === before + 1, "edit was resubmitted or no original mutation recorded");
       const updated: wire.Receipt = await client.receipt(submitted.at(-1)!, AbortSignal.timeout(5000));
       requireTest(updated.state === "confirmed", "TaskRepository edit returned before confirmed receipt"); editedConfirmed = true;
     }
-    const restored = await repository.get(TASK);
-    requireTest(restored?.id === TASK && restored.title === "Native edited" && restored.body === "Confirmed native task body", "original confirmed task not readable after restart/offline");
-    return {summary: {actualTaskRepository: true, nativeTaskCatalog: true, exactContractDigest: true, createdConfirmed, editedConfirmed, sameTaskReadable: true, offline, noSyntheticDescribe: true, noMemoryReplica: true, uiSavedBadgeQualified: false}, dispose: () => repository?.dispose()};
+    const originalRecord = await client.get(TASK, {body: true, effective: true}, AbortSignal.timeout(5000));
+    requireTest(originalRecord.id === TASK, "original native record identity changed");
+    if (portableId === null) {
+      const tasks = await repository.list();
+      const original = tasks.filter(task => task.path === originalRecord.path);
+      requireTest(original.length === 1, "original native task path is missing/ambiguous");
+      portableId = original[0]!.id;
+    }
+    const restored = await repository.get(portableId);
+    requireTest(restored?.id === portableId && restored.path === originalRecord.path && restored.title === "Native edited" && restored.body === "Confirmed native task body", "original confirmed task not readable after restart/offline");
+    return {summary: {actualTaskRepository: true, nativeTaskCatalog: true, exactContractDigest: true, nativeRecordId: originalRecord.id, portableTaskId: restored.id, createdConfirmed, editedConfirmed, sameTaskReadable: true, offline, noSyntheticDescribe: true, noMemoryReplica: true, uiSavedBadgeQualified: false}, dispose: () => repository?.dispose()};
   } catch (error) {repository?.dispose(); throw error;}
   finally {client.submit = originalSubmit;}
 }
