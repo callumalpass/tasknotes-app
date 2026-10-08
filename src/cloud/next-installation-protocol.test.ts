@@ -8,6 +8,7 @@ describe("native installation Worker public protocol (source only)", () => {
   it("accepts only fixed commands, never a generic method/host/custody getter", () => {
     for (const kind of [
       "start",
+      "renew-expired",
       "exchange",
       "attest",
       "collections",
@@ -21,6 +22,8 @@ describe("native installation Worker public protocol (source only)", () => {
       { kind: "getKeys" },
       { kind: "start", token: "not allowed" },
       { kind: "exchange", retry: true },
+      { kind: "renew-expired", actor: "fresh" },
+      { kind: "renew-expired", requestId: "caller-supplied" },
       { kind: "collections", accountId: "foreign" },
     ])
       expect(isNextInstallationCommand(command)).toBe(false);

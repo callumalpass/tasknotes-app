@@ -121,6 +121,35 @@ describe("installation Worker transport (source mocks, not LAB/native qualificat
     ]);
     expect(worker.terminated).toBe(1);
   });
+  it("explicit renewal is a fixed command; unknown outcomes never automatically renew again", async () => {
+    const client = await opened(),
+      worker = FakeWorker.last;
+    const renewal = client.renewExpiredPairing();
+    const refused = expect(renewal).rejects.toThrow("outcome_unknown");
+    expect(worker.requests.at(-1)?.command).toEqual({ kind: "renew-expired" });
+    worker.reply({
+      version: 1,
+      id: worker.requests.at(-1)!.id,
+      ok: false,
+      reason: "outcome_unknown",
+    });
+    await refused;
+    expect(worker.terminated).toBe(0);
+    const resume = client.start();
+    worker.ok();
+    await resume;
+    expect(worker.requests.map((request) => request.command.kind)).toEqual([
+      "open",
+      "renew-expired",
+      "start",
+    ]);
+    const closing = client.close();
+    await vi.waitFor(() =>
+      expect(worker.requests.at(-1)?.command.kind).toBe("close"),
+    );
+    worker.ok(null);
+    await closing;
+  });
   it("close drains the original in-flight operation before shutdown and rejects new commands", async () => {
     const client = await opened();
     const worker = FakeWorker.last;

@@ -29,6 +29,8 @@ export function NextInstallationScreen({
   const [requestCreate, setRequestCreate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deviceReady, setDeviceReady] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const [requestReady, setRequestReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const operation = useRef(false);
   useEffect(() => {
@@ -47,6 +49,7 @@ export function NextInstallationScreen({
     operation.current = true;
     setBusy(true);
     setError(null);
+    setExpired(false);
     try {
       await work();
     } catch (reason) {
@@ -58,9 +61,18 @@ export function NextInstallationScreen({
               )?.[1]
             : undefined;
         setCollections([]);
-        setError(
-          `The native installation operation did not complete${code ? ` (${code})` : ""}. Preserve device storage and explicitly resume the same request.`,
-        );
+        if (code === "expired") {
+          setExpired(true);
+          setRequestReady(false);
+          setConsent(null);
+          setError(
+            "This sign-in request expired. Start a new request on this device to continue.",
+          );
+        } else {
+          setError(
+            `The native installation operation did not complete${code ? ` (${code})` : ""}. Preserve device storage and explicitly resume the same request.`,
+          );
+        }
       }
     } finally {
       operation.current = false;
@@ -75,6 +87,8 @@ export function NextInstallationScreen({
     signal.throwIfAborted();
     owner.current = null;
     setDeviceReady(false);
+    setRequestReady(false);
+    setConsent(null);
     const opened = await NextInstallationWorker.open(
       build,
       mode,
@@ -92,7 +106,10 @@ export function NextInstallationScreen({
     owner.current = opened.worker;
     setView(opened.view);
     const started = await opened.worker.start();
-    if (current.current) setView(started);
+    if (current.current) {
+      setView(started);
+      setRequestReady(true);
+    }
   }
   const paired = view?.state === "paired";
   return (
@@ -125,7 +142,7 @@ export function NextInstallationScreen({
           </button>
         </>
       ) : null}
-      {view && !paired ? (
+      {view && !paired && requestReady ? (
         <>
           <a
             href={view.verificationUri}
@@ -147,7 +164,7 @@ export function NextInstallationScreen({
           </button>
         </>
       ) : null}
-      {view?.accountId && !deviceReady ? (
+      {view?.accountId && !deviceReady && requestReady ? (
         <section>
           <p>
             Selected account: <code>{view.accountId}</code>
@@ -170,7 +187,7 @@ export function NextInstallationScreen({
           </button>
         </section>
       ) : null}
-      {deviceReady && !paired ? (
+      {deviceReady && !paired && requestReady ? (
         <button
           disabled={busy}
           onClick={() =>
@@ -183,13 +200,37 @@ export function NextInstallationScreen({
           Send original device approval
         </button>
       ) : null}
-      {view ? (
+      {view && expired ? (
+        <button
+          disabled={busy}
+          onClick={() =>
+            void run(async () => {
+              // Explicit renewal only; keep original native ownership and keys.
+              // Until ready, never expose the expired parent's portal actions.
+              setRequestReady(false);
+              setConsent(null);
+              setCollections([]);
+              const next = await owner.current!.renewExpiredPairing();
+              if (current.current) {
+                setView(next);
+                setRequestReady(true);
+              }
+            })
+          }
+        >
+          Start a new sign-in request on this device
+        </button>
+      ) : null}
+      {view && !expired ? (
         <button
           disabled={busy}
           onClick={() =>
             void run(async () => {
               const next = await owner.current!.start();
-              if (current.current) setView(next);
+              if (current.current) {
+                setView(next);
+                setRequestReady(true);
+              }
             })
           }
         >

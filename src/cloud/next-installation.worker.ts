@@ -74,6 +74,8 @@ async function dispatch(
   switch (command.kind) {
     case "start":
       return controller.start();
+    case "renew-expired":
+      return controller.renewExpiredPairing();
     case "exchange":
       return controller.exchange();
     case "confirm-account":

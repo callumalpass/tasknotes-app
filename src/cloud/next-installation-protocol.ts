@@ -23,6 +23,7 @@ export type NextInstallationCommand =
   | {
       kind:
         | "start"
+        | "renew-expired"
         | "exchange"
         | "attest"
         | "collections"
@@ -74,6 +75,7 @@ export function isNextInstallationCommand(
         typeof command.requestedCreateCollections === "boolean"
       );
     case "start":
+    case "renew-expired":
     case "exchange":
     case "attest":
     case "collections":

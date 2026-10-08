@@ -55,6 +55,10 @@ function setup() {
       events.push("start");
       return view;
     }),
+    renewExpiredPairing: vi.fn(async () => {
+      events.push("renew-expired");
+      return view;
+    }),
     exchange: vi.fn(async () => view),
     confirmSelectedAccount: vi.fn(async (id: string) => {
       if (id !== account) throw Error("binding");
@@ -203,6 +207,21 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     await app.start();
     expect(s.flow.start).toHaveBeenCalledTimes(2);
     expect(s.open).toHaveBeenCalledOnce();
+    await app.close();
+  });
+  it("explicit renewal delegates to the original flow without replacing native ownership", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.flow.renewExpiredPairing.mockRejectedValueOnce(Error("outcome_unknown"));
+    await expect(app.renewExpiredPairing()).rejects.toThrow("outcome_unknown");
+    expect(s.flow.renewExpiredPairing).toHaveBeenCalledOnce();
+    await app.start();
+    expect(s.flow.start).toHaveBeenCalledOnce();
+    expect(s.open).toHaveBeenCalledOnce();
+    expect(s.openHost).toHaveBeenCalledOnce();
+    expect(s.host.close).not.toHaveBeenCalled();
+    expect(s.events.filter((event) => event === "lease")).toHaveLength(1);
     await app.close();
   });
   it("drains delayed original slot acquisition on abort before cleanup", async () => {

@@ -159,6 +159,11 @@ export class NextInstallationWorker {
   start(): Promise<AppInstallationSignInView> {
     return this.call({ kind: "start" }) as Promise<AppInstallationSignInView>;
   }
+  renewExpiredPairing(): Promise<AppInstallationSignInView> {
+    return this.call({
+      kind: "renew-expired",
+    }) as Promise<AppInstallationSignInView>;
+  }
   exchange(): Promise<AppInstallationSignInView> {
     return this.call({
       kind: "exchange",

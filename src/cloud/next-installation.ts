@@ -138,6 +138,11 @@ export class NextTaskNotesInstallation {
     return this.exclusive(() => this.flow!.start());
   }
 
+  /** Explicit typed-expiry retry, keeping the SAME Worker/native host/actor. */
+  renewExpiredPairing(): Promise<AppInstallationSignInView> {
+    return this.exclusive(() => this.flow!.renewExpiredPairing());
+  }
+
   /** Called by the user after selecting/approving in the real LAB/production portal. */
   exchange(): Promise<AppInstallationSignInView> {
     return this.exclusive(async () => {
