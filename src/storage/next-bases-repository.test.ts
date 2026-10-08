@@ -4,6 +4,7 @@ import type {
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
 import { nextTaskFixture } from "../test/next-task-fixture";
+import type { TaskViewExecution } from "../domain/view";
 
 // Explicit native-result stand-ins. Memory fixture supplies task metadata only;
 // never native execution/catalog/authority/startup or actual WASM proof.
@@ -264,8 +265,14 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     const pages = f.repository.iterateView(f.view, { cumulative: true });
     const iterator = pages[Symbol.asyncIterator]();
-    const page = (await iterator.next()).value!;
+    const page = (await iterator.next()).value! as TaskViewExecution;
     expect(page.records).toHaveLength(200);
+    expect(
+      page.records!.every(({ values }) => values["note.status"] === "open"),
+    ).toBe(true);
+    expect(
+      page.rows.every(({ values }) => values["note.status"] === "open"),
+    ).toBe(true);
     expect(page.totalCount).toBe(1000);
     expect(page.hasMore).toBe(true);
     expect(page.groups).toEqual([
