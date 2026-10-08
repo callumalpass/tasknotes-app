@@ -44,7 +44,9 @@ describe("dormant immutable local-runtime intake (no bootstrap/SQL/activation)",
     const instantiate = vi.spyOn(WebAssembly, "instantiate");
     const a = await loadLocalRuntimeArtifact(),
       b = await loadLocalRuntimeArtifact();
-    expect(a).not.toBe(b);
+    // Compare identity directly: assertion diagnostics must not deep-walk two
+    // 2.6 MiB byte arrays (especially under coverage instrumentation).
+    expect(a === b).toBe(false);
     expect(
       WebAssembly.Module.exports(await WebAssembly.compile(a)).map(
         (item) => item.name,
