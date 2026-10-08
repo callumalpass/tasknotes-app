@@ -1,0 +1,36 @@
+{
+  "purpose": "isolated shared compiler artifact intake only",
+  "releaseQualified": false,
+  "source": {
+    "package": "@mdbase-dev/obsidian-runtime/tasknotes-query",
+    "head": "6bec1906909955b5b7f6df93b5fedd97e5de6a24",
+    "sha256": "80dfa93195203ad41702eaddfe1e95689a40ca46d3844f5694e711c8f58e254a",
+    "archiveSha256": "7fcc4c69f9feb45b8b412e9aff8c581433cfbe785f82725d4dc7f7695e5d2c1c",
+    "license": "MIT"
+  },
+  "parser": {
+    "package": "obsidian-bases-expression",
+    "version": "0.3.0-rc.4",
+    "resolved": "https://registry.npmjs.org/obsidian-bases-expression/-/obsidian-bases-expression-0.3.0-rc.4.tgz",
+    "integrity": "sha512-3/6+27UNts+YVgISbfuSe92i+ybISRfOgnm3KD85PWNmr5V/axwVO9hkp9FngqMIsVi+AGz3ZKkZ7S8jXjo8iw=="
+  },
+  "artifacts": [
+    {
+      "file": "tasknotes-query-6bec1906.browser.mjs",
+      "sha256": "8802be67c88800c0795446b58c2b36cd2fc561bb79b04b0e603d0835c7a5f7cb"
+    },
+    {
+      "file": "tasknotes-query-6bec1906.browser.d.mts",
+      "sha256": "08ab0ef27602f503777c0194bac393a250f10ddbc879baef984a71800717b788"
+    },
+    {
+      "file": "tasknotes-query-6bec1906.browser-metafile.json",
+      "sha256": "6dc47dd08a2386447b918cd0c5c102f6a71d1c68173fd33b93bbdfe4137e1925"
+    }
+  ],
+  "excluded": [
+    "Authoritative native Timestamp and Bases context typing declarations",
+    "Native view execution, counts, grouping, Temporal and index eligibility",
+    "SQL or 10k native/LAB qualification"
+  ]
+}

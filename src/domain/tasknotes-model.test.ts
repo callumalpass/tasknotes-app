@@ -766,6 +766,15 @@ describe("TaskNotes task model app boundary", () => {
     });
     expect(skipped.parent.skippedInstances).toContain("2026-08-05");
     expect(skipped.materializeNextDate).toBe("2026-08-06");
+    const unskipped = model.transitionMaterializedOccurrence(
+      skipped.occurrence,
+      skipped.parent,
+      "skip",
+      { now: "2026-08-05T10:00:00Z" },
+    );
+    expect(unskipped.occurrence.skipped).toBe(false);
+    expect(unskipped.parent.skippedInstances).toEqual([]);
+    expect(model.read(unskipped.parent).skippedInstances).toEqual([]);
   });
 
   it("applies occurrence templates while retaining canonical identity", async () => {
