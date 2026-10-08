@@ -1,10 +1,26 @@
 {
   "repository": "mdbase-dev/mdbase-next",
-  "sourceCommit": "956c80d9bf27f8c87cc8d208a79af27aa73a4bd1",
-  "sourcePr": 390,
+  "sourceCommit": "05d8b62f491c1a45f6019ae80e8deb9465720d79",
+  "sourceIncludesPrs": [659, 657, 660],
   "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
   "artifact": "mdbase-dev-sdk-0.0.0-956c80d9.tgz",
-  "sha256": "2feb957e7d69bb83edf008d1b8fd24b067e188bbf6d8579f1297f2e7a7b4bde6",
-  "consumerEntry": "@mdbase-dev/sdk/account",
-  "purpose": "Private-account UI facade types and tests; authenticated host injection remains required. No next-backend factory or production deployment activation."
+  "artifactPathNote": "Historical filename retained as an opaque dependency path so the lockfile changes only integrity. sourceCommit above is the authoritative source pin, not the filename suffix.",
+  "sha256": "7b84cbc077308c3c8d4b1ffe323f3deccf1fb0ae7e1f7a156ddb9435ed78b05a",
+  "buildCommand": "cd packages/sdk && npm run typecheck && npm run build && npm test && npm run size && npm pack --ignore-scripts --pack-destination ../../target/clients-review/sdk-current-pack",
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "testsPassed": 1074,
+    "testsSkipped": 2,
+    "gzipKiB": 53.1,
+    "gzipCeilingKiB": 64,
+    "log": "ws-clients-views-read-review/target/clients-review/sdk-current-pack.log"
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Coordinator-approved private development native TaskNotes startup/C5/Views composition. No publication, version bump or official 0.1.0-beta.1 release-cohort adoption."
 }
