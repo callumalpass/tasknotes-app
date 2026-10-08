@@ -193,6 +193,31 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     expect(await f.repository.listSummaries()).toEqual([]);
   });
 
+  it.each(["remote", "local"])("%s data events do not let new reads join an obsolete index snapshot", async kind => {
+    const f = await fixture(), control = heldWatch();
+    let changes!:(batch:wire.ChangesResult)=>void;
+    vi.spyOn(f.client,"watchChanges").mockImplementation((_cursor,callback)=>{changes=callback;return control.watch;});
+    const opened=f.repository.initialize({deferTaskIndex:true});control.active();await opened;
+    let release!:()=>void;
+    const gate=new Promise<void>(resolve=>{release=resolve;});
+    const pages=vi.spyOn(f.client,"pages")
+      .mockImplementationOnce(async function*(){await gate;yield {records:[],complete:true,asOf:0};})
+      .mockImplementation(async function*(){yield {records:[],complete:true,asOf:1};});
+    const stale=f.repository.listSummaries();
+    const refused=expect(stale).rejects.toMatchObject({reason:"collection_changed"});
+    await vi.waitFor(()=>expect(pages).toHaveBeenCalledTimes(1));
+    if(kind==="remote") changes(batch);
+    else await f.repository.create({title:"Accepted local task"});
+    let result:unknown, failure:unknown, finished=false;
+    const current=f.repository.listSummaries().then(value=>{result=value;finished=true;},error=>{failure=error;finished=true;throw error;});
+    void current.catch(()=>{});
+    try {
+      await vi.waitFor(()=>expect(finished).toBe(true));
+      expect(failure).toBeUndefined();expect(result).toEqual([]);expect(pages).toHaveBeenCalledTimes(2);
+    } finally {release();}
+    await refused;await current;
+  });
+
   it("stops startup on suspend and ignores callbacks from the retired scope after resume", async () => {
     const f = await fixture();
     const old = heldWatch();

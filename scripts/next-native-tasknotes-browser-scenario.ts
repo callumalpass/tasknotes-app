@@ -11,10 +11,10 @@ const requireTest: (value: unknown, message: string) => asserts value = (value, 
  * retry an operation. Bounded foreground drive preserves unknown outcomes. */
 export async function qualifyNativeTaskNotes(options: {
   client: MdbaseClient; accountId: string; mode: "fresh" | "existing";
-  offline: boolean; drive(): Promise<void>;
+  offline: boolean; uiProbe?: boolean; drive(): Promise<void>;
 }) {
   const {client, accountId, mode, offline, drive} = options;
-  let repository: NextTaskRepository | null = null;
+  let repository: NextTaskRepository | null = null, uiDispose: (()=>void) | undefined;
   async function driven<T>(promise: Promise<T>, mustWait = false): Promise<T> {
     let done = false, failure: unknown, result: T | undefined;
     void promise.then(value => {result = value; done = true;}, error => {failure = error; done = true;});
@@ -85,8 +85,11 @@ export async function qualifyNativeTaskNotes(options: {
       portableId = original[0]!.id;
     }
     const restored = await repository.get(portableId);
-    requireTest(restored?.id === portableId && restored.path === originalRecord.path && restored.title === "Native edited" && restored.body === "Confirmed native task body", "original confirmed task not readable after restart/offline");
-    return {summary: {actualTaskRepository: true, nativeTaskCatalog: true, exactContractDigest: true, nativeRecordId: originalRecord.id, portableTaskId: restored.id, createdConfirmed, editedConfirmed, sameTaskReadable: true, offline, noSyntheticDescribe: true, noMemoryReplica: true, uiSavedBadgeQualified: false}, dispose: () => repository?.dispose()};
-  } catch (error) {repository?.dispose(); throw error;}
+    const expectedTitle = options.uiProbe && mode !== "fresh" ? "Native UI saved" : "Native edited";
+    requireTest(restored?.id === portableId && restored.path === originalRecord.path && restored.title === expectedTitle && restored.body === "Confirmed native task body", "original confirmed task not readable after restart/offline");
+    const ui = options.uiProbe ? await (await import("./next-native-tasknotes-ui-scenario")).qualifyNativeTaskNotesUi({repository,client,taskId:portableId,fresh:mode==="fresh",submitted,drive}) : undefined;
+    uiDispose=ui?.dispose;
+    return {summary: {actualTaskRepository: true, nativeTaskCatalog: true, exactContractDigest: true, nativeRecordId: originalRecord.id, portableTaskId: restored.id, createdConfirmed, editedConfirmed, sameTaskReadable: true, offline, noSyntheticDescribe: true, noMemoryReplica: true, ...ui?.summary, uiSavedBadgeQualified: Boolean(ui?.summary.uiSavedBadgeQualified)}, dispose: () => {uiDispose?.();repository?.dispose();}};
+  } catch (error) {uiDispose?.();repository?.dispose(); throw error;}
   finally {client.submit = originalSubmit;}
 }

@@ -37,6 +37,15 @@ describe("TaskScreen", () => {
     fireEvent.change(title, { target: { value: "Unsaved important draft" } });
   }
 
+  it("never labels a dirty draft Saved during the autosave debounce", async () => {
+    const update = vi.spyOn(repository, "update");
+    renderTask();
+    await editTitle();
+    expect(screen.getByRole("button", { name: "Saving" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Saved" })).not.toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("keeps the editor open when saving before navigation fails", async () => {
     const onBack = renderTask();
     await editTitle();
