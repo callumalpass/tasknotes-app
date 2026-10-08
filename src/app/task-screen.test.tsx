@@ -42,7 +42,9 @@ describe("TaskScreen", () => {
     renderTask();
     await editTitle();
     expect(screen.getByRole("button", { name: "Saving" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Saved" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Saved" }),
+    ).not.toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
   });
 
