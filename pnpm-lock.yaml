@@ -112,6 +112,9 @@ importers:
       lucide-react:
         specifier: 1.25.0
         version: 1.25.0(react@19.2.8)
+      mdbase:
+        specifier: file:vendor/mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz
+        version: file:vendor/mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz
       obsidian-bases-expression:
         specifier: 0.3.0-rc.1
         version: 0.3.0-rc.1
@@ -2611,6 +2614,11 @@ packages:
 
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
+
+  mdbase@file:vendor/mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz:
+    resolution: {integrity: sha512-6/fUH4l0V8tu9tniH0a2pGOwQ0+LD1uiSnRJ11ZbSGwlhglsbvMUqWTijyK2QAxGnTLjYxgusVAGHiZ1hzbbSg==, tarball: file:vendor/mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz}
+    version: 0.5.0-rc.1
+    engines: {node: '>=20'}
 
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
@@ -6602,6 +6610,8 @@ snapshots:
   mdast-util-to-string@4.0.0:
     dependencies:
       '@types/mdast': 4.0.4
+
+  mdbase@file:vendor/mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz: {}
 
   mdn-data@2.27.1: {}
 
