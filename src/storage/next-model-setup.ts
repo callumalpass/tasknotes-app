@@ -19,6 +19,7 @@ import {
   TASKNOTES_MODEL_PACK,
 } from "./next-model-plan";
 import { nextTaskProviders } from "./next-task-catalog";
+import { modelResourceInventory } from "./next-model-resources";
 
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const hash = /^sha256:[0-9a-f]{64}$/;
@@ -251,12 +252,10 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       });
   }
   private async snapshot(signal: AbortSignal): Promise<Resources> {
-    const listed = await this.client.resources.list({ text: true, signal });
+    const listed = await modelResourceInventory(this.client, signal);
     signal.throwIfAborted();
-    if (!listed.complete)
-      throw blocked("Mdbase has not supplied the complete definition list.");
     const resources: Resources = Object.create(null) as Resources;
-    for (const resource of listed.resources) {
+    for (const resource of listed) {
       if (
         resource.state !== "confirmed" ||
         typeof resource.text !== "string" ||
@@ -465,11 +464,18 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     plan: ModelPackPlan,
     signal: AbortSignal,
   ): Promise<void> {
-    const listed = await this.client.resources.list({ text: true, signal });
+    let listed: wire.ResourceView[];
+    try {
+      listed = await modelResourceInventory(this.client, signal);
+    } catch {
+      signal.throwIfAborted();
+      // Readback cannot establish that an original write did not land. This
+      // also applies when inspecting an already-verified retained intent.
+      throw uncertain();
+    }
     signal.throwIfAborted();
-    if (!listed.complete) throw uncertain();
     for (const expected of plan.readback) {
-      const matches = listed.resources.filter(
+      const matches = listed.filter(
         (resource) => resource.path === expected.path,
       );
       if (expected.doc === null) {
