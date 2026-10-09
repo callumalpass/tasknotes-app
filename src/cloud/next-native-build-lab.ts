@@ -1,4 +1,4 @@
-import runtimeUrl from "../../vendor/mdbase-app-lab-f53fb85d.wasm?url";
+import runtimeUrl from "../../vendor/mdbase-app-lab-c59379cb.wasm?url";
 import { appReleaseTrust } from "../../vendor/mdbase-app-lab-trust.mjs";
 import type { TaskNotesAppEnvironment } from "./app-environment";
 import {
@@ -7,7 +7,7 @@ import {
 } from "./next-installation-protocol";
 import { fetchBundledAsset } from "./next-bundled-asset";
 const runtimeSha256 =
-  "f53fb85dc34eaf9cdf80e71ffdd6eb4ee513e0e9c318b310945f40f35123c778";
+  "c59379cbf99c2f9c1fbfa4729c69d497ddff68aadce97daac768fc38fb136b9e";
 /** Fixed immutable LAB intake, never a production fallback or remote manifest. */
 export async function loadLabNativeBuild(
   selected: TaskNotesAppEnvironment,
