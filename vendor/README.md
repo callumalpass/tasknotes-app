@@ -27,3 +27,16 @@ snapshot with `pnpm contracts:sync`.
 
 Update the corresponding `file:` references and run `pnpm install`. Replace
 each snapshot with an exact registry version once that release is published.
+
+## Native app storage
+
+`native-app-storage.json` pins the source, archive integrity and SQLite WASM
+bytes. The storage archive contains only the six compiled JavaScript/declaration
+files needed by `@mdbase-dev/obsidian-runtime/app-storage`, unchanged from its
+source build, plus package metadata and the license. Only that subpath is
+exported; vault, editor and other runtime modules are excluded.
+
+Use exact sqlite-wasm `3.53.4-build2` in the same owned Worker as the native host,
+with OPFS sahpool only. Dependency intake does not establish native READ, Saved,
+or physical durability. No memory, automatic reset or alternate Worker fallback
+is permitted.
