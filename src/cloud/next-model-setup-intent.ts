@@ -1,15 +1,20 @@
-import type {
-  ModelDefinitionOps,
-  ModelSetupIntent,
-  ModelSetupJournal,
-  ModelSetupScope,
+import {
+  MODEL_SETUP_LIMITS,
+  type LegacyModelSetupIntent,
+  type ModelPackOperation,
+  type ModelPackPlan,
+  type ModelPackSetupIntent,
+  type ModelSetupIntent,
+  type ModelSetupJournal,
+  type ModelSetupScope,
 } from "../application/ports/model-setup";
 
 const database = "tasknotes.native-model-setup.v1";
 const records = "original-model-operation";
 const phases = ["prepared", "attempted", "confirmed", "verified"] as const;
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
-const maxBytes = 512 * 1024;
+const maxBytes = MODEL_SETUP_LIMITS.plaintextBytes;
+const digest = /^sha256:[0-9a-f]{64}$/;
 const encoder = new TextEncoder();
 interface Stored {
   version: 1;
@@ -50,8 +55,15 @@ function scopeCopy(scope: ModelSetupScope): ModelSetupScope {
     collection: scope.collection,
   });
 }
-/** Bounded immutable definition intent, not arbitrary application storage. */
-export function modelDefinitionOps(value: unknown): ModelDefinitionOps {
+function unsafePathCharacters(value: string): boolean {
+  for (const character of value) {
+    const code = character.charCodeAt(0);
+    if (code < 32 || code === 127) return true;
+  }
+  return value.includes("\\");
+}
+/** Original v1 decoder only. No legacy intent may be prepared or advanced. */
+function legacyDefinitionOps(value: unknown): LegacyModelSetupIntent["ops"] {
   if (!Array.isArray(value) || value.length !== 2) fail("binding");
   const ops = value.map((op) => {
     if (
@@ -66,7 +78,7 @@ export function modelDefinitionOps(value: unknown): ModelDefinitionOps {
       op.path.length > 1024 ||
       !op.path.endsWith(".md") ||
       op.path.startsWith("/") ||
-      /[\\\u0000-\u001f\u007f]/.test(op.path) ||
+      unsafePathCharacters(op.path) ||
       op.path
         .split("/")
         .some((part: string) => !part || part === "." || part === "..")
@@ -84,7 +96,120 @@ export function modelDefinitionOps(value: unknown): ModelDefinitionOps {
     encoder.encode(JSON.stringify(ops)).byteLength > maxBytes
   )
     fail("binding");
-  return Object.freeze(ops) as unknown as ModelDefinitionOps;
+  return Object.freeze(ops) as unknown as LegacyModelSetupIntent["ops"];
+}
+function safePath(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= MODEL_SETUP_LIMITS.pathCodeUnits &&
+    !value.startsWith("/") &&
+    !unsafePathCharacters(value) &&
+    !value.split("/").some((part) => !part || part === "." || part === "..")
+  );
+}
+/** Copy the original ordered plan without rebuilding intent from file diffs. */
+export function modelPackPlan(value: unknown): ModelPackPlan {
+  const plan = value as ModelPackPlan;
+  if (
+    !plan ||
+    typeof plan !== "object" ||
+    !exact(plan, "assessmentDigest,ops,pack,readback") ||
+    !plan.pack ||
+    typeof plan.pack !== "object" ||
+    !exact(plan.pack, "digest,id,version") ||
+    typeof plan.pack.id !== "string" ||
+    !plan.pack.id.length ||
+    typeof plan.pack.version !== "string" ||
+    !plan.pack.version.length ||
+    typeof plan.pack.digest !== "string" ||
+    !digest.test(plan.pack.digest) ||
+    typeof plan.assessmentDigest !== "string" ||
+    !digest.test(plan.assessmentDigest) ||
+    !Array.isArray(plan.ops) ||
+    !plan.ops.length ||
+    plan.ops.length > MODEL_SETUP_LIMITS.operations ||
+    !Array.isArray(plan.readback) ||
+    !plan.readback.length ||
+    plan.readback.length > MODEL_SETUP_LIMITS.readbacks
+  )
+    fail("binding");
+  const ops = plan.ops.map((op): ModelPackOperation => {
+    if (
+      !op ||
+      typeof op !== "object" ||
+      !safePath(op.path) ||
+      ("baseRevision" in op &&
+        (typeof op.baseRevision !== "string" || !digest.test(op.baseRevision)))
+    )
+      fail("binding");
+    const base = "baseRevision" in op ? { baseRevision: op.baseRevision! } : {};
+    if (op.kind === "resource_put") {
+      if (
+        !exact(
+          op,
+          "baseRevision" in op
+            ? "baseRevision,doc,kind,mustNotExist,path"
+            : "doc,kind,mustNotExist,path",
+        ) ||
+        typeof op.doc !== "string" ||
+        typeof op.mustNotExist !== "boolean"
+      )
+        fail("binding");
+      return Object.freeze({
+        kind: op.kind,
+        path: op.path,
+        doc: op.doc,
+        ...base,
+        mustNotExist: op.mustNotExist,
+      });
+    }
+    if (
+      op.kind !== "resource_delete" ||
+      !exact(op, "baseRevision" in op ? "baseRevision,kind,path" : "kind,path")
+    )
+      fail("binding");
+    return Object.freeze({ kind: op.kind, path: op.path, ...base });
+  });
+  const seen = new Set<string>();
+  const readback = plan.readback.map((entry) => {
+    if (
+      !entry ||
+      typeof entry !== "object" ||
+      !exact(entry, "doc,path") ||
+      !safePath(entry.path) ||
+      (entry.doc !== null && typeof entry.doc !== "string") ||
+      seen.has(entry.path) ||
+      (entry.doc === null &&
+        !ops.some(
+          (op) => op.kind === "resource_delete" && op.path === entry.path,
+        ))
+    )
+      fail("binding");
+    seen.add(entry.path);
+    return Object.freeze({ path: entry.path, doc: entry.doc });
+  });
+  for (const op of ops) {
+    const expected = readback.find((entry) => entry.path === op.path);
+    if (
+      !expected ||
+      expected.doc !== (op.kind === "resource_put" ? op.doc : null)
+    )
+      fail("binding");
+  }
+  const captured = Object.freeze({
+    pack: Object.freeze({
+      id: plan.pack.id,
+      version: plan.pack.version,
+      digest: plan.pack.digest,
+    }),
+    assessmentDigest: plan.assessmentDigest,
+    ops: Object.freeze(ops),
+    readback: Object.freeze(readback),
+  });
+  if (encoder.encode(JSON.stringify(captured)).byteLength > maxBytes)
+    fail("binding");
+  return captured;
 }
 export function decode(
   value: unknown,
@@ -94,8 +219,13 @@ export function decode(
   if (
     !v ||
     typeof v !== "object" ||
-    !exact(v, "mutationId,ops,phase,scope,version") ||
-    v.version !== 1 ||
+    (v.version !== 1 && v.version !== 2) ||
+    !exact(
+      v,
+      v.version === 1
+        ? "mutationId,ops,phase,scope,version"
+        : "mutationId,phase,plan,scope,version",
+    ) ||
     typeof v.mutationId !== "string" ||
     !uuid.test(v.mutationId) ||
     v.mutationId === "00000000-0000-0000-0000-000000000000" ||
@@ -104,13 +234,32 @@ export function decode(
     fail("recovery_required");
   const bound = scopeCopy(v.scope);
   if (JSON.stringify(bound) !== JSON.stringify(scope)) fail("binding");
-  return Object.freeze({
-    version: 1,
+  if (v.version === 1)
+    return Object.freeze({
+      version: 1,
+      scope: bound,
+      mutationId: v.mutationId,
+      ops: legacyDefinitionOps(v.ops),
+      phase: v.phase,
+    });
+  const intent = Object.freeze({
+    version: 2 as const,
     scope: bound,
     mutationId: v.mutationId,
-    ops: modelDefinitionOps(v.ops),
+    plan: modelPackPlan(v.plan),
     phase: v.phase,
   });
+  // Reserve the longest phase spelling so a prepared plan can always advance.
+  if (
+    encoder.encode(JSON.stringify({ ...intent, phase: "confirmed" }))
+      .byteLength > maxBytes
+  )
+    fail("binding");
+  return intent;
+}
+function packIntent(value: ModelSetupIntent): ModelPackSetupIntent {
+  if (value.version !== 2) fail("recovery_required");
+  return value;
 }
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -260,10 +409,15 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
         ),
       );
       this.check(signal);
-      return decode(
-        JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(plaintext)),
-        this.scope,
+      const value: unknown = JSON.parse(
+        new TextDecoder("utf-8", { fatal: true }).decode(plaintext),
       );
+      if (
+        (value as { version?: unknown } | null)?.version === 2 &&
+        plaintext.byteLength > maxBytes
+      )
+        fail("recovery_required");
+      return decode(value, this.scope);
     } catch (reason) {
       if (reason instanceof NextModelSetupStorageError || signal.aborted)
         throw reason;
@@ -275,9 +429,9 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
   private async commit(
     db: IDBDatabase,
     before: Stored | undefined,
-    value: ModelSetupIntent,
+    value: ModelPackSetupIntent,
     signal: AbortSignal,
-  ): Promise<ModelSetupIntent> {
+  ): Promise<ModelPackSetupIntent> {
     this.check(signal);
     const revision = (before?.revision ?? 0) + 1;
     if (!Number.isSafeInteger(revision)) fail("fenced");
@@ -290,6 +444,10 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
       ));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const plaintext = encoder.encode(JSON.stringify(value));
+    if (plaintext.byteLength > maxBytes) {
+      plaintext.fill(0);
+      fail("binding");
+    }
     let ciphertext: ArrayBuffer;
     try {
       ciphertext = await crypto.subtle.encrypt(
@@ -351,28 +509,43 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
     );
   }
   prepare(
-    ops: ModelDefinitionOps,
+    plan: ModelPackPlan,
     signal: AbortSignal,
-  ): Promise<ModelSetupIntent> {
+  ): Promise<ModelPackSetupIntent> {
     // Copy before the first await so caller mutation cannot alter the operation.
-    const captured = modelDefinitionOps(ops);
+    const captured = modelPackPlan(plan);
+    if (
+      encoder.encode(
+        JSON.stringify({
+          version: 2,
+          scope: this.scope,
+          mutationId: this.scope.collection,
+          plan: captured,
+          phase: "confirmed",
+        }),
+      ).byteLength > maxBytes
+    )
+      fail("binding");
     return this.exclusive(signal, async (db) => {
       const stored = await this.read(db, signal),
         existing = await this.unwrap(stored, signal);
       if (existing) {
-        if (JSON.stringify(existing.ops) !== JSON.stringify(captured))
+        const original = packIntent(existing);
+        if (JSON.stringify(original.plan) !== JSON.stringify(captured))
           fail("binding");
-        return existing;
+        return original;
       }
-      const intent = decode(
-        {
-          version: 1,
-          scope: this.scope,
-          mutationId: crypto.randomUUID(),
-          ops: captured,
-          phase: "prepared",
-        },
-        this.scope,
+      const intent = packIntent(
+        decode(
+          {
+            version: 2,
+            scope: this.scope,
+            mutationId: crypto.randomUUID(),
+            plan: captured,
+            phase: "prepared",
+          },
+          this.scope,
+        ),
       );
       return this.commit(db, stored, intent, signal);
     });
@@ -381,11 +554,12 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
     id: string,
     phase: ModelSetupIntent["phase"],
     signal: AbortSignal,
-  ): Promise<ModelSetupIntent> {
+  ): Promise<ModelPackSetupIntent> {
     return this.exclusive(signal, async (db) => {
       const stored = await this.read(db, signal),
-        existing = await this.unwrap(stored, signal);
-      if (!existing) fail("recovery_required");
+        loaded = await this.unwrap(stored, signal);
+      if (!loaded) fail("recovery_required");
+      const existing = packIntent(loaded);
       if (existing.mutationId !== id) fail("binding");
       const from = phases.indexOf(existing.phase),
         to = phases.indexOf(phase);
@@ -394,18 +568,27 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
       return this.commit(
         db,
         stored,
-        decode({ ...existing, phase }, this.scope),
+        packIntent(decode({ ...existing, phase }, this.scope)),
         signal,
       );
     });
   }
-  recordAttempt(id: string, signal: AbortSignal): Promise<ModelSetupIntent> {
+  recordAttempt(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent> {
     return this.advance(id, "attempted", signal);
   }
-  recordConfirmed(id: string, signal: AbortSignal): Promise<ModelSetupIntent> {
+  recordConfirmed(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent> {
     return this.advance(id, "confirmed", signal);
   }
-  recordVerified(id: string, signal: AbortSignal): Promise<ModelSetupIntent> {
+  recordVerified(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent> {
     return this.advance(id, "verified", signal);
   }
 }

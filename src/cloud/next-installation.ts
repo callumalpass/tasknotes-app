@@ -545,7 +545,7 @@ export class NextTaskNotesInstallation {
         case "load":
           return store.load(signal);
         case "prepare":
-          return store.prepare(command.ops, signal);
+          return store.prepare(command.plan, signal);
         case "attempt":
           return store.recordAttempt(command.mutationId, signal);
         case "confirm":

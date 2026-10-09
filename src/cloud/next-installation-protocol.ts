@@ -1,8 +1,8 @@
 import type {
-  ModelDefinitionOps,
+  ModelPackPlan,
   ModelSetupIntent,
 } from "../application/ports/model-setup";
-import { modelDefinitionOps } from "./next-model-setup-intent";
+import { modelPackPlan } from "./next-model-setup-intent";
 import type {
   AppBundledReleaseTrust,
   AppInstallationSignInView,
@@ -42,7 +42,7 @@ export type NextInstallationCommand =
   | { kind: "set-foreground"; active: boolean }
   | { kind: "create-collection"; reconcile: boolean }
   | { kind: "model-setup-intent"; action: "load" }
-  | { kind: "model-setup-intent"; action: "prepare"; ops: ModelDefinitionOps }
+  | { kind: "model-setup-intent"; action: "prepare"; plan: ModelPackPlan }
   | {
       kind: "model-setup-intent";
       action: "attempt" | "confirm" | "verify";
@@ -119,9 +119,9 @@ export function isNextInstallationCommand(
     case "model-setup-intent":
       if (command.action === "load") return keys === "action,kind";
       if (command.action === "prepare") {
-        if (keys !== "action,kind,ops") return false;
+        if (keys !== "action,kind,plan") return false;
         try {
-          modelDefinitionOps(command.ops);
+          modelPackPlan(command.plan);
           return true;
         } catch {
           return false;

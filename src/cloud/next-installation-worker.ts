@@ -4,10 +4,11 @@ import {
   type ModelSetupJournal,
   type ModelSetupScope,
   type ModelSetupIntent,
+  type ModelPackSetupIntent,
 } from "../application/ports/model-setup";
 import {
   decode as decodeModelSetupIntent,
-  modelDefinitionOps,
+  modelPackPlan,
 } from "./next-model-setup-intent";
 import { appLocalConnector } from "@mdbase-dev/sdk/app-host";
 import { NextTaskRepository } from "../storage/next-repository";
@@ -273,10 +274,23 @@ export class NextInstallationWorker {
         throw new Error("Original model setup binding unavailable.");
       }
       if (
+        (command.action !== "load" && intent.version !== 2) ||
         ("mutationId" in command && intent.mutationId !== command.mutationId) ||
         (command.action === "prepare" &&
-          JSON.stringify(intent.ops) !== JSON.stringify(command.ops))
+          intent.version === 2 &&
+          JSON.stringify(intent.plan) !== JSON.stringify(command.plan))
       ) {
+        this.onError();
+        throw new Error("Original model setup binding unavailable.");
+      }
+      return intent;
+    };
+    const mutate = async (
+      command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+      signal: AbortSignal,
+    ): Promise<ModelPackSetupIntent> => {
+      const intent = await invoke(command, signal);
+      if (!intent || intent.version !== 2) {
         this.onError();
         throw new Error("Original model setup binding unavailable.");
       }
@@ -286,28 +300,28 @@ export class NextInstallationWorker {
       scope: bound,
       load: (signal: AbortSignal) =>
         invoke({ kind: "model-setup-intent", action: "load" }, signal),
-      prepare: async (ops, signal) => {
-        const captured = modelDefinitionOps(ops);
-        return (await invoke(
-          { kind: "model-setup-intent", action: "prepare", ops: captured },
+      prepare: async (plan, signal) => {
+        const captured = modelPackPlan(plan);
+        return mutate(
+          { kind: "model-setup-intent", action: "prepare", plan: captured },
           signal,
-        ))!;
+        );
       },
       recordAttempt: async (mutationId, signal) =>
-        (await invoke(
+        mutate(
           { kind: "model-setup-intent", action: "attempt", mutationId },
           signal,
-        ))!,
+        ),
       recordConfirmed: async (mutationId, signal) =>
-        (await invoke(
+        mutate(
           { kind: "model-setup-intent", action: "confirm", mutationId },
           signal,
-        ))!,
+        ),
       recordVerified: async (mutationId, signal) =>
-        (await invoke(
+        mutate(
           { kind: "model-setup-intent", action: "verify", mutationId },
           signal,
-        ))!,
+        ),
     } satisfies ModelSetupJournal);
   }
   async openCollection(collectionId: string): Promise<NextTaskRepository> {

@@ -113,6 +113,16 @@ describe("native installation Worker public protocol (source only)", () => {
         mustNotExist: true,
       },
     ];
+    const plan = {
+      pack: {
+        id: "tasknotes.task",
+        version: "0.3.0-rc.18",
+        digest: "sha256:" + "ab".repeat(32),
+      },
+      assessmentDigest: "sha256:" + "cd".repeat(32),
+      ops,
+      readback: ops.map(({ path, doc }) => ({ path, doc })),
+    };
     expect(
       isNextInstallationCommand({ kind: "model-setup-intent", action: "load" }),
     ).toBe(true);
@@ -120,7 +130,7 @@ describe("native installation Worker public protocol (source only)", () => {
       isNextInstallationCommand({
         kind: "model-setup-intent",
         action: "prepare",
-        ops,
+        plan,
       }),
     ).toBe(true);
     for (const action of ["attempt", "confirm", "verify"])
@@ -138,6 +148,13 @@ describe("native installation Worker public protocol (source only)", () => {
       { kind: "model-setup-intent", action: "load", scope: {} },
       { kind: "model-setup-intent", action: "save", value: {} },
       { kind: "model-setup-intent", action: "remove" },
+      {
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: { ...plan, ops: [] },
+      },
+      { kind: "model-setup-intent", action: "prepare", plan, key: "no-loan" },
+      { kind: "model-setup-intent", action: "prepare", ops },
       { kind: "model-setup-intent", action: "prepare", ops: [ops[0]] },
       { kind: "model-setup-intent", action: "prepare", ops, key: "no-loan" },
       {

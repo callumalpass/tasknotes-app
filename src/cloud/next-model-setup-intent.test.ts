@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { IDBFactory } from "fake-indexeddb";
-import type { ModelDefinitionOps } from "../application/ports/model-setup";
-import { NextModelSetupIntentStore } from "./next-model-setup-intent";
+import type { ModelPackPlan } from "../application/ports/model-setup";
+import { decode, NextModelSetupIntentStore } from "./next-model-setup-intent";
 const scope = {
   account: "11111111-1111-4111-8111-111111111111",
   installation: "22222222-2222-4222-8222-222222222222",
@@ -9,20 +9,30 @@ const scope = {
 };
 const appOrigin = "http://127.0.0.1:48319",
   cpOrigin = "https://connect-lab.mdbase.dev";
-const ops: ModelDefinitionOps = [
+const puts = [
   {
-    kind: "resource_put",
+    kind: "resource_put" as const,
     path: "_contracts/tasknotes.task.md",
     doc: "Synthetic inline contract definition",
     mustNotExist: true,
   },
   {
-    kind: "resource_put",
+    kind: "resource_put" as const,
     path: "_types/task.md",
     doc: "Synthetic inline implementing type",
     mustNotExist: true,
   },
 ];
+const plan: ModelPackPlan = {
+  pack: {
+    id: "tasknotes.task",
+    version: "0.3.0-rc.18",
+    digest: "sha256:" + "ab".repeat(32),
+  },
+  assessmentDigest: "sha256:" + "cd".repeat(32),
+  ops: puts,
+  readback: puts.map(({ path, doc }) => ({ path, doc })),
+};
 const signal = () => new AbortController().signal;
 const journal = (bound = scope, isCurrent = () => true) =>
   new NextModelSetupIntentStore({
@@ -81,14 +91,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 // IDB/WebCrypto stand-ins only: not native model write/receipt/READ/LAB proof.
-describe("fixed protected model setup intent", () => {
+describe("fixed protected model pack setup intent", () => {
   it("commits one immutable original plan/UUID, recovers every monotonic phase, and exposes no reset", async () => {
     const store = journal();
     expect(await store.load(signal())).toBeNull();
-    const original = await store.prepare(ops, signal());
+    const original = await store.prepare(plan, signal());
+    expect(original.version).toBe(2);
     expect(Object.isFrozen(original)).toBe(true);
-    expect(Object.isFrozen(original.ops[0])).toBe(true);
-    expect(await journal().prepare(ops, signal())).toEqual(original);
+    expect(Object.isFrozen(original.plan)).toBe(true);
+    expect(Object.isFrozen(original.plan.pack)).toBe(true);
+    expect(Object.isFrozen(original.plan.ops[0])).toBe(true);
+    expect(Object.isFrozen(original.plan.readback[0])).toBe(true);
+    expect(await journal().prepare(plan, signal())).toEqual(original);
     const attempted = await store.recordAttempt(original.mutationId, signal());
     expect(await journal().load(signal())).toEqual(attempted);
     expect(await store.recordAttempt(original.mutationId, signal())).toEqual(
@@ -98,31 +112,46 @@ describe("fixed protected model setup intent", () => {
     const verified = await store.recordVerified(original.mutationId, signal());
     expect(verified).toEqual({ ...original, phase: "verified" });
     expect(await journal().load(signal())).toEqual(verified);
-    expect(await journal().prepare(ops, signal())).toEqual(verified);
+    expect(await journal().prepare(plan, signal())).toEqual(verified);
     expect("remove" in store).toBe(false);
   });
   it("keeps a nonextractable origin key and ciphertext, not plaintext definitions", async () => {
-    await journal().prepare(ops, signal());
+    await journal().prepare(plan, signal());
     const stored = await row();
     const key = stored.key as CryptoKey;
     expect(key.extractable).toBe(false);
     await expect(crypto.subtle.exportKey("raw", key)).rejects.toThrow();
-    expect(JSON.stringify(stored)).not.toContain(ops[0].doc);
+    expect(JSON.stringify(stored)).not.toContain(puts[0]!.doc);
+    expect(stored.version).toBe(1); // Existing envelope and AAD, new plaintext only.
     expect(stored.ciphertext).toBeInstanceOf(ArrayBuffer);
   });
-  it("copies the exact plan before the first await", async () => {
-    const mutable = structuredClone(ops);
+  it("copies the entire exact plan before the first await", async () => {
+    const mutable = structuredClone(plan);
     const prepare = journal().prepare(mutable, signal());
-    (mutable[0] as { doc: string }).doc = "Caller mutation";
-    expect((await prepare).ops).toEqual(ops);
+    (mutable.ops[0] as { doc: string }).doc = "Caller mutation";
+    (mutable.readback[0] as { doc: string }).doc = "Caller readback mutation";
+    (mutable.pack as { version: string }).version = "Changed";
+    expect((await prepare).plan).toEqual(plan);
   });
-  it("does not replace original operations after an attempted/lost reply", async () => {
+  it("does not replace original operations or readback after an attempted/lost reply", async () => {
     const store = journal(),
-      original = await store.prepare(ops, signal());
+      original = await store.prepare(plan, signal());
     await store.recordAttempt(original.mutationId, signal());
     await expect(
       journal().prepare(
-        [{ ...ops[0], doc: "Different plan" }, ops[1]],
+        { ...plan, assessmentDigest: "sha256:" + "ef".repeat(32) },
+        signal(),
+      ),
+    ).rejects.toMatchObject({ reason: "binding" });
+    await expect(
+      journal().prepare(
+        {
+          ...plan,
+          readback: [
+            ...plan.readback,
+            { path: "_types/preserved.md", doc: "Different preserved seed" },
+          ],
+        },
         signal(),
       ),
     ).rejects.toMatchObject({ reason: "binding" });
@@ -135,7 +164,7 @@ describe("fixed protected model setup intent", () => {
     await expect(
       store.recordAttempt(scope.collection, signal()),
     ).rejects.toMatchObject({ reason: "recovery_required" });
-    const original = await store.prepare(ops, signal());
+    const original = await store.prepare(plan, signal());
     await expect(
       store.recordAttempt(scope.collection, signal()),
     ).rejects.toMatchObject({ reason: "binding" });
@@ -149,7 +178,7 @@ describe("fixed protected model setup intent", () => {
     ).rejects.toMatchObject({ reason: "recovery_required" });
   });
   it("binds ciphertext to the original collection and preserves an unreadable record", async () => {
-    await journal().prepare(ops, signal());
+    await journal().prepare(plan, signal());
     const stored = await row();
     const other = {
       ...scope,
@@ -159,7 +188,7 @@ describe("fixed protected model setup intent", () => {
     await expect(journal(other).load(signal())).rejects.toMatchObject({
       reason: "recovery_required",
     });
-    await expect(journal(other).prepare(ops, signal())).rejects.toMatchObject({
+    await expect(journal(other).prepare(plan, signal())).rejects.toMatchObject({
       reason: "recovery_required",
     });
     expect((await row(namespace(other))).ciphertext).toEqual(stored.ciphertext);
@@ -167,12 +196,12 @@ describe("fixed protected model setup intent", () => {
   it.each(["key", "iv", "ciphertext", "revision"])(
     "never regenerates missing or corrupt %s",
     async (field) => {
-      await journal().prepare(ops, signal());
+      await journal().prepare(plan, signal());
       const stored = await row();
       if (field === "revision") stored.revision = 2;
       else delete stored[field];
       await replace(stored);
-      await expect(journal().prepare(ops, signal())).rejects.toMatchObject({
+      await expect(journal().prepare(plan, signal())).rejects.toMatchObject({
         reason: "recovery_required",
       });
       expect(await row()).toEqual(stored);
@@ -182,7 +211,7 @@ describe("fixed protected model setup intent", () => {
     let current = true;
     const store = journal(scope, () => current);
     current = false;
-    await expect(store.prepare(ops, signal())).rejects.toMatchObject({
+    await expect(store.prepare(plan, signal())).rejects.toMatchObject({
       reason: "fenced",
     });
     current = true;
@@ -196,7 +225,7 @@ describe("fixed protected model setup intent", () => {
     });
     const owner = new AbortController();
     owner.abort();
-    await expect(journal().prepare(ops, owner.signal)).rejects.toThrow();
+    await expect(journal().prepare(plan, owner.signal)).rejects.toThrow();
     expect(await journal().load(signal())).toBeNull();
   });
   it("one strict CAS wins concurrent prepares; the loser fences instead of minting a replacement", async () => {
@@ -216,7 +245,10 @@ describe("fixed protected model setup intent", () => {
     });
     const left = journal(),
       right = journal();
-    const pending = [left.prepare(ops, signal()), right.prepare(ops, signal())];
+    const pending = [
+      left.prepare(plan, signal()),
+      right.prepare(plan, signal()),
+    ];
     await started;
     release();
     const results = await Promise.allSettled(pending);
@@ -236,20 +268,137 @@ describe("fixed protected model setup intent", () => {
       winner.status === "fulfilled" ? winner.value : undefined,
     );
   });
-  it("permits only a bounded pair of create-only safe MD resources", async () => {
+  it("retains ordered schema updates, deletes, exact guards and preserved seed readback", async () => {
+    const updated: ModelPackPlan = {
+      ...plan,
+      ops: [
+        {
+          kind: "resource_delete",
+          path: "_schemas/retired.json",
+          baseRevision: "sha256:" + "12".repeat(32),
+        },
+        {
+          kind: "resource_put",
+          path: "_schemas/current.json",
+          doc: "{}",
+          mustNotExist: false,
+          baseRevision: "sha256:" + "34".repeat(32),
+        },
+        ...puts,
+      ],
+      readback: [
+        { path: "_schemas/retired.json", doc: null },
+        { path: "_schemas/current.json", doc: "{}" },
+        ...plan.readback,
+        { path: "_types/preserved.md", doc: "Exact preserved source" },
+      ],
+    };
+    const original = await journal().prepare(updated, signal());
+    expect(original.plan).toEqual(updated);
+    expect((await journal().prepare(updated, signal())).plan).toEqual(updated);
+  });
+  it("permits only a bounded exact guarded plan, refusing empty/no-op preparation and ambiguous readback", async () => {
     for (const invalid of [
-      [ops[0]],
-      [ops[0], ops[0]],
-      [{ ...ops[0], path: "../secrets.md" }, ops[1]],
-      [{ ...ops[0], path: "_schemas/task.json" }, ops[1]],
-      [{ ...ops[0], mustNotExist: false }, ops[1]],
-      [{ ...ops[0], doc: "x".repeat(512 * 1024) }, ops[1]],
-      [{ ...ops[0], baseRevision: "sha256:" + "ab".repeat(32) }, ops[1]],
+      { ...plan, ops: [] },
+      { ...plan, ops: [...puts, { ...puts[0], path: "../secrets.md" }] },
+      { ...plan, ops: [{ ...puts[0], mustNotExist: undefined }, puts[1]] },
+      {
+        ...plan,
+        readback: [{ ...plan.readback[0], doc: "Different" }, plan.readback[1]],
+      },
+      { ...plan, readback: [plan.readback[0], plan.readback[0]] },
+      {
+        ...plan,
+        readback: [
+          ...plan.readback,
+          { path: "_types/not-retired.md", doc: null },
+        ],
+      },
+      { ...plan, ops: [{ ...puts[0], baseRevision: "not-a-digest" }, puts[1]] },
+      { ...plan, ops: Array.from({ length: 65 }, () => puts[0]) },
+      {
+        ...plan,
+        readback: Array.from({ length: 129 }, (_, i) => ({
+          path: `preserved/${i}.md`,
+          doc: "Preserved",
+        })),
+      },
+      { ...plan, ignored: "unknown field" },
     ]) {
       expect(() =>
-        journal().prepare(invalid as unknown as ModelDefinitionOps, signal()),
+        journal().prepare(invalid as ModelPackPlan, signal()),
       ).toThrow();
     }
     expect(await journal().load(signal())).toBeNull();
+  });
+  it("bounds the TOTAL intent including duplicate readback bytes and phase overhead", async () => {
+    const document = "x".repeat(256 * 1024 - 220);
+    const oversized: ModelPackPlan = {
+      ...plan,
+      ops: [{ ...puts[0]!, doc: document }],
+      readback: [{ path: puts[0]!.path, doc: document }],
+    };
+    expect(
+      new TextEncoder().encode(JSON.stringify(oversized)).byteLength,
+    ).toBeLessThan(512 * 1024);
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(() => journal().prepare(oversized, signal())).toThrow();
+    expect(uuid).not.toHaveBeenCalled();
+    expect(await journal().load(signal())).toBeNull();
+  });
+  it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
+    "loads but NEVER converts, replaces or advances a legacy %s intent",
+    async (phase) => {
+      await journal().prepare(plan, signal());
+      const stored = await row();
+      const legacy = {
+        version: 1,
+        scope,
+        mutationId: "55555555-5555-4555-8555-555555555555",
+        ops: puts,
+        phase,
+      };
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ciphertext = await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv,
+          additionalData: new TextEncoder().encode(
+            JSON.stringify([namespace(), 1, stored.revision]),
+          ),
+        },
+        stored.key as CryptoKey,
+        new TextEncoder().encode(JSON.stringify(legacy)),
+      );
+      await replace({ ...stored, iv, ciphertext });
+      const before = await row();
+      expect(await journal().load(signal())).toEqual(legacy);
+      await expect(journal().prepare(plan, signal())).rejects.toMatchObject({
+        reason: "recovery_required",
+      });
+      for (const operation of [
+        "recordAttempt",
+        "recordConfirmed",
+        "recordVerified",
+      ] as const) {
+        await expect(
+          journal()[operation](legacy.mutationId, signal()),
+        ).rejects.toMatchObject({ reason: "recovery_required" });
+      }
+      expect(await row()).toEqual(before);
+    },
+  );
+  it("refuses unknown plaintext versions or added intent fields", () => {
+    const intent = {
+      version: 2,
+      scope,
+      mutationId: scope.collection,
+      plan,
+      phase: "prepared",
+    };
+    expect(() => decode({ ...intent, version: 3 }, scope)).toThrow();
+    expect(() =>
+      decode({ ...intent, extra: "not understood" }, scope),
+    ).toThrow();
   });
 });
