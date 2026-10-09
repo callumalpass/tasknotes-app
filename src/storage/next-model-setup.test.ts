@@ -180,6 +180,29 @@ async function fixture(
   return { replica, client, journal, owner, scope, setup, verified, plan };
 }
 
+// Page protocol stand-in over the real SDK/MemoryReplica. No native cursor or
+// authorization witness: native qualification remains the scoped LAB run.
+function paginateModelInventory(f: Awaited<ReturnType<typeof fixture>>) {
+  const original = f.client.resources.list.bind(f.client.resources);
+  const tails = new Map<string, wire.ResourceView[]>();
+  let sequence = 0;
+  return vi
+    .spyOn(f.client.resources, "list")
+    .mockImplementation(async (options) => {
+      if (!options?.limit) return original(options);
+      const all = options.cursor
+        ? tails.get(options.cursor)
+        : (await original({ text: true, signal: options.signal })).resources;
+      if (!all) throw Error("unknown stand-in cursor");
+      const resources = all.slice(0, 2);
+      const remaining = all.slice(2);
+      if (!remaining.length) return { resources, complete: true };
+      const cursor = `snapshot-page-${sequence++}`;
+      tails.set(cursor, remaining);
+      return { resources, complete: false, cursor };
+    });
+}
+
 describe("original model setup intent and SDK resource operations (stand-ins)", () => {
   it("requires the complete published pack/lock before an otherwise valid no-intent model can finalize", async () => {
     const f = await fixture();
@@ -713,6 +736,97 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(f.journal.prepares).toBe(1);
     expect(submit).not.toHaveBeenCalled();
     expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("installs and reads back the original pack using every inventory page", async () => {
+    const f = await fixture();
+    const pages = paginateModelInventory(f);
+    const submit = vi.spyOn(f.client, "submit");
+    await f.setup.install();
+    expect(f.journal.value!.phase).toBe("verified");
+    expect(f.journal.prepares).toBe(1);
+    expect(submit).toHaveBeenCalledOnce();
+    expect(submit.mock.calls[0]![1]!.mutationId).toBe(
+      f.journal.value!.mutationId,
+    );
+    expect(f.journal.events).toEqual(["attempted", "confirmed", "verified"]);
+    expect(f.verified).toHaveBeenCalledOnce();
+    expect(
+      pages.mock.calls
+        .filter(([options]) => options?.limit)
+        .every(([options]) => options!.text === true),
+    ).toBe(true);
+    expect(pages.mock.calls.some(([options]) => options?.cursor)).toBe(true);
+    const count = submit.mock.calls.length;
+    await f.setup.resume();
+    expect(submit.mock.calls).toHaveLength(count);
+    expect(f.journal.prepares).toBe(1);
+  });
+  it("refuses a later pending page before assessment/prepare or any model mutation", async () => {
+    const f = await fixture();
+    f.replica.seedResource("_schemas/extra.schema.json", '{"type":"string"}');
+    f.replica.seedResource("_schemas/last.schema.json", '{"type":"string"}');
+    const pages = paginateModelInventory(f);
+    const read = pages.getMockImplementation()!;
+    pages.mockImplementation(async (options) => {
+      const page = await read(options);
+      return options?.cursor
+        ? {
+            ...page,
+            resources: page.resources.map((resource) => ({
+              ...resource,
+              state: "pending" as const,
+            })),
+          }
+        : page;
+    });
+    const assess = vi.spyOn(modelPlan, "nativeModelPackAssessment");
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(assess).not.toHaveBeenCalled();
+    expect(f.journal.value).toBeNull();
+    expect(f.journal.prepares).toBe(0);
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("retains the original confirmed intent on stale paginated readback, then resumes its receipt only", async () => {
+    const f = await fixture();
+    const pages = paginateModelInventory(f);
+    const read = pages.getMockImplementation()!;
+    const submit = vi.spyOn(f.client, "submit");
+    const stale = new MdbaseError({
+      code: "invalid_request",
+      recovery: "fix_request",
+      reason: "cursor_stale",
+      message: "inventory changed",
+    });
+    pages.mockImplementation(async (options) => {
+      if (options?.cursor && f.journal.value?.phase === "confirmed")
+        throw stale;
+      return read(options);
+    });
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const original = f.journal.value as ModelPackSetupIntent;
+    expect(original.phase).toBe("confirmed");
+    expect(f.journal.events).toEqual(["attempted", "confirmed"]);
+    expect(f.journal.prepares).toBe(1);
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledOnce();
+    const awaitReceipt = vi.spyOn(f.client, "awaitReceipt");
+    pages.mockImplementation(read);
+    await f.setup.resume();
+    expect(awaitReceipt.mock.calls[0]![0]).toBe(original.mutationId);
+    expect(f.journal.value!.mutationId).toBe(original.mutationId);
+    expect((f.journal.value as ModelPackSetupIntent).plan).toEqual(
+      original.plan,
+    );
+    expect(f.journal.value!.phase).toBe("verified");
+    expect(f.journal.prepares).toBe(1);
+    expect(submit).toHaveBeenCalledOnce();
+    expect(f.verified).toHaveBeenCalledOnce();
   });
   it("refuses an incomplete confirmed resource list without finalizing", async () => {
     const f = await fixture();
