@@ -1,6 +1,7 @@
 import { connectSuccess } from "@mdbase-dev/connect-testing";
 import { describe, expect, it, vi } from "vitest";
 import { MdbaseTaskRepository } from "./mdbase-repository";
+import { opaqueTimerAuthority } from "./reminder-timers";
 import { runMdbaseMutation } from "./mdbase-mutation-coordinator";
 import { deferred, mdbaseFixture } from "../test/mdbase-fixture";
 import type { Task, TaskSummary } from "../domain/task";
@@ -181,5 +182,54 @@ describe("repository-owned reminder reconciliation", () => {
     );
     await f.repository.reconcileReminders();
     expect(f.timers).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("mdbase-next opaque timer service", () => {
+  it("reconciles the same content-free input through the timer service, not the connection", async () => {
+    const f = mdbaseFixture([]);
+    const legacy = vi.fn();
+    Object.assign(f.connect, { reconcileTimers: legacy });
+    const reconcile = vi.fn(async () => ({
+      namespace: "task-reminders",
+      cancelledIds: [],
+    }));
+    const repository = new MdbaseTaskRepository(f.connect, {
+      reminderTimers: opaqueTimerAuthority({ reconcile }),
+    });
+    vi.spyOn(repository, "listSummaries").mockResolvedValue([reminderTask]);
+    await reconcileTaskNotifications(repository, "connect");
+    expect(legacy).not.toHaveBeenCalled();
+    expect(reconcile).toHaveBeenCalledWith(
+      {
+        namespace: "task-reminders",
+        criterionId: "task.reminder",
+        timers: [
+          {
+            id: expect.stringMatching(/^[a-f0-9]{64}$/),
+            fireAt: "2099-07-26T00:00:00.000Z",
+          },
+        ],
+      },
+      { signal: expect.any(AbortSignal) },
+    );
+  });
+
+  it("bounds the call by the background budget and the repository lifecycle", async () => {
+    let seen: AbortSignal | undefined;
+    const authority = opaqueTimerAuthority({
+      reconcile: async (_input, options) => {
+        seen = options.signal;
+        return { namespace: "task-reminders", cancelledIds: [] };
+      },
+    });
+    const lifecycle = new AbortController();
+    await authority.reconcile(
+      { namespace: "task-reminders", criterionId: "task.reminder", timers: [] },
+      { signal: lifecycle.signal, timeoutMs: 45_000 },
+    );
+    expect(seen?.aborted).toBe(false);
+    lifecycle.abort();
+    expect(seen?.aborted).toBe(true);
   });
 });
