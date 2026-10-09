@@ -154,6 +154,21 @@ export function formatPropertyValue(
   }
   if (typeof value === "object") {
     const object = value as Record<string, unknown>;
+    // Already-decoded temporal values carry their own authoritative display.
+    // Do not reconstruct a JS Date, choose the browser zone, or flatten duration
+    // components. Keep rawValue/provenance intact for callers and group labels.
+    if (
+      typeof object.display === "string" &&
+      ((object.kind === "date" &&
+        Number.isSafeInteger(object.millis) &&
+        typeof object.authoritativeZone === "string" &&
+        typeof object.dateOnly === "boolean") ||
+        (object.kind === "duration" &&
+          Array.isArray(object.components) &&
+          object.components.length === 8 &&
+          object.components.every(Number.isSafeInteger)))
+    )
+      return object.display;
     if (typeof object.path === "string") return object.path;
     try {
       return JSON.stringify(value);
