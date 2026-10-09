@@ -3,11 +3,11 @@
   "appOrigin": "http://127.0.0.1:48218",
   "trustModule": "mdbase-app-lab-trust.mjs",
   "trustModuleSha256": "a7db2cc3ba9fd1e78d86093599b608a2e3268408402630d81242450603c98a10",
-  "runtime": "mdbase-app-lab-f53fb85d.wasm",
-  "runtimeSha256": "f53fb85dc34eaf9cdf80e71ffdd6eb4ee513e0e9c318b310945f40f35123c778",
+  "runtime": "mdbase-app-lab-c59379cb.wasm",
+  "runtimeSha256": "c59379cbf99c2f9c1fbfa4729c69d497ddff68aadce97daac768fc38fb136b9e",
   "runtimeSource": {
     "repository": "mdbase-dev/mdbase-next",
-    "commit": "a14cb5051104f5aceb035c751e1768a42c4ed8c8",
+    "commit": "93ff332cf6cb21e85ef0dcb8987fa73c6599f6c7",
     "package": "mdbn-wasm"
   }
 }
