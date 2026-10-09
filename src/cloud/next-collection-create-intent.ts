@@ -145,3 +145,65 @@ export async function collectionCreateIntent(
     db.close();
   }
 }
+
+/** Read only the original target's operation kind. This is not membership,
+ * authority or readiness; CP and protected native outcome gates still apply. */
+export async function findCollectionCreation(
+  scope: AppInstallationScope,
+  collection: string,
+  signal: AbortSignal,
+): Promise<NextCollectionCreateIntent | null> {
+  signal.throwIfAborted();
+  if (!uuid.test(collection)) throw failure("recovery_required");
+  const binding = Object.freeze({
+    account: scope.account,
+    installation: scope.installation,
+  });
+  const db = await open();
+  try {
+    signal.throwIfAborted();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readonly");
+      const abort = () => tx.abort();
+      signal.addEventListener("abort", abort, { once: true });
+      let result: NextCollectionCreateIntent | null = null;
+      let reason: unknown;
+      const finish = () => signal.removeEventListener("abort", abort);
+      tx.onabort = tx.onerror = () => {
+        finish();
+        reject(reason ?? failure("recovery_required"));
+      };
+      tx.oncomplete = () => {
+        finish();
+        try {
+          signal.throwIfAborted();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      for (const key of [
+        JSON.stringify([binding.account, binding.installation]),
+        JSON.stringify([binding.account, binding.installation, collection]),
+      ]) {
+        const request = tx.objectStore(store).get(key);
+        request.onsuccess = () => {
+          try {
+            if (request.result === undefined) return;
+            const original = decode(request.result, binding);
+            if (original.collection === collection) {
+              if (result && result.phase !== original.phase)
+                throw failure("recovery_required");
+              result = original;
+            }
+          } catch (error) {
+            reason = error;
+            tx.abort();
+          }
+        };
+      }
+    });
+  } finally {
+    db.close();
+  }
+}

@@ -84,8 +84,27 @@ function setup() {
   };
   const host = {
     bootstrapCloudCopy: vi.fn<AppWebCloudCopyHost["bootstrapCloudCopy"]>(
-      async () => ({}) as never,
+      async () => {
+        events.push("bootstrap");
+        return {} as never;
+      },
     ),
+    registeredReceipt: vi.fn(() => ({ deviceId: account })),
+    openCollectionSql: vi.fn(async () => {
+      events.push("sql");
+    }),
+    startCollectionLog: vi.fn(async () => {
+      events.push("log");
+    }),
+    driveCollection: vi.fn(async () => {
+      events.push("drive");
+    }),
+    waitForVerifiedRead: vi.fn(async () => {
+      events.push("read");
+    }),
+    attachDataFacade: vi.fn(() => {
+      events.push("facade");
+    }),
     attestInstallation: vi.fn(async () => ({
       ...view,
       state: "awaiting_approval",
@@ -206,6 +225,44 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     expect(s.openHost).toHaveBeenCalledOnce();
     await app.close();
   });
+  it("exposes one same-host data port only after native read, with a separate collection lease", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", collectionIds: [account] });
+    s.flow.listApprovedCollections.mockResolvedValue([
+      { collectionId: account, displayName: "Tasks", role: "owner" },
+    ] as never);
+    const result = await app.openApprovedCollection(account);
+    expect(result.scope).toEqual({
+      account,
+      installation,
+      collection: account,
+    });
+    expect(s.events.slice(-6)).toEqual([
+      "lease",
+      "bootstrap",
+      "sql",
+      "log",
+      "read",
+      "facade",
+    ]);
+    expect(s.host.openCollectionSql).toHaveBeenCalledWith(
+      expect.objectContaining({ replicaId: account, endpoint: 0 }),
+    );
+    expect(s.openHost).toHaveBeenCalledOnce();
+    await expect(app.openApprovedCollection(account)).rejects.toThrow(
+      "unavailable",
+    );
+    result.channel.close();
+    await app.close();
+    expect(s.events.slice(-4)).toEqual([
+      "host-close",
+      "flow-close",
+      "unlock",
+      "unlock",
+    ]);
+  });
   it("creates one durable target with the original host and collection-only lease", async () => {
     const s = setup(),
       app = await NextTaskNotesInstallation.open(s.options);
@@ -231,6 +288,143 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       "unlock",
       "unlock",
     ]);
+  });
+  it("opens a just-created collection without a second bootstrap or collection lease", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: true });
+    const created = await app.createCloudCopyCollection();
+    s.flow.listApprovedCollections.mockResolvedValue([
+      {
+        collectionId: created.collectionId,
+        displayName: "New collection",
+        role: "owner",
+      },
+    ] as never);
+    const opened = await app.openApprovedCollection(created.collectionId);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+    expect(s.events.filter((e) => e === "lease")).toHaveLength(2);
+    expect(s.host.waitForVerifiedRead).toHaveBeenCalledOnce();
+    expect(s.host.attachDataFacade).toHaveBeenCalledOnce();
+    opened.channel.close();
+    await app.close();
+  });
+  it("restores a completed creation with purpose create after the original installation is reopened", async () => {
+    const s = setup(),
+      first = await NextTaskNotesInstallation.open(s.options);
+    await first.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: true });
+    const created = await first.createCloudCopyCollection();
+    await first.close();
+    const second = await NextTaskNotesInstallation.open({
+      ...s.options,
+      mode: "existing",
+    });
+    await second.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired" });
+    s.flow.listApprovedCollections.mockResolvedValue([
+      {
+        collectionId: created.collectionId,
+        displayName: "New collection",
+        role: "owner",
+      },
+    ] as never);
+    const opened = await second.openApprovedCollection(created.collectionId);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scope: { account, installation, collection: created.collectionId },
+        purpose: "create",
+        outcomeMode: "existing",
+        reconcile: "explicit-unknown-outcome",
+      }),
+    );
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledTimes(2);
+    opened.channel.close();
+    await second.close();
+  });
+  it("foreground log drive pauses, resumes and stops with the original owner", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const s = setup(),
+        app = await NextTaskNotesInstallation.open(s.options);
+      await app.confirmAccountAndOpenDevice(account);
+      s.setView({ state: "paired" });
+      s.flow.listApprovedCollections.mockResolvedValue([
+        { collectionId: account, displayName: "Tasks", role: "owner" },
+      ] as never);
+      const opened = await app.openApprovedCollection(account);
+      app.setForeground(false);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(s.host.driveCollection).not.toHaveBeenCalled();
+      app.setForeground(true);
+      await vi.advanceTimersByTimeAsync(251);
+      expect(s.host.driveCollection).toHaveBeenCalledOnce();
+      opened.channel.close();
+      await app.close();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(s.host.driveCollection).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("close drains an in-flight log drive before native shutdown or ownership release", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const s = setup(),
+        app = await NextTaskNotesInstallation.open(s.options);
+      await app.confirmAccountAndOpenDevice(account);
+      s.setView({ state: "paired" });
+      s.flow.listApprovedCollections.mockResolvedValue([
+        { collectionId: account, displayName: "Tasks", role: "owner" },
+      ] as never);
+      const opened = await app.openApprovedCollection(account),
+        drive = deferred<void>();
+      s.host.driveCollection.mockReturnValueOnce(drive.promise);
+      await vi.advanceTimersByTimeAsync(251);
+      const closing = app.close();
+      await Promise.resolve();
+      expect(s.host.close).not.toHaveBeenCalled();
+      expect(s.events).not.toContain("unlock");
+      drive.resolve();
+      await closing;
+      expect(s.host.close).toHaveBeenCalledOnce();
+      expect(s.events.slice(-2)).toEqual(["unlock", "unlock"]);
+      opened.channel.close();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("a failed native read never creates a facade or exposes a repository", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", collectionIds: [account] });
+    s.flow.listApprovedCollections.mockResolvedValue([
+      { collectionId: account, displayName: "Tasks", role: "owner" },
+    ] as never);
+    s.host.waitForVerifiedRead.mockRejectedValueOnce(Error("unavailable"));
+    await expect(app.openApprovedCollection(account)).rejects.toThrow(
+      "unavailable",
+    );
+    expect(s.host.attachDataFacade).not.toHaveBeenCalled();
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+    await expect(app.openApprovedCollection(account)).rejects.toThrow(
+      "unavailable",
+    );
+    await app.close();
+  });
+  it("unapproved collection metadata cannot acquire collection ownership or bootstrap", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired" });
+    await expect(app.openApprovedCollection(account)).rejects.toThrow(
+      "approved",
+    );
+    expect(s.host.bootstrapCloudCopy).not.toHaveBeenCalled();
+    expect(s.events.filter((e) => e === "lease")).toHaveLength(1);
+    await app.close();
   });
   it("a second explicit creation after completion uses a new target and the same protected device", async () => {
     const s = setup(),

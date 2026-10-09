@@ -1,7 +1,7 @@
 import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
 import "@fontsource/azeret-mono/500.css";
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
 import { TaskNotesApp } from "./app/tasknotes-app";
@@ -23,10 +23,31 @@ const requestedDemoCount = Number(currentUrl.searchParams.get("demo") ?? 0);
 const demoCount =
   embeddedDemo && requestedDemoCount <= 0 ? 24 : requestedDemoCount;
 
+// The local e2e build may exercise the real held-repository gate with an SDK
+// protocol stand-in. Neither the fixture module nor this route ships in other modes.
+const SmokeFixture =
+  import.meta.env.MODE === "e2e"
+    ? lazy(() =>
+        import("./test/next-entry-smoke-fixture").then((module) => ({
+          default: module.NextEntrySmokeFixture,
+        })),
+      )
+    : null;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
-      <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+      {SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
+        <Suspense
+          fallback={
+            <main className="opening-screen">Loading SDK fixture…</main>
+          }
+        >
+          <SmokeFixture />
+        </Suspense>
+      ) : (
+        <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+      )}
     </AppErrorBoundary>
   </StrictMode>,
 );

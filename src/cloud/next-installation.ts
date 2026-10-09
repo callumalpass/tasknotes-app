@@ -1,4 +1,9 @@
-import { collectionCreateIntent } from "./next-collection-create-intent";
+import { openNextCollectionSql } from "./next-collection-sql";
+import {
+  collectionCreateIntent,
+  findCollectionCreation,
+} from "./next-collection-create-intent";
+import { collectionJoinIntent } from "./next-collection-join-intent";
 import type { NextCreatedCollection } from "./next-installation-protocol";
 import {
   AppProtectedInstallationSignIn,
@@ -42,6 +47,11 @@ export class NextTaskNotesInstallation {
   private lease: AppReplicaLease | null = null;
   private authority: AppInstallationCustodyAuthority | null = null;
   private collectionLease: AppReplicaLease | null = null;
+  private collectionAttempted = false;
+  private facadeAttached = false;
+  private foreground = true;
+  private driveTimer: ReturnType<typeof setTimeout> | null = null;
+  private driving: Promise<void> | null = null;
   private creationTarget: string | null = null;
   private creationCompleted = false;
   private closing: Promise<void> | null = null;
@@ -229,6 +239,7 @@ export class NextTaskNotesInstallation {
     return this.exclusive(async () => {
       if (
         (!this.host && !reconcile) ||
+        this.collectionAttempted ||
         !this.authority ||
         this.flow!.view().state !== "paired" ||
         this.flow!.view().createCollections !== true
@@ -358,13 +369,192 @@ export class NextTaskNotesInstallation {
     });
   }
 
+  /** One selected approved collection on the original device and Worker. */
+  openApprovedCollection(collectionId: string): Promise<{
+    scope: Readonly<{
+      account: string;
+      installation: string;
+      collection: string;
+    }>;
+    displayName: string;
+    channel: MessagePort;
+  }> {
+    return this.exclusive(async () => {
+      if (
+        !this.host ||
+        !this.authority ||
+        this.flow!.view().state !== "paired" ||
+        this.collectionAttempted
+      )
+        throw new Error("Original collection runtime is unavailable.");
+      const approved = await this.flow!.listApprovedCollections(this.authority);
+      this.check();
+      const selected = approved.filter(
+        (item) => item.collectionId === collectionId,
+      );
+      if (selected.length !== 1)
+        throw new Error("Choose one approved collection.");
+      const signal = this.hostLifetime.signal;
+      const creation = await findCollectionCreation(
+        this.authority.scope,
+        collectionId,
+        signal,
+      );
+      this.check();
+      if (creation?.phase === "prepared")
+        throw Object.assign(
+          new Error("Resume the original creation before opening it."),
+          { reason: "outcome_unknown" },
+        );
+      const continuingCreated =
+        this.creationTarget === collectionId && this.creationCompleted;
+      if (this.creationTarget !== null && !continuingCreated) {
+        if (this.creationTarget !== collectionId && !this.creationCompleted)
+          throw Object.assign(
+            new Error("Reconcile the original creation first."),
+            { reason: "outcome_unknown" },
+          );
+        await this.host.close();
+        this.check();
+        if (this.creationTarget !== collectionId) {
+          await this.collectionLease?.release();
+          this.collectionLease = null;
+        }
+        this.host = await AppWebCloudCopyHost.openInstallationDevice({
+          signIn: this.flow!,
+          installation: this.authority,
+          release: this.options.release,
+          origin: this.options.appOrigin,
+          signal,
+          loadRuntime: this.options.loadRuntime,
+          allowLoopbackHttp: this.selection.allowLoopbackHttp,
+        });
+        this.check();
+      }
+      const scope = Object.freeze({
+        ...this.authority.scope,
+        collection: collectionId,
+      });
+      this.collectionLease ??= await acquireAppReplicaLease(
+        this.options.locks,
+        scope,
+        signal,
+      );
+      this.check();
+      this.collectionAttempted = true;
+      const current = () =>
+        !this.closing && !signal.aborted && this.collectionLease !== null;
+      const host = this.host;
+      if (!continuingCreated) {
+        const mode = creation
+          ? "existing"
+          : await collectionJoinIntent(scope, signal, "prepare");
+        this.check();
+        await host.bootstrapCloudCopy({
+          scope,
+          collectionCurrent: current,
+          purpose: creation ? "create" : "join",
+          outcomeMode: mode,
+          signal,
+          ...(mode === "existing"
+            ? { reconcile: "explicit-unknown-outcome" as const }
+            : {}),
+          fetch: (input, init) => globalThis.fetch(input, init),
+          allowLoopbackHttp: this.selection.allowLoopbackHttp,
+        });
+        this.check();
+        if (!creation) await collectionJoinIntent(scope, signal, "complete");
+        else if (creation.phase === "attempted")
+          await collectionCreateIntent(
+            this.authority.scope,
+            signal,
+            "complete",
+          );
+        this.check();
+      }
+      const receipt = host.registeredReceipt();
+      await host.openCollectionSql({
+        signal: this.hostLifetime.signal,
+        replicaId: receipt.deviceId,
+        endpoint: 0,
+        openSql: openNextCollectionSql,
+      });
+      this.check();
+      await host.startCollectionLog({
+        signal: this.hostLifetime.signal,
+        fetch: (input, init) => globalThis.fetch(input, init),
+      });
+      await host.waitForVerifiedRead({ signal: this.hostLifetime.signal });
+      this.check();
+      const channel = new MessageChannel();
+      try {
+        host.attachDataFacade(channel.port1);
+      } catch (error) {
+        channel.port1.close();
+        channel.port2.close();
+        throw error;
+      }
+      this.facadeAttached = true;
+      this.scheduleDrive();
+      return {
+        scope,
+        displayName: selected[0]!.displayName,
+        channel: channel.port2,
+      };
+    });
+  }
+
+  /** Foreground control belongs only to the installation owner, not the data
+   * facade. Pausing does not release keys, ownership or unknown mutations. */
+  setForeground(active: boolean): void {
+    this.check();
+    this.foreground = active;
+    if (this.driveTimer !== null) clearTimeout(this.driveTimer);
+    this.driveTimer = null;
+    if (active) this.scheduleDrive();
+  }
+  private scheduleDrive(): void {
+    if (
+      this.closing ||
+      !this.foreground ||
+      !this.host ||
+      !this.facadeAttached ||
+      this.driveTimer !== null
+    )
+      return;
+    this.driveTimer = setTimeout(() => {
+      this.driveTimer = null;
+      if (this.closing || !this.foreground || !this.host || this.driving)
+        return;
+      const host = this.host;
+      const work = Promise.resolve().then(() =>
+        host.driveCollection({ signal: this.hostLifetime.signal }),
+      );
+      this.driving = work;
+      void work.then(
+        () => {
+          if (this.driving === work) this.driving = null;
+          this.scheduleDrive();
+        },
+        () => {
+          if (this.driving === work) this.driving = null;
+          this.foreground = false;
+        },
+      );
+    }, 250);
+  }
+
   close(): Promise<void> {
     if (this.closing) return this.closing;
     const pending = this.pending;
+    const driving = this.driving;
+    if (this.driveTimer !== null) clearTimeout(this.driveTimer);
+    this.driveTimer = null;
     this.options.signal.removeEventListener("abort", this.onAbort);
     this.closing = Promise.resolve().then(async () => {
       // Drain acquisition/IO so no resource can arrive after cleanup/unlock.
       await pending?.catch(() => {});
+      await driving?.catch(() => {});
       // A failed native shutdown retains ownership until Worker fail-stop.
       await this.host?.close();
       this.host = null;

@@ -4,6 +4,7 @@ import type {
   AppInstallationCollection,
   AppInstallationCollectionConsentView,
 } from "@mdbase-dev/sdk/app-host";
+import type { TaskRepository } from "../application/ports/task-repository";
 import type { NextInstallationBuildInput } from "../cloud/next-installation-protocol";
 import { NextInstallationWorker } from "../cloud/next-installation-worker";
 
@@ -15,7 +16,7 @@ export function NextInstallationScreen({
   onCollection,
 }: {
   build: NextInstallationBuildInput;
-  onCollection(collectionId: string): Promise<void>;
+  onCollection(repository: TaskRepository): Promise<void>;
 }) {
   const owner = useRef<NextInstallationWorker | null>(null);
   const current = useRef(true);
@@ -307,7 +308,12 @@ export function NextInstallationScreen({
                 <button
                   disabled={busy}
                   onClick={() =>
-                    void run(() => onCollection(collection.collectionId))
+                    void run(async () => {
+                      const repository = await owner.current!.openCollection(
+                        collection.collectionId,
+                      );
+                      await onCollection(repository);
+                    })
                   }
                 >
                   {collection.displayName}

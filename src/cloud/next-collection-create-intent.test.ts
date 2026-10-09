@@ -1,5 +1,8 @@
 import { IDBFactory } from "fake-indexeddb";
-import { collectionCreateIntent } from "./next-collection-create-intent";
+import {
+  collectionCreateIntent,
+  findCollectionCreation,
+} from "./next-collection-create-intent";
 const scope = {
   account: "11111111-1111-4111-8111-111111111111",
   installation: "22222222-2222-4222-8222-222222222222",
@@ -43,6 +46,12 @@ describe("bounded collection creation target", () => {
     const second = await collectionCreateIntent(scope, signal, "prepare");
     expect(second.phase).toBe("prepared");
     expect(second.collection).not.toBe(first.collection);
+    expect(
+      await findCollectionCreation(scope, first.collection, signal),
+    ).toEqual({ ...first, phase: "completed" });
+    expect(
+      await findCollectionCreation(scope, second.collection, signal),
+    ).toEqual(second);
     expect(await collectionCreateIntent(scope, signal, "resume")).toEqual(
       second,
     );
