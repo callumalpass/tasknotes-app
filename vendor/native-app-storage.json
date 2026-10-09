@@ -1,0 +1,30 @@
+{
+  "sourceRepository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "07ae574c815a1c1323d3edd301056345f33349ea",
+  "package": "@mdbase-dev/obsidian-runtime",
+  "version": "0.0.0",
+  "consumerEntry": "@mdbase-dev/obsidian-runtime/app-storage",
+  "artifact": "mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz",
+  "sha256": "991106d71348f7266895d99c8049f5b609b1a9137f44c8992140af59964e7d7f",
+  "integrity": "sha512-Y0lpLczgVH78g/Z7PmvL63EaX3jgKiqAlnYE9nh0sgQ2tuIntoDNbrLK+TMBgToiPee9ijFXUIcg547+ktOrBQ==",
+  "compiledFilesMatched": 6,
+  "packaging": {
+    "kind": "app-storage-only",
+    "implementation": "unmodified compiled source",
+    "exports": ["./app-storage"]
+  },
+  "sqlite": {
+    "package": "@sqlite.org/sqlite-wasm",
+    "version": "3.53.4-build2",
+    "archiveSha256": "ddff7c28d464ffa07c35158bbab2b618b83c65d65b5e7cbfa06e225e0beff53f",
+    "integrity": "sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==",
+    "wasm": "dist/sqlite3.wasm",
+    "wasmSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "constraints": [
+    "OPFS sahpool only; no memory or reset fallback",
+    "same owned installation Worker and native host",
+    "dependency intake is not native READ, Saved or physical durability evidence",
+    "authenticated native app WASM and trust remain unchanged"
+  ]
+}

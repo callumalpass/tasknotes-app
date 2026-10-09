@@ -82,12 +82,18 @@ importers:
       '@mdbase-dev/connect-protocol':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125
+      '@mdbase-dev/obsidian-runtime':
+        specifier: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
+        version: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
       '@mdbase-dev/sdk':
         specifier: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz
         version: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz
       '@mdbase-dev/ui':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.53.4-build2
+        version: 3.53.4-build2
       '@tanstack/react-virtual':
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -909,6 +915,11 @@ packages:
   '@mdbase-dev/connect@0.1.0-beta.125':
     resolution: {integrity: sha512-vEH4NQfu3dBQgMw0YQxG7LDtOOLxDyxET4DQhrWuHqtgr9qoch/H0QLzel9tFSqkyH+QWxuvW3Bet6ae1+qVyQ==}
 
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz':
+    resolution: {integrity: sha512-Y0lpLczgVH78g/Z7PmvL63EaX3jgKiqAlnYE9nh0sgQ2tuIntoDNbrLK+TMBgToiPee9ijFXUIcg547+ktOrBQ==, tarball: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz}
+    version: 0.0.0
+    engines: {node: '>=20'}
+
   '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
     resolution: {integrity: sha512-XzIxsn5imyV9Lqb6226tlcn2D77oj+J7x1M8YIS5QjWR4bkKRxo42DmeoiMrme3Hdn0Df9jFj806O4c07nqAmg==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz}
     version: 0.0.0
@@ -1070,6 +1081,10 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2':
+    resolution: {integrity: sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==}
+    engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -4821,6 +4836,10 @@ snapshots:
     dependencies:
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
 
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz':
+    dependencies:
+      '@sqlite.org/sqlite-wasm': 3.53.4-build2
+
   '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
@@ -4931,6 +4950,8 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2': {}
 
   '@standard-schema/spec@1.1.0': {}
 
