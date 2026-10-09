@@ -1,3 +1,4 @@
+import { kanbanRowValue } from "./views/kanban-columns";
 import { taskListSectionMoveInput } from "../domain/task-list-sections";
 import { viewGroupMoveInput } from "../domain/view-mutation";
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
@@ -152,11 +153,7 @@ export function removeConfirmedBoardMoves(
   for (const [taskId, move] of moves) {
     if (move.viewKey !== viewKey) continue;
     const row = rows.get(taskId);
-    const authoritative = row
-      ? (row.values[move.property] ??
-        row.task.frontmatter[move.property] ??
-        null)
-      : undefined;
+    const authoritative = row ? kanbanRowValue(row, move.property) : undefined;
     if (row && valueKey(authoritative) !== valueKey(move.value)) continue;
     next ??= new Map(moves);
     next.delete(taskId);

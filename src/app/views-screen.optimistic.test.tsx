@@ -27,6 +27,97 @@ import type { Task } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
 
+it.each(["status", "note.status"])(
+  "moves an authoritative-null %s card despite matching raw destination, then retains its optimistic overlay",
+  async (property) => {
+    const execution = boardExecution();
+    execution.view.presentation!.mappings.column = property;
+    execution.rows[0]!.values = { [property]: null };
+    execution.groups = [
+      { values: { [property]: null }, count: 1, summaries: {} },
+    ];
+    const pending = deferred<Task>();
+    const update = vi
+      .fn()
+      .mockImplementationOnce(() => pending.promise)
+      .mockResolvedValue(execution.rows[0]!.task);
+    const repository = taskRepositoryStub(
+      {
+        listSummaries: async () => execution.rows.map(({ task }) => task),
+        cachedViewExecution: async () => null,
+        executeView: async () => execution,
+        readViewSource: async () => ({
+          ...execution.view.source,
+          document: `views:\n  - type: tasknotesKanban\n    name: Board\n    groupBy: { property: ${property}, direction: ASC }\n`,
+        }),
+        update,
+      },
+      1,
+    );
+    renderListView(repository, execution.view);
+    const card = await screen.findByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    });
+    expect(card.closest("[data-kanban-column-key]")).toHaveAttribute(
+      "data-kanban-column-key",
+      "null",
+    );
+    const open = screen.getByRole("region", { name: "Open column" });
+    mockPointerCapture(card);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => open),
+    });
+    fireEvent.pointerDown(card, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerMove(card, {
+      clientX: 500,
+      clientY: 500,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerUp(card, {
+      clientX: 500,
+      clientY: 500,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith("task-1", { status: "open" }),
+    );
+    expect(within(open).getByText("Move on the board")).toBeVisible();
+    await act(async () => pending.resolve(execution.rows[0]!.task as Task));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Work board")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      ),
+    );
+    // Refreshed projected null must not be confirmed from raw status=open.
+    const moved = within(open).getByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    });
+    expect(moved).toBeVisible();
+    fireEvent.keyDown(moved, { key: "ArrowRight" });
+    await waitFor(() =>
+      expect(update).toHaveBeenNthCalledWith(2, "task-1", {
+        status: "in-progress",
+      }),
+    );
+    expect(
+      within(
+        screen.getByRole("region", { name: "In progress column" }),
+      ).getByText("Move on the board"),
+    ).toBeVisible();
+  },
+);
+
 it("moves a board card immediately and rolls it back when persistence fails", async () => {
   const pending = deferred<Task>();
   const update = vi.fn(() => pending.promise);

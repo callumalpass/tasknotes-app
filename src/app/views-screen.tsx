@@ -15,7 +15,7 @@ import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty } from "../domain/default-view-source";
 import { ProjectPropertyOffer } from "./views/project-property-offer";
-import { valueKey } from "./views/kanban-columns";
+import { kanbanRowValue, valueKey } from "./views/kanban-columns";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -594,7 +594,7 @@ export function ViewsScreen({
     const current =
       optimistic?.viewKey === selected.key && optimistic.property === property
         ? optimistic.value
-        : (row.values[property] ?? row.task.frontmatter[property] ?? null);
+        : kanbanRowValue(row, property);
     const changesColumn = valueKey(current) !== valueKey(value);
     if (!changesColumn && !order) return;
     const input = changesColumn
