@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   ModelSetupError,
@@ -207,8 +213,8 @@ it("does not publish source readiness after the opening owner unmounts", async (
   const opening = await openingWithSetup(port);
   await waitFor(() => expect(port.inspect).toHaveBeenCalledOnce());
   opening.mounted.unmount();
-  ready();
-  await waitFor(() => expect(opening.configuration).not.toHaveBeenCalled());
+  await act(async () => ready());
+  expect(opening.configuration).not.toHaveBeenCalled();
   expect(views.mounted).not.toHaveBeenCalled();
   expect(port.install).not.toHaveBeenCalled();
   expect(port.resume).not.toHaveBeenCalled();
