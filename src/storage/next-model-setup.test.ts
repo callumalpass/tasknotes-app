@@ -288,6 +288,22 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(f.journal.value).toBeNull();
     repository.dispose();
   });
+  it("does not use a pending type definition as already-valid model readiness", async () => {
+    const f = await fixture();
+    for (const op of nativeModelDefinitionPlan(new Map()))
+      f.replica.seedResource(op.path, op.doc);
+    const original = f.client.resources.get.bind(f.client.resources);
+    vi.spyOn(f.client.resources, "get").mockImplementation(async (...args) => ({
+      ...(await original(...args)),
+      state: "pending" as const,
+    }));
+    expect(await f.setup.inspect()).toMatchObject({ state: "blocked" });
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(f.journal.value).toBeNull();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
   it("requires the actual definitions capability before creating any intent", async () => {
     const f = await fixture(["collection.read"]);
     const submit = vi.spyOn(f.client, "submit");
@@ -364,6 +380,52 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(f.journal.value!.phase).toBe("confirmed");
     expect(f.verified).not.toHaveBeenCalled();
   });
+  it.each([
+    ["list", "_contracts/tasknotes.task.md"],
+    ["list", "_types/task.md"],
+    ["get", "_contracts/tasknotes.task.md"],
+    ["get", "_types/task.md"],
+  ] as const)(
+    "refuses pending %s readback of %s even with exact text and revision",
+    async (method, path) => {
+      const f = await fixture();
+      const submit = vi.spyOn(f.client, "submit");
+      if (method === "list") {
+        const original = f.client.resources.list.bind(f.client.resources);
+        vi.spyOn(f.client.resources, "list").mockImplementation(
+          async (...args) => {
+            const result = await original(...args);
+            return {
+              ...result,
+              resources: result.resources.map((resource) =>
+                f.journal.value?.phase === "confirmed" && resource.path === path
+                  ? { ...resource, state: "pending" as const }
+                  : resource,
+              ),
+            };
+          },
+        );
+      } else {
+        const original = f.client.resources.get.bind(f.client.resources);
+        vi.spyOn(f.client.resources, "get").mockImplementation(
+          async (...args) => {
+            const resource = await original(...args);
+            return f.journal.value?.phase === "confirmed" &&
+              resource.path === path
+              ? { ...resource, state: "pending" as const }
+              : resource;
+          },
+        );
+      }
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "outcome_unknown" },
+      });
+      expect(f.journal.value!.phase).toBe("confirmed");
+      expect(f.journal.events).toEqual(["attempted", "confirmed"]);
+      expect(f.verified).not.toHaveBeenCalled();
+      expect(submit).toHaveBeenCalledOnce();
+    },
+  );
   it("awaits completion recording and resumes its lost reply with the same original intent", async () => {
     const f = await fixture();
     f.verified.mockRejectedValueOnce(Error("completion reply lost"));

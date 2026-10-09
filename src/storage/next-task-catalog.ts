@@ -45,6 +45,10 @@ export async function nextTaskProviders(
     const implementation = implementations[0]!;
     const resource = await client.resources.get(type.path, signal);
     signal.throwIfAborted();
+    if (resource.state !== "confirmed")
+      throw new TaskNotesModelRequiredError(
+        "The TaskNotes type definition is not confirmed.",
+      );
     if (resource.text === undefined)
       throw new Error(
         `Mdbase did not return the task type source ${type.path}.`,

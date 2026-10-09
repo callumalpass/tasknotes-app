@@ -344,11 +344,16 @@ export class NativeModelSetup implements TaskNotesModelSetup {
         const matches = listed.resources.filter(
           (resource) => resource.path === op.path,
         );
-        if (matches.length !== 1 || matches[0]!.text !== op.doc)
+        if (
+          matches.length !== 1 ||
+          matches[0]!.state !== "confirmed" ||
+          matches[0]!.text !== op.doc
+        )
           throw uncertain();
         const resource = await this.client.resources.get(op.path, signal);
         if (
           resource.path !== op.path ||
+          resource.state !== "confirmed" ||
           resource.text !== op.doc ||
           resource.revision !== matches[0]!.revision
         )
