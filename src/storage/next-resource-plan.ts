@@ -217,12 +217,19 @@ async function retainedNativePaths(
  * Bases source paths are retained. Other path occupancy is UNKNOWN, not absence;
  * the ONE atomic explicit-path Create/create-only mutation decides at native head.
  */
-export async function nativeResourceSetupPlan(
+export type ResourceSetupAssessment = Omit<ModelResourcePlan, "sources"> & {
+  readonly sources: readonly {
+    readonly path: string;
+    readonly document: string;
+  }[];
+};
+
+export async function nativeResourceSetupAssessment(
   resources: Resources,
   client: MdbaseClient,
   sources: DefaultSourceFactory,
   signal: AbortSignal,
-): Promise<ModelResourcePlan> {
+): Promise<ResourceSetupAssessment> {
   await initializeModelPackCore(signal);
   signal.throwIfAborted();
   const declaration = await setup(resources, signal);
@@ -257,16 +264,11 @@ export async function nativeResourceSetupPlan(
       );
     seen.add(source.path);
   }
-  // Capture ALL original record identities synchronously before journal/submit await.
+  // Candidates carry UNKNOWN ordinary-file occupancy, not absence. Assessment
+  // is READ-only: do not mint record or mutation identities during inspect.
   const creates = generated
     .filter((s) => !existingNativeBasePaths.has(s.path))
-    .map((s) =>
-      Object.freeze({
-        id: crypto.randomUUID(),
-        path: s.path,
-        document: s.document,
-      }),
-    );
+    .map((s) => Object.freeze({ path: s.path, document: s.document }));
   return Object.freeze({
     assessmentDigest: assessment.assessment_digest,
     provisionDigest: assessment.provision_digest,
@@ -278,6 +280,24 @@ export async function nativeResourceSetupPlan(
     ),
     resourceReadback: Object.freeze(readback(applied, data)),
     sources: Object.freeze(creates),
+  });
+}
+
+/** Capture ALL original source identities before journal/submit awaits. */
+export function captureResourceSetupPlan(
+  assessment: ResourceSetupAssessment,
+): ModelResourcePlan {
+  return Object.freeze({
+    ...assessment,
+    sources: Object.freeze(
+      assessment.sources.map((s) =>
+        Object.freeze({
+          id: crypto.randomUUID(),
+          path: s.path,
+          document: s.document,
+        }),
+      ),
+    ),
   });
 }
 
