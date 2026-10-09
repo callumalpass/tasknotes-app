@@ -464,7 +464,15 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     plan: ModelPackPlan,
     signal: AbortSignal,
   ): Promise<void> {
-    const listed = await modelResourceInventory(this.client, signal);
+    let listed: wire.ResourceView[];
+    try {
+      listed = await modelResourceInventory(this.client, signal);
+    } catch {
+      signal.throwIfAborted();
+      // Readback cannot establish that an original write did not land. This
+      // also applies when inspecting an already-verified retained intent.
+      throw uncertain();
+    }
     signal.throwIfAborted();
     for (const expected of plan.readback) {
       const matches = listed.filter(

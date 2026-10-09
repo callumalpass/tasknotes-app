@@ -828,6 +828,49 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(submit).toHaveBeenCalledOnce();
     expect(f.verified).toHaveBeenCalledOnce();
   });
+  it.each(["incomplete", "pending", "cursor_stale"] as const)(
+    "reports uncertain rather than blocked for %s inventory when inspecting a verified original intent",
+    async (refusal) => {
+      const f = await fixture();
+      const submit = vi.spyOn(f.client, "submit");
+      await f.setup.install();
+      const original = structuredClone(f.journal.value);
+      expect(original!.phase).toBe("verified");
+      f.verified.mockClear();
+      const events = [...f.journal.events];
+      const read = f.client.resources.list.bind(f.client.resources);
+      const list = vi
+        .spyOn(f.client.resources, "list")
+        .mockImplementation(async (options) => {
+          if (refusal === "cursor_stale")
+            throw new MdbaseError({
+              code: "invalid_request",
+              recovery: "fix_request",
+              reason: "cursor_stale",
+              message: "inventory changed",
+            });
+          const page = await read(options);
+          return refusal === "incomplete"
+            ? { ...page, complete: false }
+            : {
+                ...page,
+                resources: page.resources.map((resource) => ({
+                  ...resource,
+                  state: "pending" as const,
+                })),
+              };
+        });
+      await expect(f.setup.inspect()).resolves.toMatchObject({
+        state: "outcome_unknown",
+      });
+      expect(list).toHaveBeenCalledOnce();
+      expect(f.journal.value).toEqual(original);
+      expect(f.journal.events).toEqual(events);
+      expect(f.journal.prepares).toBe(1);
+      expect(submit).toHaveBeenCalledOnce();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
   it("refuses an incomplete confirmed resource list without finalizing", async () => {
     const f = await fixture();
     const original = f.client.resources.list.bind(f.client.resources);
