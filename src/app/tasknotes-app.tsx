@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { DemoApp } from "../demo/demo-app";
-import { CollectionGate } from "./collection-gate";
+import { NextCollectionGate } from "./next-collection-gate";
 
 export function TaskNotesApp({
   demoCount,
@@ -10,11 +10,11 @@ export function TaskNotesApp({
   demoCount: number;
   embeddedDemo: boolean;
 }) {
-  const [activeDemoCount, setActiveDemoCount] = useState(demoCount);
+  const [activeDemoCount] = useState(demoCount);
 
   return activeDemoCount > 0 ? (
     <DemoApp count={activeDemoCount} embedded={embeddedDemo} />
   ) : (
-    <CollectionGate onTryDemo={() => setActiveDemoCount(30)} />
+    <NextCollectionGate />
   );
 }

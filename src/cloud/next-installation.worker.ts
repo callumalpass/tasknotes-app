@@ -11,7 +11,10 @@ import {
 
 const port = globalThis as unknown as {
   onmessage: ((event: MessageEvent<NextInstallationRequest>) => void) | null;
-  postMessage(message: NextInstallationResponse): void;
+  postMessage(
+    message: NextInstallationResponse,
+    transfer?: Transferable[],
+  ): void;
   close(): void;
 };
 let controller: NextTaskNotesInstallation | null = null;
@@ -92,6 +95,14 @@ async function dispatch(
       );
     case "exchange-consent":
       return controller.exchangeCollectionConsent();
+    case "set-foreground":
+      controller.setForeground(command.active);
+      return null;
+    case "open-collection":
+      return {
+        kind: "collection",
+        ...(await controller.openApprovedCollection(command.collectionId)),
+      };
     case "close":
       await controller.close();
       lifetime.abort();
@@ -121,8 +132,22 @@ port.onmessage = (event) => {
   busy = true;
   void dispatch(request)
     .then(
-      (result) =>
-        port.postMessage({ version: 1, id: request.id, ok: true, result }),
+      (result) => {
+        const response: NextInstallationResponse = {
+          version: 1,
+          id: request.id,
+          ok: true,
+          result,
+        };
+        if (
+          result &&
+          !Array.isArray(result) &&
+          "kind" in result &&
+          result.kind === "collection"
+        )
+          port.postMessage(response, [result.channel]);
+        else port.postMessage(response);
+      },
       (error) =>
         port.postMessage({
           version: 1,

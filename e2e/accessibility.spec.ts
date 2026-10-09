@@ -16,14 +16,12 @@ test("blocked opening screen has no serious accessibility violations", async ({
     page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("alert")).toContainText(
-    "TaskNotes couldn’t open right now",
+    "This build has no configured native release bundle",
   );
 
-  expect(requestFailures).toEqual(
-    expect.arrayContaining([
-      expect.stringMatching(/^net::ERR_BLOCKED_BY_CLIENT\b/),
-    ]),
-  );
+  // An unconfigured native build fails before contacting any authority. The
+  // former classic relay registration failure is not a synced-app behaviour.
+  expect(requestFailures).toEqual([]);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();

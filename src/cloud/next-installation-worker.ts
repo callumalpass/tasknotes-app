@@ -1,3 +1,6 @@
+import { connect } from "@mdbase-dev/sdk";
+import { appLocalConnector } from "@mdbase-dev/sdk/app-host";
+import { NextTaskRepository } from "../storage/next-repository";
 import type {
   AppInstallationSignInView,
   AppInstallationCollection,
@@ -10,6 +13,7 @@ import type {
   NextInstallationRequest,
   NextInstallationResponse,
   NextInstallationResult,
+  NextOpenedCollection,
   NextCreatedCollection,
 } from "./next-installation-protocol";
 
@@ -23,7 +27,20 @@ export class NextInstallationWorker {
     else void this.close().catch(() => {});
   };
   private stopped = false;
+  private dataConnector: ReturnType<typeof appLocalConnector> | null = null;
+  private repository: NextTaskRepository | null = null;
   private closing: Promise<void> | null = null;
+  private readonly onForeground = () => {
+    void this.syncForeground().catch(() => {});
+  };
+  private async syncForeground(): Promise<void> {
+    await this.pending?.promise.catch(() => {});
+    if (this.stopped || this.closing || this.signal?.aborted) return;
+    await this.call({
+      kind: "set-foreground",
+      active: document.visibilityState !== "hidden",
+    });
+  }
   private pending: {
     id: number;
     resolve(value: NextInstallationResult): void;
@@ -110,10 +127,15 @@ export class NextInstallationWorker {
     if (this.stopped) return;
     this.stopped = true;
     this.signal?.removeEventListener("abort", this.onAbort);
+    document.removeEventListener("visibilitychange", this.onForeground);
     if (this.pending) {
       clearTimeout(this.pending.timer);
       this.pending = null;
     }
+    this.dataConnector?.close();
+    this.repository?.dispose();
+    this.dataConnector = null;
+    this.repository = null;
     this.worker.removeEventListener("message", this.onMessage);
     this.worker.removeEventListener("error", this.onError);
     this.worker.removeEventListener("messageerror", this.onError);
@@ -203,9 +225,60 @@ export class NextInstallationWorker {
       kind: "exchange-consent",
     }) as Promise<AppInstallationCollectionConsentView>;
   }
+  async openCollection(collectionId: string): Promise<NextTaskRepository> {
+    if (this.dataConnector || this.repository)
+      throw new Error("Original collection already opened.");
+    const result = await this.call({ kind: "open-collection", collectionId });
+    const opened = result as NextOpenedCollection;
+    const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+    if (
+      !opened ||
+      opened.kind !== "collection" ||
+      !opened.scope ||
+      opened.scope.collection !== collectionId ||
+      !uuid.test(opened.scope.account) ||
+      !uuid.test(opened.scope.installation) ||
+      typeof opened.displayName !== "string" ||
+      !(opened.channel instanceof MessagePort)
+    ) {
+      this.onError();
+      throw new Error("Original collection binding unavailable.");
+    }
+    const connector = appLocalConnector(opened.channel, {
+      ...opened.scope,
+      isCurrent: () => !this.stopped && !this.closing && !this.signal?.aborted,
+    });
+    this.dataConnector = connector;
+    try {
+      const client = await connect({
+        app: { name: "TaskNotes", version: "1" },
+        connector,
+        reconnect: false,
+        ...(this.signal ? { signal: this.signal } : {}),
+      });
+      if (this.stopped || this.closing || this.signal?.aborted) {
+        client.close();
+        throw new Error("Original collection lifetime ended.");
+      }
+      this.repository = new NextTaskRepository(
+        client,
+        opened.displayName,
+        opened.scope.account,
+      );
+      document.addEventListener("visibilitychange", this.onForeground);
+      this.onForeground();
+      return this.repository;
+    } catch (error) {
+      connector.close();
+      throw error;
+    }
+  }
+
   close(): Promise<void> {
     return (this.closing ??= Promise.resolve().then(async () => {
       try {
+        this.dataConnector?.close();
+        this.repository?.dispose();
         await this.pending?.promise.catch(() => {});
         if (!this.stopped) await this.call({ kind: "close" });
       } finally {

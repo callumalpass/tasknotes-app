@@ -10,3 +10,5 @@ test-results/
 vendor/tasknotes-query-6bec1906.browser.mjs
 vendor/tasknotes-query-6bec1906.browser.d.mts
 vendor/tasknotes-query-6bec1906.browser-metafile.json
+# Immutable authenticated public LAB release context; exact bytes are hash-tested.
+vendor/mdbase-app-lab-trust.mjs

@@ -32,7 +32,19 @@ export type NextInstallationCommand =
     }
   | { kind: "confirm-account"; accountId: string }
   | { kind: "start-consent"; requestedCreateCollections: boolean }
+  | { kind: "open-collection"; collectionId: string }
+  | { kind: "set-foreground"; active: boolean }
   | { kind: "create-collection"; reconcile: boolean };
+export interface NextOpenedCollection {
+  readonly kind: "collection";
+  readonly scope: Readonly<{
+    account: string;
+    installation: string;
+    collection: string;
+  }>;
+  readonly displayName: string;
+  readonly channel: MessagePort;
+}
 export interface NextCreatedCollection {
   readonly kind: "created-collection";
   readonly collectionId: string;
@@ -48,6 +60,7 @@ export type NextInstallationResult =
   | AppInstallationSignInView
   | AppInstallationCollectionConsentView
   | readonly AppInstallationCollection[]
+  | NextOpenedCollection
   | NextCreatedCollection
   | null;
 export type NextInstallationResponse =
@@ -77,6 +90,16 @@ export function isNextInstallationCommand(
         typeof command.accountId === "string" &&
         command.accountId.length === 36
       );
+    case "open-collection":
+      return (
+        keys === "collectionId,kind" &&
+        typeof command.collectionId === "string" &&
+        /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(
+          command.collectionId,
+        )
+      );
+    case "set-foreground":
+      return keys === "active,kind" && typeof command.active === "boolean";
     case "create-collection":
       return (
         keys === "kind,reconcile" && typeof command.reconcile === "boolean"
