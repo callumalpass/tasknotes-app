@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { pinnedCoreBytes, sha256 } from "./next-resource-core.test-helper.mjs";
-import { init } from "mdbase";
+import { init, loadCatalog } from "mdbase";
 import type { MdbaseClient } from "@mdbase-dev/sdk";
 import pin from "../../vendor/mdbase-browser.pin.json";
 import {
@@ -8,7 +8,10 @@ import {
   nativeResourceSetupAssessment,
   recheckPreparedResourceSetup,
 } from "./next-resource-plan";
-import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
+import {
+  TASKNOTES_DEFAULT_VIEW_SOURCES,
+  taskNotesDefaultBaseSources,
+} from "../domain/default-view-source";
 
 vi.mock("../cloud/next-model-pack-core", () => ({
   initializeModelPackCore: async () => {
@@ -70,6 +73,55 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
     expect(
       captured.sources.map(({ path, document }) => ({ path, document })),
     ).toEqual(assessment.sources);
+  });
+  it("uses actual Core defaults and guarded configuration creation for an empty complete resource inventory", async () => {
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    const held = client();
+    const assessment = await nativeResourceSetupAssessment(
+      {},
+      held,
+      taskNotesDefaultBaseSources,
+      signal(),
+    );
+    expect(uuid).not.toHaveBeenCalled();
+    expect(held.listAppBasesViews).not.toHaveBeenCalled();
+    const configurationOp = assessment.resourceOps.find(
+      (op) => op.path === "mdbase.yaml",
+    );
+    expect(configurationOp).toMatchObject({
+      kind: "resource_put",
+      path: "mdbase.yaml",
+      mustNotExist: true,
+    });
+    expect(configurationOp).not.toHaveProperty("baseRevision");
+    const data = Object.fromEntries(
+      assessment.resourceReadback
+        .filter((resource) => resource.doc !== null)
+        .map((resource) => [resource.path, resource.doc!]),
+    );
+    expect(data["mdbase.yaml"]).toMatch(/spec_version: ['"]?0\.3\.0['"]?/);
+    const catalog = await loadCatalog(data);
+    expect(catalog.valid).toBe(true);
+    expect(catalog.settings.record_extensions).toEqual(["md", "base"]);
+    expect(catalog.settings.types_folder).toBe("_types");
+    expect(catalog.settings.contracts_folder).toBe("_contracts");
+    expect(assessment.sources.map((source) => source.path)).toEqual(
+      TASKNOTES_DEFAULT_VIEW_SOURCES.map((source) => source.path),
+    );
+    expect(
+      assessment.resourceOps.filter((op) => op.path === "mdbase.lock.yaml"),
+    ).toHaveLength(1);
+    const captured = captureResourceSetupPlan(assessment);
+    expect(uuid).toHaveBeenCalledTimes(5);
+    await recheckPreparedResourceSetup({}, captured, signal());
+    await expect(
+      recheckPreparedResourceSetup(
+        { "mdbase.yaml": config },
+        captured,
+        signal(),
+      ),
+    ).rejects.toMatchObject({ code: "concurrent_modification" });
+    expect(uuid).toHaveBeenCalledTimes(5);
   });
   it("rechecks original resource guards/digest without regenerating any sources or UUIDs", async () => {
     const factory = vi.fn(taskNotesDefaultBaseSources);

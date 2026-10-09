@@ -39,13 +39,14 @@ async function declarationDigest(value: unknown): Promise<string> {
   );
 }
 
-/** Build strict typed Core inputs from unchanged publisher bytes and actual settings. */
+/** Build strict typed Core inputs from unchanged publisher bytes and actual settings.
+ * Core resolves defaults when the complete native resource inventory has no
+ * configuration. Only Core's guarded configuration operation materializes it.
+ */
 async function setup(
   resources: Resources,
   signal: AbortSignal,
 ): Promise<CollectionSetup> {
-  if (typeof resources["mdbase.yaml"] !== "string")
-    throw new Error("Mdbase has not supplied the collection configuration.");
   const catalog = await loadCatalog(resources);
   signal.throwIfAborted();
   const packs = provisions.map((p) => {
