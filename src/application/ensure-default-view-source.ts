@@ -9,6 +9,8 @@ export async function ensureTaskNotesDefaultViewSource(
   documents: TaskViewDocument[],
   configuration: TaskCollectionConfiguration,
 ): Promise<TaskViewDocument[]> {
+  if (repository.defaultViewSourceCreation === "explicit-only")
+    return documents;
   const sources = taskNotesDefaultBaseSources(configuration);
   if (sources.every((source) => hasSource(documents, source.path))) {
     return documents;

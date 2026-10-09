@@ -49,6 +49,7 @@ import type {
   TaskViewDocument,
   TaskView,
   TaskViewExecution,
+  TaskViewSourceDocument,
   CreateTaskViewSourceInput,
   UpdateTaskViewSourceInput,
 } from "../domain/view";
@@ -203,6 +204,7 @@ function plainFields(fields: wire.FmMap): Record<string, unknown> {
  * Unsupported native metadata is explicit, never reconstructed in the app.
  */
 export class NextTaskRepository implements TaskRepository {
+  readonly defaultViewSourceCreation = "explicit-only" as const;
   private scope = new AbortController();
   private disposed = false;
   private providers: NextTaskProvider[] = [];
@@ -1987,6 +1989,72 @@ export class NextTaskRepository implements TaskRepository {
   async cachedViewExecution() {
     return null;
   }
+  private nativeSourceDescriptor(path: string): AppBasesDescriptor {
+    const matches = [...this.nativeViews.values()].filter(
+      (view) => view.path === path,
+    );
+    const descriptor = matches[0];
+    if (!descriptor)
+      throw nativeUnsupported(
+        "Refresh the native view catalog before reading this source.",
+      );
+    if (
+      matches.some(
+        (view) =>
+          view.record !== descriptor.record ||
+          view.sourceRevision !== descriptor.sourceRevision,
+      )
+    )
+      throw new Error("Native view path has ambiguous source identities.");
+    return structuredClone(descriptor);
+  }
+  private async readNativeSource(
+    descriptor: AppBasesDescriptor,
+    signal: AbortSignal,
+    timezone = runtimeTimezone(),
+  ) {
+    signal.throwIfAborted();
+    await this.initialize({ deferTaskIndex: true });
+    const revision = this.dataRevision;
+    const result = await this.client.readAppBasesViewSource(
+      { ...nativeViewSelection(descriptor), captureTimezone: timezone },
+      signal,
+    );
+    if (result.kind === "refusal") throw new MdbaseError(result.problem);
+    if (
+      result.view.record !== descriptor.record ||
+      result.view.path !== descriptor.path ||
+      result.view.sourceRevision !== descriptor.sourceRevision ||
+      result.view.ordinal !== descriptor.ordinal
+    )
+      throw new Error("Native view READ changed its selected source identity.");
+    signal.throwIfAborted();
+    this.assertCurrentData(revision);
+    return result;
+  }
+  private requireViewSourceGrant(
+    capability: "records.edit" | "records.delete",
+  ) {
+    const grant = this.client.hello.grant;
+    if (
+      grant.role === "viewer" ||
+      !grant.capabilities.includes("collection.read") ||
+      !grant.capabilities.includes(capability) ||
+      grant.fileFolders !== undefined
+    )
+      throw nativeUnsupported(
+        "This session does not provide the required full-scope view-source grant.",
+      );
+  }
+  private forgetNativeSource(record: string) {
+    this.viewCatalog = this.viewCatalog.filter(
+      (document) => document.id !== record,
+    );
+    for (const [key, descriptor] of this.nativeViews) {
+      if (descriptor.record === record) this.nativeViews.delete(key);
+    }
+    this.emit("data");
+  }
   private nativeView(view: TaskView): AppBasesDescriptor {
     const descriptor = this.nativeViews.get(view.key);
     if (
@@ -2011,13 +2079,7 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const descriptor = this.nativeView(view);
     const timezone = runtimeTimezone();
-    const selected = await this.client.readAppBasesViewSource(
-      { ...nativeViewSelection(descriptor), captureTimezone: timezone },
-      signal,
-    );
-    if (selected.kind === "refusal") throw new MdbaseError(selected.problem);
-    if (selected.view.path !== descriptor.path)
-      throw new Error("Native view source moved. Refresh the catalog.");
+    const selected = await this.readNativeSource(descriptor, signal, timezone);
     this.assertCurrentData(revision);
     const result = await this.client.executeAppBases(
       {
@@ -2118,35 +2180,11 @@ export class NextTaskRepository implements TaskRepository {
       yield await this.executeNativeView(view, signal);
     }
   }
-  async readViewSource(path: string) {
-    const descriptor = [...this.nativeViews.values()].find(
-      (view) => view.path === path,
-    );
-    if (!descriptor)
-      throw nativeUnsupported(
-        "Refresh the native view catalog before reading this source.",
-      );
-    const samePath = [...this.nativeViews.values()].filter(
-      (view) => view.path === path,
-    );
-    if (
-      samePath.some(
-        (view) =>
-          view.record !== descriptor.record ||
-          view.sourceRevision !== descriptor.sourceRevision,
-      )
-    )
-      throw new Error("Native view path has ambiguous source identities.");
-    const result = await this.client.readAppBasesViewSource(
-      {
-        ...nativeViewSelection(descriptor),
-        captureTimezone: runtimeTimezone(),
-      },
+  async readViewSource(path: string): Promise<TaskViewSourceDocument> {
+    const result = await this.readNativeSource(
+      this.nativeSourceDescriptor(path),
       this.signal(),
     );
-    if (result.kind === "refusal") throw new MdbaseError(result.problem);
-    if (result.view.path !== path)
-      throw new Error("Native view source moved. Refresh the catalog.");
     return {
       path: result.view.path,
       format: "obsidian.base",
@@ -2154,82 +2192,141 @@ export class NextTaskRepository implements TaskRepository {
       document: result.source,
     };
   }
-  async createViewSource(input: CreateTaskViewSourceInput) {
+  async createViewSource(
+    input: CreateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    this.signal().throwIfAborted();
     const format =
       input.format ??
       (input.path ? viewSourceFormat(input.path) : "obsidian.base");
     const path =
       input.path ?? newViewSourcePath(format, input.name ?? "New view");
     viewSourceRecord(path, input.document);
-    return this.mutations.run(
-      {
-        key: JSON.stringify(["view:create", path, input.document]),
-        prepare: async (mutationId, signal) => () =>
-          this.client.create(
-            {
-              path,
-              document: input.document,
-            },
-            { mutationId, signal },
-          ),
-        confirmed: async (_r, signal) =>
-          this.client.views.readSource({ path }, signal),
-      },
-      this.scope.signal,
+    // A resource reply supplies no record UUID. Do not submit a creation whose
+    // result cannot yet be identified and read through this held data port.
+    throw nativeUnsupported(
+      "Creating view sources is not available through this native session.",
     );
   }
-  async updateViewSource(input: UpdateTaskViewSourceInput) {
+  async updateViewSource(
+    input: UpdateTaskViewSourceInput,
+  ): Promise<TaskViewSourceDocument> {
+    let target: AppBasesDescriptor | undefined;
     return this.mutations.run(
       {
         key: JSON.stringify(["view:update", input]),
         prepare: async (mutationId, signal) => {
-          const source = await this.client.views.readSource(
-            { path: input.path },
+          this.requireViewSourceGrant("records.edit");
+          const source = await this.readNativeSource(
+            this.nativeSourceDescriptor(input.path),
             signal,
           );
-          if (input.ifRevision && input.ifRevision !== source.revision)
+          if (
+            input.ifRevision &&
+            input.ifRevision !== source.view.sourceRevision
+          )
             throw new Error(
               "The view source changed. Reload it before saving.",
             );
+          // Whole-document replacement needs the actual public RecordView,
+          // not an object reconstructed from a source descriptor or path.
+          const record = await this.client.get(
+            source.view.record,
+            { document: true },
+            signal,
+          );
+          if (
+            record.id !== source.view.record ||
+            record.path !== source.view.path ||
+            record.revision !== source.view.sourceRevision ||
+            record.state.state !== "confirmed" ||
+            record.document !== source.source
+          )
+            throw new Error(
+              "The native source changed before its complete record READ.",
+            );
+          signal.throwIfAborted();
+          this.requireViewSourceGrant("records.edit");
+          target = structuredClone(source.view);
           return () =>
-            this.client.replaceDocument(source.record, input.document, {
-              ifRevision: input.ifRevision ?? source.revision,
+            this.client.replaceDocument(record, input.document, {
+              ifRevision: source.view.sourceRevision,
               mutationId,
               signal,
             });
         },
-        confirmed: async (_r, signal) =>
-          this.client.views.readSource({ path: input.path }, signal),
+        confirmed: async (receipt, signal) => {
+          if (!target)
+            throw nativeUnsupported(
+              "The original native source identity is unavailable.",
+            );
+          const record = await this.client.get(
+            target.record,
+            { document: true },
+            signal,
+          );
+          const admitted = receipt.records?.find(
+            (item) => item.id === target!.record,
+          );
+          if (
+            record.id !== target.record ||
+            record.path !== target.path ||
+            record.state.state !== "confirmed" ||
+            record.document === undefined ||
+            record.document !== input.document ||
+            (receipt.records !== undefined &&
+              (!admitted ||
+                admitted.path !== target.path ||
+                admitted.revision !== record.revision))
+          )
+            throw new Error(
+              "The confirmed native view source could not be read with its exact identity and document.",
+            );
+          this.forgetNativeSource(target.record);
+          return {
+            path: record.path,
+            format: "obsidian.base",
+            revision: record.revision,
+            document: record.document,
+          };
+        },
       },
       this.scope.signal,
     );
   }
   async deleteViewSource(path: string, ifRevision?: string) {
+    let target: AppBasesDescriptor | undefined;
     await this.mutations.run(
       {
         key: JSON.stringify(["view:delete", path, ifRevision]),
         prepare: async (mutationId, signal) => {
-          const source = await this.client.views.readSource({ path }, signal);
-          if (ifRevision && ifRevision !== source.revision)
+          this.requireViewSourceGrant("records.delete");
+          const source = await this.readNativeSource(
+            this.nativeSourceDescriptor(path),
+            signal,
+          );
+          if (ifRevision && ifRevision !== source.view.sourceRevision)
             throw new Error(
               "The view source changed. Reload it before deleting.",
             );
+          target = structuredClone(source.view);
           return () =>
-            this.client.delete(source.record, {
-              ifRevision: ifRevision ?? source.revision,
+            this.client.delete(source.view.record, {
+              ifRevision: source.view.sourceRevision,
               mutationId,
               signal,
             });
         },
         confirmed: async () => {
-          this.viewCatalog = this.viewCatalog.filter(
-            (document) => document.source.path !== path,
-          );
+          if (!target)
+            throw nativeUnsupported(
+              "The original native source identity is unavailable.",
+            );
+          this.forgetNativeSource(target.record);
         },
       },
       this.scope.signal,
     );
-    this.emit("data");
   }
 
   async collectionInfo() {
