@@ -122,6 +122,11 @@ export interface TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
   stats(): Promise<TaskStats>;
+  /** Intent policy only, never evidence of READ readiness or write authority.
+   * Explicit-only repositories must not seed view sources during navigation.
+   * Absence preserves the existing automatic-default behavior.
+   */
+  readonly defaultViewSourceCreation?: "explicit-only";
   cachedViews(): Promise<TaskViewDocument[]>;
   listViews(): Promise<TaskViewDocument[]>;
   cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null>;
