@@ -259,8 +259,8 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
       expect(f.verified).not.toHaveBeenCalled();
     },
   );
-  it.each(["pending", "pending_delete"] as const)(
-    "does not finalize an already-valid/no-intent model from %s contract metadata",
+  it.each(["pending", "not_found"] as const)(
+    "does not finalize valid metadata when the actual contract source is %s",
     async (state) => {
       const f = await fixture();
       const planned = await f.plan();
@@ -270,9 +270,16 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
       vi.spyOn(f.client.resources, "get").mockImplementation(
         async (...args) => {
           const resource = await get(...args);
-          return resource.path.endsWith("/tasknotes.task.md")
-            ? { ...resource, state }
-            : resource;
+          if (resource.path.endsWith("/tasknotes.task.md")) {
+            if (state === "not_found")
+              throw new MdbaseError({
+                code: "not_found",
+                recovery: "refresh",
+                message: "Contract source is absent or pending deletion",
+              });
+            return { ...resource, state };
+          }
+          return resource;
         },
       );
       const submit = vi.spyOn(f.client, "submit");
