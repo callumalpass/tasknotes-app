@@ -126,6 +126,32 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       "source identity",
     );
   });
+  it("publishes the producer's exact declaration selector and source record identity", async () => {
+    const f = await fixture();
+    expect(f.view.declaration).toEqual({
+      recordId: descriptor.record,
+      path: descriptor.path,
+      revision,
+      ordinal: descriptor.ordinal,
+      name: descriptor.name,
+    });
+    expect((await f.repository.readViewSource(descriptor.path)).recordId).toBe(
+      descriptor.record,
+    );
+    expect(f.genericSource).not.toHaveBeenCalled();
+  });
+  it("refuses a changed declaration selector before source READ or execution", async () => {
+    const f = await fixture();
+    f.source.mockClear();
+    await expect(
+      f.repository.executeView({
+        ...f.view,
+        declaration: { ...f.view.declaration!, ordinal: 0 },
+      }),
+    ).rejects.toMatchObject({ reason: "unsupported" });
+    expect(f.source).not.toHaveBeenCalled();
+    expect(f.execute).not.toHaveBeenCalled();
+  });
   it("full-load iteration replaces the independent prefix with ONE complete execution", async () => {
     const f = await fixture();
     const window = {

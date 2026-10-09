@@ -296,7 +296,7 @@ export function ViewsScreen({
         if (!active) return;
         setSourceSort({
           key: selected.key,
-          sort: readViewDraft(source, selected.id).sort,
+          sort: readViewDraft(source, selected.id, selected.declaration).sort,
         });
         setCreationPlan({
           key: selected.key,
@@ -448,7 +448,7 @@ export function ViewsScreen({
     setViewActionError(null);
     try {
       const source = await repository.readViewSource(view.source.path);
-      const draft = readViewDraft(source, view.id);
+      const draft = readViewDraft(source, view.id, view.declaration);
       const defaultProperty =
         draft.dialect === "obsidian-bases"
           ? basesProperty(sortOrderField)
