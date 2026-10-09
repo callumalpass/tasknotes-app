@@ -120,10 +120,11 @@ import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { NextMutations, RejectedNextMutation } from "./next-mutations";
 import { NativeModelSetup } from "./next-model-setup";
 import { NativeResourceSetup } from "./next-resource-setup";
-import type {
-  ModelSetupJournal,
-  ModelResourceSetupJournal,
-  TaskNotesModelSetup,
+import {
+  TaskNotesModelRequiredError,
+  type ModelSetupJournal,
+  type ModelResourceSetupJournal,
+  type TaskNotesModelSetup,
 } from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
@@ -215,6 +216,7 @@ export class NextTaskRepository implements TaskRepository {
   readonly defaultViewSourceCreation = "explicit-only" as const;
   private scope = new AbortController();
   private disposed = false;
+  private creatorSetupPending: boolean;
   private providers: NextTaskProvider[] = [];
   private models = new Map<string, TaskNotesTaskModel>();
   private initialization: Promise<void> | null = null;
@@ -244,17 +246,27 @@ export class NextTaskRepository implements TaskRepository {
     private readonly accountId: string,
     options: {
       modelSetupJournal?: ModelSetupJournal;
+      /** Actual original-controller completion flag, not resource readiness. */
+      requiresTaskNotesModelSetup?: boolean;
       /** Completion recording only after the original client's receipt/readback. */
       onModelSetupVerified?: () => Promise<void>;
     } = {},
   ) {
     this.mutations = new NextMutations(client);
+    this.creatorSetupPending = options.requiresTaskNotesModelSetup === true;
+    if (
+      this.creatorSetupPending &&
+      (!options.modelSetupJournal || !options.onModelSetupVerified)
+    )
+      throw new Error("Original creator completion owner unavailable.");
     if (options.modelSetupJournal) {
       const onVerified = options.onModelSetupVerified;
       const journal = options.modelSetupJournal;
       const verified = async () => {
         this.invalidateRemoteData();
         await onVerified?.();
+        this.signal().throwIfAborted();
+        this.creatorSetupPending = false;
       };
       const legacy = (signal?: AbortSignal) =>
         new NativeModelSetup(
@@ -400,6 +412,10 @@ export class NextTaskRepository implements TaskRepository {
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
     const signal = this.signal();
     signal.throwIfAborted();
+    if (this.creatorSetupPending)
+      throw new TaskNotesModelRequiredError(
+        "Complete this original collection's TaskNotes setup before opening tasks and views.",
+      );
     await this.observeChanges(signal);
     if (!this.initialization) {
       const revision = this.dataRevision;

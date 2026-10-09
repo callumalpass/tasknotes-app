@@ -342,10 +342,23 @@ async function fixture({
 // One real SDK MemoryReplica client; control/port/catalog stand-ins, not native
 // receipt/READ/LAB qualification. No second client or production host is opened.
 describe("original Worker model journal and held repository wiring", () => {
-  it("fresh creation carries the v3 resource plan, all original publisher resources and five sources in one mutation before finalizing", async () => {
+  it("opening a creator stays read-only until explicit setup submits and completes its original resource plan", async () => {
     const f = await fixture();
     const submit = vi.spyOn(f.client, "submit");
+    const uuid = vi.spyOn(crypto, "randomUUID");
     const repository = await f.owner.openCollection(scope.collection);
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    expect(f.worker.intent).toBeNull();
+    expect(f.worker.markerConfirmed).toBe(false);
+    await expect(
+      repository.initialize({ deferTaskIndex: true }),
+    ).rejects.toThrow("Complete this original collection");
+    expect(await repository.modelSetup!.inspect()).toEqual({
+      state: "required",
+    });
+    expect(uuid).not.toHaveBeenCalled();
+    await repository.modelSetup!.install();
     expect(vi.mocked(connect)).toHaveBeenCalledOnce();
     expect(vi.mocked(connect).mock.calls[0]![0]).toMatchObject({
       reconnect: false,
@@ -426,6 +439,11 @@ describe("original Worker model journal and held repository wiring", () => {
         throw new Error("Synthetic lost reply");
       });
     const repository = await f.owner.openCollection(scope.collection);
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.worker.intent).toBeNull();
+    await expect(repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
     const id = f.worker.intent!.mutationId;
     expect(await repository.modelSetup!.inspect()).toMatchObject({
       state: "outcome_unknown",
@@ -450,10 +468,19 @@ describe("original Worker model journal and held repository wiring", () => {
     f.worker.loseMarkerOnce = true;
     const submit = vi.spyOn(f.client, "submit");
     const repository = await f.owner.openCollection(scope.collection);
+    expect(submit).not.toHaveBeenCalled();
+    await expect(repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
     const id = f.worker.intent!.mutationId;
     expect(f.worker.markerConfirmed).toBe(false);
     expect(f.worker.intent!.phase).toBe("verified");
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    await expect(
+      repository.initialize({ deferTaskIndex: true }),
+    ).rejects.toThrow("Complete this original collection");
     await repository.modelSetup!.resume();
+    await repository.initialize({ deferTaskIndex: true });
     expect(f.worker.markerConfirmed).toBe(true);
     expect(f.worker.intent!.mutationId).toBe(id);
     expect(submit).toHaveBeenCalledOnce();
@@ -504,9 +531,20 @@ describe("original Worker model journal and held repository wiring", () => {
     );
     const submit = vi.spyOn(f.client, "submit");
     submit.mockClear();
+    const uuid = vi.spyOn(crypto, "randomUUID");
     const repository = await f.owner.openCollection(scope.collection);
     expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
     expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    expect(f.worker.intent).toBeNull();
+    expect(f.worker.markerConfirmed).toBe(false);
+    await expect(
+      repository.initialize({ deferTaskIndex: true }),
+    ).rejects.toThrow("Complete this original collection");
+    await repository.modelSetup!.install();
+    await repository.initialize({ deferTaskIndex: true });
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
     expect(f.worker.intent).toBeNull();
     expect(f.worker.markerConfirmed).toBe(true);
   });
@@ -532,6 +570,19 @@ describe("original Worker model journal and held repository wiring", () => {
       f.worker.intent = { version: 2, scope, mutationId: id, phase, plan };
       const submit = vi.spyOn(f.client, "submit");
       const repository = await f.owner.openCollection(scope.collection);
+      expect(submit).not.toHaveBeenCalled();
+      expect(f.worker.intent).toEqual({
+        version: 2,
+        scope,
+        mutationId: id,
+        phase,
+        plan,
+      });
+      expect(f.worker.markerConfirmed).toBe(false);
+      expect(await repository.modelSetup!.inspect()).toMatchObject({
+        state: phase === "verified" ? "ready" : "outcome_unknown",
+      });
+      await repository.modelSetup!.resume();
       expect(await repository.modelSetup!.inspect()).toEqual({
         state: "ready",
       });
@@ -632,7 +683,7 @@ describe("original Worker model journal and held repository wiring", () => {
     ).toHaveLength(0);
     expect(vi.mocked(connect)).toHaveBeenCalledOnce();
   });
-  it("abort during model setup cannot publish a disposed repository or reattach foreground listeners", async () => {
+  it("abort during explicit setup cannot complete a disposed creator or reattach foreground listeners", async () => {
     const lifetime = new AbortController();
     const f = await fixture({ lifetime: lifetime.signal });
     let release!: () => void, started!: () => void;
@@ -648,7 +699,8 @@ describe("original Worker model journal and held repository wiring", () => {
       await gate;
       return original(...args);
     });
-    const publish = f.owner.openCollection(scope.collection);
+    const repository = await f.owner.openCollection(scope.collection);
+    const publish = repository.modelSetup!.install();
     await arrived;
     lifetime.abort();
     await f.owner.close();

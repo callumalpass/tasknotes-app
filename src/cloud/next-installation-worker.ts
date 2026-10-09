@@ -1,11 +1,10 @@
 import { connect } from "@mdbase-dev/sdk";
-import {
-  ModelSetupError,
-  type ModelResourceSetupJournal,
-  type ModelResourceSetupIntent,
-  type ModelSetupScope,
-  type ModelSetupIntent,
-  type ModelPackSetupIntent,
+import type {
+  ModelResourceSetupJournal,
+  ModelResourceSetupIntent,
+  ModelSetupScope,
+  ModelSetupIntent,
+  ModelPackSetupIntent,
 } from "../application/ports/model-setup";
 import {
   decode as decodeModelSetupIntent,
@@ -422,6 +421,7 @@ export class NextInstallationWorker {
         opened.scope.account,
         {
           modelSetupJournal: this.modelJournal,
+          requiresTaskNotesModelSetup: opened.requiresTaskNotesModelSetup,
           onModelSetupVerified: async () => {
             await this.pending?.promise;
             await this.call({ kind: "model-setup-verified" });
@@ -429,20 +429,9 @@ export class NextInstallationWorker {
         },
       );
       const repository = this.repository;
-      // Original creation recovery includes model setup. No existing collection
-      // is auto-configured; typed blocked/unknown states keep this held owner
-      // available for the explicit setup/recovery UI rather than opening again.
-      if (opened.requiresTaskNotesModelSetup) {
-        const setup = repository.modelSetup!;
-        try {
-          const view = await setup.inspect();
-          if (view.state === "outcome_unknown") await setup.resume();
-          else if (view.state === "required" || view.state === "ready")
-            await setup.install();
-        } catch (reason) {
-          if (!(reason instanceof ModelSetupError)) throw reason;
-        }
-      }
+      // Opening never installs or resumes, including original creator recovery.
+      // The real controller flag keeps tasks/views behind the explicit setup
+      // screen until that same controller acknowledges completion.
       if (
         this.stopped ||
         this.closing ||
