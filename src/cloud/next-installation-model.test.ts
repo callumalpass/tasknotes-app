@@ -6,10 +6,7 @@ import {
   type wire,
 } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
-import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import { init, loadCatalog } from "mdbase";
-import pin from "../../vendor/mdbase-browser.pin.json";
 import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
 import { initializeModelPackCore } from "./next-model-pack-core";
 import {
@@ -17,23 +14,13 @@ import {
   nativeModelPackPlan,
 } from "../storage/next-model-plan";
 
-// Node protocol fixture uses the SAME pinned pure helper bytes, not browser
-// asset delivery or a native authorization/READ witness.
+// Reuse the pinned package's Node-only filesystem WASM loader, as the planner
+// fixtures do. Browser bounded/hash-verified delivery has separate tests; this
+// fixture is not a native authorization, custody or READ witness.
 vi.mock("./next-model-pack-core", () => ({
   initializeModelPackCore: async (signal: AbortSignal) => {
     signal.throwIfAborted();
-    const bytes = await readFile(
-      new URL(
-        "../../node_modules/mdbase/wasm/mdbase-core.wasm",
-        import.meta.url,
-      ),
-    );
-    if (
-      bytes.length !== pin.wasmBytes ||
-      createHash("sha256").update(bytes).digest("hex") !== pin.wasmSha256
-    )
-      throw Error("Fixture core pin mismatch");
-    await init({ wasm: new Uint8Array(bytes) });
+    await init();
     signal.throwIfAborted();
   },
 }));
