@@ -38,6 +38,7 @@ export interface NextSmokeControl {
   offline: boolean;
   holdRead: string | null;
   reads: Record<string, number>;
+  prefetchReads: Record<string, number>;
   operations: string[];
   errors: string[];
   updates: Array<{
@@ -81,10 +82,11 @@ const views: AppBasesDescriptor[] = names.map((name, i) => ({
  * This module is reachable ONLY in the explicit e2e build on a loopback origin.
  */
 async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
-  const replica = new MemoryReplica({
+  const replicaOptions = {
     collection,
     confirmDelayMs: input.slowConfirmation ? null : 0,
-  });
+  };
+  const replica = new MemoryReplica(replicaOptions);
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
   const type = (input.typeDefinition ?? generated.type) as {
     implements: Array<{
@@ -119,11 +121,18 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     offline: false,
     holdRead: null,
     reads: {},
+    prefetchReads: {},
     operations: [],
     errors: [],
     updates: [],
-    confirm: () => replica.confirmAll(),
-    releaseReads: release,
+    confirm: () => {
+      replicaOptions.confirmDelayMs = 0;
+      replica.confirmAll();
+    },
+    releaseReads: () => {
+      control.holdRead = null;
+      release();
+    },
     records: () =>
       replica.allRecords.map((r) => ({
         id: r.id,
@@ -201,7 +210,10 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
           ? target.id
           : target.path;
     control.reads[id] = (control.reads[id] ?? 0) + 1;
-    if (control.holdRead === id) await gate;
+    if (control.holdRead === id && args[1]?.body === true) {
+      control.prefetchReads[id] = (control.prefetchReads[id] ?? 0) + 1;
+      await gate;
+    }
     return get(...args);
   };
   const update = client.update.bind(client);

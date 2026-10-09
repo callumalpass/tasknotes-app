@@ -1,106 +1,99 @@
 import { readFileSync } from "node:fs";
 import { parse } from "yaml";
-import type { JsonObject } from "@mdbase-dev/connect";
-import type { FileCapability } from "@mdbase-dev/connect-protocol";
-import { operationsForApplicationCapabilities } from "@mdbase-dev/connect-protocol";
-import type { MdbaseAppManifest } from "@mdbase-dev/connect";
-import {
-  installMdbaseBrowserFixture,
-  type MdbaseBrowserFixtureController,
-} from "@mdbase-dev/connect-testing";
-import {
-  buildTaskNotesMdbaseResources,
-  TASKNOTES_CONTRACT_DIGEST,
-} from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
-import {
-  expect,
-  test,
-  type Locator,
-  type Page,
-  type Route,
-} from "./local-test";
-
+import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
+import type { PlainValue } from "@mdbase-dev/sdk";
+import { expect, test, type Page } from "./local-test";
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
-import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
+import type { NextSmokeInput } from "../src/test/next-entry-smoke-fixture";
 
-const TASKNOTES_COLLECTION_ID = "01922222-2222-7222-8222-222222222222";
-const TASKNOTES_APPLICATION_ID = "01922222-2222-7222-8222-222222222221";
-const TASKNOTES_E2E_ORIGIN =
-  process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status !== testInfo.expectedStatus) {
+    const evidence = await page.evaluate(() => {
+      const c = window.__TASKNOTES_NEXT_SMOKE_CONTROL__;
+      return c
+        ? {
+            operations: c.operations,
+            errors: c.errors,
+            records: c.records().map((r) => ({
+              id: r.id,
+              path: r.path,
+              title: r.frontmatter.title,
+            })),
+          }
+        : null;
+    });
+    await testInfo.attach("synthetic-sdk-diagnostics", {
+      body: JSON.stringify(evidence),
+      contentType: "application/json",
+    });
+  }
+});
 
-test("opens an ordinary relay collection without requiring hosted sync", async ({
+async function openFixture(page: Page, input: NextSmokeInput) {
+  await page.addInitScript((value) => {
+    window.__TASKNOTES_NEXT_SMOKE__ = value;
+  }, input);
+  await page.goto("./");
+  await page
+    .getByRole("button", { name: "Open synced fixture collection" })
+    .click();
+}
+function taskRecord(title: string, id: string) {
+  const task = new TaskNotesTaskModel().create(
+    { title },
+    { id, now: "2026-07-22T00:00:00.000Z" },
+  );
+  return {
+    path: task.path,
+    frontmatter: task.frontmatter as Record<string, PlainValue>,
+    body: task.body,
+  };
+}
+async function nav(page: Page, name: string) {
+  const direct = page.getByRole("button", { name, exact: true });
+  if (await direct.isVisible()) await direct.click();
+  else {
+    await page.getByRole("button", { name: "Browse", exact: true }).click();
+    await page.getByRole("menuitem", { name, exact: true }).click();
+  }
+}
+async function operations(page: Page) {
+  return page.evaluate(
+    () => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.operations,
+  );
+}
+
+// SDK protocol stand-ins port the application behaviours formerly tested via
+// classic encrypted relay routes. They are not native authorization/READ proof.
+test("opens the original held client without relay traffic and preserves navigation across owner replacement", async ({
   page,
 }) => {
-  // The route must exist before fixture installation so the specific
-  // assessment route registered later wins Playwright's LIFO matching.
-  // eslint-disable-next-line prefer-const
-  let authorization!: MdbaseBrowserFixtureController;
-  const operations: string[] = [];
-  const task = new TaskNotesTaskModel().create(
-    { title: "Task from the relay" },
-    { id: "relay-task", now: "2026-07-22T00:00:00.000Z" },
-  );
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1)!;
-      operations.push(operation);
-      const result =
-        operation === "describe"
-          ? collectionDescription()
-          : operation === "query"
-            ? {
-                valid: true,
-                diagnostics: [],
-                result: {
-                  results: [
-                    {
-                      path: task.path,
-                      frontmatter: task.frontmatter,
-                      body: task.body,
-                      types: ["task"],
-                    },
-                  ],
-                  meta: { total_count: 1, has_more: false },
-                },
-              }
-            : operation === "list_views"
-              ? valid(defaultViewDocuments())
-              : operation === "execute_view"
-                ? valid(
-                    defaultViewExecution([
-                      {
-                        path: task.path,
-                        frontmatter: task.frontmatter,
-                        body: task.body,
-                        types: ["task"],
-                      },
-                    ]),
-                  )
-                : { valid: true, diagnostics: [], result: {} };
-      await fulfillOperation(route, request.request_id, result);
-    },
-  );
-
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
-
-  await expect(page.getByText("Task from the relay")).toBeVisible();
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (
+      page.url() !== "about:blank" &&
+      new URL(request.url()).origin !== new URL(page.url()).origin
+    )
+      outside.push(request.url());
+  });
+  await openFixture(page, {
+    records: [taskRecord("Task from the held client", "held-task")],
+  });
+  await expect(
+    page.getByText("Task from the held client", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "TaskNotes could not open." }),
   ).toHaveCount(0);
-  expect(operations).toContain("describe");
-  expect(operations).toContain("query");
-
-  await openNavigationItem(page, "Manage views");
+  expect(await operations(page)).toEqual(
+    expect.arrayContaining(["describe", "query", "bases-discovery"]),
+  );
+  expect(outside).toEqual([]);
+  await nav(page, "Manage views");
   await expect(
     page.getByRole("heading", { name: "Manage views" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Create view" }).click();
+  await page.getByRole("button", { name: "Create view", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();
   await page
     .getByRole("dialog", { name: "New view" })
@@ -113,18 +106,27 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(
     page.getByRole("button", { name: "Remove Search from navigation" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Reorder" }).click();
+  await page.getByRole("button", { name: "Reorder", exact: true }).click();
   await page.getByRole("button", { name: "Move Search earlier" }).click();
   await expect
-    .poll(() => navigationPreference(page))
+    .poll(() =>
+      page.evaluate(
+        () =>
+          Object.values(
+            JSON.parse(
+              localStorage.getItem("tasknotes:navigation-views:v4") ?? "{}",
+            ),
+          )[0],
+      ),
+    )
     .toEqual([
-      "TaskNotes/Views/today.base#today",
-      "TaskNotes/Views/upcoming.base#upcoming",
+      "33333333-3333-4333-8333-000000000001#0",
+      "33333333-3333-4333-8333-000000000002#0",
       "tasknotes:search",
       "tasknotes:scratchpad",
-      "TaskNotes/Views/calendar.base#calendar",
-      "TaskNotes/Views/projects.base#projects",
-      "TaskNotes/Views/archive.base#archive",
+      "33333333-3333-4333-8333-000000000003#0",
+      "33333333-3333-4333-8333-000000000004#0",
+      "33333333-3333-4333-8333-000000000005#0",
     ]);
   await page
     .getByRole("button", { name: "Remove Search from navigation" })
@@ -132,98 +134,57 @@ test("opens an ordinary relay collection without requiring hosted sync", async (
   await expect(
     page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();
-
-  await openNavigationItem(page, "Settings");
+  await nav(page, "Settings");
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();
   await expect(page.getByText(/mdbase delivers reminders/)).toBeVisible();
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
-  await page.getByRole("button", { name: "Change collection" }).click();
+  await page
+    .getByRole("button", { name: "Change collection", exact: true })
+    .click();
+  // Native selection closes the original owner and returns to the installation
+  // gate, not the removed classic saved-relay list/authorization installation.
   await expect(
-    page.getByRole("heading", { name: "Collections" }),
+    page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Open synced fixture collection" })
+    .click();
   await expect(
-    page.getByRole("button", { name: /TaskNotes E2E/ }),
-  ).toHaveAttribute("aria-current", "true");
-  await expect(
-    page.getByRole("button", { name: "Connect another collection" }),
+    page.getByRole("button", { name: "Today", exact: true }),
   ).toBeVisible();
-  expect(await authorization.isInstalled(page)).toBe(true);
-
   await page.reload();
-  const today = page.getByRole("button", { name: "Today" });
-  await recoverPendingChangesBefore(page, today);
-  await today.click();
-  await expect(page.getByText("Task from the relay")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Open synced fixture collection" })
+    .click();
+  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(
+    page.getByText("Task from the held client", { exact: true }),
+  ).toBeVisible();
+  expect(outside).toEqual([]);
 });
 
-test("reviews a scratchpad selectively and collapses outline branches", async ({
+test("reviews a held-client scratchpad selectively and collapses outline branches", async ({
   page,
 }) => {
-  // eslint-disable-next-line prefer-const -- assigned after route registration
-  let authorization!: MdbaseBrowserFixtureController;
-  const scratchpad = {
-    path: "scratchpads/Scratchpad.md",
-    frontmatter: {
-      type: "tasknotes-scratch",
-      id: "scratchpad-e2e",
-      state: "active",
-      dateCreated: "2026-08-06T00:00:00.000Z",
-      dateModified: "2026-08-06T00:00:00.000Z",
-    },
-    body: [
-      "- [ ] Parent task",
-      "  - [ ] Child task",
-      "- [ ] Independent task",
-      "- Context that should stay a note",
-      "",
-    ].join("\n"),
-    types: ["tasknotes-scratch"],
-    revision: "scratchpad-revision-1",
-  };
-
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1)!;
-      let result: unknown;
-      if (operation === "describe") result = collectionDescription();
-      else if (operation === "query") {
-        const input = request.input as { types?: string[] };
-        const records = input.types?.includes("tasknotes-scratch")
-          ? [scratchpad]
-          : [];
-        result = {
-          results: records,
-          meta: { total_count: records.length, has_more: false },
-        };
-      } else if (operation === "list_views") {
-        result = defaultViewDocuments();
-      } else if (operation === "execute_view") {
-        result = defaultViewExecution([]);
-      } else if (operation === "read" && isViewSourceRead(request.input)) {
-        result = viewSourceRecord(request.input);
-      } else if (operation === "read") {
-        result = scratchpad;
-      } else result = {};
-      await fulfillOperation(
-        route,
-        request.request_id,
-        operation === "describe"
-          ? result
-          : { valid: true, diagnostics: [], result },
-      );
-    },
-  );
-
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
+  await openFixture(page, {
+    records: [
+      {
+        path: "scratchpads/Scratchpad.md",
+        types: ["tasknotes-scratch"],
+        frontmatter: {
+          type: "tasknotes-scratch",
+          id: "scratchpad-smoke",
+          state: "active",
+          dateCreated: "2026-08-06T00:00:00.000Z",
+          dateModified: "2026-08-06T00:00:00.000Z",
+        },
+        body: "- [ ] Parent task\n  - [ ] Child task\n- [ ] Independent task\n- Context that should stay a note\n",
+      },
+    ],
+  });
   await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
-
   await expect(
     page.getByRole("textbox", { name: "Draft task: Parent task" }),
   ).toBeVisible();
@@ -231,7 +192,6 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
     4,
   );
   await expect(page.getByRole("textbox", { name: /^Note:/ })).toHaveCount(1);
-
   await page
     .getByRole("button", { name: "Collapse Parent task, 1 nested item" })
     .click();
@@ -241,189 +201,165 @@ test("reviews a scratchpad selectively and collapses outline branches", async ({
   await page
     .getByRole("button", { name: "Expand Parent task, 1 nested item" })
     .click();
-
-  const child = page.getByRole("textbox", { name: "Draft task: Child task" });
-  await child.focus();
-  if ((page.viewportSize()?.width ?? 1_000) <= 560) {
-    await expect(page.getByRole("button", { name: "Outdent" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Draft task: Child task" }).focus();
+  if ((page.viewportSize()?.width ?? 1000) <= 560) {
+    await expect(
+      page.getByRole("button", { name: "Outdent", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Child", exact: true }),
     ).toBeVisible();
   }
-
   await page.getByRole("button", { name: "Create task notes" }).click();
   const review = page.getByRole("dialog", { name: "Create task notes" });
   await expect(review).toContainText("3 of 3 selected");
   await page.getByRole("checkbox", { name: "Child task" }).uncheck();
   await expect(review).toContainText("2 of 3 selected");
-  await page.getByRole("button", { name: "Select all" }).click();
-  await page.getByRole("button", { name: "Clear selection" }).click();
+  await page.getByRole("button", { name: "Select all", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Clear selection", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Select branch", exact: true })
     .click();
   await expect(review).toContainText("2 of 3 selected");
   await page.getByRole("button", { name: "Keep writing" }).click();
-  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "New note", exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "More scratchpad actions" }),
   ).toHaveCount(0);
 });
 
-async function openNavigationItem(page: Page, name: string): Promise<void> {
-  const direct = page.getByRole("button", { name, exact: true });
-  if (await direct.isVisible()) {
-    await direct.click();
-    return;
-  }
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
-  await page.getByRole("menuitem", { name, exact: true }).click();
-}
-
-async function navigationPreference(page: Page) {
-  return page.evaluate(() => {
-    const stored = JSON.parse(
-      localStorage.getItem("tasknotes:navigation-views:v4") ?? "{}",
-    ) as Record<string, string[]>;
-    return stored["connect:01922222-2222-7222-8222-222222222222"] ?? [];
-  });
-}
-
-test("acknowledges slow relay creates and prefetches revisions before delete", async ({
+test("acknowledges slow native creates and prefetches actual record revisions before delete", async ({
   page,
 }) => {
-  // eslint-disable-next-line prefer-const -- assigned after route registration
-  let authorization!: MdbaseBrowserFixtureController;
-  const model = new TaskNotesTaskModel();
-  const existing = model.create(
-    { title: "Delete over the relay" },
-    { id: "relay-delete", now: "2026-07-22T00:00:00.000Z" },
-  );
-  let records = [
-    {
-      path: existing.path,
-      frontmatter: existing.frontmatter as JsonObject,
-      body: existing.body,
-      types: ["task"],
-      revision: "revision-1",
-    },
-  ];
-  const createGate = deferred();
-  const readGate = deferred();
-  let createRequests = 0;
-  let readRequests = 0;
-  let deleteRequests = 0;
-
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1)!;
-      let result: unknown;
-      if (operation === "describe") result = collectionDescription();
-      else if (operation === "query") {
-        result = valid({
-          results: records.map((record) => ({
-            path: record.path,
-            frontmatter: record.frontmatter,
-            body: record.body,
-            types: record.types,
-          })),
-          meta: { total_count: records.length, has_more: false },
-        });
-      } else if (operation === "list_views") {
-        result = valid(defaultViewDocuments());
-      } else if (operation === "execute_view") {
-        result = valid(defaultViewExecution(records));
-      } else if (operation === "create") {
-        createRequests += 1;
-        const input = request.input as {
-          path: string;
-          frontmatter: JsonObject;
-          body: string;
-        };
-        await createGate.promise;
-        const created = {
-          ...input,
-          types: ["task"],
-          revision: "revision-2",
-        };
-        records.push(created);
-        result = valid(created);
-      } else if (operation === "read" && isViewSourceRead(request.input)) {
-        result = valid(viewSourceRecord(request.input));
-      } else if (operation === "read") {
-        readRequests += 1;
-        await readGate.promise;
-        result = valid(records[0]);
-      } else if (operation === "delete") {
-        deleteRequests += 1;
-        records = records.slice(1);
-        result = valid({
-          path: existing.path,
-          deleted: true,
-          broken_links: [],
-        });
-      } else result = valid({});
-      await fulfillOperation(route, request.request_id, result);
-    },
-  );
-
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
-  await expect(page.getByText("Delete over the relay")).toBeVisible();
-
+  const existing = taskRecord("Delete through the held client", "held-delete");
+  await openFixture(page, { records: [existing], slowConfirmation: true });
+  await expect(
+    page.getByText("Delete through the held client", { exact: true }),
+  ).toBeVisible();
   if (!(await page.getByLabel("New task title").isVisible()))
     await page.locator(".view-context-capture").click();
   const input = page.getByLabel("New task title").filter({ visible: true });
-  await input.fill("Create over the relay");
+  await input.fill("Create through the held client");
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await expect.poll(() => createRequests).toBe(1);
+  await expect
+    .poll(
+      async () =>
+        (await operations(page)).filter((op) => op === "create").length,
+    )
+    .toBe(1);
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "Adding “Create over the relay”…" }),
+      .filter({ hasText: "Adding “Create through the held client”…" }),
   ).toBeVisible();
-  await expect(input).toHaveValue("Create over the relay");
+  await expect(input).toHaveValue("Create through the held client");
   await expect(input).toHaveAttribute("readonly", "");
-
-  createGate.resolve();
+  await page.evaluate(() => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.confirm());
   await expect(
-    page.getByRole("button", { name: "Create over the relay", exact: true }),
+    page.getByRole("button", {
+      name: "Create through the held client",
+      exact: true,
+    }),
   ).toBeVisible();
-
-  await page
-    .getByRole("button", { name: "Task actions for Delete over the relay" })
-    .click();
-  await expect.poll(() => readRequests).toBe(1);
-  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-  await page.getByRole("button", { name: "Delete task" }).click();
-  await expect(page.locator(".undo-toast")).toContainText(
-    "Deleted “Delete over the relay”",
+  const nativeId = await page.evaluate((path) => {
+    const c = window.__TASKNOTES_NEXT_SMOKE_CONTROL__!;
+    const id = c.records().find((r) => r.path === path)!.id;
+    c.holdRead = id;
+    return id;
+  }, existing.path);
+  const before = await page.evaluate(
+    (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.reads[id] ?? 0,
+    nativeId,
   );
-  expect(deleteRequests).toBe(0);
-
-  readGate.resolve();
   await page
-    .getByRole("button", { name: "Task actions for Create over the relay" })
+    .getByRole("button", {
+      name: "Task actions for Delete through the held client",
+    })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.reads[id] ?? 0,
+        nativeId,
+      ),
+    )
+    .toBe(before + 1);
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete task", exact: true }).click();
+  // Native deletion must first READ the original complete snapshot and CAS
+  // revision. The classic optimistic toast before that READ is intentionally
+  // unavailable; neither deletion nor its undo claim can precede the snapshot.
+  await expect(
+    page.getByRole("button", { name: "Delete task", exact: true }),
+  ).toBeDisabled();
+  expect((await operations(page)).filter((op) => op === "delete")).toHaveLength(
+    0,
+  );
+  await page.evaluate(() =>
+    window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.releaseReads(),
+  );
+  await expect(page.locator(".undo-toast")).toContainText(
+    "Deleted “Delete through the held client”",
+  );
+  await page
+    .getByRole("button", {
+      name: "Task actions for Create through the held client",
+    })
     .click();
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-  await page.getByRole("button", { name: "Delete task" }).click();
-  await expect.poll(() => deleteRequests, { timeout: 12_000 }).toBe(1);
+  await page.getByRole("button", { name: "Delete task", exact: true }).click();
+  await expect
+    .poll(
+      async () =>
+        (await operations(page)).filter((op) => op === "delete").length,
+      { timeout: 12000 },
+    )
+    .toBe(1);
   await expect(page.locator(".undo-toast")).toContainText(
-    "Deleted “Create over the relay”",
+    "Deleted “Create through the held client”",
   );
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.getByText("Delete over the relay")).toHaveCount(0);
-  expect(readRequests).toBe(1);
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(
+    page.getByText("Delete through the held client", { exact: true }),
+  ).toHaveCount(0);
+  // Exactly one original prefetch; fresh SDK GETs for CAS and row hydration
+  // are separate native reads, not duplicate prefetch requests.
+  expect(
+    await page.evaluate(
+      (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.prefetchReads[id] ?? 0,
+      nativeId,
+    ),
+  ).toBe(1);
 });
 
-test("edits a contract-defined task without collapsing custom status or fields", async ({
+function status(
+  value: string,
+  label: string,
+  order: number,
+  isCompleted = false,
+) {
+  return {
+    id: value,
+    value,
+    label,
+    color: "#808080",
+    isCompleted,
+    order,
+    autoArchive: false,
+    autoArchiveDelay: 5,
+  };
+}
+function priority(value: string, label: string, weight: number) {
+  return { id: value, value, label, color: "#808080", weight };
+}
+
+test("edits a contract-defined task without collapsing custom status or fields through the held client", async ({
   page,
 }) => {
-  // eslint-disable-next-line prefer-const -- assigned after route registration
-  let authorization!: MdbaseBrowserFixtureController;
   const configuration = {
     statuses: [
       status("todo", "To do", 1),
@@ -468,8 +404,27 @@ test("edits a contract-defined task without collapsing custom status or fields",
       },
     ],
   };
-  const model = new TaskNotesTaskModel(configuration);
-  const task = model.create(
+  const generated = buildTaskNotesMdbaseResources({
+    profiles: ["core-lite"],
+    modelConfig: configuration,
+  });
+  const definition = generated.type as unknown as {
+    schema: {
+      value: { properties: Record<string, unknown>; required?: string[] };
+    };
+  };
+  Object.assign(definition.schema.value.properties, {
+    energy: { type: "integer", title: "Energy level" },
+    client: { type: "string", title: "Client" },
+    owner: { type: "string", title: "Owner", enum: ["Alex", "Sam"] },
+    reviewedAt: { type: "string", title: "Reviewed At", format: "date-time" },
+    externalId: { type: "string", title: "External ID", readOnly: true },
+  });
+  definition.schema.value.required = [
+    ...(definition.schema.value.required ?? []),
+    "owner",
+  ];
+  const task = new TaskNotesTaskModel(configuration).create(
     {
       title: "Respect the collection contract",
       priority: "now",
@@ -484,66 +439,16 @@ test("edits a contract-defined task without collapsing custom status or fields",
     { id: "configured-task", now: "2026-07-22T00:00:00.000Z" },
   );
   task.frontmatter.status = "doing";
-  let record = {
-    path: task.path,
-    frontmatter: task.frontmatter as JsonObject,
-    body: task.body,
-    types: ["task"],
-    revision: "revision-1",
-  };
-  let updateInput: { patch?: JsonObject; body?: string } | undefined;
-
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1)!;
-      let result: unknown;
-      if (operation === "describe") result = configuredCollectionDescription();
-      else if (operation === "query") {
-        result = {
-          results: [record],
-          meta: { total_count: 1, has_more: false },
-        };
-      } else if (operation === "list_views") {
-        result = defaultViewDocuments();
-      } else if (operation === "execute_view") {
-        result = defaultViewExecution([record]);
-      } else if (operation === "read" && isViewSourceRead(request.input))
-        result = viewSourceRecord(request.input);
-      else if (operation === "read") result = record;
-      else if (operation === "update") {
-        updateInput = request.input as {
-          patch?: JsonObject;
-          body?: string;
-        };
-        const frontmatter = { ...record.frontmatter };
-        for (const [key, value] of Object.entries(updateInput.patch ?? {})) {
-          if (value === null) delete frontmatter[key];
-          else frontmatter[key] = value;
-        }
-        record = {
-          ...record,
-          frontmatter,
-          body: updateInput.body ?? record.body,
-          revision: "revision-2",
-        };
-        result = record;
-      } else result = {};
-      await fulfillOperation(
-        route,
-        request.request_id,
-        operation === "describe"
-          ? result
-          : { valid: true, diagnostics: [], result },
-      );
-    },
-  );
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
-
+  await openFixture(page, {
+    records: [
+      {
+        path: task.path,
+        frontmatter: task.frontmatter as Record<string, PlainValue>,
+        body: task.body,
+      },
+    ],
+    typeDefinition: generated.type,
+  });
   await page
     .getByText("Respect the collection contract", { exact: true })
     .click();
@@ -555,10 +460,9 @@ test("edits a contract-defined task without collapsing custom status or fields",
     .locator("details.task-form-section > summary")
     .filter({ hasText: /^Organize/ })
     .click();
-  await expect(page.getByRole("button", { name: "Right now" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(
+    page.getByRole("button", { name: "Right now", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Energy level")).toHaveValue("4");
   await expect(page.getByLabel("Client")).toHaveValue("Acme");
   await expect(page.getByRole("combobox", { name: "Owner *" })).toHaveAttribute(
@@ -569,95 +473,49 @@ test("edits a contract-defined task without collapsing custom status or fields",
     page.getByRole("button", { name: "Reviewed At date" }),
   ).toHaveAttribute("data-value", "2026-07-22");
   await expect(page.getByLabel("External ID")).toHaveAttribute("readonly", "");
-
   await page
     .getByLabel("Task title", { exact: true })
     .fill("Preserve the collection contract");
   await page.getByLabel("Client").fill("");
   await page.getByRole("combobox", { name: "Owner *" }).click();
   await page.getByRole("option").filter({ hasText: "Sam" }).click();
-  await expect.poll(() => updateInput).toBeTruthy();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.updates.length,
+      ),
+    )
+    .toBeGreaterThan(0);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-
-  expect(updateInput?.patch).toMatchObject({
+  const evidence = await page.evaluate(() => ({
+    updates: window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.updates,
+    record: window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.records()[0],
+  }));
+  const patch = Object.assign({}, ...evidence.updates.map((u) => u.patch));
+  expect(patch).toMatchObject({
     title: "Preserve the collection contract",
-    client: null,
     owner: "Sam",
   });
-  expect(updateInput?.patch).not.toHaveProperty("status");
-  expect(record.frontmatter.status).toBe("doing");
-  expect(record.frontmatter.energy).toBe(4);
-  expect(record.frontmatter).not.toHaveProperty("client");
+  // The native SDK represents removals explicitly, not classic relay null patches.
+  expect(evidence.updates.flatMap((u) => u.unset)).toContain("client");
+  expect(patch).not.toHaveProperty("status");
+  expect(evidence.record.frontmatter.status).toBe("doing");
+  expect(evidence.record.frontmatter.energy).toBe(4);
+  expect(evidence.record.frontmatter).not.toHaveProperty("client");
+  expect(
+    evidence.updates.every((u) => u.ifRevision?.startsWith("sha256:")),
+  ).toBe(true);
 });
 
-test("edits the captured migrated custom numeric property", async ({
+test("edits the captured migrated numeric property through the held client", async ({
   page,
 }) => {
-  // eslint-disable-next-line prefer-const -- assigned after route registration
-  let authorization!: MdbaseBrowserFixtureController;
-  const fixtureRoot = "tests/fixtures/mdbase-upgrades/app-custom/";
+  const root = "tests/fixtures/mdbase-upgrades/app-custom/";
   const definition = parse(
-    readFileSync(`${fixtureRoot}task.md`, "utf8").split("---")[1],
+    readFileSync(`${root}task.md`, "utf8").split("---")[1],
   );
-  const captured = JSON.parse(
-    readFileSync(`${fixtureRoot}record.json`, "utf8"),
-  );
-  const description = collectionDescription();
-  description.types[0].schema = definition.schema.value;
-  description.types[0].collection = definition.collection;
-  description.types[0].definition = definition;
-  description.contracts[0].implementations[0].fields =
-    definition.implements[0].fields;
-  description.contracts[0].implementations[0].binding =
-    definition.implements[0].binding;
-  let record = { ...captured, types: ["task"], revision: "revision-1" };
-  let updateInput: { patch?: JsonObject } | undefined;
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1)!;
-      let result: unknown;
-      if (operation === "describe") result = description;
-      else if (operation === "query")
-        result = {
-          results: [record],
-          meta: { total_count: 1, has_more: false },
-        };
-      else if (operation === "list_views") result = defaultViewDocuments();
-      else if (operation === "execute_view")
-        result = defaultViewExecution([record]);
-      else if (operation === "read" && isViewSourceRead(request.input))
-        result = viewSourceRecord(request.input);
-      else if (operation === "read") result = record;
-      else if (operation === "reconcile_timers")
-        result = {
-          namespace: request.input.namespace,
-          timers: [],
-          cancelled_ids: [],
-        };
-      else if (operation === "update") {
-        updateInput = request.input as { patch?: JsonObject };
-        record = {
-          ...record,
-          frontmatter: { ...record.frontmatter, ...updateInput.patch },
-          revision: "revision-2",
-        };
-        result = record;
-      } else result = {};
-      await fulfillOperation(
-        route,
-        request.request_id,
-        operation === "describe" || operation === "reconcile_timers"
-          ? result
-          : valid(result),
-      );
-    },
-  );
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
+  const captured = JSON.parse(readFileSync(`${root}record.json`, "utf8"));
+  await openFixture(page, { records: [captured], typeDefinition: definition });
   await page
     .getByRole("button", { name: captured.frontmatter.summary, exact: true })
     .click();
@@ -667,499 +525,48 @@ test("edits the captured migrated custom numeric property", async ({
     .click();
   await expect(page.getByLabel("Effort", { exact: true })).toHaveValue("0.5");
   await page.getByLabel("Effort", { exact: true }).fill("2");
-  await expect.poll(() => updateInput?.patch?.effort).toBe(2);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.updates.at(-1)?.patch.effort,
+      ),
+    )
+    .toBe(2);
+  const record = await page.evaluate(
+    () => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.records()[0],
+  );
   expect(record.frontmatter.effort).toBe(2);
   expect(record.body).toBe(captured.body);
 });
 
-function collectionDescription() {
-  const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
-  const type = generated.type as unknown as {
-    schema: { value: JsonObject };
-    collection?: JsonObject;
-    implements: Array<{
-      contract: string;
-      version: string;
-      fields: Record<string, string>;
-      binding: JsonObject;
-    }>;
-  };
-  const implementation = type.implements.find(
-    (candidate) =>
-      candidate.contract === "tasknotes.task" &&
-      candidate.version === TASKNOTES_SPEC_VERSION,
-  )!;
-  return {
-    protocol_version: 1,
-    collection_id: "01922222-2222-7222-8222-222222222222",
-    display_name: "Relay tasks",
-    spec_version: "0.3.0",
-    operations: [
-      "describe",
-      "query",
-      "read",
-      "create",
-      "update",
-      "delete",
-      "list_views",
-      "execute_view",
-    ],
-    change_cursor: 0,
-    types: [
-      {
-        name: "task",
-        version: 1,
-        schema: type.schema.value,
-        collection: type.collection,
-        definition: generated.type,
-        extensions: {},
-      },
-    ],
-    contracts: [
-      {
-        contract_type: "record" as const,
-        id: "tasknotes.task",
-        version: TASKNOTES_SPEC_VERSION,
-        digest: TASKNOTES_CONTRACT_DIGEST,
-        schema: generated.taskSchema,
-        binding_schema: generated.bindingSchema,
-        implementations: [
-          {
-            type_name: "task",
-            type_version: 1,
-            digest: `sha256:${"1".repeat(64)}`,
-            fields: implementation.fields,
-            binding: structuredClone(implementation.binding),
-          },
-        ],
-      },
-      // A set-up collection also carries the saved-view contracts TaskNotes
-      // requires; their packs are installed during collection setup.
-      ...bundledManifest.requirements.contracts
-        .filter((contract) => contract.id !== "tasknotes.task")
-        .map((contract) => ({
-          contract_type: "record" as const,
-          id: contract.id,
-          version: contract.version,
-          digest: contract.digest,
-          schema: { type: "object" },
-          binding_schema: { type: "object" },
-          implementations: [] as Array<{
-            type_name: string;
-            type_version: number;
-            digest: string;
-            fields: Record<string, string>;
-            binding: JsonObject;
-          }>,
-        })),
-    ],
-  };
-}
-
-function configuredCollectionDescription() {
-  const description = collectionDescription();
-  const type = description.types[0];
-  type.schema = {
-    ...type.schema,
-    properties: {
-      ...(type.schema.properties as JsonObject),
-      status: { enum: ["todo", "doing", "done"] },
-      priority: { enum: ["later", "now"] },
-      energy: { type: "integer", title: "Energy level" },
-      client: { type: "string", title: "Client" },
-      owner: { type: "string", title: "Owner", enum: ["Alex", "Sam"] },
-      reviewedAt: {
-        type: "string",
-        title: "Reviewed At",
-        format: "date-time",
-      },
-      externalId: {
-        type: "string",
-        title: "External ID",
-        readOnly: true,
-      },
-    },
-    required: [...((type.schema.required as string[]) ?? []), "owner"],
-  };
-  const tasknotes = description.contracts[0].implementations[0]
-    .binding as JsonObject;
-  tasknotes.status = {
-    values: ["todo", "doing", "done"],
-    completed_values: ["done"],
-    default: "todo",
-    definitions: [
-      { value: "todo", label: "To do", order: 1 },
-      { value: "doing", label: "In flight", order: 2 },
-      { value: "done", label: "Finished", order: 3 },
-    ],
-  };
-  tasknotes.priority = {
-    values: ["later", "now"],
-    default: "later",
-    definitions: [
-      { value: "later", label: "Whenever", weight: 1 },
-      { value: "now", label: "Right now", weight: 2 },
-    ],
-  };
-  description.contracts[0].implementations[0].binding = tasknotes;
-  return description;
-}
-
-async function installRelayAuthorization(
-  page: import("@playwright/test").Page,
-) {
-  const manifestUrl = new URL(
-    ".well-known/mdbase-app.json",
-    TASKNOTES_E2E_ORIGIN.endsWith("/")
-      ? TASKNOTES_E2E_ORIGIN
-      : `${TASKNOTES_E2E_ORIGIN}/`,
-  ).href;
-  await page.route(
-    "https://connect.mdbase.dev/v1/apps/register",
-    async (route) => {
-      expect(route.request().postDataJSON()).toMatchObject({
-        manifest: {
-          manifest_version: 1,
-          id: bundledManifest.id,
-        },
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          application: {
-            id: TASKNOTES_APPLICATION_ID,
-            family_identity: `bundle:${bundledManifest.id}`,
-            manifest_digest: "0".repeat(64),
-            name: bundledManifest.name,
-            distribution: "web",
-            homepage: bundledManifest.homepage,
-            requirements: bundledManifest.requirements,
-            provisions: bundledManifest.provisions,
-          },
-        }),
-      });
-    },
-  );
-  await page.goto("./");
-  const fixture = await installMdbaseBrowserFixture(page, {
-    serverUrl: "https://connect.mdbase.dev",
-    application: {
-      manifestUrl,
-      manifest: {
-        ...bundledManifest,
-        id: TASKNOTES_APPLICATION_ID,
-      } as MdbaseAppManifest,
-    },
-    collection: {
-      id: TASKNOTES_COLLECTION_ID,
-      name: "TaskNotes E2E",
-      operations: liveConnectorOperations(),
-      scope: {
-        contracts: [],
-        access: "full_collection",
-      },
-      fileCapability: tasknotesFileCapability(),
-    },
-    authority: { kind: "connector" },
-  });
-  await page.evaluate((collectionId) => {
-    localStorage.setItem("tasknotes:collection-choice:v1", "cloud");
-    history.replaceState(null, "", `?collection=${collectionId}`);
-  }, TASKNOTES_COLLECTION_ID);
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/assess_collection_setup",
-    async (route) => {
-      const request = await operationRequest(route, fixture);
-      await fulfillOperation(
-        route,
-        request.request_id,
-        valid(currentCollectionSetup(request.input)),
-      );
-    },
-  );
-  return fixture;
-}
-
-function liveConnectorOperations() {
-  return [
-    ...operationsForApplicationCapabilities(
-      (bundledManifest as MdbaseAppManifest).requirements!.capabilities!,
-    ),
-    // Setup authority comes from provisions, independently of intent groups.
-    "assess_collection_setup" as const,
-    "apply_collection_setup" as const,
-  ];
-}
-
-function tasknotesFileCapability(): FileCapability {
-  return {
-    kind: "files" as const,
-    protocol_version: 1 as const,
-    actions: ["list", "read", "add", "replace", "move", "delete"],
-    scope: { kind: "collection" as const },
-  };
-}
-
-function status(
-  value: string,
-  label: string,
-  order: number,
-  isCompleted = false,
-) {
-  return {
-    id: value,
-    value,
-    label,
-    color: "#808080",
-    isCompleted,
-    order,
-    autoArchive: false,
-    autoArchiveDelay: 5,
-  };
-}
-
-function priority(value: string, label: string, weight: number) {
-  return { id: value, value, label, color: "#808080", weight };
-}
-
-function valid<T>(result: T) {
-  return { valid: true as const, diagnostics: [], result };
-}
-
-const relayRequests = new WeakMap<
-  Route,
-  {
-    fixture: MdbaseBrowserFixtureController;
-    request: import("@mdbase-dev/connect-protocol").EncryptedRelayOperationRequest;
-  }
->();
-
-async function operationRequest(
-  route: Route,
-  fixture: MdbaseBrowserFixtureController,
-): Promise<{
-  protocol_version: 1;
-  request_id: string;
-  input: JsonObject;
-}> {
-  if (!fixture.relay)
-    throw new Error("The connector relay fixture is unavailable.");
-  const operation = await fixture.relay.decrypt(route.request().postDataJSON());
-  expect(new URL(route.request().url()).pathname.split("/").at(-1)).toBe(
-    operation.operation,
-  );
-  expect(operation.input).toEqual(expect.any(Object));
-  relayRequests.set(route, { fixture, request: operation.request });
-  return {
-    protocol_version: 1,
-    request_id: operation.request.request_id,
-    input: operation.input as JsonObject,
-  };
-}
-
-async function fulfillOperation(
-  route: Route,
-  requestId: string,
-  result: unknown,
-): Promise<void> {
-  const relay = relayRequests.get(route);
-  if (!relay?.fixture.relay || relay.request.request_id !== requestId) {
-    throw new Error("The encrypted relay request is unavailable.");
-  }
-  const envelope = await relay.fixture.relay.success(relay.request, result);
-  await route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({ envelope }),
-  });
-}
-
-// Saved views are `.base` records read with the ordinary record operation.
-function isViewSourceRead(input: unknown): input is { path: string } {
-  const path = (input as { path?: unknown }).path;
-  return typeof path === "string" && path.endsWith(".base");
-}
-
-function viewSourceRecord({ path }: { path: string }) {
-  const id = path
-    .split("/")
-    .at(-1)!
-    .replace(/\.base$/u, "");
-  const name = `${id[0].toUpperCase()}${id.slice(1)}`;
-  return {
-    path,
-    types: ["obsidian_base"],
-    revision: "view-r1",
-    frontmatter: { views: [{ type: "tasknotesTaskList", name }] },
-    body: "",
-    document: `views:\n  - type: tasknotesTaskList\n    name: ${name}\n`,
-  };
-}
-
-function defaultViewDocuments() {
-  return {
-    views: ["today", "upcoming", "calendar", "projects", "archive"].map(
-      (id) => ({
-        id,
-        name: id,
-        source: {
-          path: `TaskNotes/Views/${id}.base`,
-          format: "obsidian.base",
-          revision: "view-r1",
-          writable: false,
-        },
-        views: [
-          {
-            id,
-            name: `${id[0].toUpperCase()}${id.slice(1)}`,
-            properties: [],
-            presentation: {
-              type: "tasknotes.task-list",
-              fallback: "mdbase.table",
-              mappings: {},
-              options: {},
-            },
-          },
-        ],
-      }),
-    ),
-    meta: { total_count: 5 },
-  };
-}
-
-function defaultViewExecution(
-  records: Array<{
-    path: string;
-    frontmatter: JsonObject;
-    body?: string;
-    types?: string[];
-  }>,
-) {
-  return {
-    results: records.map(({ frontmatter, ...record }) => ({
-      ...record,
-      effective_frontmatter: frontmatter,
-      values: {},
-    })),
-    meta: {
-      total_count: records.length,
-      has_more: false,
-      view: { path: "TaskNotes/Views/today.base", id: "today" },
-      groups: [],
-    },
-  };
-}
-
-function currentCollectionSetup(input: JsonObject) {
-  const digest = `sha256:${"a".repeat(64)}`;
-  return {
-    status: "current",
-    applicable: true,
-    application_id: input.application_id,
-    declaration_digest: input.declaration_digest,
-    provision_digest: digest,
-    collection_revision: digest,
-    final_collection_revision: digest,
-    configuration: [
-      {
-        requirement: "tasknotes-base-sources",
-        path: "/x-obsidian/bases/include",
-        value: "TaskNotes/Views/**/*.base",
-        action: "current",
-      },
-    ],
-    type_packs: [],
-    final_resource_revisions: {},
-    assessment_digest: digest,
-  };
-}
-
-function deferred() {
-  let resolve!: () => void;
-  const promise = new Promise<void>((nextResolve) => {
-    resolve = nextResolve;
-  });
-  return { promise, resolve };
-}
-
-async function recoverPendingChangesBefore(page: Page, destination: Locator) {
-  const review = page.getByRole("heading", {
-    name: "Review unconfirmed changes",
-  });
-  await expect(destination.or(review)).toBeVisible();
-  if (!(await review.isVisible())) return;
-
-  await page.getByRole("button", { name: "Recover saved changes" }).click();
-  await page.getByRole("button", { name: "Confirm recovery" }).click();
-  await expect(destination).toBeVisible();
-}
-
-test("keeps collection availability visible across cached search and retries", async ({
+test("keeps collection availability visible across cached search and explicit retry with a held client", async ({
   page,
 }) => {
-  await page.route("**/*", (route) =>
-    ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
-      ? route.continue()
-      : route.abort(),
-  );
-  // The operation route must precede fixture installation (LIFO matching).
-  // eslint-disable-next-line prefer-const
-  let authorization!: MdbaseBrowserFixtureController;
-  let offline = false;
-  const task = new TaskNotesTaskModel().create(
-    { title: "Availability test task" },
-    { id: "availability-task", now: "2026-09-09T00:00:00.000Z" },
-  );
-  const record = {
-    path: task.path,
-    frontmatter: task.frontmatter,
-    body: task.body,
-    types: ["task"],
-  };
-  await page.route(
-    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
-    async (route) => {
-      if (offline) {
-        await route.abort("failed");
-        return;
-      }
-      const request = await operationRequest(route, authorization);
-      const operation = new URL(route.request().url()).pathname
-        .split("/")
-        .at(-1);
-      const result =
-        operation === "describe"
-          ? collectionDescription()
-          : operation === "query"
-            ? valid({
-                results: [record],
-                meta: { total_count: 1, has_more: false },
-              })
-            : operation === "list_views"
-              ? valid(defaultViewDocuments())
-              : operation === "execute_view"
-                ? valid(defaultViewExecution([record]))
-                : valid({});
-      await fulfillOperation(route, request.request_id, result);
-    },
-  );
-  authorization = await installRelayAuthorization(page);
-  await page.reload();
+  await openFixture(page, {
+    records: [taskRecord("Availability test task", "availability-task")],
+  });
   await expect(
     page.getByText("Availability test task", { exact: true }),
   ).toBeVisible();
-  await openNavigationItem(page, "Settings");
-  offline = true;
+  await nav(page, "Settings");
+  await page.evaluate(() => {
+    window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.offline = true;
+  });
   await page.getByRole("button", { name: "Refresh now", exact: true }).click();
   const notice = page.getByRole("region", { name: "Collection connection" });
   await expect(notice).toContainText("Collection unavailable");
-  await openNavigationItem(page, "Search");
+  await nav(page, "Search");
   await page.getByRole("searchbox").fill("Availability");
   await expect(
     page.getByText("Availability test task", { exact: true }),
   ).toBeVisible();
   await expect(notice).toContainText("Showing previously loaded tasks");
-  offline = false;
-  await notice.getByRole("button", { name: "Retry connection" }).click();
+  await page.evaluate(() => {
+    window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.offline = false;
+  });
+  await notice
+    .getByRole("button", { name: "Retry connection", exact: true })
+    .click();
   await expect(notice).toHaveCount(0);
 });
