@@ -2016,6 +2016,13 @@ export class NextTaskRepository implements TaskRepository {
         }
         document.views.push({
           key,
+          declaration: {
+            recordId: descriptor.record,
+            path: descriptor.path,
+            revision: descriptor.sourceRevision,
+            ordinal: descriptor.ordinal,
+            name: descriptor.name,
+          },
           documentId: descriptor.record,
           documentName: descriptor.path,
           id: String(descriptor.ordinal),
@@ -2112,7 +2119,13 @@ export class NextTaskRepository implements TaskRepository {
       descriptor.record !== view.documentId ||
       String(descriptor.ordinal) !== view.id ||
       descriptor.path !== view.source.path ||
-      descriptor.sourceRevision !== view.source.revision
+      descriptor.sourceRevision !== view.source.revision ||
+      (view.declaration !== undefined &&
+        (view.declaration.recordId !== descriptor.record ||
+          view.declaration.path !== descriptor.path ||
+          view.declaration.revision !== descriptor.sourceRevision ||
+          view.declaration.ordinal !== descriptor.ordinal ||
+          view.declaration.name !== descriptor.name))
     )
       throw nativeUnsupported(
         "Refresh the native view catalog before selecting this source.",
@@ -2241,6 +2254,7 @@ export class NextTaskRepository implements TaskRepository {
       this.signal(),
     );
     return {
+      recordId: result.view.record,
       path: result.view.path,
       format: "obsidian.base",
       revision: result.view.sourceRevision,
@@ -2339,6 +2353,7 @@ export class NextTaskRepository implements TaskRepository {
             );
           this.forgetNativeSource(target.record);
           return {
+            recordId: record.id,
             path: record.path,
             format: "obsidian.base",
             revision: record.revision,

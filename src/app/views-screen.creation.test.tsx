@@ -111,6 +111,96 @@ it("creates from a saved view with inferred defaults and refreshes the real resu
   ).not.toBeInTheDocument();
 });
 
+it("uses an explicit declaration selector for read-only view capture metadata (stand-in)", async () => {
+  const view = savedView();
+  view.documentId = "00000000-0000-0000-0000-000000000001";
+  view.id = "1";
+  view.key = `${view.documentId}#1`;
+  view.source.writable = false;
+  view.declaration = {
+    recordId: view.documentId,
+    path: view.source.path,
+    revision: view.source.revision,
+    ordinal: 1,
+    name: view.name,
+  };
+  const create = vi.fn(async (input: CreateTaskInput) => task(input));
+  const repository = taskRepositoryStub({
+    create,
+    cachedViewExecution: async () => null,
+    executeView: async () => ({
+      view,
+      rows: [],
+      totalCount: 0,
+      hasMore: false,
+      groups: [],
+    }),
+    readViewSource: async () => ({
+      recordId: view.documentId,
+      path: view.source.path,
+      format: view.source.format,
+      revision: view.source.revision,
+      document: `views:
+  - name: Work
+    type: table
+    options:
+      create:
+        defaults:
+          projects: [wrong]
+  - name: Work
+    type: tasknotesTaskList
+    options:
+      create:
+        defaults:
+          projects: [selected]
+`,
+    }),
+  });
+  render(
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
+      <ViewsScreen
+        documents={[
+          {
+            id: view.documentId,
+            name: view.documentName,
+            source: view.source,
+            views: [view],
+          },
+        ]}
+        navigationViewKeys={[view.key]}
+        operational
+        viewKey={view.key}
+        views={[view]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>,
+  );
+  const input = await screen.findByLabelText("New task title");
+  fireEvent.change(input, { target: { value: "Ordinal capture" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() =>
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Ordinal capture",
+        projects: ["selected"],
+      }),
+      expect.objectContaining({ id: expect.any(String) }),
+    ),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Edit view" }),
+  ).not.toBeInTheDocument();
+});
+
 function savedView(): TaskView {
   return {
     key: "views/work.base#work",
