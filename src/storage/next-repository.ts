@@ -2090,7 +2090,7 @@ export class NextTaskRepository implements TaskRepository {
     return result;
   }
   private requireViewSourceGrant(
-    capability: "records.edit" | "records.delete",
+    capability: "records.create" | "records.edit" | "records.delete",
   ) {
     const grant = this.client.hello.grant;
     if (
@@ -2270,11 +2270,104 @@ export class NextTaskRepository implements TaskRepository {
       (input.path ? viewSourceFormat(input.path) : "obsidian.base");
     const path =
       input.path ?? newViewSourcePath(format, input.name ?? "New view");
-    viewSourceRecord(path, input.document);
-    // A resource reply supplies no record UUID. Do not submit a creation whose
-    // result cannot yet be identified and read through this held data port.
-    throw nativeUnsupported(
-      "Creating view sources is not available through this native session.",
+    const document = input.document;
+    if (format !== "obsidian.base" || viewSourceFormat(path) !== format)
+      throw nativeUnsupported(
+        "This native session creates Bases records only.",
+      );
+    viewSourceRecord(path, document);
+    let originalRecord: string | undefined;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["view:create", path, document]),
+        prepare: async (mutationId, signal) => {
+          this.requireViewSourceGrant("records.create");
+          // Capture the ordinary record identity before any READ/await. The
+          // retained confirmation closure, not a retry's input, owns this UUID.
+          originalRecord = crypto.randomUUID();
+          await this.listViews();
+          const catalog = await this.client.describe(signal);
+          const contract = catalog.contracts.find(
+            (item) =>
+              item.id === "obsidian.base" && item.contractType === "record",
+          );
+          if (
+            !contract ||
+            !catalog.types.some((type) =>
+              type.implements.some(
+                (item) =>
+                  item.contract === contract.id &&
+                  item.version === contract.version,
+              ),
+            )
+          )
+            throw nativeUnsupported(
+              "Install a resolved Bases contract and implementing type before creating a source.",
+            );
+          signal.throwIfAborted();
+          this.requireViewSourceGrant("records.create");
+          // Explicit-path ordinary Create preserves exact YAML bytes and
+          // refuses occupied paths. Metadata summaries are not CAS/authority;
+          // the replica still classifies and validates at the submission head.
+          return () =>
+            this.client.create(
+              { id: originalRecord!, path, document },
+              { mutationId, signal },
+            );
+        },
+        confirmed: async (receipt, signal) => {
+          if (!originalRecord)
+            throw nativeUnsupported(
+              "The original source record identity is unavailable.",
+            );
+          const record = await this.client.get(
+            originalRecord,
+            { document: true },
+            signal,
+          );
+          const admitted = receipt.records?.find(
+            (item) => item.id === originalRecord,
+          );
+          if (
+            record.id !== originalRecord ||
+            record.path !== path ||
+            record.state.state !== "confirmed" ||
+            record.document !== document ||
+            (receipt.records !== undefined &&
+              (!admitted ||
+                admitted.path !== path ||
+                admitted.revision !== record.revision))
+          )
+            throw new Error(
+              "The original confirmed source could not be read exactly.",
+            );
+          // A successful ordinary record create alone is not Bases discovery.
+          // Re-read the real contract-resolved declaration and exact source.
+          this.forgetNativeSource(originalRecord);
+          await this.listViews();
+          const selected = this.nativeSourceDescriptor(path);
+          if (
+            selected.record !== originalRecord ||
+            selected.sourceRevision !== record.revision
+          )
+            throw new Error(
+              "The created source has a different native discovery identity.",
+            );
+          const source = await this.readNativeSource(selected, signal);
+          if (source.source !== document)
+            throw new Error(
+              "The created native source READ changed its original bytes.",
+            );
+          return {
+            recordId: originalRecord,
+            path,
+            format: "obsidian.base",
+            revision: record.revision,
+            document,
+          };
+        },
+      },
+      this.scope.signal,
     );
   }
   async updateViewSource(
@@ -2387,11 +2480,27 @@ export class NextTaskRepository implements TaskRepository {
               signal,
             });
         },
-        confirmed: async () => {
+        confirmed: async (_receipt, signal) => {
           if (!target)
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
+          // Receipt confirmation does not prove current absence. Read both the
+          // original UUID and exact path; a replacement record is not deletion
+          // success, and unavailable/permission errors are never absence.
+          for (const reference of [target.record, { path: target.path }]) {
+            try {
+              await this.client.get(reference, { document: true }, signal);
+            } catch (error) {
+              if (error instanceof MdbaseError && error.code === "not_found")
+                continue;
+              throw error;
+            }
+            throw new Error(
+              "The deleted source is still present or its path was reused.",
+            );
+          }
+          signal.throwIfAborted();
           this.forgetNativeSource(target.record);
         },
       },
