@@ -17,12 +17,6 @@ import "./accessibility.css";
 
 initializePwaInstall();
 
-const currentUrl = new URL(location.href);
-const embeddedDemo = /\/embed(?:\/|$)/.test(currentUrl.pathname);
-const requestedDemoCount = Number(currentUrl.searchParams.get("demo") ?? 0);
-const demoCount =
-  embeddedDemo && requestedDemoCount <= 0 ? 24 : requestedDemoCount;
-
 // The local e2e build may exercise the real held-repository gate with an SDK
 // protocol stand-in. Neither the fixture module nor this route ships in other modes.
 const SmokeFixture =
@@ -46,7 +40,7 @@ createRoot(document.getElementById("root")!).render(
           <SmokeFixture />
         </Suspense>
       ) : (
-        <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+        <TaskNotesApp />
       )}
     </AppErrorBoundary>
   </StrictMode>,
