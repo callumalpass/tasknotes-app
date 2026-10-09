@@ -111,6 +111,7 @@ import {
 } from "../domain/task-occurrence";
 import {
   newViewSourcePath,
+  taskNotesDefaultBaseSources,
   viewSourceFormat,
   viewSourceRecord,
 } from "../domain/default-view-source";
@@ -118,8 +119,10 @@ import { normalizePresentationType } from "../domain/view-renderer";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { NextMutations, RejectedNextMutation } from "./next-mutations";
 import { NativeModelSetup } from "./next-model-setup";
+import { NativeResourceSetup } from "./next-resource-setup";
 import type {
   ModelSetupJournal,
+  ModelResourceSetupJournal,
   TaskNotesModelSetup,
 } from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
@@ -248,15 +251,36 @@ export class NextTaskRepository implements TaskRepository {
     this.mutations = new NextMutations(client);
     if (options.modelSetupJournal) {
       const onVerified = options.onModelSetupVerified;
-      const setup = new NativeModelSetup(
-        client,
-        options.modelSetupJournal,
-        () => this.signal(),
-        async () => {
-          this.invalidateRemoteData();
-          await onVerified?.();
-        },
-      );
+      const journal = options.modelSetupJournal;
+      const verified = async () => {
+        this.invalidateRemoteData();
+        await onVerified?.();
+      };
+      const legacy = (signal?: AbortSignal) =>
+        new NativeModelSetup(
+          client,
+          journal,
+          () => signal ?? this.signal(),
+          verified,
+        );
+      // The real protected store implements both ports. Legacy-only adapters
+      // retain their original seam; no v1/v2 intent is enlarged into v3.
+      const resourceJournal = journal as Partial<ModelResourceSetupJournal>;
+      const supportsResources =
+        typeof resourceJournal.prepareResources === "function" &&
+        typeof resourceJournal.recordResourceAttempt === "function" &&
+        typeof resourceJournal.recordResourceConfirmed === "function" &&
+        typeof resourceJournal.recordResourceVerified === "function";
+      const setup = supportsResources
+        ? new NativeResourceSetup(
+            client,
+            journal as ModelResourceSetupJournal,
+            () => this.signal(),
+            taskNotesDefaultBaseSources,
+            verified,
+            legacy,
+          )
+        : legacy();
       this.modelSetup = Object.freeze({
         inspect: () => setup.inspect(),
         install: () => setup.install(),

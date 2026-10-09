@@ -1,9 +1,9 @@
 {
-  "sourceCommit": "c2c08afc91f992a08b10c2ea33d30c7f7aa01f6b",
-  "archive": "mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz",
-  "archiveBytes": 472256,
-  "archiveSha256": "6df89b5197ce2c49c83244d9aa97d37106171645f869cbcee1750a54a6521931",
-  "archiveIntegrity": "sha512-6/fUH4l0V8tu9tniH0a2pGOwQ0+LD1uiSnRJ11ZbSGwlhglsbvMUqWTijyK2QAxGnTLjYxgusVAGHiZ1hzbbSg==",
-  "wasmSha256": "5dff5044b0f95df4f00b33e942e66db63cd1e0b2e68b335c9e8e39fba3b7e31f",
-  "wasmBytes": 1264403
+  "sourceCommit": "84dbb8b7fe6958d0d2efa108463743393be3e46d",
+  "archive": "mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz",
+  "archiveBytes": 497749,
+  "archiveSha256": "167a1685aa5d7d80c2224e7c11284191b43fe174e856cb38958a35fbd73d5f2f",
+  "archiveIntegrity": "sha512-C2XYt0PPyHz+PpUiATmjD5Kow6KTj27rV5hEA4VXc0S+mN8uwocNLYiImCDW8uNUzUYEvvS9+S68TuIr6Za9Lg==",
+  "wasmSha256": "6fcc57674d070a3887fae62696a12c4fbf43ed09abd6b9b8f2437433f45e2b9b",
+  "wasmBytes": 1356044
 }
