@@ -98,6 +98,107 @@ describe("native installation Worker public protocol (source only)", () => {
     ])
       expect(isNextInstallationCommand(command)).toBe(false);
   });
+  it("accepts fixed original model journal actions without generic storage or caller-selected scope", () => {
+    const ops = [
+      {
+        kind: "resource_put",
+        path: "_contracts/tasknotes.task.md",
+        doc: "Inline contract",
+        mustNotExist: true,
+      },
+      {
+        kind: "resource_put",
+        path: "_types/task.md",
+        doc: "Inline type",
+        mustNotExist: true,
+      },
+    ];
+    const plan = {
+      pack: {
+        id: "tasknotes.task",
+        version: "0.3.0-rc.18",
+        digest: "sha256:" + "ab".repeat(32),
+      },
+      assessmentDigest: "sha256:" + "cd".repeat(32),
+      ops,
+      readback: ops.map(({ path, doc }) => ({ path, doc })),
+    };
+    expect(
+      isNextInstallationCommand({ kind: "model-setup-intent", action: "load" }),
+    ).toBe(true);
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan,
+      }),
+    ).toBe(true);
+    const lock = {
+      kind: "resource_put",
+      path: "mdbase.lock.yaml",
+      doc: "Exact lock update",
+      mustNotExist: false,
+      baseRevision: "sha256:" + "12".repeat(32),
+    };
+    const absentRetirement = {
+      ...plan,
+      ops: [lock],
+      readback: [
+        ...plan.readback,
+        { path: "_schemas/already-retired.json", doc: null },
+        { path: lock.path, doc: lock.doc },
+      ],
+    };
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: absentRetirement,
+      }),
+    ).toBe(true);
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: {
+          ...plan,
+          readback: [{ ...plan.readback[0], doc: null }, plan.readback[1]],
+        },
+      }),
+    ).toBe(false);
+    for (const action of ["attempt", "confirm", "verify"])
+      expect(
+        isNextInstallationCommand({
+          kind: "model-setup-intent",
+          action,
+          mutationId: "11111111-1111-4111-8111-111111111111",
+        }),
+      ).toBe(true);
+    expect(isNextInstallationCommand({ kind: "model-setup-verified" })).toBe(
+      true,
+    );
+    for (const command of [
+      { kind: "model-setup-intent", action: "load", scope: {} },
+      { kind: "model-setup-intent", action: "save", value: {} },
+      { kind: "model-setup-intent", action: "remove" },
+      {
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: { ...plan, ops: [] },
+      },
+      { kind: "model-setup-intent", action: "prepare", plan, key: "no-loan" },
+      { kind: "model-setup-intent", action: "prepare", ops },
+      { kind: "model-setup-intent", action: "prepare", ops: [ops[0]] },
+      { kind: "model-setup-intent", action: "prepare", ops, key: "no-loan" },
+      {
+        kind: "model-setup-intent",
+        action: "attempt",
+        mutationId: "replacement",
+      },
+      { kind: "model-setup-verified", collection: "caller-selected" },
+    ])
+      expect(isNextInstallationCommand(command)).toBe(false);
+  });
   it("errors are finite public codes, never raw messages or an arbitrary lower-case string", () => {
     for (const reason of [
       "binding",

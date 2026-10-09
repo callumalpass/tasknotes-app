@@ -89,6 +89,11 @@ async function dispatch(
       return controller.listApprovedCollections();
     case "create-collection":
       return controller.createCloudCopyCollection(command.reconcile);
+    case "model-setup-intent":
+      return controller.modelSetupIntent(command);
+    case "model-setup-verified":
+      await controller.finishModelSetup();
+      return null;
     case "start-consent":
       return controller.startCollectionConsent(
         command.requestedCreateCollections,

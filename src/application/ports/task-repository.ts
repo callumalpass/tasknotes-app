@@ -49,6 +49,7 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../../domain/view";
 import type { CollectionFileStore } from "./collection-file-store";
+import type { TaskNotesModelSetup } from "./model-setup";
 
 /** Retain this object for one submission, including uncertain-outcome retries. */
 export interface TaskCreateIntent {
@@ -62,6 +63,8 @@ export interface TaskCreateIntent {
  * implement this port; React and domain services never depend on an adapter.
  */
 export interface TaskRepository {
+  /** Explicit setup only when the original collection owns a durable recovery journal. */
+  readonly modelSetup?: TaskNotesModelSetup;
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
   /** Account/person discovery is unavailable in non-account demo repositories. */

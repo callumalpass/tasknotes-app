@@ -1,4 +1,9 @@
 import type {
+  ModelPackPlan,
+  ModelSetupIntent,
+} from "../application/ports/model-setup";
+import { modelPackPlan } from "./next-model-setup-intent";
+import type {
   AppBundledReleaseTrust,
   AppInstallationSignInView,
   AppInstallationCollection,
@@ -28,13 +33,21 @@ export type NextInstallationCommand =
         | "attest"
         | "collections"
         | "exchange-consent"
+        | "model-setup-verified"
         | "close";
     }
   | { kind: "confirm-account"; accountId: string }
   | { kind: "start-consent"; requestedCreateCollections: boolean }
   | { kind: "open-collection"; collectionId: string }
   | { kind: "set-foreground"; active: boolean }
-  | { kind: "create-collection"; reconcile: boolean };
+  | { kind: "create-collection"; reconcile: boolean }
+  | { kind: "model-setup-intent"; action: "load" }
+  | { kind: "model-setup-intent"; action: "prepare"; plan: ModelPackPlan }
+  | {
+      kind: "model-setup-intent";
+      action: "attempt" | "confirm" | "verify";
+      mutationId: string;
+    };
 export interface NextOpenedCollection {
   readonly kind: "collection";
   readonly scope: Readonly<{
@@ -43,6 +56,8 @@ export interface NextOpenedCollection {
     collection: string;
   }>;
   readonly displayName: string;
+  /** Original creator flow still awaits model completion, not a grant. */
+  readonly requiresTaskNotesModelSetup: boolean;
   readonly channel: MessagePort;
 }
 export interface NextCreatedCollection {
@@ -62,6 +77,7 @@ export type NextInstallationResult =
   | readonly AppInstallationCollection[]
   | NextOpenedCollection
   | NextCreatedCollection
+  | ModelSetupIntent
   | null;
 export type NextInstallationResponse =
   | { version: 1; id: number; ok: true; result: NextInstallationResult }
@@ -100,6 +116,23 @@ export function isNextInstallationCommand(
       );
     case "set-foreground":
       return keys === "active,kind" && typeof command.active === "boolean";
+    case "model-setup-intent":
+      if (command.action === "load") return keys === "action,kind";
+      if (command.action === "prepare") {
+        if (keys !== "action,kind,plan") return false;
+        try {
+          modelPackPlan(command.plan);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      return (
+        keys === "action,kind,mutationId" &&
+        ["attempt", "confirm", "verify"].includes(command.action as string) &&
+        typeof command.mutationId === "string" &&
+        /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(command.mutationId)
+      );
     case "create-collection":
       return (
         keys === "kind,reconcile" && typeof command.reconcile === "boolean"
@@ -115,6 +148,7 @@ export function isNextInstallationCommand(
     case "attest":
     case "collections":
     case "exchange-consent":
+    case "model-setup-verified":
     case "close":
       return keys === "kind";
     default:

@@ -1,10 +1,15 @@
 import { openNextCollectionSql } from "./next-collection-sql";
+import { NextModelSetupIntentStore } from "./next-model-setup-intent";
+import type { ModelSetupIntent } from "../application/ports/model-setup";
 import {
   collectionCreateIntent,
   findCollectionCreation,
 } from "./next-collection-create-intent";
 import { collectionJoinIntent } from "./next-collection-join-intent";
-import type { NextCreatedCollection } from "./next-installation-protocol";
+import type {
+  NextCreatedCollection,
+  NextInstallationCommand,
+} from "./next-installation-protocol";
 import {
   AppProtectedInstallationSignIn,
   AppWebCloudCopyHost,
@@ -49,6 +54,7 @@ export class NextTaskNotesInstallation {
   private collectionLease: AppReplicaLease | null = null;
   private collectionAttempted = false;
   private facadeAttached = false;
+  private modelSetupStore: NextModelSetupIntentStore | null = null;
   private foreground = true;
   private driveTimer: ReturnType<typeof setTimeout> | null = null;
   private driving: Promise<void> | null = null;
@@ -253,6 +259,7 @@ export class NextTaskNotesInstallation {
         this.authority.scope,
         signal,
         reconcile ? "resume" : "prepare",
+        { requireModelVerified: true },
       );
       this.check();
       if (intent.phase === "completed")
@@ -377,6 +384,7 @@ export class NextTaskNotesInstallation {
       collection: string;
     }>;
     displayName: string;
+    requiresTaskNotesModelSetup: boolean;
     channel: MessagePort;
   }> {
     return this.exclusive(async () => {
@@ -495,12 +503,97 @@ export class NextTaskNotesInstallation {
         throw error;
       }
       this.facadeAttached = true;
+      this.modelSetupStore = new NextModelSetupIntentStore({
+        scope,
+        appOrigin: this.options.appOrigin,
+        cpOrigin: this.selection.cpOrigin,
+        isCurrent: () => {
+          this.check();
+          host.registeredReceipt();
+          return (
+            this.host === host &&
+            this.facadeAttached &&
+            this.collectionLease !== null
+          );
+        },
+      });
       this.scheduleDrive();
       return {
         scope,
         displayName: selected[0]!.displayName,
+        requiresTaskNotesModelSetup:
+          creation !== null && creation.modelVerified !== true,
         channel: channel.port2,
       };
+    });
+  }
+
+  /** Fixed public definition-intent control, only inside the original verified
+   * collection owner. This neither submits writes nor grants model authority. */
+  modelSetupIntent(
+    command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+  ): Promise<ModelSetupIntent | null> {
+    return this.exclusive(async () => {
+      const store = this.modelSetupStore;
+      if (!this.facadeAttached || !store)
+        throw Object.assign(
+          new Error("Original model setup owner unavailable."),
+          { reason: "fenced" },
+        );
+      const signal = this.hostLifetime.signal;
+      switch (command.action) {
+        case "load":
+          return store.load(signal);
+        case "prepare":
+          return store.prepare(command.plan, signal);
+        case "attempt":
+          return store.recordAttempt(command.mutationId, signal);
+        case "confirm":
+          return store.recordConfirmed(command.mutationId, signal);
+        case "verify":
+          return store.recordVerified(command.mutationId, signal);
+      }
+    });
+  }
+
+  /** Called only by the original model service after confirmed native source
+   * readback (or a read-only already-valid model). This public flow marker is
+   * not model/receipt authority; it only permits a later explicit new create. */
+  finishModelSetup(): Promise<void> {
+    return this.exclusive(async () => {
+      const store = this.modelSetupStore;
+      if (
+        !store ||
+        !this.host ||
+        !this.authority ||
+        !this.facadeAttached ||
+        !this.collectionLease
+      )
+        throw Object.assign(
+          new Error("Original model setup owner unavailable."),
+          { reason: "fenced" },
+        );
+      this.host.registeredReceipt();
+      const scope = store.scope;
+      const creation = await findCollectionCreation(
+        this.authority.scope,
+        scope.collection,
+        this.hostLifetime.signal,
+      );
+      this.check();
+      if (!creation || creation.modelVerified === true) return;
+      if (creation.phase !== "completed")
+        throw Object.assign(
+          new Error("Original genesis confirmation required."),
+          { reason: "outcome_unknown" },
+        );
+      await collectionCreateIntent(
+        this.authority.scope,
+        this.hostLifetime.signal,
+        "model-verified",
+        { expectedCollection: scope.collection },
+      );
+      this.check();
     });
   }
 
@@ -556,6 +649,8 @@ export class NextTaskNotesInstallation {
       await pending?.catch(() => {});
       await driving?.catch(() => {});
       // A failed native shutdown retains ownership until Worker fail-stop.
+      this.modelSetupStore?.close();
+      this.modelSetupStore = null;
       await this.host?.close();
       this.host = null;
       await this.flow?.close();

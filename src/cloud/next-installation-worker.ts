@@ -1,4 +1,15 @@
 import { connect } from "@mdbase-dev/sdk";
+import {
+  ModelSetupError,
+  type ModelSetupJournal,
+  type ModelSetupScope,
+  type ModelSetupIntent,
+  type ModelPackSetupIntent,
+} from "../application/ports/model-setup";
+import {
+  decode as decodeModelSetupIntent,
+  modelPackPlan,
+} from "./next-model-setup-intent";
 import { appLocalConnector } from "@mdbase-dev/sdk/app-host";
 import { NextTaskRepository } from "../storage/next-repository";
 import type {
@@ -29,6 +40,7 @@ export class NextInstallationWorker {
   private stopped = false;
   private dataConnector: ReturnType<typeof appLocalConnector> | null = null;
   private repository: NextTaskRepository | null = null;
+  private modelJournal: ModelSetupJournal | null = null;
   private closing: Promise<void> | null = null;
   private readonly onForeground = () => {
     void this.syncForeground().catch(() => {});
@@ -136,6 +148,7 @@ export class NextInstallationWorker {
     this.repository?.dispose();
     this.dataConnector = null;
     this.repository = null;
+    this.modelJournal = null;
     this.worker.removeEventListener("message", this.onMessage);
     this.worker.removeEventListener("error", this.onError);
     this.worker.removeEventListener("messageerror", this.onError);
@@ -225,6 +238,92 @@ export class NextInstallationWorker {
       kind: "exchange-consent",
     }) as Promise<AppInstallationCollectionConsentView>;
   }
+  /** Only the original held repository may receive this fixed journal wrapper;
+   * no protected store/key handle is transferred from its owning Worker. */
+  modelSetupJournal(): ModelSetupJournal {
+    if (
+      !this.modelJournal ||
+      this.stopped ||
+      this.closing ||
+      this.signal?.aborted
+    )
+      throw new Error("Original model setup owner unavailable.");
+    return this.modelJournal;
+  }
+  private originalModelSetupJournal(scope: ModelSetupScope): ModelSetupJournal {
+    const bound = Object.freeze({
+      account: scope.account,
+      installation: scope.installation,
+      collection: scope.collection,
+    });
+    const invoke = async (
+      command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+      signal: AbortSignal,
+    ): Promise<ModelSetupIntent | null> => {
+      signal.throwIfAborted();
+      await this.pending?.promise;
+      signal.throwIfAborted();
+      const result = await this.call(command);
+      signal.throwIfAborted();
+      if (command.action === "load" && result === null) return null;
+      let intent: ModelSetupIntent;
+      try {
+        intent = decodeModelSetupIntent(result, bound);
+      } catch {
+        this.onError();
+        throw new Error("Original model setup binding unavailable.");
+      }
+      if (
+        (command.action !== "load" && intent.version !== 2) ||
+        ("mutationId" in command && intent.mutationId !== command.mutationId) ||
+        (command.action === "prepare" &&
+          intent.version === 2 &&
+          JSON.stringify(intent.plan) !== JSON.stringify(command.plan))
+      ) {
+        this.onError();
+        throw new Error("Original model setup binding unavailable.");
+      }
+      return intent;
+    };
+    const mutate = async (
+      command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+      signal: AbortSignal,
+    ): Promise<ModelPackSetupIntent> => {
+      const intent = await invoke(command, signal);
+      if (!intent || intent.version !== 2) {
+        this.onError();
+        throw new Error("Original model setup binding unavailable.");
+      }
+      return intent;
+    };
+    return Object.freeze({
+      scope: bound,
+      load: (signal: AbortSignal) =>
+        invoke({ kind: "model-setup-intent", action: "load" }, signal),
+      prepare: async (plan, signal) => {
+        const captured = modelPackPlan(plan);
+        return mutate(
+          { kind: "model-setup-intent", action: "prepare", plan: captured },
+          signal,
+        );
+      },
+      recordAttempt: async (mutationId, signal) =>
+        mutate(
+          { kind: "model-setup-intent", action: "attempt", mutationId },
+          signal,
+        ),
+      recordConfirmed: async (mutationId, signal) =>
+        mutate(
+          { kind: "model-setup-intent", action: "confirm", mutationId },
+          signal,
+        ),
+      recordVerified: async (mutationId, signal) =>
+        mutate(
+          { kind: "model-setup-intent", action: "verify", mutationId },
+          signal,
+        ),
+    } satisfies ModelSetupJournal);
+  }
   async openCollection(collectionId: string): Promise<NextTaskRepository> {
     if (this.dataConnector || this.repository)
       throw new Error("Original collection already opened.");
@@ -239,6 +338,7 @@ export class NextInstallationWorker {
       !uuid.test(opened.scope.account) ||
       !uuid.test(opened.scope.installation) ||
       typeof opened.displayName !== "string" ||
+      typeof opened.requiresTaskNotesModelSetup !== "boolean" ||
       !(opened.channel instanceof MessagePort)
     ) {
       this.onError();
@@ -260,14 +360,46 @@ export class NextInstallationWorker {
         client.close();
         throw new Error("Original collection lifetime ended.");
       }
+      this.modelJournal = this.originalModelSetupJournal(opened.scope);
       this.repository = new NextTaskRepository(
         client,
         opened.displayName,
         opened.scope.account,
+        {
+          modelSetupJournal: this.modelJournal,
+          onModelSetupVerified: async () => {
+            await this.pending?.promise;
+            await this.call({ kind: "model-setup-verified" });
+          },
+        },
       );
+      const repository = this.repository;
+      // Original creation recovery includes model setup. No existing collection
+      // is auto-configured; typed blocked/unknown states keep this held owner
+      // available for the explicit setup/recovery UI rather than opening again.
+      if (opened.requiresTaskNotesModelSetup) {
+        const setup = repository.modelSetup!;
+        try {
+          const view = await setup.inspect();
+          if (view.state === "outcome_unknown") await setup.resume();
+          else if (view.state === "required" || view.state === "ready")
+            await setup.install();
+        } catch (reason) {
+          if (!(reason instanceof ModelSetupError)) throw reason;
+        }
+      }
+      if (
+        this.stopped ||
+        this.closing ||
+        this.signal?.aborted ||
+        this.repository !== repository
+      ) {
+        repository.dispose();
+        throw new Error("Original collection lifetime ended.");
+      }
       document.addEventListener("visibilitychange", this.onForeground);
       this.onForeground();
-      return this.repository;
+      return repository;
     } catch (error) {
       connector.close();
       throw error;

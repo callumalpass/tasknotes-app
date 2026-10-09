@@ -65,6 +65,39 @@ describe("bounded collection creation target", () => {
       phase: "attempted",
     });
   });
+  it("retains the completed genesis target until the same creator model flow is finalized", async () => {
+    const signal = new AbortController().signal;
+    const first = await collectionCreateIntent(scope, signal, "prepare", {
+      requireModelVerified: true,
+    });
+    await collectionCreateIntent(scope, signal, "attempt");
+    await collectionCreateIntent(scope, signal, "complete");
+    expect(
+      (
+        await collectionCreateIntent(scope, signal, "prepare", {
+          requireModelVerified: true,
+        })
+      ).collection,
+    ).toBe(first.collection);
+    await expect(
+      collectionCreateIntent(scope, signal, "model-verified", {
+        expectedCollection: scope.account,
+      }),
+    ).rejects.toMatchObject({ reason: "recovery_required" });
+    expect(
+      (await collectionCreateIntent(scope, signal, "resume")).modelVerified,
+    ).toBeUndefined();
+    await collectionCreateIntent(scope, signal, "model-verified", {
+      expectedCollection: first.collection,
+    });
+    const second = await collectionCreateIntent(scope, signal, "prepare", {
+      requireModelVerified: true,
+    });
+    expect(second.collection).not.toBe(first.collection);
+    expect(
+      await findCollectionCreation(scope, first.collection, signal),
+    ).toMatchObject({ phase: "completed", modelVerified: true });
+  });
   it("never treats missing original recovery state as a new creation", async () => {
     const signal = new AbortController().signal;
     await expect(

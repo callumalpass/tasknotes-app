@@ -117,6 +117,11 @@ import {
 import { normalizePresentationType } from "../domain/view-renderer";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { NextMutations, RejectedNextMutation } from "./next-mutations";
+import { NativeModelSetup } from "./next-model-setup";
+import type {
+  ModelSetupJournal,
+  TaskNotesModelSetup,
+} from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { ConnectedTaskIndex } from "./connected-task-index";
@@ -199,11 +204,11 @@ function plainFields(fields: wire.FmMap): Record<string, unknown> {
   );
 }
 
-/** Direct native SDK implementation of the application port. Dormant: the app
- * still uses its legacy facade until account/consent and release pins are ready.
+/** Direct native SDK implementation of the application port.
  * Unsupported native metadata is explicit, never reconstructed in the app.
  */
 export class NextTaskRepository implements TaskRepository {
+  readonly modelSetup?: TaskNotesModelSetup;
   readonly defaultViewSourceCreation = "explicit-only" as const;
   private scope = new AbortController();
   private disposed = false;
@@ -234,8 +239,30 @@ export class NextTaskRepository implements TaskRepository {
     private readonly client: MdbaseClient,
     private readonly displayName: string,
     private readonly accountId: string,
+    options: {
+      modelSetupJournal?: ModelSetupJournal;
+      /** Completion recording only after the original client's receipt/readback. */
+      onModelSetupVerified?: () => Promise<void>;
+    } = {},
   ) {
     this.mutations = new NextMutations(client);
+    if (options.modelSetupJournal) {
+      const onVerified = options.onModelSetupVerified;
+      const setup = new NativeModelSetup(
+        client,
+        options.modelSetupJournal,
+        () => this.signal(),
+        async () => {
+          this.invalidateRemoteData();
+          await onVerified?.();
+        },
+      );
+      this.modelSetup = Object.freeze({
+        inspect: () => setup.inspect(),
+        install: () => setup.install(),
+        resume: () => setup.resume(),
+      });
+    }
     this.stopStatus = client.onStatus((status: SyncStatus) => {
       if (this.disposed) return;
       this.sync = {
