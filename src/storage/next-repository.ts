@@ -212,6 +212,7 @@ export class NextTaskRepository implements TaskRepository {
   private initialization: Promise<void> | null = null;
   private indexLoading: Promise<void> | null = null;
   private indexReady = false;
+  private hasLoadedIndex = false;
   private readonly cache = new ConnectedTaskIndex<CachedTask>();
   private readonly mutations: NextMutations;
   private readonly acceptedCreates = new WeakMap<TaskCreateIntent, Task>();
@@ -357,9 +358,10 @@ export class NextTaskRepository implements TaskRepository {
         this.assertCurrentData(revision);
         this.providers = providers;
         this.models = new Map(providers.map((p) => [p.typeName, p.model]));
-        this.reached();
+        this.reached(false);
       })().catch((reason) => {
         if (this.initialization === loading) this.initialization = null;
+        this.noteOperationFailure(reason, signal);
         throw reason;
       });
       this.initialization = loading;
@@ -410,6 +412,7 @@ export class NextTaskRepository implements TaskRepository {
       for (const [id, value] of snapshot)
         if (!writes.paths.has(value.task.path)) this.cache.set(id, value);
       this.indexReady = true;
+      this.hasLoadedIndex = true;
       this.reached();
     })().finally(() => {
       writes.stop();
@@ -477,36 +480,41 @@ export class NextTaskRepository implements TaskRepository {
 
   async refresh(): Promise<RefreshResult> {
     const signal = this.signal();
-    const start = performance.now();
-    const before = new Map(
-      [...this.cache].map(([id, value]) => [id, JSON.stringify(value.task)]),
-    );
-    await this.indexLoading;
-    signal.throwIfAborted();
-    if (
-      this.changesWatch &&
-      ["failed", "closed"].includes(this.changesWatch.state)
-    ) {
-      this.changesWatch();
-      this.changesWatch = null;
+    try {
+      const start = performance.now();
+      const before = new Map(
+        [...this.cache].map(([id, value]) => [id, JSON.stringify(value.task)]),
+      );
+      await this.indexLoading;
+      signal.throwIfAborted();
+      if (
+        this.changesWatch &&
+        ["failed", "closed"].includes(this.changesWatch.state)
+      ) {
+        this.changesWatch();
+        this.changesWatch = null;
+      }
+      this.initialization = null;
+      this.indexReady = false;
+      await this.initialize();
+      signal.throwIfAborted();
+      const changed = [...this.cache].filter(
+        ([id, value]) => before.get(id) !== JSON.stringify(value.task),
+      ).length;
+      const removed = [...before.keys()].filter(
+        (id) => !this.cache.has(id),
+      ).length;
+      this.emit("data");
+      return {
+        scanned: this.cache.size,
+        changed,
+        removed,
+        elapsedMs: Math.round(performance.now() - start),
+      };
+    } catch (reason) {
+      this.noteOperationFailure(reason, signal);
+      throw reason;
     }
-    this.initialization = null;
-    this.indexReady = false;
-    await this.initialize();
-    signal.throwIfAborted();
-    const changed = [...this.cache].filter(
-      ([id, value]) => before.get(id) !== JSON.stringify(value.task),
-    ).length;
-    const removed = [...before.keys()].filter(
-      (id) => !this.cache.has(id),
-    ).length;
-    this.emit("data");
-    return {
-      scanned: this.cache.size,
-      changed,
-      removed,
-      elapsedMs: Math.round(performance.now() - start),
-    };
   }
 
   async listSummaries(
@@ -1121,44 +1129,59 @@ export class NextTaskRepository implements TaskRepository {
 
   async search(query: TaskListQuery, options: { signal?: AbortSignal } = {}) {
     const signal = this.signal(options.signal);
-    await this.ensureIndex();
-    signal.throwIfAborted();
-    const tokens = taskSearchTokens(query.search);
-    const matches = new Map<string, Set<string>>();
-    for (const token of tokens) {
-      const ids = new Set<string>();
-      for await (const page of this.client.pages(
-        {
-          types: [...this.models.keys()],
-          where: `file.body.lower().contains(${JSON.stringify(token)})`,
-          limit: 1000,
-        },
-        undefined,
-        signal,
-      )) {
-        signal.throwIfAborted();
-        if (!page.complete)
-          throw nativeUnsupported(
-            "The replica has not supplied complete search matches.",
-          );
-        page.records.forEach((record) => ids.add(record.path));
+    try {
+      await this.ensureIndex();
+      signal.throwIfAborted();
+      const tokens = taskSearchTokens(query.search);
+      const matches = new Map<string, Set<string>>();
+      for (const token of tokens) {
+        const ids = new Set<string>();
+        for await (const page of this.client.pages(
+          {
+            types: [...this.models.keys()],
+            where: `file.body.lower().contains(${JSON.stringify(token)})`,
+            limit: 1000,
+          },
+          undefined,
+          signal,
+        )) {
+          signal.throwIfAborted();
+          if (!page.complete)
+            throw nativeUnsupported(
+              "The replica has not supplied complete search matches.",
+            );
+          page.records.forEach((record) => ids.add(record.path));
+        }
+        matches.set(token, ids);
       }
-      matches.set(token, ids);
+      const paths = await this.assignedPaths(query.assignedTo, signal);
+      signal.throwIfAborted();
+      return this.cache
+        .list(
+          query,
+          (task, token) => matches.get(token)?.has(task.path) ?? false,
+          paths,
+        )
+        .map((task) => ({
+          task,
+          bodyMatches: tokens.filter((token) =>
+            matches.get(token)?.has(task.path),
+          ),
+        }));
+    } catch (reason) {
+      if (
+        this.noteOperationFailure(reason, signal) &&
+        this.hasLoadedIndex &&
+        query.assignedTo === undefined
+      ) {
+        // Previously loaded metadata is display-only while unavailable. It
+        // cannot prove body/assignment matches or restore write availability.
+        return this.cache
+          .list(query)
+          .map((task) => ({ task, bodyMatches: [] }));
+      }
+      throw reason;
     }
-    const paths = await this.assignedPaths(query.assignedTo, signal);
-    signal.throwIfAborted();
-    return this.cache
-      .list(
-        query,
-        (task, token) => matches.get(token)?.has(task.path) ?? false,
-        paths,
-      )
-      .map((task) => ({
-        task,
-        bodyMatches: tokens.filter((token) =>
-          matches.get(token)?.has(task.path),
-        ),
-      }));
   }
 
   async list(
@@ -2089,6 +2112,11 @@ export class NextTaskRepository implements TaskRepository {
   ): Promise<TaskViewExecution> {
     await this.initialize({ deferTaskIndex: true });
     signal.throwIfAborted();
+    // A data push can invalidate discovery before the selected view reloads.
+    // Rediscover through the original client, then enforce the same exact
+    // source identity; never execute a retained descriptor as a stale fallback.
+    if (!this.nativeViews.has(view.key)) await this.listViews();
+    signal.throwIfAborted();
     const revision = this.dataRevision;
     const descriptor = this.nativeView(view);
     const timezone = runtimeTimezone();
@@ -2406,8 +2434,33 @@ export class NextTaskRepository implements TaskRepository {
     this.scratchFeedSnapshot = undefined;
     this.listeners.clear();
   }
-  private reached() {
-    if (this.scope.signal.aborted || this.changesWatch?.state !== "active")
+  private noteOperationFailure(reason: unknown, signal: AbortSignal): boolean {
+    if (
+      signal.aborted ||
+      this.disposed ||
+      !(reason instanceof MdbaseError) ||
+      reason.code !== "unavailable"
+    )
+      return false;
+    if (
+      this.status.state !== "unavailable" ||
+      this.status.message !== reason.message
+    ) {
+      this.status = {
+        ...this.status,
+        state: "unavailable",
+        message: reason.message,
+      };
+      this.emit("status");
+    }
+    return true;
+  }
+  private reached(dataRead = true) {
+    if (
+      this.scope.signal.aborted ||
+      this.changesWatch?.state !== "active" ||
+      (!dataRead && this.status.state === "unavailable")
+    )
       return;
     this.status = {
       state: "connected",
