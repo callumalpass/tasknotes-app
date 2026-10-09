@@ -31,7 +31,10 @@ function page(id: string, hasMore: boolean): TaskViewExecution {
     hasMore,
   };
 }
-function fixture(iterateView: TaskRepository["iterateView"]) {
+function fixture(
+  iterateView: TaskRepository["iterateView"],
+  selectedView: TaskView = view,
+) {
   const repository = {
     cachedViewExecution: async () => null,
     readViewSource: async () => ({
@@ -60,7 +63,7 @@ function fixture(iterateView: TaskRepository["iterateView"]) {
   return {
     repository,
     observer,
-    session: new ViewQuerySession(repository, view, observer),
+    session: new ViewQuerySession(repository, selectedView, observer),
   };
 }
 it("replaces an interrupted partial cursor even when foreground refresh finds no changes", async () => {
@@ -168,6 +171,101 @@ it("paints the first page without draining later pages, joins load-more, and clo
     observer.result.mock.lastCall?.[0].rows.map((row) => row.task.id),
   ).toEqual(["one", "two"]);
 });
+it("starts Kanban with one caller-driven page and requests later pages only on demand", async () => {
+  const selected = {
+    ...view,
+    presentation: { ...view.presentation!, type: "tasknotes.kanban" },
+  };
+  let reads = 0;
+  const f = fixture(async function* () {
+    reads++;
+    yield { ...page("one", true), view: selected };
+    reads++;
+    yield { ...page("two", false), view: selected };
+  }, selected);
+  await f.session.start();
+  expect(reads).toBe(1);
+  expect(f.repository.executeView).not.toHaveBeenCalled();
+  expect(f.session.currentResult?.rows.map(({ task }) => task.id)).toEqual([
+    "one",
+  ]);
+  expect(f.session.canLoadMore).toBe(true);
+  await f.session.loadMore();
+  expect(reads).toBe(2);
+  expect(f.session.currentResult?.rows.map(({ task }) => task.id)).toEqual([
+    "one",
+    "two",
+  ]);
+  expect(f.session.canLoadMore).toBe(false);
+  f.session.close();
+});
+it("Kanban full load accepts a complete replacement rather than appending a different cut", async () => {
+  const selected = {
+    ...view,
+    presentation: { ...view.presentation!, type: "tasknotes.kanban" },
+  };
+  const f = fixture(async function* () {
+    yield page("unused", false);
+  }, selected);
+  vi.spyOn(f.repository, "iterateView").mockImplementation(
+    async function* (actual, options) {
+      expect(actual).toBe(selected);
+      expect(options?.cumulative).toBe(true);
+      yield { ...page("old-prefix", true), view: selected };
+      yield {
+        ...page("complete-current-cut", false),
+        view: selected,
+        totalCount: 1,
+      };
+    },
+  );
+  await f.session.start();
+  expect(f.session.currentResult?.rows.map(({ task }) => task.id)).toEqual([
+    "old-prefix",
+  ]);
+  expect(await f.session.loadAll()).toBe(true);
+  expect(f.session.currentResult?.rows.map(({ task }) => task.id)).toEqual([
+    "complete-current-cut",
+  ]);
+  expect(f.session.currentResult?.totalCount).toBe(1);
+  f.session.close();
+});
+it("Kanban close releases the partial cursor without draining another page", async () => {
+  const selected = {
+    ...view,
+    presentation: { ...view.presentation!, type: "tasknotes.kanban" },
+  };
+  let reads = 0,
+    closed = 0;
+  const f = fixture(async function* () {
+    try {
+      reads++;
+      yield page("one", true);
+      reads++;
+      yield page("two", false);
+    } finally {
+      closed++;
+    }
+  }, selected);
+  await f.session.start();
+  f.session.close();
+  await vi.waitFor(() => expect(closed).toBe(1));
+  expect(reads).toBe(1);
+  expect(f.session.currentResult).toBeNull();
+});
+it.each(["tasknotes.kanban", "tasknotes.calendar"])(
+  "keeps full execution when iteration is unsupported: %s",
+  async (type) => {
+    const f = fixture(undefined, {
+      ...view,
+      presentation: { ...view.presentation!, type },
+    });
+    await f.session.start();
+    expect(f.repository.executeView).toHaveBeenCalledOnce();
+    expect(f.session.canLoadMore).toBe(false);
+    f.session.close();
+  },
+);
 it("does not expose lifecycle cancellation as a view failure", async () => {
   const { session, observer } = fixture(async function* () {
     yield page("one", true);
