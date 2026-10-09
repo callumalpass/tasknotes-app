@@ -4,7 +4,7 @@ import { buildTaskNotesMdbaseResources } from "@tasknotes/model/mdbase";
 import type { PlainValue } from "@mdbase-dev/sdk";
 import { expect, test, type Page } from "./local-test";
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
-import type { NextSmokeInput } from "../src/test/next-entry-smoke-fixture";
+import { openFixture } from "./next-fixture";
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
@@ -29,15 +29,6 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-async function openFixture(page: Page, input: NextSmokeInput) {
-  await page.addInitScript((value) => {
-    window.__TASKNOTES_NEXT_SMOKE__ = value;
-  }, input);
-  await page.goto("./");
-  await page
-    .getByRole("button", { name: "Open synced fixture collection" })
-    .click();
-}
 function taskRecord(title: string, id: string) {
   const task = new TaskNotesTaskModel().create(
     { title },
