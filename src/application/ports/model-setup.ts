@@ -5,42 +5,108 @@ export interface ModelSetupScope {
   readonly collection: string;
 }
 
-export interface ModelDefinitionPut {
-  readonly kind: "resource_put";
-  readonly path: string;
-  readonly doc: string;
-  readonly mustNotExist: true;
-}
+export type ModelSetupPhase =
+  "prepared" | "attempted" | "confirmed" | "verified";
 
-/** Exactly the inline contract and implementing-type documents, in that order. */
-export type ModelDefinitionOps = readonly [
-  ModelDefinitionPut,
-  ModelDefinitionPut,
-];
-
-export interface ModelSetupIntent {
+/** Retained solely to recognize the original v1 plaintext. Never submit,
+ * convert, clear or replace a legacy intent, including a prepared one.
+ */
+export interface LegacyModelSetupIntent {
   readonly version: 1;
   readonly scope: ModelSetupScope;
   readonly mutationId: string;
-  readonly ops: ModelDefinitionOps;
-  readonly phase: "prepared" | "attempted" | "confirmed" | "verified";
+  readonly ops: readonly [
+    {
+      readonly kind: "resource_put";
+      readonly path: string;
+      readonly doc: string;
+      readonly mustNotExist: true;
+    },
+    {
+      readonly kind: "resource_put";
+      readonly path: string;
+      readonly doc: string;
+      readonly mustNotExist: true;
+    },
+  ];
+  readonly phase: ModelSetupPhase;
 }
 
-/** One bounded intent owned by the original installation/collection controller.
- * Mutators commit durably before returning, retain the original tuple/ID/ops,
- * and use monotonic compare-and-set. No generic save, reset or removal is exposed.
- * Phase metadata never substitutes for an actual receipt or source readback.
+/** Original ordered core pack operations, structurally SDK-shaped. The
+ * provider-neutral port does not expose a client or rebuild intent from a diff.
+ */
+export type ModelPackOperation =
+  | {
+      readonly kind: "resource_put";
+      readonly path: string;
+      readonly doc: string;
+      readonly baseRevision?: string;
+      readonly mustNotExist: boolean;
+    }
+  | {
+      readonly kind: "resource_delete";
+      readonly path: string;
+      readonly baseRevision?: string;
+    };
+
+export interface ModelPackPlan {
+  readonly pack: {
+    readonly id: string;
+    readonly version: string;
+    readonly digest: string;
+  };
+  readonly assessmentDigest: string;
+  readonly ops: readonly ModelPackOperation[];
+  /** ALL installed/preserved targets and the exact assessed lock document.
+   * Null is confirmed absence of a core-retired/deleted target, never a missing
+   * snapshot fallback. Phase/catalog metadata is not a readback witness.
+   */
+  readonly readback: readonly {
+    readonly path: string;
+    readonly doc: string | null;
+  }[];
+}
+
+export interface ModelPackSetupIntent {
+  readonly version: 2;
+  readonly scope: ModelSetupScope;
+  readonly mutationId: string;
+  readonly plan: ModelPackPlan;
+  readonly phase: ModelSetupPhase;
+}
+export type ModelSetupIntent = LegacyModelSetupIntent | ModelPackSetupIntent;
+
+/** Bounds apply to the TOTAL UTF-8 encoded intent plaintext, not each document.
+ * Overflow refuses; never truncate, split, reset or invent a replacement ID.
+ */
+export const MODEL_SETUP_LIMITS = Object.freeze({
+  plaintextBytes: 512 * 1024,
+  operations: 64,
+  readbacks: 128,
+  pathCodeUnits: 1024,
+});
+
+/** One bounded intent on the ORIGINAL protected journal/envelope/collection.
+ * Mutators commit durably, retain the entire original tuple/ID/plan, and use
+ * monotonic CAS. Legacy v1 loads only to preserve/refuse; no mutator accepts it.
+ * No generic save, reset, remove or alternate namespace is exposed.
  */
 export interface ModelSetupJournal {
   readonly scope: ModelSetupScope;
   load(signal: AbortSignal): Promise<ModelSetupIntent | null>;
   prepare(
-    ops: ModelDefinitionOps,
+    plan: ModelPackPlan,
     signal: AbortSignal,
-  ): Promise<ModelSetupIntent>;
-  recordAttempt(id: string, signal: AbortSignal): Promise<ModelSetupIntent>;
-  recordConfirmed(id: string, signal: AbortSignal): Promise<ModelSetupIntent>;
-  recordVerified(id: string, signal: AbortSignal): Promise<ModelSetupIntent>;
+  ): Promise<ModelPackSetupIntent>;
+  recordAttempt(id: string, signal: AbortSignal): Promise<ModelPackSetupIntent>;
+  recordConfirmed(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent>;
+  recordVerified(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent>;
 }
 
 export type ModelSetupView =
