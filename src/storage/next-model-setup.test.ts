@@ -181,6 +181,110 @@ async function fixture(
 }
 
 describe("original model setup intent and SDK resource operations (stand-ins)", () => {
+  it("requires the complete published pack/lock before an otherwise valid no-intent model can finalize", async () => {
+    const f = await fixture();
+    f.replica.seedResource(
+      "_contracts/tasknotes.task.md",
+      publisher.resources[0]!.document,
+    );
+    f.replica.seedResource("_types/task.md", publisher.resources[1]!.document);
+    const submit = vi.spyOn(f.client, "submit");
+    expect(await f.setup.inspect()).toEqual({ state: "required" });
+    expect(f.journal.value).toBeNull();
+    expect(f.verified).not.toHaveBeenCalled();
+    await expect(f.setup.resume()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(submit).not.toHaveBeenCalled();
+    await f.setup.install();
+    expect(submit).toHaveBeenCalledOnce();
+    expect(
+      submit.mock.calls[0]![0].map((op) =>
+        op.kind === "resource_put" ? op.path : "unexpected",
+      ),
+    ).toEqual([
+      "_schemas/tasknotes/tasknotes-task.schema.json",
+      "_schemas/tasknotes/tasknotes-task-binding.schema.json",
+      "mdbase.lock.yaml",
+    ]);
+    expect(f.verified).toHaveBeenCalledOnce();
+    if (f.journal.value?.version === 2)
+      expect(f.journal.value.plan.readback).toHaveLength(5);
+  });
+  it("accepts a fully confirmed current pack without manage permission or invented mutation/receipt", async () => {
+    const f = await fixture(["read", "write"]);
+    const planned = await f.plan();
+    for (const op of planned.ops)
+      if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
+    const submit = vi.spyOn(f.client, "submit"),
+      receipt = vi.spyOn(f.client, "awaitReceipt");
+    const get = vi.spyOn(f.client.resources, "get");
+    expect(await f.setup.inspect()).toEqual({ state: "ready" });
+    await f.setup.install();
+    await f.setup.resume();
+    for (const expected of planned.readback)
+      expect(get).toHaveBeenCalledWith(expected.path, f.owner.signal);
+    expect(f.journal.value).toBeNull();
+    expect(f.journal.prepares).toBe(0);
+    expect(submit).not.toHaveBeenCalled();
+    expect(receipt).not.toHaveBeenCalled();
+    expect(f.verified).toHaveBeenCalledTimes(2);
+  });
+  it.each([
+    "_schemas/tasknotes/tasknotes-task.schema.json",
+    "_schemas/tasknotes/tasknotes-task-binding.schema.json",
+    "mdbase.lock.yaml",
+  ])(
+    "refuses no-intent finalization when %s lacks confirmed source readback",
+    async (path) => {
+      const f = await fixture();
+      for (const op of (await f.plan()).ops)
+        if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
+      const get = f.client.resources.get.bind(f.client.resources);
+      vi.spyOn(f.client.resources, "get").mockImplementation(
+        async (...args) => {
+          const resource = await get(...args);
+          return resource.path === path
+            ? { ...resource, state: "pending" }
+            : resource;
+        },
+      );
+      const submit = vi.spyOn(f.client, "submit");
+      expect(await f.setup.inspect()).toMatchObject({ state: "blocked" });
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      expect(f.journal.value).toBeNull();
+      expect(submit).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["pending", "pending_delete"] as const)(
+    "does not finalize an already-valid/no-intent model from %s contract metadata",
+    async (state) => {
+      const f = await fixture();
+      const planned = await f.plan();
+      for (const op of planned.ops)
+        if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
+      const get = f.client.resources.get.bind(f.client.resources);
+      vi.spyOn(f.client.resources, "get").mockImplementation(
+        async (...args) => {
+          const resource = await get(...args);
+          return resource.path.endsWith("/tasknotes.task.md")
+            ? { ...resource, state }
+            : resource;
+        },
+      );
+      const submit = vi.spyOn(f.client, "submit");
+      expect(await f.setup.inspect()).toMatchObject({ state: "blocked" });
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      expect(f.journal.value).toBeNull();
+      expect(submit).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
   it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
     "preserves every legacy v1 %s row without reinterpretation or submit",
     async (phase) => {

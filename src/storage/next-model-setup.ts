@@ -269,8 +269,11 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     }
     return Object.freeze(resources);
   }
-  private async freshPlan(signal: AbortSignal): Promise<ModelPackPlan> {
-    this.requirePermission();
+  private async freshPlan(
+    signal: AbortSignal,
+    needsManage = true,
+  ): Promise<ModelPackPlan> {
+    if (needsManage) this.requirePermission();
     try {
       const assessment = await nativeModelPackAssessment(
         await this.snapshot(signal),
@@ -322,18 +325,20 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       if (stored) {
         const intent = this.intent(stored);
         if (intent.phase !== "verified") return uncertain().view;
+        await this.readback(intent.plan, signal);
         if (!(await this.modelPresent(signal)))
           throw blocked(
             "The original setup was verified, but the collection's current TaskNotes model is unavailable.",
           );
         return { state: "ready" };
       }
-      if (await this.modelPresent(signal)) return { state: "ready" };
-      const plan = await this.freshPlan(signal);
-      if (!plan.ops.length)
-        throw blocked(
-          "The current pack has not made the TaskNotes model available. Check its confirmed definitions before continuing.",
-        );
+      const present = await this.modelPresent(signal);
+      const plan = await this.freshPlan(signal, !present);
+      if (!plan.ops.length) {
+        await this.verifyCurrentPlan(plan, signal);
+        return { state: "ready" };
+      }
+      this.requirePermission();
       return { state: "required" };
     } catch (reason) {
       signal.throwIfAborted();
@@ -374,28 +379,14 @@ export class NativeModelSetup implements TaskNotesModelSetup {
         }
         throw uncertain();
       }
-      if (await this.modelPresent(signal)) {
-        await this.finish(signal);
-        return;
-      }
-      const plan = await this.freshPlan(signal);
+      const present = await this.modelPresent(signal);
+      const plan = await this.freshPlan(signal, !present);
       if (!plan.ops.length) {
-        // A pure current/no-op plan cannot invent a mutation or a completion.
-        try {
-          await this.readback(plan, signal);
-        } catch {
-          signal.throwIfAborted();
-          throw blocked(
-            "The current TaskNotes pack readback is not confirmed. No mutation was created.",
-          );
-        }
-        if (!(await this.modelPresent(signal)))
-          throw blocked(
-            "The current pack has not made the TaskNotes model available.",
-          );
+        await this.verifyCurrentPlan(plan, signal);
         await this.finish(signal);
         return;
       }
+      this.requirePermission();
       let intent = this.intent(await this.journal.prepare(plan, signal));
       signal.throwIfAborted();
       if (intent.phase !== "prepared" || !samePlan(intent.plan, plan))
@@ -411,6 +402,12 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       signal.throwIfAborted();
       if (!stored) {
         if (await this.modelPresent(signal)) {
+          const plan = await this.freshPlan(signal, false);
+          if (plan.ops.length)
+            throw blocked(
+              "No original model mutation is available to resume. Check setup to explicitly assess the complete published pack.",
+            );
+          await this.verifyCurrentPlan(plan, signal);
           await this.finish(signal);
           return;
         }
@@ -420,6 +417,26 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       }
       await this.execute(this.intent(stored), signal);
     });
+  }
+  private async verifyCurrentPlan(
+    plan: ModelPackPlan,
+    signal: AbortSignal,
+  ): Promise<void> {
+    // No UUID, submit or receipt witness for a current plan. Catalogue metadata
+    // alone cannot complete setup: all four actual targets AND exact lock must
+    // still have confirmed list/get readback on this original client.
+    try {
+      await this.readback(plan, signal);
+    } catch {
+      signal.throwIfAborted();
+      throw blocked(
+        "The current TaskNotes pack readback is not confirmed. No mutation was created.",
+      );
+    }
+    if (!(await this.modelPresent(signal)))
+      throw blocked(
+        "The current pack has not made the TaskNotes model available.",
+      );
   }
   private async finish(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
