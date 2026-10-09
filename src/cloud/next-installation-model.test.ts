@@ -70,6 +70,7 @@ class ControlWorker {
   intent = ControlWorker.initial;
   markerConfirmed = false;
   loseMarkerOnce = false;
+  markerGate: Promise<void> | null = null;
   terminated = 0;
   listeners = new Map<string, Set<(event: MessageEvent) => void>>();
   constructor() {
@@ -162,6 +163,20 @@ class ControlWorker {
           result = this.intent ? structuredClone(this.intent) : null;
           break;
         case "model-setup-verified":
+          if (this.markerGate) {
+            const gate = this.markerGate;
+            this.markerGate = null;
+            void gate.then(() => {
+              this.markerConfirmed = true;
+              this.reply({
+                version: 1,
+                id: request.id,
+                ok: true,
+                result: null,
+              });
+            });
+            return;
+          }
           if (this.loseMarkerOnce) {
             this.loseMarkerOnce = false;
             this.reply({
@@ -487,6 +502,46 @@ describe("original Worker model journal and held repository wiring", () => {
     expect(
       f.worker.requests.filter(
         (value) => value.command.kind === "model-setup-verified",
+      ),
+    ).toHaveLength(2);
+  });
+  it("a suspended and resumed scope cannot clear creator pending on an old finalizer reply", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    let release!: () => void;
+    f.worker.markerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    const install = repository.modelSetup!.install();
+    const refused = expect(install).rejects.toThrow();
+    await vi.waitFor(() =>
+      expect(
+        f.worker.requests.filter(
+          (request) => request.command.kind === "model-setup-verified",
+        ),
+      ).toHaveLength(1),
+    );
+    const original = structuredClone(f.worker.intent!);
+    expect(original.phase).toBe("verified");
+    repository.suspend();
+    repository.resume();
+    release();
+    await refused;
+    expect(f.worker.markerConfirmed).toBe(true); // The old controller reply really succeeded.
+    expect(f.worker.intent).toEqual(original);
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    await expect(
+      repository.initialize({ deferTaskIndex: true }),
+    ).rejects.toThrow("Complete this original collection");
+    await repository.modelSetup!.resume(); // Explicit same-intent completion on the NEW lifetime.
+    await repository.initialize({ deferTaskIndex: true });
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).toHaveBeenCalledOnce();
+    expect(vi.mocked(connect)).toHaveBeenCalledOnce();
+    expect(
+      f.worker.requests.filter(
+        (request) => request.command.kind === "model-setup-verified",
       ),
     ).toHaveLength(2);
   });

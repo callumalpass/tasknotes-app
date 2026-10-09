@@ -55,7 +55,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     private readonly journal: ModelResourceSetupJournal,
     private readonly ownerSignal: () => AbortSignal,
     private readonly sources: DefaultSourceFactory,
-    private readonly verified: () => Promise<void>,
+    private readonly verified: (signal: AbortSignal) => Promise<void>,
     private readonly legacy?: (signal: AbortSignal) => TaskNotesModelSetup,
   ) {
     this.scope = Object.freeze({ ...journal.scope });
@@ -524,7 +524,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
   private async finish(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
     try {
-      await this.verified();
+      await this.verified(signal);
       signal.throwIfAborted();
     } catch {
       throw uncertain();

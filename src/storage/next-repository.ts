@@ -249,7 +249,7 @@ export class NextTaskRepository implements TaskRepository {
       /** Actual original-controller completion flag, not resource readiness. */
       requiresTaskNotesModelSetup?: boolean;
       /** Completion recording only after the original client's receipt/readback. */
-      onModelSetupVerified?: () => Promise<void>;
+      onModelSetupVerified?: (signal: AbortSignal) => Promise<void>;
     } = {},
   ) {
     this.mutations = new NextMutations(client);
@@ -262,10 +262,18 @@ export class NextTaskRepository implements TaskRepository {
     if (options.modelSetupJournal) {
       const onVerified = options.onModelSetupVerified;
       const journal = options.modelSetupJournal;
-      const verified = async () => {
+      const verified = async (signal: AbortSignal) => {
+        const owner = this.scope;
+        signal.throwIfAborted();
+        owner.signal.throwIfAborted();
         this.invalidateRemoteData();
-        await onVerified?.();
-        this.signal().throwIfAborted();
+        await onVerified?.(signal);
+        // Preserve the operation's original owner AND deadline. A renewed
+        // repository scope cannot make an old completion current again.
+        signal.throwIfAborted();
+        owner.signal.throwIfAborted();
+        if (this.disposed || owner !== this.scope)
+          throw new Error("Original creator completion owner unavailable.");
         this.creatorSetupPending = false;
       };
       const legacy = (signal?: AbortSignal) =>

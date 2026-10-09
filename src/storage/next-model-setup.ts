@@ -174,7 +174,7 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     private readonly client: MdbaseClient,
     private readonly journal: ModelSetupJournal,
     private readonly ownerSignal: () => AbortSignal,
-    private readonly verified: () => Promise<void>,
+    private readonly verified: (signal: AbortSignal) => Promise<void>,
   ) {
     this.scope = Object.freeze({ ...journal.scope });
   }
@@ -440,7 +440,7 @@ export class NativeModelSetup implements TaskNotesModelSetup {
   private async finish(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
     try {
-      await this.verified();
+      await this.verified(signal);
       signal.throwIfAborted();
     } catch {
       throw uncertain();

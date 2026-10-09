@@ -422,9 +422,12 @@ export class NextInstallationWorker {
         {
           modelSetupJournal: this.modelJournal,
           requiresTaskNotesModelSetup: opened.requiresTaskNotesModelSetup,
-          onModelSetupVerified: async () => {
+          onModelSetupVerified: async (signal) => {
+            signal.throwIfAborted();
             await this.pending?.promise;
+            signal.throwIfAborted();
             await this.call({ kind: "model-setup-verified" });
+            signal.throwIfAborted();
           },
         },
       );
