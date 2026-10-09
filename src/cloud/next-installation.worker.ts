@@ -84,6 +84,8 @@ async function dispatch(
       return controller.attest();
     case "collections":
       return controller.listApprovedCollections();
+    case "create-collection":
+      return controller.createCloudCopyCollection(command.reconcile);
     case "start-consent":
       return controller.startCollectionConsent(
         command.requestedCreateCollections,

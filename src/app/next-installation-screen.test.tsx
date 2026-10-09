@@ -10,6 +10,8 @@ const transport = vi.hoisted(() => ({
   confirmAccount: vi.fn(),
   attest: vi.fn(),
   renewExpiredPairing: vi.fn(),
+  createCollection: vi.fn(),
+  collections: vi.fn(),
   close: vi.fn(),
 }));
 vi.mock("../cloud/next-installation-worker", () => ({
@@ -51,6 +53,12 @@ beforeEach(() => {
     state: "account_confirmed",
   });
   transport.close.mockResolvedValue(undefined);
+  transport.collections.mockResolvedValue([]);
+  transport.createCollection.mockResolvedValue({
+    kind: "created-collection",
+    collectionId: account,
+    displayName: "New collection",
+  });
 });
 async function open() {
   render(<NextInstallationScreen build={build} onCollection={vi.fn()} />);
@@ -61,6 +69,69 @@ async function open() {
   );
   await waitFor(() => expect(transport.start).toHaveBeenCalledOnce());
 }
+describe("ordinary cloud-copy creation UI (DOM/Worker stand-ins)", () => {
+  async function paired(createCollections: boolean) {
+    const view = {
+      ...parent,
+      accountId: account,
+      state: "paired" as const,
+      createCollections,
+    };
+    transport.start.mockResolvedValueOnce(view);
+    transport.confirmAccount.mockResolvedValueOnce(view);
+    await open();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Confirm this account on this device",
+      }),
+    );
+    await screen.findByRole("button", { name: "Create collection" });
+  }
+  it("requires explicit create permission and never creates during navigation", async () => {
+    await paired(false);
+    expect(
+      screen.getByRole("button", { name: "Create collection" }),
+    ).toBeDisabled();
+    expect(transport.createCollection).not.toHaveBeenCalled();
+  });
+  it("records explicit creation without claiming READ or automatically creating another", async () => {
+    await paired(true);
+    fireEvent.click(screen.getByRole("button", { name: "Create collection" }));
+    await screen.findByRole("status");
+    expect(transport.createCollection).toHaveBeenCalledExactlyOnceWith(false);
+    expect(
+      screen.queryByRole("button", { name: "Create collection" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("creation recorded");
+    expect(transport.collections).not.toHaveBeenCalled();
+  });
+  it.each(["outcome_unknown", "refused"])(
+    "%s retains an explicit original-creation resume action",
+    async (reason) => {
+      await paired(true);
+      transport.createCollection.mockRejectedValueOnce(
+        Error(`TaskNotes native sign-in: ${reason}`),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Create collection" }),
+      );
+      await screen.findByRole("alert");
+      expect(transport.createCollection).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole("button", { name: "Create collection" }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Resume original collection creation",
+        }),
+      );
+      await screen.findByRole("status");
+      expect(transport.createCollection).toHaveBeenLastCalledWith(true);
+      expect(transport.open).toHaveBeenCalledOnce();
+    },
+  );
+});
+
 describe("explicit expired pairing UI (DOM/Worker stand-ins, not LAB)", () => {
   it("offers renewal only after typed expiry, never automatically, and hides stale portal actions", async () => {
     transport.start.mockRejectedValueOnce(expired());

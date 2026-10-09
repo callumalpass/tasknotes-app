@@ -1,7 +1,10 @@
+import { collectionCreateIntent } from "./next-collection-create-intent";
+import type { NextCreatedCollection } from "./next-installation-protocol";
 import {
   AppProtectedInstallationSignIn,
   AppWebCloudCopyHost,
   acquireAppInstallationLease,
+  acquireAppReplicaLease,
   selectAppEnvironment,
   type AppBundledReleaseTrust,
   type AppEnvironmentSelection,
@@ -38,6 +41,8 @@ export class NextTaskNotesInstallation {
   private host: AppWebCloudCopyHost | null = null;
   private lease: AppReplicaLease | null = null;
   private authority: AppInstallationCustodyAuthority | null = null;
+  private collectionLease: AppReplicaLease | null = null;
+  private creationTarget: string | null = null;
   private closing: Promise<void> | null = null;
   private busy = false;
   private pending: Promise<unknown> | null = null;
@@ -216,6 +221,110 @@ export class NextTaskNotesInstallation {
     });
   }
 
+  /** Explicit creation through the original native device. Public target state
+   * is durable before bootstrap; unknown recovery restores that SAME target and
+   * protected SDK outcome, never a replacement collection or native actor. */
+  createCloudCopyCollection(reconcile = false): Promise<NextCreatedCollection> {
+    return this.exclusive(async () => {
+      if (
+        (!this.host && !reconcile) ||
+        !this.authority ||
+        this.flow!.view().state !== "paired" ||
+        this.flow!.view().createCollections !== true
+      )
+        throw Object.assign(
+          new Error("Collection creation needs explicit approval."),
+          { reason: "refused" },
+        );
+      const signal = this.hostLifetime.signal;
+      let intent = await collectionCreateIntent(
+        this.authority.scope,
+        signal,
+        reconcile ? "resume" : "prepare",
+      );
+      this.check();
+      if (intent.phase === "completed")
+        return {
+          kind: "created-collection",
+          collectionId: intent.collection,
+          displayName: "New collection",
+        };
+      if (intent.phase === "attempted" && !reconcile)
+        throw Object.assign(
+          new Error("Explicit original creation recovery is required."),
+          { reason: "outcome_unknown" },
+        );
+      if (
+        this.creationTarget !== null &&
+        this.creationTarget !== intent.collection
+      )
+        throw Object.assign(new Error("Original collection binding changed."), {
+          reason: "binding",
+        });
+      const scope = Object.freeze({
+        ...this.authority.scope,
+        collection: intent.collection,
+      });
+      this.creationTarget = intent.collection;
+      this.collectionLease ??= await acquireAppReplicaLease(
+        this.options.locks,
+        scope,
+        signal,
+      );
+      this.check();
+      const mode = intent.phase === "prepared" ? "fresh" : "existing";
+      if (mode === "existing") {
+        // Shutdown before reopening only the same protected native device.
+        await this.host?.close();
+        this.host = null;
+        this.check();
+        this.host = await AppWebCloudCopyHost.openInstallationDevice({
+          signIn: this.flow!,
+          installation: this.authority,
+          release: this.options.release,
+          origin: this.options.appOrigin,
+          signal,
+          loadRuntime: this.options.loadRuntime,
+          allowLoopbackHttp: this.selection.allowLoopbackHttp,
+        });
+        this.check();
+      } else {
+        intent = await collectionCreateIntent(
+          this.authority.scope,
+          signal,
+          "attempt",
+        );
+        this.check();
+      }
+      if (!this.host)
+        throw Object.assign(new Error("Original device is unavailable."), {
+          reason: "recovery_required",
+        });
+      await this.host.bootstrapCloudCopy({
+        scope,
+        collectionCurrent: () =>
+          !this.closing && !signal.aborted && this.collectionLease !== null,
+        purpose: "create",
+        outcomeMode: mode,
+        signal,
+        ...(mode === "existing"
+          ? { reconcile: "explicit-unknown-outcome" as const }
+          : {}),
+        fetch: (input, init) => globalThis.fetch(input, init),
+        allowLoopbackHttp: this.selection.allowLoopbackHttp,
+      });
+      this.check();
+      await collectionCreateIntent(this.authority.scope, signal, "complete");
+      this.check();
+      // Metadata completion is not collection READ or write readiness.
+      return {
+        kind: "created-collection",
+        collectionId: intent.collection,
+        displayName: "New collection",
+      };
+    });
+  }
+
   startCollectionConsent(
     requestedCreateCollections = false,
   ): Promise<AppInstallationCollectionConsentView> {
@@ -251,6 +360,8 @@ export class NextTaskNotesInstallation {
       this.flowLifetime.abort();
       this.flow = null;
       this.authority = null;
+      await this.collectionLease?.release();
+      this.collectionLease = null;
       await this.lease?.release();
       this.lease = null;
     });

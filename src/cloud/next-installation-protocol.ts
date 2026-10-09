@@ -31,7 +31,14 @@ export type NextInstallationCommand =
         | "close";
     }
   | { kind: "confirm-account"; accountId: string }
-  | { kind: "start-consent"; requestedCreateCollections: boolean };
+  | { kind: "start-consent"; requestedCreateCollections: boolean }
+  | { kind: "create-collection"; reconcile: boolean };
+export interface NextCreatedCollection {
+  readonly kind: "created-collection";
+  readonly collectionId: string;
+  /** Presentation fallback, not a persisted collection name. */
+  readonly displayName: "New collection";
+}
 export interface NextInstallationRequest {
   version: 1;
   id: number;
@@ -41,6 +48,7 @@ export type NextInstallationResult =
   | AppInstallationSignInView
   | AppInstallationCollectionConsentView
   | readonly AppInstallationCollection[]
+  | NextCreatedCollection
   | null;
 export type NextInstallationResponse =
   | { version: 1; id: number; ok: true; result: NextInstallationResult }
@@ -68,6 +76,10 @@ export function isNextInstallationCommand(
         keys === "accountId,kind" &&
         typeof command.accountId === "string" &&
         command.accountId.length === 36
+      );
+    case "create-collection":
+      return (
+        keys === "kind,reconcile" && typeof command.reconcile === "boolean"
       );
     case "start-consent":
       return (

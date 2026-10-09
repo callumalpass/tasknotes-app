@@ -4,6 +4,7 @@ const methods = vi.hoisted(() => ({
   view: vi.fn(),
   start: vi.fn(),
   renewExpiredPairing: vi.fn(),
+  createCloudCopyCollection: vi.fn(),
   close: vi.fn(),
 }));
 vi.mock("./next-installation", () => ({
@@ -73,6 +74,30 @@ describe("fixed renewal Worker runtime dispatch (source stand-ins)", () => {
     expect(methods.open).toHaveBeenCalledOnce();
     expect(methods.close).not.toHaveBeenCalled();
     expect(worker.stop).not.toHaveBeenCalled();
+    await worker.send(4, { kind: "close" });
+  });
+  it("creation refusal crosses as code only and explicit recovery stays on the original controller", async () => {
+    const worker = await opened();
+    methods.createCloudCopyCollection.mockRejectedValueOnce({
+      reason: "outcome_unknown",
+      body: "private",
+    });
+    expect(
+      await worker.send(2, { kind: "create-collection", reconcile: false }),
+    ).toEqual({ version: 1, id: 2, ok: false, reason: "outcome_unknown" });
+    expect(methods.createCloudCopyCollection).toHaveBeenCalledExactlyOnceWith(
+      false,
+    );
+    methods.createCloudCopyCollection.mockResolvedValueOnce({
+      kind: "created-collection",
+      collectionId: "11111111-1111-4111-8111-111111111111",
+      displayName: "New collection",
+    });
+    expect(
+      await worker.send(3, { kind: "create-collection", reconcile: true }),
+    ).toMatchObject({ ok: true, result: { kind: "created-collection" } });
+    expect(methods.createCloudCopyCollection).toHaveBeenLastCalledWith(true);
+    expect(methods.open).toHaveBeenCalledOnce();
     await worker.send(4, { kind: "close" });
   });
   it("unknown renewal error crosses as code only and never creates another controller", async () => {

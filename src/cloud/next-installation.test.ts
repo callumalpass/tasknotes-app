@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
 import {
   AppProtectedInstallationSignIn,
   AppWebCloudCopyHost,
@@ -24,7 +25,11 @@ const release: AppBundledReleaseTrust = {
     version: "test-unit-only",
   },
 };
-afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.stubGlobal("indexedDB", new IDBFactory()));
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 function deferred<T>() {
   let resolve!: (v: T) => void;
   const promise = new Promise<T>((r) => {
@@ -78,6 +83,9 @@ function setup() {
     }),
   };
   const host = {
+    bootstrapCloudCopy: vi.fn<AppWebCloudCopyHost["bootstrapCloudCopy"]>(
+      async () => ({}) as never,
+    ),
     attestInstallation: vi.fn(async () => ({
       ...view,
       state: "awaiting_approval",
@@ -196,6 +204,93 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     await app.exchangeCollectionConsent();
     expect(s.open).toHaveBeenCalledOnce();
     expect(s.openHost).toHaveBeenCalledOnce();
+    await app.close();
+  });
+  it("creates one durable target with the original host and collection-only lease", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: true });
+    const created = await app.createCloudCopyCollection();
+    expect(created.kind).toBe("created-collection");
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: { account, installation, collection: created.collectionId },
+        purpose: "create",
+        outcomeMode: "fresh",
+      }),
+    );
+    expect(s.events.filter((e) => e === "lease")).toHaveLength(2);
+    expect(await app.createCloudCopyCollection()).toEqual(created);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+    expect(s.openHost).toHaveBeenCalledOnce();
+    await app.close();
+    expect(s.events.slice(-4)).toEqual([
+      "host-close",
+      "flow-close",
+      "unlock",
+      "unlock",
+    ]);
+  });
+  it("refuses creation before explicit paired create permission without bootstrap", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: false });
+    await expect(app.createCloudCopyCollection()).rejects.toMatchObject({
+      reason: "refused",
+    });
+    expect(s.host.bootstrapCloudCopy).not.toHaveBeenCalled();
+    expect(s.events.filter((e) => e === "lease")).toHaveLength(1);
+    await app.close();
+  });
+  it.each(["outcome_unknown", "response", "unavailable"])(
+    "%s never replaces the target or automatically reissues creation",
+    async (reason) => {
+      const s = setup(),
+        app = await NextTaskNotesInstallation.open(s.options);
+      await app.confirmAccountAndOpenDevice(account);
+      s.setView({ state: "paired", createCollections: true });
+      s.host.bootstrapCloudCopy.mockRejectedValueOnce(
+        Object.assign(Error("failed"), { reason }),
+      );
+      await expect(app.createCloudCopyCollection()).rejects.toMatchObject({
+        reason,
+      });
+      const original = s.host.bootstrapCloudCopy.mock.calls[0]![0];
+      await expect(app.createCloudCopyCollection()).rejects.toMatchObject({
+        reason: "outcome_unknown",
+      });
+      expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+      const recovered = await app.createCloudCopyCollection(true);
+      expect(recovered.collectionId).toBe(original.scope.collection);
+      expect(s.host.bootstrapCloudCopy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          scope: original.scope,
+          purpose: "create",
+          outcomeMode: "existing",
+          reconcile: "explicit-unknown-outcome",
+        }),
+      );
+      expect(s.openHost).toHaveBeenCalledTimes(2);
+      expect(s.openHost.mock.calls[1]![0].signIn).toBe(s.flow);
+      expect(s.openHost.mock.calls[1]![0].installation).toBe(
+        s.openHost.mock.calls[0]![0].installation,
+      );
+      expect(s.events.filter((e) => e === "lease")).toHaveLength(2);
+      expect(s.open).toHaveBeenCalledOnce();
+      await app.close();
+    },
+  );
+  it("an explicit recovery without a retained creation never allocates a target", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: true });
+    await expect(app.createCloudCopyCollection(true)).rejects.toMatchObject({
+      reason: "recovery_required",
+    });
+    expect(s.host.bootstrapCloudCopy).not.toHaveBeenCalled();
     await app.close();
   });
   it("has no automatic unknown-outcome retry", async () => {

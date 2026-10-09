@@ -27,6 +27,8 @@ export function NextInstallationScreen({
     readonly AppInstallationCollection[]
   >([]);
   const [requestCreate, setRequestCreate] = useState(false);
+  const [creationAttempted, setCreationAttempted] = useState(false);
+  const [creationRecorded, setCreationRecorded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deviceReady, setDeviceReady] = useState(false);
   const [expired, setExpired] = useState(false);
@@ -239,6 +241,39 @@ export function NextInstallationScreen({
       ) : null}
       {paired && deviceReady ? (
         <section>
+          <h2>Create a collection</h2>
+          <p>
+            Create a new collection with a cloud copy. A collection name is not
+            available during this setup. Creation does not mean its records are
+            ready to open.
+          </p>
+          {creationRecorded ? (
+            <p role="status">
+              Collection creation recorded. Refresh approved collections to open
+              it.
+            </p>
+          ) : (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const reconcile = creationAttempted;
+                setCreationAttempted(true);
+                void run(async () => {
+                  await owner.current!.createCollection(reconcile);
+                  if (current.current) setCreationRecorded(true);
+                });
+              }}
+            >
+              <button type="submit" disabled={busy || !view.createCollections}>
+                {creationAttempted
+                  ? "Resume original collection creation"
+                  : "Create collection"}
+              </button>
+            </form>
+          )}
+          {!view.createCollections ? (
+            <p>Approve permission to create collections before creating one.</p>
+          ) : null}
           <h2>Approved collections</h2>
           <p>
             Collection names are approval metadata. Opening one still checks
@@ -303,7 +338,20 @@ export function NextInstallationScreen({
                 onClick={() =>
                   void run(async () => {
                     const next = await owner.current!.exchangeConsent();
-                    if (current.current) setConsent(next);
+                    if (current.current) {
+                      setConsent(next);
+                      if (next.state === "scope_updated")
+                        setView((previous) =>
+                          previous
+                            ? {
+                                ...previous,
+                                createCollections:
+                                  previous.createCollections ||
+                                  next.approvedCreateCollections,
+                              }
+                            : previous,
+                        );
+                    }
                   })
                 }
               >
