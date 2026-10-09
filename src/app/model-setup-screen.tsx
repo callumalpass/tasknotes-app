@@ -83,7 +83,8 @@ export function ModelSetupScreen({
       <h1>Set up TaskNotes</h1>
       <p>
         This collection needs the TaskNotes model before its tasks and views can
-        open. Setup adds definitions without replacing existing files.
+        open. Setup installs the published TaskNotes model pack and checks
+        existing files before making changes.
       </p>
       {!view ? <p role="status">Checking the original collection…</p> : null}
       {view?.state === "required" ? (

@@ -3,16 +3,33 @@ import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { init } from "mdbase";
+import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
+import * as modelPlan from "./next-model-plan";
 import {
   ModelSetupError,
   TaskNotesModelRequiredError,
-  type ModelDefinitionOps,
+  type ModelPackPlan,
+  type ModelPackSetupIntent,
   type ModelSetupIntent,
   type ModelSetupJournal,
   type ModelSetupScope,
 } from "../application/ports/model-setup";
 import { NativeModelSetup } from "./next-model-setup";
-import { nativeModelDefinitionPlan } from "./next-model-plan";
+import {
+  nativeModelPackAssessment,
+  nativeModelPackPlan,
+} from "./next-model-plan";
+
+// Reuse the pinned package's Node WASM loader; browser asset delivery/custody
+// belongs to clients and is not qualified by these application protocol tests.
+vi.mock("../cloud/next-model-pack-core", () => ({
+  initializeModelPackCore: async (signal: AbortSignal) => {
+    signal.throwIfAborted();
+    await init();
+    signal.throwIfAborted();
+  },
+}));
 import { NextTaskRepository } from "./next-repository";
 
 // Protocol replica and synthetic describe only. These tests cover application
@@ -26,18 +43,22 @@ class TestJournal implements ModelSetupJournal {
     signal.throwIfAborted();
     return this.value;
   }
-  async prepare(ops: ModelDefinitionOps, signal: AbortSignal) {
+  async prepare(
+    plan: ModelPackPlan,
+    signal: AbortSignal,
+  ): Promise<ModelPackSetupIntent> {
     signal.throwIfAborted();
     if (!this.value) {
       this.prepares++;
       this.value = Object.freeze({
-        version: 1,
+        version: 2,
         scope: this.scope,
         mutationId: crypto.randomUUID(),
-        ops,
+        plan,
         phase: "prepared",
       });
     }
+    if (this.value.version !== 2) throw Error("preserve legacy intent");
     return this.value;
   }
   private record(
@@ -46,7 +67,7 @@ class TestJournal implements ModelSetupJournal {
     signal: AbortSignal,
   ) {
     signal.throwIfAborted();
-    if (!this.value || this.value.mutationId !== id)
+    if (!this.value || this.value.version !== 2 || this.value.mutationId !== id)
       throw Error("wrong original ID");
     this.events.push(phase);
     this.value = Object.freeze({ ...this.value, phase });
@@ -71,6 +92,7 @@ async function fixture(
   capabilities = ["definitions.manage", "collection.read"],
 ) {
   const replica = new MemoryReplica({ capabilities });
+  replica.seedResource("mdbase.yaml", 'spec_version: "0.3.0"\n');
   const client = await connect({
     connector: replica.connector(),
     app: { name: "model-test", version: "test" },
@@ -142,12 +164,158 @@ async function fixture(
     () => owner.signal,
     verified,
   );
-  return { replica, client, journal, owner, scope, setup, verified };
+  const plan = async () => {
+    const listed = await client.resources.list({ text: true });
+    const resources = Object.fromEntries(
+      listed.resources.map((resource) => [resource.path, resource.text!]),
+    );
+    const assessment = await nativeModelPackAssessment(resources, owner.signal);
+    return nativeModelPackPlan(
+      resources,
+      assessment.assessment_digest,
+      owner.signal,
+    );
+  };
+  return { replica, client, journal, owner, scope, setup, verified, plan };
 }
 
 describe("original model setup intent and SDK resource operations (stand-ins)", () => {
-  it("installs exactly two inline definitions once and verifies original receipt plus complete source readback", async () => {
+  it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
+    "preserves every legacy v1 %s row without reinterpretation or submit",
+    async (phase) => {
+      const f = await fixture();
+      const legacy = Object.freeze({
+        version: 1 as const,
+        scope: f.scope,
+        mutationId: crypto.randomUUID(),
+        phase,
+        ops: [
+          {
+            kind: "resource_put" as const,
+            path: "_contracts/tasknotes.task.md",
+            doc: "Original legacy contract bytes",
+            mustNotExist: true as const,
+          },
+          {
+            kind: "resource_put" as const,
+            path: "_types/task.md",
+            doc: "Original legacy type bytes",
+            mustNotExist: true as const,
+          },
+        ] as const,
+      });
+      f.journal.value = legacy;
+      const submit = vi.spyOn(f.client, "submit"),
+        receipt = vi.spyOn(f.client, "awaitReceipt");
+      expect(await f.setup.inspect()).toMatchObject({
+        state: "blocked",
+        message: expect.stringContaining("legacy"),
+      });
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      await expect(f.setup.resume()).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      expect(f.journal.value).toBe(legacy);
+      expect(f.journal.prepares).toBe(0);
+      expect(f.journal.events).toEqual([]);
+      expect(submit).not.toHaveBeenCalled();
+      expect(receipt).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
+  it("requires explicit re-assessment on snapshot drift before prepare, never an overwrite", async () => {
     const f = await fixture();
+    const assess = modelPlan.nativeModelPackAssessment;
+    vi.spyOn(modelPlan, "nativeModelPackAssessment").mockImplementationOnce(
+      async (...args) => {
+        const result = await assess(...args);
+        f.replica.seedResource(
+          "_types/task.md",
+          publisher.resources[1]!.document,
+        );
+        return result;
+      },
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "blocked", message: expect.stringContaining("re-assess") },
+    });
+    expect(f.journal.value).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+    expect((await f.client.resources.get("_types/task.md")).text).toBe(
+      publisher.resources[1]!.document,
+    );
+  });
+  it("holds the original prepared plan if the collection changes before its first submit", async () => {
+    const f = await fixture();
+    await f.journal.prepare(await f.plan(), f.owner.signal);
+    const original = f.journal.value;
+    f.replica.seedResource(
+      "_contracts/tasknotes.task.md",
+      "User-owned conflicting contract bytes",
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.resume()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(f.journal.value).toBe(original);
+    expect(f.journal.events).toEqual([]);
+    expect(submit).not.toHaveBeenCalled();
+  });
+  it("rejects dropped or changed original guarded ops returned by the journal", async () => {
+    const f = await fixture();
+    const attempt = f.journal.recordAttempt.bind(f.journal);
+    vi.spyOn(f.journal, "recordAttempt").mockImplementation(async (...args) => {
+      const result = await attempt(...args);
+      return {
+        ...result,
+        plan: { ...result.plan, ops: result.plan.ops.slice(1) },
+      };
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.journal.prepares).toBe(1);
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("checks preserved seed text even when that target is not in the changed ops", async () => {
+    const f = await fixture();
+    const originalSeed =
+      publisher.resources[1]!.document + "\nPreserved user notes.\n";
+    f.replica.seedResource("_types/task.md", originalSeed);
+    const get = f.client.resources.get.bind(f.client.resources);
+    vi.spyOn(f.client.resources, "get").mockImplementation(async (...args) => {
+      const resource = await get(...args);
+      return f.journal.value?.phase === "confirmed" &&
+        resource.path === "_types/task.md"
+        ? { ...resource, text: originalSeed + "unexpected change" }
+        : resource;
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(
+      submit.mock.calls[0]![0].some(
+        (op) => op.kind === "resource_put" && op.path === "_types/task.md",
+      ),
+    ).toBe(false);
+    expect(f.journal.value?.version).toBe(2);
+    if (f.journal.value?.version === 2)
+      expect(f.journal.value.plan.readback).toContainEqual({
+        path: "_types/task.md",
+        doc: originalSeed,
+      });
+    expect(f.journal.value?.phase).toBe("confirmed");
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("installs the complete pinned pack plus lock once and verifies original receipt plus complete source readback", async () => {
+    const f = await fixture();
+    const expected = await f.plan();
     const original = f.client.submit.bind(f.client);
     const submit = vi.spyOn(f.client, "submit");
     expect(await f.setup.inspect()).toEqual({ state: "required" });
@@ -161,9 +329,10 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(f.journal.events).toEqual(["attempted", "confirmed", "verified"]);
     expect(f.journal.prepares).toBe(1);
     expect(submit).toHaveBeenCalledOnce();
-    expect(submit.mock.calls[0]![0]).toEqual(
-      nativeModelDefinitionPlan(new Map()),
-    );
+    expect(submit.mock.calls[0]![0]).toEqual(expected.ops);
+    expect(expected.ops).toHaveLength(5);
+    expect(expected.readback).toHaveLength(5);
+    expect(expected.ops.at(-1)?.path).toBe("mdbase.lock.yaml");
     expect(submit.mock.calls[0]![1]).not.toHaveProperty("allowPartial");
     expect(f.verified).toHaveBeenCalledOnce();
     expect(await f.setup.inspect()).toEqual({ state: "ready" });
@@ -203,9 +372,10 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
   });
   it("does not promote matching catalog metadata to confirmation of an unknown original write", async () => {
     const f = await fixture();
-    const ops = nativeModelDefinitionPlan(new Map());
-    for (const op of ops) f.replica.seedResource(op.path, op.doc);
-    await f.journal.prepare(ops, f.owner.signal);
+    const plan = await f.plan();
+    for (const op of plan.ops)
+      if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
+    await f.journal.prepare(plan, f.owner.signal);
     await f.journal.recordAttempt(f.journal.value!.mutationId, f.owner.signal);
     vi.spyOn(f.client, "awaitReceipt").mockRejectedValue(
       new MdbaseError({
@@ -224,10 +394,7 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
   });
   it("resumes a durably prepared but never attempted intent exactly once", async () => {
     const f = await fixture();
-    await f.journal.prepare(
-      nativeModelDefinitionPlan(new Map()),
-      f.owner.signal,
-    );
+    await f.journal.prepare(await f.plan(), f.owner.signal);
     const id = f.journal.value!.mutationId;
     const submit = vi.spyOn(f.client, "submit");
     await f.setup.resume();
@@ -290,8 +457,8 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
   });
   it("does not use a pending type definition as already-valid model readiness", async () => {
     const f = await fixture();
-    for (const op of nativeModelDefinitionPlan(new Map()))
-      f.replica.seedResource(op.path, op.doc);
+    for (const op of (await f.plan()).ops)
+      if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
     const original = f.client.resources.get.bind(f.client.resources);
     vi.spyOn(f.client.resources, "get").mockImplementation(async (...args) => ({
       ...(await original(...args)),
@@ -385,6 +552,12 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     ["list", "_types/task.md"],
     ["get", "_contracts/tasknotes.task.md"],
     ["get", "_types/task.md"],
+    ["list", "_schemas/tasknotes/tasknotes-task.schema.json"],
+    ["get", "_schemas/tasknotes/tasknotes-task.schema.json"],
+    ["list", "_schemas/tasknotes/tasknotes-task-binding.schema.json"],
+    ["get", "_schemas/tasknotes/tasknotes-task-binding.schema.json"],
+    ["list", "mdbase.lock.yaml"],
+    ["get", "mdbase.lock.yaml"],
   ] as const)(
     "refuses pending %s readback of %s even with exact text and revision",
     async (method, path) => {
@@ -444,8 +617,8 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
   });
   it("finalizes an already-valid model without inventing an intent, also after a lost completion reply", async () => {
     const f = await fixture();
-    for (const op of nativeModelDefinitionPlan(new Map()))
-      f.replica.seedResource(op.path, op.doc);
+    for (const op of (await f.plan()).ops)
+      if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
     const submit = vi.spyOn(f.client, "submit");
     expect(await f.setup.inspect()).toEqual({ state: "ready" });
     expect(f.verified).not.toHaveBeenCalled();
