@@ -28,6 +28,17 @@ const SmokeFixture =
       )
     : null;
 
+// Keep the existing demo backend only in local test builds while native source
+// writes are unavailable. The held-client fixture above always takes precedence.
+const DemoFixture =
+  import.meta.env.MODE === "e2e"
+    ? lazy(() =>
+        import("./test/demo-entry-fixture").then((module) => ({
+          default: module.DemoEntryFixture,
+        })),
+      )
+    : null;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
@@ -38,6 +49,14 @@ createRoot(document.getElementById("root")!).render(
           }
         >
           <SmokeFixture />
+        </Suspense>
+      ) : DemoFixture ? (
+        <Suspense
+          fallback={
+            <main className="opening-screen">Loading demo test fixture…</main>
+          }
+        >
+          <DemoFixture />
         </Suspense>
       ) : (
         <TaskNotesApp />
