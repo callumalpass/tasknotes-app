@@ -19,7 +19,11 @@ test("isolated LAB native bundle retains immutable verified context and runtime 
   );
   assert.equal(
     pin.runtimeSha256,
-    "e31916f5ca96c1a8e220b7ef7aa67a8d20c26945f1ffb78f7108d9c9a79636e2",
+    "f53fb85dc34eaf9cdf80e71ffdd6eb4ee513e0e9c318b310945f40f35123c778",
+  );
+  assert.equal(
+    pin.runtimeSource.commit,
+    "a14cb5051104f5aceb035c751e1768a42c4ed8c8",
   );
   assert.equal(sha(`vendor/${pin.trustModule}`), pin.trustModuleSha256);
   assert.equal(sha(`vendor/${pin.runtime}`), pin.runtimeSha256);
