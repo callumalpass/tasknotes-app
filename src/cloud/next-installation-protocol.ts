@@ -1,8 +1,9 @@
 import type {
   ModelPackPlan,
+  ModelResourcePlan,
   ModelSetupIntent,
 } from "../application/ports/model-setup";
-import { modelPackPlan } from "./next-model-setup-intent";
+import { modelPackPlan, modelResourcePlan } from "./next-model-setup-intent";
 import type {
   AppBundledReleaseTrust,
   AppInstallationSignInView,
@@ -45,6 +46,16 @@ export type NextInstallationCommand =
   | { kind: "model-setup-intent"; action: "prepare"; plan: ModelPackPlan }
   | {
       kind: "model-setup-intent";
+      action: "attempt" | "confirm" | "verify";
+      mutationId: string;
+    }
+  | {
+      kind: "model-resource-setup-intent";
+      action: "prepare";
+      plan: ModelResourcePlan;
+    }
+  | {
+      kind: "model-resource-setup-intent";
       action: "attempt" | "confirm" | "verify";
       mutationId: string;
     };
@@ -116,6 +127,22 @@ export function isNextInstallationCommand(
       );
     case "set-foreground":
       return keys === "active,kind" && typeof command.active === "boolean";
+    case "model-resource-setup-intent":
+      if (command.action === "prepare") {
+        if (keys !== "action,kind,plan") return false;
+        try {
+          modelResourcePlan(command.plan);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      return (
+        keys === "action,kind,mutationId" &&
+        ["attempt", "confirm", "verify"].includes(command.action as string) &&
+        typeof command.mutationId === "string" &&
+        /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(command.mutationId)
+      );
     case "model-setup-intent":
       if (command.action === "load") return keys === "action,kind";
       if (command.action === "prepare") {

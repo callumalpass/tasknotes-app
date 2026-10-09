@@ -531,7 +531,10 @@ export class NextTaskNotesInstallation {
   /** Fixed public definition-intent control, only inside the original verified
    * collection owner. This neither submits writes nor grants model authority. */
   modelSetupIntent(
-    command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+    command: Extract<
+      NextInstallationCommand,
+      { kind: "model-setup-intent" | "model-resource-setup-intent" }
+    >,
   ): Promise<ModelSetupIntent | null> {
     return this.exclusive(async () => {
       const store = this.modelSetupStore;
@@ -545,13 +548,21 @@ export class NextTaskNotesInstallation {
         case "load":
           return store.load(signal);
         case "prepare":
-          return store.prepare(command.plan, signal);
+          return command.kind === "model-resource-setup-intent"
+            ? store.prepareResources(command.plan, signal)
+            : store.prepare(command.plan, signal);
         case "attempt":
-          return store.recordAttempt(command.mutationId, signal);
+          return command.kind === "model-resource-setup-intent"
+            ? store.recordResourceAttempt(command.mutationId, signal)
+            : store.recordAttempt(command.mutationId, signal);
         case "confirm":
-          return store.recordConfirmed(command.mutationId, signal);
+          return command.kind === "model-resource-setup-intent"
+            ? store.recordResourceConfirmed(command.mutationId, signal)
+            : store.recordConfirmed(command.mutationId, signal);
         case "verify":
-          return store.recordVerified(command.mutationId, signal);
+          return command.kind === "model-resource-setup-intent"
+            ? store.recordResourceVerified(command.mutationId, signal)
+            : store.recordVerified(command.mutationId, signal);
       }
     });
   }

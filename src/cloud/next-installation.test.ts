@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@mdbase-dev/sdk/app-host";
 import { NextTaskNotesInstallation } from "./next-installation";
 import { collectionCreateIntent } from "./next-collection-create-intent";
+import { resourceSetupPlan } from "../test/resource-setup-plan";
 
 const account = "11111111-1111-4111-8111-111111111111";
 const installation = "22222222-2222-4222-8222-222222222222";
@@ -263,6 +265,64 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       "unlock",
       "unlock",
     ]);
+  });
+  it("carries v3 actions on the same protected collection ledger without converting legacy actions", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    const load = {
+      kind: "model-setup-intent" as const,
+      action: "load" as const,
+    };
+    await expect(app.modelSetupIntent(load)).rejects.toMatchObject({
+      reason: "fenced",
+    });
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", collectionIds: [account] });
+    s.flow.listApprovedCollections.mockResolvedValue([
+      { collectionId: account, displayName: "Tasks", role: "owner" },
+    ] as never);
+    const opened = await app.openApprovedCollection(account);
+    expect(await app.modelSetupIntent(load)).toBeNull();
+    const plan = resourceSetupPlan();
+    const original = await app.modelSetupIntent({
+      kind: "model-resource-setup-intent",
+      action: "prepare",
+      plan,
+    });
+    expect(original).toMatchObject({
+      version: 3,
+      scope: opened.scope,
+      plan,
+      phase: "prepared",
+    });
+    for (const [action, phase] of [
+      ["attempt", "attempted"],
+      ["confirm", "confirmed"],
+      ["verify", "verified"],
+    ] as const) {
+      const command = {
+        kind: "model-resource-setup-intent" as const,
+        action,
+        mutationId: original!.mutationId,
+      };
+      expect(await app.modelSetupIntent(command)).toEqual({
+        ...original,
+        phase,
+      });
+      expect(await app.modelSetupIntent(load)).toEqual({ ...original, phase });
+      await expect(
+        app.modelSetupIntent({
+          kind: "model-setup-intent",
+          action,
+          mutationId: original!.mutationId,
+        }),
+      ).rejects.toMatchObject({ reason: "recovery_required" });
+    }
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+    expect(s.openHost).toHaveBeenCalledOnce();
+    opened.channel.close();
+    await app.close();
+    await expect(app.modelSetupIntent(load)).rejects.toThrow();
   });
   it("creates one durable target with the original host and collection-only lease", async () => {
     const s = setup(),
