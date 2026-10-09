@@ -1,5 +1,5 @@
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 import { describe, expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
@@ -26,6 +26,85 @@ describe("TaskNotes starter views", () => {
     expect(taskNotesViewSourcePath("Résumé 📌")).toBe(
       "TaskNotes/Views/resume.base",
     );
+  });
+
+  it("keeps the five source documents bare, byte-exact and identity-free", () => {
+    const configuration = defaultTaskCollectionConfiguration();
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    const combined = parse(taskNotesDefaultBaseDocument(configuration)) as {
+      properties: Record<string, unknown>;
+      views: Array<{ name: string } & Record<string, unknown>>;
+    };
+    const sources = taskNotesDefaultBaseSources(configuration);
+    expect(sources.map(({ name, path }) => [name, path])).toEqual([
+      ["Today", "TaskNotes/Views/today.base"],
+      ["Upcoming", "TaskNotes/Views/upcoming.base"],
+      ["Calendar", "TaskNotes/Views/calendar.base"],
+      ["Projects", "TaskNotes/Views/projects.base"],
+      ["Archive", "TaskNotes/Views/archive.base"],
+    ]);
+    for (const source of sources) {
+      const expected = {
+        properties: combined.properties,
+        views: [combined.views.find((view) => view.name === source.name)],
+      };
+      expect(parse(source.document)).toEqual(expected);
+      expect(source.document).toBe(stringify(expected, { lineWidth: 0 }));
+      expect(Object.keys(parse(source.document))).toEqual([
+        "properties",
+        "views",
+      ]);
+      expect(source.document).not.toMatch(/^(kind|type|id):/m);
+    }
+    expect(uuid).not.toHaveBeenCalled();
+    uuid.mockRestore();
+  });
+
+  it("uses the supplied collection's mapped fields and completed statuses without replacing settings", () => {
+    const defaults = defaultTaskCollectionConfiguration();
+    const configuration = {
+      ...defaults,
+      fieldMapping: {
+        ...defaults.fieldMapping,
+        title: "Task title",
+        status: "State",
+        scheduled: "Start day",
+        due: "Due day",
+        priority: "Importance",
+        projects: "Project links",
+        sortOrder: "Rank key",
+        archiveTag: "retired",
+      },
+      statuses: defaults.statuses.map((status) =>
+        status.isCompleted ? { ...status, value: "finished" } : status,
+      ),
+    };
+    const before = structuredClone(configuration);
+    const sources = taskNotesDefaultBaseSources(configuration);
+    const today = parse(sources[0].document);
+    expect(today.views[0].filters.and).toContain('note["State"] != "finished"');
+    expect(today.views[0].filters.and).toContain(
+      'file.hasTag("retired") != true',
+    );
+    expect(today.views[0].order).toEqual([
+      'note["Task title"]',
+      'note["Start day"]',
+      'note["Due day"]',
+      'note["Project links"]',
+    ]);
+    expect(today.views[0].sort[0]).toEqual({
+      property: 'note["Rank key"]',
+      direction: "DESC",
+    });
+    expect(today.properties['note["Rank key"]']).toEqual({
+      displayName: "Manual order",
+      hidden: true,
+    });
+    expect(parse(sources[4].document).views[0].filters.and).toEqual([
+      'file.hasTag("retired") == true',
+    ]);
+    expect(JSON.stringify(sources)).not.toContain('note[\\"status\\"]');
+    expect(configuration).toEqual(before);
   });
 
   it("writes every starter screen as an ordinary editable view", () => {

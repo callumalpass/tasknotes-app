@@ -82,9 +82,10 @@ export function ModelSetupScreen({
     <main className="opening-screen">
       <h1>Set up TaskNotes</h1>
       <p>
-        This collection needs the TaskNotes model before its tasks and views can
-        open. Setup installs the published TaskNotes model pack and checks
-        existing files before making changes.
+        This collection needs its TaskNotes setup before tasks and views can
+        open. New setup installs the published models and adds Today, Upcoming,
+        Calendar, Projects and Archive. Existing view sources stay unchanged;
+        interrupted setup resumes only its original changes.
       </p>
       {!view ? <p role="status">Checking the original collection…</p> : null}
       {view?.state === "required" ? (
