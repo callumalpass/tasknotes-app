@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { ScratchImageService } from "./scratch-image-service";
 import type { TaskRepository } from "../ports/task-repository";
 
-function setup(overrides: { wrongDigest?: boolean } = {}) {
+function setup(
+  overrides: { wrongDigest?: boolean; uploadGate?: Promise<void> } = {},
+) {
   const createScratchImage = vi.fn(async (input) => ({
     kind: "image",
     ...input,
@@ -10,6 +12,7 @@ function setup(overrides: { wrongDigest?: boolean } = {}) {
     dateModified: input.dateCreated,
   }));
   const upload = vi.fn(async (path: string, source: Blob) => {
+    await overrides.uploadGate;
     const bytes = await crypto.subtle.digest(
       "SHA-256",
       await source.arrayBuffer(),
@@ -69,17 +72,34 @@ describe("ScratchImageService", () => {
   });
 
   it("rejects SVG and coalesces an identical rapid paste", async () => {
-    const { service, upload } = setup();
+    let releaseUpload!: () => void;
+    const uploadGate = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    const { service, upload } = setup({ uploadGate });
     await expect(
       service.add(new Blob(["svg"], { type: "image/svg+xml" })),
     ).rejects.toThrow(/Add an/);
     const blob = png(1);
-    const [left, right] = await Promise.all([
-      service.add(blob),
-      service.add(blob),
-    ]);
-    expect(left.id).toBe(right.id);
-    expect(upload).toHaveBeenCalledOnce();
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      await blob.arrayBuffer(),
+    );
+    const hashing = vi.spyOn(crypto.subtle, "digest").mockResolvedValue(digest);
+    const writes = [service.add(blob), service.add(blob)];
+    try {
+      // Coalescing is in-flight, not time-based. Keep the authority upload open
+      // until BOTH preflight hashes complete instead of racing native crypto.
+      await vi.waitFor(() => expect(hashing).toHaveBeenCalledTimes(2));
+      releaseUpload();
+      const [left, right] = await Promise.all(writes);
+      expect(left!.id).toBe(right!.id);
+      expect(upload).toHaveBeenCalledOnce();
+    } finally {
+      releaseUpload();
+      hashing.mockRestore();
+      await Promise.allSettled(writes);
+    }
   });
 
   it("rejects bytes that merely claim an image media type", async () => {
