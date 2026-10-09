@@ -149,7 +149,7 @@ export function MoreScreen({
           className="text-action"
           disabled={refreshing}
           type="button"
-          onClick={() => void refresh()}
+          onClick={() => void refresh().catch(() => undefined)}
         >
           {refreshing ? "Refreshing" : "Refresh now"}
         </button>
