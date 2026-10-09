@@ -115,6 +115,41 @@ interface RepositoryContextValue {
 
 const RepositoryContext = createContext<RepositoryContextValue | null>(null);
 
+// UI mount references only, never READ readiness or authority. Effect replay
+// and synchronous remount can retain the same original held repository.
+const repositoryMounts = new WeakMap<TaskRepository, Set<object>>();
+function retainRepositoryMount(repository: TaskRepository) {
+  let mounts = repositoryMounts.get(repository);
+  if (!mounts) {
+    mounts = new Set();
+    repositoryMounts.set(repository, mounts);
+  }
+  const activeMounts = mounts;
+  const mount = {};
+  activeMounts.add(mount);
+  return () => {
+    activeMounts.delete(mount);
+    if (activeMounts.size) return;
+    if (repository.suspend && repository.resume) {
+      // Cancel immediately; close permanently only if no mount retains it
+      // before the microtask. No new client or authority is constructed.
+      repository.suspend();
+      queueMicrotask(() => {
+        if (
+          activeMounts.size ||
+          repositoryMounts.get(repository) !== activeMounts
+        )
+          return;
+        repositoryMounts.delete(repository);
+        repository.dispose?.();
+      });
+    } else {
+      repositoryMounts.delete(repository);
+      repository.dispose?.();
+    }
+  };
+}
+
 export function RepositoryProvider({
   children,
   repository: supplied,
@@ -224,6 +259,7 @@ export function RepositoryProvider({
 
   useEffect(() => {
     repository.resume?.();
+    const releaseMount = retainRepositoryMount(repository);
     let active = true;
     let generation = 0;
     let opening: Promise<void> | null = null;
@@ -368,7 +404,7 @@ export function RepositoryProvider({
       refreshInFlight.current = null;
       startupRef.current = null;
       interruptStartupRef.current = null;
-      repository.dispose?.();
+      releaseMount();
       disposeStartup?.();
       taskCommandsRef.current = null;
       taskCommandsReadyRef.current = null;
