@@ -235,8 +235,17 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
 test("acknowledges slow native creates and prefetches actual record revisions before delete", async ({
   page,
 }) => {
+  const throttle = Number(process.env.TASKNOTES_SMOKE_CPU_THROTTLE ?? "1");
+  if (throttle > 1) {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: throttle });
+  }
   const existing = taskRecord("Delete through the held client", "held-delete");
-  await openFixture(page, { records: [existing], slowConfirmation: true });
+  await openFixture(page, {
+    records: [existing],
+    slowConfirmation: true,
+    holdBodyReadPath: existing.path,
+  });
   await expect(
     page.getByText("Delete through the held client", { exact: true }),
   ).toBeVisible();
@@ -268,13 +277,10 @@ test("acknowledges slow native creates and prefetches actual record revisions be
   const nativeId = await page.evaluate((path) => {
     const c = window.__TASKNOTES_NEXT_SMOKE_CONTROL__!;
     const id = c.records().find((r) => r.path === path)!.id;
-    c.holdRead = id;
+    if (c.holdRead !== id)
+      throw new Error("Original body-read gate is not armed.");
     return id;
   }, existing.path);
-  const before = await page.evaluate(
-    (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.reads[id] ?? 0,
-    nativeId,
-  );
   await page
     .getByRole("button", {
       name: "Task actions for Delete through the held client",
@@ -283,16 +289,35 @@ test("acknowledges slow native creates and prefetches actual record revisions be
   await expect
     .poll(() =>
       page.evaluate(
-        (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.reads[id] ?? 0,
+        (id) =>
+          window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.pendingBodyReads[id] ?? 0,
         nativeId,
       ),
     )
-    .toBe(before + 1);
+    .toBe(1);
+  expect(
+    await page.evaluate(
+      (id) => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.prefetchReads[id],
+      nativeId,
+    ),
+  ).toBe(1);
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await page.evaluate((id) => {
+    window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.holdSummaryRead = id;
+  }, nativeId);
   await page.getByRole("button", { name: "Delete task", exact: true }).click();
-  // Native deletion must first READ the original complete snapshot and CAS
-  // revision. The classic optimistic toast before that READ is intentionally
-  // unavailable; neither deletion nor its undo claim can precede the snapshot.
+  // Queuing the undo command needs its original task summary, while the
+  // independent full-body prefetch is still pending. Hold that summary READ
+  // explicitly rather than depending on a transient disabled dialog frame.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (id) =>
+          window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.pendingSummaryReads[id] ?? 0,
+        nativeId,
+      ),
+    )
+    .toBe(1);
   await expect(
     page.getByRole("button", { name: "Delete task", exact: true }),
   ).toBeDisabled();

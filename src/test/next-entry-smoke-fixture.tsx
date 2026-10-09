@@ -33,12 +33,16 @@ export interface NextSmokeInput {
   }>;
   typeDefinition?: unknown;
   slowConfirmation?: boolean;
+  holdBodyReadPath?: string;
 }
 export interface NextSmokeControl {
   offline: boolean;
   holdRead: string | null;
+  holdSummaryRead: string | null;
+  pendingSummaryReads: Record<string, number>;
   reads: Record<string, number>;
   prefetchReads: Record<string, number>;
+  pendingBodyReads: Record<string, number>;
   operations: string[];
   errors: string[];
   updates: Array<{
@@ -119,9 +123,19 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
   });
   const control: NextSmokeControl = {
     offline: false,
-    holdRead: null,
+    // Arm before rendering: hover/focus can prefetch a snapshot before the
+    // test clicks its actions menu. Metadata-only reads remain unblocked.
+    holdRead:
+      input.holdBodyReadPath === undefined
+        ? null
+        : replica.allRecords.find(
+            (record) => record.path === input.holdBodyReadPath,
+          )!.id,
+    holdSummaryRead: null,
+    pendingSummaryReads: {},
     reads: {},
     prefetchReads: {},
+    pendingBodyReads: {},
     operations: [],
     errors: [],
     updates: [],
@@ -131,6 +145,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     },
     releaseReads: () => {
       control.holdRead = null;
+      control.holdSummaryRead = null;
       release();
     },
     records: () =>
@@ -212,9 +227,34 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     control.reads[id] = (control.reads[id] ?? 0) + 1;
     if (control.holdRead === id && args[1]?.body === true) {
       control.prefetchReads[id] = (control.prefetchReads[id] ?? 0) + 1;
-      await gate;
+      control.pendingBodyReads[id] = (control.pendingBodyReads[id] ?? 0) + 1;
+      try {
+        await gate;
+      } finally {
+        control.pendingBodyReads[id] -= 1;
+      }
     }
     return get(...args);
+  };
+  const find = client.find.bind(client);
+  client.find = async (...args) => {
+    const target = args[0];
+    const id =
+      typeof target === "string"
+        ? target
+        : "id" in target
+          ? target.id
+          : target.path;
+    if (control.holdSummaryRead === id) {
+      control.pendingSummaryReads[id] =
+        (control.pendingSummaryReads[id] ?? 0) + 1;
+      try {
+        await gate;
+      } finally {
+        control.pendingSummaryReads[id] -= 1;
+      }
+    }
+    return find(...args);
   };
   const update = client.update.bind(client);
   client.update = async (...args) => {
