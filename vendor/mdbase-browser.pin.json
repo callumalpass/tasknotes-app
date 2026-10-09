@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "c2c08afc91f992a08b10c2ea33d30c7f7aa01f6b",
+  "archive": "mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz",
+  "archiveBytes": 472256,
+  "archiveSha256": "6df89b5197ce2c49c83244d9aa97d37106171645f869cbcee1750a54a6521931",
+  "archiveIntegrity": "sha512-6/fUH4l0V8tu9tniH0a2pGOwQ0+LD1uiSnRJ11ZbSGwlhglsbvMUqWTijyK2QAxGnTLjYxgusVAGHiZ1hzbbSg==",
+  "wasmSha256": "5dff5044b0f95df4f00b33e942e66db63cd1e0b2e68b335c9e8e39fba3b7e31f",
+  "wasmBytes": 1264403
+}
