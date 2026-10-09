@@ -430,6 +430,35 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     expect(f.factory).not.toHaveBeenCalled();
     expect(f.mocked.submit).not.toHaveBeenCalled();
   });
+  it("does not mask a mid-submit owner abort as unavailable or readiness; original intent remains held", async () => {
+    const f = fixture();
+    const accept = f.mocked.submit.getMockImplementation()!;
+    f.mocked.submit.mockImplementation(async (ops, options) => {
+      const writes = await accept(ops, options);
+      f.owner.abort();
+      return writes;
+    });
+    await f.setup.install().then(
+      () => {
+        throw new Error("owner abort was masked");
+      },
+      (reason) => expect(reason).toBe(f.owner.signal.reason),
+    );
+    expect(f.mocked.submit).toHaveBeenCalledTimes(1);
+    expect(f.verified).not.toHaveBeenCalled();
+    const reopen = new NextModelSetupIntentStore({
+      scope,
+      appOrigin: "http://127.0.0.1:48319",
+      cpOrigin: "https://connect-lab.mdbase.dev",
+      isCurrent: () => true,
+    });
+    const original = await reopen.load(signal());
+    expect(original?.phase).toBe("attempted");
+    if (original?.version !== 3) throw new Error("missing held original");
+    expect(original.plan.sources.map((s) => s.id)).toEqual([
+      ...f.records.keys(),
+    ]);
+  });
   it("owner abort precedes readiness classification and never creates another intent", async () => {
     const f = fixture();
     f.owner.abort();

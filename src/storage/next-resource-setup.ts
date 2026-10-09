@@ -262,6 +262,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           throw uncertain();
         receipt = await this.wait(writes[0]!.confirmed, signal);
       } catch (reason) {
+        signal.throwIfAborted();
         // A typed native refusal is not transformed into overwrite/retry.
         if (reason instanceof MdbaseError) throw reason;
         throw uncertain();
@@ -274,6 +275,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           signal,
         );
       } catch {
+        signal.throwIfAborted();
         throw uncertain();
       }
     }
