@@ -39,6 +39,7 @@ export interface NextSmokeControl {
   holdRead: string | null;
   reads: Record<string, number>;
   operations: string[];
+  errors: string[];
   updates: Array<{
     patch: Record<string, PlainValue>;
     unset: string[];
@@ -119,6 +120,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     holdRead: null,
     reads: {},
     operations: [],
+    errors: [],
     updates: [],
     confirm: () => replica.confirmAll(),
     releaseReads: release,
@@ -292,7 +294,23 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
       })),
     };
   };
-  return new NextTaskRepository(client, "Synced SDK fixture", account);
+  const repository = new NextTaskRepository(
+    client,
+    "Synced SDK fixture",
+    account,
+  );
+  const iterate = repository.iterateView.bind(repository);
+  repository.iterateView = async function* (...args) {
+    try {
+      yield* iterate(...args);
+    } catch (error) {
+      control.errors.push(
+        error instanceof Error ? error.message : "Synthetic query failure",
+      );
+      throw error;
+    }
+  };
+  return repository;
 }
 const fixtureBuild = async (): Promise<NextInstallationBuildInput> =>
   ({ environment: "lab" }) as NextInstallationBuildInput;

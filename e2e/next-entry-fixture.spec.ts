@@ -6,6 +6,31 @@ import { expect, test, type Page } from "./local-test";
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import type { NextSmokeInput } from "../src/test/next-entry-smoke-fixture";
 
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status !== testInfo.expectedStatus) {
+    const evidence = await page.evaluate(() => {
+      const c = window.__TASKNOTES_NEXT_SMOKE_CONTROL__;
+      return c
+        ? {
+            operations: c.operations,
+            errors: c.errors,
+            records: c
+              .records()
+              .map((r) => ({
+                id: r.id,
+                path: r.path,
+                title: r.frontmatter.title,
+              })),
+          }
+        : null;
+    });
+    await testInfo.attach("synthetic-sdk-diagnostics", {
+      body: JSON.stringify(evidence),
+      contentType: "application/json",
+    });
+  }
+});
+
 async function openFixture(page: Page, input: NextSmokeInput) {
   await page.addInitScript((value) => {
     window.__TASKNOTES_NEXT_SMOKE__ = value;
@@ -97,13 +122,13 @@ test("opens the original held client without relay traffic and preserves navigat
       ),
     )
     .toEqual([
-      "TaskNotes/Views/today.base#0",
-      "TaskNotes/Views/upcoming.base#0",
+      "33333333-3333-4333-8333-000000000001#0",
+      "33333333-3333-4333-8333-000000000002#0",
       "tasknotes:search",
       "tasknotes:scratchpad",
-      "TaskNotes/Views/calendar.base#0",
-      "TaskNotes/Views/projects.base#0",
-      "TaskNotes/Views/archive.base#0",
+      "33333333-3333-4333-8333-000000000003#0",
+      "33333333-3333-4333-8333-000000000004#0",
+      "33333333-3333-4333-8333-000000000005#0",
     ]);
   await page
     .getByRole("button", { name: "Remove Search from navigation" })
