@@ -76,6 +76,28 @@ describe("native installation Worker public protocol (source only)", () => {
       }),
     ).toBe(false);
   });
+  it("creation carries only explicit recovery intent, never a caller-selected target or authority", () => {
+    expect(
+      isNextInstallationCommand({
+        kind: "create-collection",
+        reconcile: false,
+      }),
+    ).toBe(true);
+    expect(
+      isNextInstallationCommand({ kind: "create-collection", reconcile: true }),
+    ).toBe(true);
+    for (const command of [
+      { kind: "create-collection" },
+      { kind: "create-collection", reconcile: "true" },
+      {
+        kind: "create-collection",
+        reconcile: true,
+        collectionId: "replacement",
+      },
+      { kind: "create-collection", reconcile: false, grant: "owner" },
+    ])
+      expect(isNextInstallationCommand(command)).toBe(false);
+  });
   it("errors are finite public codes, never raw messages or an arbitrary lower-case string", () => {
     for (const reason of [
       "binding",
