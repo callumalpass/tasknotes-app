@@ -126,6 +126,75 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       "source identity",
     );
   });
+  it("rediscovers the exact declaration after an accepted write invalidates the catalog", async () => {
+    const f = await fixture();
+    const added = await f.repository.create({ title: "Confirmed new task" });
+    await vi.waitFor(async () =>
+      expect(await f.repository.cachedViews()).toEqual([]),
+    );
+    const record = (
+      await f.client.query({ types: ["task"], limit: 10 })
+    ).records.find(
+      (candidate) => candidate.frontmatter.get("id") === added.id,
+    )!;
+    f.execute.mockResolvedValue({
+      ...f.reply,
+      rows: [
+        ...f.reply.rows,
+        {
+          record: record.id,
+          path: record.path,
+          sourceRevision: record.revision,
+          cells: [{ kind: "text", value: "Confirmed new task" }],
+        },
+      ],
+    });
+    const result = await f.repository.executeView(f.view);
+    expect(result.rows.map((row) => row.task.id)).toEqual([
+      f.task.id,
+      added.id,
+    ]);
+    expect(f.list).toHaveBeenCalledTimes(2);
+    expect(f.execute.mock.calls[0]![0]).toMatchObject({
+      record: descriptor.record,
+      sourceRevision: revision,
+      ordinal: descriptor.ordinal,
+    });
+    expect(f.genericExecute).not.toHaveBeenCalled();
+  });
+  it.each(["revision", "path", "missing"] as const)(
+    "refuses a %s declaration after rediscovery instead of silently reselecting it",
+    async (drift) => {
+      const f = await fixture();
+      await f.repository.create({ title: "Invalidate the original catalog" });
+      await vi.waitFor(async () =>
+        expect(await f.repository.cachedViews()).toEqual([]),
+      );
+      f.list.mockResolvedValue({
+        kind: "success",
+        views:
+          drift === "missing"
+            ? []
+            : [
+                {
+                  ...descriptor,
+                  ...(drift === "revision"
+                    ? { sourceRevision: "sha256:" + "cd".repeat(32) }
+                    : { path: "moved.base" }),
+                },
+              ],
+        clock,
+        collectionRevision: revision,
+        continuation: null,
+      });
+      f.source.mockClear();
+      await expect(f.repository.executeView(f.view)).rejects.toMatchObject({
+        reason: "unsupported",
+      });
+      expect(f.source).not.toHaveBeenCalled();
+      expect(f.execute).not.toHaveBeenCalled();
+    },
+  );
   it("full-load iteration replaces the independent prefix with ONE complete execution", async () => {
     const f = await fixture();
     const window = {

@@ -157,7 +157,7 @@ export function AppShell() {
         changeCollection={changeCollection}
         error={error}
         reauthorizeCurrentCollection={reauthorizeCurrentCollection}
-        retry={() => void refresh()}
+        retry={() => void refresh().catch(() => undefined)}
       />
     );
   }
