@@ -12,6 +12,7 @@ import pin from "../../vendor/mdbase-browser.pin.json";
 import { NextModelSetupIntentStore } from "../cloud/next-model-setup-intent";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import { NativeResourceSetup } from "./next-resource-setup";
+import { NextTaskRepository } from "./next-repository";
 import {
   captureResourceSetupPlan,
   nativeResourceSetupAssessment,
@@ -90,6 +91,9 @@ function fixture() {
         implementations: [],
       }));
   const mocked = {
+    onStatus: vi.fn(() => vi.fn()),
+    onHolds: vi.fn(() => vi.fn()),
+    onLink: vi.fn(() => vi.fn()),
     hello: {
       collection: scope.collection,
       grant: {
@@ -270,6 +274,26 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     expect(uuid).not.toHaveBeenCalled();
     expect(await f.journal.load(signal())).toBeNull();
   });
+  it("wires the real extended journal port into the repository without enabling source writes", async () => {
+    const f = fixture();
+    const repository = new NextTaskRepository(
+      f.client,
+      "Synthetic collection",
+      scope.account,
+      { modelSetupJournal: f.journal, onModelSetupVerified: f.verified },
+    );
+    expect(await repository.modelSetup!.inspect()).toEqual({
+      state: "required",
+    });
+    await repository.modelSetup!.install();
+    expect((await f.journal.load(signal()))?.version).toBe(3);
+    expect(f.mocked.submit).toHaveBeenCalledTimes(1);
+    expect(
+      f.mocked.submit.mock.calls[0]![0].filter((op) => op.kind === "create"),
+    ).toHaveLength(5);
+    expect(repository.defaultViewSourceCreation).toBe("explicit-only");
+    expect(f.verified).toHaveBeenCalledTimes(1);
+  });
   it("submits all original Core ops plus five explicit UUID/path/raw-document Creates in ONE mutation", async () => {
     const f = fixture();
     await f.setup.install();
@@ -444,6 +468,63 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     expect(await f.journal.load(signal())).toEqual(original);
     expect(f.factory).not.toHaveBeenCalled();
     expect(f.mocked.submit).not.toHaveBeenCalled();
+  });
+  it("delegates original v2 actions without generation, slot replacement or a new foreground budget", async () => {
+    const f = fixture();
+    const plan: ModelPackPlan = {
+      pack: {
+        id: "tasknotes.task",
+        version: "0.3.0-rc.18",
+        digest: digest("synthetic pack"),
+      },
+      assessmentDigest: digest("synthetic assessment"),
+      ops: [
+        {
+          kind: "resource_put",
+          path: "_types/task.md",
+          doc: "synthetic",
+          mustNotExist: true,
+        },
+      ],
+      readback: [{ path: "_types/task.md", doc: "synthetic" }],
+    };
+    const original = await f.journal.prepare(plan, signal());
+    const old = {
+      inspect: vi.fn(async () => ({
+        state: "outcome_unknown" as const,
+        message: "original v2",
+      })),
+      install: vi.fn(async () => undefined),
+      resume: vi.fn(async () => undefined),
+    };
+    const signals: AbortSignal[] = [];
+    const setup = new NativeResourceSetup(
+      f.client,
+      f.journal,
+      () => f.owner.signal,
+      f.factory,
+      f.verified,
+      (deadline) => {
+        signals.push(deadline);
+        return old;
+      },
+    );
+    expect(await setup.inspect()).toEqual({
+      state: "outcome_unknown",
+      message: "original v2",
+    });
+    await setup.install();
+    await setup.resume();
+    expect(old.inspect).toHaveBeenCalledTimes(1);
+    expect(old.install).toHaveBeenCalledTimes(1);
+    expect(old.resume).toHaveBeenCalledTimes(1);
+    expect(signals).toHaveLength(3);
+    expect(signals.every((s) => !s.aborted)).toBe(true);
+    expect(await f.journal.load(signal())).toEqual(original);
+    expect(f.factory).not.toHaveBeenCalled();
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    f.owner.abort();
+    expect(signals.every((s) => s.aborted)).toBe(true);
   });
   it("does not mask a mid-submit owner abort as unavailable or readiness; original intent remains held", async () => {
     const f = fixture();

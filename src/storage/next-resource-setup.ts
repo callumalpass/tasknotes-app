@@ -56,6 +56,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     private readonly ownerSignal: () => AbortSignal,
     private readonly sources: DefaultSourceFactory,
     private readonly verified: () => Promise<void>,
+    private readonly legacy?: (signal: AbortSignal) => TaskNotesModelSetup,
   ) {
     this.scope = Object.freeze({ ...journal.scope });
   }
@@ -135,6 +136,8 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (stored) {
+        if (stored.version !== 3 && this.legacy)
+          return await this.legacy(signal).inspect();
         const original = this.intent(stored);
         if (original.phase !== "verified") return uncertain().view;
         try {
@@ -175,6 +178,10 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (stored) {
+        if (stored.version !== 3 && this.legacy) {
+          await this.legacy(signal).install();
+          return;
+        }
         await this.execute(this.intent(stored), signal);
         return;
       }
@@ -208,6 +215,10 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       signal.throwIfAborted();
       if (!stored)
         throw blocked("No original resource mutation is available to resume.");
+      if (stored.version !== 3 && this.legacy) {
+        await this.legacy(signal).resume();
+        return;
+      }
       await this.execute(this.intent(stored), signal);
     });
   }
