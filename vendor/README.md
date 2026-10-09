@@ -28,6 +28,25 @@ snapshot with `pnpm contracts:sync`.
 Update the corresponding `file:` references and run `pnpm install`. Replace
 each snapshot with an exact registry version once that release is published.
 
+## Interim browser pack helpers
+
+`mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz` is the unchanged browser package built
+from exact mdbase-next main commit
+`c2c08afc91f992a08b10c2ea33d30c7f7aa01f6b`, including guarded pack operations
+and atomic schema-resource planning. No source patches were applied.
+
+Archive SHA-256:
+`6df89b5197ce2c49c83244d9aa97d37106171645f869cbcee1750a54a6521931`.
+`mdbase-browser.pin.json` also records its byte size, lockfile SHA-512 integrity
+and embedded WASM SHA-256/size. The initializer reuses the bounded same-origin
+asset loader and explicitly supplies verified bytes to the package's `init`.
+No helper call may rely on the package's implicit asset fetch.
+
+This is an interim LAB/launch-preparation dependency. Replacing the file
+snapshot with a published package version is a prerequisite before public
+launch; release owns publishing. These pure helpers do not replace the native
+held client/runtime or qualify authorization, receipts, READ or Saved.
+
 ## Native app storage
 
 `native-app-storage.json` pins the source, archive integrity and SQLite WASM
