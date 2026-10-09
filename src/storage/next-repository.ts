@@ -64,6 +64,7 @@ import {
 } from "./next-bases-discovery";
 import { readNativeRows } from "./next-bases-rows";
 import { nativeCellValue } from "./next-bases-values";
+import { nativeRowValues } from "./next-bases-row-values";
 import { nativePresentation } from "./next-bases-presentation";
 import { normalizeViewExecution } from "./views";
 import {
@@ -2044,6 +2045,12 @@ export class NextTaskRepository implements TaskRepository {
       throw nativeUnsupported(
         "The native grouped view did not declare its group property.",
       );
+    const values = nativeRowValues(
+      result.columns,
+      result.rows,
+      result.groups,
+      metadata.groupProperty,
+    );
     const records = await readNativeRows(
       result.rows,
       (id, current) => this.client.get(id, { effective: true }, current),
@@ -2068,12 +2075,7 @@ export class NextTaskRepository implements TaskRepository {
             ),
           ),
           types: [...record.types],
-          values: Object.fromEntries(
-            result.columns.map((column, cell) => [
-              column,
-              nativeCellValue(result.rows[index]!.cells[cell]!),
-            ]),
-          ),
+          values: values[index]!,
         })),
         meta: {
           totalCount,
