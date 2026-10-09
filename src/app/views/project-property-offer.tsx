@@ -58,7 +58,7 @@ export function ProjectPropertyOffer({
     setError("");
     try {
       const source = await repository.readViewSource(view.source.path);
-      const draft = readViewDraft(source, view.id);
+      const draft = readViewDraft(source, view.id, view.declaration);
       const property =
         draft.dialect === "obsidian-bases" ? basesProperty(projects) : projects;
       await repository.updateViewSource({

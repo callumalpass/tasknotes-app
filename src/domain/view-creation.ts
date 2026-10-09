@@ -7,7 +7,11 @@ import { readViewDraft } from "./view-document";
 
 import type { CreateTaskInput } from "./task";
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { TaskView, TaskViewSourceDocument } from "./view";
+import type {
+  TaskView,
+  TaskViewDeclarationSelector,
+  TaskViewSourceDocument,
+} from "./view";
 
 export type TaskCreationDefaults = Partial<CreateTaskInput>;
 
@@ -28,8 +32,8 @@ export function createPlanForView(
   configuration: TaskCollectionConfiguration,
   now = new Date(),
 ): ViewCreationPlan {
-  const draft = readViewDraft(source, view.id);
-  const sharedFilter = readSharedFilter(source);
+  const draft = readViewDraft(source, view.id, view.declaration);
+  const sharedFilter = readSharedFilter(source, view.declaration);
   const inferred = new ConstraintSet();
   inferred.addFilter(sharedFilter, draft.dialect, now);
   inferred.addFilter(draft.filter, draft.dialect, now);
@@ -156,9 +160,16 @@ function propertyCreateDefault(
   return { customProperties: { [field]: structuredClone(value) } };
 }
 
-function readSharedFilter(source: TaskViewSourceDocument): unknown {
+function readSharedFilter(
+  source: TaskViewSourceDocument,
+  declaration?: TaskViewDeclarationSelector,
+): unknown {
   if (source.format === "obsidian.base") {
-    const document = record(parse(source.document));
+    const document = record(
+      declaration && source.document.startsWith("---")
+        ? parseFrontmatter(source.document).frontmatter
+        : parse(source.document),
+    );
     return document.filters;
   }
   return record(parseFrontmatter(source.document).frontmatter.query).where;
