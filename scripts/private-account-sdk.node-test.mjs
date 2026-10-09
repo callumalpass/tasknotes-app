@@ -14,11 +14,11 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "38250cf10b4e3f5d0c6fcf99b7631c6c771db623",
+    "57d484a29284749f59e6935371750e5d65fafa59",
   );
   assert.deepEqual(
     manifest.sourceIncludesPrs,
-    [659, 657, 660, 670, 672, 675, 679],
+    [659, 657, 660, 670, 672, 675, 679, 753],
   );
   assert.deepEqual(manifest.consumerEntries, [
     "@mdbase-dev/sdk",
@@ -28,7 +28,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "b9442c15586f24d5f5200cf007ded3b11a40b603dbdd1e99a36e33dcd1f1d785",
+    "133ac93068bf3a98ad4ab3a7c8b61d051c8c14a0435ab396d26cebd5adb83f8a",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
