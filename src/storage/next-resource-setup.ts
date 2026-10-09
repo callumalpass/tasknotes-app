@@ -25,6 +25,7 @@ import {
   nativeResourceSetupAssessment,
   recheckPreparedResourceSetup,
   type DefaultSourceFactory,
+  type ResourceSetupAssessment,
 } from "./next-resource-plan";
 
 const uncertain = () =>
@@ -37,6 +38,10 @@ const blocked = (message: string) =>
   new ModelSetupError({ state: "blocked", message });
 const same = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
+const confirmed = (record: wire.RecordView) =>
+  record.state.state === "confirmed" &&
+  !record.state.hold &&
+  !record.state.unresolved;
 
 /** Resource-components + ordinary Creates on ONE held client/original journal.
  * Existing v1/v2 recovery remains in NativeModelSetup, never converted here.
@@ -91,7 +96,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     });
   }
   private requirePermission(
-    plan: Pick<ModelResourcePlan, "resourceOps" | "sources">,
+    plan: Pick<ResourceSetupAssessment, "resourceOps" | "sources">,
   ) {
     const g = this.client.hello.grant;
     if (
@@ -410,12 +415,12 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         record.id !== source.id ||
         record.path !== source.path ||
         record.document !== source.document ||
-        record.state !== "confirmed" ||
+        !confirmed(record) ||
         atPath.id !== record.id ||
         atPath.path !== record.path ||
         atPath.document !== record.document ||
         atPath.revision !== record.revision ||
-        atPath.state !== "confirmed" ||
+        !confirmed(atPath) ||
         !catalog.types.some(
           (t) =>
             record.types.includes(t.name) &&
@@ -465,13 +470,13 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           view.path !== record.path ||
           view.record !== record.id ||
           view.sourceRevision !== record.revision ||
-          record.state !== "confirmed" ||
+          !confirmed(record) ||
           typeof record.document !== "string" ||
           holder.id !== record.id ||
           holder.path !== record.path ||
           holder.revision !== record.revision ||
           holder.document !== record.document ||
-          holder.state !== "confirmed" ||
+          !confirmed(holder) ||
           !catalog.types.some(
             (t) =>
               record.types.includes(t.name) &&

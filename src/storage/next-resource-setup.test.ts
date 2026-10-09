@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // @vitest-environment node
 import { IDBFactory } from "fake-indexeddb";
 import { readFileSync } from "node:fs";
@@ -45,6 +46,7 @@ const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
 const notFound = () =>
   new MdbaseError({
     code: "not_found",
+    recovery: "refresh",
     message: "Synthetic missing record/resource",
   });
 const signal = () => new AbortController().signal;
@@ -93,6 +95,7 @@ function fixture() {
         path: r.path,
         sourceRevision: r.revision,
         ordinal: 0,
+        name: "Synthetic view",
         viewType: "tasknotesTaskList",
         implementations: [],
       }));
@@ -114,6 +117,7 @@ function fixture() {
           throw new MdbaseError({
             code: "unavailable",
             reason: "resource_inventory_unavailable",
+            recovery: "retry",
             message: "Synthetic unavailable inventory",
           });
         return {
@@ -146,7 +150,7 @@ function fixture() {
               contract: i.contract,
               version: i.version,
               fields: i.fields,
-              binding: toValue(i.binding),
+              binding: toValue(JSON.parse(JSON.stringify(i.binding))),
             })),
         })),
       };
@@ -198,7 +202,7 @@ function fixture() {
             revision: digest(op.document!),
             frontmatter: new Map(),
             types: ["obsidian_base"],
-            state: "confirmed",
+            state: { state: "confirmed", confirmedSeq: 1 },
           });
         else throw new Error("unexpected original operation");
       }
@@ -327,6 +331,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     f.state.reject = {
       code: "conflict",
       reason: "path_taken",
+      recovery: "resolve_conflict",
       message: "Synthetic occupied original source path",
     };
     await expect(f.setup.install()).rejects.toMatchObject({
@@ -381,7 +386,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
           document: "wrong",
           frontmatter: new Map(),
           types: ["obsidian_base"],
-          state: "confirmed",
+          state: { state: "confirmed" as const, confirmedSeq: 1 },
         }));
       await expect(f.setup.install()).rejects.toMatchObject({
         view: { state: "outcome_unknown" },

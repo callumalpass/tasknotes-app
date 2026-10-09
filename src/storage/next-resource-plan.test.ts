@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -126,6 +127,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
           path: "TaskNotes/Views/today.base",
           sourceRevision: "sha256:" + "cd".repeat(32),
           ordinal: 0,
+          name: "Synthetic Today",
           viewType: "tasknotesTaskList",
           implementations: [],
         },
