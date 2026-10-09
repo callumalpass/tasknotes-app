@@ -2,6 +2,7 @@ import { toPlain, type MdbaseClient } from "@mdbase-dev/sdk";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import {
   resolveTaskTypeDefinition,
   type ResolvedTaskProvider,
@@ -27,7 +28,7 @@ export async function nextTaskProviders(
       item.digest === TASKNOTES_CONTRACT_DIGEST,
   );
   if (!contract)
-    throw new Error(
+    throw new TaskNotesModelRequiredError(
       `This collection does not provide tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
     );
   const providers: NextTaskProvider[] = [];
@@ -67,6 +68,8 @@ export async function nextTaskProviders(
     });
   }
   if (!providers.length)
-    throw new Error("The TaskNotes contract has no implementing types.");
+    throw new TaskNotesModelRequiredError(
+      "The TaskNotes contract has no implementing types.",
+    );
   return providers;
 }

@@ -57,6 +57,14 @@ export interface TaskNotesModelSetup {
   resume(): Promise<void>;
 }
 
+/** A setup failure carries a display/recovery state, not a write witness. */
+export class ModelSetupError extends Error {
+  constructor(readonly view: Extract<ModelSetupView, { message: string }>) {
+    super(view.message);
+    this.name = "ModelSetupError";
+  }
+}
+
 /** Missing definitions must not select a default schema or render task views. */
 export class TaskNotesModelRequiredError extends Error {
   constructor(message: string) {
