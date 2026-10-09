@@ -1,5 +1,11 @@
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
-import { assessTypePack, init, loadPack, parseLock } from "mdbase";
+import {
+  applyTypePack,
+  assessTypePack,
+  init,
+  loadPack,
+  parseLock,
+} from "mdbase";
 import { expect, it, vi } from "vitest";
 import { stringify } from "yaml";
 import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
@@ -213,6 +219,60 @@ it("retains a preserved customized seed in full readback, although it is absent 
     doc: resources["_types/task.md"],
   });
   expect(planned.readback).toHaveLength(5);
+});
+it("keeps core-retired targets as absence readback with their original delete guards", async () => {
+  const document = '{"type":"object"}\n';
+  const bytes = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(document)),
+  );
+  const digest =
+    "sha256:" +
+    [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const target = "_schemas/tasknotes/retired.schema.json";
+  const previousPack = {
+    manifest: stringify({
+      ...publisher.manifest,
+      version: "0.3.0-rc.17",
+      resources: [
+        ...publisher.manifest.resources,
+        {
+          kind: "schema",
+          mode: "managed",
+          source: "schemas/retired.schema.json",
+          target,
+          digest,
+        },
+      ],
+    }),
+    sources: { ...pack.sources, "schemas/retired.schema.json": document },
+  };
+  const resources: Record<string, string> = { "mdbase.yaml": config };
+  const assessment = await assessTypePack({
+    pack: previousPack,
+    resources,
+    options: { installed_by: manifest.id },
+  });
+  const previous = await applyTypePack({
+    pack: previousPack,
+    resources,
+    options: { installed_by: manifest.id },
+    expectedDigest: assessment.assessment_digest,
+  });
+  for (const op of previous.ops)
+    if (op.kind === "resource_put") resources[op.path] = op.doc;
+  const planned = await plan(resources);
+  expect(planned.ops).toContainEqual({
+    kind: "resource_delete",
+    path: target,
+    baseRevision: digest,
+  });
+  expect(planned.readback).toContainEqual({ path: target, doc: null });
+  expect(planned.readback).toHaveLength(6);
+  expect(planned.ops.at(-1)).toMatchObject({
+    kind: "resource_put",
+    path: "mdbase.lock.yaml",
+    mustNotExist: false,
+  });
 });
 it.each([0, 1, 2, 3])(
   "uses publisher seed baseline %s through actual core upgrade assessment",

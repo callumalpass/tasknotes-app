@@ -11,6 +11,7 @@ import {
   TaskNotesModelRequiredError,
   type ModelPackPlan,
   type ModelPackSetupIntent,
+  MODEL_SETUP_LIMITS,
   type ModelSetupIntent,
   type ModelSetupJournal,
   type ModelSetupScope,
@@ -220,6 +221,76 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
       expect(f.journal.value).toBe(legacy);
       expect(f.journal.prepares).toBe(0);
       expect(f.journal.events).toEqual([]);
+      expect(submit).not.toHaveBeenCalled();
+      expect(receipt).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["operations", "readbacks", "utf8-total", "path"] as const)(
+    "preserves/refuses an original plan exceeding %s bounds without truncation or replacement",
+    async (bound) => {
+      const f = await fixture();
+      const originalPlan = await f.plan();
+      let plan = originalPlan;
+      if (bound === "operations")
+        plan = {
+          ...plan,
+          ops: Array.from(
+            { length: MODEL_SETUP_LIMITS.operations + 1 },
+            () => originalPlan.ops[0]!,
+          ),
+        };
+      if (bound === "readbacks")
+        plan = {
+          ...plan,
+          readback: [
+            ...originalPlan.readback,
+            ...Array.from(
+              {
+                length:
+                  MODEL_SETUP_LIMITS.readbacks +
+                  1 -
+                  originalPlan.readback.length,
+              },
+              (_, i) => ({ path: `retired-${i}`, doc: null }),
+            ),
+          ],
+        };
+      if (bound === "utf8-total") {
+        const first = originalPlan.ops[0]!;
+        if (first.kind !== "resource_put")
+          throw Error("fixture requires original core put");
+        const doc = "😀".repeat(MODEL_SETUP_LIMITS.plaintextBytes / 6);
+        plan = {
+          ...plan,
+          ops: [{ ...first, doc }, ...originalPlan.ops.slice(1)],
+          readback: originalPlan.readback.map((entry) =>
+            entry.path === first.path ? { ...entry, doc } : entry,
+          ),
+        };
+      }
+      if (bound === "path")
+        plan = {
+          ...plan,
+          readback: [
+            ...originalPlan.readback,
+            {
+              path: "x".repeat(MODEL_SETUP_LIMITS.pathCodeUnits + 1),
+              doc: null,
+            },
+          ],
+        };
+      const prepared = await f.journal.prepare(plan, f.owner.signal);
+      await f.journal.recordAttempt(prepared.mutationId, f.owner.signal);
+      const original = f.journal.value;
+      const submit = vi.spyOn(f.client, "submit"),
+        receipt = vi.spyOn(f.client, "awaitReceipt");
+      await expect(f.setup.resume()).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      expect(f.journal.value).toBe(original);
+      expect(f.journal.prepares).toBe(1);
+      expect(f.journal.events).toEqual(["attempted"]);
       expect(submit).not.toHaveBeenCalled();
       expect(receipt).not.toHaveBeenCalled();
       expect(f.verified).not.toHaveBeenCalled();
