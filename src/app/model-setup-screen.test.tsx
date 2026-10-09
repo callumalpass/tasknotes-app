@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   ModelSetupError,
   TaskNotesModelRequiredError,
@@ -38,6 +44,18 @@ vi.mock("./use-navigation-views", () => ({
   }),
 }));
 const closes: (() => void)[] = [];
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: () => false,
+  }));
+});
 afterEach(() => {
   closes.splice(0).forEach((close) => close());
   vi.restoreAllMocks();
@@ -58,16 +76,6 @@ function setup(): TaskNotesModelSetup {
 }
 
 it("does not mount task views or choose a fallback schema when the model is missing", async () => {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: () => false,
-  }));
   const f = await nextTaskFixture();
   closes.push(f.close);
   const port = setup();
@@ -91,6 +99,128 @@ it("does not mount task views or choose a fallback schema when the model is miss
   expect(port.resume).not.toHaveBeenCalled();
   mounted.unmount();
 });
+async function openingWithSetup(port: TaskNotesModelSetup) {
+  const f = await nextTaskFixture();
+  closes.push(f.close);
+  Object.defineProperty(f.repository, "modelSetup", { value: port });
+  const initialize = vi.spyOn(f.repository, "initialize");
+  const configuration = vi.spyOn(f.repository, "taskConfiguration");
+  const uuid = vi.spyOn(crypto, "randomUUID");
+  const mounted = render(
+    <CollectionGateContext.Provider value={callbacks}>
+      <RepositoryProvider
+        repository={f.repository}
+        mutationJournal={new MemoryMutationJournal()}
+      >
+        <AppShell />
+      </RepositoryProvider>
+    </CollectionGateContext.Provider>,
+  );
+  return { mounted, initialize, configuration, uuid };
+}
+
+it.each([
+  { state: "required", visible: "Set up TaskNotes" },
+  {
+    state: "outcome_unknown",
+    message: "Original sources unconfirmed",
+    visible: "Resume original setup",
+  },
+  {
+    state: "permission_required",
+    message: "Original source permission required",
+    visible: "Review collection permission",
+  },
+  {
+    state: "blocked",
+    message: "Original sources unavailable",
+    visible: "Original sources unavailable",
+  },
+] as const)(
+  "keeps readable task metadata behind explicit $state source setup",
+  async ({ visible, ...readiness }) => {
+    const port = setup();
+    vi.mocked(port.inspect).mockResolvedValue(readiness);
+    const opening = await openingWithSetup(port);
+    await screen.findByText(visible);
+    expect(opening.initialize).toHaveResolved();
+    expect(port.inspect).toHaveBeenCalled();
+    expect(opening.configuration).not.toHaveBeenCalled();
+    expect(views.mounted).not.toHaveBeenCalled();
+    expect(port.install).not.toHaveBeenCalled();
+    expect(port.resume).not.toHaveBeenCalled();
+    expect(opening.uuid).not.toHaveBeenCalled();
+    opening.mounted.unmount();
+  },
+);
+
+it.each([
+  { action: "install", state: "required", button: "Set up TaskNotes" },
+  {
+    action: "resume",
+    state: "outcome_unknown",
+    button: "Resume original setup",
+  },
+] as const)(
+  "opens readable tasks only after explicit original $action and readiness",
+  async ({ action, state, button }) => {
+    const port = setup();
+    vi.mocked(port.inspect).mockResolvedValue(
+      state === "required"
+        ? { state }
+        : { state, message: "Original receipt unconfirmed" },
+    );
+    vi.mocked(port[action]).mockImplementation(async () => {
+      vi.mocked(port.inspect).mockResolvedValue({ state: "ready" });
+    });
+    const opening = await openingWithSetup(port);
+    const control = await screen.findByRole("button", { name: button });
+    expect(opening.configuration).not.toHaveBeenCalled();
+    expect(views.mounted).not.toHaveBeenCalled();
+    expect(opening.uuid).not.toHaveBeenCalled();
+    fireEvent.click(control);
+    await screen.findByText("Task views mounted");
+    expect(port[action]).toHaveBeenCalledOnce();
+    expect(
+      port[action === "install" ? "resume" : "install"],
+    ).not.toHaveBeenCalled();
+    expect(opening.configuration).toHaveBeenCalled();
+    opening.mounted.unmount();
+  },
+);
+
+it("opens readable task metadata after read-only source readiness without completing a creator", async () => {
+  const port = setup();
+  vi.mocked(port.inspect).mockResolvedValue({ state: "ready" });
+  const opening = await openingWithSetup(port);
+  await waitFor(() => expect(opening.configuration).toHaveBeenCalled());
+  expect(port.inspect).toHaveBeenCalledOnce();
+  expect(port.install).not.toHaveBeenCalled();
+  expect(port.resume).not.toHaveBeenCalled();
+  expect(opening.uuid).not.toHaveBeenCalled();
+  opening.mounted.unmount();
+});
+
+it("does not publish source readiness after the opening owner unmounts", async () => {
+  const port = setup();
+  let ready!: () => void;
+  vi.mocked(port.inspect).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        ready = () => resolve({ state: "ready" });
+      }),
+  );
+  const opening = await openingWithSetup(port);
+  await waitFor(() => expect(port.inspect).toHaveBeenCalledOnce());
+  opening.mounted.unmount();
+  await act(async () => ready());
+  expect(opening.configuration).not.toHaveBeenCalled();
+  expect(views.mounted).not.toHaveBeenCalled();
+  expect(port.install).not.toHaveBeenCalled();
+  expect(port.resume).not.toHaveBeenCalled();
+  expect(opening.uuid).not.toHaveBeenCalled();
+});
+
 it("installs only after the explicit action and reopens the original repository after readiness", async () => {
   const port = setup();
   const onReady = vi.fn(async () => undefined);
