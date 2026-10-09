@@ -85,7 +85,8 @@ export class ViewQuerySession {
         .catch(() => undefined);
       this.controller.signal.throwIfAborted();
       if (
-        this.view.presentation?.type === "tasknotes.task-list" &&
+        (this.view.presentation?.type === "tasknotes.task-list" ||
+          this.view.presentation?.type === "tasknotes.kanban") &&
         this.repository.iterateView
       ) {
         const pages = this.repository.iterateView(this.view, {

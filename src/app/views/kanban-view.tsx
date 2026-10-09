@@ -6,7 +6,13 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { KanbanColumnJump } from "../../components/kanban-column-jump";
-import { columnLabel, kanbanColumnLabel, valueKey } from "./kanban-columns";
+import {
+  columnLabel,
+  kanbanColumnLabel,
+  kanbanRowValue,
+  orderedKanbanColumns,
+  valueKey,
+} from "./kanban-columns";
 import {
   kanbanPropertyRole,
   type KanbanFieldMapping,
@@ -111,13 +117,17 @@ export function KanbanView({
     const value =
       moves.get(row.task.id)?.property === property
         ? moves.get(row.task.id)!.value
-        : (row.values[property] ?? row.task.frontmatter[property] ?? null);
+        : kanbanRowValue(row, property);
     const key = valueKey(value);
     const column = columns.get(key) ?? { value, rows: [] };
     column.rows.push(row);
     columns.set(key, column);
   }
-  const orderedColumns = [...columns.values()];
+  const orderedColumns = orderedKanbanColumns(
+    [...columns.values()],
+    execution.groups,
+    property,
+  );
   const writable = propertyName !== null;
   const movable = writable || Boolean(manualOrder);
   const [dragging, setDragging] = useState<{

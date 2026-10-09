@@ -350,6 +350,7 @@ function TaskEditor({
   }, [persist]);
 
   function change(patch: Partial<Draft>) {
+    setSaveState("saving");
     editVersion.current += 1;
     setDraft((value) => {
       const next = { ...value, ...patch };
