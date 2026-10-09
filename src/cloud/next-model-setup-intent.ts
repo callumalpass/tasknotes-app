@@ -4,8 +4,10 @@ import {
   type ModelPackOperation,
   type ModelPackPlan,
   type ModelPackSetupIntent,
+  type ModelResourcePlan,
+  type ModelResourceSetupIntent,
+  type ModelResourceSetupJournal,
   type ModelSetupIntent,
-  type ModelSetupJournal,
   type ModelSetupScope,
 } from "../application/ports/model-setup";
 
@@ -211,6 +213,131 @@ export function modelPackPlan(value: unknown): ModelPackPlan {
     fail("binding");
   return captured;
 }
+/** Distinct v3 data plan. Copy originals, never fabricate a capture/file inventory. */
+export function modelResourcePlan(value: unknown): ModelResourcePlan {
+  const p = value as ModelResourcePlan;
+  if (
+    !p ||
+    typeof p !== "object" ||
+    !exact(
+      p,
+      "assessmentDigest,packs,provisionDigest,resourceOps,resourceReadback,sources",
+    ) ||
+    typeof p.assessmentDigest !== "string" ||
+    !digest.test(p.assessmentDigest) ||
+    typeof p.provisionDigest !== "string" ||
+    !digest.test(p.provisionDigest) ||
+    !Array.isArray(p.packs) ||
+    !p.packs.length ||
+    p.packs.length > 16 ||
+    !Array.isArray(p.resourceOps) ||
+    !Array.isArray(p.sources) ||
+    (!p.resourceOps.length && !p.sources.length) ||
+    p.resourceOps.length + p.sources.length > MODEL_SETUP_LIMITS.operations ||
+    !Array.isArray(p.resourceReadback) ||
+    !p.resourceReadback.length ||
+    p.resourceReadback.length + p.sources.length > MODEL_SETUP_LIMITS.readbacks
+  )
+    fail("binding");
+  const packIds = new Set<string>();
+  const packs = p.packs.map((pack) => {
+    if (
+      !pack ||
+      typeof pack !== "object" ||
+      !exact(pack, "digest,id,version") ||
+      typeof pack.id !== "string" ||
+      !pack.id.length ||
+      pack.id.length > 150 ||
+      packIds.has(pack.id) ||
+      typeof pack.version !== "string" ||
+      !pack.version.length ||
+      pack.version.length > 256 ||
+      typeof pack.digest !== "string" ||
+      !digest.test(pack.digest)
+    )
+      fail("binding");
+    packIds.add(pack.id);
+    return Object.freeze({ ...pack });
+  });
+  const paths = new Set<string>();
+  const resourceReadback = p.resourceReadback.map((r) => {
+    if (
+      !r ||
+      typeof r !== "object" ||
+      !exact(r, "doc,path") ||
+      !safePath(r.path) ||
+      paths.has(r.path) ||
+      (r.doc !== null && typeof r.doc !== "string")
+    )
+      fail("binding");
+    paths.add(r.path);
+    return Object.freeze({ ...r });
+  });
+  const resourceOps = p.resourceOps.map((op): ModelPackOperation => {
+    if (!op || typeof op !== "object" || !safePath(op.path)) fail("binding");
+    const hasBase = Object.hasOwn(op, "baseRevision");
+    if (
+      hasBase &&
+      (typeof op.baseRevision !== "string" || !digest.test(op.baseRevision))
+    )
+      fail("binding");
+    if (op.kind === "resource_put") {
+      if (
+        !exact(
+          op,
+          hasBase
+            ? "baseRevision,doc,kind,mustNotExist,path"
+            : "doc,kind,mustNotExist,path",
+        ) ||
+        typeof op.doc !== "string" ||
+        typeof op.mustNotExist !== "boolean" ||
+        (op.mustNotExist ? hasBase : !hasBase)
+      )
+        fail("binding");
+    } else if (
+      op.kind !== "resource_delete" ||
+      !hasBase ||
+      !exact(op, "baseRevision,kind,path")
+    )
+      fail("binding");
+    const r = resourceReadback.find((r) => r.path === op.path);
+    if (!r || r.doc !== (op.kind === "resource_put" ? op.doc : null))
+      fail("binding");
+    return Object.freeze({ ...op });
+  });
+  const ids = new Set<string>();
+  const sources = p.sources.map((s) => {
+    if (
+      !s ||
+      typeof s !== "object" ||
+      !exact(s, "document,id,path") ||
+      !safePath(s.path) ||
+      paths.has(s.path) ||
+      typeof s.id !== "string" ||
+      !uuid.test(s.id) ||
+      s.id === "00000000-0000-0000-0000-000000000000" ||
+      ids.has(s.id) ||
+      typeof s.document !== "string" ||
+      !s.document.length
+    )
+      fail("binding");
+    paths.add(s.path);
+    ids.add(s.id);
+    return Object.freeze({ ...s });
+  });
+  const captured = Object.freeze({
+    assessmentDigest: p.assessmentDigest,
+    provisionDigest: p.provisionDigest,
+    packs: Object.freeze(packs),
+    resourceOps: Object.freeze(resourceOps),
+    resourceReadback: Object.freeze(resourceReadback),
+    sources: Object.freeze(sources),
+  });
+  if (encoder.encode(JSON.stringify(captured)).byteLength > maxBytes)
+    fail("binding");
+  return captured;
+}
+
 export function decode(
   value: unknown,
   scope: ModelSetupScope,
@@ -219,7 +346,7 @@ export function decode(
   if (
     !v ||
     typeof v !== "object" ||
-    (v.version !== 1 && v.version !== 2) ||
+    (v.version !== 1 && v.version !== 2 && v.version !== 3) ||
     !exact(
       v,
       v.version === 1
@@ -242,6 +369,21 @@ export function decode(
       ops: legacyDefinitionOps(v.ops),
       phase: v.phase,
     });
+  if (v.version === 3) {
+    const intent = Object.freeze({
+      version: 3 as const,
+      scope: bound,
+      mutationId: v.mutationId,
+      plan: modelResourcePlan(v.plan),
+      phase: v.phase,
+    });
+    if (
+      encoder.encode(JSON.stringify({ ...intent, phase: "confirmed" }))
+        .byteLength > maxBytes
+    )
+      fail("binding");
+    return intent;
+  }
   const intent = Object.freeze({
     version: 2 as const,
     scope: bound,
@@ -282,7 +424,7 @@ function openDatabase(): Promise<IDBDatabase> {
  * XSS boundary, receipt authority, model readiness or collection Saved proof.
  * The installation owner supplies the actual tuple and lifetime, never the UI.
  */
-export class NextModelSetupIntentStore implements ModelSetupJournal {
+export class NextModelSetupIntentStore implements ModelResourceSetupJournal {
   readonly scope: ModelSetupScope;
   private readonly namespace: string;
   private readonly binding: string;
@@ -413,7 +555,8 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
         new TextDecoder("utf-8", { fatal: true }).decode(plaintext),
       );
       if (
-        (value as { version?: unknown } | null)?.version === 2 &&
+        ((value as { version?: unknown } | null)?.version === 2 ||
+          (value as { version?: unknown } | null)?.version === 3) &&
         plaintext.byteLength > maxBytes
       )
         fail("recovery_required");
@@ -426,12 +569,14 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
       plaintext?.fill(0);
     }
   }
-  private async commit(
+  private async commit<
+    T extends ModelPackSetupIntent | ModelResourceSetupIntent,
+  >(
     db: IDBDatabase,
     before: Stored | undefined,
-    value: ModelPackSetupIntent,
+    value: T,
     signal: AbortSignal,
-  ): Promise<ModelPackSetupIntent> {
+  ): Promise<T> {
     this.check(signal);
     const revision = (before?.revision ?? 0) + 1;
     if (!Number.isSafeInteger(revision)) fail("fenced");
@@ -549,6 +694,85 @@ export class NextModelSetupIntentStore implements ModelSetupJournal {
       );
       return this.commit(db, stored, intent, signal);
     });
+  }
+  prepareResources(
+    plan: ModelResourcePlan,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent> {
+    // Copy complete original source UUIDs/bytes before the first await. No remint.
+    const captured = modelResourcePlan(plan);
+    if (
+      encoder.encode(
+        JSON.stringify({
+          version: 3,
+          scope: this.scope,
+          mutationId: this.scope.collection,
+          plan: captured,
+          phase: "confirmed",
+        }),
+      ).byteLength > maxBytes
+    )
+      fail("binding");
+    return this.exclusive(signal, async (db) => {
+      const stored = await this.read(db, signal),
+        existing = await this.unwrap(stored, signal);
+      if (existing) {
+        // Only identical v3 recovery; existing v1/v2 can NEVER grow new seeds.
+        if (existing.version !== 3) fail("recovery_required");
+        if (JSON.stringify(existing.plan) !== JSON.stringify(captured))
+          fail("binding");
+        return existing;
+      }
+      const value = decode(
+        {
+          version: 3,
+          scope: this.scope,
+          mutationId: crypto.randomUUID(),
+          plan: captured,
+          phase: "prepared",
+        },
+        this.scope,
+      );
+      if (value.version !== 3) fail("binding");
+      return this.commit(db, stored, value, signal);
+    });
+  }
+  private advanceResource(
+    id: string,
+    phase: ModelSetupIntent["phase"],
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent> {
+    return this.exclusive(signal, async (db) => {
+      const stored = await this.read(db, signal),
+        existing = await this.unwrap(stored, signal);
+      if (!existing || existing.version !== 3) fail("recovery_required");
+      if (existing.mutationId !== id) fail("binding");
+      const from = phases.indexOf(existing.phase),
+        to = phases.indexOf(phase);
+      if (to < from || to > from + 1) fail("recovery_required");
+      if (to === from) return existing;
+      const value = decode({ ...existing, phase }, this.scope);
+      if (value.version !== 3) fail("binding");
+      return this.commit(db, stored, value, signal);
+    });
+  }
+  recordResourceAttempt(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent> {
+    return this.advanceResource(id, "attempted", signal);
+  }
+  recordResourceConfirmed(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent> {
+    return this.advanceResource(id, "confirmed", signal);
+  }
+  recordResourceVerified(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent> {
+    return this.advanceResource(id, "verified", signal);
   }
   private advance(
     id: string,
