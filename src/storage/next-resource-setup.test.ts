@@ -1,8 +1,6 @@
-/// <reference types="node" />
 // @vitest-environment node
 import { IDBFactory } from "fake-indexeddb";
-import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { pinnedCoreBytes, sha256 } from "./next-resource-core.test-helper.mjs";
 import { init, loadCatalog } from "mdbase";
 import {
   MdbaseError,
@@ -22,15 +20,8 @@ import type { ModelPackPlan } from "../application/ports/model-setup";
 
 vi.mock("../cloud/next-model-pack-core", () => ({
   initializeModelPackCore: async () => {
-    const bytes = readFileSync(
-      new URL(
-        "../../node_modules/mdbase/wasm/mdbase-core.wasm",
-        import.meta.url,
-      ),
-    );
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
-      pin.wasmSha256,
-    );
+    const bytes = pinnedCoreBytes();
+    expect(sha256(bytes)).toBe(pin.wasmSha256);
     expect(bytes.length).toBe(pin.wasmBytes);
     await init({ wasm: bytes });
   },
@@ -40,8 +31,7 @@ const scope = {
   installation: "22222222-2222-4222-8222-222222222222",
   collection: "33333333-3333-4333-8333-333333333333",
 };
-const digest = (source: string) =>
-  "sha256:" + createHash("sha256").update(source).digest("hex");
+const digest = (source: string) => "sha256:" + sha256(source);
 const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
 const notFound = () =>
   new MdbaseError({
@@ -85,7 +75,7 @@ function fixture() {
     text,
     state: "confirmed",
     revision: digest(text),
-    size: Buffer.byteLength(text),
+    size: new TextEncoder().encode(text).byteLength,
   });
   const views = () =>
     [...records.values()]

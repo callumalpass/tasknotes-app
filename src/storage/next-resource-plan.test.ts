@@ -1,7 +1,5 @@
-/// <reference types="node" />
 // @vitest-environment node
-import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { pinnedCoreBytes, sha256 } from "./next-resource-core.test-helper.mjs";
 import { init } from "mdbase";
 import type { MdbaseClient } from "@mdbase-dev/sdk";
 import pin from "../../vendor/mdbase-browser.pin.json";
@@ -14,16 +12,9 @@ import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 
 vi.mock("../cloud/next-model-pack-core", () => ({
   initializeModelPackCore: async () => {
-    const bytes = readFileSync(
-      new URL(
-        "../../node_modules/mdbase/wasm/mdbase-core.wasm",
-        import.meta.url,
-      ),
-    );
+    const bytes = pinnedCoreBytes();
     expect(bytes.length).toBe(pin.wasmBytes);
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
-      pin.wasmSha256,
-    );
+    expect(sha256(bytes)).toBe(pin.wasmSha256);
     await init({ wasm: bytes });
   },
 }));
