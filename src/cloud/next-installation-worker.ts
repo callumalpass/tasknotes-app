@@ -1,8 +1,9 @@
 import { connect } from "@mdbase-dev/sdk";
-import type {
-  ModelSetupJournal,
-  ModelSetupScope,
-  ModelSetupIntent,
+import {
+  ModelSetupError,
+  type ModelSetupJournal,
+  type ModelSetupScope,
+  type ModelSetupIntent,
 } from "../application/ports/model-setup";
 import {
   decode as decodeModelSetupIntent,
@@ -323,6 +324,7 @@ export class NextInstallationWorker {
       !uuid.test(opened.scope.account) ||
       !uuid.test(opened.scope.installation) ||
       typeof opened.displayName !== "string" ||
+      typeof opened.requiresTaskNotesModelSetup !== "boolean" ||
       !(opened.channel instanceof MessagePort)
     ) {
       this.onError();
@@ -349,7 +351,28 @@ export class NextInstallationWorker {
         client,
         opened.displayName,
         opened.scope.account,
+        {
+          modelSetupJournal: this.modelJournal,
+          onModelSetupVerified: async () => {
+            await this.pending?.promise;
+            await this.call({ kind: "model-setup-verified" });
+          },
+        },
       );
+      // Original creation recovery includes model setup. No existing collection
+      // is auto-configured; typed blocked/unknown states keep this held owner
+      // available for the explicit setup/recovery UI rather than opening again.
+      if (opened.requiresTaskNotesModelSetup) {
+        const setup = this.repository.modelSetup!;
+        try {
+          const view = await setup.inspect();
+          if (view.state === "outcome_unknown") await setup.resume();
+          else if (view.state === "required" || view.state === "ready")
+            await setup.install();
+        } catch (reason) {
+          if (!(reason instanceof ModelSetupError)) throw reason;
+        }
+      }
       document.addEventListener("visibilitychange", this.onForeground);
       this.onForeground();
       return this.repository;
