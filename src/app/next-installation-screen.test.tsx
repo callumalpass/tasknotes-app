@@ -105,6 +105,19 @@ describe("ordinary cloud-copy creation UI (DOM/Worker stand-ins)", () => {
     expect(screen.getByRole("status")).toHaveTextContent("creation recorded");
     expect(transport.collections).not.toHaveBeenCalled();
   });
+  it("a completed creation requires another explicit create action before allocating another collection", async () => {
+    await paired(true);
+    fireEvent.click(screen.getByRole("button", { name: "Create collection" }));
+    await screen.findByRole("status");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create another collection" }),
+    );
+    expect(transport.createCollection).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Create collection" }));
+    await screen.findByRole("status");
+    expect(transport.createCollection.mock.calls).toEqual([[false], [false]]);
+    expect(transport.open).toHaveBeenCalledOnce();
+  });
   it.each(["outcome_unknown", "refused"])(
     "%s retains an explicit original-creation resume action",
     async (reason) => {

@@ -48,9 +48,10 @@ async function open(): Promise<IDBDatabase> {
     };
   });
 }
-/** One bounded public target per installation, not a credential or authority.
- * Commit its identity before native/HTTP work. Never delete or allocate another
- * target to recover an uncertain creation; native outcome custody stays in SDK.
+/** One active public creation target per installation, not a credential or
+ * authority. Commit its identity before native/HTTP work. Only a completed intent
+ * may advance on an explicit new create; uncertain targets are never replaced.
+ * Native outcome custody stays in SDK.
  */
 export async function collectionCreateIntent(
   scope: AppInstallationScope,
@@ -97,8 +98,21 @@ export async function collectionCreateIntent(
             request.result === undefined
               ? undefined
               : decode(request.result, binding);
-          if (!current) {
+          if (
+            !current ||
+            (current.phase === "completed" && change === "prepare")
+          ) {
             if (change !== "prepare") throw failure("recovery_required");
+            // Preserve completed target metadata when advancing the active intent.
+            if (current)
+              records.put(
+                current,
+                JSON.stringify([
+                  binding.account,
+                  binding.installation,
+                  current.collection,
+                ]),
+              );
             current = decode(
               {
                 version: 1,
@@ -108,7 +122,7 @@ export async function collectionCreateIntent(
               },
               binding,
             );
-            records.add(current, key);
+            records.put(current, key);
           }
           if (change === "attempt") {
             if (current.phase !== "prepared") throw failure("outcome_unknown");

@@ -221,7 +221,7 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       }),
     );
     expect(s.events.filter((e) => e === "lease")).toHaveLength(2);
-    expect(await app.createCloudCopyCollection()).toEqual(created);
+    expect(await app.createCloudCopyCollection(true)).toEqual(created);
     expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
     expect(s.openHost).toHaveBeenCalledOnce();
     await app.close();
@@ -231,6 +231,28 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       "unlock",
       "unlock",
     ]);
+  });
+  it("a second explicit creation after completion uses a new target and the same protected device", async () => {
+    const s = setup(),
+      app = await NextTaskNotesInstallation.open(s.options);
+    await app.confirmAccountAndOpenDevice(account);
+    s.setView({ state: "paired", createCollections: true });
+    const first = await app.createCloudCopyCollection();
+    const second = await app.createCloudCopyCollection();
+    expect(second.collectionId).not.toBe(first.collectionId);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledTimes(2);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scope: { account, installation, collection: second.collectionId },
+        purpose: "create",
+        outcomeMode: "fresh",
+      }),
+    );
+    expect(s.host.close).toHaveBeenCalledOnce();
+    expect(s.openHost).toHaveBeenCalledTimes(2);
+    expect(s.openHost.mock.calls[1]![0].signIn).toBe(s.flow);
+    expect(s.events.filter((e) => e === "unlock")).toHaveLength(1);
+    await app.close();
   });
   it("refuses creation before explicit paired create permission without bootstrap", async () => {
     const s = setup(),

@@ -248,10 +248,21 @@ export function NextInstallationScreen({
             ready to open.
           </p>
           {creationRecorded ? (
-            <p role="status">
-              Collection creation recorded. Refresh approved collections to open
-              it.
-            </p>
+            <>
+              <p role="status">
+                Collection creation recorded. Refresh approved collections to
+                open it.
+              </p>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setCreationRecorded(false);
+                  setCreationAttempted(false);
+                }}
+              >
+                Create another collection
+              </button>
+            </>
           ) : (
             <form
               onSubmit={(event) => {

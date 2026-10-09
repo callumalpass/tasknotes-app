@@ -30,9 +30,30 @@ describe("bounded collection creation target", () => {
       ...initial,
       phase: "completed",
     });
-    expect(await collectionCreateIntent(scope, signal, "prepare")).toEqual({
+    expect(await collectionCreateIntent(scope, signal, "resume")).toEqual({
       ...initial,
       phase: "completed",
+    });
+  });
+  it("a later explicit creation replaces only a completed intent with a different durable target", async () => {
+    const signal = new AbortController().signal;
+    const first = await collectionCreateIntent(scope, signal, "prepare");
+    await collectionCreateIntent(scope, signal, "attempt");
+    await collectionCreateIntent(scope, signal, "complete");
+    const second = await collectionCreateIntent(scope, signal, "prepare");
+    expect(second.phase).toBe("prepared");
+    expect(second.collection).not.toBe(first.collection);
+    expect(await collectionCreateIntent(scope, signal, "resume")).toEqual(
+      second,
+    );
+  });
+  it("a new create click during an uncertain attempt retains the same target", async () => {
+    const signal = new AbortController().signal;
+    const first = await collectionCreateIntent(scope, signal, "prepare");
+    await collectionCreateIntent(scope, signal, "attempt");
+    expect(await collectionCreateIntent(scope, signal, "prepare")).toEqual({
+      ...first,
+      phase: "attempted",
     });
   });
   it("never treats missing original recovery state as a new creation", async () => {

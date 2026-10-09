@@ -43,6 +43,7 @@ export class NextTaskNotesInstallation {
   private authority: AppInstallationCustodyAuthority | null = null;
   private collectionLease: AppReplicaLease | null = null;
   private creationTarget: string | null = null;
+  private creationCompleted = false;
   private closing: Promise<void> | null = null;
   private busy = false;
   private pending: Promise<unknown> | null = null;
@@ -254,13 +255,22 @@ export class NextTaskNotesInstallation {
           new Error("Explicit original creation recovery is required."),
           { reason: "outcome_unknown" },
         );
-      if (
+      const replacingCompleted =
         this.creationTarget !== null &&
-        this.creationTarget !== intent.collection
-      )
+        this.creationTarget !== intent.collection;
+      if (replacingCompleted && !this.creationCompleted)
         throw Object.assign(new Error("Original collection binding changed."), {
           reason: "binding",
         });
+      if (replacingCompleted) {
+        // Native shutdown precedes releasing the completed collection's lease.
+        await this.host?.close();
+        this.host = null;
+        this.check();
+        await this.collectionLease?.release();
+        this.collectionLease = null;
+        this.creationCompleted = false;
+      }
       const scope = Object.freeze({
         ...this.authority.scope,
         collection: intent.collection,
@@ -273,7 +283,7 @@ export class NextTaskNotesInstallation {
       );
       this.check();
       const mode = intent.phase === "prepared" ? "fresh" : "existing";
-      if (mode === "existing") {
+      if (mode === "existing" || !this.host) {
         // Shutdown before reopening only the same protected native device.
         await this.host?.close();
         this.host = null;
@@ -288,7 +298,8 @@ export class NextTaskNotesInstallation {
           allowLoopbackHttp: this.selection.allowLoopbackHttp,
         });
         this.check();
-      } else {
+      }
+      if (mode === "fresh") {
         intent = await collectionCreateIntent(
           this.authority.scope,
           signal,
@@ -316,6 +327,7 @@ export class NextTaskNotesInstallation {
       this.check();
       await collectionCreateIntent(this.authority.scope, signal, "complete");
       this.check();
+      this.creationCompleted = true;
       // Metadata completion is not collection READ or write readiness.
       return {
         kind: "created-collection",
