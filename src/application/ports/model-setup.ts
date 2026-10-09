@@ -74,7 +74,36 @@ export interface ModelPackSetupIntent {
   readonly plan: ModelPackPlan;
   readonly phase: ModelSetupPhase;
 }
-export type ModelSetupIntent = LegacyModelSetupIntent | ModelPackSetupIntent;
+/** New immutable resource-components + explicit create setup. No file-absence witness. */
+export interface ModelResourcePlan {
+  readonly assessmentDigest: string;
+  readonly provisionDigest: string;
+  readonly packs: readonly {
+    readonly id: string;
+    readonly version: string;
+    readonly digest: string;
+  }[];
+  readonly resourceOps: readonly ModelPackOperation[];
+  readonly resourceReadback: readonly {
+    readonly path: string;
+    readonly doc: string | null;
+  }[];
+  /** Original record identities are captured before any asynchronous prepare. */
+  readonly sources: readonly {
+    readonly id: string;
+    readonly path: string;
+    readonly document: string;
+  }[];
+}
+export interface ModelResourceSetupIntent {
+  readonly version: 3;
+  readonly scope: ModelSetupScope;
+  readonly mutationId: string;
+  readonly plan: ModelResourcePlan;
+  readonly phase: ModelSetupPhase;
+}
+export type ModelSetupIntent =
+  LegacyModelSetupIntent | ModelPackSetupIntent | ModelResourceSetupIntent;
 
 /** Bounds apply to the TOTAL UTF-8 encoded intent plaintext, not each document.
  * Overflow refuses; never truncate, split, reset or invent a replacement ID.
@@ -107,6 +136,28 @@ export interface ModelSetupJournal {
     id: string,
     signal: AbortSignal,
   ): Promise<ModelPackSetupIntent>;
+}
+
+/** Same protected ledger/tuple; v3 prepare only when its original slot is absent.
+ * Existing v1/v2 intents are never converted, enlarged, reset or replaced.
+ */
+export interface ModelResourceSetupJournal extends ModelSetupJournal {
+  prepareResources(
+    plan: ModelResourcePlan,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent>;
+  recordResourceAttempt(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent>;
+  recordResourceConfirmed(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent>;
+  recordResourceVerified(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupIntent>;
 }
 
 export type ModelSetupView =
