@@ -40,6 +40,8 @@ import {
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
+import { ModelSetupScreen } from "./model-setup-screen";
+import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import {
   loadCalendarPreferences,
   saveCalendarPreferences,
@@ -151,6 +153,15 @@ export function AppShell() {
     );
   }
   if (status === "error") {
+    if (error instanceof TaskNotesModelRequiredError && repository.modelSetup)
+      return (
+        <ModelSetupScreen
+          setup={repository.modelSetup}
+          onReady={refresh}
+          changeCollection={changeCollection}
+          reauthorizeCollection={reauthorizeCurrentCollection}
+        />
+      );
     return (
       <StorageErrorScreen
         authorizeAnotherCollection={authorizeAnotherCollection}
