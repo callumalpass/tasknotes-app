@@ -359,11 +359,12 @@ export class NextInstallationWorker {
           },
         },
       );
+      const repository = this.repository;
       // Original creation recovery includes model setup. No existing collection
       // is auto-configured; typed blocked/unknown states keep this held owner
       // available for the explicit setup/recovery UI rather than opening again.
       if (opened.requiresTaskNotesModelSetup) {
-        const setup = this.repository.modelSetup!;
+        const setup = repository.modelSetup!;
         try {
           const view = await setup.inspect();
           if (view.state === "outcome_unknown") await setup.resume();
@@ -373,9 +374,18 @@ export class NextInstallationWorker {
           if (!(reason instanceof ModelSetupError)) throw reason;
         }
       }
+      if (
+        this.stopped ||
+        this.closing ||
+        this.signal?.aborted ||
+        this.repository !== repository
+      ) {
+        repository.dispose();
+        throw new Error("Original collection lifetime ended.");
+      }
       document.addEventListener("visibilitychange", this.onForeground);
       this.onForeground();
-      return this.repository;
+      return repository;
     } catch (error) {
       connector.close();
       throw error;
