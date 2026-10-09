@@ -386,6 +386,26 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       expect(f.mocked.submit).toHaveBeenCalledTimes(1);
     },
   );
+  it.each(["pending", "unresolved"] as const)(
+    "holds original confirmation when native record state is %s",
+    async (state) => {
+      const f = fixture();
+      const get = f.mocked.get.getMockImplementation()!;
+      f.mocked.get.mockImplementation(async (ref) => ({
+        ...(await get(ref)),
+        state: {
+          state: state === "pending" ? "pending" : "confirmed",
+          confirmedSeq: 1,
+          unresolved: state === "unresolved" ? 1 : undefined,
+        },
+      }));
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "outcome_unknown" },
+      });
+      expect((await f.journal.load(signal()))!.phase).toBe("confirmed");
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
   it("holds verified original intent when current native inventory becomes unavailable", async () => {
     const f = fixture();
     await f.setup.install();
