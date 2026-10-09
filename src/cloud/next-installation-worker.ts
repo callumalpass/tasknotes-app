@@ -10,6 +10,7 @@ import type {
   NextInstallationRequest,
   NextInstallationResponse,
   NextInstallationResult,
+  NextCreatedCollection,
 } from "./next-installation-protocol";
 
 /** One owned Worker and one original in-flight operation. No automatic retry or
@@ -182,6 +183,12 @@ export class NextInstallationWorker {
     return this.call({ kind: "collections" }) as Promise<
       readonly AppInstallationCollection[]
     >;
+  }
+  createCollection(reconcile = false): Promise<NextCreatedCollection> {
+    return this.call({
+      kind: "create-collection",
+      reconcile,
+    }) as Promise<NextCreatedCollection>;
   }
   startConsent(
     requestedCreateCollections = false,
