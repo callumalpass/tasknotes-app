@@ -179,16 +179,16 @@ export function modelPackPlan(value: unknown): ModelPackPlan {
       !exact(entry, "doc,path") ||
       !safePath(entry.path) ||
       (entry.doc !== null && typeof entry.doc !== "string") ||
-      seen.has(entry.path) ||
-      (entry.doc === null &&
-        !ops.some(
-          (op) => op.kind === "resource_delete" && op.path === entry.path,
-        ))
+      seen.has(entry.path)
     )
       fail("binding");
     seen.add(entry.path);
     return Object.freeze({ path: entry.path, doc: entry.doc });
   });
+  // Core may retire an already-absent managed target without emitting a delete.
+  // Preserve its explicit null readback; never invent an operation. Core's
+  // producer supplies retirement semantics, while this store enforces exact
+  // immutable capture and put/delete-to-readback consistency.
   for (const op of ops) {
     const expected = readback.find((entry) => entry.path === op.path);
     if (

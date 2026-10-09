@@ -133,6 +133,39 @@ describe("native installation Worker public protocol (source only)", () => {
         plan,
       }),
     ).toBe(true);
+    const lock = {
+      kind: "resource_put",
+      path: "mdbase.lock.yaml",
+      doc: "Exact lock update",
+      mustNotExist: false,
+      baseRevision: "sha256:" + "12".repeat(32),
+    };
+    const absentRetirement = {
+      ...plan,
+      ops: [lock],
+      readback: [
+        ...plan.readback,
+        { path: "_schemas/already-retired.json", doc: null },
+        { path: lock.path, doc: lock.doc },
+      ],
+    };
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: absentRetirement,
+      }),
+    ).toBe(true);
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        plan: {
+          ...plan,
+          readback: [{ ...plan.readback[0], doc: null }, plan.readback[1]],
+        },
+      }),
+    ).toBe(false);
     for (const action of ["attempt", "confirm", "verify"])
       expect(
         isNextInstallationCommand({

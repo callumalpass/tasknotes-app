@@ -297,6 +297,41 @@ describe("fixed protected model pack setup intent", () => {
     expect(original.plan).toEqual(updated);
     expect((await journal().prepare(updated, signal())).plan).toEqual(updated);
   });
+  it("retains original already-absent retirement readback without inventing a delete or replacing its UUID", async () => {
+    const lock = {
+      kind: "resource_put" as const,
+      path: "mdbase.lock.yaml",
+      doc: "Exact original updated lock",
+      mustNotExist: false,
+      baseRevision: "sha256:" + "12".repeat(32),
+    };
+    const originalPlan: ModelPackPlan = {
+      ...plan,
+      ops: [lock],
+      readback: [
+        ...plan.readback,
+        { path: "_schemas/already-retired.json", doc: null },
+        { path: lock.path, doc: lock.doc },
+      ],
+    };
+    const store = journal();
+    const original = await store.prepare(originalPlan, signal());
+    expect(original.plan).toEqual(originalPlan);
+    expect(original.plan.ops).toEqual([lock]);
+    expect(Object.isFrozen(original.plan.readback[2])).toBe(true);
+    await store.recordAttempt(original.mutationId, signal());
+    const recovered = await journal().load(signal());
+    expect(recovered).toMatchObject({
+      version: 2,
+      mutationId: original.mutationId,
+      phase: "attempted",
+      plan: originalPlan,
+    });
+    expect(recovered).not.toHaveProperty("ops");
+    expect((await journal().prepare(originalPlan, signal())).mutationId).toBe(
+      original.mutationId,
+    );
+  });
   it("permits only a bounded exact guarded plan, refusing empty/no-op preparation and ambiguous readback", async () => {
     for (const invalid of [
       { ...plan, ops: [] },
@@ -309,11 +344,13 @@ describe("fixed protected model pack setup intent", () => {
       { ...plan, readback: [plan.readback[0], plan.readback[0]] },
       {
         ...plan,
-        readback: [
-          ...plan.readback,
-          { path: "_types/not-retired.md", doc: null },
-        ],
+        readback: [{ ...plan.readback[0], doc: null }, plan.readback[1]],
       },
+      {
+        ...plan,
+        ops: [{ kind: "resource_delete", path: puts[0]!.path }, puts[1]],
+      },
+      { ...plan, readback: [plan.readback[1]] },
       { ...plan, ops: [{ ...puts[0], baseRevision: "not-a-digest" }, puts[1]] },
       { ...plan, ops: Array.from({ length: 65 }, () => puts[0]) },
       {
