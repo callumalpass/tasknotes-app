@@ -7,6 +7,9 @@ import {
 } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { init, loadCatalog } from "mdbase";
+import { nativeResourceSetupAssessment } from "../storage/next-resource-plan";
+import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
+import { resourceSetupPlan } from "../test/resource-setup-plan";
 import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
 import { initializeModelPackCore } from "./next-model-pack-core";
 import {
@@ -137,6 +140,27 @@ class ControlWorker {
             };
           result = this.intent ? structuredClone(this.intent) : null;
           break;
+        case "model-resource-setup-intent":
+          if (command.action === "prepare" && !this.intent)
+            this.intent = {
+              version: 3,
+              scope,
+              plan: command.plan,
+              mutationId: crypto.randomUUID(),
+              phase: "prepared",
+            };
+          if ("mutationId" in command && this.intent?.version === 3)
+            this.intent = {
+              ...this.intent,
+              phase:
+                command.action === "attempt"
+                  ? "attempted"
+                  : command.action === "confirm"
+                    ? "confirmed"
+                    : "verified",
+            };
+          result = this.intent ? structuredClone(this.intent) : null;
+          break;
         case "model-setup-verified":
           if (this.loseMarkerOnce) {
             this.loseMarkerOnce = false;
@@ -188,7 +212,13 @@ async function fixture({
   const replica = new MemoryReplica({
     collection: scope.collection,
     capabilities: permission
-      ? ["read", "write", "definitions.manage"]
+      ? [
+          "read",
+          "write",
+          "collection.read",
+          "definitions.manage",
+          "records.create",
+        ]
       : ["read", "write"],
   });
   replica.seedResource("mdbase.yaml", 'spec_version: "0.3.0"\n');
@@ -200,6 +230,69 @@ async function fixture({
     reconnect: false,
   });
   clients.push(client);
+  // MemoryReplica is not a raw YAML/Base implementation. Explicit source/data
+  // and discovery stand-ins exercise the real caller and SDK transport only.
+  const sourceDocuments = new Map<string, string>();
+  const originalSubmit = client.submit.bind(client);
+  client.submit = async (ops, options) => {
+    for (const op of ops)
+      if (op.kind === "create" && typeof op.document === "string")
+        sourceDocuments.set(op.id, op.document);
+    return originalSubmit(ops, options);
+  };
+  const originalGet = client.get.bind(client);
+  vi.spyOn(client, "get").mockImplementation(async (ref, include, signal) => {
+    const record = await originalGet(ref, include, signal);
+    if (!sourceDocuments.has(record.id)) return record;
+    // Native classifies bare .base records from its resolved catalog; this
+    // explicit protocol stand-in is needed because MemoryReplica does not.
+    const catalog = await client.describe();
+    const type = catalog.types.find((candidate) =>
+      candidate.implements.some(
+        (implementation) =>
+          implementation.contract === "obsidian.base" &&
+          implementation.version === "1.0.0",
+      ),
+    );
+    if (!type) throw Error("Synthetic Base catalog is unavailable");
+    return {
+      ...record,
+      types: [type.name],
+      document: sourceDocuments.get(record.id)!,
+    };
+  });
+  const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
+  const views = async () =>
+    Promise.all(
+      [...sourceDocuments.keys()].sort().map(async (id) => {
+        const record = await client.get(id);
+        return {
+          record: id,
+          path: record.path,
+          sourceRevision: record.revision,
+          ordinal: 0,
+          name: "Synthetic view",
+          viewType: "tasknotesTaskList",
+          implementations: [],
+        };
+      }),
+    );
+  vi.spyOn(client, "listAppBasesViews").mockImplementation(async () => ({
+    kind: "success",
+    views: await views(),
+    continuation: null,
+    clock,
+    collectionRevision: "sha256:" + "ab".repeat(32),
+  }));
+  vi.spyOn(client, "readAppBasesViewSource").mockImplementation(
+    async (selection) => ({
+      kind: "success",
+      view: (await views()).find((v) => v.record === selection.record)!,
+      source: sourceDocuments.get(selection.record)!,
+      clock,
+      collectionRevision: "sha256:" + "ab".repeat(32),
+    }),
+  );
   vi.spyOn(client, "describe").mockImplementation(async (signal) => {
     const listed = await client.resources.list({ text: true, signal });
     const resources = Object.fromEntries(
@@ -249,7 +342,7 @@ async function fixture({
 // One real SDK MemoryReplica client; control/port/catalog stand-ins, not native
 // receipt/READ/LAB qualification. No second client or production host is opened.
 describe("original Worker model journal and held repository wiring", () => {
-  it("fresh creation installs all four published resources and lock in one original-client mutation and awaits the creator finalizer", async () => {
+  it("fresh creation carries the v3 resource plan, all original publisher resources and five sources in one mutation before finalizing", async () => {
     const f = await fixture();
     const submit = vi.spyOn(f.client, "submit");
     const repository = await f.owner.openCollection(scope.collection);
@@ -258,24 +351,30 @@ describe("original Worker model journal and held repository wiring", () => {
       reconnect: false,
     });
     expect(submit).toHaveBeenCalledOnce();
-    expect(submit.mock.calls[0]![0]).toHaveLength(5);
-    expect(
-      submit.mock.calls[0]![0].map((operation) =>
-        "path" in operation ? operation.path : undefined,
-      ),
-    ).toEqual([
-      ...publisher.manifest.resources.map((resource) => resource.target),
-      "mdbase.lock.yaml",
-    ]);
+    const ops = submit.mock.calls[0]![0];
+    const paths = ops.map((op) => ("path" in op ? op.path : undefined));
+    for (const resource of publisher.manifest.resources)
+      expect(paths.filter((path) => path === resource.target)).toHaveLength(1);
+    expect(ops.filter((op) => op.kind === "create")).toHaveLength(5);
+    expect(paths.filter((path) => path === "mdbase.lock.yaml")).toHaveLength(1);
     expect(submit.mock.calls[0]![1]).not.toHaveProperty("allowPartial");
     expect(f.worker.intent).toMatchObject({
-      version: 2,
+      version: 3,
       phase: "verified",
       scope,
       mutationId: submit.mock.calls[0]![1]!.mutationId,
       plan: {
-        pack: { id: "tasknotes.task", version: "0.3.0-rc.18" },
-        ops: submit.mock.calls[0]![0],
+        packs: [
+          expect.objectContaining({
+            id: "tasknotes.task",
+            version: "0.3.0-rc.18",
+          }),
+          expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
+        ],
+        resourceOps: ops.filter((op) => op.kind !== "create"),
+        sources: ops
+          .filter((op) => op.kind === "create")
+          .map((op) => ({ id: op.id, path: op.path, document: op.document })),
       },
     });
     expect(f.worker.markerConfirmed).toBe(true);
@@ -364,27 +463,134 @@ describe("original Worker model journal and held repository wiring", () => {
       ),
     ).toHaveLength(2);
   });
-  it("already-current published pack finalizes the original creator with no invented model mutation", async () => {
+  it("already-current resource packs and exact native source discovery finalize without inventing another mutation", async () => {
     const f = await fixture();
     const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
     const signal = new AbortController().signal;
+    const plan = await nativeResourceSetupAssessment(
+      resources,
+      f.client,
+      taskNotesDefaultBaseSources,
+      signal,
+    );
+    for (const operation of plan.resourceOps) {
+      if (operation.kind !== "resource_put")
+        throw Error("Unexpected retirement on fresh install");
+      f.replica.seedResource(operation.path, operation.doc);
+    }
+    const catalog = await loadCatalog(
+      Object.fromEntries(
+        plan.resourceReadback
+          .filter((r) => r.doc !== null)
+          .map((r) => [r.path, r.doc!]),
+      ),
+    );
+    const baseType = catalog.implementations.find(
+      (i) => i.contract === "obsidian.base",
+    )!.type;
+    await Promise.all(
+      (
+        await f.client.submit(
+          plan.sources.map((source) => ({
+            kind: "create" as const,
+            id: crypto.randomUUID(),
+            path: source.path,
+            document: source.document,
+            type: baseType,
+          })),
+          { mutationId: crypto.randomUUID() },
+        )
+      ).map((write) => write.confirmed),
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    submit.mockClear();
+    const repository = await f.owner.openCollection(scope.collection);
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.worker.intent).toBeNull();
+    expect(f.worker.markerConfirmed).toBe(true);
+  });
+  it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
+    "recovers the original v2 %s plan without extending it to resource setup",
+    async (phase) => {
+      const f = await fixture();
+      const signal = new AbortController().signal;
+      const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
+      const assessment = await nativeModelPackAssessment(resources, signal);
+      const plan = await nativeModelPackPlan(
+        resources,
+        assessment.assessment_digest,
+        signal,
+      );
+      const id = crypto.randomUUID();
+      if (phase !== "prepared")
+        await Promise.all(
+          (await f.client.submit([...plan.ops], { mutationId: id })).map(
+            (write) => write.confirmed,
+          ),
+        );
+      f.worker.intent = { version: 2, scope, mutationId: id, phase, plan };
+      const submit = vi.spyOn(f.client, "submit");
+      const repository = await f.owner.openCollection(scope.collection);
+      expect(await repository.modelSetup!.inspect()).toEqual({
+        state: "ready",
+      });
+      expect(f.worker.intent).toEqual({
+        version: 2,
+        scope,
+        mutationId: id,
+        phase: "verified",
+        plan,
+      });
+      expect(submit).toHaveBeenCalledTimes(phase === "prepared" ? 1 : 0);
+      if (phase === "prepared") {
+        expect(submit.mock.calls[0]![0]).toEqual(plan.ops);
+        expect(submit.mock.calls[0]![1]).toMatchObject({ mutationId: id });
+      }
+      expect(
+        f.worker.requests.filter(
+          (request) => request.command.kind === "model-resource-setup-intent",
+        ),
+      ).toEqual([]);
+      expect(f.worker.markerConfirmed).toBe(true);
+    },
+  );
+  it("rejects a v2 reply to v3 preparation without replacing the owner or converting the original intent", async () => {
+    const f = await fixture({ created: false });
+    await f.owner.openCollection(scope.collection);
+    const signal = new AbortController().signal;
+    const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
     const assessment = await nativeModelPackAssessment(resources, signal);
     const plan = await nativeModelPackPlan(
       resources,
       assessment.assessment_digest,
       signal,
     );
-    for (const operation of plan.ops) {
-      if (operation.kind !== "resource_put")
-        throw Error("Unexpected retirement on fresh install");
-      f.replica.seedResource(operation.path, operation.doc);
-    }
-    const submit = vi.spyOn(f.client, "submit");
-    const repository = await f.owner.openCollection(scope.collection);
-    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
-    expect(submit).not.toHaveBeenCalled();
-    expect(f.worker.intent).toBeNull();
-    expect(f.worker.markerConfirmed).toBe(true);
+    const original = {
+      version: 2 as const,
+      scope,
+      mutationId: crypto.randomUUID(),
+      phase: "prepared" as const,
+      plan,
+    };
+    f.worker.intent = original;
+    const journal = f.owner.modelSetupJournal();
+    await expect(
+      journal.prepareResources(resourceSetupPlan(), signal),
+    ).rejects.toThrow("binding unavailable");
+    expect(f.worker.intent).toEqual(original);
+    expect(f.worker.terminated).toBe(1);
+    expect(
+      f.worker.requests.filter(
+        (request) => request.command.kind === "model-resource-setup-intent",
+      ),
+    ).toHaveLength(1);
+    expect(
+      f.worker.requests.filter(
+        (request) => request.command.kind === "open-collection",
+      ),
+    ).toHaveLength(1);
+    expect(vi.mocked(connect)).toHaveBeenCalledOnce();
   });
   it("retains a legacy intent without preparing, writing or completing its creator", async () => {
     const legacy = {

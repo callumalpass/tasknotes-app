@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { resourceSetupPlan } from "../test/resource-setup-plan";
 import {
   isNextInstallationCommand,
   installationErrorCode,
@@ -196,6 +197,52 @@ describe("native installation Worker public protocol (source only)", () => {
         mutationId: "replacement",
       },
       { kind: "model-setup-verified", collection: "caller-selected" },
+    ])
+      expect(isNextInstallationCommand(command)).toBe(false);
+  });
+  it("accepts only strict original resource-plan actions and rejects legacy/caller authority", () => {
+    const plan = resourceSetupPlan();
+    const prepare = {
+      kind: "model-resource-setup-intent",
+      action: "prepare",
+      plan,
+    };
+    expect(isNextInstallationCommand(prepare)).toBe(true);
+    for (const action of ["attempt", "confirm", "verify"]) {
+      expect(
+        isNextInstallationCommand({
+          kind: "model-resource-setup-intent",
+          action,
+          mutationId: "11111111-1111-4111-8111-111111111111",
+        }),
+      ).toBe(true);
+    }
+    for (const command of [
+      { ...prepare, scope: {} },
+      { ...prepare, key: "no-loan" },
+      {
+        ...prepare,
+        plan: { ...plan, sources: [{ ...plan.sources[0], id: "replacement" }] },
+      },
+      { ...prepare, plan: { ...plan, resourceReadback: [] } },
+      {
+        ...prepare,
+        plan: { ...plan, sources: [...plan.sources, ...plan.sources] },
+      },
+      { kind: "model-resource-setup-intent", action: "load" },
+      { kind: "model-resource-setup-intent", action: "save", value: plan },
+      { kind: "model-resource-setup-intent", action: "remove" },
+      {
+        kind: "model-resource-setup-intent",
+        action: "attempt",
+        mutationId: "replacement",
+      },
+      {
+        kind: "model-resource-setup-intent",
+        action: "verify",
+        mutationId: "11111111-1111-4111-8111-111111111111",
+        scope: {},
+      },
     ])
       expect(isNextInstallationCommand(command)).toBe(false);
   });

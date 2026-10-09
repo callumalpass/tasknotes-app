@@ -90,6 +90,7 @@ async function dispatch(
     case "create-collection":
       return controller.createCloudCopyCollection(command.reconcile);
     case "model-setup-intent":
+    case "model-resource-setup-intent":
       return controller.modelSetupIntent(command);
     case "model-setup-verified":
       await controller.finishModelSetup();

@@ -1,7 +1,8 @@
 import { connect } from "@mdbase-dev/sdk";
 import {
   ModelSetupError,
-  type ModelSetupJournal,
+  type ModelResourceSetupJournal,
+  type ModelResourceSetupIntent,
   type ModelSetupScope,
   type ModelSetupIntent,
   type ModelPackSetupIntent,
@@ -9,6 +10,7 @@ import {
 import {
   decode as decodeModelSetupIntent,
   modelPackPlan,
+  modelResourcePlan,
 } from "./next-model-setup-intent";
 import { appLocalConnector } from "@mdbase-dev/sdk/app-host";
 import { NextTaskRepository } from "../storage/next-repository";
@@ -40,7 +42,7 @@ export class NextInstallationWorker {
   private stopped = false;
   private dataConnector: ReturnType<typeof appLocalConnector> | null = null;
   private repository: NextTaskRepository | null = null;
-  private modelJournal: ModelSetupJournal | null = null;
+  private modelJournal: ModelResourceSetupJournal | null = null;
   private closing: Promise<void> | null = null;
   private readonly onForeground = () => {
     void this.syncForeground().catch(() => {});
@@ -240,7 +242,7 @@ export class NextInstallationWorker {
   }
   /** Only the original held repository may receive this fixed journal wrapper;
    * no protected store/key handle is transferred from its owning Worker. */
-  modelSetupJournal(): ModelSetupJournal {
+  modelSetupJournal(): ModelResourceSetupJournal {
     if (
       !this.modelJournal ||
       this.stopped ||
@@ -250,14 +252,19 @@ export class NextInstallationWorker {
       throw new Error("Original model setup owner unavailable.");
     return this.modelJournal;
   }
-  private originalModelSetupJournal(scope: ModelSetupScope): ModelSetupJournal {
+  private originalModelSetupJournal(
+    scope: ModelSetupScope,
+  ): ModelResourceSetupJournal {
     const bound = Object.freeze({
       account: scope.account,
       installation: scope.installation,
       collection: scope.collection,
     });
     const invoke = async (
-      command: Extract<NextInstallationCommand, { kind: "model-setup-intent" }>,
+      command: Extract<
+        NextInstallationCommand,
+        { kind: "model-setup-intent" | "model-resource-setup-intent" }
+      >,
       signal: AbortSignal,
     ): Promise<ModelSetupIntent | null> => {
       signal.throwIfAborted();
@@ -274,11 +281,13 @@ export class NextInstallationWorker {
         throw new Error("Original model setup binding unavailable.");
       }
       if (
-        (command.action !== "load" && intent.version !== 2) ||
+        (command.action !== "load" &&
+          intent.version !==
+            (command.kind === "model-resource-setup-intent" ? 3 : 2)) ||
         ("mutationId" in command && intent.mutationId !== command.mutationId) ||
         (command.action === "prepare" &&
-          intent.version === 2 &&
-          JSON.stringify(intent.plan) !== JSON.stringify(command.plan))
+          (intent.version === 1 ||
+            JSON.stringify(intent.plan) !== JSON.stringify(command.plan)))
       ) {
         this.onError();
         throw new Error("Original model setup binding unavailable.");
@@ -293,6 +302,20 @@ export class NextInstallationWorker {
       if (!intent || intent.version !== 2) {
         this.onError();
         throw new Error("Original model setup binding unavailable.");
+      }
+      return intent;
+    };
+    const mutateResources = async (
+      command: Extract<
+        NextInstallationCommand,
+        { kind: "model-resource-setup-intent" }
+      >,
+      signal: AbortSignal,
+    ): Promise<ModelResourceSetupIntent> => {
+      const intent = await invoke(command, signal);
+      if (!intent || intent.version !== 3) {
+        this.onError();
+        throw new Error("Original resource setup binding unavailable.");
       }
       return intent;
     };
@@ -322,7 +345,39 @@ export class NextInstallationWorker {
           { kind: "model-setup-intent", action: "verify", mutationId },
           signal,
         ),
-    } satisfies ModelSetupJournal);
+      prepareResources: async (plan, signal) =>
+        mutateResources(
+          {
+            kind: "model-resource-setup-intent",
+            action: "prepare",
+            plan: modelResourcePlan(plan),
+          },
+          signal,
+        ),
+      recordResourceAttempt: async (mutationId, signal) =>
+        mutateResources(
+          {
+            kind: "model-resource-setup-intent",
+            action: "attempt",
+            mutationId,
+          },
+          signal,
+        ),
+      recordResourceConfirmed: async (mutationId, signal) =>
+        mutateResources(
+          {
+            kind: "model-resource-setup-intent",
+            action: "confirm",
+            mutationId,
+          },
+          signal,
+        ),
+      recordResourceVerified: async (mutationId, signal) =>
+        mutateResources(
+          { kind: "model-resource-setup-intent", action: "verify", mutationId },
+          signal,
+        ),
+    } satisfies ModelResourceSetupJournal);
   }
   async openCollection(collectionId: string): Promise<NextTaskRepository> {
     if (this.dataConnector || this.repository)
