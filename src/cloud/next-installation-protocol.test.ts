@@ -98,6 +98,57 @@ describe("native installation Worker public protocol (source only)", () => {
     ])
       expect(isNextInstallationCommand(command)).toBe(false);
   });
+  it("accepts fixed original model journal actions without generic storage or caller-selected scope", () => {
+    const ops = [
+      {
+        kind: "resource_put",
+        path: "_contracts/tasknotes.task.md",
+        doc: "Inline contract",
+        mustNotExist: true,
+      },
+      {
+        kind: "resource_put",
+        path: "_types/task.md",
+        doc: "Inline type",
+        mustNotExist: true,
+      },
+    ];
+    expect(
+      isNextInstallationCommand({ kind: "model-setup-intent", action: "load" }),
+    ).toBe(true);
+    expect(
+      isNextInstallationCommand({
+        kind: "model-setup-intent",
+        action: "prepare",
+        ops,
+      }),
+    ).toBe(true);
+    for (const action of ["attempt", "confirm", "verify"])
+      expect(
+        isNextInstallationCommand({
+          kind: "model-setup-intent",
+          action,
+          mutationId: "11111111-1111-4111-8111-111111111111",
+        }),
+      ).toBe(true);
+    expect(isNextInstallationCommand({ kind: "model-setup-verified" })).toBe(
+      true,
+    );
+    for (const command of [
+      { kind: "model-setup-intent", action: "load", scope: {} },
+      { kind: "model-setup-intent", action: "save", value: {} },
+      { kind: "model-setup-intent", action: "remove" },
+      { kind: "model-setup-intent", action: "prepare", ops: [ops[0]] },
+      { kind: "model-setup-intent", action: "prepare", ops, key: "no-loan" },
+      {
+        kind: "model-setup-intent",
+        action: "attempt",
+        mutationId: "replacement",
+      },
+      { kind: "model-setup-verified", collection: "caller-selected" },
+    ])
+      expect(isNextInstallationCommand(command)).toBe(false);
+  });
   it("errors are finite public codes, never raw messages or an arbitrary lower-case string", () => {
     for (const reason of [
       "binding",

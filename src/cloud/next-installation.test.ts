@@ -8,6 +8,7 @@ import {
   type AppLockPort,
 } from "@mdbase-dev/sdk/app-host";
 import { NextTaskNotesInstallation } from "./next-installation";
+import { collectionCreateIntent } from "./next-collection-create-intent";
 
 const account = "11111111-1111-4111-8111-111111111111";
 const installation = "22222222-2222-4222-8222-222222222222";
@@ -432,6 +433,16 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     await app.confirmAccountAndOpenDevice(account);
     s.setView({ state: "paired", createCollections: true });
     const first = await app.createCloudCopyCollection();
+    const awaitingModel = await app.createCloudCopyCollection();
+    expect(awaitingModel.collectionId).toBe(first.collectionId);
+    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
+    // Metadata stand-in for the model service's original-owner finalizer.
+    await collectionCreateIntent(
+      { account, installation },
+      s.options.signal,
+      "model-verified",
+      { expectedCollection: first.collectionId },
+    );
     const second = await app.createCloudCopyCollection();
     expect(second.collectionId).not.toBe(first.collectionId);
     expect(s.host.bootstrapCloudCopy).toHaveBeenCalledTimes(2);

@@ -4,6 +4,8 @@ export interface NextCollectionCreateIntent extends AppInstallationScope {
   readonly version: 1;
   readonly collection: string;
   readonly phase: "prepared" | "attempted" | "completed";
+  /** Public flow completion only, never a model readiness or receipt witness. */
+  readonly modelVerified?: true;
 }
 const database = "tasknotes.native-collection-create.v1";
 const store = "original-creation";
@@ -21,8 +23,12 @@ function decode(
   const r = value as NextCollectionCreateIntent;
   if (
     !r ||
-    Object.keys(r).sort().join() !==
-      "account,collection,installation,phase,version" ||
+    ![
+      "account,collection,installation,phase,version",
+      "account,collection,installation,modelVerified,phase,version",
+    ].includes(Object.keys(r).sort().join()) ||
+    ("modelVerified" in r &&
+      (r.modelVerified !== true || r.phase !== "completed")) ||
     r.version !== 1 ||
     r.account !== scope.account ||
     r.installation !== scope.installation ||
@@ -56,7 +62,11 @@ async function open(): Promise<IDBDatabase> {
 export async function collectionCreateIntent(
   scope: AppInstallationScope,
   signal: AbortSignal,
-  change: "prepare" | "resume" | "attempt" | "complete",
+  change: "prepare" | "resume" | "attempt" | "complete" | "model-verified",
+  options: Readonly<{
+    requireModelVerified?: boolean;
+    expectedCollection?: string;
+  }> = {},
 ): Promise<NextCollectionCreateIntent> {
   signal.throwIfAborted();
   if (!uuid.test(scope.account) || !uuid.test(scope.installation))
@@ -100,7 +110,9 @@ export async function collectionCreateIntent(
               : decode(request.result, binding);
           if (
             !current ||
-            (current.phase === "completed" && change === "prepare")
+            (current.phase === "completed" &&
+              change === "prepare" &&
+              (!options.requireModelVerified || current.modelVerified === true))
           ) {
             if (change !== "prepare") throw failure("recovery_required");
             // Preserve completed target metadata when advancing the active intent.
@@ -132,6 +144,14 @@ export async function collectionCreateIntent(
             if (current.phase === "prepared")
               throw failure("recovery_required");
             current = { ...current, phase: "completed" };
+            records.put(current, key);
+          } else if (change === "model-verified") {
+            if (
+              current.phase !== "completed" ||
+              options.expectedCollection !== current.collection
+            )
+              throw failure("recovery_required");
+            current = { ...current, modelVerified: true };
             records.put(current, key);
           }
           result = Object.freeze(current);
