@@ -72,6 +72,8 @@ describe("native Capacitor configuration", () => {
     expect(source).toContain('url.scheme == "https"');
     expect(source).toContain("Self.proofHeaders.allSatisfy");
     expect(source).toContain("task?.cancel()");
+    expect(source).toContain("session.invalidateAndCancel()");
+    expect(capacitorConfig.ios.loggingBehavior).toBe("none");
     expect(source).toContain("completionHandler(nil)");
     expect(source).not.toMatch(
       /didReceive challenge|serverTrust|print\(|NSLog/,

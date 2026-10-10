@@ -11,7 +11,7 @@ class TaskNotesBridgeViewController: CAPBridgeViewController {
 /// The bundled native publisher has the same identity as its web declaration;
 /// WKWebView's capacitor asset origin is not that publisher's grant origin.
 @objc(TaskNotesAuthorityHttpPlugin)
-public class TaskNotesAuthorityHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionTaskDelegate {
+public class TaskNotesAuthorityHttpPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "TaskNotesAuthorityHttpPlugin"
     public let jsName = "TaskNotesAuthorityHttp"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -26,14 +26,20 @@ public class TaskNotesAuthorityHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessi
     ]
     private let lock = NSLock()
     private var tasks: [String: URLSessionDataTask] = [:]
-    private lazy var session: URLSession = {
+    private let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpShouldSetCookies = false
         configuration.httpCookieStorage = nil
         configuration.urlCredentialStorage = nil
         configuration.urlCache = nil
-        return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        // URLSession retains its delegate. A separate stateless delegate avoids
+        // retaining the plugin/webview lifetime through a session cycle.
+        return URLSession(configuration: configuration, delegate: TaskNotesAuthorityRedirectGuard(), delegateQueue: nil)
     }()
+
+    deinit {
+        session.invalidateAndCancel()
+    }
 
     @objc func request(_ call: CAPPluginCall) {
         guard let id = call.getString("id"), UUID(uuidString: id) != nil,
@@ -125,7 +131,10 @@ public class TaskNotesAuthorityHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessi
         call.resolve()
     }
 
-    public func urlSession(_ session: URLSession, task: URLSessionTask,
+}
+
+private final class TaskNotesAuthorityRedirectGuard: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask,
                            willPerformHTTPRedirection response: HTTPURLResponse,
                            newRequest request: URLRequest,
                            completionHandler: @escaping (URLRequest?) -> Void) {

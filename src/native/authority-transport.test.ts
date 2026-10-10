@@ -154,7 +154,7 @@ it("returns authority denials unchanged rather than retrying or bypassing them",
   expect(browserFetch).not.toHaveBeenCalled();
 });
 
-it.each([302, 307, 308])(
+it.each([301, 302, 303, 307, 308])(
   "rejects redirects without forwarding or retrying credentials: %s",
   async (status) => {
     platform.request.mockResolvedValueOnce({
@@ -184,6 +184,32 @@ it("rejects cookie-bearing authority requests before dispatch", async () => {
     nativeFetch(url, { headers, credentials: "include" }),
   ).rejects.toThrow(/cookies/);
   expect(platform.request).not.toHaveBeenCalled();
+});
+
+it("supports WebKit without throwIfAborted or custom abort reasons", async () => {
+  const prototype = Object.getPrototypeOf(new Request(url).signal);
+  const method = Object.getOwnPropertyDescriptor(prototype, "throwIfAborted")!;
+  const reason = Object.getOwnPropertyDescriptor(prototype, "reason")!;
+  Object.defineProperty(prototype, "throwIfAborted", {
+    configurable: true,
+    value: undefined,
+  });
+  Object.defineProperty(prototype, "reason", {
+    configurable: true,
+    get: () => undefined,
+  });
+  try {
+    expect((await nativeFetch(url, { headers })).status).toBe(200);
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      nativeFetch(url, { headers, signal: controller.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(platform.request).toHaveBeenCalledOnce();
+  } finally {
+    Object.defineProperty(prototype, "throwIfAborted", method);
+    Object.defineProperty(prototype, "reason", reason);
+  }
 });
 
 it("does not send an already-aborted request", async () => {
@@ -222,7 +248,7 @@ it("cleans up abort listeners after completion", async () => {
   expect(platform.cancel).not.toHaveBeenCalled();
 });
 
-it.each([204, 205])("supports bodyless responses: %s", async (status) => {
+it.each([204, 205, 304])("supports bodyless responses: %s", async (status) => {
   platform.request.mockResolvedValueOnce({
     url,
     status,

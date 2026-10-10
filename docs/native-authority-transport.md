@@ -44,6 +44,7 @@ AbortSignal cancellation rejects with the caller's original reason and cancels
 the URLSession task. This preserves Connect's request budgets and its explicit
 unknown-write-outcome recovery rules. Cancellation never implies a write was
 not accepted. The adapter does not retry writes or change recovery decisions.
+Plugin teardown invalidates the native session and cancels outstanding tasks.
 
 ## Verification and remaining device work
 

@@ -41,11 +41,11 @@ export function createNativeAuthorityFetch(
     if (!signedAuthorityRequest) return browserFetch(request);
     if (request.credentials === "include")
       throw new TypeError("Native authority requests cannot include cookies.");
-    request.signal.throwIfAborted();
+    if (request.signal.aborted) throw abortReason(request.signal);
     const body = request.body
       ? encodeBytes(new Uint8Array(await request.arrayBuffer()))
       : undefined;
-    request.signal.throwIfAborted();
+    if (request.signal.aborted) throw abortReason(request.signal);
     const id = crypto.randomUUID();
     let abort: () => void = () => undefined;
     try {
@@ -53,7 +53,7 @@ export function createNativeAuthorityFetch(
         Awaited<ReturnType<NativeAuthorityHttp["request"]>>
       >((resolve, reject) => {
         abort = () => {
-          reject(request.signal.reason);
+          reject(abortReason(request.signal));
           // Bridge calls are ordered. Cancel the actual URLSession task, not
           // merely the JS waiter: write-outcome/recovery budgets stay intact.
           void transport.cancel({ id }).catch(() => undefined);
@@ -69,12 +69,14 @@ export function createNativeAuthorityFetch(
           })
           .then(resolve, reject);
       });
-      request.signal.throwIfAborted();
+      if (request.signal.aborted) throw abortReason(request.signal);
       // Request proofs bind the exact target. Never forward credentials/proofs
       // through redirects, including same-host redirects to another path.
       if (
         response.url !== request.url ||
-        (response.status >= 300 && response.status < 400)
+        (response.status >= 300 &&
+          response.status < 400 &&
+          response.status !== 304)
       )
         throw new TypeError(
           "Native authority requests cannot follow redirects.",
@@ -100,6 +102,15 @@ export function installNativeAuthorityTransport(): void {
   window.fetch = createNativeAuthorityFetch(
     window.fetch.bind(window),
     nativeHttp,
+  );
+}
+
+function abortReason(signal: AbortSignal): unknown {
+  // The native deployment floor includes WebKit versions without throwIfAborted
+  // or custom abort reasons. Preserve supplied reasons, otherwise use Fetch's
+  // standard AbortError rather than depending on those newer APIs.
+  return (
+    signal.reason ?? new DOMException("The request was aborted.", "AbortError")
   );
 }
 
