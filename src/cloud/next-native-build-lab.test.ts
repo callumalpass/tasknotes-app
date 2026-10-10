@@ -19,7 +19,7 @@ it("supplies the exact registered application from the fixed isolated LAB build"
     environment: "lab",
     appOrigin: "http://127.0.0.1:48218",
     runtimeSha256:
-      "5f1ea5b2ab8809794ea6da8ef8609e53651551716a57309bfa628c44f497ddf2",
+      "58e9ed23146a956af24b936359fc79c931873eda1c8d9e297f5196f02ddaa265",
   });
   expect(fetchBundledAsset).toHaveBeenCalledExactlyOnceWith(
     expect.any(String),
