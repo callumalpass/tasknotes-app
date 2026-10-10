@@ -749,9 +749,40 @@ export class NextTaskRepository implements TaskRepository {
     return note;
   }
 
+  private async createdScratchpad(
+    nativeId: string,
+    receipt: wire.Receipt,
+    signal: AbortSignal,
+  ): Promise<ScratchpadDocument> {
+    const record = await this.client.get(nativeId, { body: true }, signal);
+    signal.throwIfAborted();
+    const admitted = receipt.records?.find((item) => item.id === nativeId);
+    if (
+      record.id !== nativeId ||
+      record.state.state !== "confirmed" ||
+      record.state.hold ||
+      record.state.unresolved ||
+      (receipt.records !== undefined &&
+        (!admitted ||
+          admitted.path !== record.path ||
+          admitted.revision !== record.revision))
+    )
+      throw new Error(
+        "The original created scratchpad could not be confirmed by its native identity and revision.",
+      );
+    // Native on_create may assign the portable ID. Decode its actual result
+    // only for this original creation; existing-note witnesses stay exact.
+    const note = this.scratchpad(record);
+    if (note.state !== "active" || note.body !== "")
+      throw new Error("The created scratchpad changed before its result READ.");
+    return note;
+  }
+
   getActiveScratchpad(): Promise<ScratchpadDocument> {
     const signal = this.signal();
-    let target: { nativeId: string; portableId: string };
+    let target:
+      | { nativeId: string; created: true }
+      | { nativeId: string; portableId: string };
     return this.mutations.run(
       {
         key: JSON.stringify(["scratchpad:active"]),
@@ -765,7 +796,7 @@ export class NextTaskRepository implements TaskRepository {
             const values = newScratchpadValues();
             target = {
               nativeId: crypto.randomUUID(),
-              portableId: values.frontmatter.id as string,
+              created: true,
             };
             return () =>
               this.client.create(
@@ -809,12 +840,19 @@ export class NextTaskRepository implements TaskRepository {
               })
             )[0]!;
         },
-        confirmed: async (_, requestSignal) => {
-          const current = await this.savedScratchpad(
-            target.nativeId,
-            target.portableId,
-            requestSignal,
-          );
+        confirmed: async (receipt, requestSignal) => {
+          const current =
+            "created" in target
+              ? await this.createdScratchpad(
+                  target.nativeId,
+                  receipt,
+                  requestSignal,
+                )
+              : await this.savedScratchpad(
+                  target.nativeId,
+                  target.portableId,
+                  requestSignal,
+                );
           this.reached();
           this.emit("data");
           return current;
@@ -889,7 +927,7 @@ export class NextTaskRepository implements TaskRepository {
     const signal = this.signal();
     const captured = structuredClone(input);
     let previousId: string;
-    let next: { nativeId: string; portableId: string };
+    let next: { nativeId: string };
     return this.mutations.run(
       {
         key: JSON.stringify(["scratchpad:new", captured]),
@@ -901,10 +939,7 @@ export class NextTaskRepository implements TaskRepository {
           const now = new Date().toISOString();
           const values = newScratchpadValues(now);
           previousId = record.id;
-          next = {
-            nativeId: crypto.randomUUID(),
-            portableId: values.frontmatter.id as string,
-          };
+          next = { nativeId: crypto.randomUUID() };
           const ops: wire.Op[] = [
             this.client.updateOp(record, {
               patch: scratchpadFrontmatter(current, {
@@ -926,15 +961,15 @@ export class NextTaskRepository implements TaskRepository {
               })
             )[0]!;
         },
-        confirmed: async (_, requestSignal) => {
+        confirmed: async (receipt, requestSignal) => {
           const previous = await this.savedScratchpad(
             previousId,
             captured.id,
             requestSignal,
           );
-          const current = await this.savedScratchpad(
+          const current = await this.createdScratchpad(
             next.nativeId,
-            next.portableId,
+            receipt,
             requestSignal,
           );
           this.reached();

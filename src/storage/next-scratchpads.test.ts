@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCRATCHPAD_TYPE, type ScratchpadDocument } from "../domain/scratchpad";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { SCRATCH_IMAGE_TYPE } from "../domain/scratch-image";
+import { toValue } from "@mdbase-dev/sdk";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 async function fixture() {
@@ -208,6 +209,26 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     expect(await f.repository.getScratchpad(current.id)).toEqual(current);
   });
 
+  it("diagnostic: reads the engine lifecycle's portable identity from the original created native UUID", async () => {
+    const f = await fixture();
+    const get = f.client.get.bind(f.client);
+    const nativePortableId = "91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9";
+    // MemoryReplica has no lifecycle planner. Mirror the actual Core on_create
+    // id.uuid assignment only in result READ, not a native authorization claim.
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      if (!record.types.includes(SCRATCHPAD_TYPE)) return record;
+      const frontmatter = new Map(record.frontmatter);
+      frontmatter.set("id", toValue(nativePortableId));
+      return { ...record, frontmatter };
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.repository.getActiveScratchpad()).resolves.toMatchObject({
+      id: nativePortableId,
+      state: "active",
+    });
+    expect(submit).toHaveBeenCalledOnce();
+  });
   it("saves portable identities to the original native record and rebases only identical bodies", async () => {
     const f = await fixture();
     const native = seed(f, "portable-note");
