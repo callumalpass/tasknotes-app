@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ModelSetupError,
   type ModelSetupView,
+  type ModelSetupProgress,
   type TaskNotesModelSetup,
 } from "../application/ports/model-setup";
 
@@ -20,6 +21,7 @@ export function ModelSetupScreen({
   const [view, setView] = useState<ModelSetupView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState<ModelSetupProgress | null>(null);
   useEffect(() => {
     let active = true;
     void setup.inspect().then(
@@ -47,21 +49,36 @@ export function ModelSetupScreen({
       if (busy) return;
       setBusy(true);
       setError("");
+      setProgress(null);
+      const operation = { progress: null as ModelSetupProgress | null };
+      const report = (next: ModelSetupProgress) => {
+        // Once the original deadline expires, stay truthful about checking
+        // its outcome even if the provider enters a receipt/readback phase.
+        if (operation.progress === "checking_outcome") return;
+        operation.progress = next;
+        setProgress(next);
+      };
       try {
-        if (action !== "inspect") await setup[action]();
+        if (action !== "inspect") await setup[action](report);
         const next = await setup.inspect();
         setView(next);
         if (next.state === "ready") {
           // A read-only check cannot complete a retained creation target. This
           // is an idempotent read/no-op when definitions already exist.
-          if (action === "inspect") await setup.install();
+          if (action === "inspect") await setup.install(report);
           await onReady();
         }
       } catch (reason) {
+        const checkingOriginalOutcome =
+          operation.progress === "checking_outcome" &&
+          reason instanceof ModelSetupError &&
+          reason.view.state === "outcome_unknown";
         setError(
-          reason instanceof Error
-            ? reason.message
-            : "TaskNotes setup is unavailable.",
+          checkingOriginalOutcome
+            ? ""
+            : reason instanceof Error
+              ? reason.message
+              : "TaskNotes setup is unavailable.",
         );
         if (reason instanceof ModelSetupError) setView(reason.view);
         else {
@@ -115,7 +132,17 @@ export function ModelSetupScreen({
           Check setup
         </button>
       ) : null}
-      {busy ? <p role="status">Checking TaskNotes setup…</p> : null}
+      {busy ? (
+        <p role="status">
+          {progress === "checking_outcome"
+            ? "Checking whether setup finished…"
+            : progress === "waiting_for_confirmation"
+              ? "Waiting for setup confirmation…"
+              : progress === "installing"
+                ? "Installing TaskNotes setup…"
+                : "Checking TaskNotes setup…"}
+        </p>
+      ) : null}
       {error ? <p role="alert">{error}</p> : null}
       <button
         className="text-action"

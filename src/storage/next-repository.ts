@@ -125,6 +125,7 @@ import {
   type ModelSetupJournal,
   type ModelResourceSetupJournal,
   type TaskNotesModelSetup,
+  type ModelSetupProgressListener,
 } from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
@@ -280,7 +281,7 @@ export class NextTaskRepository implements TaskRepository {
         new NativeModelSetup(
           client,
           journal,
-          () => signal ?? this.signal(),
+          () => this.setupOwnerSignal(signal),
           verified,
         );
       // The real protected store implements both ports. Legacy-only adapters
@@ -295,7 +296,7 @@ export class NextTaskRepository implements TaskRepository {
         ? new NativeResourceSetup(
             client,
             journal as ModelResourceSetupJournal,
-            () => this.signal(),
+            () => this.setupOwnerSignal(),
             taskNotesDefaultBaseSources,
             verified,
             legacy,
@@ -303,8 +304,10 @@ export class NextTaskRepository implements TaskRepository {
         : legacy();
       this.modelSetup = Object.freeze({
         inspect: () => setup.inspect(),
-        install: () => setup.install(),
-        resume: () => setup.resume(),
+        install: (progress?: ModelSetupProgressListener) =>
+          setup.install(progress),
+        resume: (progress?: ModelSetupProgressListener) =>
+          setup.resume(progress),
       });
     }
     this.stopStatus = client.onStatus((status: SyncStatus) => {
@@ -340,6 +343,16 @@ export class NextTaskRepository implements TaskRepository {
     });
   }
 
+  /** Setup owns its bounded submit/receipt window, not a foreground read budget.
+   * Pin this lifecycle before entering it; owner aborts are never renewed. */
+  private setupOwnerSignal(extra?: AbortSignal): AbortSignal {
+    if (this.disposed)
+      throw new Error("The native collection instance has been disposed.");
+    this.scope.signal.throwIfAborted();
+    return extra
+      ? AbortSignal.any([this.scope.signal, extra])
+      : this.scope.signal;
+  }
   private signal(extra?: AbortSignal): AbortSignal {
     if (this.disposed)
       throw new Error("The native collection instance has been disposed.");

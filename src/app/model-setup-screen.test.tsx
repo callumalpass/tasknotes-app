@@ -274,6 +274,48 @@ it("keeps unknown outcome visible and resumes the original intent instead of ins
   expect(port.install).toHaveBeenCalledOnce();
   expect(port.resume).toHaveBeenCalledOnce();
 });
+it("shows bounded setup and receipt-check progress, retaining unknown outcome without a timeout alert or resubmit", async () => {
+  const port = setup();
+  let report!: NonNullable<Parameters<TaskNotesModelSetup["install"]>[0]>;
+  let reject!: (error: unknown) => void;
+  vi.mocked(port.install).mockImplementation((progress) => {
+    report = progress!;
+    return new Promise<void>((_, failed) => {
+      reject = failed;
+    });
+  });
+  const onReady = vi.fn(async () => undefined);
+  render(
+    <ModelSetupScreen
+      setup={port}
+      onReady={onReady}
+      changeCollection={vi.fn()}
+      reauthorizeCollection={vi.fn()}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Set up TaskNotes" }),
+  );
+  act(() => report("waiting_for_confirmation"));
+  await screen.findByText("Waiting for setup confirmation…");
+  act(() => report("checking_outcome"));
+  await screen.findByText("Checking whether setup finished…");
+  act(() => report("waiting_for_confirmation")); // Do not re-label reconciliation as a fresh install.
+  expect(screen.getByText("Checking whether setup finished…")).toBeTruthy();
+  await act(async () =>
+    reject(
+      new ModelSetupError({
+        state: "outcome_unknown",
+        message: "Checking whether setup finished. Original changes retained.",
+      }),
+    ),
+  );
+  await screen.findByRole("button", { name: "Resume original setup" });
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(port.install).toHaveBeenCalledOnce();
+  expect(port.resume).not.toHaveBeenCalled();
+  expect(onReady).not.toHaveBeenCalled();
+});
 it("awaits idempotent completion recording after a ready read-only check", async () => {
   const port = setup();
   vi.mocked(port.inspect).mockResolvedValue({ state: "ready" });
