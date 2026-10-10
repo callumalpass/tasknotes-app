@@ -19,7 +19,11 @@ export const TASKNOTES_MODEL_PACK = Object.freeze({
   id: "tasknotes.task",
   version: "0.3.0-rc.18",
 });
-const provision = manifest.provisions.type_packs[0] as TypePackProvision;
+// Legacy v2 journals bind ONE task pack. New setup installs the full application
+// declaration in next-resource-plan; never enlarge a persisted v2 operation.
+const provision = manifest.provisions.type_packs.find(
+  (pack) => pack.manifest.id === TASKNOTES_MODEL_PACK.id,
+) as TypePackProvision;
 // Match the editor contract-catalog's kind/identity/resource-count preflight.
 // Core's existing pack loader (inside assess/apply) validates all resource kinds,
 // paths, documents, digests and seed baselines. The protocol manifest validator

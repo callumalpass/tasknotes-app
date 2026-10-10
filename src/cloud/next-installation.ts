@@ -547,6 +547,12 @@ export class NextTaskNotesInstallation {
       switch (command.action) {
         case "load":
           return store.load(signal);
+        case "prepare-round":
+          return store.prepareResourceRound(
+            command.plan,
+            command.previousMutationId,
+            signal,
+          );
         case "prepare":
           return command.kind === "model-resource-setup-intent"
             ? store.prepareResources(command.plan, signal)

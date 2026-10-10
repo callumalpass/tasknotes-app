@@ -102,8 +102,21 @@ export interface ModelResourceSetupIntent {
   readonly plan: ModelResourcePlan;
   readonly phase: ModelSetupPhase;
 }
+/** Additive setup after a verified operation. The entire prior journal is
+ * retained unchanged; a new mutation/plan never replaces its original intent.
+ */
+export interface ModelResourceSetupRoundIntent {
+  readonly version: 4;
+  readonly scope: ModelSetupScope;
+  readonly mutationId: string;
+  readonly plan: ModelResourcePlan;
+  readonly phase: ModelSetupPhase;
+  readonly previous: ModelSetupIntent;
+}
+export type ResourceSetupIntent =
+  ModelResourceSetupIntent | ModelResourceSetupRoundIntent;
 export type ModelSetupIntent =
-  LegacyModelSetupIntent | ModelPackSetupIntent | ModelResourceSetupIntent;
+  LegacyModelSetupIntent | ModelPackSetupIntent | ResourceSetupIntent;
 
 /** Bounds apply to the TOTAL UTF-8 encoded intent plaintext, not each document.
  * Overflow refuses; never truncate, split, reset or invent a replacement ID.
@@ -115,7 +128,7 @@ export const MODEL_SETUP_LIMITS = Object.freeze({
   pathCodeUnits: 1024,
 });
 
-/** One bounded intent on the ORIGINAL protected journal/envelope/collection.
+/** Bounded original intents on the ORIGINAL protected journal/envelope/collection.
  * Mutators commit durably, retain the entire original tuple/ID/plan, and use
  * monotonic CAS. Legacy v1 loads only to preserve/refuse; no mutator accepts it.
  * No generic save, reset, remove or alternate namespace is exposed.
@@ -139,25 +152,34 @@ export interface ModelSetupJournal {
 }
 
 /** Same protected ledger/tuple; v3 prepare only when its original slot is absent.
- * Existing v1/v2 intents are never converted, enlarged, reset or replaced.
+ * A separate explicit v4 round retains its verified predecessor unchanged.
+ * Existing intents are never converted, enlarged, reset or replaced.
  */
 export interface ModelResourceSetupJournal extends ModelSetupJournal {
   prepareResources(
     plan: ModelResourcePlan,
     signal: AbortSignal,
   ): Promise<ModelResourceSetupIntent>;
+  /** Explicit new round only after the named original operation is verified.
+   * Absent on older adapters: no reset/overwrite fallback is permitted.
+   */
+  prepareResourceRound?(
+    plan: ModelResourcePlan,
+    previousMutationId: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupRoundIntent>;
   recordResourceAttempt(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent>;
+  ): Promise<ResourceSetupIntent>;
   recordResourceConfirmed(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent>;
+  ): Promise<ResourceSetupIntent>;
   recordResourceVerified(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent>;
+  ): Promise<ResourceSetupIntent>;
 }
 
 export type ModelSetupView =

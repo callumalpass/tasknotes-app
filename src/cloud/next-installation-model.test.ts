@@ -151,7 +151,23 @@ class ControlWorker {
               mutationId: crypto.randomUUID(),
               phase: "prepared",
             };
-          if ("mutationId" in command && this.intent?.version === 3)
+          if (
+            command.action === "prepare-round" &&
+            this.intent?.phase === "verified" &&
+            this.intent.mutationId === command.previousMutationId
+          )
+            this.intent = {
+              version: 4,
+              scope,
+              mutationId: crypto.randomUUID(),
+              plan: command.plan,
+              phase: "prepared",
+              previous: structuredClone(this.intent),
+            };
+          if (
+            "mutationId" in command &&
+            (this.intent?.version === 3 || this.intent?.version === 4)
+          )
             this.intent = {
               ...this.intent,
               phase:
@@ -399,6 +415,14 @@ describe("original Worker model journal and held repository wiring", () => {
             id: "tasknotes.task",
             version: "0.3.0-rc.18",
           }),
+          expect.objectContaining({
+            id: "tasknotes.scratch",
+            version: "1.2.0",
+          }),
+          expect.objectContaining({
+            id: "tasknotes.scratch-image",
+            version: "1.2.0",
+          }),
           expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
         ],
         resourceOps: ops.filter((op) => op.kind !== "create"),
@@ -639,11 +663,11 @@ describe("original Worker model journal and held repository wiring", () => {
       });
       expect(f.worker.markerConfirmed).toBe(false);
       expect(await repository.modelSetup!.inspect()).toMatchObject({
-        state: phase === "verified" ? "ready" : "outcome_unknown",
+        state: phase === "verified" ? "required" : "outcome_unknown",
       });
       await repository.modelSetup!.resume();
       expect(await repository.modelSetup!.inspect()).toEqual({
-        state: "ready",
+        state: "required",
       });
       expect(f.worker.intent).toEqual({
         version: 2,
@@ -663,6 +687,42 @@ describe("original Worker model journal and held repository wiring", () => {
         ),
       ).toEqual([]);
       expect(f.worker.markerConfirmed).toBe(true);
+      if (phase === "verified") {
+        const previous = structuredClone(f.worker.intent);
+        submit.mockClear();
+        f.worker.loseMarkerOnce = true;
+        await expect(repository.modelSetup!.install()).rejects.toMatchObject({
+          view: { state: "outcome_unknown" },
+        });
+        const round = structuredClone(f.worker.intent);
+        expect(round).toMatchObject({
+          version: 4,
+          phase: "verified",
+          previous,
+        });
+        expect(round!.mutationId).not.toBe(id);
+        expect(submit).toHaveBeenCalledOnce();
+        expect(
+          submit.mock.calls[0]![0].flatMap((op) =>
+            op.kind === "resource_put" && op.path.startsWith("_types/")
+              ? [op.path]
+              : [],
+          ),
+        ).toEqual([
+          "_types/tasknotes-scratch.md",
+          "_types/tasknotes-scratch-image.md",
+          "_types/obsidian_base.md",
+        ]);
+        await repository.modelSetup!.resume();
+        expect(f.worker.intent).toEqual(round);
+        expect(submit).toHaveBeenCalledOnce();
+        expect(await repository.modelSetup!.inspect()).toEqual({
+          state: "ready",
+        });
+        await repository.modelSetup!.install();
+        expect(f.worker.intent).toEqual(round);
+        expect(submit).toHaveBeenCalledOnce();
+      }
     },
   );
   it("rejects a v2 reply to v3 preparation without replacing the owner or converting the original intent", async () => {
