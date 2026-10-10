@@ -231,7 +231,7 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
   ).toHaveCount(0);
 });
 
-test("acknowledges slow native creates and prefetches actual record revisions before delete", async ({
+test("acknowledges local capture before confirmation and prefetches actual record revisions before delete", async ({
   page,
 }) => {
   const throttle = Number(process.env.TASKNOTES_SMOKE_CPU_THROTTLE ?? "1");
@@ -259,14 +259,42 @@ test("acknowledges slow native creates and prefetches actual record revisions be
         (await operations(page)).filter((op) => op === "create").length,
     )
     .toBe(1);
+  // Capture is already readable from the original client, while its authority
+  // confirmation remains held. The composer is free for the next task; only
+  // this record is pending, and it must not be presented as authority-saved.
+  const createdRow = page.locator(".task-row").filter({
+    has: page.getByRole("button", {
+      name: "Create through the held client",
+      exact: true,
+    }),
+  });
+  await expect(createdRow.getByRole("status")).toContainText(
+    "Saved locally · Waiting to sync",
+  );
+  const mobileCapture = (page.viewportSize()?.width ?? 1000) <= 560;
+  if (mobileCapture) {
+    // Phone capture closes after local acceptance. Reopening must offer an
+    // empty, editable composer even while the original record awaits its ACK.
+    await expect(input).toHaveCount(0);
+    await page.getByRole("button", { name: "New task", exact: true }).click();
+  }
+  await expect(input).toHaveValue("");
+  await expect(input).toBeEditable();
+  if (mobileCapture) await page.keyboard.press("Escape");
   await expect(
-    page
-      .getByRole("status")
-      .filter({ hasText: "Adding “Create through the held client”…" }),
+    page.getByRole("button", {
+      name: "Create through the held client",
+      exact: true,
+    }),
   ).toBeVisible();
-  await expect(input).toHaveValue("Create through the held client");
-  await expect(input).toHaveAttribute("readonly", "");
+  expect((await operations(page)).filter((op) => op === "create")).toHaveLength(
+    1,
+  );
   await page.evaluate(() => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.confirm());
+  await expect(createdRow.getByRole("status")).toHaveCount(0);
+  expect((await operations(page)).filter((op) => op === "create")).toHaveLength(
+    1,
+  );
   await expect(
     page.getByRole("button", {
       name: "Create through the held client",
