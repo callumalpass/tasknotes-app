@@ -19,6 +19,7 @@ import {
   readOwnCollectionBinding,
   openOwnPairedCollection,
   closeOwnedBrowser,
+  assertBrowserStopped,
 } from "./browser-flow.mjs";
 import { UserJourney } from "./journeys.mjs";
 
@@ -122,8 +123,7 @@ async function scenario() {
     context,
     originalProfile,
   );
-  if (report.bindingBrowserCleanup === "cleanup-blocked")
-    throw Error("Binding browser did not stop; no second browser allowed");
+  assertBrowserStopped(report.bindingBrowserCleanup);
   context = undefined;
   activeProfile = profile;
   if (continuing) context = await guardedContext(profile);

@@ -3,54 +3,37 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import { once, ownedPath, redact } from "./support.mjs";
+import { closeWithScopedCleanup } from "./browser-cleanup.mjs";
+export { assertBrowserStopped } from "./browser-cleanup.mjs";
 
 export async function closeOwnedBrowser(context, profile) {
   ownedPath(profile);
-  const closed = await Promise.race([
-    context.close().then(
-      () => true,
-      () => false,
-    ),
-    delay(10000, false, { ref: false }),
-  ]);
-  if (closed) return "stopped";
   async function matchingChildren() {
     const { stdout } = await promisify(execFile)(
       "ps",
       ["--ppid", String(process.pid), "-o", "pid=,args="],
       { timeout: 5000 },
-    ).catch(() => ({ stdout: "" }));
-    return stdout
+    ); // Inspection errors propagate to the fail-closed state machine.
+    const matches = stdout
       .split("\n")
       .map((line) => line.trim().split(/\s+/))
-      .filter(
+      .filter((parts) => parts.includes(`--user-data-dir=${profile}`));
+    if (
+      matches.some(
         (parts) =>
-          /^\d+$/.test(parts[0] ?? "") &&
-          parts.includes(`--user-data-dir=${profile}`) &&
-          parts[1]?.includes("chrome-headless-shell"),
+          !/^\d+$/.test(parts[0] ?? "") ||
+          !parts[1]?.includes("chrome-headless-shell"),
       )
-      .map((parts) => Number(parts[0]));
+    )
+      throw Error("Owned process identity unconfirmed");
+    return matches.map((parts) => Number(parts[0]));
   }
-  const children = await matchingChildren();
-  for (const pid of children) {
-    try {
-      process.kill(pid, "SIGTERM");
-    } catch {
-      /* Child already stopped. */
-    }
-  }
-  await delay(1500);
-  for (const pid of await matchingChildren()) {
-    try {
-      process.kill(pid, "SIGKILL");
-    } catch {
-      /* Child already stopped. */
-    }
-  }
-  await delay(300);
-  return (await matchingChildren()).length
-    ? "cleanup-blocked"
-    : "stopped-after-scoped-cleanup";
+  return closeWithScopedCleanup(context, {
+    inspect: matchingChildren,
+    stop: (pid, signal) => process.kill(pid, signal),
+    wait: (ms) => delay(ms),
+    deadline: () => delay(10000, false, { ref: false }),
+  });
 }
 
 export const cp = "https://connect-lab.mdbase.dev";

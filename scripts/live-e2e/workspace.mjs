@@ -1,6 +1,7 @@
 import { chromium, expect } from "@playwright/test";
 import { resolve } from "node:path";
-import { readFile } from "node:fs/promises";
+import { disposableCredentials } from "./credentials.mjs";
+import { assertAccount } from "./browser-flow.mjs";
 import { performance } from "node:perf_hooks";
 import {
   evidenceRoot,
@@ -57,17 +58,9 @@ const context = await chromium.launchPersistentContext(
 const page = await context.newPage();
 const journey = new UserJourney(page, root);
 try {
-  const metadata = JSON.parse(
-    await readFile(
-      "/home/calluma/.local/state/mdbase-lab-provisioning/release-20261008T235536Z-4153028/clients-account-created.json",
-      "utf8",
-    ),
-  );
-  const me = await context.request.get("https://connect-lab.mdbase.dev/v1/me");
-  report.accountMatched =
-    me.ok() && (await me.json()).user?.id === metadata.account_id;
-  if (!report.accountMatched)
-    throw Error("Disposable account identity mismatch");
+  const credentials = await disposableCredentials();
+  await assertAccount(context, credentials.accountId);
+  report.accountMatched = true;
   await page.goto(expected.url);
   async function click(name) {
     await page.getByRole("button", { name, exact: true }).click();

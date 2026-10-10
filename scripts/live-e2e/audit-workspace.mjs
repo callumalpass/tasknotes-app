@@ -13,6 +13,7 @@ import {
 import { UserJourney } from "./journeys.mjs";
 import {
   closeOwnedBrowser,
+  assertBrowserStopped,
   ordinaryLogin,
   observeOwnCollectionBinding,
   openOwnPairedCollection,
@@ -120,7 +121,9 @@ async function scenario() {
     await inspect(page, name);
     await new UserJourney(page, root).openTask(title);
     await inspect(page, `${name}-details`);
-    report.cleanup.push(await closeOwnedBrowser(context, profile));
+    const cleanup = await closeOwnedBrowser(context, profile);
+    report.cleanup.push(cleanup);
+    assertBrowserStopped(cleanup);
     context = null;
   }
   report.result = "completed";

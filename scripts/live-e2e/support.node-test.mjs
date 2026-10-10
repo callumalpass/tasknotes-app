@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import {
   assertDisposableLocator,
@@ -26,6 +26,14 @@ const ready = () => ({
   entry_resources: [{}],
 });
 
+test("source contains no hardcoded private provisioning directories", async () => {
+  const directory = new URL("./", import.meta.url);
+  for (const name of await readdir(directory)) {
+    if (!name.endsWith(".mjs")) continue;
+    const contents = await readFile(new URL(name, directory), "utf8");
+    assert.doesNotMatch(contents, /mdbase-lab-provisioning\/release-/, name);
+  }
+});
 test("accepts exact refreshed LAB identity", () => assertReadiness(ready()));
 test("historical concurrent browser workflow is refused", () => {
   assertSingleBrowserPolicy(1);

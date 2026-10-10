@@ -13,6 +13,7 @@ import {
 import { UserJourney } from "./journeys.mjs";
 import {
   closeOwnedBrowser,
+  assertBrowserStopped,
   ordinaryLogin,
   observeOwnCollectionBinding,
   openOwnPairedCollection,
@@ -78,7 +79,9 @@ async function scenario() {
     redact,
   );
   report.screenshot = await journey.screenshot("calendar-positive-data");
-  report.cleanup.push(await closeOwnedBrowser(context, profile));
+  const cleanup = await closeOwnedBrowser(context, profile);
+  report.cleanup.push(cleanup);
+  assertBrowserStopped(cleanup);
   context = null;
   if (expired) throw Error("Calendar scenario already expired");
   profile = ownedPath(resolve(secondRoot, "profile-b"));

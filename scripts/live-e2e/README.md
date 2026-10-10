@@ -13,7 +13,10 @@ unapproved collections. They do not launch or redeploy the preview.
 - Use one headless browser at a time. Close it immediately after each run.
   Sequential device checks close the first context before launching the next.
   `concurrency.mjs` is a retained historical diagnostic and now refuses execution
-  before any browser, credential lookup, or network request.
+  before any browser, credential lookup, or network request. A failed process
+  inspection is unknown cleanup, not a stopped browser. Sequential scripts keep
+  the original context/profile/receipt and refuse another launch unless cleanup
+  positively reports `stopped` or `stopped-after-scoped-cleanup`.
 - Use only provisioned disposable LAB accounts through ordinary portal UI.
   Never sign up again, copy cookies/sessions/journals, use `lab-acceptance`, or
   substitute fixtures for native CRUD acceptance.
@@ -68,7 +71,7 @@ From the repository root, with dependencies installed:
 pnpm exec prettier --check scripts/live-e2e/
 pnpm exec eslint scripts/live-e2e/*.mjs
 # Select an owned directory for synthetic marker tests, not a live fixture.
-E2E_EVIDENCE_ROOT="$PWD/.ops/live-e2e-unit" node --test scripts/live-e2e/support.node-test.mjs
+E2E_EVIDENCE_ROOT="$PWD/.ops/live-e2e-unit" node --test scripts/live-e2e/*.node-test.mjs
 ```
 
 These tests make no browser, account, or provider calls. Generated `.ops/` state

@@ -15,6 +15,7 @@ import {
 import { UserJourney } from "./journeys.mjs";
 import {
   closeOwnedBrowser,
+  assertBrowserStopped,
   ordinaryLogin,
   observeOwnCollectionBinding,
   openOwnPairedCollection,
@@ -102,7 +103,9 @@ async function scenario() {
     editedTitle;
   delaying = false;
   await context.unrouteAll({ behavior: "wait" });
-  report.cleanup.push(await closeOwnedBrowser(context, profile));
+  const cleanup = await closeOwnedBrowser(context, profile);
+  report.cleanup.push(cleanup);
+  assertBrowserStopped(cleanup);
   context = null;
   if (expired)
     throw Error("Scenario already expired before independent readback");
