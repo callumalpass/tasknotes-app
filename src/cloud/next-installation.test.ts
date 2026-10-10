@@ -11,6 +11,7 @@ import {
 import { NextTaskNotesInstallation } from "./next-installation";
 import { collectionCreateIntent } from "./next-collection-create-intent";
 import { resourceSetupPlan } from "../test/resource-setup-plan";
+import { TASKNOTES_APPLICATION_REGISTRATION } from "./next-application-registration";
 
 const account = "11111111-1111-4111-8111-111111111111";
 const installation = "22222222-2222-4222-8222-222222222222";
@@ -48,7 +49,7 @@ function setup() {
     requestId: account,
     installationId: installation,
     deviceId: account,
-    appId: "tasknotes-web",
+    appId: TASKNOTES_APPLICATION_REGISTRATION.appId,
     kind: "app-runtime",
     verificationUri: `${release.cpOrigin}/pair/${account}`,
     state: "pending",
@@ -144,6 +145,7 @@ function setup() {
   const options = {
     environment: "lab" as const,
     appOrigin: "http://127.0.0.1:48218",
+    ...TASKNOTES_APPLICATION_REGISTRATION,
     release,
     mode: "fresh" as const,
     signal: ctrl.signal,
@@ -173,6 +175,8 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
         environment: "lab",
         origin: s.options.appOrigin,
         cpOrigin: release.cpOrigin,
+        appId: "5cdfa020-c201-4da8-845a-f2cc9969eade",
+        appName: "TaskNotes",
         mode: "fresh",
       }),
     );
@@ -181,6 +185,27 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
     expect(s.events).not.toContain("lease");
     expect(app.view()).not.toHaveProperty("token");
     await app.close();
+  });
+  it("does not retry a refused original restore with fresh mode or an alias", async () => {
+    const s = setup();
+    s.open.mockRejectedValueOnce(
+      Object.assign(new Error("Sign in again"), {
+        reason: "recovery_required",
+      }),
+    );
+    await expect(
+      NextTaskNotesInstallation.open({ ...s.options, mode: "existing" }),
+    ).rejects.toMatchObject({ reason: "recovery_required" });
+    expect(s.open).toHaveBeenCalledOnce();
+    expect(s.open.mock.calls[0]![0]).toMatchObject({
+      ...TASKNOTES_APPLICATION_REGISTRATION,
+      origin: s.options.appOrigin,
+      environment: "lab",
+      mode: "existing",
+    });
+    expect(s.flow.start).not.toHaveBeenCalled();
+    expect(s.openHost).not.toHaveBeenCalled();
+    expect(s.events).not.toContain("lease");
   });
   it("provides native fetch with its original GlobalScope receiver, not an SDK instance receiver", async () => {
     const s = setup();

@@ -1,0 +1,23 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "5369226d26baa338b98e25feed9c0454e52f5865",
+  "sourceIncludesPrs": [799],
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-5369226d.tgz",
+  "bytes": 359457,
+  "sha256": "3a8f7d0d6b56aa0f44657605618775cb35047e7d0c6b5512bdb28d3eb2361ba2",
+  "integrity": "sha512-vLoZ7CrA+Yfi7ZL0N9mVEKZpaXadOAX11hffCCfBdt6hUIeHObWpqZFX6rSuTJdollYZxHnAqfRtFkE/w8mzTg==",
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "targetedSignInStoreEnvironmentTestsPassed": 111,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact"
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Coordinator-approved source-only SDK intake for explicit registered application metadata. No runtime/trust pin change, deployment or unreleased files API."
+}

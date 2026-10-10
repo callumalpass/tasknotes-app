@@ -1,5 +1,6 @@
 import type { NextInstallationRequest } from "./next-installation-protocol";
 import { resourceSetupPlan } from "../test/resource-setup-plan";
+import { TASKNOTES_APPLICATION_REGISTRATION } from "./next-application-registration";
 const methods = vi.hoisted(() => ({
   open: vi.fn(),
   view: vi.fn(),
@@ -46,6 +47,7 @@ async function opened() {
     build: {
       environment: "lab",
       appOrigin: "http://127.0.0.1:48218",
+      ...TASKNOTES_APPLICATION_REGISTRATION,
       release: {} as never,
       runtime: artifact,
       runtimeSha256: Array.from(
@@ -61,6 +63,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("fixed renewal Worker runtime dispatch (source stand-ins)", () => {
+  it("forwards explicit build registration and original restore mode to its controller", async () => {
+    const worker = await opened();
+    expect(methods.open).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        ...TASKNOTES_APPLICATION_REGISTRATION,
+        appOrigin: "http://127.0.0.1:48218",
+        environment: "lab",
+        mode: "existing",
+      }),
+    );
+    expect(methods.start).not.toHaveBeenCalled();
+    await worker.send(2, { kind: "close" });
+  });
   it("dispatches renewal and SAME-successor resume on one original controller", async () => {
     const worker = await opened();
     expect(await worker.send(2, { kind: "renew-expired" })).toMatchObject({
