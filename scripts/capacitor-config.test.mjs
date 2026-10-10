@@ -9,7 +9,7 @@ import capacitorConfig, {
 import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
 
 describe("native Capacitor configuration", () => {
-  it("uses the exact production manifest origin in native webviews", async () => {
+  it("uses the canonical publisher origin and a supported iOS asset scheme", async () => {
     const [manifest, manifestWriter] = await Promise.all([
       buildTaskNotesManifest({
         appUrl: TASKNOTES_NATIVE_APPLICATION_ORIGIN,
@@ -29,9 +29,53 @@ describe("native Capacitor configuration", () => {
     expect(
       `${capacitorConfig.server.androidScheme}://${capacitorConfig.server.hostname}`,
     ).toBe(manifestOrigin);
+    // Unlike Android, WKWebView cannot serve packaged assets through HTTP(S).
+    expect(capacitorConfig.server.iosScheme).toBe("capacitor");
     expect(
       `${capacitorConfig.server.iosScheme}://${capacitorConfig.server.hostname}`,
-    ).toBe(manifestOrigin);
+    ).toBe("capacitor://app.tasknotes.dev");
+    const nativeSource = await readFile(
+      resolve(process.cwd(), "ios/App/App/TaskNotesBridgeViewController.swift"),
+      "utf8",
+    );
+    expect(nativeSource).toContain(`applicationOrigin = "${manifestOrigin}"`);
+  });
+
+  it("packages a cookie-free, cancellable, redirect-denying signed authority transport", async () => {
+    const [source, storyboard, project] = await Promise.all([
+      readFile(
+        resolve(
+          process.cwd(),
+          "ios/App/App/TaskNotesBridgeViewController.swift",
+        ),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), "ios/App/App/Base.lproj/Main.storyboard"),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), "ios/App/App.xcodeproj/project.pbxproj"),
+        "utf8",
+      ),
+    ]);
+    expect(storyboard).toContain('customClass="TaskNotesBridgeViewController"');
+    expect(project).toContain("TaskNotesBridgeViewController.swift in Sources");
+    expect(source).toContain(
+      "registerPluginInstance(TaskNotesAuthorityHttpPlugin())",
+    );
+    expect(source).toContain("URLSessionConfiguration.ephemeral");
+    expect(source).toContain("configuration.httpCookieStorage = nil");
+    expect(source).toContain("configuration.urlCredentialStorage = nil");
+    expect(source).toContain("request.httpShouldHandleCookies = false");
+    expect(source).toContain('forHTTPHeaderField: "Origin"');
+    expect(source).toContain('url.scheme == "https"');
+    expect(source).toContain("Self.proofHeaders.allSatisfy");
+    expect(source).toContain("task?.cancel()");
+    expect(source).toContain("completionHandler(nil)");
+    expect(source).not.toMatch(
+      /didReceive challenge|serverTrust|print\(|NSLog/,
+    );
   });
 
   it("uses the proven Android push plugin without forcing a legacy bridge", async () => {

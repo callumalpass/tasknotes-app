@@ -29,7 +29,9 @@ const config: CapacitorConfig = {
   server: {
     hostname: nativeApplicationUrl.hostname,
     androidScheme: nativeApplicationUrl.protocol.slice(0, -1),
-    iosScheme: nativeApplicationUrl.protocol.slice(0, -1),
+    // WKWebView cannot handle bundled assets through HTTP(S) scheme handlers.
+    // Grant identity is carried by the proof-scoped native authority transport.
+    iosScheme: "capacitor",
   },
   android: {
     backgroundColor: "#fbfcfe",
@@ -39,6 +41,8 @@ const config: CapacitorConfig = {
     ],
   },
   ios: {
+    // Authority bridge options contain credentials and signed request payloads.
+    loggingBehavior: "none",
     includePlugins: [
       ...sharedNativePlugins,
       ...(iosFirebaseConfigured ? ["@capacitor-firebase/messaging"] : []),
