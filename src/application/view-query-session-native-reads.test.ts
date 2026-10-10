@@ -57,15 +57,16 @@ function fixture(type = "tasknotes.calendar") {
       outstanding = false;
     }
   };
-  const executeView = vi.fn(async () => {
+  const executeView = vi.fn(async (selected: TaskView) => {
     await read("execution-source");
     await read("execution");
-    return result;
+    return { ...result, view: selected };
   });
-  const readViewSource = vi.fn(async () => {
+  const readViewSource = vi.fn(async (path: string) => {
     await read("ui-source");
     return {
       ...view.source,
+      path,
       document: "views:\n  - name: Today\n    type: tasknotesTaskList\n",
     };
   });
@@ -73,8 +74,8 @@ function fixture(type = "tasknotes.calendar") {
     cachedViewExecution: async () => null,
     executeView,
     readViewSource,
-    iterateView: async function* () {
-      yield await executeView();
+    iterateView: async function* (selected: TaskView) {
+      yield await executeView(selected);
     },
   } as unknown as TaskRepository;
   const observer = { result: vi.fn(), error: vi.fn(), pending: vi.fn() };
@@ -167,6 +168,110 @@ it("preserves an execution failure while still allowing source inspection", asyn
   expect(f.observer.error).toHaveBeenCalledWith(failure);
   expect(f.observer.result).not.toHaveBeenCalled();
   f.session.close();
+});
+
+it("orders replacement-view reads behind a closed session's active metadata read", async () => {
+  const f = fixture();
+  const oldMetadata = f.session.readSource();
+  const cancelled = expect(oldMetadata).rejects.toMatchObject({
+    name: "AbortError",
+  });
+  await f.started;
+  f.session.close();
+  const nextView = {
+    ...f.result.view,
+    key: "next#0",
+    documentId: "next",
+    documentName: "Upcoming",
+    name: "Upcoming",
+    source: {
+      ...f.result.view.source,
+      path: "TaskNotes/Views/upcoming.base",
+      revision: "next",
+    },
+  };
+  const observer = { result: vi.fn(), error: vi.fn(), pending: vi.fn() };
+  const next = new ViewQuerySession(f.repository, nextView, observer);
+  const execution = next.start();
+  const metadata = next.readSource();
+  try {
+    // Advance the deferred start and its initial cursor cleanup, while the
+    // original metadata read still owns the single transport slot.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(f.repository.executeView).not.toHaveBeenCalled();
+    expect(f.repository.readViewSource).toHaveBeenCalledOnce();
+  } finally {
+    f.release();
+    await Promise.allSettled([execution, metadata, cancelled]);
+  }
+  const [, source] = await Promise.all([execution, metadata, cancelled]);
+  expect(source.path).toBe(nextView.source.path);
+  expect(f.events).toEqual([
+    "ui-source",
+    "execution-source",
+    "execution",
+    "ui-source",
+  ]);
+  expect(f.observer.result).not.toHaveBeenCalled();
+  expect(observer.error).not.toHaveBeenCalled();
+  expect(observer.result).toHaveBeenLastCalledWith({
+    ...f.result,
+    view: nextView,
+  });
+  expect(f.repository.executeView).toHaveBeenCalledExactlyOnceWith(nextView);
+  expect(f.repository.readViewSource).toHaveBeenNthCalledWith(
+    2,
+    nextView.source.path,
+  );
+  next.close();
+});
+
+it("skips an obsolete replacement queued behind an old metadata read", async () => {
+  const f = fixture();
+  const oldMetadata = f.session.readSource();
+  const cancelled = expect(oldMetadata).rejects.toMatchObject({
+    name: "AbortError",
+  });
+  await f.started;
+  f.session.close();
+  const observer = { result: vi.fn(), error: vi.fn(), pending: vi.fn() };
+  const replacement = new ViewQuerySession(
+    f.repository,
+    f.result.view,
+    observer,
+  );
+  const execution = replacement.start();
+  const metadata = replacement.readSource();
+  const skipped = expect(metadata).rejects.toMatchObject({
+    name: "AbortError",
+  });
+  replacement.close();
+  f.release();
+  await Promise.all([execution, cancelled, skipped]);
+  expect(f.events).toEqual(["ui-source"]);
+  expect(f.repository.executeView).not.toHaveBeenCalled();
+  expect(f.repository.readViewSource).toHaveBeenCalledOnce();
+  expect(observer.result).not.toHaveBeenCalled();
+  expect(observer.error).not.toHaveBeenCalled();
+});
+
+it("does not block a different repository behind an old source read", async () => {
+  const old = fixture();
+  const other = fixture();
+  const metadata = old.session.readSource();
+  await old.started;
+  const execution = other.session.start();
+  await other.started;
+  other.release();
+  await execution;
+  expect(other.observer.result).toHaveBeenLastCalledWith(other.result);
+  expect(other.observer.error).not.toHaveBeenCalled();
+  expect(old.events).toEqual(["ui-source"]);
+  old.release();
+  await metadata;
+  old.session.close();
+  other.session.close();
 });
 
 it("does not let a failed metadata read poison a later execution", async () => {
