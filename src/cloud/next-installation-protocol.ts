@@ -9,6 +9,7 @@ import type {
   AppInstallationSignInView,
   AppInstallationCollection,
   AppInstallationCollectionConsentView,
+  AppWebSignInSnapshot,
 } from "@mdbase-dev/sdk/app-host";
 
 import type { NextApplicationRegistration } from "./next-application-registration";
@@ -22,6 +23,10 @@ export interface NextInstallationBuildInput extends NextApplicationRegistration 
   runtimeSha256: string;
 }
 export type NextInstallationCommand =
+  | { kind: "session-open"; build: NextInstallationBuildInput }
+  | { kind: "session-start" | "session-authorize" | "session-renew" }
+  | { kind: "session-select"; collectionId: string }
+  | { kind: "session-connection"; collectionId: string }
   | {
       kind: "open";
       build: NextInstallationBuildInput;
@@ -68,6 +73,8 @@ export type NextInstallationCommand =
       mutationId: string;
     };
 export interface NextOpenedCollection {
+  /** Bounded duration-only diagnostics, never readiness or custody evidence. */
+  readonly startupTiming?: import("../observability/startup-timing").StartupDurations;
   readonly kind: "collection";
   readonly scope: Readonly<{
     account: string;
@@ -91,6 +98,7 @@ export interface NextInstallationRequest {
   command: NextInstallationCommand;
 }
 export type NextInstallationResult =
+  | { kind: "session"; snapshot: AppWebSignInSnapshot }
   | AppInstallationSignInView
   | AppInstallationCollectionConsentView
   | readonly AppInstallationCollection[]
@@ -109,6 +117,16 @@ export function isNextInstallationCommand(
   const command = value as Record<string, unknown>;
   const keys = Object.keys(command).sort().join(",");
   switch (command.kind) {
+    case "session-open":
+      return (
+        keys === "build,kind" &&
+        !!command.build &&
+        typeof command.build === "object"
+      );
+    case "session-start":
+    case "session-authorize":
+    case "session-renew":
+      return keys === "kind";
     case "open":
       return (
         (keys === "build,kind,mode" ||
@@ -125,6 +143,8 @@ export function isNextInstallationCommand(
         typeof command.accountId === "string" &&
         command.accountId.length === 36
       );
+    case "session-select":
+    case "session-connection":
     case "open-collection":
       return (
         keys === "collectionId,kind" &&

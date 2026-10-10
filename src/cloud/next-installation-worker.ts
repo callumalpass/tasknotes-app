@@ -1,4 +1,5 @@
 import { connect } from "@mdbase-dev/sdk";
+import { registerStartupTiming } from "../observability/startup-timing";
 import type {
   ModelResourceSetupJournal,
   ModelResourceSetupIntent,
@@ -12,7 +13,13 @@ import {
   modelPackPlan,
   modelResourcePlan,
 } from "./next-model-setup-intent";
-import { appLocalConnector } from "@mdbase-dev/sdk/app-host";
+import {
+  appLocalConnector,
+  selectAppEnvironment,
+  type AppWebSignInSnapshot,
+  type AppWebSignInPortal,
+} from "@mdbase-dev/sdk/app-host";
+import { isNextSignInSnapshot } from "./next-sign-in-snapshot";
 import { NextTaskRepository } from "../storage/next-repository";
 import type {
   AppInstallationSignInView,
@@ -34,6 +41,44 @@ import type {
  * restart. Error delivery is code-only, never SDK/HTTP response bodies. */
 export class NextInstallationWorker {
   private nextId = 1;
+  private snapshot: AppWebSignInSnapshot | null = null;
+  private readonly snapshotListeners = new Set<() => void>();
+  private portal: AppWebSignInPortal | null = null;
+  private sessionClosed = false;
+  private closeWaiter: { resolve(): void; reject(error: Error): void } | null =
+    null;
+  getSnapshot = () => this.snapshot;
+  subscribe = (listener: () => void) => {
+    this.snapshotListeners.add(listener);
+    return () => {
+      this.snapshotListeners.delete(listener);
+    };
+  };
+  closePortal(): void {
+    this.portal?.close();
+    this.portal = null;
+  }
+  reservePortal(open: () => AppWebSignInPortal): void {
+    this.closePortal();
+    this.portal = open();
+  }
+  private receiveSnapshot(snapshot: AppWebSignInSnapshot) {
+    this.snapshot = snapshot;
+    // A paired account can still be approving ADDITIONAL collection consent.
+    // Close only after that genuine receipt has advanced out of authorizing.
+    if (
+      (snapshot.signIn?.state === "paired" &&
+        ["unselected", "opening", "setup_required", "ready"].includes(
+          snapshot.status,
+        )) ||
+      snapshot.status === "closed" ||
+      snapshot.status === "blocked"
+    ) {
+      this.portal?.close();
+      this.portal = null;
+    }
+    for (const listener of this.snapshotListeners) listener();
+  }
   private protectedSlotOpened = false;
   private readonly onAbort = () => {
     if (!this.protectedSlotOpened) this.onError();
@@ -65,6 +110,7 @@ export class NextInstallationWorker {
   private constructor(
     private readonly worker: Worker,
     private readonly signal?: AbortSignal,
+    private readonly sessionCpOrigin: string | null = null,
   ) {
     signal?.addEventListener("abort", this.onAbort, { once: true });
     worker.addEventListener("message", this.onMessage);
@@ -104,10 +150,139 @@ export class NextInstallationWorker {
       throw error;
     }
   }
+  static async openSession(
+    build: NextInstallationBuildInput,
+    signal?: AbortSignal,
+  ): Promise<NextInstallationWorker> {
+    signal?.throwIfAborted();
+    const environment = selectAppEnvironment({
+      environment: build.environment,
+      appOrigin: build.appOrigin,
+      release: build.release,
+    });
+    const worker = new NextInstallationWorker(
+      new Worker(new URL("./next-sign-in.worker.ts", import.meta.url), {
+        type: "module",
+      }),
+      signal,
+      environment.cpOrigin,
+    );
+    try {
+      await worker.sessionCall({ kind: "session-open", build });
+      signal?.throwIfAborted();
+      worker.protectedSlotOpened = true;
+      document.addEventListener("visibilitychange", worker.onForeground);
+      return worker;
+    } catch (error) {
+      worker.failStop();
+      throw error;
+    }
+  }
+  private async sessionCall(
+    command: NextInstallationCommand,
+  ): Promise<AppWebSignInSnapshot> {
+    const result = await this.call(command);
+    if (
+      !result ||
+      Array.isArray(result) ||
+      !("kind" in result) ||
+      result.kind !== "session" ||
+      !this.sessionCpOrigin ||
+      !isNextSignInSnapshot(result.snapshot, this.sessionCpOrigin)
+    ) {
+      this.onError();
+      throw Error("TaskNotes sign-in response unavailable.");
+    }
+    if (this.closing || this.stopped || this.signal?.aborted)
+      throw Error("TaskNotes sign-in owner closed.");
+    this.receiveSnapshot(result.snapshot);
+    return result.snapshot;
+  }
+  startSession() {
+    return this.sessionCall({ kind: "session-start" });
+  }
+  authorizeSession() {
+    return this.sessionCall({ kind: "session-authorize" });
+  }
+  renewSession() {
+    return this.sessionCall({ kind: "session-renew" });
+  }
+  selectSession(collectionId: string) {
+    return this.sessionCall({ kind: "session-select", collectionId });
+  }
   private readonly onMessage = (
-    event: MessageEvent<NextInstallationResponse>,
+    event: MessageEvent<NextInstallationResponse | Record<string, unknown>>,
   ) => {
-    const response = event.data,
+    const pushed = event.data;
+    if (this.sessionCpOrigin && pushed && "event" in pushed) {
+      if (pushed.version !== 1) {
+        this.onError();
+        return;
+      }
+      switch (pushed.event) {
+        case "session-snapshot":
+          if (
+            Object.keys(pushed).sort().join() !== "event,snapshot,version" ||
+            !isNextSignInSnapshot(pushed.snapshot, this.sessionCpOrigin)
+          ) {
+            this.onError();
+            return;
+          }
+          if (!this.closing && !this.stopped)
+            this.receiveSnapshot(pushed.snapshot);
+          return;
+        case "portal-navigate": {
+          if (
+            Object.keys(pushed).sort().join() !== "event,uri,version" ||
+            typeof pushed.uri !== "string"
+          ) {
+            this.onError();
+            return;
+          }
+          try {
+            const uri = new URL(pushed.uri);
+            if (
+              uri.origin !== this.sessionCpOrigin ||
+              uri.username ||
+              uri.password
+            )
+              throw Error("portal binding");
+            this.portal?.navigate(uri.href);
+          } catch {
+            this.onError();
+          }
+          return;
+        }
+        case "portal-close":
+          if (Object.keys(pushed).sort().join() !== "event,version") {
+            this.onError();
+            return;
+          }
+          this.portal?.close();
+          this.portal = null;
+          return;
+        case "session-closed":
+          if (
+            Object.keys(pushed).sort().join() !== "event,ok,version" ||
+            typeof pushed.ok !== "boolean"
+          ) {
+            this.onError();
+            return;
+          }
+          if (pushed.ok) {
+            this.sessionClosed = true;
+            this.closeWaiter?.resolve();
+          } else
+            this.closeWaiter?.reject(
+              Error("TaskNotes owner shutdown could not be confirmed."),
+            );
+          return;
+        default:
+          this.onError();
+          return;
+      }
+    }
+    const response = event.data as NextInstallationResponse,
       pending = this.pending;
     if (
       !pending ||
@@ -135,10 +310,25 @@ export class NextInstallationWorker {
         "TaskNotes native Worker stopped; preserve storage and resume the original installation.",
       ),
     );
+    if (this.sessionCpOrigin && this.protectedSlotOpened) {
+      void this.close().catch(() => {});
+      return;
+    }
     this.failStop();
   };
   private failStop(): void {
-    if (this.stopped) return;
+    if (this.stopped && !this.sessionClosed) return;
+    if (
+      this.sessionCpOrigin &&
+      this.protectedSlotOpened &&
+      !this.sessionClosed
+    ) {
+      // Quarantine the original Worker/resources on failed or unknown stop.
+      // Do not discard native/SQL/leases or an original pending result reader.
+      this.stopped = true;
+      document.removeEventListener("visibilitychange", this.onForeground);
+      return;
+    }
     this.stopped = true;
     this.signal?.removeEventListener("abort", this.onAbort);
     document.removeEventListener("visibilitychange", this.onForeground);
@@ -174,14 +364,18 @@ export class NextInstallationWorker {
       resolve = ok;
       reject = no;
     });
-    const timer = setTimeout(() => {
-      reject(
-        new Error(
-          "TaskNotes native outcome unknown; preserve storage and resume the original installation.",
-        ),
-      );
-      this.failStop();
-    }, 30_000);
+    const timer = setTimeout(
+      () => {
+        reject(
+          new Error(
+            "TaskNotes native outcome unknown; preserve storage and resume the original installation.",
+          ),
+        );
+        if (this.sessionCpOrigin) this.onError();
+        else this.failStop();
+      },
+      this.sessionCpOrigin ? 120_000 : 30_000,
+    );
     this.pending = { id, resolve, reject, promise, timer };
     try {
       this.worker.postMessage({
@@ -407,7 +601,10 @@ export class NextInstallationWorker {
   async openCollection(collectionId: string): Promise<NextTaskRepository> {
     if (this.dataConnector || this.repository)
       throw new Error("Original collection already opened.");
-    const result = await this.call({ kind: "open-collection", collectionId });
+    const result = await this.call({
+      kind: this.sessionCpOrigin ? "session-connection" : "open-collection",
+      collectionId,
+    });
     const opened = result as NextOpenedCollection;
     const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
     if (
@@ -458,6 +655,7 @@ export class NextInstallationWorker {
         },
       );
       const repository = this.repository;
+      registerStartupTiming(repository, opened.startupTiming);
       // Opening never installs or resumes, including original creator recovery.
       // The real controller flag keeps tasks/views behind the explicit setup
       // screen until that same controller acknowledges completion.
@@ -480,6 +678,20 @@ export class NextInstallationWorker {
   }
 
   close(): Promise<void> {
+    if (this.sessionCpOrigin && this.protectedSlotOpened) {
+      return (this.closing ??= Promise.resolve().then(async () => {
+        this.portal?.close();
+        this.portal = null;
+        try {
+          await new Promise<void>((resolve, reject) => {
+            this.closeWaiter = { resolve, reject };
+            this.worker.postMessage({ version: 1, event: "session-close" });
+          });
+        } finally {
+          this.failStop();
+        }
+      }));
+    }
     return (this.closing ??= Promise.resolve().then(async () => {
       try {
         this.dataConnector?.close();

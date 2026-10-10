@@ -526,6 +526,10 @@
   line-height: 1.5;
 }
 
+.cloud-welcome .connection-status {
+  overflow-wrap: anywhere;
+}
+
 .mdbase-explainer {
   max-width: 500px;
   margin-top: 12px;
