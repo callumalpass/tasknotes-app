@@ -374,6 +374,33 @@ async function fixture({
 }
 // One real SDK MemoryReplica client; control/port/catalog stand-ins, not native
 // receipt/READ/LAB qualification. No second client or production host is opened.
+async function verifiedTaskOnlyFixture() {
+  const f = await fixture();
+  const signal = new AbortController().signal;
+  const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
+  const assessment = await nativeModelPackAssessment(resources, signal);
+  const plan = await nativeModelPackPlan(
+    resources,
+    assessment.assessment_digest,
+    signal,
+  );
+  const previous: ModelSetupIntent = {
+    version: 2,
+    scope,
+    mutationId: crypto.randomUUID(),
+    phase: "verified",
+    plan,
+  };
+  await Promise.all(
+    (
+      await f.client.submit([...plan.ops], { mutationId: previous.mutationId })
+    ).map((write) => write.confirmed),
+  );
+  f.worker.intent = structuredClone(previous);
+  const repository = await f.owner.openCollection(scope.collection);
+  const submit = vi.spyOn(f.client, "submit");
+  return { ...f, repository, submit, previous };
+}
 describe("original Worker model journal and held repository wiring", () => {
   it("opening a creator stays read-only until explicit setup submits and completes its original resource plan", async () => {
     const f = await fixture();
@@ -687,44 +714,53 @@ describe("original Worker model journal and held repository wiring", () => {
         ),
       ).toEqual([]);
       expect(f.worker.markerConfirmed).toBe(true);
-      if (phase === "verified") {
-        const previous = structuredClone(f.worker.intent);
-        submit.mockClear();
-        f.worker.loseMarkerOnce = true;
-        await expect(repository.modelSetup!.install()).rejects.toMatchObject({
-          view: { state: "outcome_unknown" },
-        });
-        const round = structuredClone(f.worker.intent);
-        expect(round).toMatchObject({
-          version: 4,
-          phase: "verified",
-          previous,
-        });
-        expect(round!.mutationId).not.toBe(id);
-        expect(submit).toHaveBeenCalledOnce();
-        expect(
-          submit.mock.calls[0]![0].flatMap((op) =>
-            op.kind === "resource_put" && op.path.startsWith("_types/")
-              ? [op.path]
-              : [],
-          ),
-        ).toEqual([
-          "_types/tasknotes-scratch.md",
-          "_types/tasknotes-scratch-image.md",
-          "_types/obsidian_base.md",
-        ]);
-        await repository.modelSetup!.resume();
-        expect(f.worker.intent).toEqual(round);
-        expect(submit).toHaveBeenCalledOnce();
-        expect(await repository.modelSetup!.inspect()).toEqual({
-          state: "ready",
-        });
-        await repository.modelSetup!.install();
-        expect(f.worker.intent).toEqual(round);
-        expect(submit).toHaveBeenCalledOnce();
-      }
     },
   );
+  it("retains the verified predecessor across an additive round's lost completion reply", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    f.worker.loseMarkerOnce = true;
+    await expect(f.repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(round!.mutationId).not.toBe(f.previous.mutationId);
+    expect(f.submit).toHaveBeenCalledOnce();
+    expect(
+      f.submit.mock.calls[0]![0].flatMap((op) =>
+        op.kind === "resource_put" && op.path.startsWith("_types/")
+          ? [op.path]
+          : [],
+      ),
+    ).toEqual([
+      "_types/tasknotes-scratch.md",
+      "_types/tasknotes-scratch-image.md",
+      "_types/obsidian_base.md",
+    ]);
+    await f.repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
+  it("an explicit additive setup round becomes ready and repeated install remains read-only", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    await f.repository.modelSetup!.install();
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(await f.repository.modelSetup!.inspect()).toEqual({
+      state: "ready",
+    });
+    await f.repository.modelSetup!.install();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
   it("rejects a v2 reply to v3 preparation without replacing the owner or converting the original intent", async () => {
     const f = await fixture({ created: false });
     await f.owner.openCollection(scope.collection);
