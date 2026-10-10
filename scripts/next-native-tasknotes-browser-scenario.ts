@@ -7,6 +7,7 @@ import {
 } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { NextTaskRepository } from "../src/storage/next-repository";
+import { qualifyNativeTaskNotesLocalCallers } from "./next-native-tasknotes-local-callers";
 const TASK = "99999999-9999-4999-8999-999999999999";
 const pause = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -29,7 +30,10 @@ export async function qualifyNativeTaskNotes(options: {
   const { client, accountId, mode, offline, drive } = options;
   let repository: NextTaskRepository | null = null,
     uiDispose: (() => void) | undefined;
-  async function driven<T>(promise: Promise<T>, mustWait = false): Promise<T> {
+  async function driven<T>(
+    promise: Promise<T>,
+    localCapture = false,
+  ): Promise<T> {
     let done = false,
       failure: unknown,
       result: T | undefined;
@@ -43,12 +47,10 @@ export async function qualifyNativeTaskNotes(options: {
         done = true;
       },
     );
-    if (mustWait) {
-      await pause(40);
-      requireTest(!done, "Saved resolved before any log drive");
-    }
+    // Record capture must finish WITHOUT any authority/log drive. Resources
+    // and the later original-receipt confirmation retain the real log pump.
     for (let round = 0; round < 100 && !done; round++) {
-      await drive();
+      if (!localCapture) await drive();
       await pause(50);
     }
     if (!done) {
@@ -121,8 +123,13 @@ export async function qualifyNativeTaskNotes(options: {
       accountId,
     );
     await repository.initialize();
+    let localCallers:
+      | Awaited<ReturnType<typeof qualifyNativeTaskNotesLocalCallers>>
+      | undefined;
     let createdConfirmed = false,
       editedConfirmed = false,
+      localCaptureQualified = false,
+      pendingMetadataRestored = false,
       portableId: string | null = null;
     if (mode === "fresh") {
       const beforeCreate = submitted.length;
@@ -169,8 +176,24 @@ export async function qualifyNativeTaskNotes(options: {
         AbortSignal.timeout(5000),
       );
       requireTest(
-        receipt.state === "confirmed",
-        "TaskRepository create returned before confirmed receipt",
+        receipt.state === "pending" &&
+          originalRecord.state.state === "pending" &&
+          Number.isSafeInteger(originalRecord.state.confirmedSeq) &&
+          originalRecord.state.confirmedSeq >= 0 &&
+          !originalRecord.state.hold &&
+          !originalRecord.state.unresolved &&
+          intent.authorityRequestId === createMutation &&
+          repository.writeState({ kind: "task", id: created.id }) === "pending",
+        "create did not return a genuine pending native READ/original MID",
+      );
+      const createAck = await driven(
+        client.awaitReceipt(createMutation, 5000, AbortSignal.timeout(5000)),
+      );
+      requireTest(
+        createAck.mutation === createMutation &&
+          createAck.state === "confirmed" &&
+          submitted.length === beforeCreate + 1,
+        "original create did not confirm without replacement submission",
       );
       createdConfirmed = true;
       const before = submitted.length;
@@ -196,10 +219,95 @@ export async function qualifyNativeTaskNotes(options: {
         AbortSignal.timeout(5000),
       );
       requireTest(
-        updated.state === "confirmed",
-        "TaskRepository edit returned before confirmed receipt",
+        updated.state === "pending" &&
+          repository.writeState({ kind: "task", id: portableId }) === "pending",
+        "edit did not return before original authority confirmation",
       );
+      const editedRecord = await client.get(
+        TASK,
+        { body: true, document: true, effective: true },
+        AbortSignal.timeout(5000),
+      );
+      requireTest(
+        editedRecord.id === TASK &&
+          editedRecord.path === originalRecord.path &&
+          editedRecord.state.state === "pending" &&
+          Number.isSafeInteger(editedRecord.state.confirmedSeq) &&
+          editedRecord.state.confirmedSeq >= 0 &&
+          !editedRecord.state.hold &&
+          !editedRecord.state.unresolved &&
+          editedRecord.body === edited.body,
+        "edited pending native document/identity/path differs from capture",
+      );
+      // A second repository over this SAME borrowed native client qualifies
+      // pending metadata restoration, not a process/session/power-loss restart.
+      const reopened = new NextTaskRepository(
+        client,
+        "Owned native TaskNotes restored metadata",
+        accountId,
+      );
+      try {
+        await reopened.initialize();
+        const task = await reopened.get(portableId);
+        const pending = await client.pendingWrites(AbortSignal.timeout(5000));
+        requireTest(
+          task?.id === portableId &&
+            task.path === edited.path &&
+            task.title === edited.title &&
+            task.body === edited.body &&
+            reopened.writeState({ kind: "task", id: portableId }) ===
+              "pending" &&
+            pending.some(
+              (write) => write.receipt.mutation === updated.mutation,
+            ) &&
+            submitted.length === before + 1,
+          "new repository lost original pending metadata/MID or submitted again",
+        );
+        const editAck = await driven(
+          client.awaitReceipt(
+            updated.mutation,
+            5000,
+            AbortSignal.timeout(5000),
+          ),
+        );
+        requireTest(
+          editAck.mutation === updated.mutation &&
+            editAck.state === "confirmed" &&
+            submitted.length === before + 1,
+          "original edit did not confirm without replacement submission",
+        );
+        await reopened.reconcileWrites();
+        const confirmed = await reopened.get(portableId);
+        requireTest(
+          confirmed?.id === portableId &&
+            confirmed.path === edited.path &&
+            confirmed.title === edited.title &&
+            confirmed.body === edited.body &&
+            reopened.writeState({ kind: "task", id: portableId }) === undefined,
+          "original ACK did not clear restored metadata/current native READ",
+        );
+        pendingMetadataRestored = true;
+      } finally {
+        reopened.dispose();
+      }
       editedConfirmed = true;
+      localCaptureQualified = true;
+      localCallers = await qualifyNativeTaskNotesLocalCallers({
+        repository,
+        client,
+        taskId: portableId,
+        submitted,
+        capture: (promise) => driven(promise, true),
+        confirm: async (mutation) => {
+          const receipt = await driven(
+            client.awaitReceipt(mutation, 5000, AbortSignal.timeout(5000)),
+          );
+          requireTest(
+            receipt.mutation === mutation && receipt.state === "confirmed",
+            "caller original MID did not confirm",
+          );
+        },
+      });
     }
     const originalRecord = await client.get(
       TASK,
@@ -253,10 +361,14 @@ export async function qualifyNativeTaskNotes(options: {
         portableTaskId: restored.id,
         createdConfirmed,
         editedConfirmed,
+        localCaptureQualified,
+        pendingMetadataRestored,
+        pendingRestorationUsesSameBorrowedClient: true,
         sameTaskReadable: true,
         offline,
         noSyntheticDescribe: true,
         noMemoryReplica: true,
+        ...localCallers,
         ...ui?.summary,
         uiSavedBadgeQualified: Boolean(ui?.summary.uiSavedBadgeQualified),
       },
