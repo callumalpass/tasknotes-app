@@ -168,8 +168,27 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     });
   });
 
-  it("refuses to install a snapshot invalidated while its pages were loading", async () => {
+  it("discards an invalidated snapshot and its pending metadata, then reads the current layer once", async () => {
     const f = await fixture();
+    const task = new TaskNotesTaskModel().create(
+      { title: "Retired snapshot" },
+      { id: crypto.randomUUID() },
+    );
+    const write = await f.client.create(
+      {
+        type: "task",
+        path: task.path,
+        frontmatter: task.frontmatter as Record<string, PlainValue>,
+        body: task.body,
+      },
+      { wait: "pending" },
+    );
+    const staleRecord = await f.client.get(write.receipt.records![0]!.id, {
+      effective: true,
+    });
+    expect(staleRecord.state.state).toBe("pending");
+    f.replica.confirmAll();
+    await f.client.delete(staleRecord);
     const control = heldWatch();
     let changes!: (batch: wire.ChangesResult) => void;
     vi.spyOn(f.client, "watchChanges").mockImplementation(
@@ -181,16 +200,22 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     const opened = f.repository.initialize({ deferTaskIndex: true });
     control.active();
     await opened;
-    const page = { records: [], complete: true, asOf: 0 };
-    vi.spyOn(f.client, "pages").mockImplementationOnce(async function* () {
-      yield page;
-      changes(batch);
-    });
-    await expect(f.repository.listSummaries()).rejects.toMatchObject({
-      code: "conflict",
-      reason: "collection_changed",
-    });
+    const original = f.client.pages.bind(f.client);
+    const pages = vi
+      .spyOn(f.client, "pages")
+      .mockImplementationOnce(async function* () {
+        yield { records: [staleRecord], complete: true, asOf: 0 };
+        changes(batch);
+      })
+      .mockImplementation(original);
     expect(await f.repository.listSummaries()).toEqual([]);
+    expect(pages).toHaveBeenCalledTimes(2);
+    expect(pages.mock.calls[0]![2]).toBe(pages.mock.calls[1]![2]); // original deadline/owner
+    expect(
+      f.repository.writeState({ kind: "task", id: task.id }),
+    ).toBeUndefined();
+    expect(await f.repository.listSummaries()).toEqual([]);
+    expect(pages).toHaveBeenCalledTimes(2);
   });
 
   it.each(["remote", "local"])(
@@ -212,19 +237,20 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });
+      const originalPages = f.client.pages.bind(f.client);
       const pages = vi
         .spyOn(f.client, "pages")
         .mockImplementationOnce(async function* () {
           await gate;
           yield { records: [], complete: true, asOf: 0 };
         })
-        .mockImplementation(async function* () {
-          yield { records: [], complete: true, asOf: 1 };
-        });
+        .mockImplementation(originalPages);
+      const expected =
+        kind === "local"
+          ? [expect.objectContaining({ title: "Accepted local task" })]
+          : [];
       const stale = f.repository.listSummaries();
-      const refused = expect(stale).rejects.toMatchObject({
-        reason: "collection_changed",
-      });
+      const refreshed = expect(stale).resolves.toEqual(expected);
       await vi.waitFor(() => expect(pages).toHaveBeenCalledTimes(1));
       if (kind === "remote") changes(batch);
       else await f.repository.create({ title: "Accepted local task" });
@@ -246,13 +272,15 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       try {
         await vi.waitFor(() => expect(finished).toBe(true));
         expect(failure).toBeUndefined();
-        expect(result).toEqual([]);
+        expect(result).toEqual(expected);
         expect(pages).toHaveBeenCalledTimes(2);
       } finally {
         release();
       }
-      await refused;
+      await refreshed;
       await current;
+      expect(await f.repository.listSummaries()).toEqual(expected);
+      expect(pages).toHaveBeenCalledTimes(2);
     },
   );
 
@@ -316,7 +344,7 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     expect(describe).toHaveBeenCalledTimes(2);
   });
 
-  it("rejects catalog installation if it changes while bindings are loading", async () => {
+  it("discards changed catalog bindings and reloads once under the original deadline", async () => {
     const f = await fixture();
     const control = heldWatch();
     let changes!: (batch: wire.ChangesResult) => void;
@@ -327,7 +355,8 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       },
     );
     const original = vi.mocked(f.client.describe).getMockImplementation()!;
-    vi.spyOn(f.client, "describe")
+    const describe = vi
+      .spyOn(f.client, "describe")
       .mockImplementationOnce(async (signal) => {
         const result = await original(signal);
         changes(batch);
@@ -336,11 +365,56 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       .mockImplementation(original);
     const opened = f.repository.initialize({ deferTaskIndex: true });
     control.active();
-    await expect(opened).rejects.toMatchObject({
-      reason: "collection_changed",
-    });
+    await opened;
+    expect(describe).toHaveBeenCalledTimes(2);
+    expect(describe.mock.calls[0]![0]).toBe(describe.mock.calls[1]![0]);
     await f.repository.initialize({ deferTaskIndex: true });
+    expect(describe).toHaveBeenCalledTimes(2);
   });
+
+  it.each(["catalog", "index"])(
+    "refuses continuous %s invalidation after one read-only retry",
+    async (kind) => {
+      const f = await fixture(),
+        control = heldWatch();
+      let changes!: (batch: wire.ChangesResult) => void;
+      vi.spyOn(f.client, "watchChanges").mockImplementation(
+        (_cursor, callback) => {
+          changes = callback;
+          return control.watch;
+        },
+      );
+      const opened = f.repository.initialize({ deferTaskIndex: true });
+      control.active();
+      await opened;
+      let count = 0;
+      if (kind === "catalog") {
+        const original = vi.mocked(f.client.describe).getMockImplementation()!;
+        vi.mocked(f.client.describe).mockImplementation(async (signal) => {
+          count++;
+          const result = await original(signal);
+          changes(batch);
+          return result;
+        });
+        changes(batch);
+      } else {
+        vi.spyOn(f.client, "pages").mockImplementation(async function* () {
+          count++;
+          yield { records: [], complete: true, asOf: 0 };
+          changes(batch);
+        });
+      }
+      await expect(
+        kind === "catalog"
+          ? f.repository.initialize({ deferTaskIndex: true })
+          : f.repository.listSummaries(),
+      ).rejects.toMatchObject({
+        code: "conflict",
+        reason: "collection_changed",
+      });
+      expect(count).toBe(2);
+    },
+  );
 
   it("does not let prior successful initialization clear known subscription failure", async () => {
     const f = await fixture();

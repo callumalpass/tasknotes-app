@@ -347,8 +347,11 @@ Today             Search       More
   visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
   Explicit property edits survive subsequent title typing. The complete draft
-  remains visible while saving and survives a rejected write; it clears only
-  after authority acceptance. Date shortcuts preserve an existing time. Closing
+  remains visible during native capture and survives a refused capture; it
+  clears only after a genuine native local result. “Saved locally · Waiting to
+  sync” distinguishes this from authority confirmation; subsequent rejection,
+  conflict, and unknown outcomes have separate record status. Date shortcuts
+  preserve an existing time. Closing
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.

@@ -58,6 +58,10 @@ export interface TaskCreateIntent {
   authorityRequestId?: string;
 }
 
+export type RecordWriteTarget =
+  { kind: "task"; id: string } | { kind: "source"; path: string };
+export type RecordWriteStatus = "pending" | "failed" | "unknown" | "conflicted";
+
 /**
  * Application-facing collection boundary. Storage and provider adapters
  * implement this port; React and domain services never depend on an adapter.
@@ -67,6 +71,10 @@ export interface TaskRepository {
   readonly modelSetup?: TaskNotesModelSetup;
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
+  /** Local capture and authority confirmation are separate; no document replica. */
+  writeState?(target: RecordWriteTarget): RecordWriteStatus | undefined;
+  /** Read existing native queue/receipts only; never retries a submission. */
+  reconcileWrites?(): Promise<void>;
   /** Account/person discovery is unavailable in non-account demo repositories. */
   people?(
     signal?: AbortSignal,

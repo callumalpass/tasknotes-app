@@ -83,25 +83,35 @@ describe("atomic native rolling windows (SDK stand-in, not Core/Noise/LAB)", () 
     expect(spy).toHaveBeenCalledOnce();
     expect(await f.repository.listSummaries()).toHaveLength(4);
   });
-  it("rejects the entire window without leaving a parent or partial children", async () => {
+  it("reports late rejection of a locally captured atomic window without leaving parent or partial children", async () => {
     const f = await fixture();
     f.replica.setOnline(false);
     const intent = {
       id: crypto.randomUUID(),
       authorityRequestId: undefined as string | undefined,
     };
-    const create = f.repository.create(input, intent);
-    await vi.waitFor(async () =>
-      expect((await f.client.pendingWrites()).length).toBe(1),
-    );
+    const submit = vi.spyOn(f.client, "submit");
+    const captured = await f.repository.create(input, intent);
+    expect(captured.id).toBe(intent.id);
+    expect(await f.repository.listSummaries()).toHaveLength(4);
+    expect((await f.client.pendingWrites()).length).toBe(1);
+    const originalRequest = intent.authorityRequestId;
     const pending = (await f.client.pendingWrites())[0]!;
     f.replica.reject(pending.receipt.mutation, {
       code: "conflict",
       recovery: "refresh",
       message: "Window collision at head",
     });
-    await expect(create).rejects.toMatchObject({ code: "conflict" });
-    expect(intent.authorityRequestId).toBeUndefined();
+    await vi.waitFor(() =>
+      expect(f.repository.writeState({ kind: "task", id: intent.id })).toBe(
+        "failed",
+      ),
+    );
+    expect(intent.authorityRequestId).toBe(originalRequest);
     expect(await f.repository.listSummaries()).toEqual([]);
+    await expect(f.repository.create(input, intent)).rejects.toMatchObject({
+      mutationId: originalRequest,
+    });
+    expect(submit).toHaveBeenCalledOnce();
   });
 });

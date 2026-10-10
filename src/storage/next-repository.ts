@@ -22,6 +22,8 @@ import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import type {
   TaskRepository,
   TaskCreateIntent,
+  RecordWriteTarget,
+  RecordWriteStatus,
   RepositoryChange,
   RepositoryConnectionStatus,
   HeldEdit,
@@ -253,6 +255,36 @@ export class NextTaskRepository implements TaskRepository {
         (slot.execution ? JSON.stringify(slot.execution).length : 0)),
   );
   private nativeViews = new Map<string, AppBasesDescriptor>();
+  private readonly sourceRecords = new Map<string, string>();
+  private readonly nativeWriteStates = new Map<string, RecordWriteStatus>();
+  private readonly knownTaskRecords = new Map<string, string>();
+
+  writeState(target: RecordWriteTarget): RecordWriteStatus | undefined {
+    const id =
+      target.kind === "task"
+        ? (this.cache.get(target.id)?.recordId ??
+          this.knownTaskRecords.get(target.id))
+        : this.sourceRecords.get(target.path);
+    if (!id) return undefined;
+    if (this.nativeWriteStates.get(id) === "conflicted") return "conflicted";
+    const state = this.mutations.recordWriteState(id)?.state;
+    if (state === "rejected") return "failed";
+    if (state && state !== "confirmed") return state;
+    return this.nativeWriteStates.get(id);
+  }
+  async reconcileWrites(): Promise<void> {
+    await this.mutations.restorePending(this.scope.signal);
+    this.scope.signal.throwIfAborted();
+    this.indexReady = false;
+    this.emit("data");
+  }
+  private rememberWriteState(record: wire.RecordView): void {
+    if (record.state.hold || record.state.unresolved)
+      this.nativeWriteStates.set(record.id, "conflicted");
+    else if (record.state.state === "pending")
+      this.nativeWriteStates.set(record.id, "pending");
+    else this.nativeWriteStates.delete(record.id);
+  }
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
   private changesWatch: ChangesWatch | null = null;
@@ -269,7 +301,35 @@ export class NextTaskRepository implements TaskRepository {
       onModelSetupVerified?: (signal: AbortSignal) => Promise<void>;
     } = {},
   ) {
-    this.mutations = new NextMutations(client);
+    this.mutations = new NextMutations(
+      client,
+      () => {
+        if (this.disposed || this.scope.signal.aborted) return;
+        this.emit("status");
+      },
+      async (ids, signal) => {
+        for (const id of ids) {
+          const record = await client.find(
+            id,
+            { body: true, document: true, effective: true },
+            signal,
+          );
+          signal.throwIfAborted();
+          if (!record) {
+            this.nativeWriteStates.delete(id);
+            continue;
+          }
+          if (record.id !== id)
+            throw new Error("The restored native record changed identity.");
+          this.rememberWriteState(record);
+          if (record.types.some((type) => this.models.has(type)))
+            this.remember(record);
+          else if (viewSourceFormat(record.path) === "obsidian.base")
+            this.sourceDocument(record, record.path);
+        }
+        this.emit("data");
+      },
+    );
     this.creatorSetupPending = options.requiresTaskNotesModelSetup === true;
     if (
       this.creatorSetupPending &&
@@ -354,6 +414,7 @@ export class NextTaskRepository implements TaskRepository {
         held: status.holds,
       };
       this.emit("status");
+      void this.mutations.restorePending(this.scope.signal).catch(() => {});
     });
     this.stopHolds = client.onHolds((holds: Hold[]) => {
       if (this.disposed) return;
@@ -468,6 +529,38 @@ export class NextTaskRepository implements TaskRepository {
 
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
     const signal = this.signal();
+    await this.readCurrentGeneration(signal, async () => {
+      await this.initializeModel(signal);
+      if (!options.deferTaskIndex) await this.loadIndex(signal);
+    });
+  }
+
+  /** A receipt/change may retire a READ in flight. Discard it and reread once,
+   * under the original owner/deadline; never retry a mutation or publish stale
+   * rows. Continuous changes and all other failures still refuse the read. */
+  private async readCurrentGeneration(
+    signal: AbortSignal,
+    read: () => Promise<void>,
+  ): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+      signal.throwIfAborted();
+      try {
+        await read();
+        signal.throwIfAborted();
+        return;
+      } catch (reason) {
+        signal.throwIfAborted();
+        if (
+          attempt !== 0 ||
+          !(reason instanceof MdbaseError) ||
+          reason.reason !== "collection_changed"
+        )
+          throw reason;
+      }
+    }
+  }
+
+  private async initializeModel(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
     // Do not reclassify ordinary pending task work in an already loaded model
     // as missing setup. This gate protects the first/invalidated model read.
@@ -500,12 +593,15 @@ export class NextTaskRepository implements TaskRepository {
     }
     await this.initialization;
     signal.throwIfAborted();
-    if (!options.deferTaskIndex) await this.ensureIndex();
   }
 
   private async ensureIndex(): Promise<void> {
     const signal = this.signal();
-    await this.initialize({ deferTaskIndex: true });
+    await this.readCurrentGeneration(signal, () => this.loadIndex(signal));
+  }
+
+  private async loadIndex(signal: AbortSignal): Promise<void> {
+    await this.initializeModel(signal);
     signal.throwIfAborted();
     if (this.indexReady) return;
     if (this.indexLoading) return this.indexLoading;
@@ -513,6 +609,7 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const loading = (async () => {
       const snapshot = new Map<string, CachedTask>();
+      const records = new Map<string, wire.RecordView>();
       for await (const page of this.client.pages(
         { types: [...this.models.keys()], limit: 1000 },
         { effective: true },
@@ -524,7 +621,7 @@ export class NextTaskRepository implements TaskRepository {
             "The replica has not supplied a complete task index.",
           );
         for (const record of page.records) {
-          const decoded = this.decodeSummary(record);
+          const decoded = this.decodeSummary(record, false);
           if (decoded) {
             const previous = snapshot.get(decoded.task.id);
             if (previous && previous.recordId !== decoded.recordId)
@@ -532,6 +629,7 @@ export class NextTaskRepository implements TaskRepository {
                 "Two native records have the same portable TaskNotes identity. Resolve the duplicate before opening this collection.",
               );
             snapshot.set(decoded.task.id, decoded);
+            records.set(decoded.task.id, record);
           }
         }
       }
@@ -542,7 +640,11 @@ export class NextTaskRepository implements TaskRepository {
           this.cache.delete(id);
       }
       for (const [id, value] of snapshot)
-        if (!writes.paths.has(value.task.path)) this.cache.set(id, value);
+        if (!writes.paths.has(value.task.path)) {
+          this.rememberWriteState(records.get(id)!);
+          this.knownTaskRecords.set(id, value.recordId);
+          this.cache.set(id, value);
+        }
       this.indexReady = true;
       this.hasLoadedIndex = true;
       this.reached();
@@ -554,9 +656,16 @@ export class NextTaskRepository implements TaskRepository {
     return loading;
   }
 
-  private decodeSummary(record: wire.RecordView): CachedTask | null {
+  private decodeSummary(
+    record: wire.RecordView,
+    remember = true,
+  ): CachedTask | null {
     const task = nextTaskSummary(record, this.models);
     if (!task) return null;
+    if (remember) {
+      this.rememberWriteState(record);
+      this.knownTaskRecords.set(task.id, record.id);
+    }
     const typeName = record.types.find((name) => this.models.has(name))!;
     return {
       task,
@@ -567,6 +676,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private remember(record: wire.RecordView): Task {
+    this.rememberWriteState(record);
     const task = nextTaskDocument(record, this.models);
     if (!task)
       throw new Error(
@@ -581,6 +691,7 @@ export class NextTaskRepository implements TaskRepository {
     const previous = this.cache.atPath(task.path);
     if (previous && previous.task.id !== task.id)
       this.cache.delete(previous.task.id);
+    this.knownTaskRecords.set(task.id, record.id);
     this.cache.set(task.id, {
       task: summarizeTask(task),
       recordId: record.id,
@@ -602,6 +713,15 @@ export class NextTaskRepository implements TaskRepository {
       signal,
     );
     signal.throwIfAborted();
+    if (record.id !== entry.recordId)
+      throw new Error(
+        "The native task READ changed its original record identity.",
+      );
+    this.rememberWriteState(record);
+    if (record.state.hold || record.state.unresolved)
+      throw new Error(
+        "Resolve this task’s conflicting changes before editing it.",
+      );
     const task = this.remember(record);
     if (task.id !== id)
       throw new Error(
@@ -1430,15 +1550,27 @@ export class NextTaskRepository implements TaskRepository {
     const owner = this.scope.signal;
     owner.throwIfAborted();
     const accepted = this.acceptedCreates.get(intent);
-    if (accepted) return accepted;
+    if (accepted) {
+      const state = this.mutations.recordWriteState(intent.id);
+      if (state?.state === "rejected")
+        throw new RejectedNextMutation(state.mutationId);
+      const record = await this.client.get(
+        intent.id,
+        { body: true, document: true, effective: true },
+        this.signal(),
+      );
+      owner.throwIfAborted();
+      return this.remember(record);
+    }
     await this.initialize({ deferTaskIndex: true });
     owner.throwIfAborted();
     let rollingWarnings: string[] = [];
     const task = await this.mutations
-      .run(
+      .runRecord(
         {
           key: JSON.stringify(["task:create", intent.id]),
           requestId: intent.authorityRequestId,
+          recordIds: () => [intent.id],
           prepare: async (mutationId, signal) => {
             const provider = this.providers[0]!;
             const task = await this.availableTaskPath(
@@ -1468,7 +1600,12 @@ export class NextTaskRepository implements TaskRepository {
                     frontmatter: task.frontmatter as Record<string, PlainValue>,
                     body: task.body,
                   },
-                  { mutationId, signal },
+                  {
+                    mutationId,
+                    signal,
+                    wait: "pending",
+                    include: { body: true, document: true, effective: true },
+                  },
                 );
               return (
                 await this.client.submit(
@@ -1476,12 +1613,17 @@ export class NextTaskRepository implements TaskRepository {
                     createRecordOp(intent.id, provider.typeName, task),
                     ...rolling.ops,
                   ],
-                  { mutationId, signal },
+                  {
+                    mutationId,
+                    signal,
+                    wait: "pending",
+                    include: { body: true, document: true, effective: true },
+                  },
                 )
               )[0]!;
             };
           },
-          confirmed: async (_receipt, signal) => {
+          confirmed: async (receipt, signal) => {
             const record = await this.client.get(
               intent.id,
               { body: true, effective: true },
@@ -1489,6 +1631,12 @@ export class NextTaskRepository implements TaskRepository {
             );
             signal.throwIfAborted();
             const saved = this.remember(record);
+            if (
+              receipt.state === "confirmed" &&
+              receipt.status === "applied" &&
+              !receipt.conflicts?.length
+            )
+              delete intent.authorityRequestId;
             if (saved.occurrenceMaterialization === "rolling")
               this.indexReady = false;
             return rollingWarnings.length
@@ -1508,7 +1656,6 @@ export class NextTaskRepository implements TaskRepository {
       });
     owner.throwIfAborted();
     this.acceptedCreates.set(intent, task);
-    delete intent.authorityRequestId;
     this.emit("data");
     return task;
   }
@@ -1589,9 +1736,10 @@ export class NextTaskRepository implements TaskRepository {
   ): Promise<Task> {
     let recordId: string | undefined = this.cache.get(id)?.recordId;
     let rollingWarnings: string[] = [];
-    return this.mutations.run(
+    return this.mutations.runRecord(
       {
         key,
+        recordIds: () => (recordId ? [recordId] : []),
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
           recordId = current.record.id;
@@ -1609,7 +1757,12 @@ export class NextTaskRepository implements TaskRepository {
               this.client.update(
                 current.record,
                 taskChanges(current.record, current.task, next),
-                { mutationId, signal },
+                {
+                  mutationId,
+                  signal,
+                  wait: "pending",
+                  include: { body: true, document: true, effective: true },
+                },
               );
           const ops = [
             this.client.updateOp(
@@ -1619,7 +1772,14 @@ export class NextTaskRepository implements TaskRepository {
             ...rolling.ops,
           ];
           return async () =>
-            (await this.client.submit(ops, { mutationId, signal }))[0]!;
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal,
+                wait: "pending",
+                include: { body: true, document: true, effective: true },
+              })
+            )[0]!;
         },
         confirmed: async (_receipt, signal) => {
           if (!recordId)
@@ -1680,8 +1840,9 @@ export class NextTaskRepository implements TaskRepository {
   ): Promise<Task> {
     const targets: string[] = [];
     const warnings: string[] = [];
-    return this.mutations.run(
+    return this.mutations.runRecord(
       {
+        recordIds: () => targets,
         key: JSON.stringify([
           "task:transition",
           id,
@@ -1796,7 +1957,14 @@ export class NextTaskRepository implements TaskRepository {
           // Related task updates and the requested next occurrence are one atomic
           // native mutation, not a partially acknowledged multi-request cascade.
           return async () =>
-            (await this.client.submit(ops, { mutationId, signal }))[0]!;
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal,
+                wait: "pending",
+                include: { body: true, document: true, effective: true },
+              })
+            )[0]!;
         },
         confirmed: async (_receipt, signal) => {
           const records = await Promise.all(
@@ -1832,8 +2000,9 @@ export class NextTaskRepository implements TaskRepository {
     const recordId = await occurrenceRecordId(parentId, occurrenceDate);
     owner.throwIfAborted();
     let warnings: string[] = [];
-    return this.mutations.run<MaterializeOccurrenceResult>(
+    return this.mutations.runRecord<MaterializeOccurrenceResult>(
       {
+        recordIds: () => [recordId],
         key: JSON.stringify(["task:materialize", parentId, occurrenceDate]),
         prepare: async (mutationId, signal) => {
           const parent = await this.current(parentId, signal);
@@ -1868,7 +2037,12 @@ export class NextTaskRepository implements TaskRepository {
                 frontmatter: created.frontmatter as Record<string, PlainValue>,
                 body: created.body,
               },
-              { mutationId, signal },
+              {
+                mutationId,
+                signal,
+                wait: "pending",
+                include: { body: true, document: true, effective: true },
+              },
             );
         },
         confirmed: async (_r, signal) => {
@@ -1925,8 +2099,9 @@ export class NextTaskRepository implements TaskRepository {
   }
   async setArchived(id: string, archived: boolean): Promise<Task> {
     let recordId: string | undefined;
-    return this.mutations.run(
+    return this.mutations.runRecord(
       {
+        recordIds: () => (recordId ? [recordId] : []),
         key: JSON.stringify(["task:archive", id, archived]),
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
@@ -1954,7 +2129,14 @@ export class NextTaskRepository implements TaskRepository {
           // One atomic mutation; a retry cannot repeat the archive patch before
           // recovering an uncertain rename. The update carries the observed CAS.
           return async () =>
-            (await this.client.submit(ops, { mutationId, signal }))[0]!;
+            (
+              await this.client.submit(ops, {
+                mutationId,
+                signal,
+                wait: "pending",
+                include: { body: true, document: true, effective: true },
+              })
+            )[0]!;
         },
         confirmed: async (_r, signal) => {
           if (!recordId)
@@ -1984,21 +2166,41 @@ export class NextTaskRepository implements TaskRepository {
     await this.ensureIndex();
     owner.throwIfAborted();
     if (!this.cache.has(id) && !options.authorityRequestId) return;
-    await this.mutations.run(
+    let recordId = this.cache.get(id)?.recordId;
+    if (options.authorityRequestId) {
+      await this.mutations.restorePending(owner);
+      const original = this.mutations.recordIds(options.authorityRequestId);
+      recordId = original.length === 1 ? original[0] : undefined;
+    }
+    await this.mutations.runRecord(
       {
+        recordIds: () => (recordId ? [recordId] : []),
         key: JSON.stringify(["task:delete", id]),
         requestId: options.authorityRequestId,
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
+          recordId = current.record.id;
           return () =>
             this.client.delete(current.record, {
               ifRevision: current.record.revision,
               mutationId,
               signal,
+              wait: "pending",
             });
         },
-        confirmed: async () => {
-          this.cache.delete(id);
+        confirmed: async (_receipt, signal) => {
+          if (!recordId)
+            throw new Error(
+              "The original deletion identity is unavailable; preserve its recovery request.",
+            );
+          const record = await this.client.find(recordId, undefined, signal);
+          signal.throwIfAborted();
+          if (record)
+            throw new Error(
+              "The original native record is still present after deletion.",
+            );
+          if (this.cache.get(id)?.recordId === recordId) this.cache.delete(id);
+          this.nativeWriteStates.delete(recordId);
           this.emit("data");
         },
       },
@@ -2123,6 +2325,7 @@ export class NextTaskRepository implements TaskRepository {
       for (const descriptor of views) {
         const key = taskViewKey(descriptor.record, String(descriptor.ordinal));
         descriptors.set(key, structuredClone(descriptor));
+        this.sourceRecords.set(descriptor.path, descriptor.record);
         let document = documents.get(descriptor.record);
         if (!document) {
           document = {
@@ -2207,6 +2410,13 @@ export class NextTaskRepository implements TaskRepository {
     )
       throw new Error("Native view path has ambiguous source identities.");
     return structuredClone(descriptor);
+  }
+  private nativeSourceId(path: string): string | undefined {
+    // Discovery ambiguity still refuses writes. A remembered actual record is
+    // used only when its obsolete descriptors were cleared by our local edit.
+    if ([...this.nativeViews.values()].some((view) => view.path === path))
+      return this.nativeSourceDescriptor(path).record;
+    return this.sourceRecords.get(path);
   }
   private async readNativeSource(
     descriptor: AppBasesDescriptor,
@@ -2427,6 +2637,7 @@ export class NextTaskRepository implements TaskRepository {
       (input.path ? viewSourceFormat(input.path) : "obsidian.base");
     const path =
       input.path ?? newViewSourcePath(format, input.name ?? "New view");
+
     if (
       format !== "obsidian.base" ||
       viewSourceFormat(path) !== "obsidian.base"
@@ -2436,57 +2647,48 @@ export class NextTaskRepository implements TaskRepository {
       );
     const document = input.document;
     viewSourceRecord(path, document);
-    let nativeId: string | undefined;
+    let recordId: string | undefined;
+    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+      if (!recordId)
+        throw new Error("The original native source identity is unavailable.");
+      const record = await this.client.views.getSourceRecord(recordId, {
+        signal,
+      });
+      signal.throwIfAborted();
+      if (record.id !== recordId)
+        throw new Error(
+          "The native source READ changed its original record identity.",
+        );
+      return this.sourceDocument(record, path);
+    };
     return this.mutations.run(
       {
         key: JSON.stringify(["view:create", path, document]),
+        recordIds: () => (recordId ? [recordId] : []),
         prepare: async (mutationId, signal) => {
           this.requireViewSourceGrant("records.edit");
+          if (await this.client.find({ path }, undefined, signal))
+            throw new Error("A record already occupies this view source path.");
           signal.throwIfAborted();
-          nativeId = crypto.randomUUID();
-          const id = nativeId;
+          this.requireViewSourceGrant("records.edit");
+          recordId = crypto.randomUUID();
+          const id = recordId;
           return () =>
             this.client.views.createSource(
               { id, path, document },
-              { mutationId, signal },
+              { mutationId, signal, wait: "pending" },
             );
         },
-        confirmed: async (receipt, signal) => {
-          if (!nativeId)
-            throw nativeUnsupported(
-              "The original native source identity is unavailable.",
-            );
-          const record = await this.client.views.getSourceRecord(nativeId, {
-            signal,
-          });
-          const admitted = receipt.records?.find(
-            (item) => item.id === nativeId,
-          );
-          if (
-            record.id !== nativeId ||
-            record.path !== path ||
-            record.document !== document ||
-            record.state.state !== "confirmed" ||
-            record.state.hold ||
-            record.state.unresolved ||
-            (receipt.records !== undefined &&
-              (!admitted ||
-                admitted.path !== path ||
-                admitted.revision !== record.revision))
-          )
+        local: async (receipt, signal) => {
+          const source = await read(receipt, signal);
+          if (source.document !== document)
             throw new Error(
-              "The confirmed native view source could not be read with its exact identity and document.",
+              "The native source capture did not retain the submitted document.",
             );
-          signal.throwIfAborted();
-          this.forgetNativeSource(nativeId);
-          return {
-            recordId: record.id,
-            path: record.path,
-            format: "obsidian.base" as const,
-            revision: record.revision,
-            document: record.document!,
-          };
+          this.forgetNativeSource(source.recordId!);
+          return source;
         },
+        confirmed: read,
       },
       this.scope.signal,
     );
@@ -2494,130 +2696,159 @@ export class NextTaskRepository implements TaskRepository {
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
   ): Promise<TaskViewSourceDocument> {
-    let target: AppBasesDescriptor | undefined;
+    let target: wire.RecordView | undefined;
+    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+      if (!target)
+        throw new Error("The original native source identity is unavailable.");
+      const record = await this.client.views.getSourceRecord(target.id, {
+        signal,
+      });
+      signal.throwIfAborted();
+      if (record.id !== target.id)
+        throw new Error(
+          "The native source READ changed its original record identity.",
+        );
+      return this.sourceDocument(record, target.path);
+    };
     return this.mutations.run(
       {
         key: JSON.stringify(["view:update", input]),
+        recordIds: () => (target ? [target.id] : []),
         prepare: async (mutationId, signal) => {
           this.requireViewSourceGrant("records.edit");
-          const source = await this.readNativeSource(
-            this.nativeSourceDescriptor(input.path),
-            signal,
-          );
-          if (
-            input.ifRevision &&
-            input.ifRevision !== source.view.sourceRevision
-          )
-            throw new Error(
-              "The view source changed. Reload it before saving.",
-            );
-          // Whole-document replacement needs the actual public RecordView,
-          // not an object reconstructed from a source descriptor or path.
-          const record = await this.client.views.getSourceRecord(
-            source.view.record,
-            { signal },
-          );
-          if (
-            record.id !== source.view.record ||
-            record.path !== source.view.path ||
-            record.revision !== source.view.sourceRevision ||
-            record.state.state !== "confirmed" ||
-            record.state.hold ||
-            record.state.unresolved ||
-            record.document !== source.source
-          )
-            throw new Error(
-              "The native source changed before its complete record READ.",
-            );
-          signal.throwIfAborted();
-          this.requireViewSourceGrant("records.edit");
-          target = structuredClone(source.view);
-          return () =>
-            this.client.views.updateSource(record, input.document, {
-              mutationId,
-              signal,
-            });
-        },
-        confirmed: async (receipt, signal) => {
-          if (!target)
+          viewSourceRecord(input.path, input.document);
+          const id = this.nativeSourceId(input.path);
+          if (!id)
             throw nativeUnsupported(
-              "The original native source identity is unavailable.",
+              "Refresh the native view catalog before editing this source.",
             );
-          const record = await this.client.views.getSourceRecord(
-            target.record,
-            { signal },
-          );
-          const admitted = receipt.records?.find(
-            (item) => item.id === target!.record,
-          );
-          if (
-            record.id !== target.record ||
-            record.path !== target.path ||
-            record.state.state !== "confirmed" ||
-            record.state.hold ||
-            record.state.unresolved ||
-            record.document === undefined ||
-            record.document !== input.document ||
-            (receipt.records !== undefined &&
-              (!admitted ||
-                admitted.path !== target.path ||
-                admitted.revision !== record.revision))
-          )
-            throw new Error(
-              "The confirmed native view source could not be read with its exact identity and document.",
-            );
-          this.forgetNativeSource(target.record);
-          return {
-            recordId: record.id,
-            path: record.path,
-            format: "obsidian.base",
-            revision: record.revision,
-            document: record.document,
-          };
-        },
-      },
-      this.scope.signal,
-    );
-  }
-  async deleteViewSource(path: string, ifRevision?: string) {
-    let target: AppBasesDescriptor | undefined;
-    await this.mutations.run(
-      {
-        key: JSON.stringify(["view:delete", path, ifRevision]),
-        prepare: async (mutationId, signal) => {
-          this.requireViewSourceGrant("records.delete");
-          const source = await this.readNativeSource(
-            this.nativeSourceDescriptor(path),
+          // Genuine current-layer full source, including native tentative CAS.
+          const record = await this.client.views.getSourceRecord(id, {
             signal,
-          );
-          if (ifRevision && ifRevision !== source.view.sourceRevision)
-            throw new Error(
-              "The view source changed. Reload it before deleting.",
-            );
-          const record = await this.client.views.getSourceRecord(
-            source.view.record,
-            { signal },
-          );
+          });
           if (
-            record.id !== source.view.record ||
-            record.path !== source.view.path ||
-            record.revision !== source.view.sourceRevision ||
-            record.document !== source.source ||
-            record.state.state !== "confirmed" ||
+            record.id !== id ||
+            record.path !== input.path ||
+            record.document === undefined ||
             record.state.hold ||
             record.state.unresolved
           )
             throw new Error(
               "The native source changed before its complete record READ.",
             );
+          if (input.ifRevision && input.ifRevision !== record.revision)
+            throw new Error(
+              "The view source changed. Reload it before saving.",
+            );
+          const descriptor = [...this.nativeViews.values()].find(
+            (view) => view.record === id,
+          );
+          if (record.state.state === "confirmed" && descriptor) {
+            const source = await this.readNativeSource(descriptor, signal);
+            if (
+              record.revision !== source.view.sourceRevision ||
+              record.document !== source.source
+            )
+              throw new Error(
+                "The native source changed before its complete record READ.",
+              );
+          }
           signal.throwIfAborted();
+          this.requireViewSourceGrant("records.edit");
+          target = record;
+          return () =>
+            this.client.views.updateSource(record, input.document, {
+              mutationId,
+              signal,
+              wait: "pending",
+              include: { document: true, body: true },
+            });
+        },
+        local: async (receipt, signal) => {
+          const source = await read(receipt, signal);
+          if (source.document !== input.document)
+            throw new Error(
+              "The native source capture did not retain the submitted document.",
+            );
+          this.forgetNativeSource(source.recordId!);
+          return source;
+        },
+        // A late ACK reads the CURRENT layer, never relabels the earlier
+        // receipt's document or overwrites a newer pending source edit.
+        confirmed: read,
+      },
+      this.scope.signal,
+    );
+  }
+  private sourceDocument(
+    record: wire.RecordView,
+    path: string,
+  ): TaskViewSourceDocument {
+    if (record.path === path) this.rememberWriteState(record);
+    if (
+      record.path !== path ||
+      record.document === undefined ||
+      record.state.hold ||
+      record.state.unresolved
+    )
+      throw new Error(
+        "The native source record is unavailable or has conflicting changes.",
+      );
+    viewSourceRecord(path, record.document);
+    this.sourceRecords.set(path, record.id);
+    this.rememberWriteState(record);
+    return {
+      recordId: record.id,
+      path,
+      format: "obsidian.base",
+      revision: record.revision,
+      document: record.document,
+    };
+  }
+  async deleteViewSource(path: string, ifRevision?: string) {
+    let target: wire.RecordView | undefined;
+    await this.mutations.runRecord(
+      {
+        recordIds: () => (target ? [target.id] : []),
+        key: JSON.stringify(["view:delete", path, ifRevision]),
+        prepare: async (mutationId, signal) => {
           this.requireViewSourceGrant("records.delete");
-          target = structuredClone(source.view);
+          const id = this.nativeSourceId(path);
+          if (!id)
+            throw nativeUnsupported(
+              "Refresh the native view catalog before deleting this source.",
+            );
+          const record = await this.client.views.getSourceRecord(id, {
+            signal,
+          });
+          signal.throwIfAborted();
+          if (
+            record.id !== id ||
+            record.path !== path ||
+            record.document === undefined ||
+            record.state.hold ||
+            record.state.unresolved
+          )
+            throw new Error(
+              "The native source changed before its complete record READ.",
+            );
+          if (ifRevision && ifRevision !== record.revision)
+            throw new Error(
+              "The view source changed. Reload it before deleting.",
+            );
+          const descriptor = [...this.nativeViews.values()].find(
+            (view) => view.record === id,
+          );
+          if (record.state.state === "confirmed" && descriptor)
+            await this.readNativeSource(descriptor, signal);
+          target = record;
+          this.requireViewSourceGrant("records.delete");
           return () =>
             this.client.delete(record, {
               ifRevision: record.revision,
               mutationId,
               signal,
+              wait: "pending",
             });
         },
         confirmed: async (_receipt, signal) => {
@@ -2625,17 +2856,14 @@ export class NextTaskRepository implements TaskRepository {
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
-          const remaining = await this.client.find(
-            target.record,
-            { document: true },
-            signal,
-          );
-          if (remaining !== null)
-            throw new Error(
-              "The original native view source is still present after deletion.",
-            );
+          const record = await this.client.find(target.id, undefined, signal);
           signal.throwIfAborted();
-          this.forgetNativeSource(target.record);
+          if (record)
+            throw new Error(
+              "The original native source is still present after deletion.",
+            );
+          this.nativeWriteStates.delete(target.id);
+          this.forgetNativeSource(target.id);
         },
       },
       this.scope.signal,
@@ -2700,6 +2928,8 @@ export class NextTaskRepository implements TaskRepository {
     this.stopHolds();
     this.client.close();
     this.cache.clear();
+    this.nativeWriteStates.clear();
+    this.sourceRecords.clear();
     this.viewCatalog = [];
     this.viewExecutions.clear();
     this.scratchFeedSnapshot = undefined;
