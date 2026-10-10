@@ -4,7 +4,8 @@ import type {
   FileTransferSession,
   OpenFileUploadRequest,
 } from "@mdbase-dev/connect-protocol";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { CollectionFile } from "../application/ports/collection-file-store";
 
 import {
   MdbaseCollectionFileStore,
@@ -78,6 +79,38 @@ describe("TaskNotes mdbase files", () => {
 
     await store.delete(replaced);
     expect(await store.list()).toEqual([]);
+  });
+
+  it("does not invent a missing timestamp for the legacy descriptor bridge", async () => {
+    const files = {
+      download: vi.fn(),
+      downloadStream: vi.fn(),
+      move: vi.fn(),
+      delete: vi.fn(),
+    };
+    const store = new MdbaseCollectionFileStore({
+      files,
+    } as unknown as MdbaseConnection);
+    const file: CollectionFile = {
+      fileId: "11111111-1111-4111-8111-111111111111",
+      path: "attachments/photo.png",
+      revision: "rev",
+      contentDigest: `sha256:${"ab".repeat(32)}`,
+      size: 8,
+      mediaClass: "image",
+    };
+    expect(() => store.download(file)).toThrow("File metadata is incomplete");
+    expect(() => store.downloadStream(file)).toThrow(
+      "File metadata is incomplete",
+    );
+    await expect(store.move(file, "attachments/renamed.png")).rejects.toThrow(
+      "File metadata is incomplete",
+    );
+    await expect(store.delete(file)).rejects.toThrow(
+      "File metadata is incomplete",
+    );
+    for (const method of Object.values(files))
+      expect(method).not.toHaveBeenCalled();
   });
 
   it("combines caller and collection lifecycle cancellation for file work", async () => {
