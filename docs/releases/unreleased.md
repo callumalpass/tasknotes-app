@@ -1,6 +1,7 @@
 # Unreleased
 
 - Keep native setup's saved operation and recovery history in the shared SDK journal, preserving existing collection and operation identities.
+- Add original-only recovery for already-started native setup. Recovery refuses changed operations or plans instead of submitting a not-yet-started replacement.
 - Update the pinned SDK while retaining explicit authenticated build-environment selection. This does not enable People or shared-session features.
 - Clarify native Scratchpad recovery limits: opening or listing notes may write, and reloading does not prove recovery of an earlier uncertain operation.
 - Older file operations report incomplete metadata if a modification timestamp is unavailable, rather than submitting an incomplete descriptor.

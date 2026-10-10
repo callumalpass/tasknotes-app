@@ -479,6 +479,7 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
       await expect(f.setup.resume()).rejects.toMatchObject({
         view: { state: "blocked" },
       });
+      await expect(f.setup.recoverOriginal(legacy)).rejects.toThrow();
       expect(f.journal.value).toBe(legacy);
       expect(f.journal.prepares).toBe(0);
       expect(f.journal.events).toEqual([]);
@@ -672,6 +673,128 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     await f.setup.resume();
     expect(submit).toHaveBeenCalledOnce();
   });
+  it.each(["attempted", "confirmed"] as const)(
+    "admitted-only v2 recovery preserves the original %s operation without assessment or submit",
+    async (phase) => {
+      const f = await fixture();
+      const plan = await f.plan();
+      for (const op of plan.ops)
+        if (op.kind === "resource_put") f.replica.seedResource(op.path, op.doc);
+      const original = await f.journal.prepare(plan, f.owner.signal);
+      await f.journal.recordAttempt(original.mutationId, f.owner.signal);
+      if (phase === "confirmed")
+        await f.journal.recordConfirmed(original.mutationId, f.owner.signal);
+      const captured = f.journal.value!;
+      const receipt = vi.spyOn(f.client, "awaitReceipt").mockResolvedValue({
+        mutation: captured.mutationId,
+        state: "confirmed",
+        status: "applied",
+        seq: 1,
+      });
+      const submit = vi.spyOn(f.client, "submit");
+      const planner = vi.spyOn(modelPlan, "nativeModelPackPlan");
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      await f.setup.recoverOriginal(captured);
+      expect(receipt).toHaveBeenCalledExactlyOnceWith(
+        captured.mutationId,
+        120000,
+        expect.any(AbortSignal),
+      );
+      expect(f.journal.value).toEqual({ ...captured, phase: "verified" });
+      expect(submit).not.toHaveBeenCalled();
+      expect(planner).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      expect(f.journal.prepares).toBe(1);
+      expect(f.verified).toHaveBeenCalledOnce();
+    },
+  );
+  it.each(["absent", "prepared", "mutation", "plan", "regressed"] as const)(
+    "admitted-only v2 recovery refuses a %s journal replacement",
+    async (replacement) => {
+      const f = await fixture();
+      const original = await f.journal.prepare(await f.plan(), f.owner.signal);
+      await f.journal.recordAttempt(original.mutationId, f.owner.signal);
+      await f.journal.recordConfirmed(original.mutationId, f.owner.signal);
+      const captured = f.journal.value!;
+      if (captured.version !== 2) throw Error("missing original v2");
+      f.journal.value =
+        replacement === "absent"
+          ? null
+          : {
+              ...captured,
+              ...(replacement === "prepared" ? { phase: "prepared" } : {}),
+              ...(replacement === "regressed" ? { phase: "attempted" } : {}),
+              ...(replacement === "mutation"
+                ? { mutationId: f.scope.collection }
+                : {}),
+              ...(replacement === "plan"
+                ? {
+                    plan: {
+                      ...captured.plan,
+                      assessmentDigest: "sha256:" + "a".repeat(64),
+                    },
+                  }
+                : {}),
+            };
+      const submit = vi.spyOn(f.client, "submit");
+      const receipt = vi.spyOn(f.client, "awaitReceipt");
+      await expect(f.setup.recoverOriginal(captured)).rejects.toThrow();
+      expect(submit).not.toHaveBeenCalled();
+      expect(receipt).not.toHaveBeenCalled();
+      expect(f.journal.events).toEqual(["attempted", "confirmed"]);
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
+  it("admitted-only v2 recovery cannot promote a conflicted confirmed receipt", async () => {
+    const f = await fixture();
+    const original = await f.journal.prepare(await f.plan(), f.owner.signal);
+    await f.journal.recordAttempt(original.mutationId, f.owner.signal);
+    const captured = f.journal.value!;
+    vi.spyOn(f.client, "awaitReceipt").mockResolvedValue({
+      mutation: captured.mutationId,
+      state: "confirmed",
+      status: "conflicted",
+      seq: 1,
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.setup.recoverOriginal(captured)).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(f.journal.value).toBe(captured);
+    expect(f.journal.events).toEqual(["attempted"]);
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("exposes admitted-only repository recovery on the same client without a generic resume fallback", async () => {
+    const f = await fixture();
+    const prepared = await f.journal.prepare(await f.plan(), f.owner.signal);
+    await f.journal.recordAttempt(prepared.mutationId, f.owner.signal);
+    const captured = f.journal.value!;
+    const repository = new NextTaskRepository(
+      f.client,
+      "Existing collection",
+      f.scope.account,
+      {
+        modelSetupJournal: f.journal,
+      },
+    );
+    const recover = repository.modelSetup?.recoverOriginal;
+    if (!recover) throw Error("missing repository original-only recovery");
+    const receipt = vi
+      .spyOn(f.client, "awaitReceipt")
+      .mockRejectedValue(new Error("original receipt unavailable"));
+    const submit = vi.spyOn(f.client, "submit");
+    const resume = vi.spyOn(NativeModelSetup.prototype, "resume");
+    const install = vi.spyOn(NativeModelSetup.prototype, "install");
+    await expect(recover(captured)).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(receipt.mock.calls[0]![0]).toBe(captured.mutationId);
+    expect(f.journal.value).toBe(captured);
+    expect(resume).not.toHaveBeenCalled();
+    expect(install).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+  });
   it("reconciles a lost submit reply through the same receipt without another submission or ID", async () => {
     const f = await fixture();
     const original = f.client.submit.bind(f.client);
@@ -748,6 +871,7 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
       "onReadinessChange",
       "install",
       "resume",
+      "recoverOriginal",
     ]);
     expect(Object.isFrozen(repository.modelSetup)).toBe(true);
     expect(repository.modelSetup).not.toHaveProperty("client");

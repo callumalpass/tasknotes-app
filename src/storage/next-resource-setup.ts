@@ -35,6 +35,11 @@ import {
   type ResourceSetupAssessment,
 } from "./next-resource-plan";
 
+import {
+  captureOriginalSetupRecovery,
+  recheckOriginalSetupRecovery,
+} from "./next-original-setup-recovery";
+
 const uncertain = () =>
   new ModelSetupError({
     state: "outcome_unknown",
@@ -225,6 +230,8 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
   private async operation(
     work: (signal: AbortSignal) => Promise<void>,
     progress?: ModelSetupProgressListener,
+    reconcile: (signal: AbortSignal) => Promise<void> = (signal) =>
+      this.reconcile(signal),
   ): Promise<void> {
     // Pin at the explicit action, BEFORE the serialization queue yields.
     const owner = this.signal(0);
@@ -235,7 +242,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           requireSetupAvailability(this.client.status);
           return work(signal);
         },
-        (signal) => this.reconcile(signal),
+        reconcile,
         progress,
       ),
     );
@@ -340,6 +347,34 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       }
       await this.execute(this.intent(stored), signal, progress);
     }, progress);
+  }
+  async recoverOriginal(
+    value: ModelSetupIntent,
+    progress?: ModelSetupProgressListener,
+  ): Promise<void> {
+    const original = captureOriginalSetupRecovery(value, this.scope);
+    const recover = async (signal: AbortSignal) => {
+      requireSetupAvailability(this.client.status);
+      const stored = await this.journal.load(signal);
+      signal.throwIfAborted();
+      const current = recheckOriginalSetupRecovery(
+        original,
+        stored,
+        this.scope,
+      );
+      if (current.version === 2) {
+        const legacy = this.legacy?.(signal);
+        if (!legacy?.recoverOriginal)
+          throw blocked("Original model-pack recovery is unavailable.");
+        await legacy.recoverOriginal(original, progress);
+        signal.throwIfAborted();
+        return;
+      }
+      // The admitted phase and immutable identity are rechecked INSIDE both
+      // operation windows. No load-then-general-resume or prepared submit path.
+      await this.execute(this.intent(current), signal, progress);
+    };
+    return this.operation(recover, progress, recover);
   }
   private transition(
     before: ResourceSetupIntent,

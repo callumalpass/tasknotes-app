@@ -1,3 +1,5 @@
+import type { AppModelSetupIntent as ModelSetupIntent } from "@mdbase-dev/sdk/app-host";
+
 /** Shared original journal/intent definitions; no app codec or alternate ledger. */
 export { APP_COLLECTION_SETUP_LIMITS as MODEL_SETUP_LIMITS } from "@mdbase-dev/sdk/app-host";
 export type {
@@ -39,6 +41,11 @@ export interface TaskNotesModelSetup {
   onReadinessChange?(listener: () => void): () => void;
   install(progress?: ModelSetupProgressListener): Promise<void>;
   resume(progress?: ModelSetupProgressListener): Promise<void>;
+  /** Reconcile only this captured ATTEMPTED/CONFIRMED operation; never submit. */
+  recoverOriginal?(
+    original: ModelSetupIntent,
+    progress?: ModelSetupProgressListener,
+  ): Promise<void>;
 }
 
 /** A setup failure carries a display/recovery state, not a write witness. */

@@ -26,6 +26,11 @@ import {
   setupStillPending,
 } from "./next-setup-operation";
 
+import {
+  captureOriginalSetupRecovery,
+  recheckOriginalSetupRecovery,
+} from "./next-original-setup-recovery";
+
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const hash = /^sha256:[0-9a-f]{64}$/;
 const nil = "00000000-0000-0000-0000-000000000000";
@@ -377,16 +382,13 @@ export class NativeModelSetup implements TaskNotesModelSetup {
   private async operation(
     work: (signal: AbortSignal) => Promise<void>,
     progress?: ModelSetupProgressListener,
+    reconcile: (signal: AbortSignal) => Promise<void> = (signal) =>
+      this.reconcile(signal),
   ): Promise<void> {
     // Pin at the explicit action, BEFORE the serialization queue yields.
     const owner = this.signal(0);
     return this.exclusive(() =>
-      atomicSetupOperation(
-        owner,
-        work,
-        (signal) => this.reconcile(signal),
-        progress,
-      ),
+      atomicSetupOperation(owner, work, reconcile, progress),
     );
   }
   private async reconcile(signal: AbortSignal): Promise<void> {
@@ -445,6 +447,27 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       }
       await this.execute(this.intent(stored), signal, progress);
     }, progress);
+  }
+  async recoverOriginal(
+    value: ModelSetupIntent,
+    progress?: ModelSetupProgressListener,
+  ): Promise<void> {
+    const original = captureOriginalSetupRecovery(value, this.scope);
+    if (original.version !== 2)
+      throw blocked(
+        "Original model-pack recovery requires its version-two intent.",
+      );
+    const recover = async (signal: AbortSignal) => {
+      const stored = await this.journal.load(signal);
+      signal.throwIfAborted();
+      const current = recheckOriginalSetupRecovery(
+        original,
+        stored,
+        this.scope,
+      );
+      await this.execute(this.intent(current), signal, progress);
+    };
+    return this.operation(recover, progress, recover);
   }
   private async verifyCurrentPlan(
     plan: ModelPackPlan,
@@ -589,7 +612,12 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       throw blocked(
         "Mdbase did not accept the original TaskNotes pack setup. Its identity is retained; re-assess the collection without overwriting or submitting a replacement.",
       );
-    if (receipt.state !== "confirmed") throw uncertain();
+    if (
+      receipt.state !== "confirmed" ||
+      receipt.status === "conflicted" ||
+      receipt.conflicts?.length
+    )
+      throw uncertain();
     try {
       if (intent.phase === "attempted")
         intent = this.transition(

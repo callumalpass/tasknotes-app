@@ -130,6 +130,7 @@ import {
   type ModelResourceSetupJournal,
   type TaskNotesModelSetup,
   type ModelSetupProgressListener,
+  type ModelSetupIntent,
 } from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
@@ -343,6 +344,13 @@ export class NextTaskRepository implements TaskRepository {
         resume: async (progress?: ModelSetupProgressListener) => {
           requireSetupAvailability(client.status);
           return setup.resume(progress);
+        },
+        recoverOriginal: async (
+          original: ModelSetupIntent,
+          progress?: ModelSetupProgressListener,
+        ) => {
+          requireSetupAvailability(client.status);
+          return setup.recoverOriginal(original, progress);
         },
       });
     }

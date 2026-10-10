@@ -12,6 +12,10 @@ import pin from "../../vendor/mdbase-browser.pin.json";
 import { NextModelSetupIntentStore } from "../cloud/next-model-setup-intent";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import { NativeResourceSetup } from "./next-resource-setup";
+import {
+  captureOriginalSetupRecovery,
+  recheckOriginalSetupRecovery,
+} from "./next-original-setup-recovery";
 import { NextTaskRepository } from "./next-repository";
 import {
   captureResourceSetupPlan,
@@ -263,6 +267,184 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+});
+
+describe("admitted-only resource setup recovery (protocol stand-ins)", () => {
+  async function admitted(phase: "attempted" | "confirmed" = "attempted") {
+    const f = fixture();
+    expect(await f.setup.inspect()).toEqual({ state: "required" });
+    f.state.loseReply = phase === "attempted";
+    f.state.omitDiscovery = phase === "confirmed";
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const original = await f.journal.load(signal());
+    if (original?.version !== 3 || original.phase !== phase)
+      throw new Error("missing admitted original");
+    f.state.loseReply = false;
+    f.state.omitDiscovery = false;
+    f.mocked.submit.mockClear();
+    f.mocked.awaitReceipt.mockClear();
+    f.factory.mockClear();
+    return { f, original };
+  }
+  it.each(["attempted", "confirmed"] as const)(
+    "recovers the exact %s intent after explicit admission from inspect, without submission or new source identity",
+    async (phase) => {
+      const { f, original } = await admitted(phase);
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      expect(await f.setup.inspect()).toMatchObject({
+        state: "outcome_unknown",
+      });
+      await f.setup.recoverOriginal(original);
+      expect(f.mocked.awaitReceipt).toHaveBeenCalledExactlyOnceWith(
+        original.mutationId,
+        120000,
+        expect.any(AbortSignal),
+      );
+      expect(await f.journal.load(signal())).toEqual({
+        ...original,
+        phase: "verified",
+      });
+      expect(await f.setup.inspect()).toEqual({ state: "ready" });
+      expect(f.mocked.submit).not.toHaveBeenCalled();
+      expect(f.factory).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      expect(f.verified).toHaveBeenCalledOnce();
+    },
+  );
+  it.each(["absent", "prepared", "mutation", "plan", "scope"] as const)(
+    "refuses a %s replacement inside recovery without entering a submit branch",
+    async (replacement) => {
+      const { f, original } = await admitted();
+      const changed = structuredClone(original);
+      if (replacement === "mutation")
+        Object.assign(changed, { mutationId: scope.account });
+      if (replacement === "plan")
+        Object.assign(changed.plan.sources[0]!, {
+          document: changed.plan.sources[0]!.document + "\nChanged body.\n",
+        });
+      if (replacement === "scope")
+        Object.assign(changed.scope, { collection: scope.account });
+      vi.spyOn(f.journal, "load").mockResolvedValue(
+        replacement === "absent"
+          ? null
+          : replacement === "prepared"
+            ? { ...changed, phase: "prepared" }
+            : changed,
+      );
+      await expect(f.setup.recoverOriginal(original)).rejects.toThrow();
+      expect(f.mocked.awaitReceipt).not.toHaveBeenCalled();
+      expect(f.mocked.submit).not.toHaveBeenCalled();
+      expect(f.factory).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["prepared", "verified"] as const)(
+    "does not admit a captured %s input as original recovery",
+    async (phase) => {
+      const { f, original } = await admitted();
+      const load = vi.spyOn(f.journal, "load");
+      await expect(
+        f.setup.recoverOriginal({ ...original, phase }),
+      ).rejects.toMatchObject({
+        view: { state: "blocked" },
+      });
+      expect(load).not.toHaveBeenCalled();
+      expect(f.mocked.submit).not.toHaveBeenCalled();
+    },
+  );
+  it("pins a v4 round's exact verified predecessor and rejects version or previous-round replacement", async () => {
+    const { original } = await admitted();
+    // Codec/phase-guard fixture only, not evidence of a native additive round.
+    const round = {
+      ...original,
+      version: 4 as const,
+      previous: {
+        ...original,
+        mutationId: scope.account,
+        phase: "verified" as const,
+      },
+    };
+    const captured = captureOriginalSetupRecovery(round, scope);
+    expect(
+      recheckOriginalSetupRecovery(
+        captured,
+        { ...round, phase: "confirmed" },
+        scope,
+      ),
+    ).toEqual({ ...round, phase: "confirmed" });
+    expect(() =>
+      recheckOriginalSetupRecovery(captured, original, scope),
+    ).toThrow();
+    expect(() =>
+      recheckOriginalSetupRecovery(
+        captured,
+        {
+          ...round,
+          previous: { ...round.previous, mutationId: scope.installation },
+        },
+        scope,
+      ),
+    ).toThrow();
+  });
+  it("pins a clone before the queue yields and fences owner abortion after receipt delivery", async () => {
+    const { f, original } = await admitted();
+    const caller = structuredClone(original);
+    const awaitReceipt = f.mocked.awaitReceipt.getMockImplementation()!;
+    f.mocked.awaitReceipt.mockImplementation(async (id) => {
+      const receipt = await awaitReceipt(id);
+      f.owner.abort();
+      return receipt;
+    });
+    const recovery = f.setup.recoverOriginal(caller);
+    Object.assign(caller, { mutationId: scope.account });
+    await recovery.then(
+      () => {
+        throw new Error("owner abort was masked");
+      },
+      (reason) => {
+        expect(f.owner.signal.aborted).toBe(true);
+        expect(reason).toBe(f.owner.signal.reason);
+      },
+    );
+    expect(f.mocked.awaitReceipt.mock.calls[0]![0]).toBe(original.mutationId);
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    const reopened = new NextModelSetupIntentStore({
+      scope,
+      appOrigin: "http://127.0.0.1:48319",
+      cpOrigin: "https://connect-lab.mdbase.dev",
+      isCurrent: () => true,
+    });
+    expect(await reopened.load(signal())).toEqual(original);
+  });
+  it("rechecks the same admitted identity in the timeout reconciliation window, never generic resume", async () => {
+    const { f, original } = await admitted();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const owner = new AbortController();
+      setTimeout(
+        () => owner.abort(new DOMException("expired", "TimeoutError")),
+        ms,
+      );
+      return owner.signal;
+    });
+    vi.spyOn(f.journal, "load")
+      .mockResolvedValueOnce(original)
+      .mockResolvedValue({ ...original, phase: "prepared" });
+    f.mocked.awaitReceipt.mockImplementation(() => new Promise(() => {}));
+    const recovery = f.setup.recoverOriginal(original);
+    const refusal = expect(recovery).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    await vi.advanceTimersByTimeAsync(120000);
+    await refusal;
+    expect(f.mocked.awaitReceipt).toHaveBeenCalledOnce();
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    expect(f.factory).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
 });
 
 describe("original resource setup sequencing (protocol stand-ins)", () => {
@@ -934,6 +1116,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       })),
       install: vi.fn(async () => undefined),
       resume: vi.fn(async () => undefined),
+      recoverOriginal: vi.fn(async () => undefined),
     };
     const signals: AbortSignal[] = [];
     const setup = new NativeResourceSetup(
@@ -959,6 +1142,22 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     expect(signals).toHaveLength(3);
     expect(signals.every((s) => !s.aborted)).toBe(true);
     expect(await f.journal.load(signal())).toEqual(original);
+    await expect(setup.recoverOriginal(original)).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(old.recoverOriginal).not.toHaveBeenCalled();
+    const admitted = await f.journal.recordAttempt(
+      original.mutationId,
+      signal(),
+    );
+    await setup.recoverOriginal(admitted);
+    expect(old.recoverOriginal).toHaveBeenCalledExactlyOnceWith(
+      admitted,
+      undefined,
+    );
+    expect(old.resume).toHaveBeenCalledTimes(1);
+    expect(old.install).toHaveBeenCalledTimes(1);
+    expect(signals).toHaveLength(4);
     expect(f.factory).not.toHaveBeenCalled();
     expect(f.mocked.submit).not.toHaveBeenCalled();
     f.owner.abort();
