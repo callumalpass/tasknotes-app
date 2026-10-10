@@ -1,5 +1,6 @@
 import type { MdbaseConnection, PendingMutation } from "@mdbase-dev/connect";
-import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
+import type { AppWebSignInSnapshot } from "@mdbase-dev/sdk/app-host";
+import { CloudConnectionView } from "./cloud-connection-view";
 import {
   useEffect,
   useMemo,
@@ -454,7 +455,14 @@ export function CloudConnection({
     }),
   onTryDemo,
   retryAuthorization,
+  sdk,
 }: {
+  /** Actual public SDK snapshot/actions, never a fabricated legacy snapshot. */
+  sdk?: {
+    snapshot: AppWebSignInSnapshot;
+    authorize(): Promise<void>;
+    select(collectionId: string): Promise<void>;
+  };
   error: string | null;
   ensureStarted?(): Promise<void>;
   onTryDemo?(): void;
@@ -467,10 +475,16 @@ export function CloudConnection({
   const [authorizationPending, setAuthorizationPending] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const authorizationController = useRef<AbortController | null>(null);
-  const session = useCloudSessionSnapshot();
-  const connections = session.connections;
-  const selectedCollectionId =
-    "collectionId" in session ? session.collectionId : null;
+  const legacySession = useCloudSessionSnapshot();
+  const session = sdk?.snapshot ?? legacySession;
+  const connections = sdk
+    ? sdk.snapshot.collections
+    : legacySession.connections;
+  const selectedCollectionId = sdk
+    ? sdk.snapshot.selectedCollectionId
+    : "collectionId" in legacySession
+      ? legacySession.collectionId
+      : null;
   const selectedConnection = connections.find(
     (connection) => connection.collectionId === selectedCollectionId,
   );
@@ -483,6 +497,10 @@ export function CloudConnection({
     setOpening(kind);
     setStartError(null);
     try {
+      if (sdk) {
+        await sdk.authorize();
+        return;
+      }
       if (session.status === "not_started" || session.status === "starting") {
         await ensureStarted();
       }
@@ -529,6 +547,10 @@ export function CloudConnection({
     setOpeningCollectionId(collectionId);
     setStartError(null);
     try {
+      if (sdk) {
+        await sdk.select(collectionId);
+        return;
+      }
       await ensureStarted();
       requireConnectOutcome(
         cloudSession.select(collectionId, { history: "replace" }),
@@ -559,252 +581,52 @@ export function CloudConnection({
 
   const reviewingCollection =
     session.status === "setup_review_required" ||
-    session.status === "authorization_required";
+    session.status === "authorization_required" ||
+    session.status === "setup_required";
   const firstVisit = connections.length === 0 && !reviewingCollection;
-  const busy = opening !== null || openingCollectionId !== null;
+  const sdkWaiting = sdk?.snapshot.status === "authorizing";
+  const busy =
+    opening !== null ||
+    openingCollectionId !== null ||
+    sdkWaiting ||
+    sdk?.snapshot.status === "not_started" ||
+    sdk?.snapshot.status === "starting" ||
+    sdk?.snapshot.status === "opening";
   const availableConnections = connections.filter(
     (connection) => connection.collectionId !== selectedCollectionId,
   );
 
   return (
-    <main className="collection-welcome cloud-welcome">
-      <div className="welcome-copy">
-        <img alt="" src={tasknotesMarkUrl} />
-        <h1>
-          {reviewingCollection
-            ? "Finish opening TaskNotes"
-            : firstVisit
-              ? "Connect TaskNotes to your tasks"
-              : "Welcome back"}
-        </h1>
-        <p>
-          {reviewingCollection
-            ? "Complete this collection’s setup, or choose a different collection."
-            : firstVisit
-              ? "TaskNotes works with collections managed by mdbase."
-              : "Choose a collection to open your tasks."}
-        </p>
-        <details className="mdbase-explainer">
-          <summary>
-            <span>What is mdbase?</span>
-            <ChevronDown aria-hidden="true" size={16} />
-          </summary>
-          <p>
-            mdbase keeps your tasks as portable Markdown files while giving
-            compatible apps a shared way to understand them. mdbase Connect lets
-            you choose a collection and approve TaskNotes’ access—whether it’s
-            hosted by mdbase or available from a connected computer.
-          </p>
-        </details>
-      </div>
-      {error || startError ? (
-        <>
-          <p className="inline-error" role="alert">
-            {error ?? startError}
-          </p>
-          {error && retryAuthorization ? (
-            <button
-              className="outline-action"
-              onClick={retryAuthorization}
-              type="button"
-            >
-              Retry authorization
-            </button>
-          ) : null}
-        </>
-      ) : null}
-      {session.status === "checking_setup" ? (
-        <p className="connection-status" role="status">
-          Checking this collection’s TaskNotes setup…
-        </p>
-      ) : null}
-      {session.status === "blocked" ? (
-        <p className="inline-error" role="alert">
-          {message({ problem: session.problem })}
-        </p>
-      ) : null}
-      {session.status === "setup_review_required" ? (
-        <section
-          className="connection-update"
-          aria-labelledby="collection-setup-title"
-        >
-          <h2 id="collection-setup-title">Review TaskNotes setup</h2>
-          <p>
-            TaskNotes needs the following collection settings and definitions.
-            Your task records and unrelated collection settings will not change.
-          </p>
-          <ul>
-            {session.update.configuration
-              .filter((configuration) => configuration.action !== "current")
-              .map((configuration) => (
-                <li key={configuration.requirement}>
-                  {configuration.action === "conflict"
-                    ? configuration.conflict?.message
-                    : `Allow TaskNotes Base views at ${String(configuration.value)}`}
-                </li>
-              ))}
-            {session.update.typePacks.map((update) => (
-              <li key={update.id}>
-                {update.name}: {update.currentVersion ?? "not installed"} →{" "}
-                {update.desiredVersion}
-              </li>
-            ))}
-          </ul>
-          <p>
-            If you do not approve this setup, TaskNotes cannot create its
-            portable views in this collection. You can choose another collection
-            below.
-          </p>
-          <button
-            className="outline-action"
-            disabled={opening !== null || !session.update.canApply}
-            onClick={() => void applyCollectionSetup()}
-            type="button"
-          >
-            Apply reviewed setup
-          </button>
-        </section>
-      ) : null}
-      {session.status === "authorization_required" ? (
-        <section
-          className="connection-update"
-          aria-labelledby="access-review-title"
-        >
-          <h2 id="access-review-title">Review updated access</h2>
-          <p>
-            TaskNotes needs you to review its updated collection access in
-            mdbase before this collection can open.
-          </p>
-          <button
-            className="outline-action"
-            disabled={opening !== null}
-            onClick={() => void connect("reconnect")}
-            type="button"
-          >
-            {opening === "reconnect"
-              ? "Opening mdbase…"
-              : "Review updated access"}
-          </button>
-        </section>
-      ) : null}
-      <div className="welcome-actions">
-        {availableConnections.length ? (
-          <section
-            aria-labelledby="recent-collections-title"
-            className="welcome-collections"
-          >
-            <h2 id="recent-collections-title">
-              {reviewingCollection ? "Other collections" : "Recent collections"}
-            </h2>
-            <div className="welcome-collection-list">
-              {availableConnections.map((connection) => {
-                const hosted = isHostedCloudConnection(connection);
-                const authorityLabel = hosted
-                  ? "Hosted by mdbase"
-                  : "Connected computer";
-                const action =
-                  session.status === "setup_review_required" ? "Use" : "Open";
-                return (
-                  <button
-                    aria-label={`${action} ${connection.displayName}, ${authorityLabel}`}
-                    className="welcome-collection-row"
-                    disabled={busy}
-                    key={connection.collectionId}
-                    onClick={() => void open(connection.collectionId)}
-                    type="button"
-                  >
-                    <span className="welcome-collection-icon">
-                      {hosted ? (
-                        <Cloud aria-hidden="true" size={19} />
-                      ) : (
-                        <Monitor aria-hidden="true" size={19} />
-                      )}
-                    </span>
-                    <span className="welcome-collection-copy">
-                      <strong>{connection.displayName}</strong>
-                      <small>{authorityLabel}</small>
-                    </span>
-                    <span className="welcome-collection-open">
-                      {openingCollectionId === connection.collectionId ? (
-                        "Opening…"
-                      ) : (
-                        <ArrowRight aria-hidden="true" size={18} />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-        <div className="welcome-connect-action">
-          <button
-            className={
-              firstVisit
-                ? "welcome-primary-action"
-                : "outline-action welcome-secondary-action"
-            }
-            disabled={busy}
-            type="button"
-            onClick={() => void connect("another")}
-          >
-            {opening === "another" ? (
-              <span className="welcome-opening-label">Opening mdbase…</span>
-            ) : (
-              <>
-                <Plus aria-hidden="true" size={18} />
-                <span>
-                  {reviewingCollection
-                    ? "Choose a different collection in mdbase"
-                    : firstVisit
-                      ? "Choose a collection"
-                      : "Choose another collection in mdbase"}
-                </span>
-                <ArrowRight aria-hidden="true" size={18} />
-              </>
-            )}
-          </button>
-          <p role={authorizationPending ? "status" : undefined}>
-            {authorizationPending
-              ? "Complete your selection in the mdbase window."
-              : "mdbase will open so you can choose a collection and approve access."}
-          </p>
-        </div>
-        {selectedCollectionId &&
-        session.status !== "setup_review_required" &&
-        session.status !== "authorization_required" ? (
-          <button
-            className="text-action"
-            disabled={busy}
-            type="button"
-            onClick={() => void connect("reconnect")}
-          >
-            {opening === "reconnect"
-              ? "Opening mdbase…"
-              : `Reconnect ${selectedConnection?.displayName ?? "selected collection"}`}
-          </button>
-        ) : null}
-        {authorizationPending ? (
-          <button
-            className="welcome-cancel-action"
-            onClick={cancelAuthorization}
-            type="button"
-          >
-            Cancel
-          </button>
-        ) : null}
-        {onTryDemo ? (
-          <button
-            className="welcome-demo-action"
-            disabled={busy}
-            onClick={onTryDemo}
-            type="button"
-          >
-            Try a disposable demo
-          </button>
-        ) : null}
-      </div>
-    </main>
+    <CloudConnectionView
+      {...{
+        session,
+        sdk,
+        error,
+        startError,
+        retryAuthorization,
+        reviewingCollection,
+        firstVisit,
+        busy,
+        sdkWaiting,
+        authorizationPending,
+        opening,
+        openingCollectionId,
+        selectedCollectionId,
+        selectedConnection,
+        availableConnections,
+        connect,
+        open,
+        applyCollectionSetup,
+        cancelAuthorization,
+        onTryDemo,
+      }}
+      authorityFor={(id) => {
+        const legacy = sdk
+          ? undefined
+          : legacySession.connections.find((item) => item.collectionId === id);
+        return legacy ? isHostedCloudConnection(legacy) : null;
+      }}
+    />
   );
 }
 
