@@ -172,6 +172,84 @@ describe("resource setup in the original protected model ledger", () => {
     ])
       expect(() => modelResourcePlan(changed)).toThrow();
   });
+  it("allows current-only source policy only in a new v4 round with verified history", async () => {
+    const current = {
+      ...plan,
+      sourcePolicy: "current-only" as const,
+      sources: [],
+    };
+    expect(modelResourcePlan(current)).toEqual(current);
+    expect(() =>
+      modelResourcePlan({ ...current, sourcePolicy: "other" }),
+    ).toThrow();
+    expect(() =>
+      modelResourcePlan({ ...current, sources: plan.sources }),
+    ).toThrow();
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(() => journal().prepareResources(current, signal())).toThrow();
+    expect(uuid).not.toHaveBeenCalled();
+    const first = await journal().prepareResources(plan, signal());
+    for (const phase of ["prepared", "attempted", "confirmed"] as const) {
+      expect(() =>
+        decode(
+          {
+            version: 4,
+            scope,
+            mutationId: scope.collection,
+            phase: "prepared",
+            plan: current,
+            previous: { ...first, phase },
+          },
+          scope,
+        ),
+      ).toThrow();
+    }
+    expect(() => decode({ ...first, plan: current }, scope)).toThrow();
+    await journal().recordResourceAttempt(first.mutationId, signal());
+    await journal().recordResourceConfirmed(first.mutationId, signal());
+    const previous = await journal().recordResourceVerified(
+      first.mutationId,
+      signal(),
+    );
+    const next = await journal().prepareResourceRound(
+      current,
+      previous.mutationId,
+      signal(),
+    );
+    expect(next.previous).toEqual(previous);
+    expect(next.previous).not.toHaveProperty("plan.sourcePolicy");
+    expect(next.plan.sourcePolicy).toBe("current-only");
+    expect(await journal().load(signal())).toEqual(next);
+  });
+  it("never adds a source policy to an existing unfinished v4 definitions-only plan", async () => {
+    const first = await journal().prepareResources(plan, signal());
+    await journal().recordResourceAttempt(first.mutationId, signal());
+    await journal().recordResourceConfirmed(first.mutationId, signal());
+    const previous = await journal().recordResourceVerified(
+      first.mutationId,
+      signal(),
+    );
+    const next = await journal().prepareResourceRound(
+      { ...plan, sources: [] },
+      previous.mutationId,
+      signal(),
+    );
+    expect(next.plan).not.toHaveProperty("sourcePolicy");
+    await expect(
+      journal().prepareResourceRound(
+        { ...next.plan, sourcePolicy: "current-only" },
+        next.mutationId,
+        signal(),
+      ),
+    ).rejects.toMatchObject({ reason: "recovery_required" });
+    expect(await journal().load(signal())).toEqual(next);
+    const attempted = await journal().recordResourceAttempt(
+      next.mutationId,
+      signal(),
+    );
+    expect(attempted.plan).toEqual(next.plan);
+    expect(attempted.plan).not.toHaveProperty("sourcePolicy");
+  });
   it("uses one existing nonextractable key through every v3 phase", async () => {
     const key = vi.spyOn(crypto.subtle, "generateKey");
     const original = await journal().prepareResources(plan, signal());
@@ -200,6 +278,154 @@ describe("resource setup in the original protected model ledger", () => {
     await expect(
       journal().recordResourceAttempt(original.mutationId, signal()),
     ).rejects.toMatchObject({ reason: "recovery_required" });
+  });
+  it.each([2, 3] as const)(
+    "retains verified v%s unchanged inside a new v4 round and recovers it without a new identity",
+    async (version) => {
+      const store = journal();
+      let previous;
+      if (version === 2) {
+        const original = await store.prepare(
+          {
+            pack: plan.packs[0]!,
+            assessmentDigest: hash,
+            ops: puts,
+            readback: plan.resourceReadback,
+          },
+          signal(),
+        );
+        await store.recordAttempt(original.mutationId, signal());
+        await store.recordConfirmed(original.mutationId, signal());
+        previous = await store.recordVerified(original.mutationId, signal());
+      } else {
+        const original = await store.prepareResources(plan, signal());
+        await store.recordResourceAttempt(original.mutationId, signal());
+        await store.recordResourceConfirmed(original.mutationId, signal());
+        previous = await store.recordResourceVerified(
+          original.mutationId,
+          signal(),
+        );
+      }
+      const retained = structuredClone(previous);
+      const next = await store.prepareResourceRound(
+        { ...plan, sources: [] },
+        previous.mutationId,
+        signal(),
+      );
+      expect(next.version).toBe(4);
+      expect(next.mutationId).not.toBe(previous.mutationId);
+      expect(next.previous).toEqual(retained);
+      expect(Object.isFrozen(next.previous)).toBe(true);
+      expect(await journal().load(signal())).toEqual(next);
+      await journal().recordResourceAttempt(next.mutationId, signal());
+      await journal().recordResourceConfirmed(next.mutationId, signal());
+      const verified = await journal().recordResourceVerified(
+        next.mutationId,
+        signal(),
+      );
+      expect(verified).toEqual({ ...next, phase: "verified" });
+      expect(verified.version === 4 && verified.previous).toEqual(retained);
+      await expect(
+        journal().recordResourceAttempt(previous.mutationId, signal()),
+      ).rejects.toMatchObject({ reason: "binding" });
+    },
+  );
+  it.each(["prepared", "attempted", "confirmed"] as const)(
+    "refuses a new round while v3 is %s",
+    async (phase) => {
+      const original = await journal().prepareResources(plan, signal());
+      if (phase !== "prepared")
+        await journal().recordResourceAttempt(original.mutationId, signal());
+      if (phase === "confirmed")
+        await journal().recordResourceConfirmed(original.mutationId, signal());
+      const before = await journal().load(signal());
+      await expect(
+        journal().prepareResourceRound(plan, original.mutationId, signal()),
+      ).rejects.toMatchObject({ reason: "recovery_required" });
+      expect(await journal().load(signal())).toEqual(before);
+    },
+  );
+  it("rejects cross-scope/unverified ancestors, re-used mutation IDs and destructive additive plans", () => {
+    const previous = {
+      version: 3,
+      scope,
+      mutationId: scope.collection,
+      plan,
+      phase: "verified",
+    };
+    const round = {
+      version: 4,
+      scope,
+      mutationId: scope.account,
+      plan,
+      previous,
+      phase: "prepared",
+    };
+    expect(decode(round, scope)).toEqual(round);
+    for (const invalid of [
+      { ...round, previous: { ...previous, phase: "attempted" } },
+      {
+        ...round,
+        previous: {
+          ...previous,
+          scope: { ...scope, collection: scope.account },
+        },
+      },
+      { ...round, mutationId: previous.mutationId },
+      {
+        ...round,
+        plan: {
+          ...plan,
+          resourceOps: [
+            { ...puts[0]!, mustNotExist: false, baseRevision: hash },
+          ],
+        },
+      },
+    ])
+      expect(() => decode(invalid, scope)).toThrow();
+  });
+  it("preserves verified v1 bytes in a new round and bounds retained history", () => {
+    const previous = {
+      version: 1,
+      scope,
+      mutationId: scope.collection,
+      phase: "verified",
+      ops: [
+        {
+          kind: "resource_put",
+          path: "_contracts/task.md",
+          doc: "legacy contract\n",
+          mustNotExist: true,
+        },
+        {
+          kind: "resource_put",
+          path: "_types/task.md",
+          doc: "legacy type\n",
+          mustNotExist: true,
+        },
+      ],
+    };
+    const value = {
+      version: 4,
+      scope,
+      mutationId: scope.account,
+      phase: "verified",
+      plan,
+      previous,
+    };
+    expect(decode(value, scope)).toEqual(value);
+    let history = decode(value, scope);
+    for (let i = 0; i < 7; i++)
+      history = decode(
+        { ...value, mutationId: crypto.randomUUID(), previous: history },
+        scope,
+      );
+    expect(() =>
+      decode(
+        { ...value, mutationId: crypto.randomUUID(), previous: history },
+        scope,
+      ),
+    ).toThrow();
   });
   it("strict CAS permits only one concurrent v3 prepare and fences the loser", async () => {
     let arrivals = 0;

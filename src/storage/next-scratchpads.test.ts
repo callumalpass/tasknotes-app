@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCRATCHPAD_TYPE, type ScratchpadDocument } from "../domain/scratchpad";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { SCRATCH_IMAGE_TYPE } from "../domain/scratch-image";
+import { toValue } from "@mdbase-dev/sdk";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 async function fixture() {
@@ -208,6 +209,122 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     expect(await f.repository.getScratchpad(current.id)).toEqual(current);
   });
 
+  it("reads the creation lifecycle's portable identity from the original native UUID", async () => {
+    const f = await fixture();
+    const get = f.client.get.bind(f.client);
+    const nativePortableId = "91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9";
+    // MemoryReplica has no lifecycle planner. Mirror the actual Core on_create
+    // id.uuid assignment only in result READ, not a native authorization claim.
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      if (!record.types.includes(SCRATCHPAD_TYPE)) return record;
+      const frontmatter = new Map(record.frontmatter);
+      frontmatter.set("id", toValue(nativePortableId));
+      return { ...record, frontmatter };
+    });
+    const submit = vi.spyOn(f.client, "submit");
+    await expect(f.repository.getActiveScratchpad()).resolves.toMatchObject({
+      id: nativePortableId,
+      state: "active",
+    });
+    expect(submit).toHaveBeenCalledOnce();
+  });
+  it("recovers the original creation UUID and admission after an unanswered result READ", async () => {
+    const f = await fixture();
+    const submit = vi.spyOn(f.client, "submit");
+    const read = vi
+      .spyOn(f.client, "get")
+      .mockRejectedValueOnce(new Error("READ unavailable"));
+    await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+      problem: { code: "operation_outcome_unknown" },
+    });
+    const op = submit.mock.calls[0]![0][0]!;
+    expect(op.kind).toBe("create");
+    if (op.kind !== "create")
+      throw new Error("Expected the original create admission");
+    const current = await f.repository.getActiveScratchpad();
+    expect(current.state).toBe("active");
+    expect(submit).toHaveBeenCalledOnce();
+    expect(read.mock.calls.map(([id]) => id)).toEqual([op.id, op.id]);
+  });
+  it.each(["nativeId", "hold", "unresolved", "pending", "body"] as const)(
+    "does not certify an unsafe or changed original creation READ: %s",
+    async (field) => {
+      const f = await fixture();
+      const get = f.client.get.bind(f.client);
+      const submit = vi.spyOn(f.client, "submit");
+      vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+        const record = await get(...args);
+        if (field === "nativeId")
+          return { ...record, id: "00000000-0000-0000-0000-000000000003" };
+        if (field === "body")
+          return { ...record, body: "Changed after creation" };
+        if (field === "hold")
+          return {
+            ...record,
+            state: {
+              ...record.state,
+              hold: {
+                id: "00000000-0000-0000-0000-000000000003",
+                reason: "conflict" as const,
+              },
+            },
+          };
+        if (field === "unresolved")
+          return { ...record, state: { ...record.state, unresolved: 1 } };
+        return {
+          ...record,
+          state: { ...record.state, state: "pending" as const },
+        };
+      });
+      await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+        problem: { code: "operation_outcome_unknown" },
+      });
+      await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+        problem: { code: "operation_outcome_unknown" },
+      });
+      expect(submit).toHaveBeenCalledOnce();
+    },
+  );
+  it("decodes a new note's native-assigned portable ID without relaxing the previous-note witness", async () => {
+    const f = await fixture();
+    const previous = seed(f, "previous-note");
+    const current = await f.repository.getActiveScratchpad();
+    const get = f.client.get.bind(f.client);
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      if (record.id === previous.id) return record;
+      const frontmatter = new Map(record.frontmatter);
+      frontmatter.set("id", toValue("91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9"));
+      return { ...record, frontmatter };
+    });
+    const result = await f.repository.startNewScratchpad(
+      saveInput(current, "Final body"),
+    );
+    expect(result.previous.id).toBe(current.id);
+    expect(result.current.id).toBe("91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9");
+  });
+  it("still refuses a changed portable ID when reading an existing note after save", async () => {
+    const f = await fixture();
+    seed(f, "existing-note");
+    const current = await f.repository.getActiveScratchpad();
+    const get = f.client.get.bind(f.client);
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      const frontmatter = new Map(record.frontmatter);
+      frontmatter.set("id", toValue("changed-existing-id"));
+      return { ...record, frontmatter };
+    });
+    await expect(
+      f.repository.saveScratchpad(saveInput(current, "Edit")),
+    ).rejects.toMatchObject({
+      problem: { code: "operation_outcome_unknown" },
+      cause: {
+        message:
+          "The saved scratchpad's portable identity changed. Reload before continuing.",
+      },
+    });
+  });
   it("saves portable identities to the original native record and rebases only identical bodies", async () => {
     const f = await fixture();
     const native = seed(f, "portable-note");

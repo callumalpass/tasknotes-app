@@ -11,8 +11,10 @@ import type {
   AppInstallationCollectionConsentView,
 } from "@mdbase-dev/sdk/app-host";
 
+import type { NextApplicationRegistration } from "./next-application-registration";
+
 /** Public BUILD context and immutable artifact, not an auth/credential message. */
-export interface NextInstallationBuildInput {
+export interface NextInstallationBuildInput extends NextApplicationRegistration {
   environment: "lab" | "production";
   appOrigin: string;
   release: AppBundledReleaseTrust;
@@ -53,6 +55,12 @@ export type NextInstallationCommand =
       kind: "model-resource-setup-intent";
       action: "prepare";
       plan: ModelResourcePlan;
+    }
+  | {
+      kind: "model-resource-setup-intent";
+      action: "prepare-round";
+      plan: ModelResourcePlan;
+      previousMutationId: string;
     }
   | {
       kind: "model-resource-setup-intent";
@@ -128,8 +136,17 @@ export function isNextInstallationCommand(
     case "set-foreground":
       return keys === "active,kind" && typeof command.active === "boolean";
     case "model-resource-setup-intent":
-      if (command.action === "prepare") {
-        if (keys !== "action,kind,plan") return false;
+      if (command.action === "prepare" || command.action === "prepare-round") {
+        if (command.action === "prepare-round") {
+          if (
+            keys !== "action,kind,plan,previousMutationId" ||
+            typeof command.previousMutationId !== "string" ||
+            !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(
+              command.previousMutationId,
+            )
+          )
+            return false;
+        } else if (keys !== "action,kind,plan") return false;
         try {
           modelResourcePlan(command.plan);
           return true;

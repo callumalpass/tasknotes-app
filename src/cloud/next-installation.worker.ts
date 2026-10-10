@@ -59,6 +59,8 @@ async function dispatch(
     controller = await NextTaskNotesInstallation.open({
       environment: build.environment,
       appOrigin: build.appOrigin,
+      appId: build.appId,
+      appName: build.appName,
       release: build.release,
       mode: command.mode,
       signal: lifetime.signal,

@@ -26,7 +26,9 @@ import {
   type AppReplicaLease,
 } from "@mdbase-dev/sdk/app-host";
 
-export interface NextInstallationOptions {
+import type { NextApplicationRegistration } from "./next-application-registration";
+
+export interface NextInstallationOptions extends NextApplicationRegistration {
   readonly environment: "lab" | "production";
   readonly appOrigin: string;
   /** Independently authenticated BUILD module, never a UI/redirect parameter. */
@@ -97,7 +99,8 @@ export class NextTaskNotesInstallation {
           environmentSelection: controller.selection,
           origin: options.appOrigin,
           cpOrigin: controller.selection.cpOrigin,
-          appId: "tasknotes-web",
+          appId: options.appId,
+          appName: options.appName,
           mode: options.mode,
           signal: controller.flowLifetime.signal,
           locks: options.locks,
@@ -547,6 +550,12 @@ export class NextTaskNotesInstallation {
       switch (command.action) {
         case "load":
           return store.load(signal);
+        case "prepare-round":
+          return store.prepareResourceRound(
+            command.plan,
+            command.previousMutationId,
+            signal,
+          );
         case "prepare":
           return command.kind === "model-resource-setup-intent"
             ? store.prepareResources(command.plan, signal)

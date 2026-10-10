@@ -208,6 +208,19 @@ describe("native installation Worker public protocol (source only)", () => {
       plan,
     };
     expect(isNextInstallationCommand(prepare)).toBe(true);
+    const round = {
+      ...prepare,
+      action: "prepare-round",
+      previousMutationId: "11111111-1111-4111-8111-111111111111",
+    };
+    expect(isNextInstallationCommand(round)).toBe(true);
+    for (const invalid of [
+      { ...round, previousMutationId: "replacement" },
+      { ...round, scope: {} },
+      { ...round, previous: {} },
+      { ...round, plan: { ...plan, resourceOps: [], sources: [] } },
+    ])
+      expect(isNextInstallationCommand(invalid)).toBe(false);
     for (const action of ["attempt", "confirm", "verify"]) {
       expect(
         isNextInstallationCommand({

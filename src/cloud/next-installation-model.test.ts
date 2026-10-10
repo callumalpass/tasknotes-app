@@ -7,7 +7,12 @@ import {
 } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { init, loadCatalog } from "mdbase";
-import { nativeResourceSetupAssessment } from "../storage/next-resource-plan";
+import {
+  nativeResourceSetupAssessment,
+  captureResourceSetupPlan,
+} from "../storage/next-resource-plan";
+import { modelResourceInventory } from "../storage/next-model-resources";
+import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import { resourceSetupPlan } from "../test/resource-setup-plan";
 import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
@@ -49,6 +54,8 @@ const scope: ModelSetupScope = {
   collection: "33333333-3333-4333-8333-333333333333",
 };
 const build = {
+  appId: "5cdfa020-c201-4da8-845a-f2cc9969eade",
+  appName: "TaskNotes",
   environment: "lab",
   appOrigin: "http://127.0.0.1:48319",
   release: {},
@@ -151,7 +158,23 @@ class ControlWorker {
               mutationId: crypto.randomUUID(),
               phase: "prepared",
             };
-          if ("mutationId" in command && this.intent?.version === 3)
+          if (
+            command.action === "prepare-round" &&
+            this.intent?.phase === "verified" &&
+            this.intent.mutationId === command.previousMutationId
+          )
+            this.intent = {
+              version: 4,
+              scope,
+              mutationId: crypto.randomUUID(),
+              plan: command.plan,
+              phase: "prepared",
+              previous: structuredClone(this.intent),
+            };
+          if (
+            "mutationId" in command &&
+            (this.intent?.version === 3 || this.intent?.version === 4)
+          )
             this.intent = {
               ...this.intent,
               phase:
@@ -310,41 +333,61 @@ async function fixture({
       collectionRevision: "sha256:" + "ab".repeat(32),
     }),
   );
+  // Real describe() reads an already-resolved native catalog. This protocol
+  // stand-in must not recompile identical WASM definitions for each Base get.
+  // Still READ resources on every call; any document change selects a new cache.
+  let catalogCache:
+    | {
+        signature: string;
+        result: Promise<wire.DescribeResult>;
+      }
+    | undefined;
   vi.spyOn(client, "describe").mockImplementation(async (signal) => {
     const listed = await client.resources.list({ text: true, signal });
     const resources = Object.fromEntries(
       listed.resources.map((resource) => [resource.path, resource.text!]),
     );
-    const core = await loadCatalog(resources);
-    const catalog: wire.DescribeResult = {
-      specVersion: "0.3.0",
-      inclusion: { include: [] },
-      issues: [],
-      settings: new Map(),
-      contracts: core.contracts.map((contract) => ({
-        id: contract.id,
-        version: contract.version,
-        digest: contract.digest,
-        path: contract.path,
-        contractType: "record" as const,
-        implementedBy: core.implementations
-          .filter((implementation) => implementation.contract === contract.id)
-          .map((implementation) => implementation.type),
-      })),
-      types: core.types.map((type) => ({
-        name: type.name,
-        path: type.path,
-        implements: core.implementations
-          .filter((implementation) => implementation.type === type.name)
-          .map((implementation) => ({
-            contract: implementation.contract,
-            version: implementation.version,
-            fields: new Map(implementation.fields),
-            binding: toValue(implementation.binding as never),
-          })),
-      })),
-    };
-    return catalog;
+    const signature = JSON.stringify(Object.entries(resources).sort());
+    if (!catalogCache || catalogCache.signature !== signature) {
+      catalogCache = {
+        signature,
+        result: (async () => {
+          const core = await loadCatalog(resources);
+          const catalog: wire.DescribeResult = {
+            specVersion: "0.3.0",
+            inclusion: { include: [] },
+            issues: [],
+            settings: new Map(),
+            contracts: core.contracts.map((contract) => ({
+              id: contract.id,
+              version: contract.version,
+              digest: contract.digest,
+              path: contract.path,
+              contractType: "record" as const,
+              implementedBy: core.implementations
+                .filter(
+                  (implementation) => implementation.contract === contract.id,
+                )
+                .map((implementation) => implementation.type),
+            })),
+            types: core.types.map((type) => ({
+              name: type.name,
+              path: type.path,
+              implements: core.implementations
+                .filter((implementation) => implementation.type === type.name)
+                .map((implementation) => ({
+                  contract: implementation.contract,
+                  version: implementation.version,
+                  fields: new Map(implementation.fields),
+                  binding: toValue(implementation.binding as never),
+                })),
+            })),
+          };
+          return catalog;
+        })(),
+      };
+    }
+    return structuredClone(await catalogCache.result);
   });
   vi.mocked(connect).mockResolvedValueOnce(client);
   const { worker: owner } = await NextInstallationWorker.open(
@@ -354,10 +397,43 @@ async function fixture({
     lifetime,
   );
   owners.push(owner);
-  return { owner, worker: ControlWorker.last, client, replica };
+  return {
+    owner,
+    worker: ControlWorker.last,
+    client,
+    replica,
+    sourceDocuments,
+  };
 }
 // One real SDK MemoryReplica client; control/port/catalog stand-ins, not native
 // receipt/READ/LAB qualification. No second client or production host is opened.
+async function verifiedTaskOnlyFixture() {
+  const f = await fixture();
+  const signal = new AbortController().signal;
+  const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
+  const assessment = await nativeModelPackAssessment(resources, signal);
+  const plan = await nativeModelPackPlan(
+    resources,
+    assessment.assessment_digest,
+    signal,
+  );
+  const previous: ModelSetupIntent = {
+    version: 2,
+    scope,
+    mutationId: crypto.randomUUID(),
+    phase: "verified",
+    plan,
+  };
+  await Promise.all(
+    (
+      await f.client.submit([...plan.ops], { mutationId: previous.mutationId })
+    ).map((write) => write.confirmed),
+  );
+  f.worker.intent = structuredClone(previous);
+  const repository = await f.owner.openCollection(scope.collection);
+  const submit = vi.spyOn(f.client, "submit");
+  return { ...f, repository, submit, previous };
+}
 describe("original Worker model journal and held repository wiring", () => {
   it("opening a creator stays read-only until explicit setup submits and completes its original resource plan", async () => {
     const f = await fixture();
@@ -398,6 +474,14 @@ describe("original Worker model journal and held repository wiring", () => {
           expect.objectContaining({
             id: "tasknotes.task",
             version: "0.3.0-rc.18",
+          }),
+          expect.objectContaining({
+            id: "tasknotes.scratch",
+            version: "1.2.0",
+          }),
+          expect.objectContaining({
+            id: "tasknotes.scratch-image",
+            version: "1.2.0",
           }),
           expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
         ],
@@ -639,11 +723,15 @@ describe("original Worker model journal and held repository wiring", () => {
       });
       expect(f.worker.markerConfirmed).toBe(false);
       expect(await repository.modelSetup!.inspect()).toMatchObject({
-        state: phase === "verified" ? "ready" : "outcome_unknown",
+        state: phase === "verified" ? "required" : "outcome_unknown",
       });
-      await repository.modelSetup!.resume();
+      if (phase === "verified")
+        await expect(repository.modelSetup!.resume()).rejects.toMatchObject({
+          view: { state: "blocked" },
+        });
+      else await repository.modelSetup!.resume();
       expect(await repository.modelSetup!.inspect()).toEqual({
-        state: "ready",
+        state: "required",
       });
       expect(f.worker.intent).toEqual({
         version: 2,
@@ -662,9 +750,403 @@ describe("original Worker model journal and held repository wiring", () => {
           (request) => request.command.kind === "model-resource-setup-intent",
         ),
       ).toEqual([]);
-      expect(f.worker.markerConfirmed).toBe(true);
+      expect(f.worker.markerConfirmed).toBe(phase !== "verified");
     },
   );
+  it("retains the verified predecessor across an additive round's lost completion reply", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    f.worker.loseMarkerOnce = true;
+    await expect(f.repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(round!.mutationId).not.toBe(f.previous.mutationId);
+    expect(f.submit).toHaveBeenCalledOnce();
+    expect(
+      f.submit.mock.calls[0]![0].flatMap((op) =>
+        op.kind === "resource_put" && op.path.startsWith("_types/")
+          ? [op.path]
+          : [],
+      ),
+    ).toEqual(["_types/obsidian_base.md"]);
+    expect(round).toMatchObject({
+      plan: { sourcePolicy: "current-only", sources: [] },
+    });
+    await f.repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
+  it("an explicit additive setup round becomes ready and repeated install remains read-only", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    await f.repository.modelSetup!.install();
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(await f.repository.modelSetup!.inspect()).toEqual({
+      state: "ready",
+    });
+    await f.repository.modelSetup!.install();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
+  it("keeps verified history immutable after current source and definition edits", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    if (original.version !== 3)
+      throw Error("Expected initial resource history");
+    const source = original.plan.sources[0]!;
+    const edited = source.document + "\n# User-owned source notes\n";
+    await (
+      await f.client.update(source.id, { body: edited })
+    ).confirmed;
+    f.sourceDocuments.set(source.id, edited);
+    const definition = await f.client.resources.get("_types/task.md");
+    await (
+      await f.client.resources.put(
+        definition.path,
+        definition.text! + "\nUser-owned definition notes.\n",
+        { baseRevision: definition.revision },
+      )
+    ).confirmed;
+    const submit = vi.spyOn(f.client, "submit");
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    await repository.modelSetup!.install();
+    await repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+  });
+  it("accepts genuine pending source edits in current readiness without changing verified history", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    if (original.version !== 3)
+      throw Error("Expected completed source history");
+    const source = original.plan.sources[0]!;
+    vi.useFakeTimers();
+    try {
+      const edited = source.document + "\n# Local source edit awaiting ACK\n";
+      const write = await f.client.update(
+        source.id,
+        { body: edited },
+        { wait: "pending" },
+      );
+      f.sourceDocuments.set(source.id, edited);
+      expect(write.receipt.state).toBe("pending");
+      expect(
+        (await f.client.get(source.id, { document: true })).state.state,
+      ).toBe("pending");
+      const submit = vi.spyOn(f.client, "submit");
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      expect(await repository.modelSetup!.inspect()).toEqual({
+        state: "ready",
+      });
+      await repository.modelSetup!.install();
+      await repository.modelSetup!.resume();
+      expect(f.worker.intent).toEqual(original);
+      expect(submit).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      const get = vi.mocked(f.client.get).getMockImplementation()!;
+      for (const problem of [
+        { hold: { id: source.id, reason: "conflict" as const } },
+        { unresolved: 1 },
+      ]) {
+        vi.mocked(f.client.get).mockImplementation(async (...args) => {
+          const record = await get(...args);
+          return record.id === source.id
+            ? { ...record, state: { ...record.state, ...problem } }
+            : record;
+        });
+        expect(await repository.modelSetup!.inspect()).toMatchObject({
+          state: "blocked",
+        });
+        expect(f.worker.intent).toEqual(original);
+        expect(submit).not.toHaveBeenCalled();
+      }
+      vi.mocked(f.client.get).mockImplementation(get);
+    } finally {
+      f.replica.confirmAll();
+      vi.useRealTimers();
+    }
+  });
+  it("does not resurrect a deleted default source after verified history", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    if (original.version !== 3)
+      throw Error("Expected initial resource history");
+    const source = original.plan.sources[0]!;
+    await (
+      await f.client.delete(source.id)
+    ).confirmed;
+    f.sourceDocuments.delete(source.id);
+    const submit = vi.spyOn(f.client, "submit");
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    await repository.modelSetup!.install();
+    await repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    await expect(f.client.get(source.id)).rejects.toMatchObject({
+      code: "not_found",
+    });
+  });
+  it("accepts user-owned implementing task and view types without factory paths", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    for (const [path, name, replacement] of [
+      ["_types/task.md", "task", "company_task"],
+      ["_types/obsidian_base.md", "obsidian_base", "company_base"],
+    ]) {
+      const resource = await f.client.resources.get(path!);
+      const document = resource.text!.replace(
+        `\nname: ${name}\n`,
+        `\nname: ${replacement}\n`,
+      );
+      expect(document).not.toBe(resource.text);
+      await (
+        await f.client.resources.put(`_types/${replacement}.md`, document, {
+          mustNotExist: true,
+        })
+      ).confirmed;
+      await (
+        await f.client.resources.delete(path!, {
+          baseRevision: resource.revision,
+        })
+      ).confirmed;
+    }
+    const submit = vi.spyOn(f.client, "submit");
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(await repository.modelSetup!.inspect()).toEqual({ state: "ready" });
+    await repository.modelSetup!.install();
+    await repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+  });
+  it("requires explicit model setup, without reminting history or deleted defaults", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    if (original.version !== 3)
+      throw Error("Expected initial resource history");
+    for (const source of original.plan.sources) {
+      await (
+        await f.client.delete(source.id)
+      ).confirmed;
+      f.sourceDocuments.delete(source.id);
+    }
+    const model = await f.client.resources.get("_types/obsidian_base.md");
+    await (
+      await f.client.resources.delete(model.path, {
+        baseRevision: model.revision,
+      })
+    ).confirmed;
+    const task = await f.client.resources.get("_types/task.md");
+    await (
+      await f.client.resources.put(
+        task.path,
+        task.text! + "\nCurrent task customization.\n",
+        { baseRevision: task.revision },
+      )
+    ).confirmed;
+    const submit = vi.spyOn(f.client, "submit");
+    expect(await repository.modelSetup!.inspect()).toEqual({
+      state: "required",
+    });
+    expect(submit).not.toHaveBeenCalled();
+    // Core intentionally does not reseed a deliberately deleted installed seed.
+    // Never reset it, submit metadata-only work or call that work ready.
+    await expect(repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).not.toHaveBeenCalled();
+    for (const source of original.plan.sources)
+      await expect(f.client.get(source.id)).rejects.toMatchObject({
+        code: "not_found",
+      });
+  });
+  it("retains factory readback for an old unfinished v4 definitions-only plan", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    const signal = new AbortController().signal;
+    for (const entry of bases.manifest.resources) {
+      const document = bases.resources.find(
+        (r) => r.source === entry.source,
+      )!.document;
+      await (
+        await f.client.resources.put(entry.target, document, {
+          mustNotExist: true,
+        })
+      ).confirmed;
+    }
+    const resources = Object.fromEntries(
+      (await modelResourceInventory(f.client, signal)).map((r) => [
+        r.path,
+        r.text!,
+      ]),
+    );
+    const initial = await nativeResourceSetupAssessment(
+      resources,
+      f.client,
+      taskNotesDefaultBaseSources,
+      signal,
+      true,
+    );
+    const seeded = captureResourceSetupPlan(initial).sources;
+    await Promise.all(
+      (
+        await f.client.submit(
+          seeded.map((s) => ({
+            kind: "create" as const,
+            id: s.id,
+            path: s.path,
+            document: s.document,
+          })),
+        )
+      ).map((w) => w.confirmed),
+    );
+    const plan = captureResourceSetupPlan(
+      await nativeResourceSetupAssessment(
+        resources,
+        f.client,
+        taskNotesDefaultBaseSources,
+        signal,
+        true,
+      ),
+    );
+    expect(plan.sources).toEqual([]);
+    expect(plan).not.toHaveProperty("sourcePolicy");
+    const old = {
+      version: 4 as const,
+      scope,
+      mutationId: crypto.randomUUID(),
+      phase: "prepared" as const,
+      plan,
+      previous: f.previous,
+    };
+    f.worker.intent = structuredClone(old);
+    const deleted = seeded[0]!;
+    await (
+      await f.client.delete(deleted.id)
+    ).confirmed;
+    f.sourceDocuments.delete(deleted.id);
+    f.submit.mockClear();
+    await expect(f.repository.modelSetup!.resume()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(f.worker.intent).toEqual({ ...old, phase: "confirmed" });
+    expect(f.worker.intent).not.toHaveProperty("plan.sourcePolicy");
+    expect(f.submit).toHaveBeenCalledOnce();
+    expect(f.submit.mock.calls[0]![0]).toEqual(plan.resourceOps);
+    await expect(f.repository.modelSetup!.resume()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(f.submit).toHaveBeenCalledOnce();
+    expect(f.worker.intent).toEqual({ ...old, phase: "confirmed" });
+  });
+  it("uses current models and custom/deleted sources across immutable v4 predecessors", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    const task = await f.client.resources.get("_types/task.md");
+    await (
+      await f.client.resources.put(
+        task.path,
+        task.text! + "\nBefore additive round customization.\n",
+        { baseRevision: task.revision },
+      )
+    ).confirmed;
+    await f.repository.modelSetup!.install();
+    const round = structuredClone(f.worker.intent!);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+      plan: { sourcePolicy: "current-only", sources: [] },
+    });
+    const base = await f.client.resources.get("_types/obsidian_base.md");
+    await (
+      await f.client.resources.put(
+        base.path,
+        base.text! + "\nAfter additive round customization.\n",
+        { baseRevision: base.revision },
+      )
+    ).confirmed;
+    const id = crypto.randomUUID();
+    await (
+      await f.client.submit([
+        {
+          kind: "create",
+          id,
+          path: "My Views/Custom.base",
+          document: "views: [{type: tasknotesTaskList, name: Custom}]\n",
+        },
+      ])
+    )[0]!.confirmed;
+    f.submit.mockClear();
+    expect(await f.repository.modelSetup!.inspect()).toEqual({
+      state: "ready",
+    });
+    await f.repository.modelSetup!.install();
+    await f.repository.modelSetup!.resume();
+    await (
+      await f.client.delete(id)
+    ).confirmed;
+    f.sourceDocuments.delete(id);
+    f.submit.mockClear();
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(await f.repository.modelSetup!.inspect()).toEqual({
+      state: "ready",
+    });
+    await f.repository.modelSetup!.install();
+    await f.repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+  });
+  it("refuses mismatched current native source identity without altering verified history", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    const read = vi
+      .mocked(f.client.readAppBasesViewSource)
+      .getMockImplementation()!
+      .bind(f.client);
+    vi.spyOn(f.client, "readAppBasesViewSource").mockImplementation(
+      async (...args) => {
+        const result = await read(...args);
+        return result.kind === "success"
+          ? { ...result, view: { ...result.view, record: crypto.randomUUID() } }
+          : result;
+      },
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    expect(await repository.modelSetup!.inspect()).toMatchObject({
+      state: "blocked",
+    });
+    await expect(repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "blocked" },
+    });
+    expect(f.worker.intent).toEqual(original);
+    expect(submit).not.toHaveBeenCalled();
+  });
   it("rejects a v2 reply to v3 preparation without replacing the owner or converting the original intent", async () => {
     const f = await fixture({ created: false });
     await f.owner.openCollection(scope.collection);

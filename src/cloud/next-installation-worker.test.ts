@@ -5,7 +5,9 @@ import type {
   NextInstallationRequest,
   NextInstallationResponse,
 } from "./next-installation-protocol";
+import { TASKNOTES_APPLICATION_REGISTRATION } from "./next-application-registration";
 const build = {
+  ...TASKNOTES_APPLICATION_REGISTRATION,
   environment: "lab",
   appOrigin: "http://127.0.0.1:48218",
   release: {},
@@ -103,7 +105,10 @@ describe("installation Worker transport (source mocks, not LAB/native qualificat
     expect(worker.requests.map((request) => request.command.kind)).toEqual([
       "open",
     ]);
-    expect(worker.requests[0]!.command).toMatchObject({ mode: "existing" });
+    expect(worker.requests[0]!.command).toMatchObject({
+      mode: "existing",
+      build: { ...TASKNOTES_APPLICATION_REGISTRATION },
+    });
     const started = client.start();
     await expect(client.exchange()).rejects.toThrow("busy");
     worker.ok();

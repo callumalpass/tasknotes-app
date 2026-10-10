@@ -134,6 +134,7 @@ import {
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { ConnectedTaskIndex } from "./connected-task-index";
+import { BoundedCache } from "./bounded-cache";
 import {
   connectedTaskRelationships,
   connectedTaskStats,
@@ -240,6 +241,17 @@ export class NextTaskRepository implements TaskRepository {
   private readonly stopStatus: () => void;
   private readonly stopHolds: () => void;
   private viewCatalog: TaskViewDocument[] = [];
+  private readonly viewExecutions = new BoundedCache<{
+    signature: string;
+    execution: TaskViewExecution | null;
+  }>(
+    16,
+    8 * 1024 * 1024,
+    (slot) =>
+      2 *
+      (slot.signature.length +
+        (slot.execution ? JSON.stringify(slot.execution).length : 0)),
+  );
   private nativeViews = new Map<string, AppBasesDescriptor>();
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
@@ -737,9 +749,40 @@ export class NextTaskRepository implements TaskRepository {
     return note;
   }
 
+  private async createdScratchpad(
+    nativeId: string,
+    receipt: wire.Receipt,
+    signal: AbortSignal,
+  ): Promise<ScratchpadDocument> {
+    const record = await this.client.get(nativeId, { body: true }, signal);
+    signal.throwIfAborted();
+    const admitted = receipt.records?.find((item) => item.id === nativeId);
+    if (
+      record.id !== nativeId ||
+      record.state.state !== "confirmed" ||
+      record.state.hold ||
+      record.state.unresolved ||
+      (receipt.records !== undefined &&
+        (!admitted ||
+          admitted.path !== record.path ||
+          admitted.revision !== record.revision))
+    )
+      throw new Error(
+        "The original created scratchpad could not be confirmed by its native identity and revision.",
+      );
+    // Native on_create may assign the portable ID. Decode its actual result
+    // only for this original creation; existing-note witnesses stay exact.
+    const note = this.scratchpad(record);
+    if (note.state !== "active" || note.body !== "")
+      throw new Error("The created scratchpad changed before its result READ.");
+    return note;
+  }
+
   getActiveScratchpad(): Promise<ScratchpadDocument> {
     const signal = this.signal();
-    let target: { nativeId: string; portableId: string };
+    let target:
+      | { nativeId: string; created: true }
+      | { nativeId: string; portableId: string };
     return this.mutations.run(
       {
         key: JSON.stringify(["scratchpad:active"]),
@@ -753,7 +796,7 @@ export class NextTaskRepository implements TaskRepository {
             const values = newScratchpadValues();
             target = {
               nativeId: crypto.randomUUID(),
-              portableId: values.frontmatter.id as string,
+              created: true,
             };
             return () =>
               this.client.create(
@@ -797,12 +840,19 @@ export class NextTaskRepository implements TaskRepository {
               })
             )[0]!;
         },
-        confirmed: async (_, requestSignal) => {
-          const current = await this.savedScratchpad(
-            target.nativeId,
-            target.portableId,
-            requestSignal,
-          );
+        confirmed: async (receipt, requestSignal) => {
+          const current =
+            "created" in target
+              ? await this.createdScratchpad(
+                  target.nativeId,
+                  receipt,
+                  requestSignal,
+                )
+              : await this.savedScratchpad(
+                  target.nativeId,
+                  target.portableId,
+                  requestSignal,
+                );
           this.reached();
           this.emit("data");
           return current;
@@ -877,7 +927,7 @@ export class NextTaskRepository implements TaskRepository {
     const signal = this.signal();
     const captured = structuredClone(input);
     let previousId: string;
-    let next: { nativeId: string; portableId: string };
+    let next: { nativeId: string };
     return this.mutations.run(
       {
         key: JSON.stringify(["scratchpad:new", captured]),
@@ -889,10 +939,7 @@ export class NextTaskRepository implements TaskRepository {
           const now = new Date().toISOString();
           const values = newScratchpadValues(now);
           previousId = record.id;
-          next = {
-            nativeId: crypto.randomUUID(),
-            portableId: values.frontmatter.id as string,
-          };
+          next = { nativeId: crypto.randomUUID() };
           const ops: wire.Op[] = [
             this.client.updateOp(record, {
               patch: scratchpadFrontmatter(current, {
@@ -914,15 +961,15 @@ export class NextTaskRepository implements TaskRepository {
               })
             )[0]!;
         },
-        confirmed: async (_, requestSignal) => {
+        confirmed: async (receipt, requestSignal) => {
           const previous = await this.savedScratchpad(
             previousId,
             captured.id,
             requestSignal,
           );
-          const current = await this.savedScratchpad(
+          const current = await this.createdScratchpad(
             next.nativeId,
-            next.portableId,
+            receipt,
             requestSignal,
           );
           this.reached();
@@ -2004,12 +2051,22 @@ export class NextTaskRepository implements TaskRepository {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });
     signal.throwIfAborted();
+    // Capture still uses the primary provider's defaults. The collection-wide
+    // settings port has no provider selector; do not imply those settings can
+    // safely edit an arbitrary first type in a multi-provider collection.
     return this.providers[0]!.model.configuration();
   }
   async taskModelSettingsAccess() {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });
     signal.throwIfAborted();
+    if (this.providers.length !== 1)
+      return {
+        writable: false as const,
+        source: "Multiple task type definitions",
+        reason:
+          "This collection has several task types. Edit each type's settings in mdbase.",
+      };
     const source = this.providers[0]!.sourcePath;
     if (!this.client.hello.grant.capabilities.includes("definitions.manage"))
       return {
@@ -2036,11 +2093,20 @@ export class NextTaskRepository implements TaskRepository {
     owner.throwIfAborted();
     await this.initialize({ deferTaskIndex: true });
     owner.throwIfAborted();
+    if (this.providers.length !== 1)
+      throw new Error(
+        "This collection has several task types. Edit each type's settings in mdbase.",
+      );
     const source = this.providers[0]!.sourcePath;
     await this.mutations.run(
       {
         key: JSON.stringify(["task:settings", patch]),
         prepare: async (mutationId, signal) => {
+          const providers = await nextTaskProviders(this.client, signal);
+          if (providers.length !== 1 || providers[0]!.sourcePath !== source)
+            throw new Error(
+              "Task type selection changed. Reload before editing its settings.",
+            );
           const resource = await this.client.resources.get(source, signal);
           if (resource.text === undefined)
             throw new Error("The replica did not supply the task type source.");
@@ -2101,7 +2167,7 @@ export class NextTaskRepository implements TaskRepository {
               path: descriptor.path,
               revision: descriptor.sourceRevision,
               format: "obsidian.base",
-              writable: false,
+              writable: this.hasViewSourceGrant("records.edit"),
             },
             views: [],
           };
@@ -2134,10 +2200,29 @@ export class NextTaskRepository implements TaskRepository {
     this.assertCurrentData(revision);
     this.nativeViews = descriptors;
     this.viewCatalog = [...documents.values()];
+    const live = new Set(
+      this.viewCatalog.flatMap((document) =>
+        document.views.map((view) => view.key),
+      ),
+    );
+    for (const key of this.viewExecutions.keys())
+      if (!live.has(key)) this.viewExecutions.delete(key);
     return structuredClone(this.viewCatalog);
   }
-  async cachedViewExecution() {
-    return null;
+  private viewExecutionSignature(view: TaskView, timezone: string): string {
+    return JSON.stringify([timezone, view]);
+  }
+  async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
+    this.signal().throwIfAborted();
+    const slot = this.viewExecutions.get(view.key);
+    if (
+      !slot?.execution ||
+      slot.signature !== this.viewExecutionSignature(view, runtimeTimezone())
+    )
+      return null;
+    // Cached rows are display-only; they never certify a live native cut or
+    // permit manual ordering while the new execution is being loaded.
+    return { ...structuredClone(slot.execution), stale: true };
   }
   private nativeSourceDescriptor(path: string): AppBasesDescriptor {
     const matches = [...this.nativeViews.values()].filter(
@@ -2182,16 +2267,19 @@ export class NextTaskRepository implements TaskRepository {
     this.assertCurrentData(revision);
     return result;
   }
+  private hasViewSourceGrant(capability: "records.edit" | "records.delete") {
+    const grant = this.client.hello.grant;
+    return (
+      grant.role !== "viewer" &&
+      grant.capabilities.includes("collection.read") &&
+      grant.capabilities.includes(capability) &&
+      grant.fileFolders === undefined
+    );
+  }
   private requireViewSourceGrant(
     capability: "records.edit" | "records.delete",
   ) {
-    const grant = this.client.hello.grant;
-    if (
-      grant.role === "viewer" ||
-      !grant.capabilities.includes("collection.read") ||
-      !grant.capabilities.includes(capability) ||
-      grant.fileFolders !== undefined
-    )
+    if (!this.hasViewSourceGrant(capability))
       throw nativeUnsupported(
         "This session does not provide the required full-scope view-source grant.",
       );
@@ -2240,6 +2328,13 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const descriptor = this.nativeView(view);
     const timezone = runtimeTimezone();
+    const signature = this.viewExecutionSignature(view, timezone);
+    const previous = this.viewExecutions.get(view.key);
+    const slot = {
+      signature,
+      execution: previous?.signature === signature ? previous.execution : null,
+    };
+    this.viewExecutions.set(view.key, slot);
     const selected = await this.readNativeSource(descriptor, signal, timezone);
     this.assertCurrentData(revision);
     const result = await this.client.executeAppBases(
@@ -2316,6 +2411,10 @@ export class NextTaskRepository implements TaskRepository {
       },
       () => nextTaskSummary(records[rowIndex++]!, this.models),
     );
+    if (this.viewExecutions.get(view.key) === slot) {
+      slot.execution = structuredClone(normalized);
+      this.viewExecutions.set(view.key, slot);
+    }
     return normalized;
   }
   async executeView(view: TaskView): Promise<TaskViewExecution> {
@@ -2363,11 +2462,68 @@ export class NextTaskRepository implements TaskRepository {
       (input.path ? viewSourceFormat(input.path) : "obsidian.base");
     const path =
       input.path ?? newViewSourcePath(format, input.name ?? "New view");
-    viewSourceRecord(path, input.document);
-    // A resource reply supplies no record UUID. Do not submit a creation whose
-    // result cannot yet be identified and read through this held data port.
-    throw nativeUnsupported(
-      "Creating view sources is not available through this native session.",
+    if (
+      format !== "obsidian.base" ||
+      viewSourceFormat(path) !== "obsidian.base"
+    )
+      throw nativeUnsupported(
+        "This native session supports only obsidian.base view sources.",
+      );
+    const document = input.document;
+    viewSourceRecord(path, document);
+    let nativeId: string | undefined;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["view:create", path, document]),
+        prepare: async (mutationId, signal) => {
+          this.requireViewSourceGrant("records.edit");
+          signal.throwIfAborted();
+          nativeId = crypto.randomUUID();
+          const id = nativeId;
+          return () =>
+            this.client.views.createSource(
+              { id, path, document },
+              { mutationId, signal },
+            );
+        },
+        confirmed: async (receipt, signal) => {
+          if (!nativeId)
+            throw nativeUnsupported(
+              "The original native source identity is unavailable.",
+            );
+          const record = await this.client.views.getSourceRecord(nativeId, {
+            signal,
+          });
+          const admitted = receipt.records?.find(
+            (item) => item.id === nativeId,
+          );
+          if (
+            record.id !== nativeId ||
+            record.path !== path ||
+            record.document !== document ||
+            record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
+            (receipt.records !== undefined &&
+              (!admitted ||
+                admitted.path !== path ||
+                admitted.revision !== record.revision))
+          )
+            throw new Error(
+              "The confirmed native view source could not be read with its exact identity and document.",
+            );
+          signal.throwIfAborted();
+          this.forgetNativeSource(nativeId);
+          return {
+            recordId: record.id,
+            path: record.path,
+            format: "obsidian.base" as const,
+            revision: record.revision,
+            document: record.document!,
+          };
+        },
+      },
+      this.scope.signal,
     );
   }
   async updateViewSource(
@@ -2392,16 +2548,17 @@ export class NextTaskRepository implements TaskRepository {
             );
           // Whole-document replacement needs the actual public RecordView,
           // not an object reconstructed from a source descriptor or path.
-          const record = await this.client.get(
+          const record = await this.client.views.getSourceRecord(
             source.view.record,
-            { document: true },
-            signal,
+            { signal },
           );
           if (
             record.id !== source.view.record ||
             record.path !== source.view.path ||
             record.revision !== source.view.sourceRevision ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document !== source.source
           )
             throw new Error(
@@ -2411,8 +2568,7 @@ export class NextTaskRepository implements TaskRepository {
           this.requireViewSourceGrant("records.edit");
           target = structuredClone(source.view);
           return () =>
-            this.client.replaceDocument(record, input.document, {
-              ifRevision: source.view.sourceRevision,
+            this.client.views.updateSource(record, input.document, {
               mutationId,
               signal,
             });
@@ -2422,10 +2578,9 @@ export class NextTaskRepository implements TaskRepository {
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
-          const record = await this.client.get(
+          const record = await this.client.views.getSourceRecord(
             target.record,
-            { document: true },
-            signal,
+            { signal },
           );
           const admitted = receipt.records?.find(
             (item) => item.id === target!.record,
@@ -2434,6 +2589,8 @@ export class NextTaskRepository implements TaskRepository {
             record.id !== target.record ||
             record.path !== target.path ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document === undefined ||
             record.document !== input.document ||
             (receipt.records !== undefined &&
@@ -2472,19 +2629,47 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The view source changed. Reload it before deleting.",
             );
+          const record = await this.client.views.getSourceRecord(
+            source.view.record,
+            { signal },
+          );
+          if (
+            record.id !== source.view.record ||
+            record.path !== source.view.path ||
+            record.revision !== source.view.sourceRevision ||
+            record.document !== source.source ||
+            record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved
+          )
+            throw new Error(
+              "The native source changed before its complete record READ.",
+            );
+          signal.throwIfAborted();
+          this.requireViewSourceGrant("records.delete");
           target = structuredClone(source.view);
           return () =>
-            this.client.delete(source.view.record, {
-              ifRevision: source.view.sourceRevision,
+            this.client.delete(record, {
+              ifRevision: record.revision,
               mutationId,
               signal,
             });
         },
-        confirmed: async () => {
+        confirmed: async (_receipt, signal) => {
           if (!target)
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
+          const remaining = await this.client.find(
+            target.record,
+            { document: true },
+            signal,
+          );
+          if (remaining !== null)
+            throw new Error(
+              "The original native view source is still present after deletion.",
+            );
+          signal.throwIfAborted();
           this.forgetNativeSource(target.record);
         },
       },
@@ -2551,6 +2736,7 @@ export class NextTaskRepository implements TaskRepository {
     this.client.close();
     this.cache.clear();
     this.viewCatalog = [];
+    this.viewExecutions.clear();
     this.scratchFeedSnapshot = undefined;
     this.listeners.clear();
   }
@@ -2590,6 +2776,7 @@ export class NextTaskRepository implements TaskRepository {
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") {
       this.dataRevision++;
+      this.viewExecutions.clear();
       // Every data event, including accepted local writes, invalidates in-flight
       // snapshot promises. New readers must not join an obsolete generation.
       // The old revision guards remain; identity-checked cleanup cannot erase

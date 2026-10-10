@@ -5,6 +5,7 @@ import type {
 } from "@mdbase-dev/sdk/app-host";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import type { TaskViewExecution } from "../domain/view";
+import * as timezone from "../domain/runtime-timezone";
 
 // Explicit native-result stand-ins. Memory fixture supplies task metadata only;
 // never native execution/catalog/authority/startup or actual WASM proof.
@@ -87,6 +88,102 @@ async function fixture() {
 }
 
 describe("native saved-view adapter sequencing (stand-ins only)", () => {
+  it("retains a detached display-only execution for first paint without another native read", async () => {
+    const f = await fixture();
+    expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
+    const result = await f.repository.executeView(f.view);
+    result.rows[0]!.values["note.title"] = "caller changed result";
+    f.execute.mockClear();
+    f.source.mockClear();
+    const cached = await f.repository.cachedViewExecution(f.view);
+    expect(cached).toMatchObject({ stale: true, totalCount: 1 });
+    expect(cached!.rows[0]!.values["note.title"]).toBe("Native cell");
+    cached!.rows[0]!.values["note.title"] = "caller changed cache";
+    expect(
+      (await f.repository.cachedViewExecution(f.view))!.rows[0]!.values[
+        "note.title"
+      ],
+    ).toBe("Native cell");
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(f.source).not.toHaveBeenCalled();
+  });
+  it("does not reuse cached rows for changed source identity, view metadata or timezone", async () => {
+    const f = await fixture();
+    await f.repository.executeView(f.view);
+    for (const changed of [
+      {
+        ...f.view,
+        source: { ...f.view.source, revision: "sha256:" + "cd".repeat(32) },
+      },
+      { ...f.view, id: "2" },
+      { ...f.view, name: "Another view" },
+    ])
+      expect(await f.repository.cachedViewExecution(changed)).toBeNull();
+    const original = timezone.runtimeTimezone();
+    vi.spyOn(timezone, "runtimeTimezone").mockReturnValue(
+      original === "UTC" ? "Australia/Sydney" : "UTC",
+    );
+    expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
+  });
+  it("clears remembered executions on writes and refuses reads from suspended or disposed owners", async () => {
+    const f = await fixture();
+    await f.repository.executeView(f.view);
+    f.repository.suspend();
+    await expect(f.repository.cachedViewExecution(f.view)).rejects.toThrow();
+    f.repository.resume();
+    expect(await f.repository.cachedViewExecution(f.view)).toMatchObject({
+      stale: true,
+    });
+    await f.repository.create({ title: "Invalidate cached rows" });
+    expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
+    f.repository.dispose();
+    await expect(f.repository.cachedViewExecution(f.view)).rejects.toThrow();
+  });
+  it("cannot repopulate the cache with an execution invalidated while loading", async () => {
+    const f = await fixture();
+    let release!: (reply: typeof f.reply) => void;
+    f.execute.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const pending = f.repository.executeView(f.view);
+    const rejected = expect(pending).rejects.toMatchObject({
+      reason: "collection_changed",
+    });
+    await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
+    await f.repository.create({ title: "Concurrent change" });
+    release(f.reply);
+    await rejected;
+    expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
+  });
+  it("a slower earlier execution cannot replace a newer cached execution", async () => {
+    const f = await fixture();
+    let release!: (reply: typeof f.reply) => void;
+    f.execute.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const older = f.repository.executeView(f.view);
+    await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
+    f.execute.mockResolvedValueOnce({
+      ...f.reply,
+      rows: [
+        { ...f.reply.rows[0]!, cells: [{ kind: "text", value: "Newer cell" }] },
+      ],
+    });
+    await f.repository.executeView(f.view);
+    release(f.reply);
+    await older;
+    expect(
+      (await f.repository.cachedViewExecution(f.view))!.rows[0]!.values[
+        "note.title"
+      ],
+    ).toBe("Newer cell");
+  });
   it("uses original UUID/SHA/ordinal and selected metadata READ without generic fallback", async () => {
     const f = await fixture();
     const get = vi.spyOn(f.client, "get");
