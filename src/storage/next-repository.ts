@@ -2004,12 +2004,22 @@ export class NextTaskRepository implements TaskRepository {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });
     signal.throwIfAborted();
+    // Capture still uses the primary provider's defaults. The collection-wide
+    // settings port has no provider selector; do not imply those settings can
+    // safely edit an arbitrary first type in a multi-provider collection.
     return this.providers[0]!.model.configuration();
   }
   async taskModelSettingsAccess() {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });
     signal.throwIfAborted();
+    if (this.providers.length !== 1)
+      return {
+        writable: false as const,
+        source: "Multiple task type definitions",
+        reason:
+          "This collection has several task types. Edit each type's settings in mdbase.",
+      };
     const source = this.providers[0]!.sourcePath;
     if (!this.client.hello.grant.capabilities.includes("definitions.manage"))
       return {
@@ -2036,11 +2046,20 @@ export class NextTaskRepository implements TaskRepository {
     owner.throwIfAborted();
     await this.initialize({ deferTaskIndex: true });
     owner.throwIfAborted();
+    if (this.providers.length !== 1)
+      throw new Error(
+        "This collection has several task types. Edit each type's settings in mdbase.",
+      );
     const source = this.providers[0]!.sourcePath;
     await this.mutations.run(
       {
         key: JSON.stringify(["task:settings", patch]),
         prepare: async (mutationId, signal) => {
+          const providers = await nextTaskProviders(this.client, signal);
+          if (providers.length !== 1 || providers[0]!.sourcePath !== source)
+            throw new Error(
+              "Task type selection changed. Reload before editing its settings.",
+            );
           const resource = await this.client.resources.get(source, signal);
           if (resource.text === undefined)
             throw new Error("The replica did not supply the task type source.");
