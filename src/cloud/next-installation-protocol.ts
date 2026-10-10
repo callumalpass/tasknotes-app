@@ -11,8 +11,10 @@ import type {
   AppInstallationCollectionConsentView,
 } from "@mdbase-dev/sdk/app-host";
 
+import type { NextApplicationRegistration } from "./next-application-registration";
+
 /** Public BUILD context and immutable artifact, not an auth/credential message. */
-export interface NextInstallationBuildInput {
+export interface NextInstallationBuildInput extends NextApplicationRegistration {
   environment: "lab" | "production";
   appOrigin: string;
   release: AppBundledReleaseTrust;

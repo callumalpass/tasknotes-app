@@ -18,6 +18,22 @@ LAB uses `.env.lab.example` and the fixed isolated `VITE_TASKNOTES_LAB_ORIGIN=ht
 
 `requireTaskNotesAppEnvironment` is configuration validation, not authority or startup evidence. Native Worker/controller and ordinary startup wiring are being completed; no old-storage gate is required.
 
+## Registered application metadata
+
+The authenticated LAB build supplies the registered application ID
+`5cdfa020-c201-4da8-845a-f2cc9969eade` and exact name `TaskNotes` through the
+Worker to the protected SDK sign-in controller. The origin remains the fixed
+LAB origin above; neither metadata value is a grant, credential, or UI choice.
+The SDK archive is pinned to source `5369226d26baa338b98e25feed9c0454e52f5865`
+with provenance in `vendor/mdbase-dev-sdk-5369226d.json`.
+
+Existing protected app IDs, origins, environments, accounts, devices, namespaces,
+and key derivations are not rewritten. Refused original restoration stays refused;
+only an explicit user sign-in may start a new flow. There is no alias migration,
+automatic fresh-mode retry, or device replacement. This caller/source intake does
+not change the native runtime or trust pins and is not combined-runtime or
+live sign-in acceptance.
+
 ## Source intake and remaining work
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.

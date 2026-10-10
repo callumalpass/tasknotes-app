@@ -64,7 +64,7 @@
     "@mdbase-dev/connect": "0.1.0-beta.125",
     "@mdbase-dev/connect-protocol": "0.1.0-beta.125",
     "@mdbase-dev/obsidian-runtime": "file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz",
-    "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz",
+    "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz",
     "@mdbase-dev/ui": "0.1.0-beta.125",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tanstack/react-virtual": "3.14.11",

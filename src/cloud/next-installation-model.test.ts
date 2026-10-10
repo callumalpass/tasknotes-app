@@ -49,6 +49,8 @@ const scope: ModelSetupScope = {
   collection: "33333333-3333-4333-8333-333333333333",
 };
 const build = {
+  appId: "5cdfa020-c201-4da8-845a-f2cc9969eade",
+  appName: "TaskNotes",
   environment: "lab",
   appOrigin: "http://127.0.0.1:48319",
   release: {},

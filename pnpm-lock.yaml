@@ -86,8 +86,8 @@ importers:
         specifier: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
         version: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
       '@mdbase-dev/sdk':
-        specifier: file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz
-        version: file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz
+        specifier: file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz
+        version: file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz
       '@mdbase-dev/ui':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)
@@ -923,8 +923,8 @@ packages:
     version: 0.0.0
     engines: {node: '>=20'}
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz':
-    resolution: {integrity: sha512-HZ5TmsH4vn91StkmKuD6b1l/R+x7saR5l8hKvJMINnzr371NGO7NHpZyQefU+7J+qV+IjRwseUoxbHwIvzyvPA==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz}
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz':
+    resolution: {integrity: sha512-vLoZ7CrA+Yfi7ZL0N9mVEKZpaXadOAX11hffCCfBdt6hUIeHObWpqZFX6rSuTJdollYZxHnAqfRtFkE/w8mzTg==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 
@@ -4848,7 +4848,7 @@ snapshots:
     dependencies:
       '@sqlite.org/sqlite-wasm': 3.53.4-build2
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-57d484a2.tgz':
+  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-5369226d.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
