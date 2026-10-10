@@ -7,18 +7,18 @@ const root = new URL("../", import.meta.url);
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
     await readFile(
-      new URL("vendor/mdbase-dev-sdk-561501d0.json", root),
+      new URL("vendor/mdbase-dev-sdk-9ab0f31d.json", root),
       "utf8",
     ),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "561501d0c627b7808d02e403d65e949bdb78fa88",
+    "9ab0f31d43ae801241acb5fbc11f3be4ceefa76b",
   );
   assert.deepEqual(
     manifest.sourceIncludesPrs,
-    [799, 803, 804, 806, 807, 808, 809, 811],
+    [799, 803, 804, 806, 807, 808, 809, 810, 811, 814, 815, 816],
   );
   assert.deepEqual(manifest.consumerEntries, [
     "@mdbase-dev/sdk",
@@ -28,7 +28,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "8982d7e2442b29584931a965b96d3ddd0a2266fa70890c493a0ee1a7588e3948",
+    "ab4db6bde0e6b3d97a1d8ed9b8126b7f0fd69820b508869cb7b82c489ae4ef13",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -43,6 +43,28 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
+  );
+});
+
+test("SDK environment stays bound to the authenticated LAB build tuple", async () => {
+  const { selectAppEnvironment } = await import("@mdbase-dev/sdk/app-host");
+  const { appReleaseTrust } =
+    await import("../vendor/mdbase-app-lab-trust.mjs");
+  const release = appReleaseTrust();
+  const input = {
+    environment: "lab",
+    appOrigin: "http://127.0.0.1:48218",
+    release,
+  };
+  assert.equal(release.environment, "lab");
+  const selected = selectAppEnvironment(input);
+  assert.equal(selected.environment, "lab");
+  assert.equal(selected.cpOrigin, release.cpOrigin);
+  assert.equal(selected.logOrigin, release.logOrigin);
+  assert.equal(selected.assetSha256, release.assetSha256);
+  assert.equal(selected.allowLoopbackHttp, true);
+  assert.throws(() =>
+    selectAppEnvironment({ ...input, environment: "production" }),
   );
 });
 

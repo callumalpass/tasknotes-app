@@ -25,8 +25,8 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`561501d0c627b7808d02e403d65e949bdb78fa88`, with provenance in
-`vendor/mdbase-dev-sdk-561501d0.json`. A source pin does not identify the currently
+`9ab0f31d43ae801241acb5fbc11f3be4ceefa76b`, with provenance in
+`vendor/mdbase-dev-sdk-9ab0f31d.json`. A source pin does not identify the currently
 served build or authorize a runtime refresh, session enablement or deployment.
 
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
