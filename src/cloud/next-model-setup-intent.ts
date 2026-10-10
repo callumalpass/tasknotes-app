@@ -223,8 +223,12 @@ export function modelResourcePlan(value: unknown): ModelResourcePlan {
     typeof p !== "object" ||
     !exact(
       p,
-      "assessmentDigest,packs,provisionDigest,resourceOps,resourceReadback,sources",
+      Object.hasOwn(p, "sourcePolicy")
+        ? "assessmentDigest,packs,provisionDigest,resourceOps,resourceReadback,sourcePolicy,sources"
+        : "assessmentDigest,packs,provisionDigest,resourceOps,resourceReadback,sources",
     ) ||
+    (Object.hasOwn(p, "sourcePolicy") &&
+      (p.sourcePolicy !== "current-only" || p.sources?.length !== 0)) ||
     typeof p.assessmentDigest !== "string" ||
     !digest.test(p.assessmentDigest) ||
     typeof p.provisionDigest !== "string" ||
@@ -328,6 +332,9 @@ export function modelResourcePlan(value: unknown): ModelResourcePlan {
     return Object.freeze({ ...s });
   });
   const captured = Object.freeze({
+    ...(p.sourcePolicy === "current-only"
+      ? { sourcePolicy: p.sourcePolicy }
+      : {}),
     assessmentDigest: p.assessmentDigest,
     provisionDigest: p.provisionDigest,
     packs: Object.freeze(packs),
@@ -416,6 +423,7 @@ export function decode(
     return intent;
   }
   if (v.version === 3) {
+    if (modelResourcePlan(v.plan).sourcePolicy !== undefined) fail("binding");
     const intent = Object.freeze({
       version: 3 as const,
       scope: bound,
@@ -746,6 +754,7 @@ export class NextModelSetupIntentStore implements ModelResourceSetupJournal {
   ): Promise<ModelResourceSetupIntent> {
     // Copy complete original source UUIDs/bytes before the first await. No remint.
     const captured = modelResourcePlan(plan);
+    if (captured.sourcePolicy !== undefined) fail("binding");
     if (
       encoder.encode(
         JSON.stringify({

@@ -76,6 +76,8 @@ export interface ModelPackSetupIntent {
 }
 /** New immutable resource-components + explicit create setup. No file-absence witness. */
 export interface ModelResourcePlan {
+  /** New additive rounds only; absent retains every original factory guard. */
+  readonly sourcePolicy?: "current-only";
   readonly assessmentDigest: string;
   readonly provisionDigest: string;
   readonly packs: readonly {
