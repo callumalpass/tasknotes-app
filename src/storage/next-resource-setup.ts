@@ -15,6 +15,7 @@ import { modelResourcePlan } from "../cloud/next-model-setup-intent";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { modelResourceInventory } from "./next-model-resources";
+import { requireSetupAvailability } from "./next-setup-availability";
 import {
   atomicSetupOperation,
   setupStillPending,
@@ -139,7 +140,9 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
   async inspect(): Promise<ModelSetupView> {
     const signal = this.signal();
     try {
+      requireSetupAvailability(this.client.status);
       const stored = await this.journal.load(signal);
+      requireSetupAvailability(this.client.status);
       signal.throwIfAborted();
       if (stored) {
         if (stored.version !== 3 && this.legacy)
@@ -148,8 +151,14 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         if (original.phase !== "verified") return uncertain().view;
         try {
           await this.readback(original.plan, signal);
-        } catch {
+        } catch (reason) {
           signal.throwIfAborted();
+          requireSetupAvailability(this.client.status);
+          if (
+            reason instanceof ModelSetupError &&
+            reason.view.state === "waiting"
+          )
+            throw reason;
           throw uncertain();
         }
         return { state: "ready" };
@@ -160,6 +169,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         this.sources,
         signal,
       );
+      requireSetupAvailability(this.client.status);
       if (assessment.resourceOps.length || assessment.sources.length) {
         this.requirePermission(assessment);
         return { state: "required" };
@@ -187,13 +197,17 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     return this.exclusive(() =>
       atomicSetupOperation(
         owner,
-        work,
+        (signal) => {
+          requireSetupAvailability(this.client.status);
+          return work(signal);
+        },
         (signal) => this.reconcile(signal),
         progress,
       ),
     );
   }
   private async reconcile(signal: AbortSignal): Promise<void> {
+    requireSetupAvailability(this.client.status);
     const stored = await this.journal.load(signal);
     signal.throwIfAborted();
     if (!stored || stored.phase === "prepared") setupStillPending();
@@ -225,6 +239,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         signal,
       );
       signal.throwIfAborted();
+      requireSetupAvailability(this.client.status);
       if (!assessment.resourceOps.length && !assessment.sources.length) {
         await this.currentReadback({ ...assessment, sources: [] }, signal);
         await this.finish(signal);
@@ -273,6 +288,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     signal: AbortSignal,
     progress?: ModelSetupProgressListener,
   ): Promise<void> {
+    requireSetupAvailability(this.client.status);
     let intent = original;
     let receipt: wire.Receipt;
     if (intent.phase === "prepared") {
@@ -284,6 +300,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         intent.plan,
         signal,
       );
+      requireSetupAvailability(this.client.status);
       intent = this.transition(
         intent,
         await this.journal.recordResourceAttempt(intent.mutationId, signal),

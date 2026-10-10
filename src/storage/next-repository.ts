@@ -116,6 +116,10 @@ import {
   viewSourceRecord,
 } from "../domain/default-view-source";
 import { normalizePresentationType } from "../domain/view-renderer";
+import {
+  requireSetupAvailability,
+  setupAvailability,
+} from "./next-setup-availability";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { NextMutations, RejectedNextMutation } from "./next-mutations";
 import { NativeModelSetup } from "./next-model-setup";
@@ -303,11 +307,31 @@ export class NextTaskRepository implements TaskRepository {
           )
         : legacy();
       this.modelSetup = Object.freeze({
-        inspect: () => setup.inspect(),
-        install: (progress?: ModelSetupProgressListener) =>
-          setup.install(progress),
-        resume: (progress?: ModelSetupProgressListener) =>
-          setup.resume(progress),
+        inspect: async () => {
+          const waiting = setupAvailability(client.status);
+          if (waiting) return waiting;
+          const inspected = await setup.inspect();
+          return setupAvailability(client.status) ?? inspected;
+        },
+        onReadinessChange: (listener: () => void) => {
+          let previous = setupAvailability(client.status)?.reason;
+          return client.onStatus((status) => {
+            if (this.disposed || this.scope.signal.aborted) return;
+            const next = setupAvailability(status)?.reason;
+            if (next !== previous) {
+              previous = next;
+              listener();
+            }
+          });
+        },
+        install: async (progress?: ModelSetupProgressListener) => {
+          requireSetupAvailability(client.status);
+          return setup.install(progress);
+        },
+        resume: async (progress?: ModelSetupProgressListener) => {
+          requireSetupAvailability(client.status);
+          return setup.resume(progress);
+        },
       });
     }
     this.stopStatus = client.onStatus((status: SyncStatus) => {
@@ -433,6 +457,14 @@ export class NextTaskRepository implements TaskRepository {
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
     const signal = this.signal();
     signal.throwIfAborted();
+    // Do not reclassify ordinary pending task work in an already loaded model
+    // as missing setup. This gate protects the first/invalidated model read.
+    const unavailableSetup =
+      this.modelSetup &&
+      !this.providers.length &&
+      setupAvailability(this.client.status);
+    if (unavailableSetup)
+      throw new TaskNotesModelRequiredError(unavailableSetup.message);
     if (this.creatorSetupPending)
       throw new TaskNotesModelRequiredError(
         "Complete this original collection's TaskNotes setup before opening tasks and views.",

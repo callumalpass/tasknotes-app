@@ -915,6 +915,111 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       ...f.records.keys(),
     ]);
   });
+  it.each(["inspect", "install", "resume"] as const)(
+    "%s fences a readable old prefix before journal, source planning or writes",
+    async (action) => {
+      const f = fixture();
+      Object.defineProperty(f.client, "status", {
+        value: {
+          mode: "synced",
+          connection: "online",
+          pending: 0,
+          confirmedThrough: 2,
+          headKnown: 5,
+          incidents: [{ kind: "waiting_for_key" }],
+        },
+      });
+      const load = vi.spyOn(f.journal, "load");
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      if (action === "inspect")
+        await expect(f.setup.inspect()).resolves.toMatchObject({
+          state: "waiting",
+          reason: "waiting_for_access",
+        });
+      else
+        await expect(f.setup[action]()).rejects.toMatchObject({
+          view: { state: "waiting", reason: "waiting_for_access" },
+        });
+      expect(load).not.toHaveBeenCalled();
+      expect(f.mocked.resources.list).not.toHaveBeenCalled();
+      expect(f.factory).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      expect(f.mocked.submit).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+      await expect(f.journal.load(signal())).resolves.toBeNull();
+    },
+  );
+  it("key wait preserves a verified intent and recovery still requires exact readback", async () => {
+    const f = fixture();
+    await f.setup.install();
+    const original = await f.journal.load(signal());
+    expect(original?.phase).toBe("verified");
+    const current = {
+      confirmedThrough: 2,
+      headKnown: 5,
+      incidents: [{ kind: "waiting_for_key" }],
+    };
+    Object.defineProperty(f.client, "status", { get: () => current });
+    await expect(f.setup.inspect()).resolves.toMatchObject({
+      state: "waiting",
+    });
+    await expect(f.journal.load(signal())).resolves.toEqual(original);
+    current.confirmedThrough = 5;
+    current.incidents = [];
+    await expect(f.setup.inspect()).resolves.toEqual({ state: "ready" });
+    f.mocked.resources.get.mockRejectedValueOnce(notFound());
+    await expect(f.setup.inspect()).resolves.toMatchObject({
+      state: "outcome_unknown",
+    });
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.verified).toHaveBeenCalledOnce();
+    await expect(f.journal.load(signal())).resolves.toEqual(original);
+  });
+  it("catch-up after prepare retains that exact prepared intent without submitting or automatically resuming", async () => {
+    const f = fixture();
+    const current = { confirmedThrough: 5, headKnown: 5, incidents: [] };
+    Object.defineProperty(f.client, "status", { get: () => current });
+    const prepare = f.journal.prepareResources.bind(f.journal);
+    vi.spyOn(f.journal, "prepareResources").mockImplementation(
+      async (plan, owner) => {
+        const intent = await prepare(plan, owner);
+        current.headKnown = 6;
+        return intent;
+      },
+    );
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "waiting", reason: "catching_up" },
+    });
+    const original = await f.journal.load(signal());
+    expect(original?.phase).toBe("prepared");
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+    current.confirmedThrough = 6;
+    await expect(f.setup.inspect()).resolves.toMatchObject({
+      state: "outcome_unknown",
+    });
+    await expect(f.journal.load(signal())).resolves.toEqual(original);
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    await f.setup.resume();
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.mocked.submit.mock.calls[0]?.[1].mutationId).toBe(
+      original?.mutationId,
+    );
+    expect((await f.journal.load(signal()))?.phase).toBe("verified");
+  });
+  it("cleared catch-up does not automatically install on a genuinely unconfigured collection", async () => {
+    const f = fixture();
+    const current = { confirmedThrough: 2, headKnown: 5, incidents: [] };
+    Object.defineProperty(f.client, "status", { get: () => current });
+    await expect(f.setup.inspect()).resolves.toMatchObject({
+      state: "waiting",
+    });
+    current.confirmedThrough = 5;
+    await expect(f.setup.inspect()).resolves.toEqual({ state: "required" });
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+    await expect(f.journal.load(signal())).resolves.toBeNull();
+  });
   it("owner abort precedes readiness classification and never creates another intent", async () => {
     const f = fixture();
     f.owner.abort();
