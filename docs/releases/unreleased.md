@@ -1,5 +1,6 @@
 # Unreleased
 
+- Restore the familiar TaskNotes welcome screen with one Sign in action, automatic approval detection and the signed-in account email when available. Sign-in opens the first-party mdbase popup; collection choices remain in mdbase.
 - Update the pinned SDK while retaining explicit authenticated build-environment selection. This does not enable People or shared-session features.
 - Clarify native Scratchpad recovery limits: opening or listing notes may write, and reloading does not prove recovery of an earlier uncertain operation.
 - Older file operations report incomplete metadata if a modification timestamp is unavailable, rather than submitting an incomplete descriptor.

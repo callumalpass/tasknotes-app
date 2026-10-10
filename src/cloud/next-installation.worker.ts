@@ -116,6 +116,8 @@ async function dispatch(
       lifetime.abort();
       controller = null;
       return null;
+    default:
+      throw Error("Unsupported legacy installation command.");
   }
 }
 port.onmessage = (event) => {

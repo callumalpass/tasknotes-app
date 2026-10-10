@@ -8,19 +8,17 @@ import {
 import type { TaskRepository } from "../application/ports/task-repository";
 import { loadNativeBuild } from "../cloud/next-native-build";
 import type { NextInstallationBuildInput } from "../cloud/next-installation-protocol";
-import { NextInstallationScreen } from "./next-installation-screen";
+import { CloudSignIn } from "./cloud-sign-in";
 import { OpenedCollection } from "./opened-collection";
 
 /** Keep the installation owner mounted while its original data-only repository
  * is rendered. Replacing the held lifetime closes it, not just the UI selection. */
 export function NextCollectionGate({
   loadBuild = loadNativeBuild,
-  InstallationScreen = NextInstallationScreen,
+  InstallationScreen = CloudSignIn,
 }: {
   loadBuild?: typeof loadNativeBuild;
-  InstallationScreen?: ComponentType<
-    Parameters<typeof NextInstallationScreen>[0]
-  >;
+  InstallationScreen?: ComponentType<Parameters<typeof CloudSignIn>[0]>;
 } = {}) {
   const [build, setBuild] = useState<NextInstallationBuildInput | null>(null);
   const [unavailable, setUnavailable] = useState(false);
