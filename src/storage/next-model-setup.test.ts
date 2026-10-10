@@ -745,12 +745,20 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     const submit = vi.spyOn(f.client, "submit");
     expect(Object.keys(repository.modelSetup!)).toEqual([
       "inspect",
+      "onReadinessChange",
       "install",
       "resume",
     ]);
     expect(Object.isFrozen(repository.modelSetup)).toBe(true);
     expect(repository.modelSetup).not.toHaveProperty("client");
     expect(repository.modelSetup).not.toHaveProperty("journal");
+    const changed = vi.fn();
+    const stop = repository.modelSetup!.onReadinessChange!(changed);
+    expect(stop).toBeTypeOf("function");
+    expect(changed).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+    expect(f.journal.value).toBeNull();
+    stop();
     await expect(repository.initialize()).rejects.toBeInstanceOf(
       TaskNotesModelRequiredError,
     );
