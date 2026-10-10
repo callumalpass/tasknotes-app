@@ -2730,6 +2730,7 @@ export class NextTaskRepository implements TaskRepository {
             record.id !== id ||
             record.path !== input.path ||
             record.document === undefined ||
+            !Number.isSafeInteger(record.state.confirmedSeq) ||
             record.state.hold ||
             record.state.unresolved
           )
@@ -2788,6 +2789,7 @@ export class NextTaskRepository implements TaskRepository {
     if (
       record.path !== path ||
       record.document === undefined ||
+      !Number.isSafeInteger(record.state.confirmedSeq) ||
       record.state.hold ||
       record.state.unresolved
     )
