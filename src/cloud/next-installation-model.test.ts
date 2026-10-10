@@ -71,6 +71,7 @@ class ControlWorker {
   markerConfirmed = false;
   loseMarkerOnce = false;
   markerGate: Promise<void> | null = null;
+  onMarkerEntered?: () => void;
   terminated = 0;
   listeners = new Map<string, Set<(event: MessageEvent) => void>>();
   constructor() {
@@ -163,6 +164,7 @@ class ControlWorker {
           result = this.intent ? structuredClone(this.intent) : null;
           break;
         case "model-setup-verified":
+          this.onMarkerEntered?.();
           if (this.markerGate) {
             const gate = this.markerGate;
             this.markerGate = null;
@@ -512,16 +514,18 @@ describe("original Worker model journal and held repository wiring", () => {
     f.worker.markerGate = new Promise<void>((resolve) => {
       release = resolve;
     });
+    const markerEntered = new Promise<void>((resolve) => {
+      f.worker.onMarkerEntered = resolve;
+    });
     const submit = vi.spyOn(f.client, "submit");
     const install = repository.modelSetup!.install();
     const refused = expect(install).rejects.toThrow();
-    await vi.waitFor(() =>
-      expect(
-        f.worker.requests.filter(
-          (request) => request.command.kind === "model-setup-verified",
-        ),
-      ).toHaveLength(1),
-    );
+    await markerEntered;
+    expect(
+      f.worker.requests.filter(
+        (request) => request.command.kind === "model-setup-verified",
+      ),
+    ).toHaveLength(1);
     const original = structuredClone(f.worker.intent!);
     expect(original.phase).toBe("verified");
     repository.suspend();

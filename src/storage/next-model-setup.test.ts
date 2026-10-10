@@ -245,23 +245,32 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     await f.plan();
     setupClock();
     const original = f.client.submit.bind(f.client);
+    let markSubmitted!: () => void;
+    const submitted = new Promise<void>((resolve) => {
+      markSubmitted = resolve;
+    });
     const submit = vi
       .spyOn(f.client, "submit")
       .mockImplementationOnce(async (...args) => {
-        const writes = await original(...args),
-          receipt = await writes[0]!.confirmed;
+        const writes = await original(...args);
+        // Confirmation is an explicit stand-in event, not the replica's fake
+        // zero-delay timer (which cannot advance while this barrier awaits).
+        f.replica.confirmAll();
+        const receipt = await writes[0]!.confirmed;
         Object.defineProperty(writes[0]!, "confirmed", {
           value: new Promise<typeof receipt>((resolve) =>
             setTimeout(() => resolve(receipt), 35000),
           ),
         });
+        markSubmitted();
         return writes;
       });
     const receipt = vi.spyOn(f.client, "awaitReceipt"),
       progress = vi.fn(),
       done = vi.fn();
     const result = f.setup.install(progress).then(done);
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    await submitted;
+    expect(submit).toHaveBeenCalledOnce();
     const intent = structuredClone(f.journal.value!);
     await vi.advanceTimersByTimeAsync(21000);
     expect(done).not.toHaveBeenCalled();
@@ -279,19 +288,26 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     await f.plan();
     setupClock();
     const original = f.client.submit.bind(f.client);
+    let markSubmitted!: () => void;
+    const submitted = new Promise<void>((resolve) => {
+      markSubmitted = resolve;
+    });
     const submit = vi
       .spyOn(f.client, "submit")
       .mockImplementationOnce(async (...args) => {
         const writes = await original(...args);
+        f.replica.confirmAll();
         Object.defineProperty(writes[0]!, "confirmed", {
           value: new Promise<wire.Receipt>(() => {}),
         });
+        markSubmitted();
         return writes;
       });
     const receipt = vi.spyOn(f.client, "awaitReceipt"),
       progress = vi.fn();
     const result = f.setup.install(progress);
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    await submitted;
+    expect(submit).toHaveBeenCalledOnce();
     const intent = structuredClone(f.journal.value!);
     await vi.advanceTimersByTimeAsync(120000);
     await result;

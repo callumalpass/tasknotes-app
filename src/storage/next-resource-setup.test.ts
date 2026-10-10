@@ -69,6 +69,10 @@ function fixture() {
     omitDiscovery: false,
     failInventory: false,
   };
+  let markSubmitted!: () => void;
+  const submitted = new Promise<void>((resolve) => {
+    markSubmitted = resolve;
+  });
   const factory = vi.fn(taskNotesDefaultBaseSources);
   const verified = vi.fn(async () => undefined);
   const resource = (path: string, text: string): wire.ResourceView => ({
@@ -176,6 +180,7 @@ function fixture() {
       };
     }),
     submit: vi.fn(async (ops: wire.Op[], options: { mutationId: string }) => {
+      markSubmitted();
       if (state.reject) {
         receipts.set(options.mutationId, {
           mutation: options.mutationId,
@@ -243,6 +248,7 @@ function fixture() {
     factory,
     verified,
     mocked,
+    submitted,
     client,
     setup,
   };
@@ -310,7 +316,8 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     const progress = vi.fn(),
       done = vi.fn();
     const result = f.setup.install(progress).then(done);
-    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    await f.submitted;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(21000);
     expect(done).not.toHaveBeenCalled();
     const originalIntent = (await f.journal.load(f.owner.signal))!;
@@ -339,7 +346,8 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     });
     const progress = vi.fn(),
       result = f.setup.install(progress);
-    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    await f.submitted;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
     const originalIntent = (await f.journal.load(f.owner.signal))!;
     await vi.advanceTimersByTimeAsync(120000);
     await result;
@@ -377,7 +385,8 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     const unknown = expect(result).rejects.toMatchObject({
       view: { state: "outcome_unknown" },
     });
-    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    await f.submitted;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
     const originalIntent = (await f.journal.load(f.owner.signal))!,
       count = uuid.mock.calls.length;
     await vi.advanceTimersByTimeAsync(120000);
@@ -410,21 +419,26 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
         { ...writes[0]!, confirmed: new Promise<wire.Receipt>(() => {}) },
       ];
     });
-    let reply!: (receipt: wire.Receipt) => void;
+    let reply!: (receipt: wire.Receipt) => void,
+      markReconciliation!: () => void;
+    const reconciliationStarted = new Promise<void>((resolve) => {
+      markReconciliation = resolve;
+    });
     f.mocked.awaitReceipt.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           reply = resolve;
+          markReconciliation();
         }),
     );
     const result = f.setup.install(),
       stopped = expect(result).rejects.toThrow();
-    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    await f.submitted;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
     const originalIntent = (await f.journal.load(f.owner.signal))!;
     await vi.advanceTimersByTimeAsync(120000);
-    await vi.waitFor(() =>
-      expect(f.mocked.awaitReceipt).toHaveBeenCalledOnce(),
-    );
+    await reconciliationStarted;
+    expect(f.mocked.awaitReceipt).toHaveBeenCalledOnce();
     f.owner.abort();
     await stopped;
     reply(f.receipts.get(originalIntent.mutationId)!);
