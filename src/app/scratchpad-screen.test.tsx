@@ -82,6 +82,20 @@ describe("ScratchpadScreen", () => {
       });
   }
 
+  it("distinguishes native note pending metadata from authority Saved (component port stand-in)", async () => {
+    const current = await repository.getActiveScratchpad();
+    const writeState = vi.fn(() => "pending" as const);
+    Object.assign(repository, { writeState });
+    renderScratchpad();
+    await screen.findByRole("textbox", { name: "Draft task: empty" });
+    expect(screen.getByText("Saved locally · Waiting to sync")).toBeVisible();
+    expect(screen.queryByText("Saved", { exact: true })).toBeNull();
+    expect(writeState).toHaveBeenCalledWith({
+      kind: "scratchpad",
+      id: current.id,
+    });
+  });
+
   it("converts one draft in place and preserves its linked Markdown", async () => {
     const openTask = renderScratchpad();
     const input = await screen.findByRole(

@@ -78,6 +78,78 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     });
   });
 
+  it("keeps definitive original rejection when rollback races the local result READ", async () => {
+    const f = await fixture();
+    const recordId = crypto.randomUUID();
+    const submit = vi.spyOn(f.client, "submit");
+    let mid = "";
+    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+      f.replica.reject(mid, {
+        code: "conflict",
+        recovery: "refresh",
+        message: "Rejected at head",
+      });
+      return f.client.get(recordId, { body: true }, signal);
+    };
+    await expect(
+      f.mutations.runRecord(
+        {
+          key: "rollback-race",
+          recordIds: () => [recordId],
+          prepare: async (mutationId, signal) => {
+            mid = mutationId;
+            return () =>
+              f.client.create(
+                { id: recordId, path: "rollback.md", body: "native capture" },
+                { mutationId, signal, wait: "pending" },
+              );
+          },
+          confirmed: read,
+        },
+        f.signal,
+      ),
+    ).rejects.toMatchObject({
+      code: "conflict",
+      mutationId: expect.any(String),
+    });
+    expect(f.mutations.recordWriteState(recordId)).toEqual({
+      mutationId: mid,
+      state: "rejected",
+    });
+    expect(submit).toHaveBeenCalledOnce();
+  });
+
+  it("uses a current-metadata ACK reader only after local delivery, retaining the original result reader for recovery", async () => {
+    const f = await fixture();
+    const recordId = crypto.randomUUID();
+    const result = vi.fn((_receipt: wire.Receipt, signal: AbortSignal) =>
+      f.client.get(recordId, { body: true }, signal),
+    );
+    const ack = vi.fn(async (_receipt: wire.Receipt, signal: AbortSignal) => {
+      await f.client.find(recordId, { body: true }, signal);
+    });
+    await f.mutations.run(
+      {
+        key: "current-metadata-ack",
+        recordIds: () => [recordId],
+        prepare: async (mutationId, signal) => () =>
+          f.client.create(
+            { id: recordId, path: "metadata.md", body: "original" },
+            { mutationId, signal, wait: "pending" },
+          ),
+        local: result,
+        confirmed: result,
+        ack,
+      },
+      f.signal,
+    );
+    expect(result).toHaveBeenCalledOnce();
+    expect(ack).not.toHaveBeenCalled();
+    f.replica.confirmAll();
+    await vi.waitFor(() => expect(ack).toHaveBeenCalledOnce());
+    expect(result).toHaveBeenCalledOnce();
+  });
+
   it("retains the original local reader and ID after a lost response, without reissue", async () => {
     const f = await fixture();
     const recordId = crypto.randomUUID();

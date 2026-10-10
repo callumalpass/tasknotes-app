@@ -9,12 +9,12 @@ export function useRecordWriteState(
   repository: TaskRepository | undefined,
   target: RecordWriteTarget,
 ) {
-  const key = target.kind === "task" ? target.id : target.path;
+  const key = target.kind === "source" ? target.path : target.id;
   const kind = target.kind;
   const snapshot = useCallback(
     () =>
       repository?.writeState?.(
-        kind === "task" ? { kind, id: key } : { kind, path: key },
+        kind === "source" ? { kind, path: key } : { kind, id: key },
       ),
     [repository, kind, key],
   );

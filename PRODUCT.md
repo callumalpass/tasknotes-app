@@ -40,7 +40,7 @@ Obsidian UI at phone scale.
 ## Design Principles
 
 1. Open into the work. Once mdbase is available, show the selected collection without an extra storage layer.
-2. Make authority explicit. Task and view-source capture can return the real local result from the selected mdbase replica before synchronization. Show “Saved locally · Waiting to sync” until authority confirmation, and keep rejection, conflict, or an unknown outcome visible. Never invent task records or replace an uncertain submission. Definitions and setup remain confirmed-only. Known unavailability remains visible even when cached reads succeed. Capture does not force navigation or promise inclusion in the current filtered view.
+2. Make authority explicit. Task, Scratchpad note/image-metadata, and view-source capture can return the real local result from the selected mdbase replica before synchronization. Show “Saved locally · Waiting to sync” until authority confirmation, and keep rejection, conflict, or an unknown outcome visible. Never invent task records or replace an uncertain submission. Definitions and setup remain confirmed-only. Image metadata capture does not claim that the separate binary upload is locally available or authority-confirmed. Known unavailability remains visible even when cached reads succeed. Capture does not force navigation or promise inclusion in the current filtered view.
 3. Keep structure legible. Dates, status, priority, and recurrence should scan clearly without becoming a control panel.
 4. Reveal portability gently. Let users inspect the Markdown record and collection location when they choose.
 5. Use one vocabulary across providers. Hosted and connected-computer collections should behave like the same product.

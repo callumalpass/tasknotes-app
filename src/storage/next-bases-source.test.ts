@@ -49,6 +49,25 @@ async function fixture(options: Parameters<typeof nextTaskFixture>[0] = {}) {
 }
 
 describe("native view source boundaries (protocol stand-ins)", () => {
+  it("older source edit ACKs read current absence after a newer pending delete without reissuing either write", async () => {
+    const f = await fixture({ confirmDelayMs: null });
+    const update = vi.spyOn(f.client, "replaceDocument");
+    const remove = vi.spyOn(f.client, "delete");
+    await f.repository.updateViewSource({
+      path: f.record.path,
+      document: changed,
+    });
+    await f.repository.deleteViewSource(f.record.path);
+    expect(await f.client.find(f.record.id)).toBeNull();
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "source", path: f.record.path }),
+      ).toBeUndefined(),
+    );
+    expect(update).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledOnce();
+  });
   it("does not seed defaults during navigation, even with an owner grant", async () => {
     const f = await fixture();
     const create = vi.spyOn(f.client, "create");

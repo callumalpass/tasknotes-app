@@ -5,8 +5,8 @@ import { SCRATCH_IMAGE_TYPE } from "../domain/scratch-image";
 import { toValue } from "@mdbase-dev/sdk";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
-async function fixture() {
-  const f = await nextTaskFixture();
+async function fixture(pending = false) {
+  const f = await nextTaskFixture(pending ? { confirmDelayMs: null } : {});
   fixtures.push(f);
   return f;
 }
@@ -57,6 +57,98 @@ function imageInput(id: string, dateCreated = "2026-08-01T12:00:00Z") {
 }
 
 describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
+  it("captures notes and atomic transitions in the native pending lane without an ACK wait", async () => {
+    const f = await fixture(true);
+    const submit = vi.spyOn(f.client, "submit");
+    const first = await f.repository.getActiveScratchpad();
+    expect(f.repository.writeState({ kind: "scratchpad", id: first.id })).toBe(
+      "pending",
+    );
+    const saved = await f.repository.saveScratchpad(
+      saveInput(first, "- Local pending note"),
+    );
+    expect(saved.body).toBe("- Local pending note");
+    const next = await f.repository.startNewScratchpad(saveInput(saved));
+    expect(next.previous).toMatchObject({
+      id: first.id,
+      state: "converted",
+      body: saved.body,
+    });
+    expect(next.current).toMatchObject({ state: "active", body: "" });
+    expect(next.current.id).not.toBe(first.id);
+    const resumed = await f.repository.reactivateScratchpad({
+      current: next.current,
+      target: next.previous,
+    });
+    expect(resumed.current).toMatchObject({
+      id: first.id,
+      state: "active",
+      body: saved.body,
+    });
+    expect(resumed.previous).toMatchObject({
+      id: next.current.id,
+      state: "converted",
+    });
+    await f.repository.deleteScratchpad(resumed.previous);
+    expect(await f.repository.getScratchpad(resumed.previous.id)).toBeNull();
+    expect(
+      f.repository.writeState({ kind: "scratchpad", id: resumed.previous.id }),
+    ).toBe("pending");
+    expect(await f.client.pendingWrites()).toHaveLength(5);
+    expect(submit).toHaveBeenCalledTimes(5);
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "scratchpad", id: first.id }),
+      ).toBeUndefined(),
+    );
+    expect(submit).toHaveBeenCalledTimes(5);
+  });
+
+  it("an older creation ACK reads newer note bytes under the established identity rather than reapplying empty-body guards", async () => {
+    const f = await fixture(true);
+    const first = await f.repository.getActiveScratchpad();
+    const saved = await f.repository.saveScratchpad(
+      saveInput(first, "- Newer pending bytes"),
+    );
+    const get = vi.spyOn(f.client, "get");
+    f.replica["confirmNext"]();
+    await vi.waitFor(() => expect(get).toHaveBeenCalled());
+    expect((await f.repository.getScratchpad(first.id))?.body).toBe(saved.body);
+    expect(f.repository.writeState({ kind: "scratchpad", id: first.id })).toBe(
+      "pending",
+    );
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "scratchpad", id: first.id }),
+      ).toBeUndefined(),
+    );
+  });
+
+  it("captures and removes independent image metadata locally, without deleting or qualifying a binary asset", async () => {
+    const f = await fixture(true);
+    const remove = vi.spyOn(f.client, "delete");
+    const image = await f.repository.createScratchImage(
+      imageInput("pending-image"),
+    );
+    expect(image.id).toBe("pending-image");
+    expect(f.repository.writeState({ kind: "image", id: image.id })).toBe(
+      "pending",
+    );
+    expect(await f.repository.getScratchImage(image.id)).toEqual(image);
+    await f.repository.removeScratchImage(image);
+    expect(await f.repository.getScratchImage(image.id)).toBeNull();
+    expect(remove).toHaveBeenCalledOnce();
+    expect(await f.client.pendingWrites()).toHaveLength(2);
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "image", id: image.id }),
+      ).toBeUndefined(),
+    );
+    expect(remove).toHaveBeenCalledOnce();
+  });
   it("orders and pages mixed metadata history independently of binary delivery", async () => {
     const f = await fixture();
     seed(f, "history", "converted");
@@ -253,7 +345,13 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     ]);
     expect(read.mock.calls.every(([id]) => id === op.id)).toBe(true);
   });
-  it.each(["nativeId", "hold", "unresolved", "pending", "body"] as const)(
+  it.each([
+    "nativeId",
+    "hold",
+    "unresolved",
+    "missingSequence",
+    "body",
+  ] as const)(
     "does not certify an unsafe or changed original creation READ: %s",
     async (field) => {
       const f = await fixture();
@@ -280,7 +378,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
           return { ...record, state: { ...record.state, unresolved: 1 } };
         return {
           ...record,
-          state: { ...record.state, state: "pending" as const },
+          state: { ...record.state, confirmedSeq: NaN },
         };
       });
       await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
@@ -521,25 +619,43 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     );
   });
 
-  it("rejected atomic transitions leave both notes unchanged", async () => {
+  it("a late atomic rejection is visible and restores both notes without replacement submission", async () => {
     const f = await fixture();
     const current = await f.repository.getActiveScratchpad();
+    // Local capture no longer implies seed ACK. Isolate the transition from
+    // that genuine first capture before rejecting its original batch below.
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "scratchpad", id: current.id }),
+      ).toBeUndefined(),
+    );
     f.replica.setOnline(false);
-    const transition = f.repository.startNewScratchpad(
+    const submit = vi.spyOn(f.client, "submit");
+    const transition = await f.repository.startNewScratchpad(
       saveInput(current, "- Unaccepted"),
     );
-    await vi.waitFor(async () =>
-      expect((await f.client.pendingWrites()).length).toBe(1),
-    );
+    expect(transition.previous.body).toBe("- Unaccepted");
     const pending = (await f.client.pendingWrites())[0]!;
     f.replica.reject(pending.receipt.mutation, {
       code: "conflict",
       recovery: "refresh",
       message: "Changed at head",
     });
-    await expect(transition).rejects.toMatchObject({ code: "conflict" });
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "scratchpad", id: current.id }),
+      ).toBe("failed"),
+    );
+    expect(
+      f.repository.writeState({
+        kind: "scratchpad",
+        id: transition.current.id,
+      }),
+    ).toBe("failed");
     expect(await f.repository.getScratchpad(current.id)).toEqual(current);
     expect((await f.repository.listScratchpads()).documents).toHaveLength(1);
+    expect(submit).toHaveBeenCalledOnce();
   });
 
   it("rejects ambiguous portable note identities before any mutation", async () => {

@@ -59,7 +59,8 @@ export interface TaskCreateIntent {
 }
 
 export type RecordWriteTarget =
-  { kind: "task"; id: string } | { kind: "source"; path: string };
+  | { kind: "task" | "scratchpad" | "image"; id: string }
+  | { kind: "source"; path: string };
 export type RecordWriteStatus = "pending" | "failed" | "unknown" | "conflicted";
 
 /**

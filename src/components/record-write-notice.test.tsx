@@ -2,12 +2,16 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type {
   RecordWriteStatus,
+  RecordWriteTarget,
   TaskRepository,
 } from "../application/ports/task-repository";
 import { RecordWriteNotice } from "./record-write-notice";
 
 // Component port stand-in only, never native admission/persistence evidence.
-function fixture(initial?: RecordWriteStatus) {
+function fixture(
+  initial?: RecordWriteStatus,
+  target: RecordWriteTarget = { kind: "task", id: "task" },
+) {
   let state = initial;
   const listeners = new Set<() => void>();
   const reconcile = vi.fn(async () => {});
@@ -21,13 +25,9 @@ function fixture(initial?: RecordWriteStatus) {
       };
     },
   } as unknown as TaskRepository;
-  render(
-    <RecordWriteNotice
-      repository={repository}
-      target={{ kind: "task", id: "task" }}
-    />,
-  );
+  render(<RecordWriteNotice repository={repository} target={target} />);
   return {
+    repository,
     reconcile,
     set: (next?: RecordWriteStatus) =>
       act(() => {
@@ -53,6 +53,20 @@ it.each(["failed", "conflicted"] as const)(
       state === "failed" ? "Change rejected" : "Conflicting changes",
     );
     expect(screen.queryByRole("button")).toBeNull();
+    expect(f.reconcile).not.toHaveBeenCalled();
+  },
+);
+it.each(["scratchpad", "image"] as const)(
+  "keeps the original %s metadata target distinct from a source path",
+  (kind) => {
+    const target = { kind, id: "original-portable-id" };
+    const f = fixture("pending", target);
+    expect(f.repository.writeState).toHaveBeenCalledWith(target);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Saved locally · Waiting to sync",
+    );
+    f.set("failed");
+    expect(screen.getByRole("status")).toHaveTextContent("Change rejected");
     expect(f.reconcile).not.toHaveBeenCalled();
   },
 );

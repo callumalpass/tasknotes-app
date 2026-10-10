@@ -39,6 +39,24 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("older creation ACKs read current metadata after a newer pending deletion, never recreate the task", async () => {
+    const f = await fixture({ confirmDelayMs: null });
+    const create = vi.spyOn(f.client, "create");
+    const remove = vi.spyOn(f.client, "delete");
+    const task = await f.repository.create({ title: "Locally deleted" });
+    const nativeId = create.mock.calls[0]![0].id!;
+    await f.repository.delete(task.id);
+    expect(await f.client.find(nativeId)).toBeNull();
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "task", id: task.id }),
+      ).toBeUndefined(),
+    );
+    expect(await f.repository.get(task.id)).toBeNull();
+    expect(create).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledOnce();
+  });
   it("keeps portable IDs separate and updates the observed native record", async () => {
     const f = await fixture();
     const s = await seed(f);

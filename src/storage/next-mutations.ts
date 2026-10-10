@@ -18,6 +18,8 @@ interface NativeMutation<Result> {
   confirmed(receipt: wire.Receipt, signal: AbortSignal): Promise<Result>;
   /** Opt-in genuine native local result, never an application projection. */
   local?(receipt: wire.Receipt, signal: AbortSignal): Promise<Result>;
+  /** Delivered records may later be edited/deleted; ACK reads current metadata. */
+  ack?(receipt: wire.Receipt, signal: AbortSignal): Promise<void>;
   /** Native record IDs retained by preparation, including deletes. */
   recordIds?(): readonly string[];
   /** Recovery only; never authorizes a replacement submission. */
@@ -35,6 +37,7 @@ interface LocalMutation {
   readonly recordIds: Set<string>;
   read?: NativeMutation<unknown>["confirmed"];
   local?: NonNullable<NativeMutation<unknown>["local"]>;
+  ack?: NativeMutation<unknown>["ack"];
   finished?: boolean;
   delivered?: boolean;
   state: NativeRecordWriteState["state"];
@@ -150,6 +153,10 @@ export class NextMutations {
       ids: readonly string[],
       signal: AbortSignal,
     ) => Promise<void> = async () => {},
+    private readonly readDelivered?: (
+      ids: readonly string[],
+      signal: AbortSignal,
+    ) => Promise<void>,
   ) {}
 
   recordIds(mutationId: string): readonly string[] {
@@ -215,7 +222,10 @@ export class NextMutations {
         AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.foregroundMs),
       ]);
       if (!this.localWrites.has(entry.id)) return;
-      await entry.read?.(receipt, signal);
+      if (entry.delivered && entry.ack) await entry.ack(receipt, signal);
+      else if (entry.delivered && this.readDelivered)
+        await this.readDelivered([...entry.recordIds], signal);
+      else await entry.read?.(receipt, signal);
       signal.throwIfAborted();
       if (entry.delivered) this.localWrites.delete(entry.id);
       this.changed();
@@ -273,6 +283,7 @@ export class NextMutations {
         recordIds: new Set(operation.recordIds?.()),
         read: operation.confirmed,
         local: operation.local!,
+        ack: operation.ack,
         state: "unknown",
       };
       entry.local ??= operation.local;
@@ -312,6 +323,8 @@ export class NextMutations {
         >;
         const value = await local(receipt, signal);
         signal.throwIfAborted();
+        if (entry.receipt?.state === "rejected")
+          throw new RejectedNextMutation(id, entry.receipt.problem);
         entry.delivered = true;
         if (receipt.state === "confirmed" && entry.state === "confirmed")
           this.localWrites.delete(id);
@@ -320,6 +333,20 @@ export class NextMutations {
         return value;
       } catch (reason) {
         if (reason instanceof RejectedNextMutation) throw reason;
+        // A result READ can race rollback before its receipt push arrives.
+        // Observe the original MID once, within this same owner/deadline; never
+        // wait for authority or reissue its submission to diagnose that failure.
+        if (!signal.aborted && entry.receipt?.state !== "rejected") {
+          try {
+            const observed = await this.client.receipt(id, signal);
+            signal.throwIfAborted();
+            this.finishLocal(entry, observed, ownerSignal);
+          } catch {
+            /* Preserve the original uncertain failure if READ fails. */
+          }
+        }
+        if (entry.receipt?.state === "rejected")
+          throw new RejectedNextMutation(id, entry.receipt.problem);
         if (entry.state !== "conflicted") entry.state = "unknown";
         this.changed();
         throw pendingRecoveryError(id, reason);
