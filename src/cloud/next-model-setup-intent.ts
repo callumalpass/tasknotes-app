@@ -6,6 +6,8 @@ import {
   type ModelPackSetupIntent,
   type ModelResourcePlan,
   type ModelResourceSetupIntent,
+  type ModelResourceSetupRoundIntent,
+  type ResourceSetupIntent,
   type ModelResourceSetupJournal,
   type ModelSetupIntent,
   type ModelSetupScope,
@@ -341,17 +343,24 @@ export function modelResourcePlan(value: unknown): ModelResourcePlan {
 export function decode(
   value: unknown,
   scope: ModelSetupScope,
+  depth = 0,
 ): ModelSetupIntent {
+  if (depth > 8) fail("binding");
   const v = value as ModelSetupIntent;
   if (
     !v ||
     typeof v !== "object" ||
-    (v.version !== 1 && v.version !== 2 && v.version !== 3) ||
+    (v.version !== 1 &&
+      v.version !== 2 &&
+      v.version !== 3 &&
+      v.version !== 4) ||
     !exact(
       v,
       v.version === 1
         ? "mutationId,ops,phase,scope,version"
-        : "mutationId,phase,plan,scope,version",
+        : v.version === 4
+          ? "mutationId,phase,plan,previous,scope,version"
+          : "mutationId,phase,plan,scope,version",
     ) ||
     typeof v.mutationId !== "string" ||
     !uuid.test(v.mutationId) ||
@@ -369,6 +378,43 @@ export function decode(
       ops: legacyDefinitionOps(v.ops),
       phase: v.phase,
     });
+  if (v.version === 4) {
+    const previous = decode(v.previous, scope, depth + 1);
+    if (previous.phase !== "verified") fail("recovery_required");
+    for (let prior = previous; ;) {
+      if (prior.mutationId === v.mutationId) fail("binding");
+      if (prior.version !== 4) break;
+      prior = prior.previous;
+    }
+    const plan = modelResourcePlan(v.plan);
+    if (
+      plan.resourceOps.some(
+        (op) =>
+          op.kind !== "resource_put" ||
+          (!op.mustNotExist &&
+            ![
+              "mdbase.yaml",
+              "mdbase.lock.yaml",
+              "mdbase.provisions.yaml",
+            ].includes(op.path)),
+      )
+    )
+      fail("binding");
+    const intent: ModelResourceSetupRoundIntent = Object.freeze({
+      version: 4,
+      scope: bound,
+      mutationId: v.mutationId,
+      plan,
+      phase: v.phase,
+      previous,
+    });
+    if (
+      encoder.encode(JSON.stringify({ ...intent, phase: "confirmed" }))
+        .byteLength > maxBytes
+    )
+      fail("binding");
+    return intent;
+  }
   if (v.version === 3) {
     const intent = Object.freeze({
       version: 3 as const,
@@ -556,7 +602,8 @@ export class NextModelSetupIntentStore implements ModelResourceSetupJournal {
       );
       if (
         ((value as { version?: unknown } | null)?.version === 2 ||
-          (value as { version?: unknown } | null)?.version === 3) &&
+          (value as { version?: unknown } | null)?.version === 3 ||
+          (value as { version?: unknown } | null)?.version === 4) &&
         plaintext.byteLength > maxBytes
       )
         fail("recovery_required");
@@ -569,9 +616,7 @@ export class NextModelSetupIntentStore implements ModelResourceSetupJournal {
       plaintext?.fill(0);
     }
   }
-  private async commit<
-    T extends ModelPackSetupIntent | ModelResourceSetupIntent,
-  >(
+  private async commit<T extends ModelPackSetupIntent | ResourceSetupIntent>(
     db: IDBDatabase,
     before: Stored | undefined,
     value: T,
@@ -737,41 +782,69 @@ export class NextModelSetupIntentStore implements ModelResourceSetupJournal {
       return this.commit(db, stored, value, signal);
     });
   }
+  prepareResourceRound(
+    plan: ModelResourcePlan,
+    previousMutationId: string,
+    signal: AbortSignal,
+  ): Promise<ModelResourceSetupRoundIntent> {
+    const captured = modelResourcePlan(plan);
+    return this.exclusive(signal, async (db) => {
+      const stored = await this.read(db, signal);
+      const previous = await this.unwrap(stored, signal);
+      if (!previous || previous.mutationId !== previousMutationId)
+        fail("binding");
+      if (previous.phase !== "verified") fail("recovery_required");
+      const value = decode(
+        {
+          version: 4,
+          scope: this.scope,
+          mutationId: crypto.randomUUID(),
+          plan: captured,
+          phase: "prepared",
+          previous,
+        },
+        this.scope,
+      );
+      if (value.version !== 4) fail("binding");
+      return this.commit(db, stored, value, signal);
+    });
+  }
   private advanceResource(
     id: string,
     phase: ModelSetupIntent["phase"],
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent> {
+  ): Promise<ResourceSetupIntent> {
     return this.exclusive(signal, async (db) => {
       const stored = await this.read(db, signal),
         existing = await this.unwrap(stored, signal);
-      if (!existing || existing.version !== 3) fail("recovery_required");
+      if (!existing || (existing.version !== 3 && existing.version !== 4))
+        fail("recovery_required");
       if (existing.mutationId !== id) fail("binding");
       const from = phases.indexOf(existing.phase),
         to = phases.indexOf(phase);
       if (to < from || to > from + 1) fail("recovery_required");
       if (to === from) return existing;
       const value = decode({ ...existing, phase }, this.scope);
-      if (value.version !== 3) fail("binding");
+      if (value.version !== 3 && value.version !== 4) fail("binding");
       return this.commit(db, stored, value, signal);
     });
   }
   recordResourceAttempt(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent> {
+  ): Promise<ResourceSetupIntent> {
     return this.advanceResource(id, "attempted", signal);
   }
   recordResourceConfirmed(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent> {
+  ): Promise<ResourceSetupIntent> {
     return this.advanceResource(id, "confirmed", signal);
   }
   recordResourceVerified(
     id: string,
     signal: AbortSignal,
-  ): Promise<ModelResourceSetupIntent> {
+  ): Promise<ResourceSetupIntent> {
     return this.advanceResource(id, "verified", signal);
   }
   private advance(

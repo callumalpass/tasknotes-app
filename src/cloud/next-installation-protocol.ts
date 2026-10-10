@@ -56,6 +56,12 @@ export type NextInstallationCommand =
     }
   | {
       kind: "model-resource-setup-intent";
+      action: "prepare-round";
+      plan: ModelResourcePlan;
+      previousMutationId: string;
+    }
+  | {
+      kind: "model-resource-setup-intent";
       action: "attempt" | "confirm" | "verify";
       mutationId: string;
     };
@@ -128,8 +134,17 @@ export function isNextInstallationCommand(
     case "set-foreground":
       return keys === "active,kind" && typeof command.active === "boolean";
     case "model-resource-setup-intent":
-      if (command.action === "prepare") {
-        if (keys !== "action,kind,plan") return false;
+      if (command.action === "prepare" || command.action === "prepare-round") {
+        if (command.action === "prepare-round") {
+          if (
+            keys !== "action,kind,plan,previousMutationId" ||
+            typeof command.previousMutationId !== "string" ||
+            !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(
+              command.previousMutationId,
+            )
+          )
+            return false;
+        } else if (keys !== "action,kind,plan") return false;
         try {
           modelResourcePlan(command.plan);
           return true;
