@@ -2132,7 +2132,7 @@ export class NextTaskRepository implements TaskRepository {
               path: descriptor.path,
               revision: descriptor.sourceRevision,
               format: "obsidian.base",
-              writable: false,
+              writable: this.hasViewSourceGrant("records.edit"),
             },
             views: [],
           };
@@ -2232,16 +2232,19 @@ export class NextTaskRepository implements TaskRepository {
     this.assertCurrentData(revision);
     return result;
   }
+  private hasViewSourceGrant(capability: "records.edit" | "records.delete") {
+    const grant = this.client.hello.grant;
+    return (
+      grant.role !== "viewer" &&
+      grant.capabilities.includes("collection.read") &&
+      grant.capabilities.includes(capability) &&
+      grant.fileFolders === undefined
+    );
+  }
   private requireViewSourceGrant(
     capability: "records.edit" | "records.delete",
   ) {
-    const grant = this.client.hello.grant;
-    if (
-      grant.role === "viewer" ||
-      !grant.capabilities.includes("collection.read") ||
-      !grant.capabilities.includes(capability) ||
-      grant.fileFolders !== undefined
-    )
+    if (!this.hasViewSourceGrant(capability))
       throw nativeUnsupported(
         "This session does not provide the required full-scope view-source grant.",
       );
@@ -2424,11 +2427,68 @@ export class NextTaskRepository implements TaskRepository {
       (input.path ? viewSourceFormat(input.path) : "obsidian.base");
     const path =
       input.path ?? newViewSourcePath(format, input.name ?? "New view");
-    viewSourceRecord(path, input.document);
-    // A resource reply supplies no record UUID. Do not submit a creation whose
-    // result cannot yet be identified and read through this held data port.
-    throw nativeUnsupported(
-      "Creating view sources is not available through this native session.",
+    if (
+      format !== "obsidian.base" ||
+      viewSourceFormat(path) !== "obsidian.base"
+    )
+      throw nativeUnsupported(
+        "This native session supports only obsidian.base view sources.",
+      );
+    const document = input.document;
+    viewSourceRecord(path, document);
+    let nativeId: string | undefined;
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["view:create", path, document]),
+        prepare: async (mutationId, signal) => {
+          this.requireViewSourceGrant("records.edit");
+          signal.throwIfAborted();
+          nativeId = crypto.randomUUID();
+          const id = nativeId;
+          return () =>
+            this.client.views.createSource(
+              { id, path, document },
+              { mutationId, signal },
+            );
+        },
+        confirmed: async (receipt, signal) => {
+          if (!nativeId)
+            throw nativeUnsupported(
+              "The original native source identity is unavailable.",
+            );
+          const record = await this.client.views.getSourceRecord(nativeId, {
+            signal,
+          });
+          const admitted = receipt.records?.find(
+            (item) => item.id === nativeId,
+          );
+          if (
+            record.id !== nativeId ||
+            record.path !== path ||
+            record.document !== document ||
+            record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
+            (receipt.records !== undefined &&
+              (!admitted ||
+                admitted.path !== path ||
+                admitted.revision !== record.revision))
+          )
+            throw new Error(
+              "The confirmed native view source could not be read with its exact identity and document.",
+            );
+          signal.throwIfAborted();
+          this.forgetNativeSource(nativeId);
+          return {
+            recordId: record.id,
+            path: record.path,
+            format: "obsidian.base" as const,
+            revision: record.revision,
+            document: record.document!,
+          };
+        },
+      },
+      this.scope.signal,
     );
   }
   async updateViewSource(
@@ -2453,16 +2513,17 @@ export class NextTaskRepository implements TaskRepository {
             );
           // Whole-document replacement needs the actual public RecordView,
           // not an object reconstructed from a source descriptor or path.
-          const record = await this.client.get(
+          const record = await this.client.views.getSourceRecord(
             source.view.record,
-            { document: true },
-            signal,
+            { signal },
           );
           if (
             record.id !== source.view.record ||
             record.path !== source.view.path ||
             record.revision !== source.view.sourceRevision ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document !== source.source
           )
             throw new Error(
@@ -2472,8 +2533,7 @@ export class NextTaskRepository implements TaskRepository {
           this.requireViewSourceGrant("records.edit");
           target = structuredClone(source.view);
           return () =>
-            this.client.replaceDocument(record, input.document, {
-              ifRevision: source.view.sourceRevision,
+            this.client.views.updateSource(record, input.document, {
               mutationId,
               signal,
             });
@@ -2483,10 +2543,9 @@ export class NextTaskRepository implements TaskRepository {
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
-          const record = await this.client.get(
+          const record = await this.client.views.getSourceRecord(
             target.record,
-            { document: true },
-            signal,
+            { signal },
           );
           const admitted = receipt.records?.find(
             (item) => item.id === target!.record,
@@ -2495,6 +2554,8 @@ export class NextTaskRepository implements TaskRepository {
             record.id !== target.record ||
             record.path !== target.path ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document === undefined ||
             record.document !== input.document ||
             (receipt.records !== undefined &&
@@ -2533,19 +2594,47 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The view source changed. Reload it before deleting.",
             );
+          const record = await this.client.views.getSourceRecord(
+            source.view.record,
+            { signal },
+          );
+          if (
+            record.id !== source.view.record ||
+            record.path !== source.view.path ||
+            record.revision !== source.view.sourceRevision ||
+            record.document !== source.source ||
+            record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved
+          )
+            throw new Error(
+              "The native source changed before its complete record READ.",
+            );
+          signal.throwIfAborted();
+          this.requireViewSourceGrant("records.delete");
           target = structuredClone(source.view);
           return () =>
-            this.client.delete(source.view.record, {
-              ifRevision: source.view.sourceRevision,
+            this.client.delete(record, {
+              ifRevision: record.revision,
               mutationId,
               signal,
             });
         },
-        confirmed: async () => {
+        confirmed: async (_receipt, signal) => {
           if (!target)
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
+          const remaining = await this.client.find(
+            target.record,
+            { document: true },
+            signal,
+          );
+          if (remaining !== null)
+            throw new Error(
+              "The original native view source is still present after deletion.",
+            );
+          signal.throwIfAborted();
           this.forgetNativeSource(target.record);
         },
       },
