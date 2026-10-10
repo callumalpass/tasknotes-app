@@ -34,6 +34,25 @@ automatic fresh-mode retry, or device replacement. This caller/source intake doe
 not change the native runtime or trust pins and is not combined-runtime or
 live sign-in acceptance.
 
+## Completed setup and current readiness
+
+Verified setup is immutable history, not a requirement to keep its original
+mutable definition or saved-view bytes. Readiness uses complete confirmed
+resource inventory, compatible `tasknotes.task` providers and `obsidian.base`
+implementations from the native catalog, plus current native source identity and
+body reads. User-defined implementing types count; factory paths and the five
+initial default views do not. Editing or deleting defaults never recreates them.
+
+Missing required models still require explicit setup. New additive v4 rounds
+retain their verified predecessor unchanged and capture `sourcePolicy:
+"current-only"`, without default-source creation. An absent marker retains every
+original initial/default readback guard, including old unfinished v4 rounds with
+no source creates. Prepared, attempted and confirmed plans still reconcile their
+original UUID, exact receipt, resource bytes and source identities; no conversion,
+reset or new-plan fallback is introduced. Core deliberately preserves deleted
+installed seeds: a metadata-only factory offer cannot repair that deletion, so an
+implementing model must be restored or supplied explicitly instead.
+
 ## Source intake and remaining work
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.
