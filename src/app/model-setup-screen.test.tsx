@@ -142,7 +142,9 @@ it.each([
     const port = setup();
     vi.mocked(port.inspect).mockResolvedValue(readiness);
     const opening = await openingWithSetup(port);
-    await screen.findByText(visible);
+    if (readiness.state === "required")
+      await screen.findByRole("button", { name: visible });
+    else await screen.findByText(visible);
     expect(opening.initialize).toHaveResolved();
     expect(port.inspect).toHaveBeenCalled();
     expect(opening.configuration).not.toHaveBeenCalled();
@@ -365,4 +367,134 @@ it("offers explicit permission review without treating READ or a role as definit
   expect(permission).toHaveBeenCalledOnce();
   expect(port.install).not.toHaveBeenCalled();
   expect(port.resume).not.toHaveBeenCalled();
+});
+
+function readinessScreen(
+  port: TaskNotesModelSetup,
+  onReady = vi.fn(async () => undefined),
+) {
+  const mounted = render(
+    <CollectionGateContext.Provider value={callbacks}>
+      <ModelSetupScreen
+        setup={port}
+        onReady={onReady}
+        changeCollection={callbacks.changeCollection}
+        reauthorizeCollection={callbacks.reauthorizeCurrentCollection}
+      />
+    </CollectionGateContext.Provider>,
+  );
+  return { mounted, onReady };
+}
+
+it("does not announce missing setup before the initial inspection finishes", async () => {
+  const port = setup();
+  let finish!: (view: { state: "required" }) => void;
+  vi.mocked(port.inspect).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const opening = readinessScreen(port);
+  expect(
+    screen.getByRole("heading", { name: "Opening collection" }),
+  ).toBeVisible();
+  expect(screen.queryByText("Set up TaskNotes")).not.toBeInTheDocument();
+  await act(async () => finish({ state: "required" }));
+  expect(
+    screen.getByRole("button", { name: "Set up TaskNotes" }),
+  ).toBeVisible();
+  opening.mounted.unmount();
+});
+
+it.each(["waiting_for_access", "catching_up"] as const)(
+  "keeps %s read-only and automatically reopens only after exact ready inspection",
+  async (reason) => {
+    const port = setup();
+    vi.mocked(port.inspect).mockResolvedValue({
+      state: "waiting",
+      reason,
+      message: "Collection not ready yet",
+    });
+    let changed!: () => void;
+    const stop = vi.fn();
+    port.onReadinessChange = (listener) => {
+      changed = listener;
+      return stop;
+    };
+    const opening = readinessScreen(port);
+    await screen.findByRole("heading", {
+      name:
+        reason === "waiting_for_access" ? "Waiting for access" : "Catching up",
+    });
+    expect(screen.queryByText("Set up TaskNotes")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Resume original setup" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check setup" }),
+    ).not.toBeInTheDocument();
+    expect(opening.onReady).not.toHaveBeenCalled();
+    vi.mocked(port.inspect).mockResolvedValue({ state: "ready" });
+    await act(async () => changed());
+    await waitFor(() => expect(opening.onReady).toHaveBeenCalledOnce());
+    expect(port.install).not.toHaveBeenCalled();
+    expect(port.resume).not.toHaveBeenCalled();
+    opening.mounted.unmount();
+    expect(stop).toHaveBeenCalledOnce();
+  },
+);
+
+it("cleared catch-up still requires explicit setup if native inspection finds genuine absence", async () => {
+  const port = setup();
+  vi.mocked(port.inspect).mockResolvedValue({
+    state: "waiting",
+    reason: "catching_up",
+    message: "Downloading",
+  });
+  let changed!: () => void;
+  port.onReadinessChange = (listener) => {
+    changed = listener;
+    return () => undefined;
+  };
+  const opening = readinessScreen(port);
+  await screen.findByRole("heading", { name: "Catching up" });
+  vi.mocked(port.inspect).mockResolvedValue({ state: "required" });
+  await act(async () => changed());
+  expect(
+    screen.getByRole("button", { name: "Set up TaskNotes" }),
+  ).toBeVisible();
+  expect(opening.onReady).not.toHaveBeenCalled();
+  expect(port.install).not.toHaveBeenCalled();
+  expect(port.resume).not.toHaveBeenCalled();
+  opening.mounted.unmount();
+});
+
+it("ignores an old absence assessment after a newer access-wait inspection", async () => {
+  const port = setup();
+  let finish!: (view: { state: "required" }) => void;
+  vi.mocked(port.inspect).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  let changed!: () => void;
+  port.onReadinessChange = (listener) => {
+    changed = listener;
+    return () => undefined;
+  };
+  const opening = readinessScreen(port);
+  vi.mocked(port.inspect).mockResolvedValue({
+    state: "waiting",
+    reason: "waiting_for_access",
+    message: "Waiting",
+  });
+  await act(async () => changed());
+  await act(async () => finish({ state: "required" }));
+  expect(
+    screen.getByRole("heading", { name: "Waiting for access" }),
+  ).toBeVisible();
+  expect(screen.queryByText("Set up TaskNotes")).not.toBeInTheDocument();
+  opening.mounted.unmount();
 });

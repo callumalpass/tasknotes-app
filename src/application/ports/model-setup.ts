@@ -163,6 +163,11 @@ export interface ModelResourceSetupJournal extends ModelSetupJournal {
 export type ModelSetupView =
   | { readonly state: "required" }
   | { readonly state: "ready" }
+  | {
+      readonly state: "waiting";
+      readonly reason: "waiting_for_access" | "catching_up";
+      readonly message: string;
+    }
   | { readonly state: "outcome_unknown"; readonly message: string }
   | { readonly state: "blocked"; readonly message: string }
   | { readonly state: "permission_required"; readonly message: string };
@@ -174,6 +179,8 @@ export type ModelSetupProgressListener = (progress: ModelSetupProgress) => void;
 /** Provider-neutral explicit model installation and original-intent recovery. */
 export interface TaskNotesModelSetup {
   inspect(): Promise<ModelSetupView>;
+  /** Notify only to repeat a read-only inspection, never to install or resume. */
+  onReadinessChange?(listener: () => void): () => void;
   install(progress?: ModelSetupProgressListener): Promise<void>;
   resume(progress?: ModelSetupProgressListener): Promise<void>;
 }

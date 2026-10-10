@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ModelSetupError,
   type ModelSetupView,
@@ -22,31 +22,52 @@ export function ModelSetupScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState<ModelSetupProgress | null>(null);
+  const operationInProgress = useRef(false);
   useEffect(() => {
     let active = true;
-    void setup.inspect().then(
-      (next) => {
-        if (active) setView(next);
-      },
-      (reason: unknown) => {
-        if (active)
+    let generation = 0;
+    let waited = false;
+    const inspect = async () => {
+      const current = ++generation;
+      try {
+        const next = await setup.inspect();
+        if (!active || current !== generation) return;
+        setView(next);
+        if (next.state === "waiting") waited = true;
+        else if (
+          next.state === "ready" &&
+          waited &&
+          !operationInProgress.current
+        ) {
+          waited = false;
+          // Reopening an already configured collection is read-only. This
+          // cannot install, resume or finish an original creator controller.
+          await onReady();
+        }
+      } catch (reason) {
+        if (active && current === generation)
           setView({
             state: "blocked",
             message:
               reason instanceof Error
                 ? reason.message
-                : "Original setup is unavailable.",
+                : "Collection access is unavailable.",
           });
-      },
-    );
+      }
+    };
+    void inspect();
+    const stop = setup.onReadinessChange?.(() => void inspect());
     return () => {
       active = false;
+      generation++;
+      stop?.();
     };
-  }, [setup]);
+  }, [setup, onReady]);
 
   const run = useCallback(
     async (action: "install" | "resume" | "inspect") => {
-      if (busy) return;
+      if (busy || operationInProgress.current) return;
+      operationInProgress.current = true;
       setBusy(true);
       setError("");
       setProgress(null);
@@ -89,6 +110,7 @@ export function ModelSetupScreen({
           }
         }
       } finally {
+        operationInProgress.current = false;
         setBusy(false);
       }
     },
@@ -97,14 +119,25 @@ export function ModelSetupScreen({
 
   return (
     <main className="opening-screen">
-      <h1>Set up TaskNotes</h1>
-      <p>
-        This collection needs its TaskNotes setup before tasks and views can
-        open. New setup installs the published models and adds Today, Upcoming,
-        Calendar, Projects and Archive. Existing view sources stay unchanged;
-        interrupted setup resumes only its original changes.
-      </p>
-      {!view ? <p role="status">Checking the original collection…</p> : null}
+      <h1>
+        {!view
+          ? "Opening collection"
+          : view.state === "waiting"
+            ? view.reason === "waiting_for_access"
+              ? "Waiting for access"
+              : "Catching up"
+            : "Set up TaskNotes"}
+      </h1>
+      {view && view.state !== "waiting" ? (
+        <p>
+          This collection needs its TaskNotes setup before tasks and views can
+          open. New setup installs the published models and adds Today,
+          Upcoming, Calendar, Projects and Archive. Existing view sources stay
+          unchanged; interrupted setup resumes only its original changes.
+        </p>
+      ) : null}
+      {!view ? <p role="status">Checking collection access…</p> : null}
+      {view?.state === "waiting" ? <p role="status">{view.message}</p> : null}
       {view?.state === "required" ? (
         <button disabled={busy} onClick={() => void run("install")}>
           Set up TaskNotes
@@ -127,12 +160,15 @@ export function ModelSetupScreen({
         </>
       ) : null}
       {view?.state === "blocked" ? <p role="alert">{view.message}</p> : null}
-      {view && view.state !== "required" && view.state !== "outcome_unknown" ? (
+      {view &&
+      view.state !== "waiting" &&
+      view.state !== "required" &&
+      view.state !== "outcome_unknown" ? (
         <button disabled={busy} onClick={() => void run("inspect")}>
           Check setup
         </button>
       ) : null}
-      {busy ? (
+      {busy && view?.state !== "waiting" ? (
         <p role="status">
           {progress === "checking_outcome"
             ? "Checking whether setup finished…"
@@ -143,7 +179,7 @@ export function ModelSetupScreen({
                 : "Checking TaskNotes setup…"}
         </p>
       ) : null}
-      {error ? <p role="alert">{error}</p> : null}
+      {error && view?.state !== "waiting" ? <p role="alert">{error}</p> : null}
       <button
         className="text-action"
         disabled={busy}

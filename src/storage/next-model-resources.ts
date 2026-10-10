@@ -1,4 +1,5 @@
 import type { MdbaseClient, wire } from "@mdbase-dev/sdk";
+import { requireSetupAvailability } from "./next-setup-availability";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   MODEL_SETUP_LIMITS,
@@ -29,7 +30,10 @@ function refuse(): never {
  * cursor, reinterpret currentness errors, or publish a first-page witness.
  */
 export async function modelResourceInventory(
-  client: { readonly resources: Pick<MdbaseClient["resources"], "list"> },
+  client: {
+    readonly resources: Pick<MdbaseClient["resources"], "list">;
+    readonly status?: MdbaseClient["status"];
+  },
   ownerSignal: AbortSignal,
 ): Promise<wire.ResourceView[]> {
   ownerSignal.throwIfAborted();
@@ -49,6 +53,7 @@ export async function modelResourceInventory(
     pageNumber++
   ) {
     signal.throwIfAborted();
+    requireSetupAvailability(client.status);
     const page = await client.resources.list({
       text: true,
       limit: MODEL_RESOURCE_INVENTORY_LIMITS.pageSize,
@@ -56,6 +61,7 @@ export async function modelResourceInventory(
       signal,
     });
     signal.throwIfAborted();
+    requireSetupAvailability(client.status);
     bytes += encoder.encode(JSON.stringify(page)).byteLength;
     if (
       bytes > MODEL_RESOURCE_INVENTORY_LIMITS.bytes ||
