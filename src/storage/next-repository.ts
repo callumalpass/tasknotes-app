@@ -2132,7 +2132,7 @@ export class NextTaskRepository implements TaskRepository {
               path: descriptor.path,
               revision: descriptor.sourceRevision,
               format: "obsidian.base",
-              writable: false,
+              writable: this.hasViewSourceGrant("records.edit"),
             },
             views: [],
           };
@@ -2232,16 +2232,19 @@ export class NextTaskRepository implements TaskRepository {
     this.assertCurrentData(revision);
     return result;
   }
+  private hasViewSourceGrant(capability: "records.edit" | "records.delete") {
+    const grant = this.client.hello.grant;
+    return (
+      grant.role !== "viewer" &&
+      grant.capabilities.includes("collection.read") &&
+      grant.capabilities.includes(capability) &&
+      grant.fileFolders === undefined
+    );
+  }
   private requireViewSourceGrant(
     capability: "records.edit" | "records.delete",
   ) {
-    const grant = this.client.hello.grant;
-    if (
-      grant.role === "viewer" ||
-      !grant.capabilities.includes("collection.read") ||
-      !grant.capabilities.includes(capability) ||
-      grant.fileFolders !== undefined
-    )
+    if (!this.hasViewSourceGrant(capability))
       throw nativeUnsupported(
         "This session does not provide the required full-scope view-source grant.",
       );
@@ -2463,6 +2466,8 @@ export class NextTaskRepository implements TaskRepository {
             record.path !== source.view.path ||
             record.revision !== source.view.sourceRevision ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document !== source.source
           )
             throw new Error(
@@ -2495,6 +2500,8 @@ export class NextTaskRepository implements TaskRepository {
             record.id !== target.record ||
             record.path !== target.path ||
             record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved ||
             record.document === undefined ||
             record.document !== input.document ||
             (receipt.records !== undefined &&
@@ -2533,19 +2540,48 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The view source changed. Reload it before deleting.",
             );
+          const record = await this.client.get(
+            source.view.record,
+            { document: true },
+            signal,
+          );
+          if (
+            record.id !== source.view.record ||
+            record.path !== source.view.path ||
+            record.revision !== source.view.sourceRevision ||
+            record.document !== source.source ||
+            record.state.state !== "confirmed" ||
+            record.state.hold ||
+            record.state.unresolved
+          )
+            throw new Error(
+              "The native source changed before its complete record READ.",
+            );
+          signal.throwIfAborted();
+          this.requireViewSourceGrant("records.delete");
           target = structuredClone(source.view);
           return () =>
-            this.client.delete(source.view.record, {
-              ifRevision: source.view.sourceRevision,
+            this.client.delete(record, {
+              ifRevision: record.revision,
               mutationId,
               signal,
             });
         },
-        confirmed: async () => {
+        confirmed: async (_receipt, signal) => {
           if (!target)
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
+          const remaining = await this.client.find(
+            target.record,
+            { document: true },
+            signal,
+          );
+          if (remaining !== null)
+            throw new Error(
+              "The original native view source is still present after deletion.",
+            );
+          signal.throwIfAborted();
           this.forgetNativeSource(target.record);
         },
       },
