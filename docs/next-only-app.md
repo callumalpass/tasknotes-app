@@ -86,14 +86,26 @@ checks.
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.
 
-The current native entry point uses protected installation sign-in, the owned
-native host and `NextTaskRepository`. Its manual sign-in controller still awaits
-replacement by `AppWebSignInSession` and the shared native collection/SQL adapter;
-the concrete adapter ABI and required Connect account/collection-receipt parity
-must be delivered before adoption. Paired shared-session authorization requests
+The native entry point uses `AppWebSignInSession` on SDK9ab for the original
+protected request, approval polling, device, native host and ownership leases.
+The production welcome renderer consumes its public snapshot directly, without
+a legacy snapshot adapter. The existing single-port collection/journal boundary
+and `NextTaskRepository` remain until separate shared-factory/two-port adoption. Paired shared-session authorization requests
 same-installation additive consent, with named creation owned by the Connect
 portal and creation permission explicitly requested. The app must not retain a
 second old owner or invent a shared-session `createCollection()` method.
+
+Sign-in reserves the production named 620×760 Connect popup synchronously in
+the click. Its SDK-validated first-party opener relationship is retained so the
+app can close it after confirmed approval, unlike the SDK9ab doc's detached
+opener recommendation. No secrets, postMessage completion or storage callbacks
+use that relationship. The fallback tab is immediately opener-detached; its
+cross-origin close remains best-effort. A paired account still approving additive
+consent does not close the popup prematurely.
+
+Provider labels, recent-visit metadata, legacy setup/access reviews and manual
+sign-in recovery/cancellation are not fabricated from SDK discovery. The existing
+model setup gate remains; automatic original-setup recovery is a separate change.
 
 Saved follows original confirmations, never dirty drafts or pending retries.
 Real ordinary startup, current-account/revoke and restart/offline must be

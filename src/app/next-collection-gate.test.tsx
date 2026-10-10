@@ -13,8 +13,8 @@ const fixture = vi.hoisted(() => ({
 vi.mock("../cloud/next-native-build", () => ({
   loadNativeBuild: fixture.load,
 }));
-vi.mock("./next-installation-screen", () => ({
-  NextInstallationScreen: ({
+vi.mock("./cloud-sign-in", () => ({
+  CloudSignIn: ({
     onCollection,
   }: {
     onCollection(repository: TaskRepository): Promise<void>;
