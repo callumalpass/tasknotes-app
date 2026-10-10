@@ -326,41 +326,61 @@ async function fixture({
       collectionRevision: "sha256:" + "ab".repeat(32),
     }),
   );
+  // Real describe() reads an already-resolved native catalog. This protocol
+  // stand-in must not recompile identical WASM definitions for each Base get.
+  // Still READ resources on every call; any document change selects a new cache.
+  let catalogCache:
+    | {
+        signature: string;
+        result: Promise<wire.DescribeResult>;
+      }
+    | undefined;
   vi.spyOn(client, "describe").mockImplementation(async (signal) => {
     const listed = await client.resources.list({ text: true, signal });
     const resources = Object.fromEntries(
       listed.resources.map((resource) => [resource.path, resource.text!]),
     );
-    const core = await loadCatalog(resources);
-    const catalog: wire.DescribeResult = {
-      specVersion: "0.3.0",
-      inclusion: { include: [] },
-      issues: [],
-      settings: new Map(),
-      contracts: core.contracts.map((contract) => ({
-        id: contract.id,
-        version: contract.version,
-        digest: contract.digest,
-        path: contract.path,
-        contractType: "record" as const,
-        implementedBy: core.implementations
-          .filter((implementation) => implementation.contract === contract.id)
-          .map((implementation) => implementation.type),
-      })),
-      types: core.types.map((type) => ({
-        name: type.name,
-        path: type.path,
-        implements: core.implementations
-          .filter((implementation) => implementation.type === type.name)
-          .map((implementation) => ({
-            contract: implementation.contract,
-            version: implementation.version,
-            fields: new Map(implementation.fields),
-            binding: toValue(implementation.binding as never),
-          })),
-      })),
-    };
-    return catalog;
+    const signature = JSON.stringify(Object.entries(resources).sort());
+    if (!catalogCache || catalogCache.signature !== signature) {
+      catalogCache = {
+        signature,
+        result: (async () => {
+          const core = await loadCatalog(resources);
+          const catalog: wire.DescribeResult = {
+            specVersion: "0.3.0",
+            inclusion: { include: [] },
+            issues: [],
+            settings: new Map(),
+            contracts: core.contracts.map((contract) => ({
+              id: contract.id,
+              version: contract.version,
+              digest: contract.digest,
+              path: contract.path,
+              contractType: "record" as const,
+              implementedBy: core.implementations
+                .filter(
+                  (implementation) => implementation.contract === contract.id,
+                )
+                .map((implementation) => implementation.type),
+            })),
+            types: core.types.map((type) => ({
+              name: type.name,
+              path: type.path,
+              implements: core.implementations
+                .filter((implementation) => implementation.type === type.name)
+                .map((implementation) => ({
+                  contract: implementation.contract,
+                  version: implementation.version,
+                  fields: new Map(implementation.fields),
+                  binding: toValue(implementation.binding as never),
+                })),
+            })),
+          };
+          return catalog;
+        })(),
+      };
+    }
+    return structuredClone(await catalogCache.result);
   });
   vi.mocked(connect).mockResolvedValueOnce(client);
   const { worker: owner } = await NextInstallationWorker.open(
