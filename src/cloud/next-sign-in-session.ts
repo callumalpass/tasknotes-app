@@ -6,6 +6,7 @@ import {
   type AppWebSignInPortal,
   type AppLockPort,
 } from "@mdbase-dev/sdk/app-host";
+import { StartupTiming } from "../observability/startup-timing";
 import { collectionJoinIntent } from "./next-collection-join-intent";
 import { findCollectionCreation } from "./next-collection-create-intent";
 import { openNextCollectionSql } from "./next-collection-sql";
@@ -39,6 +40,8 @@ export function createNextSignInSession({
   });
   const runtime = new Uint8Array(build.runtime);
   let adapter: NextSessionCollection | null = null;
+  let timing: StartupTiming | null = null;
+  let endNativeOpen: (() => void) | undefined;
   const session = new AppWebSignInSession<NextOpenedCollection>({
     environment: build.environment,
     release: build.release,
@@ -63,11 +66,27 @@ export function createNextSignInSession({
         build.appOrigin,
         environment.cpOrigin,
         environment.allowLoopbackHttp,
+        (timing ??= new StartupTiming()),
       );
       adapter = next;
-      return next.open();
+      endNativeOpen ??= timing.begin("native_open");
+      try {
+        return await next.open();
+      } finally {
+        endNativeOpen();
+      }
     },
   });
+  let opening = false;
+  const stopTiming = session.subscribe(() => {
+    const next = session.getSnapshot().status === "opening";
+    if (next && !opening) {
+      timing = new StartupTiming();
+      endNativeOpen = timing.begin("native_open");
+    }
+    opening = next;
+  });
+  signal.addEventListener("abort", stopTiming, { once: true });
   return {
     session,
     takeConnection(collectionId: string) {
@@ -132,6 +151,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
     appOrigin: string,
     cpOrigin: string,
     private readonly allowLoopbackHttp: boolean,
+    private readonly timing: StartupTiming,
   ) {
     this.scope = Object.freeze({ ...context.scope });
     this.signal = AbortSignal.any([context.signal, this.lifetime.signal]);
@@ -181,18 +201,23 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
         ? "existing"
         : await collectionJoinIntent(this.scope, signal, "prepare");
       this.check();
-      await host.bootstrapCloudCopy({
-        scope: this.scope,
-        collectionCurrent: () => this.current(),
-        purpose: creation ? "create" : "join",
-        outcomeMode: mode,
-        signal,
-        ...(mode === "existing"
-          ? { reconcile: "explicit-unknown-outcome" as const }
-          : {}),
-        fetch: (input, init) => globalThis.fetch(input, init),
-        allowLoopbackHttp: this.allowLoopbackHttp,
-      });
+      const endBootstrap = this.timing.begin("bootstrap");
+      try {
+        await host.bootstrapCloudCopy({
+          scope: this.scope,
+          collectionCurrent: () => this.current(),
+          purpose: creation ? "create" : "join",
+          outcomeMode: mode,
+          signal,
+          ...(mode === "existing"
+            ? { reconcile: "explicit-unknown-outcome" as const }
+            : {}),
+          fetch: (input, init) => globalThis.fetch(input, init),
+          allowLoopbackHttp: this.allowLoopbackHttp,
+        });
+      } finally {
+        endBootstrap();
+      }
       this.check();
       if (!creation) await collectionJoinIntent(this.scope, signal, "complete");
       this.check();
@@ -201,19 +226,29 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
         throw Object.assign(Error("Original collection binding."), {
           reason: "binding",
         });
-      await host.openCollectionSql({
-        signal,
-        replicaId: receipt.deviceId,
-        endpoint: 0,
-        openSql: openNextCollectionSql,
-      });
+      const endSql = this.timing.begin("sql_open");
+      try {
+        await host.openCollectionSql({
+          signal,
+          replicaId: receipt.deviceId,
+          endpoint: 0,
+          openSql: openNextCollectionSql,
+        });
+      } finally {
+        endSql();
+      }
       this.check();
-      await host.startCollectionLog({
-        signal,
-        fetch: (input, init) => globalThis.fetch(input, init),
-        allowLoopbackHttp: this.allowLoopbackHttp,
-      });
-      await host.waitForVerifiedRead({ signal });
+      const endRead = this.timing.begin("verified_read");
+      try {
+        await host.startCollectionLog({
+          signal,
+          fetch: (input, init) => globalThis.fetch(input, init),
+          allowLoopbackHttp: this.allowLoopbackHttp,
+        });
+        await host.waitForVerifiedRead({ signal });
+      } finally {
+        endRead();
+      }
       this.check();
       this.channel = new MessageChannel();
       host.attachDataFacade(this.channel.port1);
@@ -239,6 +274,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
       // invent a creator-history flag from CP metadata or a verified callback.
       requiresTaskNotesModelSetup: false,
       channel: this.channel.port2,
+      startupTiming: this.timing.snapshot(),
     });
   }
   takeConnection() {

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { startupTiming } from "../observability/startup-timing";
 import { ViewQuerySession } from "../application/view-query-session";
 import type { TaskRepository } from "../application/ports/task-repository";
 import type { TaskView, TaskViewExecution } from "../domain/view";
@@ -13,6 +20,7 @@ export function useViewExecution(
 ) {
   const sessionRef = useRef<ViewQuerySession | null>(null);
   const queryRowsRef = useRef(new Map<string, number>());
+  const renderEnd = useRef<(() => void) | undefined>(undefined);
   const [paging, setPaging] = useState({
     key: "",
     available: false,
@@ -32,6 +40,8 @@ export function useViewExecution(
   useEffect(() => {
     if (!viewKey || !selected) return;
     const executionKey = `${selected.key}:${selected.source.revision}`;
+    const timing = startupTiming(repository);
+    const endQuery = timing?.begin("first_query");
     const session = new ViewQuerySession(
       repository,
       selected,
@@ -39,6 +49,9 @@ export function useViewExecution(
         result: (result) => {
           setExecution(result);
           if (!result.stale) {
+            endQuery?.();
+            if (!timing?.has("first_render"))
+              renderEnd.current ??= timing?.begin("first_render");
             if (queryRowsRef.current.get(selected.key) !== Infinity)
               queryRowsRef.current.set(selected.key, result.rows.length);
             reconcile(result, selected.key);
@@ -74,6 +87,13 @@ export function useViewExecution(
     revision,
     retry,
   ]);
+
+  useLayoutEffect(() => {
+    if (!execution || execution.stale || !renderEnd.current) return;
+    renderEnd.current();
+    renderEnd.current = undefined;
+    startupTiming(repository)?.report();
+  }, [execution, repository]);
 
   const currentSession = useCallback(() => sessionRef.current, []);
 
