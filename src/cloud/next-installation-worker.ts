@@ -1,4 +1,5 @@
 import { connect } from "@mdbase-dev/sdk";
+import { registerStartupTiming } from "../observability/startup-timing";
 import type {
   ModelResourceSetupJournal,
   ModelResourceSetupIntent,
@@ -654,6 +655,7 @@ export class NextInstallationWorker {
         },
       );
       const repository = this.repository;
+      registerStartupTiming(repository, opened.startupTiming);
       // Opening never installs or resumes, including original creator recovery.
       // The real controller flag keeps tasks/views behind the explicit setup
       // screen until that same controller acknowledges completion.

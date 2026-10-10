@@ -107,6 +107,20 @@ Provider labels, recent-visit metadata, legacy setup/access reviews and manual
 sign-in recovery/cancellation are not fabricated from SDK discovery. The existing
 model setup gate remains; automatic original-setup recovery is a separate change.
 
+Startup diagnostics use `tasknotes:startup:<local-counter>:<stage>` marks and
+measures and one `[TaskNotes startup timing ms]` debug line after the first
+non-stale view execution reaches its React layout commit. Labels and duration
+values contain no account, collection, request, source or error details.
+`native_open` spans SDK public `opening` through the original app adapter's
+completion, including leases, ledger reads, bootstrap, SQL and verified log READ;
+`bootstrap`, `sql_open` and `verified_read` are nested, not additive. SDK device
+open before `opening` is outside this span. UI `repository_init`, first
+`setup_assessment`, `first_query` and `first_render` are separate intervals;
+`first_render` is result-to-React-commit, not browser paint. Cached/stale results
+never complete query/render diagnostics. Timing failures do not change an
+operation's success, rejection, abort or readiness. These are measurement
+boundaries, not evidence that any phase is fast or that native startup is qualified.
+
 Saved follows original confirmations, never dirty drafts or pending retries.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.

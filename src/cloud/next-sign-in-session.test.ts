@@ -17,6 +17,10 @@ import { collectionJoinIntent } from "./next-collection-join-intent";
 const f = vi.hoisted(() => ({
   options: null as unknown as AppWebSignInSessionOptions<NextOpenedCollection>,
   connection: null as NextOpenedCollection | null,
+  listener: () => {},
+  stop: vi.fn(),
+  status:
+    "not_started" as import("@mdbase-dev/sdk/app-host").AppWebSignInSnapshot["status"],
 }));
 vi.mock("@mdbase-dev/sdk/app-host", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -28,6 +32,13 @@ vi.mock("@mdbase-dev/sdk/app-host", async (importOriginal) => ({
       return f.connection;
     }
     setForeground() {}
+    subscribe(listener: () => void) {
+      f.listener = listener;
+      return f.stop;
+    }
+    getSnapshot() {
+      return { status: f.status };
+    }
   },
 }));
 const account = "11111111-1111-4111-8111-111111111111",
@@ -59,6 +70,8 @@ const build: NextInstallationBuildInput = {
 beforeEach(() => {
   vi.stubGlobal("indexedDB", new IDBFactory());
   f.connection = null;
+  f.status = "not_started";
+  f.stop.mockClear();
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -143,7 +156,19 @@ it("CP-created selections JOIN once and expose one stable data-only handle, neve
     "kind",
     "requiresTaskNotesModelSetup",
     "scope",
+    "startupTiming",
   ]);
+  expect(Object.keys(first.startupTiming!).sort()).toEqual([
+    "bootstrap",
+    "native_open",
+    "sql_open",
+    "verified_read",
+  ]);
+  expect(
+    Object.values(first.startupTiming!).every(
+      (value) => Number.isFinite(value) && value >= 0,
+    ),
+  ).toBe(true);
   expect(() => fixtureValue.wrapper.takeConnection(collection)).toThrow(
     "already handed off",
   );

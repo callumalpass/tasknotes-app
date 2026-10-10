@@ -1,4 +1,5 @@
 import { App as CapacitorApp } from "@capacitor/app";
+import { timedStartup } from "../observability/startup-timing";
 import { Capacitor } from "@capacitor/core";
 import {
   createContext,
@@ -290,13 +291,18 @@ export function RepositoryProvider({
         resolveTaskCommands(null);
       };
       disposeStartup = disposeAttempt;
-      const run = repository
-        .initialize({ deferTaskIndex: true })
+      const run = timedStartup(repository, "repository_init", () =>
+        repository.initialize({ deferTaskIndex: true }),
+      )
         .then(async () => {
           if (!current()) return;
           // Readable task metadata is not evidence that the original source
           // setup finished. Inspection cannot install, resume or mint IDs.
-          const setupView = await repository.modelSetup?.inspect();
+          const setupView = await timedStartup(
+            repository,
+            "setup_assessment",
+            async () => repository.modelSetup?.inspect(),
+          );
           if (!current()) return;
           if (setupView && setupView.state !== "ready")
             throw new TaskNotesModelRequiredError(

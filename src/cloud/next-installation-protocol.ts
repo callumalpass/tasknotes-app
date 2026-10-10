@@ -73,6 +73,8 @@ export type NextInstallationCommand =
       mutationId: string;
     };
 export interface NextOpenedCollection {
+  /** Bounded duration-only diagnostics, never readiness or custody evidence. */
+  readonly startupTiming?: import("../observability/startup-timing").StartupDurations;
   readonly kind: "collection";
   readonly scope: Readonly<{
     account: string;
