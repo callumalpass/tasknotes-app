@@ -2,6 +2,7 @@ import { connect } from "@mdbase-dev/sdk";
 import type {
   ModelResourceSetupJournal,
   ModelResourceSetupIntent,
+  ResourceSetupIntent,
   ModelSetupScope,
   ModelSetupIntent,
   ModelPackSetupIntent,
@@ -281,10 +282,14 @@ export class NextInstallationWorker {
       }
       if (
         (command.action !== "load" &&
-          intent.version !==
-            (command.kind === "model-resource-setup-intent" ? 3 : 2)) ||
+          (command.kind === "model-resource-setup-intent"
+            ? intent.version !== 3 && intent.version !== 4
+            : intent.version !== 2)) ||
+        (command.action === "prepare-round" &&
+          (intent.version !== 4 ||
+            intent.previous.mutationId !== command.previousMutationId)) ||
         ("mutationId" in command && intent.mutationId !== command.mutationId) ||
-        (command.action === "prepare" &&
+        ((command.action === "prepare" || command.action === "prepare-round") &&
           (intent.version === 1 ||
             JSON.stringify(intent.plan) !== JSON.stringify(command.plan)))
       ) {
@@ -310,9 +315,9 @@ export class NextInstallationWorker {
         { kind: "model-resource-setup-intent" }
       >,
       signal: AbortSignal,
-    ): Promise<ModelResourceSetupIntent> => {
+    ): Promise<ResourceSetupIntent> => {
       const intent = await invoke(command, signal);
-      if (!intent || intent.version !== 3) {
+      if (!intent || (intent.version !== 3 && intent.version !== 4)) {
         this.onError();
         throw new Error("Original resource setup binding unavailable.");
       }
@@ -344,15 +349,36 @@ export class NextInstallationWorker {
           { kind: "model-setup-intent", action: "verify", mutationId },
           signal,
         ),
-      prepareResources: async (plan, signal) =>
-        mutateResources(
+      prepareResources: async (
+        plan,
+        signal,
+      ): Promise<ModelResourceSetupIntent> => {
+        const intent = await mutateResources(
           {
             kind: "model-resource-setup-intent",
             action: "prepare",
             plan: modelResourcePlan(plan),
           },
           signal,
-        ),
+        );
+        if (intent.version !== 3)
+          throw new Error("Original resource setup version unavailable.");
+        return intent;
+      },
+      prepareResourceRound: async (plan, previousMutationId, signal) => {
+        const intent = await mutateResources(
+          {
+            kind: "model-resource-setup-intent",
+            action: "prepare-round",
+            plan: modelResourcePlan(plan),
+            previousMutationId,
+          },
+          signal,
+        );
+        if (intent.version !== 4)
+          throw new Error("Original resource setup round unavailable.");
+        return intent;
+      },
       recordResourceAttempt: async (mutationId, signal) =>
         mutateResources(
           {
