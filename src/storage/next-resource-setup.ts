@@ -4,14 +4,14 @@ import {
   ModelSetupError,
   MODEL_SETUP_LIMITS,
   type ModelResourcePlan,
-  type ModelResourceSetupIntent,
+  type ResourceSetupIntent,
   type ModelResourceSetupJournal,
   type ModelSetupIntent,
   type ModelSetupProgressListener,
   type ModelSetupView,
   type TaskNotesModelSetup,
 } from "../application/ports/model-setup";
-import { modelResourcePlan } from "../cloud/next-model-setup-intent";
+import { decode, modelResourcePlan } from "../cloud/next-model-setup-intent";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { modelResourceInventory } from "./next-model-resources";
@@ -83,25 +83,33 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       ? AbortSignal.any([owner, AbortSignal.timeout(budget)])
       : owner;
   }
-  private intent(value: ModelSetupIntent): ModelResourceSetupIntent {
-    if (!value || value.version !== 3)
+  private intent(value: ModelSetupIntent): ResourceSetupIntent {
+    const original = decode(value, this.scope);
+    if (original.version !== 3 && original.version !== 4)
       throw blocked(
-        "Preserve and resume the original legacy/model-pack intent. It cannot be enlarged into resource setup.",
+        "Preserve and resume the original legacy/model-pack intent.",
       );
-    if (
-      Object.keys(value).sort().join() !==
-        "mutationId,phase,plan,scope,version" ||
-      !same(value.scope, this.scope) ||
-      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(value.mutationId) ||
-      value.mutationId === "00000000-0000-0000-0000-000000000000" ||
-      !["prepared", "attempted", "confirmed", "verified"].includes(value.phase)
-    )
-      throw blocked("The original resource setup binding is invalid.");
-    return Object.freeze({
-      ...value,
-      scope: this.scope,
-      plan: modelResourcePlan(value.plan),
-    });
+    return original;
+  }
+  private async verifyPrevious(
+    value: ModelSetupIntent,
+    signal: AbortSignal,
+  ): Promise<void> {
+    value = decode(value, this.scope);
+    if (value.phase !== "verified") throw uncertain();
+    if (value.version === 3 || value.version === 4) {
+      await this.readback(value.plan, signal);
+    } else if (value.version === 2 && this.legacy) {
+      const view = await this.legacy(signal).inspect();
+      if (view.state !== "ready") throw uncertain();
+    } else if (value.version === 1) {
+      for (const op of value.ops) {
+        const resource = await this.client.resources.get(op.path, signal);
+        signal.throwIfAborted();
+        if (resource.state !== "confirmed" || resource.text !== op.doc)
+          throw uncertain();
+      }
+    } else throw uncertain();
   }
   private requirePermission(
     plan: Pick<ResourceSetupAssessment, "resourceOps" | "sources">,
@@ -145,12 +153,14 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       requireSetupAvailability(this.client.status);
       signal.throwIfAborted();
       if (stored) {
-        if (stored.version !== 3 && this.legacy)
-          return await this.legacy(signal).inspect();
-        const original = this.intent(stored);
-        if (original.phase !== "verified") return uncertain().view;
+        if (stored.phase !== "verified") {
+          if (stored.version < 3 && this.legacy)
+            return await this.legacy(signal).inspect();
+          this.intent(stored);
+          return uncertain().view;
+        }
         try {
-          await this.readback(original.plan, signal);
+          await this.verifyPrevious(stored, signal);
         } catch (reason) {
           signal.throwIfAborted();
           requireSetupAvailability(this.client.status);
@@ -161,13 +171,13 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
             throw reason;
           throw uncertain();
         }
-        return { state: "ready" };
       }
       const assessment = await nativeResourceSetupAssessment(
         await this.snapshot(signal),
         this.client,
         this.sources,
         signal,
+        stored !== null,
       );
       requireSetupAvailability(this.client.status);
       if (assessment.resourceOps.length || assessment.sources.length) {
@@ -211,7 +221,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     const stored = await this.journal.load(signal);
     signal.throwIfAborted();
     if (!stored || stored.phase === "prepared") setupStillPending();
-    if (stored.version !== 3 && this.legacy) {
+    if (stored.version < 3 && this.legacy) {
       if (stored.version !== 2) setupStillPending();
       await this.legacy(signal).resume();
       return;
@@ -224,19 +234,21 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     return this.operation(async (signal) => {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
-      if (stored) {
-        if (stored.version !== 3 && this.legacy) {
+      if (stored && stored.phase !== "verified") {
+        if (stored.version < 3 && this.legacy) {
           await this.legacy(signal).install(progress);
           return;
         }
         await this.execute(this.intent(stored), signal, progress);
         return;
       }
+      if (stored) await this.verifyPrevious(stored, signal);
       const assessment = await nativeResourceSetupAssessment(
         await this.snapshot(signal),
         this.client,
         this.sources,
         signal,
+        stored !== null,
       );
       signal.throwIfAborted();
       requireSetupAvailability(this.client.status);
@@ -248,9 +260,21 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       this.requirePermission(assessment);
       // Every original record UUID/source is captured before the first durable prepare await.
       const plan = modelResourcePlan(captureResourceSetupPlan(assessment));
+      if (stored && !this.journal.prepareResourceRound)
+        throw blocked(
+          "The original journal cannot retain an additive setup round.",
+        );
       const intent = this.intent(
-        await this.journal.prepareResources(plan, signal),
+        stored
+          ? await this.journal.prepareResourceRound!(
+              plan,
+              stored.mutationId,
+              signal,
+            )
+          : await this.journal.prepareResources(plan, signal),
       );
+      if (stored && (intent.version !== 4 || !same(intent.previous, stored)))
+        throw uncertain();
       signal.throwIfAborted();
       if (!same(intent.plan, plan)) throw uncertain();
       await this.execute(intent, signal, progress);
@@ -262,7 +286,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       signal.throwIfAborted();
       if (!stored)
         throw blocked("No original resource mutation is available to resume.");
-      if (stored.version !== 3 && this.legacy) {
+      if (stored.version < 3 && this.legacy) {
         await this.legacy(signal).resume(progress);
         return;
       }
@@ -270,13 +294,16 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     }, progress);
   }
   private transition(
-    before: ModelResourceSetupIntent,
-    after: ModelResourceSetupIntent,
-    phase: ModelResourceSetupIntent["phase"],
+    before: ResourceSetupIntent,
+    after: ResourceSetupIntent,
+    phase: ResourceSetupIntent["phase"],
   ) {
     const result = this.intent(after);
     if (
       result.mutationId !== before.mutationId ||
+      result.version !== before.version ||
+      (before.version === 4 &&
+        (result.version !== 4 || !same(before.previous, result.previous))) ||
       !same(result.plan, before.plan) ||
       result.phase !== phase
     )
@@ -284,7 +311,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     return result;
   }
   private async execute(
-    original: ModelResourceSetupIntent,
+    original: ResourceSetupIntent,
     signal: AbortSignal,
     progress?: ModelSetupProgressListener,
   ): Promise<void> {
@@ -299,6 +326,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         await this.snapshot(signal),
         intent.plan,
         signal,
+        intent.version === 4,
       );
       requireSetupAvailability(this.client.status);
       intent = this.transition(

@@ -13,6 +13,7 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 import { CollectionGateContext } from "./collection-context";
 import { MoreScreen } from "./more-screen";
+import { mdbaseNotifications } from "../native/mdbase-notifications";
 import {
   RepositoryProvider,
   useRepository,
@@ -74,6 +75,12 @@ it("contains a rejected Settings refresh while showing cached search and retaini
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled(),
   );
+  expect(mdbaseNotifications.status).not.toHaveBeenCalled();
+  expect(screen.getByText("Not available", { exact: true })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Notifications" })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: /^Turn on reminders$/ }),
+  ).toBeNull();
   describe.mockRejectedValue(
     new MdbaseError({
       code: "unavailable",

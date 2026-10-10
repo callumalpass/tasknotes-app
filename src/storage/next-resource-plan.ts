@@ -23,9 +23,17 @@ import { iterateNativeDiscovery } from "./next-bases-discovery";
 import { MODEL_SETUP_LIMITS } from "../application/ports/model-setup";
 
 const provisions = [
-  manifest.provisions.type_packs[0] as TypePackProvision,
-  bases,
-];
+  "tasknotes.task",
+  "tasknotes.scratch",
+  "tasknotes.scratch-image",
+  "obsidian.base",
+].map((id) => {
+  const provision = manifest.provisions.type_packs.find(
+    (p) => p.manifest.id === id,
+  );
+  if (!provision) throw new Error(`The pinned ${id} provision is unavailable.`);
+  return provision as TypePackProvision;
+});
 // This hashes actual declaration DATA only. Core independently binds actual
 // setup inputs; neither digest is a trusted native head or file witness.
 async function declarationDigest(value: unknown): Promise<string> {
@@ -46,10 +54,15 @@ async function declarationDigest(value: unknown): Promise<string> {
 async function setup(
   resources: Resources,
   signal: AbortSignal,
+  packIds: readonly string[] = provisions.map((p) => p.manifest.id),
 ): Promise<CollectionSetup> {
   const catalog = await loadCatalog(resources);
   signal.throwIfAborted();
-  const packs = provisions.map((p) => {
+  // Reassessment of an original prepared journal retains its original pack
+  // scope/order. New installs use all four packs; recovery never adds packs.
+  const packs = packIds.map((id) => {
+    const p = provisions.find((provision) => provision.manifest.id === id);
+    if (!p) throw new Error("The original setup provision is unavailable.");
     const options: PackOptions = { installed_by: manifest.id };
     const overrides: Record<string, string> = {};
     for (const r of p.manifest.resources) {
@@ -230,6 +243,7 @@ export async function nativeResourceSetupAssessment(
   client: MdbaseClient,
   sources: DefaultSourceFactory,
   signal: AbortSignal,
+  missingOnly = false,
 ): Promise<ResourceSetupAssessment> {
   await initializeModelPackCore(signal);
   signal.throwIfAborted();
@@ -242,6 +256,22 @@ export async function nativeResourceSetupAssessment(
     expectedDigest: assessment.assessment_digest,
   });
   signal.throwIfAborted();
+  if (
+    missingOnly &&
+    applied.ops.some(
+      (op) =>
+        op.kind !== "resource_put" ||
+        (!op.mustNotExist &&
+          ![
+            "mdbase.yaml",
+            "mdbase.lock.yaml",
+            "mdbase.provisions.yaml",
+          ].includes(op.path)),
+    )
+  )
+    throw new Error(
+      "Additive setup cannot replace or delete an existing definition.",
+    );
   const data = prospective(resources, applied);
   const existingNativeBasePaths = await retainedNativePaths(
     client,
@@ -309,15 +339,36 @@ export async function recheckPreparedResourceSetup(
   resources: Resources,
   original: ModelResourcePlan,
   signal: AbortSignal,
+  missingOnly = false,
 ): Promise<void> {
   await initializeModelPackCore(signal);
   signal.throwIfAborted();
   const applied = await applyCollectionResources({
     resources: rows(resources),
-    setup: await setup(resources, signal),
+    setup: await setup(
+      resources,
+      signal,
+      original.packs.map((p) => p.id),
+    ),
     expectedDigest: original.assessmentDigest,
   });
   signal.throwIfAborted();
+  if (
+    missingOnly &&
+    applied.ops.some(
+      (op) =>
+        op.kind !== "resource_put" ||
+        (!op.mustNotExist &&
+          ![
+            "mdbase.yaml",
+            "mdbase.lock.yaml",
+            "mdbase.provisions.yaml",
+          ].includes(op.path)),
+    )
+  )
+    throw new Error(
+      "Additive setup cannot replace or delete an existing definition.",
+    );
   if (
     applied.assessment.provision_digest !== original.provisionDigest ||
     JSON.stringify(applied.assessment.type_packs.map((p) => p.pack)) !==

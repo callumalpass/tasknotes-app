@@ -151,7 +151,23 @@ class ControlWorker {
               mutationId: crypto.randomUUID(),
               phase: "prepared",
             };
-          if ("mutationId" in command && this.intent?.version === 3)
+          if (
+            command.action === "prepare-round" &&
+            this.intent?.phase === "verified" &&
+            this.intent.mutationId === command.previousMutationId
+          )
+            this.intent = {
+              version: 4,
+              scope,
+              mutationId: crypto.randomUUID(),
+              plan: command.plan,
+              phase: "prepared",
+              previous: structuredClone(this.intent),
+            };
+          if (
+            "mutationId" in command &&
+            (this.intent?.version === 3 || this.intent?.version === 4)
+          )
             this.intent = {
               ...this.intent,
               phase:
@@ -310,41 +326,61 @@ async function fixture({
       collectionRevision: "sha256:" + "ab".repeat(32),
     }),
   );
+  // Real describe() reads an already-resolved native catalog. This protocol
+  // stand-in must not recompile identical WASM definitions for each Base get.
+  // Still READ resources on every call; any document change selects a new cache.
+  let catalogCache:
+    | {
+        signature: string;
+        result: Promise<wire.DescribeResult>;
+      }
+    | undefined;
   vi.spyOn(client, "describe").mockImplementation(async (signal) => {
     const listed = await client.resources.list({ text: true, signal });
     const resources = Object.fromEntries(
       listed.resources.map((resource) => [resource.path, resource.text!]),
     );
-    const core = await loadCatalog(resources);
-    const catalog: wire.DescribeResult = {
-      specVersion: "0.3.0",
-      inclusion: { include: [] },
-      issues: [],
-      settings: new Map(),
-      contracts: core.contracts.map((contract) => ({
-        id: contract.id,
-        version: contract.version,
-        digest: contract.digest,
-        path: contract.path,
-        contractType: "record" as const,
-        implementedBy: core.implementations
-          .filter((implementation) => implementation.contract === contract.id)
-          .map((implementation) => implementation.type),
-      })),
-      types: core.types.map((type) => ({
-        name: type.name,
-        path: type.path,
-        implements: core.implementations
-          .filter((implementation) => implementation.type === type.name)
-          .map((implementation) => ({
-            contract: implementation.contract,
-            version: implementation.version,
-            fields: new Map(implementation.fields),
-            binding: toValue(implementation.binding as never),
-          })),
-      })),
-    };
-    return catalog;
+    const signature = JSON.stringify(Object.entries(resources).sort());
+    if (!catalogCache || catalogCache.signature !== signature) {
+      catalogCache = {
+        signature,
+        result: (async () => {
+          const core = await loadCatalog(resources);
+          const catalog: wire.DescribeResult = {
+            specVersion: "0.3.0",
+            inclusion: { include: [] },
+            issues: [],
+            settings: new Map(),
+            contracts: core.contracts.map((contract) => ({
+              id: contract.id,
+              version: contract.version,
+              digest: contract.digest,
+              path: contract.path,
+              contractType: "record" as const,
+              implementedBy: core.implementations
+                .filter(
+                  (implementation) => implementation.contract === contract.id,
+                )
+                .map((implementation) => implementation.type),
+            })),
+            types: core.types.map((type) => ({
+              name: type.name,
+              path: type.path,
+              implements: core.implementations
+                .filter((implementation) => implementation.type === type.name)
+                .map((implementation) => ({
+                  contract: implementation.contract,
+                  version: implementation.version,
+                  fields: new Map(implementation.fields),
+                  binding: toValue(implementation.binding as never),
+                })),
+            })),
+          };
+          return catalog;
+        })(),
+      };
+    }
+    return structuredClone(await catalogCache.result);
   });
   vi.mocked(connect).mockResolvedValueOnce(client);
   const { worker: owner } = await NextInstallationWorker.open(
@@ -358,6 +394,33 @@ async function fixture({
 }
 // One real SDK MemoryReplica client; control/port/catalog stand-ins, not native
 // receipt/READ/LAB qualification. No second client or production host is opened.
+async function verifiedTaskOnlyFixture() {
+  const f = await fixture();
+  const signal = new AbortController().signal;
+  const resources = { "mdbase.yaml": 'spec_version: "0.3.0"\n' };
+  const assessment = await nativeModelPackAssessment(resources, signal);
+  const plan = await nativeModelPackPlan(
+    resources,
+    assessment.assessment_digest,
+    signal,
+  );
+  const previous: ModelSetupIntent = {
+    version: 2,
+    scope,
+    mutationId: crypto.randomUUID(),
+    phase: "verified",
+    plan,
+  };
+  await Promise.all(
+    (
+      await f.client.submit([...plan.ops], { mutationId: previous.mutationId })
+    ).map((write) => write.confirmed),
+  );
+  f.worker.intent = structuredClone(previous);
+  const repository = await f.owner.openCollection(scope.collection);
+  const submit = vi.spyOn(f.client, "submit");
+  return { ...f, repository, submit, previous };
+}
 describe("original Worker model journal and held repository wiring", () => {
   it("opening a creator stays read-only until explicit setup submits and completes its original resource plan", async () => {
     const f = await fixture();
@@ -398,6 +461,14 @@ describe("original Worker model journal and held repository wiring", () => {
           expect.objectContaining({
             id: "tasknotes.task",
             version: "0.3.0-rc.18",
+          }),
+          expect.objectContaining({
+            id: "tasknotes.scratch",
+            version: "1.2.0",
+          }),
+          expect.objectContaining({
+            id: "tasknotes.scratch-image",
+            version: "1.2.0",
           }),
           expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
         ],
@@ -639,11 +710,11 @@ describe("original Worker model journal and held repository wiring", () => {
       });
       expect(f.worker.markerConfirmed).toBe(false);
       expect(await repository.modelSetup!.inspect()).toMatchObject({
-        state: phase === "verified" ? "ready" : "outcome_unknown",
+        state: phase === "verified" ? "required" : "outcome_unknown",
       });
       await repository.modelSetup!.resume();
       expect(await repository.modelSetup!.inspect()).toEqual({
-        state: "ready",
+        state: "required",
       });
       expect(f.worker.intent).toEqual({
         version: 2,
@@ -665,6 +736,51 @@ describe("original Worker model journal and held repository wiring", () => {
       expect(f.worker.markerConfirmed).toBe(true);
     },
   );
+  it("retains the verified predecessor across an additive round's lost completion reply", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    f.worker.loseMarkerOnce = true;
+    await expect(f.repository.modelSetup!.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(round!.mutationId).not.toBe(f.previous.mutationId);
+    expect(f.submit).toHaveBeenCalledOnce();
+    expect(
+      f.submit.mock.calls[0]![0].flatMap((op) =>
+        op.kind === "resource_put" && op.path.startsWith("_types/")
+          ? [op.path]
+          : [],
+      ),
+    ).toEqual([
+      "_types/tasknotes-scratch.md",
+      "_types/tasknotes-scratch-image.md",
+      "_types/obsidian_base.md",
+    ]);
+    await f.repository.modelSetup!.resume();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
+  it("an explicit additive setup round becomes ready and repeated install remains read-only", async () => {
+    const f = await verifiedTaskOnlyFixture();
+    await f.repository.modelSetup!.install();
+    const round = structuredClone(f.worker.intent);
+    expect(round).toMatchObject({
+      version: 4,
+      phase: "verified",
+      previous: f.previous,
+    });
+    expect(await f.repository.modelSetup!.inspect()).toEqual({
+      state: "ready",
+    });
+    await f.repository.modelSetup!.install();
+    expect(f.worker.intent).toEqual(round);
+    expect(f.submit).toHaveBeenCalledOnce();
+  });
   it("rejects a v2 reply to v3 preparation without replacing the owner or converting the original intent", async () => {
     const f = await fixture({ created: false });
     await f.owner.openCollection(scope.collection);
