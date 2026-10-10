@@ -2512,7 +2512,7 @@ function ScratchpadDocumentEditor({
           </button>
         </div>
         <div className="scratchpad-header-actions">
-          {saveState === "saved" && nativeSaveState ? (
+          {nativeSaveState ? (
             <RecordWriteNotice
               repository={repository}
               target={{
@@ -2520,7 +2520,8 @@ function ScratchpadDocumentEditor({
                 id: document?.id ?? initialDocument.id,
               }}
             />
-          ) : (
+          ) : null}
+          {!nativeSaveState || saveState !== "saved" ? (
             <span
               className={`scratchpad-save-state is-${saveState}`}
               role="status"
@@ -2528,10 +2529,12 @@ function ScratchpadDocumentEditor({
               {saveState === "saving"
                 ? "Saving"
                 : saveState === "error"
-                  ? "Not saved"
+                  ? nativeSaveState
+                    ? "Save needs review"
+                    : "Not saved"
                   : "Saved"}
             </span>
-          )}
+          ) : null}
           {onReactivate ? (
             <button
               className="text-action scratchpad-reactivate-action"

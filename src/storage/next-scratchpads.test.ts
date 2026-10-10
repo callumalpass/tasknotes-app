@@ -3,6 +3,7 @@ import { SCRATCHPAD_TYPE, type ScratchpadDocument } from "../domain/scratchpad";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { SCRATCH_IMAGE_TYPE } from "../domain/scratch-image";
 import { toValue } from "@mdbase-dev/sdk";
+import { NextTaskRepository } from "./next-repository";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 async function fixture(pending = false) {
@@ -57,6 +58,50 @@ function imageInput(id: string, dateCreated = "2026-08-01T12:00:00Z") {
 }
 
 describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
+  it("restores original note/image pending metadata into a new repository over the borrowed client (not process/native durability proof)", async () => {
+    const f = await fixture(true);
+    const note = await f.repository.getActiveScratchpad();
+    const image = await f.repository.createScratchImage(
+      imageInput("original-image"),
+    );
+    const mids = (await f.client.pendingWrites()).map(
+      (write) => write.receipt.mutation,
+    );
+    const submit = vi.spyOn(f.client, "submit");
+    const restored = new NextTaskRepository(
+      f.client,
+      "Native test tasks",
+      f.accountId,
+    );
+    try {
+      await restored.initialize({ deferTaskIndex: true });
+      expect((await restored.getScratchpad(note.id))?.id).toBe(note.id);
+      expect(
+        (await restored.listScratchFeed()).items.map((entry) => entry.id),
+      ).toContain(image.id);
+      expect(restored.writeState({ kind: "scratchpad", id: note.id })).toBe(
+        "pending",
+      );
+      expect(restored.writeState({ kind: "image", id: image.id })).toBe(
+        "pending",
+      );
+      expect(
+        (await f.client.pendingWrites()).map((write) => write.receipt.mutation),
+      ).toEqual(mids);
+      f.replica.confirmAll();
+      await vi.waitFor(() =>
+        expect(
+          restored.writeState({ kind: "scratchpad", id: note.id }),
+        ).toBeUndefined(),
+      );
+      expect(
+        restored.writeState({ kind: "image", id: image.id }),
+      ).toBeUndefined();
+      expect(submit).not.toHaveBeenCalled();
+    } finally {
+      restored.dispose();
+    }
+  });
   it("captures notes and atomic transitions in the native pending lane without an ACK wait", async () => {
     const f = await fixture(true);
     const submit = vi.spyOn(f.client, "submit");
