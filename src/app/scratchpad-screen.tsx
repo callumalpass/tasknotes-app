@@ -101,6 +101,8 @@ import type { ScratchImage } from "../domain/scratch-image";
 import { scratchFeedKey } from "../domain/scratch-feed";
 import { ScratchImageService } from "../application/scratch-images/scratch-image-service";
 import { TaskActions } from "../components/task-actions";
+import { RecordWriteNotice } from "../components/record-write-notice";
+import { useRecordWriteState } from "../components/use-record-write-state";
 
 const MarkdownSourceEditor = lazy(async () => ({
   default: (await import("../components/markdown-source-editor"))
@@ -1046,6 +1048,12 @@ export function ScratchpadScreen({
                       />
                     ) : null}
                   </div>
+                  {!expanded ? (
+                    <RecordWriteNotice
+                      repository={repository}
+                      target={{ kind: "scratchpad", id: document.id }}
+                    />
+                  ) : null}
                   {expanded ? editor(document) : null}
                 </article>
               );
@@ -1357,6 +1365,10 @@ function ScratchImageCard({
       className="scratch-image-card"
       data-feed-key={scratchFeedKey(image)}
     >
+      <RecordWriteNotice
+        repository={repository}
+        target={{ kind: "image", id: image.id }}
+      />
       {!collapsed ? (
         <div
           className="scratch-image-frame"
@@ -1477,6 +1489,10 @@ function ScratchpadDocumentEditor({
   const [linkedTasks, setLinkedTasks] = useState<Map<string, TaskSummary>>(
     new Map(),
   );
+  const nativeSaveState = useRecordWriteState(repository, {
+    kind: "scratchpad",
+    id: document?.id ?? initialDocument.id,
+  });
   const [source, setSource] = useState(initialDocument.body);
   const [title, setTitle] = useState(initialDocument.title ?? "");
   const [editorMode, setEditorMode] = useState<"outline" | "markdown">(() =>
@@ -2496,16 +2512,29 @@ function ScratchpadDocumentEditor({
           </button>
         </div>
         <div className="scratchpad-header-actions">
-          <span
-            className={`scratchpad-save-state is-${saveState}`}
-            role="status"
-          >
-            {saveState === "saving"
-              ? "Saving"
-              : saveState === "error"
-                ? "Not saved"
-                : "Saved"}
-          </span>
+          {nativeSaveState ? (
+            <RecordWriteNotice
+              repository={repository}
+              target={{
+                kind: "scratchpad",
+                id: document?.id ?? initialDocument.id,
+              }}
+            />
+          ) : null}
+          {!nativeSaveState || saveState !== "saved" ? (
+            <span
+              className={`scratchpad-save-state is-${saveState}`}
+              role="status"
+            >
+              {saveState === "saving"
+                ? "Saving"
+                : saveState === "error"
+                  ? nativeSaveState
+                    ? "Save needs review"
+                    : "Not saved"
+                  : "Saved"}
+            </span>
+          ) : null}
           {onReactivate ? (
             <button
               className="text-action scratchpad-reactivate-action"

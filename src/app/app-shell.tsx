@@ -380,6 +380,7 @@ export function AppShell() {
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
       />
       <TaskAddedNotice
+        repository={repository}
         task={!pendingDeletion && !deletionError ? addedTask : undefined}
         onDismiss={() => setAddedNotice(undefined)}
         onOpen={(task) => navigate({ page: "task", id: task.id })}

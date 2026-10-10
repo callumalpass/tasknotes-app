@@ -82,6 +82,43 @@ describe("ScratchpadScreen", () => {
       });
   }
 
+  it("distinguishes native note pending metadata from authority Saved (component port stand-in)", async () => {
+    const current = await repository.getActiveScratchpad();
+    const writeState = vi.fn(() => "pending" as const);
+    Object.assign(repository, { writeState });
+    renderScratchpad();
+    await screen.findByRole("textbox", { name: "Draft task: empty" });
+    expect(screen.getByText("Saved locally · Waiting to sync")).toBeVisible();
+    expect(screen.queryByText("Saved", { exact: true })).toBeNull();
+    expect(writeState).toHaveBeenCalledWith({
+      kind: "scratchpad",
+      id: current.id,
+    });
+  });
+
+  it("keeps read-only original-outcome reconciliation available after a note save result fails (component stand-in)", async () => {
+    const save = vi
+      .spyOn(repository, "saveScratchpad")
+      .mockRejectedValue(new Error("Native result unavailable"));
+    const reconcile = vi.fn(async () => {});
+    Object.assign(repository, {
+      writeState: () => "unknown" as const,
+      reconcileWrites: reconcile,
+    });
+    renderScratchpad();
+    const input = await screen.findByRole("textbox", {
+      name: "Draft task: empty",
+    });
+    fireEvent.change(input, { target: { value: "Retained original text" } });
+    await screen.findByText("Save needs review");
+    expect(screen.getByText("Save outcome unknown")).toBeVisible();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Check save" }));
+    });
+    expect(reconcile).toHaveBeenCalledOnce();
+    expect(save).toHaveBeenCalledOnce();
+    expect(input).toHaveValue("Retained original text");
+  });
   it("converts one draft in place and preserves its linked Markdown", async () => {
     const openTask = renderScratchpad();
     const input = await screen.findByRole(

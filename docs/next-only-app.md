@@ -73,14 +73,26 @@ when none is active and may submit a CAS batch to reconcile several active notes
 reads the complete stream; it does not create a note or settle an earlier
 mutation.
 
-The current `NextMutations` manager retains its pending mutation ID, known receipt
-and original confirmed-result reader in repository-instance memory. A retry in
-that same instance observes the original receipt/result rather than resubmitting.
-Reloading does not establish that this app reader was reconstructed, even if
-native storage survives. Preserve the original device, collection and operation
+For task, Scratchpad note/image metadata and view-source writes, `NextMutations`
+can return a genuine native pending result separately from authority confirmation.
+Original result readers and exact request keys remain in repository-instance
+memory for same-instance uncertain-result recovery, never replacement submission.
+After local delivery, an older ACK reads current native bytes/metadata, including
+subsequent edits or deletions, rather than installing its receipt document.
+The manager can restore record/MID/status metadata from the native pending queue
+and reconcile those original receipts with genuine current record READs. It does
+not reconstruct the original app result reader or input after reload. A native
+pending queue and a restarted app result are different evidence. Preserve the original device, collection and operation
 identity after an unknown outcome; do not treat a new note, reset or replacement
 ID as recovery. Native restart and physical-durability acceptance remain separate
 checks.
+
+A repository normally owns its SDK client's lifetime. An explicit
+`clientOwnership: "borrowed"` composition releases only that repository's scope,
+watchers and listeners on disposal; the host retains the original client's close.
+This allows metadata rehydration over the same native client without closing the
+live caller or creating a replacement session. It does not extend a retired host's
+lifetime or qualify process restart/custody.
 
 ## Source intake and remaining work
 
@@ -121,7 +133,10 @@ never complete query/render diagnostics. Timing failures do not change an
 operation's success, rejection, abort or readiness. These are measurement
 boundaries, not evidence that any phase is fast or that native startup is qualified.
 
-Saved follows original confirmations, never dirty drafts or pending retries.
+Saved follows original confirmations. A genuine native local result is labelled
+Saved locally · Waiting to sync, not authority-saved; rejection, conflict and
+unknown outcomes remain visible with read-only Check save, never replacement
+submissions. Definitions, model settings and setup remain confirmed-only.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.
 Unsupported reminders, file metadata and authenticated record authors remain

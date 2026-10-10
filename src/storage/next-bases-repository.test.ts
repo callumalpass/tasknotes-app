@@ -29,6 +29,12 @@ async function fixture() {
   const f = await nextTaskFixture();
   fixtures.push(f);
   const task = await f.repository.create({ title: "Native-selected task" });
+  // This suite isolates native selection/metadata ordering, not ACK races.
+  // Local capture now returns before ACK: establish a stable seed frontier.
+  f.replica.confirmAll();
+  await vi.waitFor(async () =>
+    expect(await f.client.pendingWrites()).toEqual([]),
+  );
   const record = (await f.client.query({ types: ["task"], limit: 10 }))
     .records[0]!;
   const genericList = vi.spyOn(f.client.views, "list");
