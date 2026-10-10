@@ -6,6 +6,10 @@ import type {
   TaskViewSourceDocument,
 } from "../domain/view";
 
+// Ordering only: results, source identities and cancellation belong to each
+// original session. Replacement sessions share the same repository read slot.
+const repositoryReads = new WeakMap<TaskRepository, Promise<void>>();
+
 export function appendViewPage(
   previous: TaskViewExecution | null,
   page: TaskViewExecution,
@@ -31,7 +35,6 @@ export class ViewQuerySession {
   private acceptingCached = true;
   private running: Promise<void> | null = null;
   private source: Promise<TaskViewSourceDocument> | null = null;
-  private reads: Promise<void> = Promise.resolve();
   constructor(
     private readonly repository: TaskRepository,
     private readonly view: TaskView,
@@ -52,18 +55,24 @@ export class ViewQuerySession {
   }
   /** Execution may itself read the source. Sequence the optional UI metadata
    * read with it, rather than competing for a provider's single native slot.
-   * Source reads are memoized and execution joins running: at most one of each.
+   * A replacement also waits for an old session's outstanding metadata read.
+   * Per session, source reads are memoized and execution joins running.
    */
   private read<T>(operation: () => Promise<T>): Promise<T> {
-    const pending = this.reads.then(async () => {
+    const pending = (
+      repositoryReads.get(this.repository) ?? Promise.resolve()
+    ).then(async () => {
       this.controller.signal.throwIfAborted();
       const result = await operation();
       this.controller.signal.throwIfAborted();
       return result;
     });
-    this.reads = pending.then(
-      () => undefined,
-      () => undefined,
+    repositoryReads.set(
+      this.repository,
+      pending.then(
+        () => undefined,
+        () => undefined,
+      ),
     );
     return pending;
   }
