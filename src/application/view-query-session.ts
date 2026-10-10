@@ -31,6 +31,7 @@ export class ViewQuerySession {
   private acceptingCached = true;
   private running: Promise<void> | null = null;
   private source: Promise<TaskViewSourceDocument> | null = null;
+  private reads: Promise<void> = Promise.resolve();
   constructor(
     private readonly repository: TaskRepository,
     private readonly view: TaskView,
@@ -45,9 +46,26 @@ export class ViewQuerySession {
     return this.controller.signal.aborted ? null : this.execution;
   }
   readSource() {
-    return (this.source ??= this.repository.readViewSource(
-      this.view.source.path,
+    return (this.source ??= this.read(() =>
+      this.repository.readViewSource(this.view.source.path),
     ));
+  }
+  /** Execution may itself read the source. Sequence the optional UI metadata
+   * read with it, rather than competing for a provider's single native slot.
+   * Source reads are memoized and execution joins running: at most one of each.
+   */
+  private read<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = this.reads.then(async () => {
+      this.controller.signal.throwIfAborted();
+      const result = await operation();
+      this.controller.signal.throwIfAborted();
+      return result;
+    });
+    this.reads = pending.then(
+      () => undefined,
+      () => undefined,
+    );
+    return pending;
   }
   private get cachedRows() {
     return this.cached?.rows.length ?? 0;
@@ -157,8 +175,7 @@ export class ViewQuerySession {
     if (this.running) return this.running;
     if (this.controller.signal.aborted) return Promise.resolve();
     this.observer.pending(true);
-    const promise = Promise.resolve()
-      .then(operation)
+    const promise = this.read(operation)
       .catch((reason) => {
         if (this.controller.signal.aborted) return;
         if (
