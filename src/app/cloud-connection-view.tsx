@@ -253,7 +253,11 @@ export function CloudConnectionView({
               <span className="welcome-opening-label">Opening mdbase…</span>
             ) : (
               <>
-                <Plus aria-hidden="true" size={18} />
+                {!sdk ||
+                !firstVisit ||
+                sdk.snapshot.signIn?.state === "paired" ? (
+                  <Plus aria-hidden="true" size={18} />
+                ) : null}
                 <span>
                   {reviewingCollection
                     ? "Choose a different collection in mdbase"

@@ -89,6 +89,8 @@ it("restores production mark/copy/explainer and one styled sign-in action withou
   render(<CloudSignIn build={build} onCollection={vi.fn()} />);
   const button = await screen.findByRole("button", { name: "Sign in" });
   expect(button).toHaveClass("welcome-primary-action");
+  expect(button.querySelector(".lucide-plus")).toBeNull();
+  expect(button.querySelector(".lucide-arrow-right")).not.toBeNull();
   expect(
     screen.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
   ).toBeInTheDocument();
