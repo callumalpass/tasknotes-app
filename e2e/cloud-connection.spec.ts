@@ -129,7 +129,15 @@ test("opens the original held client without relay traffic and preserves navigat
   await expect(
     page.getByRole("heading", { name: "Notifications" }),
   ).toBeVisible();
-  await expect(page.getByText(/mdbase delivers reminders/)).toBeVisible();
+  await expect(page.getByText("Not available", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(
+      /this version of TaskNotes does not send reminder notifications/,
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Turn on reminders", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await page
     .getByRole("button", { name: "Change collection", exact: true })
