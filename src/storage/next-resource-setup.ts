@@ -49,6 +49,10 @@ const confirmed = (record: wire.RecordView) =>
   record.state.state === "confirmed" &&
   !record.state.hold &&
   !record.state.unresolved;
+const readableSource = (record: wire.RecordView) =>
+  (record.state.state === "pending" || record.state.state === "confirmed") &&
+  !record.state.hold &&
+  !record.state.unresolved;
 
 /** Resource-components + ordinary Creates on ONE held client/original journal.
  * Existing v1/v2 recovery remains in NativeModelSetup, never converted here.
@@ -635,13 +639,13 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           view.path !== record.path ||
           view.record !== record.id ||
           view.sourceRevision !== record.revision ||
-          !confirmed(record) ||
+          !(currentSources ? readableSource(record) : confirmed(record)) ||
           typeof record.document !== "string" ||
           holder.id !== record.id ||
           holder.path !== record.path ||
           holder.revision !== record.revision ||
           holder.document !== record.document ||
-          !confirmed(holder) ||
+          !(currentSources ? readableSource(holder) : confirmed(holder)) ||
           !catalog.types.some(
             (t) =>
               record.types.includes(t.name) &&

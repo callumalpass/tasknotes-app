@@ -827,6 +827,60 @@ describe("original Worker model journal and held repository wiring", () => {
     expect(submit).not.toHaveBeenCalled();
     expect(uuid).not.toHaveBeenCalled();
   });
+  it("accepts genuine pending source edits in current readiness without changing verified history", async () => {
+    const f = await fixture();
+    const repository = await f.owner.openCollection(scope.collection);
+    await repository.modelSetup!.install();
+    const original = structuredClone(f.worker.intent!);
+    if (original.version !== 3)
+      throw Error("Expected completed source history");
+    const source = original.plan.sources[0]!;
+    vi.useFakeTimers();
+    try {
+      const edited = source.document + "\n# Local source edit awaiting ACK\n";
+      const write = await f.client.update(
+        source.id,
+        { body: edited },
+        { wait: "pending" },
+      );
+      f.sourceDocuments.set(source.id, edited);
+      expect(write.receipt.state).toBe("pending");
+      expect(
+        (await f.client.get(source.id, { document: true })).state.state,
+      ).toBe("pending");
+      const submit = vi.spyOn(f.client, "submit");
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      expect(await repository.modelSetup!.inspect()).toEqual({
+        state: "ready",
+      });
+      await repository.modelSetup!.install();
+      await repository.modelSetup!.resume();
+      expect(f.worker.intent).toEqual(original);
+      expect(submit).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      const get = vi.mocked(f.client.get).getMockImplementation()!;
+      for (const problem of [
+        { hold: { id: source.id, reason: "conflict" as const } },
+        { unresolved: 1 },
+      ]) {
+        vi.mocked(f.client.get).mockImplementation(async (...args) => {
+          const record = await get(...args);
+          return record.id === source.id
+            ? { ...record, state: { ...record.state, ...problem } }
+            : record;
+        });
+        expect(await repository.modelSetup!.inspect()).toMatchObject({
+          state: "blocked",
+        });
+        expect(f.worker.intent).toEqual(original);
+        expect(submit).not.toHaveBeenCalled();
+      }
+      vi.mocked(f.client.get).mockImplementation(get);
+    } finally {
+      f.replica.confirmAll();
+      vi.useRealTimers();
+    }
+  });
   it("does not resurrect a deleted default source after verified history", async () => {
     const f = await fixture();
     const repository = await f.owner.openCollection(scope.collection);
