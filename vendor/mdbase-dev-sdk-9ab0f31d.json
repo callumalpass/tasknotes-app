@@ -1,0 +1,50 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "9ab0f31d43ae801241acb5fbc11f3be4ceefa76b",
+  "sourceIncludesPrs": [
+    799, 803, 804, 806, 807, 808, 809, 810, 811, 814, 815, 816
+  ],
+  "includedMerges": {
+    "environment816": "9ab0f31d43ae801241acb5fbc11f3be4ceefa76b",
+    "sdkReadHelpers814": "49f9355d42f777c154fde09fcd2951b6077ca14b",
+    "people810": "0e07aecc20117d41c31f4d834de0ce5cfc174a17",
+    "correctedSession808": "561501d0c627b7808d02e403d65e949bdb78fa88",
+    "testBatch815": "8cbc82fb009edbafea12e5922dbe2f50b72c0be2"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-9ab0f31d.tgz",
+  "bytes": 660679,
+  "sha256": "ab4db6bde0e6b3d97a1d8ed9b8126b7f0fd69820b508869cb7b82c489ae4ef13",
+  "integrity": "sha512-JkI7EM9GdYAey70lX2QLD6q4LgSiOYGtd7gs12CzSOdbVSapslcxmJY8C/O/3dIGt0k/UZHccudU1J4XFVzQAQ==",
+  "shasum": "ff772c36ee7d3c3cacf2d712aae84620f998199c",
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "724ce75e132724e29ff18f84e2b5cea80a5d3191eeabbb86e3a9d29df3269f69"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "25a6a5e7a0618c912afbe94a1f6c55197a29d35d685af1e2c15091f8cb2959ff"
+    }
+  },
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "sdkTestsPassed": 1457,
+    "browserTestsPassed": 5,
+    "existingSkipped": 3,
+    "skippedTestScope": "runtime.wasm-gated tests; not runtime qualification",
+    "sourceClean": true,
+    "allArchiveMemberBytesVerified": true,
+    "archiveFileMembers": 245,
+    "includesMergedSessionFix808": true,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "peopleProducerCompatibilityQualified": false,
+    "perAppTrustOriginCustodyAndOperationQualification": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Coordinator 18:07 delegated pin-only intake of release's qualified 9ab0f31d SDK archive for coherent second-candidate source. Authenticated BUILD environment remains explicit. No runtime/trust pin, protected-store migration, People/session enablement or preview change. Earlier unsafe 5ba/b940 remains held; prior safe SDK archives remain immutable."
+}
