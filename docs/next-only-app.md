@@ -87,6 +87,13 @@ identity after an unknown outcome; do not treat a new note, reset or replacement
 ID as recovery. Native restart and physical-durability acceptance remain separate
 checks.
 
+A repository normally owns its SDK client's lifetime. An explicit
+`clientOwnership: "borrowed"` composition releases only that repository's scope,
+watchers and listeners on disposal; the host retains the original client's close.
+This allows metadata rehydration over the same native client without closing the
+live caller or creating a replacement session. It does not extend a retired host's
+lifetime or qualify process restart/custody.
+
 ## Source intake and remaining work
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.

@@ -72,6 +72,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
       f.client,
       "Native test tasks",
       f.accountId,
+      { clientOwnership: "borrowed" },
     );
     try {
       await restored.initialize({ deferTaskIndex: true });
@@ -101,6 +102,8 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     } finally {
       restored.dispose();
     }
+    expect((await f.repository.getScratchpad(note.id))?.id).toBe(note.id);
+    expect(submit).not.toHaveBeenCalled();
   });
   it("captures notes and atomic transitions in the native pending lane without an ACK wait", async () => {
     const f = await fixture(true);

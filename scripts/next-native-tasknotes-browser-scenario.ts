@@ -121,6 +121,7 @@ export async function qualifyNativeTaskNotes(options: {
       client,
       "Owned native TaskNotes",
       accountId,
+      { clientOwnership: "borrowed" },
     );
     await repository.initialize();
     let localCallers:
@@ -245,6 +246,7 @@ export async function qualifyNativeTaskNotes(options: {
         client,
         "Owned native TaskNotes restored metadata",
         accountId,
+        { clientOwnership: "borrowed" },
       );
       try {
         await reopened.initialize();

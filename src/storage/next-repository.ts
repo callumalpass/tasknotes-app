@@ -295,12 +295,15 @@ export class NextTaskRepository implements TaskRepository {
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
   private changesWatch: ChangesWatch | null = null;
+  private readonly clientOwnership: "owned" | "borrowed";
 
   constructor(
     private readonly client: MdbaseClient,
     private readonly displayName: string,
     private readonly accountId: string,
     options: {
+      /** Host-owned clients survive this adapter's disposal; default remains owned. */
+      clientOwnership?: "owned" | "borrowed";
       modelSetupJournal?: ModelSetupJournal;
       /** Actual original-controller completion flag, not resource readiness. */
       requiresTaskNotesModelSetup?: boolean;
@@ -308,6 +311,7 @@ export class NextTaskRepository implements TaskRepository {
       onModelSetupVerified?: (signal: AbortSignal) => Promise<void>;
     } = {},
   ) {
+    this.clientOwnership = options.clientOwnership ?? "owned";
     this.readCurrentWrites = async (
       ids: readonly string[],
       signal: AbortSignal,
@@ -3183,7 +3187,7 @@ export class NextTaskRepository implements TaskRepository {
     this.stopLink();
     this.stopStatus();
     this.stopHolds();
-    this.client.close();
+    if (this.clientOwnership === "owned") this.client.close();
     this.cache.clear();
     this.nativeWriteStates.clear();
     this.sourceRecords.clear();
