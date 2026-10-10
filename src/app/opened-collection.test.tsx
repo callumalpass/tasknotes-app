@@ -15,7 +15,14 @@ vi.mock("./app-shell", () => ({
   AppShell: () => {
     const context = useRepository();
     observed.push(context.repository);
-    return <output data-testid="repository-status">{context.status}</output>;
+    return (
+      <>
+        <output data-testid="repository-status">{context.status}</output>
+        <output data-testid="reminder-authority">
+          {context.reminderAuthority}
+        </output>
+      </>
+    );
   },
 }));
 afterEach(() => {
@@ -44,6 +51,7 @@ it("retains the supplied repository and original client across StrictMode effect
   await waitFor(() =>
     expect(screen.getByTestId("repository-status")).toHaveTextContent("ready"),
   );
+  expect(screen.getByTestId("reminder-authority")).toHaveTextContent("none");
   expect(observed.length).toBeGreaterThan(0);
   expect(observed.every((repository) => repository === f.repository)).toBe(
     true,
