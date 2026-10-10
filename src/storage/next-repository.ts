@@ -134,6 +134,7 @@ import {
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { ConnectedTaskIndex } from "./connected-task-index";
+import { BoundedCache } from "./bounded-cache";
 import {
   connectedTaskRelationships,
   connectedTaskStats,
@@ -240,6 +241,17 @@ export class NextTaskRepository implements TaskRepository {
   private readonly stopStatus: () => void;
   private readonly stopHolds: () => void;
   private viewCatalog: TaskViewDocument[] = [];
+  private readonly viewExecutions = new BoundedCache<{
+    signature: string;
+    execution: TaskViewExecution | null;
+  }>(
+    16,
+    8 * 1024 * 1024,
+    (slot) =>
+      2 *
+      (slot.signature.length +
+        (slot.execution ? JSON.stringify(slot.execution).length : 0)),
+  );
   private nativeViews = new Map<string, AppBasesDescriptor>();
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
@@ -2134,10 +2146,29 @@ export class NextTaskRepository implements TaskRepository {
     this.assertCurrentData(revision);
     this.nativeViews = descriptors;
     this.viewCatalog = [...documents.values()];
+    const live = new Set(
+      this.viewCatalog.flatMap((document) =>
+        document.views.map((view) => view.key),
+      ),
+    );
+    for (const key of this.viewExecutions.keys())
+      if (!live.has(key)) this.viewExecutions.delete(key);
     return structuredClone(this.viewCatalog);
   }
-  async cachedViewExecution() {
-    return null;
+  private viewExecutionSignature(view: TaskView, timezone: string): string {
+    return JSON.stringify([timezone, view]);
+  }
+  async cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null> {
+    this.signal().throwIfAborted();
+    const slot = this.viewExecutions.get(view.key);
+    if (
+      !slot?.execution ||
+      slot.signature !== this.viewExecutionSignature(view, runtimeTimezone())
+    )
+      return null;
+    // Cached rows are display-only; they never certify a live native cut or
+    // permit manual ordering while the new execution is being loaded.
+    return { ...structuredClone(slot.execution), stale: true };
   }
   private nativeSourceDescriptor(path: string): AppBasesDescriptor {
     const matches = [...this.nativeViews.values()].filter(
@@ -2240,6 +2271,13 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const descriptor = this.nativeView(view);
     const timezone = runtimeTimezone();
+    const signature = this.viewExecutionSignature(view, timezone);
+    const previous = this.viewExecutions.get(view.key);
+    const slot = {
+      signature,
+      execution: previous?.signature === signature ? previous.execution : null,
+    };
+    this.viewExecutions.set(view.key, slot);
     const selected = await this.readNativeSource(descriptor, signal, timezone);
     this.assertCurrentData(revision);
     const result = await this.client.executeAppBases(
@@ -2316,6 +2354,10 @@ export class NextTaskRepository implements TaskRepository {
       },
       () => nextTaskSummary(records[rowIndex++]!, this.models),
     );
+    if (this.viewExecutions.get(view.key) === slot) {
+      slot.execution = structuredClone(normalized);
+      this.viewExecutions.set(view.key, slot);
+    }
     return normalized;
   }
   async executeView(view: TaskView): Promise<TaskViewExecution> {
@@ -2551,6 +2593,7 @@ export class NextTaskRepository implements TaskRepository {
     this.client.close();
     this.cache.clear();
     this.viewCatalog = [];
+    this.viewExecutions.clear();
     this.scratchFeedSnapshot = undefined;
     this.listeners.clear();
   }
@@ -2590,6 +2633,7 @@ export class NextTaskRepository implements TaskRepository {
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") {
       this.dataRevision++;
+      this.viewExecutions.clear();
       // Every data event, including accepted local writes, invalidates in-flight
       // snapshot promises. New readers must not join an obsolete generation.
       // The old revision guards remain; identity-checked cleanup cannot erase
