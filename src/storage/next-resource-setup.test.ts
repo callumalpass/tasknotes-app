@@ -795,7 +795,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     await f.setup.install();
     const original = await f.journal.load(signal());
     f.state.failInventory = true;
-    expect(await f.setup.inspect()).toMatchObject({ state: "outcome_unknown" });
+    expect(await f.setup.inspect()).toMatchObject({ state: "blocked" });
     expect(await f.journal.load(signal())).toEqual(original);
     expect(f.mocked.submit).toHaveBeenCalledTimes(1);
   });
@@ -949,7 +949,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       await expect(f.journal.load(signal())).resolves.toBeNull();
     },
   );
-  it("key wait preserves a verified intent and recovery still requires exact readback", async () => {
+  it("key wait preserves verified history and current readiness still requires complete native reads", async () => {
     const f = fixture();
     await f.setup.install();
     const original = await f.journal.load(signal());
@@ -969,7 +969,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     await expect(f.setup.inspect()).resolves.toEqual({ state: "ready" });
     f.mocked.resources.get.mockRejectedValueOnce(notFound());
     await expect(f.setup.inspect()).resolves.toMatchObject({
-      state: "outcome_unknown",
+      state: "blocked",
     });
     expect(f.mocked.submit).toHaveBeenCalledOnce();
     expect(f.verified).toHaveBeenCalledOnce();
