@@ -172,6 +172,84 @@ describe("resource setup in the original protected model ledger", () => {
     ])
       expect(() => modelResourcePlan(changed)).toThrow();
   });
+  it("allows current-only source policy only in a new v4 round with verified history", async () => {
+    const current = {
+      ...plan,
+      sourcePolicy: "current-only" as const,
+      sources: [],
+    };
+    expect(modelResourcePlan(current)).toEqual(current);
+    expect(() =>
+      modelResourcePlan({ ...current, sourcePolicy: "other" }),
+    ).toThrow();
+    expect(() =>
+      modelResourcePlan({ ...current, sources: plan.sources }),
+    ).toThrow();
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(() => journal().prepareResources(current, signal())).toThrow();
+    expect(uuid).not.toHaveBeenCalled();
+    const first = await journal().prepareResources(plan, signal());
+    for (const phase of ["prepared", "attempted", "confirmed"] as const) {
+      expect(() =>
+        decode(
+          {
+            version: 4,
+            scope,
+            mutationId: scope.collection,
+            phase: "prepared",
+            plan: current,
+            previous: { ...first, phase },
+          },
+          scope,
+        ),
+      ).toThrow();
+    }
+    expect(() => decode({ ...first, plan: current }, scope)).toThrow();
+    await journal().recordResourceAttempt(first.mutationId, signal());
+    await journal().recordResourceConfirmed(first.mutationId, signal());
+    const previous = await journal().recordResourceVerified(
+      first.mutationId,
+      signal(),
+    );
+    const next = await journal().prepareResourceRound(
+      current,
+      previous.mutationId,
+      signal(),
+    );
+    expect(next.previous).toEqual(previous);
+    expect(next.previous).not.toHaveProperty("plan.sourcePolicy");
+    expect(next.plan.sourcePolicy).toBe("current-only");
+    expect(await journal().load(signal())).toEqual(next);
+  });
+  it("never adds a source policy to an existing unfinished v4 definitions-only plan", async () => {
+    const first = await journal().prepareResources(plan, signal());
+    await journal().recordResourceAttempt(first.mutationId, signal());
+    await journal().recordResourceConfirmed(first.mutationId, signal());
+    const previous = await journal().recordResourceVerified(
+      first.mutationId,
+      signal(),
+    );
+    const next = await journal().prepareResourceRound(
+      { ...plan, sources: [] },
+      previous.mutationId,
+      signal(),
+    );
+    expect(next.plan).not.toHaveProperty("sourcePolicy");
+    await expect(
+      journal().prepareResourceRound(
+        { ...next.plan, sourcePolicy: "current-only" },
+        next.mutationId,
+        signal(),
+      ),
+    ).rejects.toMatchObject({ reason: "recovery_required" });
+    expect(await journal().load(signal())).toEqual(next);
+    const attempted = await journal().recordResourceAttempt(
+      next.mutationId,
+      signal(),
+    );
+    expect(attempted.plan).toEqual(next.plan);
+    expect(attempted.plan).not.toHaveProperty("sourcePolicy");
+  });
   it("uses one existing nonextractable key through every v3 phase", async () => {
     const key = vi.spyOn(crypto.subtle, "generateKey");
     const original = await journal().prepareResources(plan, signal());

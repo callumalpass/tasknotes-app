@@ -2,6 +2,7 @@ import { MdbaseError, type MdbaseClient, type wire } from "@mdbase-dev/sdk";
 import type { Resources } from "mdbase";
 import {
   ModelSetupError,
+  TaskNotesModelRequiredError,
   MODEL_SETUP_LIMITS,
   type ModelResourcePlan,
   type ResourceSetupIntent,
@@ -91,25 +92,53 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       );
     return original;
   }
-  private async verifyPrevious(
-    value: ModelSetupIntent,
-    signal: AbortSignal,
-  ): Promise<void> {
+  private verifyPrevious(value: ModelSetupIntent, signal: AbortSignal): void {
+    // Scoped VERIFIED history is not a mutable byte snapshot guard.
     value = decode(value, this.scope);
+    signal.throwIfAborted();
     if (value.phase !== "verified") throw uncertain();
-    if (value.version === 3 || value.version === 4) {
-      await this.readback(value.plan, signal);
-    } else if (value.version === 2 && this.legacy) {
-      const view = await this.legacy(signal).inspect();
-      if (view.state !== "ready") throw uncertain();
-    } else if (value.version === 1) {
-      for (const op of value.ops) {
-        const resource = await this.client.resources.get(op.path, signal);
-        signal.throwIfAborted();
-        if (resource.state !== "confirmed" || resource.text !== op.doc)
-          throw uncertain();
-      }
-    } else throw uncertain();
+  }
+  private async requiredPacks(signal: AbortSignal): Promise<string[]> {
+    await this.snapshot(signal); // Complete confirmed inventory, never a cache.
+    let task = true;
+    try {
+      await nextTaskProviders(this.client, signal);
+    } catch (reason) {
+      signal.throwIfAborted();
+      if (!(reason instanceof TaskNotesModelRequiredError)) throw reason;
+      task = false;
+    }
+    const catalog = await this.client.describe(signal);
+    signal.throwIfAborted();
+    const base =
+      catalog.contracts.some(
+        (c) =>
+          c.id === "obsidian.base" &&
+          c.version === "1.0.0" &&
+          c.digest === bases.provides[0]!.digest,
+      ) &&
+      catalog.types.some((t) =>
+        t.implements.some(
+          (c) => c.contract === "obsidian.base" && c.version === "1.0.0",
+        ),
+      );
+    return [
+      ...(!task ? ["tasknotes.task"] : []),
+      ...(!base ? ["obsidian.base"] : []),
+    ];
+  }
+  private offeredPacks(
+    missing: readonly string[],
+    history: boolean,
+  ): readonly string[] {
+    return !history && missing.includes("tasknotes.task")
+      ? [
+          "tasknotes.task",
+          "tasknotes.scratch",
+          "tasknotes.scratch-image",
+          ...missing.filter((id) => id !== "tasknotes.task"),
+        ]
+      : missing;
   }
   private requirePermission(
     plan: Pick<ResourceSetupAssessment, "resourceOps" | "sources">,
@@ -159,18 +188,12 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           this.intent(stored);
           return uncertain().view;
         }
-        try {
-          await this.verifyPrevious(stored, signal);
-        } catch (reason) {
-          signal.throwIfAborted();
-          requireSetupAvailability(this.client.status);
-          if (
-            reason instanceof ModelSetupError &&
-            reason.view.state === "waiting"
-          )
-            throw reason;
-          throw uncertain();
-        }
+        this.verifyPrevious(stored, signal);
+      }
+      const missing = await this.requiredPacks(signal);
+      if (!missing.length) {
+        await this.currentReadback(signal);
+        return { state: "ready" };
       }
       const assessment = await nativeResourceSetupAssessment(
         await this.snapshot(signal),
@@ -178,14 +201,11 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         this.sources,
         signal,
         stored !== null,
+        this.offeredPacks(missing, stored !== null),
       );
       requireSetupAvailability(this.client.status);
-      if (assessment.resourceOps.length || assessment.sources.length) {
-        this.requirePermission(assessment);
-        return { state: "required" };
-      }
-      await this.currentReadback({ ...assessment, sources: [] }, signal);
-      return { state: "ready" };
+      this.requirePermission(assessment);
+      return { state: "required" };
     } catch (reason) {
       signal.throwIfAborted();
       if (reason instanceof ModelSetupError) return reason.view;
@@ -221,6 +241,11 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     const stored = await this.journal.load(signal);
     signal.throwIfAborted();
     if (!stored || stored.phase === "prepared") setupStillPending();
+    if (stored.phase === "verified") {
+      this.verifyPrevious(stored, signal);
+      await this.completeCurrent(signal);
+      return;
+    }
     if (stored.version < 3 && this.legacy) {
       if (stored.version !== 2) setupStillPending();
       await this.legacy(signal).resume();
@@ -242,21 +267,35 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         await this.execute(this.intent(stored), signal, progress);
         return;
       }
-      if (stored) await this.verifyPrevious(stored, signal);
+      if (stored) this.verifyPrevious(stored, signal);
+      const missing = await this.requiredPacks(signal);
+      if (!missing.length) {
+        await this.completeCurrent(signal);
+        return;
+      }
       const assessment = await nativeResourceSetupAssessment(
         await this.snapshot(signal),
         this.client,
         this.sources,
         signal,
         stored !== null,
+        this.offeredPacks(missing, stored !== null),
       );
       signal.throwIfAborted();
       requireSetupAvailability(this.client.status);
-      if (!assessment.resourceOps.length && !assessment.sources.length) {
-        await this.currentReadback({ ...assessment, sources: [] }, signal);
-        await this.finish(signal);
-        return;
-      }
+      if (
+        !assessment.resourceOps.some(
+          (op) =>
+            ![
+              "mdbase.yaml",
+              "mdbase.lock.yaml",
+              "mdbase.provisions.yaml",
+            ].includes(op.path),
+        )
+      )
+        throw blocked(
+          "Current compatible models are missing. The factory offer cannot restore a deliberately deleted seed; restore or supply an implementing model explicitly. Completed history is unchanged.",
+        );
       this.requirePermission(assessment);
       // Every original record UUID/source is captured before the first durable prepare await.
       const plan = modelResourcePlan(captureResourceSetupPlan(assessment));
@@ -286,6 +325,11 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       signal.throwIfAborted();
       if (!stored)
         throw blocked("No original resource mutation is available to resume.");
+      if (stored.phase === "verified") {
+        this.verifyPrevious(stored, signal);
+        await this.completeCurrent(signal);
+        return;
+      }
       if (stored.version < 3 && this.legacy) {
         await this.legacy(signal).resume(progress);
         return;
@@ -317,6 +361,11 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
   ): Promise<void> {
     requireSetupAvailability(this.client.status);
     let intent = original;
+    if (intent.version === 4) this.verifyPrevious(intent.previous, signal);
+    if (intent.phase === "verified") {
+      await this.completeCurrent(signal);
+      return;
+    }
     let receipt: wire.Receipt;
     if (intent.phase === "prepared") {
       this.requirePermission(intent.plan);
@@ -439,12 +488,18 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       signal.removeEventListener("abort", cancel);
     }
   }
-  private async currentReadback(
-    plan: ModelResourcePlan,
-    signal: AbortSignal,
-  ): Promise<void> {
+  private async completeCurrent(signal: AbortSignal): Promise<void> {
+    if ((await this.requiredPacks(signal)).length)
+      throw blocked(
+        "Current models need explicit setup; completed history is retained.",
+      );
+    await this.currentReadback(signal);
+    await this.finish(signal);
+  }
+  private async currentReadback(signal: AbortSignal): Promise<void> {
     try {
-      await this.readback(plan, signal);
+      await this.readback(undefined, signal);
+      requireSetupAvailability(this.client.status);
     } catch {
       signal.throwIfAborted();
       throw blocked(
@@ -453,12 +508,14 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     }
   }
   private async readback(
-    plan: ModelResourcePlan,
+    plan: ModelResourcePlan | undefined,
     signal: AbortSignal,
   ): Promise<void> {
+    const currentSources =
+      plan === undefined || plan.sourcePolicy === "current-only";
     const inventory = await modelResourceInventory(this.client, signal);
     signal.throwIfAborted();
-    for (const expected of plan.resourceReadback) {
+    for (const expected of plan?.resourceReadback ?? []) {
       const found = inventory.filter((r) => r.path === expected.path);
       if (expected.doc === null) {
         if (found.length) throw uncertain();
@@ -496,9 +553,17 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         c.version === "1.0.0" &&
         c.digest === bases.provides[0]!.digest,
     );
-    if (!contract) throw uncertain();
+    if (
+      !contract ||
+      !catalog.types.some((t) =>
+        t.implements.some(
+          (i) => i.contract === contract.id && i.version === contract.version,
+        ),
+      )
+    )
+      throw uncertain();
     const records = new Map<string, wire.RecordView>();
-    for (const source of plan.sources) {
+    for (const source of plan?.sources ?? []) {
       const record = await this.client.get(
         source.id,
         { document: true },
@@ -553,9 +618,10 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     }, signal))
       for (const view of views) {
         const created = records.get(view.record);
-        if (!created && !defaultPaths.has(view.path)) continue;
+        if (!currentSources && !created && !defaultPaths.has(view.path))
+          continue;
         if (created && view.ordinal !== 0) throw uncertain();
-        if (readPaths.has(view.path)) continue; // Existing user source may have multiple views.
+        if (!currentSources && readPaths.has(view.path)) continue; // Original factory readback semantics.
         const record =
           created ??
           (await this.client.get(view.record, { document: true }, signal));
@@ -605,7 +671,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       }
     if (
       observed.size !== records.size ||
-      [...defaultPaths].some((p) => !readPaths.has(p))
+      (!currentSources && [...defaultPaths].some((p) => !readPaths.has(p)))
     )
       throw uncertain();
   }

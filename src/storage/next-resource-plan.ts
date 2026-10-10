@@ -162,6 +162,7 @@ async function configuration(
 function readback(
   applied: CollectionResourceApplication,
   data: Resources,
+  currentOnly = false,
 ): ModelResourcePlan["resourceReadback"] {
   const paths = new Set([
     "mdbase.yaml",
@@ -175,8 +176,15 @@ function readback(
       if (r.action === "retire") retired.add(r.target);
     }
   for (const op of applied.ops) paths.add(op.path);
-  return [...paths].map((path) => {
+  return [...paths].flatMap((path) => {
     const doc = data[path];
+    if (
+      currentOnly &&
+      doc === undefined &&
+      !applied.ops.some((op) => op.path === path) &&
+      !retired.has(path)
+    )
+      return [];
     if (typeof doc !== "string" && !retired.has(path))
       throw new Error(
         "Mdbase has not supplied an installed/preserved setup resource.",
@@ -244,10 +252,11 @@ export async function nativeResourceSetupAssessment(
   sources: DefaultSourceFactory,
   signal: AbortSignal,
   missingOnly = false,
+  currentPackIds?: readonly string[],
 ): Promise<ResourceSetupAssessment> {
   await initializeModelPackCore(signal);
   signal.throwIfAborted();
-  const declaration = await setup(resources, signal);
+  const declaration = await setup(resources, signal, currentPackIds);
   const input = { resources: rows(resources), setup: declaration };
   const assessment = await assessCollectionResources(input);
   signal.throwIfAborted();
@@ -273,6 +282,20 @@ export async function nativeResourceSetupAssessment(
       "Additive setup cannot replace or delete an existing definition.",
     );
   const data = prospective(resources, applied);
+  if (missingOnly && currentPackIds !== undefined)
+    return Object.freeze({
+      sourcePolicy: "current-only" as const,
+      assessmentDigest: assessment.assessment_digest,
+      provisionDigest: assessment.provision_digest,
+      packs: Object.freeze(
+        assessment.type_packs.map((p) => Object.freeze({ ...p.pack })),
+      ),
+      resourceOps: Object.freeze(
+        applied.ops.map((op) => Object.freeze({ ...op })),
+      ),
+      resourceReadback: Object.freeze(readback(applied, data, true)),
+      sources: Object.freeze([]),
+    });
   const existingNativeBasePaths = await retainedNativePaths(
     client,
     resources,
@@ -374,8 +397,13 @@ export async function recheckPreparedResourceSetup(
     JSON.stringify(applied.assessment.type_packs.map((p) => p.pack)) !==
       JSON.stringify(original.packs) ||
     JSON.stringify(applied.ops) !== JSON.stringify(original.resourceOps) ||
-    JSON.stringify(readback(applied, prospective(resources, applied))) !==
-      JSON.stringify(original.resourceReadback)
+    JSON.stringify(
+      readback(
+        applied,
+        prospective(resources, applied),
+        original.sourcePolicy === "current-only",
+      ),
+    ) !== JSON.stringify(original.resourceReadback)
   )
     throw new Error(
       "The original resource setup plan changed; no replacement will be submitted.",
