@@ -345,13 +345,21 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     )
       throw uncertain();
     try {
-      // Confirmed original receipt AND each original record identity are required.
-      for (const source of intent.plan.sources) {
-        const records =
-          receipt.records?.filter(
+      // Records are optional in the wire. For an applied original receipt
+      // without them, exact bounded readback must succeed BEFORE advancing the
+      // attempted journal. A refusal/mismatch retains its original recovery state.
+      const receiptRecords = receipt.records;
+      const recordsOmitted = receiptRecords === undefined;
+      if (recordsOmitted) {
+        if (receipt.status !== "applied") throw uncertain();
+        await this.readback(intent.plan, signal);
+      } else {
+        for (const source of intent.plan.sources) {
+          const records = receiptRecords.filter(
             (r) => r.id === source.id && r.path === source.path,
-          ) ?? [];
-        if (records.length !== 1) throw uncertain();
+          );
+          if (records.length !== 1) throw uncertain();
+        }
       }
       if (intent.phase === "attempted")
         intent = this.transition(
@@ -359,7 +367,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           await this.journal.recordResourceConfirmed(intent.mutationId, signal),
           "confirmed",
         );
-      await this.readback(intent.plan, signal);
+      if (!recordsOmitted) await this.readback(intent.plan, signal);
       if (intent.phase === "confirmed")
         intent = this.transition(
           intent,
