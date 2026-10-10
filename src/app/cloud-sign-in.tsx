@@ -5,12 +5,12 @@ import type { NextInstallationBuildInput } from "../cloud/next-installation-prot
 import { NextInstallationWorker } from "../cloud/next-installation-worker";
 import { openConnectPopup } from "../cloud/connect-popup";
 import { CloudConnectionView } from "./cloud-connection-view";
-
-function signInMessage(reason: unknown): string {
-  if (reason instanceof Error && reason.message.includes("popup_blocked"))
-    return "Your browser blocked the sign-in window.";
-  return "Sign-in was interrupted. Please try again.";
-}
+import {
+  logSignInFailure,
+  signInErrorCode,
+  signInMessage,
+  type SignInFailureStage,
+} from "../cloud/sign-in-error";
 /** Existing production welcome renderer, driven by the actual SDK session.
  * Keep this owner mounted when its single repository is handed to the gate.
  * Approval polling, original request/device and collection selection are SDK
@@ -30,6 +30,15 @@ export function CloudSignIn({
   const owner = useRef<NextInstallationWorker | null>(null);
   const current = useRef<AbortSignal | null>(null);
   const onCollectionRef = useRef(onCollection);
+  const reported = useRef(new Set<string>());
+  function failure(stage: SignInFailureStage, reason: unknown): string {
+    const key = `${stage}:${signInErrorCode(reason)}`;
+    if (!reported.current.has(key)) {
+      reported.current.add(key);
+      logSignInFailure(stage, reason);
+    }
+    return signInMessage(reason);
+  }
   useEffect(() => {
     onCollectionRef.current = onCollection;
   }, [onCollection]);
@@ -44,7 +53,7 @@ export function CloudSignIn({
       if (lifetime.signal.aborted || !held || owner.current !== held) return;
       const value = held.getSnapshot();
       setSnapshot(value);
-      if (value?.problem) setError(signInMessage(value.problem));
+      if (value?.problem) setError(failure("snapshot", value.problem));
       else setError(null);
       if (
         !claiming &&
@@ -65,7 +74,10 @@ export function CloudSignIn({
             delivered = true;
           })
           .catch((reason) => {
-            if (!lifetime.signal.aborted) setError(signInMessage(reason));
+            if (!lifetime.signal.aborted) {
+              original.closePortal();
+              setError(failure("handoff", reason));
+            }
           });
       }
     };
@@ -82,7 +94,10 @@ export function CloudSignIn({
         await worker.startSession();
       })
       .catch((reason) => {
-        if (!lifetime.signal.aborted) setError(signInMessage(reason));
+        if (!lifetime.signal.aborted) {
+          held?.closePortal();
+          setError(failure("start", reason));
+        }
       });
     return () => {
       lifetime.abort();
@@ -102,17 +117,21 @@ export function CloudSignIn({
     try {
       original.reservePortal(openConnectPopup);
     } catch {
-      throw Error("Your browser blocked the sign-in window.");
+      throw Error(failure("popup", Error("popup_blocked")));
     }
+    let stage: SignInFailureStage = "authorize";
     try {
-      if (original.getSnapshot()?.problem === "expired")
+      if (original.getSnapshot()?.problem === "expired") {
+        stage = "renew";
         await original.renewSession();
+        stage = "authorize";
+      }
       signal.throwIfAborted();
       await original.authorizeSession();
       signal.throwIfAborted();
     } catch (reason) {
       original.closePortal();
-      throw Error(signInMessage(reason), { cause: reason });
+      throw Error(failure(stage, reason), { cause: reason });
     }
   }
   if (!snapshot) {
@@ -182,7 +201,8 @@ export function CloudSignIn({
           try {
             await original.selectSession(collectionId);
           } catch (reason) {
-            throw Error(signInMessage(reason), { cause: reason });
+            original.closePortal();
+            throw Error(failure("select", reason), { cause: reason });
           }
         })
       }

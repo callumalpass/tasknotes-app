@@ -85,6 +85,49 @@ beforeEach(() => {
     closePortal: f.closePopup,
   });
 });
+it.each([
+  "binding",
+  "response",
+  "refused",
+  "expired",
+  "recovery_required",
+  "account_confirmation_required",
+  "outcome_unknown",
+])(
+  "shows the known %s failure and logs only its code, closing the display popup",
+  async (reason) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    f.authorize.mockRejectedValue(
+      Object.assign(Error("private-response-token"), { reason }),
+    );
+    render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sign in" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).not.toHaveTextContent("private-response-token");
+    expect(alert).not.toHaveTextContent("Sign-in was interrupted");
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      `[TaskNotes sign-in] authorize: ${reason}`,
+    );
+    expect(f.closePopup).toHaveBeenCalledOnce();
+    expect(f.close).not.toHaveBeenCalled();
+    warn.mockRestore();
+  },
+);
+it("reports a snapshot failure once without logging its display/account fields", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+  await screen.findByRole("button", { name: "Sign in" });
+  act(() => {
+    value = { ...value, status: "blocked", problem: "refused" };
+    notify();
+    notify();
+  });
+  expect(await screen.findByRole("alert")).toHaveTextContent("refused access");
+  expect(warn).toHaveBeenCalledExactlyOnceWith(
+    "[TaskNotes sign-in] snapshot: refused",
+  );
+  warn.mockRestore();
+});
 it("restores production mark/copy/explainer and one styled sign-in action without technical controls", async () => {
   render(<CloudSignIn build={build} onCollection={vi.fn()} />);
   const button = await screen.findByRole("button", { name: "Sign in" });

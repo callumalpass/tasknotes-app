@@ -44,6 +44,7 @@ export class NextInstallationWorker {
   private snapshot: AppWebSignInSnapshot | null = null;
   private readonly snapshotListeners = new Set<() => void>();
   private portal: AppWebSignInPortal | null = null;
+  private portalPhase: "idle" | "starting" | "authorizing" = "idle";
   private sessionClosed = false;
   private closeWaiter: { resolve(): void; reject(error: Error): void } | null =
     null;
@@ -55,8 +56,13 @@ export class NextInstallationWorker {
     };
   };
   closePortal(): void {
-    this.portal?.close();
+    try {
+      this.portal?.close();
+    } catch {
+      /* Display cleanup cannot undo approval or prove native shutdown. */
+    }
     this.portal = null;
+    this.portalPhase = "idle";
   }
   reservePortal(open: () => AppWebSignInPortal): void {
     this.closePortal();
@@ -64,18 +70,20 @@ export class NextInstallationWorker {
   }
   private receiveSnapshot(snapshot: AppWebSignInSnapshot) {
     this.snapshot = snapshot;
+    if (this.portalPhase === "starting" && snapshot.status === "authorizing")
+      this.portalPhase = "authorizing";
     // A paired account can still be approving ADDITIONAL collection consent.
     // Close only after that genuine receipt has advanced out of authorizing.
     if (
-      (snapshot.signIn?.state === "paired" &&
+      (this.portalPhase === "authorizing" &&
+        snapshot.signIn?.state === "paired" &&
         ["unselected", "opening", "setup_required", "ready"].includes(
           snapshot.status,
         )) ||
       snapshot.status === "closed" ||
       snapshot.status === "blocked"
     ) {
-      this.portal?.close();
-      this.portal = null;
+      this.closePortal();
     }
     for (const listener of this.snapshotListeners) listener();
   }
@@ -202,6 +210,7 @@ export class NextInstallationWorker {
     return this.sessionCall({ kind: "session-start" });
   }
   authorizeSession() {
+    this.portalPhase = "starting";
     return this.sessionCall({ kind: "session-authorize" });
   }
   renewSession() {
@@ -258,8 +267,7 @@ export class NextInstallationWorker {
             this.onError();
             return;
           }
-          this.portal?.close();
-          this.portal = null;
+          this.closePortal();
           return;
         case "session-closed":
           if (
@@ -305,6 +313,7 @@ export class NextInstallationWorker {
     }
   };
   private readonly onError = () => {
+    this.closePortal();
     this.pending?.reject(
       new Error(
         "TaskNotes native Worker stopped; preserve storage and resume the original installation.",
@@ -601,6 +610,13 @@ export class NextInstallationWorker {
   async openCollection(collectionId: string): Promise<NextTaskRepository> {
     if (this.dataConnector || this.repository)
       throw new Error("Original collection already opened.");
+    // SDK readiness pushes may precede the original command reply. Wait for
+    // that exact transport slot; do not turn a valid handoff into "busy".
+    if (this.sessionCpOrigin) {
+      while (this.pending) await this.pending.promise;
+      if (this.dataConnector || this.repository)
+        throw new Error("Original collection already opened.");
+    }
     const result = await this.call({
       kind: this.sessionCpOrigin ? "session-connection" : "open-collection",
       collectionId,
@@ -680,8 +696,7 @@ export class NextInstallationWorker {
   close(): Promise<void> {
     if (this.sessionCpOrigin && this.protectedSlotOpened) {
       return (this.closing ??= Promise.resolve().then(async () => {
-        this.portal?.close();
-        this.portal = null;
+        this.closePortal();
         try {
           await new Promise<void>((resolve, reject) => {
             this.closeWaiter = { resolve, reject };

@@ -225,6 +225,7 @@ const publicErrorCodes = new Set([
   "binding",
   "response",
   "recovery_required",
+  "account_confirmation_required",
   "outcome_unknown",
   "fenced",
   "refused",
