@@ -251,9 +251,188 @@ beforeEach(() => vi.stubGlobal("indexedDB", new IDBFactory()));
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("original resource setup sequencing (protocol stand-ins)", () => {
+  function fakeSetupClock() {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const owner = new AbortController();
+      setTimeout(
+        () => owner.abort(new DOMException("signal timed out", "TimeoutError")),
+        ms,
+      );
+      return owner.signal;
+    });
+  }
+  it("pins an explicit resource action before the queue yields; renewal cannot move it to a new owner", async () => {
+    const f = fixture();
+    let current = f.owner;
+    const ownerSignal = vi.fn(() => current.signal);
+    const setup = new NativeResourceSetup(
+      f.client,
+      f.journal,
+      ownerSignal,
+      f.factory,
+      f.verified,
+    );
+    const load = vi.spyOn(f.journal, "load"),
+      uuid = vi.spyOn(crypto, "randomUUID");
+    const result = setup.install(),
+      stopped = expect(result).rejects.toThrow();
+    f.owner.abort();
+    current = new AbortController();
+    await stopped;
+    expect(ownerSignal).toHaveBeenCalledOnce();
+    expect(load).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("slow original confirmation survives 20s with one unchanged resource/source submit", async () => {
+    const f = fixture();
+    await f.setup.inspect();
+    fakeSetupClock();
+    const original = f.mocked.submit.getMockImplementation()!;
+    f.mocked.submit.mockImplementationOnce(async (...args) => {
+      const writes = await original(...args),
+        receipt = await writes[0]!.confirmed;
+      return [
+        {
+          ...writes[0]!,
+          confirmed: new Promise<typeof receipt>((resolve) =>
+            setTimeout(() => resolve(receipt), 35000),
+          ),
+        },
+      ];
+    });
+    const progress = vi.fn(),
+      done = vi.fn();
+    const result = f.setup.install(progress).then(done);
+    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    await vi.advanceTimersByTimeAsync(21000);
+    expect(done).not.toHaveBeenCalled();
+    const originalIntent = (await f.journal.load(f.owner.signal))!;
+    expect(originalIntent.phase).toBe("attempted");
+    await vi.advanceTimersByTimeAsync(15000);
+    await result;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.mocked.awaitReceipt).not.toHaveBeenCalled();
+    expect(await f.journal.load(f.owner.signal)).toMatchObject({
+      ...originalIntent,
+      phase: "verified",
+    });
+    expect(progress).toHaveBeenCalledWith("waiting_for_confirmation");
+    expect(f.verified).toHaveBeenCalledOnce();
+  });
+  it("setup timeout checks the exact original receipt and readback without resubmitting", async () => {
+    const f = fixture();
+    await f.setup.inspect();
+    fakeSetupClock();
+    const original = f.mocked.submit.getMockImplementation()!;
+    f.mocked.submit.mockImplementationOnce(async (...args) => {
+      const writes = await original(...args);
+      return [
+        { ...writes[0]!, confirmed: new Promise<wire.Receipt>(() => {}) },
+      ];
+    });
+    const progress = vi.fn(),
+      result = f.setup.install(progress);
+    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    const originalIntent = (await f.journal.load(f.owner.signal))!;
+    await vi.advanceTimersByTimeAsync(120000);
+    await result;
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.mocked.awaitReceipt).toHaveBeenCalledWith(
+      originalIntent.mutationId,
+      120000,
+      expect.any(AbortSignal),
+    );
+    expect(await f.journal.load(f.owner.signal)).toMatchObject({
+      ...originalIntent,
+      phase: "verified",
+    });
+    expect(f.verified).toHaveBeenCalledOnce();
+    expect(progress).toHaveBeenCalledWith("checking_outcome");
+  });
+  it("keeps a pending original receipt attempted across deadline recovery and explicit resume, without a new UUID or submit", async () => {
+    const f = fixture();
+    await f.setup.inspect();
+    fakeSetupClock();
+    const uuid = vi.spyOn(crypto, "randomUUID"),
+      original = f.mocked.submit.getMockImplementation()!;
+    f.mocked.submit.mockImplementationOnce(async (...args) => {
+      const writes = await original(...args);
+      return [
+        { ...writes[0]!, confirmed: new Promise<wire.Receipt>(() => {}) },
+      ];
+    });
+    f.mocked.awaitReceipt.mockImplementation(async (mutation) => ({
+      mutation,
+      state: "pending",
+    }));
+    const progress = vi.fn(),
+      result = f.setup.install(progress);
+    const unknown = expect(result).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    const originalIntent = (await f.journal.load(f.owner.signal))!,
+      count = uuid.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(120000);
+    await unknown;
+    expect(await f.journal.load(f.owner.signal)).toEqual(originalIntent);
+    expect(f.mocked.awaitReceipt).toHaveBeenCalledWith(
+      originalIntent.mutationId,
+      120000,
+      expect.any(AbortSignal),
+    );
+    expect(progress).toHaveBeenLastCalledWith("checking_outcome");
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(uuid).toHaveBeenCalledTimes(count);
+    expect(await f.setup.inspect()).toMatchObject({ state: "outcome_unknown" });
+    await expect(f.setup.resume()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(uuid).toHaveBeenCalledTimes(count);
+    expect(await f.journal.load(f.owner.signal)).toEqual(originalIntent);
+  });
+  it("does not finish or recover after the original owner ends during receipt reconciliation", async () => {
+    const f = fixture();
+    await f.setup.inspect();
+    fakeSetupClock();
+    const original = f.mocked.submit.getMockImplementation()!;
+    f.mocked.submit.mockImplementationOnce(async (...args) => {
+      const writes = await original(...args);
+      return [
+        { ...writes[0]!, confirmed: new Promise<wire.Receipt>(() => {}) },
+      ];
+    });
+    let reply!: (receipt: wire.Receipt) => void;
+    f.mocked.awaitReceipt.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          reply = resolve;
+        }),
+    );
+    const result = f.setup.install(),
+      stopped = expect(result).rejects.toThrow();
+    await vi.waitFor(() => expect(f.mocked.submit).toHaveBeenCalledOnce());
+    const originalIntent = (await f.journal.load(f.owner.signal))!;
+    await vi.advanceTimersByTimeAsync(120000);
+    await vi.waitFor(() =>
+      expect(f.mocked.awaitReceipt).toHaveBeenCalledOnce(),
+    );
+    f.owner.abort();
+    await stopped;
+    reply(f.receipts.get(originalIntent.mutationId)!);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.mocked.get).not.toHaveBeenCalled();
+  });
   it("inspects without UUID/prepare/submit and requires real full-scope source creation grant", async () => {
     const f = fixture(),
       uuid = vi.spyOn(crypto, "randomUUID");

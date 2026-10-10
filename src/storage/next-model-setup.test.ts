@@ -88,6 +88,7 @@ const closes: (() => void)[] = [];
 afterEach(() => {
   closes.splice(0).forEach((close) => close());
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 async function fixture(
   capabilities = ["definitions.manage", "collection.read"],
@@ -204,6 +205,107 @@ function paginateModelInventory(f: Awaited<ReturnType<typeof fixture>>) {
 }
 
 describe("original model setup intent and SDK resource operations (stand-ins)", () => {
+  function setupClock() {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const owner = new AbortController();
+      setTimeout(
+        () => owner.abort(new DOMException("signal timed out", "TimeoutError")),
+        ms,
+      );
+      return owner.signal;
+    });
+  }
+  it("pins an explicit legacy action before the queue yields, refusing owner renewal without reads or writes", async () => {
+    const f = await fixture();
+    let current = f.owner;
+    const ownerSignal = vi.fn(() => current.signal),
+      setup = new NativeModelSetup(
+        f.client,
+        f.journal,
+        ownerSignal,
+        f.verified,
+      );
+    const load = vi.spyOn(f.journal, "load"),
+      submit = vi.spyOn(f.client, "submit"),
+      uuid = vi.spyOn(crypto, "randomUUID");
+    const result = setup.install(),
+      stopped = expect(result).rejects.toThrow();
+    f.owner.abort();
+    current = new AbortController();
+    await stopped;
+    expect(ownerSignal).toHaveBeenCalledOnce();
+    expect(load).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+  });
+  it("legacy v2 slow confirmation outlives foreground20s without changing its original submit", async () => {
+    const f = await fixture();
+    await f.plan();
+    setupClock();
+    const original = f.client.submit.bind(f.client);
+    const submit = vi
+      .spyOn(f.client, "submit")
+      .mockImplementationOnce(async (...args) => {
+        const writes = await original(...args),
+          receipt = await writes[0]!.confirmed;
+        Object.defineProperty(writes[0]!, "confirmed", {
+          value: new Promise<typeof receipt>((resolve) =>
+            setTimeout(() => resolve(receipt), 35000),
+          ),
+        });
+        return writes;
+      });
+    const receipt = vi.spyOn(f.client, "awaitReceipt"),
+      progress = vi.fn(),
+      done = vi.fn();
+    const result = f.setup.install(progress).then(done);
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    const intent = structuredClone(f.journal.value!);
+    await vi.advanceTimersByTimeAsync(21000);
+    expect(done).not.toHaveBeenCalled();
+    expect(f.journal.value?.phase).toBe("attempted");
+    await vi.advanceTimersByTimeAsync(15000);
+    await result;
+    expect(f.journal.value).toMatchObject({ ...intent, phase: "verified" });
+    expect(submit).toHaveBeenCalledOnce();
+    expect(receipt).not.toHaveBeenCalled();
+    expect(progress).toHaveBeenCalledWith("waiting_for_confirmation");
+    expect(f.verified).toHaveBeenCalledOnce();
+  });
+  it("legacy v2 deadline recovery awaits the original receipt, never preparing or submitting again", async () => {
+    const f = await fixture();
+    await f.plan();
+    setupClock();
+    const original = f.client.submit.bind(f.client);
+    const submit = vi
+      .spyOn(f.client, "submit")
+      .mockImplementationOnce(async (...args) => {
+        const writes = await original(...args);
+        Object.defineProperty(writes[0]!, "confirmed", {
+          value: new Promise<wire.Receipt>(() => {}),
+        });
+        return writes;
+      });
+    const receipt = vi.spyOn(f.client, "awaitReceipt"),
+      progress = vi.fn();
+    const result = f.setup.install(progress);
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    const intent = structuredClone(f.journal.value!);
+    await vi.advanceTimersByTimeAsync(120000);
+    await result;
+    expect(submit).toHaveBeenCalledOnce();
+    expect(f.journal.prepares).toBe(1);
+    expect(receipt).toHaveBeenCalledWith(
+      intent.mutationId,
+      120000,
+      expect.any(AbortSignal),
+    );
+    expect(f.journal.value).toMatchObject({ ...intent, phase: "verified" });
+    expect(progress).toHaveBeenLastCalledWith("checking_outcome");
+    expect(f.verified).toHaveBeenCalledOnce();
+  });
   it("requires the complete published pack/lock before an otherwise valid no-intent model can finalize", async () => {
     const f = await fixture();
     f.replica.seedResource(
@@ -245,8 +347,17 @@ describe("original model setup intent and SDK resource operations (stand-ins)", 
     expect(await f.setup.inspect()).toEqual({ state: "ready" });
     await f.setup.install();
     await f.setup.resume();
-    for (const expected of planned.readback)
-      expect(get).toHaveBeenCalledWith(expected.path, f.owner.signal);
+    const operations = [
+      ...new Set(get.mock.calls.map(([, signal]) => signal!)),
+    ];
+    expect(operations).toHaveLength(3); // inspect/install/resume own distinct bounded windows.
+    for (const operation of operations) {
+      for (const expected of planned.readback)
+        expect(get).toHaveBeenCalledWith(expected.path, operation);
+      expect(operation.aborted).toBe(false);
+    }
+    f.owner.abort();
+    for (const operation of operations) expect(operation.aborted).toBe(true);
     expect(f.journal.value).toBeNull();
     expect(f.journal.prepares).toBe(0);
     expect(submit).not.toHaveBeenCalled();

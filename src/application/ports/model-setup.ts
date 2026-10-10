@@ -167,11 +167,15 @@ export type ModelSetupView =
   | { readonly state: "blocked"; readonly message: string }
   | { readonly state: "permission_required"; readonly message: string };
 
+export type ModelSetupProgress =
+  "installing" | "waiting_for_confirmation" | "checking_outcome";
+export type ModelSetupProgressListener = (progress: ModelSetupProgress) => void;
+
 /** Provider-neutral explicit model installation and original-intent recovery. */
 export interface TaskNotesModelSetup {
   inspect(): Promise<ModelSetupView>;
-  install(): Promise<void>;
-  resume(): Promise<void>;
+  install(progress?: ModelSetupProgressListener): Promise<void>;
+  resume(progress?: ModelSetupProgressListener): Promise<void>;
 }
 
 /** A setup failure carries a display/recovery state, not a write witness. */

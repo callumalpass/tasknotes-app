@@ -7,6 +7,7 @@ import {
   type ModelPackPlan,
   type ModelPackSetupIntent,
   type ModelSetupIntent,
+  type ModelSetupProgressListener,
   type ModelSetupJournal,
   type ModelSetupScope,
   type ModelSetupView,
@@ -20,6 +21,10 @@ import {
 } from "./next-model-plan";
 import { nextTaskProviders } from "./next-task-catalog";
 import { modelResourceInventory } from "./next-model-resources";
+import {
+  atomicSetupOperation,
+  setupStillPending,
+} from "./next-setup-operation";
 
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const hash = /^sha256:[0-9a-f]{64}$/;
@@ -179,7 +184,9 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     this.scope = Object.freeze({ ...journal.scope });
   }
 
-  private signal(): AbortSignal {
+  private signal(
+    budget: number = TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+  ): AbortSignal {
     const signal = this.ownerSignal();
     signal.throwIfAborted();
     if (
@@ -193,7 +200,9 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       throw blocked(
         "The original model setup collection binding is unavailable.",
       );
-    return signal;
+    return budget
+      ? AbortSignal.any([signal, AbortSignal.timeout(budget)])
+      : signal;
   }
 
   private intent(value: ModelSetupIntent): ModelPackSetupIntent {
@@ -365,15 +374,36 @@ export class NativeModelSetup implements TaskNotesModelSetup {
     );
     return result;
   }
-  install(): Promise<void> {
-    return this.exclusive(async () => {
-      const signal = this.signal();
+  private async operation(
+    work: (signal: AbortSignal) => Promise<void>,
+    progress?: ModelSetupProgressListener,
+  ): Promise<void> {
+    // Pin at the explicit action, BEFORE the serialization queue yields.
+    const owner = this.signal(0);
+    return this.exclusive(() =>
+      atomicSetupOperation(
+        owner,
+        work,
+        (signal) => this.reconcile(signal),
+        progress,
+      ),
+    );
+  }
+  private async reconcile(signal: AbortSignal): Promise<void> {
+    const stored = await this.journal.load(signal);
+    signal.throwIfAborted();
+    if (!stored || stored.version !== 2 || stored.phase === "prepared")
+      setupStillPending();
+    await this.execute(this.intent(stored), signal);
+  }
+  install(progress?: ModelSetupProgressListener): Promise<void> {
+    return this.operation(async (signal) => {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (stored) {
         const intent = this.intent(stored);
         if (intent.phase === "verified") {
-          await this.execute(intent, signal);
+          await this.execute(intent, signal, progress);
           return;
         }
         throw uncertain();
@@ -390,13 +420,12 @@ export class NativeModelSetup implements TaskNotesModelSetup {
       signal.throwIfAborted();
       if (intent.phase !== "prepared" || !samePlan(intent.plan, plan))
         throw uncertain();
-      intent = await this.execute(intent, signal);
+      intent = await this.execute(intent, signal, progress);
       if (intent.phase !== "verified") throw uncertain();
-    });
+    }, progress);
   }
-  resume(): Promise<void> {
-    return this.exclusive(async () => {
-      const signal = this.signal();
+  resume(progress?: ModelSetupProgressListener): Promise<void> {
+    return this.operation(async (signal) => {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (!stored) {
@@ -414,8 +443,8 @@ export class NativeModelSetup implements TaskNotesModelSetup {
           "No original TaskNotes setup intent is available to resume.",
         );
       }
-      await this.execute(this.intent(stored), signal);
-    });
+      await this.execute(this.intent(stored), signal, progress);
+    }, progress);
   }
   private async verifyCurrentPlan(
     plan: ModelPackPlan,
@@ -510,6 +539,7 @@ export class NativeModelSetup implements TaskNotesModelSetup {
   private async execute(
     original: ModelPackSetupIntent,
     signal: AbortSignal,
+    progress?: ModelSetupProgressListener,
   ): Promise<ModelPackSetupIntent> {
     let intent = original;
     let receipt: wire.Receipt;
@@ -530,20 +560,23 @@ export class NativeModelSetup implements TaskNotesModelSetup {
           mutationId: intent.mutationId,
           signal,
         });
+        signal.throwIfAborted();
         if (
           writes.length !== 1 ||
           writes[0]!.receipt.mutation !== intent.mutationId
         )
           throw uncertain();
+        progress?.("waiting_for_confirmation");
         receipt = await withSignal(writes[0]!.confirmed, signal);
       } catch {
         throw uncertain();
       }
     } else {
+      progress?.("waiting_for_confirmation");
       try {
         receipt = await this.client.awaitReceipt(
           intent.mutationId,
-          TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+          TASKNOTES_REQUEST_BUDGETS.atomicSetupMs,
           signal,
         );
       } catch {

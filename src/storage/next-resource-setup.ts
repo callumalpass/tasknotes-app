@@ -7,6 +7,7 @@ import {
   type ModelResourceSetupIntent,
   type ModelResourceSetupJournal,
   type ModelSetupIntent,
+  type ModelSetupProgressListener,
   type ModelSetupView,
   type TaskNotesModelSetup,
 } from "../application/ports/model-setup";
@@ -14,6 +15,10 @@ import { modelResourcePlan } from "../cloud/next-model-setup-intent";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { modelResourceInventory } from "./next-model-resources";
+import {
+  atomicSetupOperation,
+  setupStillPending,
+} from "./next-setup-operation";
 import {
   iterateNativeDiscovery,
   nativeViewSelection,
@@ -61,7 +66,9 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
     this.scope = Object.freeze({ ...journal.scope });
   }
 
-  private signal(): AbortSignal {
+  private signal(
+    budget: number = TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+  ): AbortSignal {
     const owner = this.ownerSignal();
     owner.throwIfAborted();
     if (
@@ -71,10 +78,9 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       throw blocked(
         "The original resource setup collection binding is unavailable.",
       );
-    return AbortSignal.any([
-      owner,
-      AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.foregroundMs),
-    ]);
+    return budget
+      ? AbortSignal.any([owner, AbortSignal.timeout(budget)])
+      : owner;
   }
   private intent(value: ModelSetupIntent): ModelResourceSetupIntent {
     if (!value || value.version !== 3)
@@ -172,17 +178,44 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       };
     }
   }
-  install(): Promise<void> {
-    return this.exclusive(async () => {
-      const signal = this.signal();
+  private async operation(
+    work: (signal: AbortSignal) => Promise<void>,
+    progress?: ModelSetupProgressListener,
+  ): Promise<void> {
+    // Pin at the explicit action, BEFORE the serialization queue yields.
+    const owner = this.signal(0);
+    return this.exclusive(() =>
+      atomicSetupOperation(
+        owner,
+        work,
+        (signal) => this.reconcile(signal),
+        progress,
+      ),
+    );
+  }
+  private async reconcile(signal: AbortSignal): Promise<void> {
+    const stored = await this.journal.load(signal);
+    signal.throwIfAborted();
+    if (!stored || stored.phase === "prepared") setupStillPending();
+    if (stored.version !== 3 && this.legacy) {
+      if (stored.version !== 2) setupStillPending();
+      await this.legacy(signal).resume();
+      return;
+    }
+    // execute's attempted/confirmed/verified branches ONLY await the original
+    // receipt and verify readback. Never run the prepared/submit branch here.
+    await this.execute(this.intent(stored), signal);
+  }
+  install(progress?: ModelSetupProgressListener): Promise<void> {
+    return this.operation(async (signal) => {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (stored) {
         if (stored.version !== 3 && this.legacy) {
-          await this.legacy(signal).install();
+          await this.legacy(signal).install(progress);
           return;
         }
-        await this.execute(this.intent(stored), signal);
+        await this.execute(this.intent(stored), signal, progress);
         return;
       }
       const assessment = await nativeResourceSetupAssessment(
@@ -205,22 +238,21 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
       );
       signal.throwIfAborted();
       if (!same(intent.plan, plan)) throw uncertain();
-      await this.execute(intent, signal);
-    });
+      await this.execute(intent, signal, progress);
+    }, progress);
   }
-  resume(): Promise<void> {
-    return this.exclusive(async () => {
-      const signal = this.signal();
+  resume(progress?: ModelSetupProgressListener): Promise<void> {
+    return this.operation(async (signal) => {
       const stored = await this.journal.load(signal);
       signal.throwIfAborted();
       if (!stored)
         throw blocked("No original resource mutation is available to resume.");
       if (stored.version !== 3 && this.legacy) {
-        await this.legacy(signal).resume();
+        await this.legacy(signal).resume(progress);
         return;
       }
-      await this.execute(this.intent(stored), signal);
-    });
+      await this.execute(this.intent(stored), signal, progress);
+    }, progress);
   }
   private transition(
     before: ModelResourceSetupIntent,
@@ -239,6 +271,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
   private async execute(
     original: ModelResourceSetupIntent,
     signal: AbortSignal,
+    progress?: ModelSetupProgressListener,
   ): Promise<void> {
     let intent = original;
     let receipt: wire.Receipt;
@@ -276,6 +309,7 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
           writes[0]!.receipt.mutation !== intent.mutationId
         )
           throw uncertain();
+        progress?.("waiting_for_confirmation");
         receipt = await this.wait(writes[0]!.confirmed, signal);
       } catch (reason) {
         signal.throwIfAborted();
@@ -284,10 +318,11 @@ export class NativeResourceSetup implements TaskNotesModelSetup {
         throw uncertain();
       }
     } else {
+      progress?.("waiting_for_confirmation");
       try {
         receipt = await this.client.awaitReceipt(
           intent.mutationId,
-          TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+          TASKNOTES_REQUEST_BUDGETS.atomicSetupMs,
           signal,
         );
       } catch {
