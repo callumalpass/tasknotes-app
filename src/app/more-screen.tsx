@@ -71,6 +71,7 @@ export function MoreScreen({
     !Capacitor.isNativePlatform() &&
     (installState === "available" || installState === "ios-instructions");
   useEffect(() => {
+    if (!deliversReminders) return;
     let active = true;
     void mdbaseNotifications
       .status()
@@ -88,7 +89,7 @@ export function MoreScreen({
     return () => {
       active = false;
     };
-  }, []);
+  }, [deliversReminders]);
 
   async function installTaskNotes() {
     if (installState === "ios-instructions") {
@@ -111,6 +112,7 @@ export function MoreScreen({
   }
 
   async function toggleChangeNotifications() {
+    if (!deliversReminders) return;
     setChangeNotificationsBusy(true);
     setChangeNotificationsError(null);
     try {
@@ -230,18 +232,19 @@ export function MoreScreen({
           <small>
             {deliversReminders
               ? changeNotificationLabel(changeNotifications)
-              : "Not in the demo"}
+              : "Not available"}
           </small>
         </div>
         <p className="section-copy">
           {deliversReminders
             ? "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-            : "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."}
+            : "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."}
         </p>
-        {changeNotifications.state === "off" ||
-        changeNotifications.state === "enabled" ||
-        (changeNotifications.state === "denied" &&
-          changeNotifications.optedIn) ? (
+        {deliversReminders &&
+        (changeNotifications.state === "off" ||
+          changeNotifications.state === "enabled" ||
+          (changeNotifications.state === "denied" &&
+            changeNotifications.optedIn)) ? (
           <button
             className="text-action"
             disabled={changeNotificationsBusy}
@@ -255,7 +258,8 @@ export function MoreScreen({
                 : "Turn on reminders"}
           </button>
         ) : null}
-        {changeNotifications.state === "reauthorization_required" ? (
+        {deliversReminders &&
+        changeNotifications.state === "reauthorization_required" ? (
           <button
             className="text-action"
             type="button"
@@ -273,7 +277,7 @@ export function MoreScreen({
             Review notification access
           </button>
         ) : null}
-        {changeNotificationsError ? (
+        {deliversReminders && changeNotificationsError ? (
           <p className="inline-error" role="alert">
             {changeNotificationsError}
           </p>
