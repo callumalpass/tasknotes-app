@@ -538,6 +538,84 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       phase: "verified",
     });
   });
+  it.each(["attempted", "confirmed"] as const)(
+    "a fresh service resumes the sealed original %s intent after its owner closes without new admission",
+    async (phase) => {
+      const f = fixture();
+      f.state.loseReply = phase === "attempted";
+      f.state.omitDiscovery = phase === "confirmed";
+      await expect(f.setup.install()).rejects.toMatchObject({
+        view: { state: "outcome_unknown" },
+      });
+      const original = await f.journal.load(signal());
+      if (original?.version !== 3 || original.phase !== phase)
+        throw new Error("missing original held v3 intent");
+      expect(f.mocked.submit).toHaveBeenCalledOnce();
+      expect(f.factory).toHaveBeenCalledOnce();
+      expect(f.verified).not.toHaveBeenCalled();
+      f.owner.abort();
+      f.journal.close();
+
+      const owner = new AbortController();
+      const journal = new NextModelSetupIntentStore({
+        scope,
+        appOrigin: "http://127.0.0.1:48319",
+        cpOrigin: "https://connect-lab.mdbase.dev",
+        isCurrent: () => !owner.signal.aborted,
+      });
+      const verified = vi.fn(async () => undefined);
+      // A new protocol client/service, not the old owner's result callback.
+      // The shared stand-in authority retains its records and original receipt.
+      const client = { ...f.mocked } as unknown as MdbaseClient;
+      const setup = new NativeResourceSetup(
+        client,
+        journal,
+        () => owner.signal,
+        f.factory,
+        verified,
+      );
+      f.state.loseReply = false;
+      f.state.omitDiscovery = false;
+      f.mocked.submit.mockClear();
+      f.mocked.awaitReceipt.mockClear();
+      f.mocked.get.mockClear();
+      f.factory.mockClear();
+      const uuid = vi.spyOn(crypto, "randomUUID");
+
+      expect(await journal.load(signal())).toEqual(original);
+      expect(await setup.inspect()).toMatchObject({ state: "outcome_unknown" });
+      await setup.resume();
+      expect(f.mocked.awaitReceipt).toHaveBeenCalledExactlyOnceWith(
+        original.mutationId,
+        120000,
+        expect.any(AbortSignal),
+      );
+      for (const source of original.plan.sources) {
+        expect(f.mocked.get).toHaveBeenCalledWith(
+          source.id,
+          { document: true },
+          expect.any(AbortSignal),
+        );
+        expect(f.mocked.get).toHaveBeenCalledWith(
+          { path: source.path },
+          { document: true },
+          expect.any(AbortSignal),
+        );
+      }
+      expect(f.mocked.submit).not.toHaveBeenCalled();
+      expect(f.factory).not.toHaveBeenCalled();
+      expect(uuid).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+      expect(verified).toHaveBeenCalledOnce();
+      expect(await journal.load(signal())).toEqual({
+        ...original,
+        phase: "verified",
+      });
+      expect(await setup.inspect()).toEqual({ state: "ready" });
+      owner.abort();
+      journal.close();
+    },
+  );
   async function heldWithoutReceiptRecords() {
     const f = fixture();
     f.state.omitReceiptRecords = true;
