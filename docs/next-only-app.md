@@ -24,8 +24,10 @@ The authenticated LAB build supplies the registered application ID
 `5cdfa020-c201-4da8-845a-f2cc9969eade` and exact name `TaskNotes` through the
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
-The SDK archive is pinned to source `5369226d26baa338b98e25feed9c0454e52f5865`
-with provenance in `vendor/mdbase-dev-sdk-5369226d.json`.
+This source branch pins the SDK archive to
+`561501d0c627b7808d02e403d65e949bdb78fa88`, with provenance in
+`vendor/mdbase-dev-sdk-561501d0.json`. A source pin does not identify the currently
+served build or authorize a runtime refresh, session enablement or deployment.
 
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
 and key derivations are not rewritten. Refused original restoration stays refused;
@@ -40,7 +42,10 @@ Verified setup is immutable history, not a requirement to keep its original
 mutable definition or saved-view bytes. Readiness uses complete confirmed
 resource inventory, compatible `tasknotes.task` providers and `obsidian.base`
 implementations from the native catalog, plus current native source identity and
-body reads. User-defined implementing types count; factory paths and the five
+body reads. Current source records may be pending or confirmed only with exact
+identity, revision and complete native body readback, and without a hold or
+unresolved state. Original unfinished setup still requires its exact confirmed
+readback. User-defined implementing types count; factory paths and the five
 initial default views do not. Editing or deleting defaults never recreates them.
 
 Missing required models still require explicit setup. New additive v4 rounds
@@ -53,10 +58,48 @@ reset or new-plan fallback is introduced. Core deliberately preserves deleted
 installed seeds: a metadata-only factory offer cannot repair that deletion, so an
 implementing model must be restored or supplied explicitly instead.
 
+## Scratchpad creation and recovery limits
+
+A native creation policy may assign a different portable Scratchpad ID from the
+one requested by the app. For a fresh initial note or its replacement, the app
+reads the original native UUID, checks confirmation and any supplied receipt
+path/revision, and decodes the actual active, empty note. It does not replace the
+native UUID or mutation ID. Existing-note saves, reactivation and duplicate-note
+reconciliation retain their strict portable-identity witnesses.
+
+`getActiveScratchpad()` is not a read-only recovery action: it creates a note
+when none is active and may submit a CAS batch to reconcile several active notes.
+`listScratchpads()` also invokes that action. `getScratchpad(portableId)` only
+reads the complete stream; it does not create a note or settle an earlier
+mutation.
+
+The current `NextMutations` manager retains its pending mutation ID, known receipt
+and original confirmed-result reader in repository-instance memory. A retry in
+that same instance observes the original receipt/result rather than resubmitting.
+Reloading does not establish that this app reader was reconstructed, even if
+native storage survives. Preserve the original device, collection and operation
+identity after an unknown outcome; do not treat a new note, reset or replacement
+ID as recovery. Native restart and physical-durability acceptance remain separate
+checks.
+
 ## Source intake and remaining work
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.
 
-The current collection entry point/dependency graph still needs replacement by protected installation sign-in, C5 initial/additive consent, the owned native host and `NextTaskRepository`. Saved follows original confirmations, never dirty drafts or pending retries. Real ordinary startup, current-account/revoke and restart/offline must be qualified. A build-graph gate excludes all classic repositories/transports/runtime. Unsupported timers/size/mtime/authenticated-record-authors are explicit, not emulated through legacy.
+The current native entry point uses protected installation sign-in, the owned
+native host and `NextTaskRepository`. Its manual sign-in controller still awaits
+replacement by `AppWebSignInSession` and the shared native collection/SQL adapter;
+the concrete adapter ABI and required Connect account/collection-receipt parity
+must be delivered before adoption. Paired shared-session authorization requests
+same-installation additive consent, with named creation owned by the Connect
+portal and creation permission explicitly requested. The app must not retain a
+second old owner or invent a shared-session `createCollection()` method.
+
+Saved follows original confirmations, never dirty drafts or pending retries.
+Real ordinary startup, current-account/revoke and restart/offline must be
+qualified. A build-graph gate excludes all classic repositories/transports/runtime.
+Unsupported reminders, file metadata and authenticated record authors remain
+explicit; they are not emulated through legacy. An optional file timestamp does
+not make native Files available.
 
 Publication versions/manifests/trust and production cutover/promotion remain separately owned. No production deployment or mobile submission is authorized by this source branch.

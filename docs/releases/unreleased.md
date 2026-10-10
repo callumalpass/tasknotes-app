@@ -1,5 +1,6 @@
 # Unreleased
 
+- Clarify native Scratchpad recovery limits: opening or listing notes may write, and reloading does not prove recovery of an earlier uncertain operation.
 - Older file operations report incomplete metadata if a modification timestamp is unavailable, rather than submitting an incomplete descriptor.
 - Opening Scratchpad or starting a new note accepts the portable identity assigned by the native type's creation policy, while retaining the original native record and exact recovery. Existing-note identity checks remain unchanged.
 - Create, edit and delete saved Base view sources in native sessions with full-scope edit permission. Read-only and folder-scoped sessions remain non-editable. Changes use the original record identity and complete document readback; deletion confirms the native record is absent before reporting success.
