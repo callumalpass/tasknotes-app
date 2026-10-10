@@ -1,0 +1,30 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "561501d0c627b7808d02e403d65e949bdb78fa88",
+  "sourceIncludesPrs": [799, 803, 804, 806, 807, 808, 809, 811],
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-561501d0.tgz",
+  "bytes": 638609,
+  "sha256": "8982d7e2442b29584931a965b96d3ddd0a2266fa70890c493a0ee1a7588e3948",
+  "integrity": "sha512-8TmGRP+O74AlMYpbMrPF9pzDpB98N5oLJXyFfR3rGhGqkkRKoyHlhMHNWVhwU/Yf+khFLzQtA4LtWlSAfoSSvw==",
+  "shasum": "6b7b27a02efff78e1e5401cca76c0be4d1d7cf2a",
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "sdkTestsPassed": 1369,
+    "browserTestsPassed": 5,
+    "existingSkipped": 2,
+    "sourceClean": true,
+    "allArchiveMemberBytesVerified": true,
+    "includesMergedSessionFix808": true,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "perAppTrustOriginCustodyAndOperationQualification": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Coordinator 15:53 and release 15:59 delegated coherent source-only SDK intake for native view CRUD after setup readiness merge. No runtime/trust pin, protected-store migration, session enablement or preview change. Earlier unsafe 5ba/b940 archive remains held."
+}

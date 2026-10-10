@@ -96,15 +96,131 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     expect(documents[0]!.source.writable).toBe(false);
     expect(documents[0]!.views[0]!.source.writable).toBe(false);
   });
-  it("keeps explicit creation unavailable without submitting or generic source reads", async () => {
+  it("explicitly creates a source with one captured UUID and actual complete readback", async () => {
     const f = await fixture();
     const create = vi.spyOn(f.client, "create");
-    await expect(
-      f.repository.createViewSource({ path: "new.base", document }),
-    ).rejects.toMatchObject({ reason: "unsupported" });
-    expect(create).not.toHaveBeenCalled();
+    const helper = vi.spyOn(f.client.views, "createSource");
+    const read = vi.spyOn(f.client.views, "getSourceRecord");
+    const result = await f.repository.createViewSource({
+      path: "new.base",
+      document,
+    });
+    expect(create).toHaveBeenCalledOnce();
+    expect(helper).toHaveBeenCalledWith(
+      { id: result.recordId, path: "new.base", document },
+      expect.objectContaining({
+        mutationId: expect.any(String),
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(read).toHaveBeenCalledWith(result.recordId, {
+      signal: expect.any(AbortSignal),
+    });
+    expect(result).toMatchObject({
+      path: "new.base",
+      document,
+      format: "obsidian.base",
+    });
+    const record = await f.client.get(result.recordId!, { document: true });
+    expect(record.id).toBe(result.recordId);
+    expect(record.path).toBe(result.path);
+    expect(record.revision).toBe(result.revision);
+    expect(record.document).toBe(result.document);
     expect(f.generic).not.toHaveBeenCalled();
   });
+  it("recovers creation through the original UUID/MID after an unknown result READ without resubmitting", async () => {
+    const f = await fixture();
+    const create = vi.spyOn(f.client.views, "createSource");
+    const read = vi
+      .spyOn(f.client.views, "getSourceRecord")
+      .mockRejectedValueOnce(new Error("READ unavailable"));
+    const input = { path: "new.base", document };
+    await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
+      problem: { code: "operation_outcome_unknown" },
+      cause: { message: "READ unavailable" },
+    });
+    const originalId = create.mock.calls[0]![0].id;
+    const result = await f.repository.createViewSource(input);
+    expect(create).toHaveBeenCalledOnce();
+    expect(result.recordId).toBe(originalId);
+    expect(read.mock.calls.map(([id]) => id)).toEqual([originalId, originalId]);
+  });
+  it.each([
+    { role: "viewer" as const },
+    { capabilities: ["collection.read"] },
+    { capabilities: ["records.edit"] },
+  ])(
+    "refuses creation before capturing an ID or submitting without full-scope edit authority: %j",
+    async (options) => {
+      const f = await fixture(options);
+      const create = vi.spyOn(f.client.views, "createSource");
+      const read = vi.spyOn(f.client.views, "getSourceRecord");
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      await expect(
+        f.repository.createViewSource({ path: "new.base", document }),
+      ).rejects.toMatchObject({ reason: "unsupported" });
+      expect(create).not.toHaveBeenCalled();
+      expect(read).not.toHaveBeenCalled();
+      // Only the existing manager's MID is captured; prepare refuses before
+      // capturing a second UUID for a source or submitting an admission.
+      expect(uuid).toHaveBeenCalledOnce();
+    },
+  );
+  it.each([
+    { path: "new.md", document: "---\nkind: mdbase.view\n---\n" },
+    { path: "new.base", format: "mdbase.view", document },
+  ])(
+    "refuses unsupported source formats before a source admission: %j",
+    async (input) => {
+      const f = await fixture();
+      const create = vi.spyOn(f.client.views, "createSource");
+      await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
+        reason: "unsupported",
+      });
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["id", "path", "document", "hold", "unresolved", "pending"] as const)(
+    "retains the original creation admission on mismatching or unsafe confirmed READ %s",
+    async (field) => {
+      const f = await fixture();
+      const create = vi.spyOn(f.client.views, "createSource");
+      const get = f.client.get.bind(f.client);
+      vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+        const record = await get(...args);
+        if (field === "id")
+          return { ...record, id: "00000000-0000-0000-0000-000000000003" };
+        if (field === "path") return { ...record, path: "other.base" };
+        if (field === "document") return { ...record, document: changed };
+        if (field === "hold")
+          return {
+            ...record,
+            state: {
+              ...record.state,
+              hold: {
+                id: "00000000-0000-0000-0000-000000000003",
+                reason: "conflict" as const,
+              },
+            },
+          };
+        if (field === "unresolved")
+          return { ...record, state: { ...record.state, unresolved: 1 } };
+        return {
+          ...record,
+          state: { ...record.state, state: "pending" as const },
+        };
+      });
+      const input = { path: "new.base", document };
+      await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
+        problem: { code: "operation_outcome_unknown" },
+      });
+      await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
+        problem: { code: "operation_outcome_unknown" },
+      });
+      expect(create).toHaveBeenCalledOnce();
+      expect(f.generic).not.toHaveBeenCalled();
+    },
+  );
   it.each(["record", "sourceRevision", "ordinal", "path"] as const)(
     "rejects a mismatching native READ %s before editing",
     async (field) => {
@@ -306,7 +422,15 @@ describe("native view source boundaries (protocol stand-ins)", () => {
           path: f.record.path,
           document: changed,
         }),
-      ).rejects.toThrow("complete record READ");
+      ).rejects.toThrow(
+        field === "id"
+          ? "view source writes need their original record and mutation UUIDs"
+          : field === "revision"
+            ? "view source needs its original source revision"
+            : field === "document"
+              ? "view source document differs from its captured revision"
+              : "complete record READ",
+      );
       expect(replace).not.toHaveBeenCalled();
     },
   );
