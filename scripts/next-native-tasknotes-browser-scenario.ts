@@ -7,6 +7,7 @@ import {
 } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { NextTaskRepository } from "../src/storage/next-repository";
+import bases from "../vendor/obsidian-base-1.0.0.json";
 import { qualifyNativeTaskNotesLocalCallers } from "./next-native-tasknotes-local-callers";
 const TASK = "99999999-9999-4999-8999-999999999999";
 const pause = (ms: number) =>
@@ -81,12 +82,23 @@ export async function qualifyNativeTaskNotes(options: {
         schemasFolder: "_types/tasknotes",
         stableId: true,
       });
+      // listViews requires the real Bases catalog even when no saved views
+      // exist. Preserve the publisher documents/targets; do not invent an
+      // empty inventory or weaken native catalog/discovery guards.
+      const baseResources = bases.manifest.resources.map((resource) => {
+        const source = bases.resources.find(
+          (candidate) => candidate.source === resource.source,
+        );
+        requireTest(source, "canonical Bases resource is missing");
+        return [resource.target, source.document] as const;
+      });
       for (const [path, document] of [
         [generated.paths.config, generated.configDocument],
         [generated.paths.taskSchema, generated.taskSchemaDocument],
         [generated.paths.bindingSchema, generated.bindingSchemaDocument],
         [generated.paths.contract, generated.contractDocument],
         [generated.paths.type, generated.typeDocument],
+        ...baseResources,
       ]) {
         const write = await client.resources.put(path!, document!, {
           mustNotExist: true,
@@ -99,6 +111,25 @@ export async function qualifyNativeTaskNotes(options: {
       }
     }
     const catalog = await client.describe(AbortSignal.timeout(5000));
+    requireTest(
+      catalog.contracts.some(
+        (contract) =>
+          contract.id === bases.provides[0]!.id &&
+          contract.version === bases.provides[0]!.version &&
+          contract.digest === bases.provides[0]!.digest,
+      ),
+      "real Describe lacks the exact canonical Bases contract/digest",
+    );
+    requireTest(
+      catalog.types.some((type) =>
+        type.implements.some(
+          (implementation) =>
+            implementation.contract === bases.provides[0]!.id &&
+            implementation.version === bases.provides[0]!.version,
+        ),
+      ),
+      "real catalog lacks an implementing Bases type",
+    );
     const contract = catalog.contracts.find(
       (c) =>
         c.id === "tasknotes.task" &&
