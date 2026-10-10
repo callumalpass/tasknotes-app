@@ -66,6 +66,7 @@ function fixture() {
     loseReply: false,
     reject: undefined as wire.Problem | undefined,
     omitRecord: false,
+    omitReceiptRecords: false,
     omitDiscovery: false,
     failInventory: false,
   };
@@ -210,9 +211,13 @@ function fixture() {
         state: "confirmed",
         status: "applied",
         seq: 1,
-        records: state.omitRecord
-          ? [...records.values()].slice(1)
-          : [...records.values()],
+        ...(state.omitReceiptRecords
+          ? {}
+          : {
+              records: state.omitRecord
+                ? [...records.values()].slice(1)
+                : [...records.values()],
+            }),
       };
       receipts.set(options.mutationId, receipt);
       if (state.loseReply)
@@ -533,6 +538,168 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       phase: "verified",
     });
   });
+  async function heldWithoutReceiptRecords() {
+    const f = fixture();
+    f.state.omitReceiptRecords = true;
+    f.state.loseReply = true;
+    await expect(f.setup.install()).rejects.toMatchObject({
+      view: { state: "outcome_unknown" },
+    });
+    const original = await f.journal.load(signal());
+    if (original?.version !== 3 || original.phase !== "attempted")
+      throw new Error("missing original attempted v3 intent");
+    expect(f.receipts.get(original.mutationId)).not.toHaveProperty("records");
+    return { f, original };
+  }
+  it("finishes the original applied receipt with omitted records only after exact bounded readback", async () => {
+    const { f, original } = await heldWithoutReceiptRecords();
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    const confirm = vi.spyOn(f.journal, "recordResourceConfirmed");
+    const nativeRead = f.mocked.readAppBasesViewSource.getMockImplementation()!;
+    f.mocked.readAppBasesViewSource.mockImplementation(async (selection) => {
+      // Even the last native source must be verified before phase advancement.
+      expect(await f.journal.load(signal())).toEqual(original);
+      expect(confirm).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+      return nativeRead(selection);
+    });
+    await f.setup.resume();
+    expect(f.mocked.awaitReceipt).toHaveBeenCalledWith(
+      original.mutationId,
+      120000,
+      expect.any(AbortSignal),
+    );
+    for (const source of original.plan.sources) {
+      expect(f.mocked.get).toHaveBeenCalledWith(
+        source.id,
+        { document: true },
+        expect.any(AbortSignal),
+      );
+      expect(f.mocked.get).toHaveBeenCalledWith(
+        { path: source.path },
+        { document: true },
+        expect.any(AbortSignal),
+      );
+    }
+    expect(f.mocked.readAppBasesViewSource).toHaveBeenCalledTimes(5);
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(f.verified).toHaveBeenCalledOnce();
+    expect(await f.journal.load(signal())).toEqual({
+      ...original,
+      phase: "verified",
+    });
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    expect(f.factory).toHaveBeenCalledOnce();
+    expect(uuid).not.toHaveBeenCalled();
+  });
+  it("never advances omitted-record fallback after the original owner ends during readback", async () => {
+    const { f, original } = await heldWithoutReceiptRecords();
+    const confirm = vi.spyOn(f.journal, "recordResourceConfirmed");
+    const nativeRead = f.mocked.readAppBasesViewSource.getMockImplementation()!;
+    f.mocked.readAppBasesViewSource.mockImplementation(async (selection) => {
+      const result = await nativeRead(selection);
+      f.owner.abort();
+      return result;
+    });
+    await f.setup.resume().then(
+      () => {
+        throw new Error("owner abort was masked");
+      },
+      (reason) => expect(reason).toBe(f.owner.signal.reason),
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(f.mocked.submit).toHaveBeenCalledOnce();
+    const reopened = new NextModelSetupIntentStore({
+      scope,
+      appOrigin: "http://127.0.0.1:48319",
+      cpOrigin: "https://connect-lab.mdbase.dev",
+      isCurrent: () => true,
+    });
+    expect(await reopened.load(signal())).toEqual(original);
+  });
+  it.each([
+    "resource",
+    "source-id",
+    "source-path",
+    "source-document",
+    "pending-source",
+    "inventory",
+    "discovery",
+  ] as const)(
+    "retains ATTEMPTED with omitted receipt records and %s readback mismatch/refusal",
+    async (mismatch) => {
+      const { f, original } = await heldWithoutReceiptRecords();
+      const uuid = vi.spyOn(crypto, "randomUUID");
+      const confirm = vi.spyOn(f.journal, "recordResourceConfirmed");
+      const source = original.plan.sources[0]!;
+      const record = f.records.get(source.id)!;
+      if (mismatch === "resource") {
+        const resource = original.plan.resourceReadback.find(
+          (r) => r.doc !== null,
+        )!;
+        f.resources.set(resource.path, resource.doc! + "\nx-drift: changed\n");
+      }
+      if (mismatch === "source-id") record.id = scope.collection;
+      if (mismatch === "source-path") record.path = "wrong.base";
+      if (mismatch === "source-document") record.document += "\n# drift\n";
+      if (mismatch === "pending-source")
+        record.state = { state: "pending", confirmedSeq: 1 };
+      if (mismatch === "inventory") f.state.failInventory = true;
+      if (mismatch === "discovery") f.state.omitDiscovery = true;
+      await expect(f.setup.resume()).rejects.toMatchObject({
+        view: {
+          state: "outcome_unknown",
+          message:
+            "Preserve this collection and resume its original resource setup. Confirmation or exact native readback is unfinished.",
+        },
+      });
+      expect(await f.journal.load(signal())).toEqual(original);
+      expect(confirm).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+      expect(f.mocked.submit).toHaveBeenCalledOnce();
+      expect(f.factory).toHaveBeenCalledOnce();
+      expect(uuid).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    "wrong-mutation",
+    "rejected",
+    "pending",
+    "conflicted",
+    "conflicts",
+    "merged",
+    "no-status",
+  ] as const)(
+    "does not use omitted-record fallback for %s original receipt",
+    async (invalid) => {
+      const { f, original } = await heldWithoutReceiptRecords();
+      const receipt = f.receipts.get(original.mutationId)!;
+      if (invalid === "wrong-mutation") receipt.mutation = scope.collection;
+      if (invalid === "rejected") receipt.state = "rejected";
+      if (invalid === "pending") receipt.state = "pending";
+      if (invalid === "conflicted") receipt.status = "conflicted";
+      if (invalid === "conflicts")
+        receipt.conflicts = [
+          {
+            kind: "path",
+            id: original.plan.sources[0]!.id,
+            kept: { form: "text", text: "original.base" },
+            lost: { form: "text", text: "wrong.base" },
+          },
+        ];
+      if (invalid === "merged") receipt.status = "merged";
+      if (invalid === "no-status") delete receipt.status;
+      f.mocked.get.mockClear();
+      f.mocked.resources.list.mockClear();
+      await expect(f.setup.resume()).rejects.toThrow();
+      expect(await f.journal.load(signal())).toEqual(original);
+      expect(f.mocked.get).not.toHaveBeenCalled();
+      expect(f.mocked.resources.list).not.toHaveBeenCalled();
+      expect(f.verified).not.toHaveBeenCalled();
+      expect(f.mocked.submit).toHaveBeenCalledOnce();
+    },
+  );
   it("retains native path refusal without retry, fallback or replacement UUID", async () => {
     const f = fixture();
     f.state.reject = {
