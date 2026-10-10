@@ -245,7 +245,13 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     const current = await f.repository.getActiveScratchpad();
     expect(current.state).toBe("active");
     expect(submit).toHaveBeenCalledOnce();
-    expect(read.mock.calls.map(([id]) => id)).toEqual([op.id, op.id]);
+    // Original failure and exact foreground recovery retain the same UUID;
+    // the record manager may also READ it for background authority metadata.
+    expect(read.mock.calls.slice(0, 2).map(([id]) => id)).toEqual([
+      op.id,
+      op.id,
+    ]);
+    expect(read.mock.calls.every(([id]) => id === op.id)).toBe(true);
   });
   it.each(["nativeId", "hold", "unresolved", "pending", "body"] as const)(
     "does not certify an unsafe or changed original creation READ: %s",
