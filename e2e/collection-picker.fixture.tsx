@@ -38,7 +38,7 @@ const choices: CollectionChoice[] = parameters.has("empty")
       { collectionId: "epsilon", displayName: "Travel" },
       { collectionId: "zeta", displayName: "Archive" },
     ];
-function Fixture() {
+export function Fixture() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<string | null>(
     choices[0]?.collectionId ?? null,
