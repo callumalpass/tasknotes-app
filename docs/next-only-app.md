@@ -25,13 +25,13 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`4b9553819ddb769ff1487170c05494321d23ab8b`, using the original
-`sdk-dev-4b955381.tgz` and provenance in
-`vendor/sdk-dev-4b955381.json`. This concrete original coordinator-approved
+`6a576a5f25231333bd899274ad6fed91f54a19ab`, using the original
+`sdk-dev-6a576a5f.tgz` and provenance in
+`vendor/sdk-dev-6a576a5f.json`. This concrete original coordinator-approved
 DEV/LAB intake is not release-qualified. It includes shared error descriptions,
-status summaries, opaque push helpers, and mobile origin/sign-in APIs; app
-adoption and delivery qualification remain separate. The successor security
-and setup cut is not included. It retains shared factory #819, canonical
+status summaries, opaque push helpers, mobile origin/sign-in APIs, setup planning
+and collection availability/lifecycle APIs. App adoption and delivery
+qualification remain separate. It retains shared factory #819, canonical
 no-email provider receipts #827, bounded failure classification #832, signal
 composition #837 and the original shared-facade Bases READ FIFO. It also retains SDK563's
 original-target enrollment reconciliation. Enrollment
@@ -44,7 +44,8 @@ refusals and failed-stop recovery do not receive this action.
 The original protocol beta.129/3c14fc91 archive is a normal file dependency in
 `vendor/`; the earlier protocol override stays removed so it cannot replace the
 SDK's original dependency. The SDK's bundled protocol matches that same original
-archive. The exact first DEV cut also contains an unused
+archive. The active successor has no vendor warnings or unused protocol archive.
+The retained historical first DEV cut, `4b955381`, contains an unused
 `vendor/mdbase-dev-connect-protocol-0.1.0-beta.129.tgz`, SHA256
 `dfc5db0daf6700874aa2c6235b86570f1d4e444740d0925bf1f97551cf43d3bd`.
 The named co0648 exception applies only to this immutable cut, not its successor;
@@ -62,8 +63,8 @@ manifest or work around SDK Worker/asset packaging in the app. Manifest generati
 is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
 manifest has a different origin and digest. This source
 intake does not qualify native compatibility. The producer's `native.available: true` means original
-native assets are packaged: runtimec5cb (3533579 bytes, SHA256
-`38ca6f006aef7675ebe16abb981c7ba59fe0c27c287d78ee0b845c26aff37ba8`)
+native assets are packaged: runtime9a58 (3553905 bytes, SHA256
+`08bb2dfcfd48e663147a7d1f3ebf2728b81bd82ac59183307c2cd7bc30c9ab67`)
 and the original SQLite bytes. It is not a public runtime readiness signal;
 Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
 browser initialization has its own registration, manifest and asset checks. The shared entry uses the SDK's original packaged assets; it does not take an

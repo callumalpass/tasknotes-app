@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-4b955381.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-6a576a5f.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "4b9553819ddb769ff1487170c05494321d23ab8b",
+    "6a576a5f25231333bd899274ad6fed91f54a19ab",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "9874074d6a68287780de2092a069c1cb4e81d3558e432b719b7525974eb6b0ad",
+    "00ee3484b4d70b9df4b9fab72c6fcadf24476c1b5834eef6d4d9a4a9281ec56f",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-4b955381.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-6a576a5f.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -164,6 +164,28 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
       `file:${manifest.vendorWarnings[0].path}`,
     ),
     false,
+  );
+});
+
+test("the successor SDK has no unused protocol exception", async () => {
+  const manifest = JSON.parse(
+    await readFile(new URL("vendor/sdk-dev-6a576a5f.json", root), "utf8"),
+  );
+  assert.deepEqual(manifest.vendorWarnings, []);
+  assert.equal(manifest.qualification.productionQualified, false);
+  const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
+  const members = execFileSync("tar", ["-tf", archive], {
+    encoding: "utf8",
+  }).split("\n");
+  assert.equal(
+    members.includes(
+      "package/vendor/mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
+    ),
+    false,
+  );
+  assert.equal(
+    members.includes(`package/vendor/${manifest.protocol.artifact}`),
+    true,
   );
 });
 
