@@ -190,12 +190,13 @@ export function TaskCapture({
     return () => window.clearTimeout(timeout);
   }, [session, configuration, creationDefaults, text]);
 
+  // Keep the last settled reading while typing. The next parse replaces it
+  // within a few frames, so swapping in a notice on every keystroke flickers.
+  const settled = result && parsedText ? result : null;
+  const slowParse = useDelayedFlag(parsing && !settled, 400, text);
   const preview = useMemo(
-    () =>
-      result && parsedText === text.trim()
-        ? taskCapturePreview(result.input, configuration)
-        : [],
-    [configuration, parsedText, result, text],
+    () => (settled ? taskCapturePreview(settled.input, configuration) : []),
+    [configuration, settled],
   );
 
   function changeText(value: string, nextCursor = value.length) {
@@ -358,22 +359,20 @@ export function TaskCapture({
       {text.trim() ? (
         <div className="capture-interpretation" aria-live="polite">
           <div>
-            {parsing && parsedText !== text.trim() ? (
+            {slowParse ? (
               <span className="capture-parsing">Understanding…</span>
             ) : (
               <>
-                {result &&
-                parsedText === text.trim() &&
-                result.input.title !== text.trim() ? (
+                {settled && settled.input.title !== parsedText ? (
                   <span className="capture-title-preview">
                     <span className="visually-hidden">Task: </span>
-                    {result.input.title}
+                    {settled.input.title}
                   </span>
                 ) : null}
                 {preview.map((item) => {
                   const removal = capturePreviewRemoval(
                     item.key,
-                    result?.input,
+                    settled?.input,
                   );
                   const dated = item.key === "scheduled" || item.key === "due";
                   return (
@@ -739,6 +738,25 @@ function CaptureList({
       />
     </label>
   );
+}
+
+/** True once `active` has held for `delay` ms without `restart` changing;
+ * false as soon as either changes. */
+function useDelayedFlag(
+  active: boolean,
+  delay: number,
+  restart: unknown,
+): boolean {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const timeout = window.setTimeout(() => setElapsed(true), delay);
+    return () => {
+      window.clearTimeout(timeout);
+      setElapsed(false);
+    };
+  }, [active, delay, restart]);
+  return active && elapsed;
 }
 
 function capturePreviewRemoval(
