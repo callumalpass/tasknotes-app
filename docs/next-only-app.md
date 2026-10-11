@@ -25,11 +25,12 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`563dc868fd5847abe272bd8cead1b044cd46fbe0`, with provenance in
-`vendor/mdbase-dev-sdk-563dc868.json`. This original coordinator-approved dev
+`8a557ad68290e04146e456df94c4946d6f033ea7`, with provenance in
+`vendor/sdk-dev-8a557ad6.json`. This concrete original coordinator-approved dev
 intake is not release-qualified. It retains shared factory #819, canonical
 no-email provider receipts #827, bounded failure classification #832, signal
-composition #837 and the original shared-facade Bases READ FIFO. Enrollment
+composition #837 and the original shared-facade Bases READ FIFO. It also retains SDK563's
+original-target enrollment reconciliation. Enrollment
 503/network loss stays an unknown outcome; a visible Retry invokes only the
 SDK's explicit original-target selection/reconciliation. The SDK retains the
 original device, keys and operation, requires current approval and clean stop,
@@ -42,8 +43,15 @@ SDK's original dependency.
 Legacy Connect packages retain their ordinary protocol dependencies.
 App signal plumbing is unchanged. The default public application entry remains
 an explicit unavailable shell; this archive does not activate it or qualify
-native compatibility. A source pin does not identify the currently
-served build or authorize a runtime refresh, session enablement or deployment.
+native compatibility. The producer's `native.available: true` means original
+native assets are packaged: runtime515 (3427675 bytes, SHA256
+`6c4ea51534b785c5165bfb671d40116535b1a60fafad035bd384708ea288de83`)
+and the original SQLite bytes. It is not a public runtime readiness signal;
+`MdbaseConnect` still reports `application_not_yet_available`. Existing app
+D70 runtime and trust pins remain unchanged. The immutable concrete archive,
+not `sdk-dev-latest`, is the consumer authority. A source pin does not identify
+the currently served build or authorize a runtime refresh, session enablement
+or deployment.
 
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
 and key derivations are not rewritten. Refused original restoration stays refused;

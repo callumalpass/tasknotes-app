@@ -1,20 +1,19 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(
-      new URL("vendor/mdbase-dev-sdk-563dc868.json", root),
-      "utf8",
-    ),
+    await readFile(new URL("vendor/sdk-dev-8a557ad6.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "8a557ad68290e04146e456df94c4946d6f033ea7",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -26,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "8892aaff198437ad51d490dca86faad893275d991f6f848f758e457f4e7a1250",
+    "773126b8414b0d2b9b4afd3ec5b94b32b1b5fef51707a01e9db0ea324fbcfdae",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -38,7 +37,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   );
   assert.equal(
     manifest.includedCommits.enrollmentReconciliation,
-    manifest.sourceCommit,
+    "563dc868fd5847abe272bd8cead1b044cd46fbe0",
   );
   assert.equal(
     manifest.qualification.label,
@@ -70,6 +69,48 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
   );
+});
+
+test("packaged native assets are original bytes, not public application readiness", async () => {
+  const manifest = JSON.parse(
+    await readFile(new URL("vendor/sdk-dev-8a557ad6.json", root), "utf8"),
+  );
+  const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
+  const member = (name) =>
+    execFileSync("tar", ["-xOf", archive, name], { maxBuffer: 5_000_000 });
+  const native = member(manifest.native.member);
+  assert.equal(manifest.native.available, true);
+  assert.equal(native.byteLength, manifest.native.bytes);
+  assert.equal(
+    createHash("sha256").update(native).digest("hex"),
+    manifest.native.sha256,
+  );
+  const provenance = JSON.parse(
+    member("package/dist/native/provenance.lab.json"),
+  );
+  assert.equal(provenance.runtime.sha256, manifest.native.sha256);
+  assert.equal(provenance.runtime.source.commit, manifest.native.sourceCommit);
+  assert.equal(
+    createHash("sha256")
+      .update(member("package/dist/native/sqlite3.wasm"))
+      .digest("hex"),
+    manifest.native.sqliteSha256,
+  );
+  // Public shell only: no Worker, popup, network, storage or native client.
+  const { MdbaseConnect } = await import("@mdbase-dev/sdk");
+  const entry = new MdbaseConnect({
+    id: "5cdfa020-c201-4da8-845a-f2cc9969eade",
+    name: "TaskNotes",
+    origin: "http://127.0.0.1:48218",
+    environment: "lab",
+    manifest: { id: "dev.tasknotes.tasknotes" },
+  });
+  assert.equal(entry.application().getSnapshot().status, "blocked");
+  assert.equal(
+    entry.application().getSnapshot().problem,
+    "application_not_yet_available",
+  );
+  assert.equal(entry.connection("not-selected"), null);
 });
 
 test("SDK environment stays bound to the authenticated LAB build tuple", async () => {
