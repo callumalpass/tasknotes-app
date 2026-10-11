@@ -175,6 +175,49 @@ it("keeps edited dates on failure and supports removing a parsed date", async ()
   expect(create.mock.calls[1][0].due).toBe("2026-08-14");
 });
 
+it("marks recognized phrases behind the input and clears a removed one", async () => {
+  vi.mocked(parseTaskCapture).mockImplementation(async (text: string) =>
+    text === "Call Sam tomorrow #work"
+      ? {
+          input: { title: "Call Sam", scheduled: "2026-10-12", tags: ["work"] },
+          preview: [],
+        }
+      : { input: { title: text }, preview: [] },
+  );
+  const { container } = render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+    />,
+  );
+  const marks = () =>
+    [...container.querySelectorAll(".capture-highlights mark")].map(
+      (mark) => mark.textContent,
+    );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Call Sam tomorrow #work" },
+  });
+  await waitFor(() => expect(marks()).toEqual(["tomorrow", "#work"]));
+  expect(container.querySelector(".capture-highlights")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Remove #work" }));
+  expect(marks()).toEqual(["tomorrow"]);
+
+  // Typing ahead keeps the settled phrase marked until the next parse.
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Call Sam tomorrow #work at" },
+  });
+  expect(marks()).toEqual(["tomorrow"]);
+  vi.mocked(parseTaskCapture).mockReset();
+  vi.mocked(parseTaskCapture).mockImplementation(async (title: string) => ({
+    input: { title },
+    preview: [],
+  }));
+});
+
 it("preserves structured unknown acceptance and asks for exact recovery, not ordinary retry", async () => {
   const create = vi.fn(async () => {
     throw connectError("operation_outcome_unknown", "Neutral diagnostic", {

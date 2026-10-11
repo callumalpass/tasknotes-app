@@ -48,8 +48,7 @@
 }
 
 .eyebrow,
-.section-heading,
-.record-path > span {
+.section-heading {
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-mono-micro);
   font-weight: 500;
@@ -98,6 +97,70 @@
   background: transparent;
   border: 0;
   outline: 0;
+}
+
+/* Recognized phrases sit on a backdrop that mirrors the input's text, so the
+   caret, selection, and IME remain native. Only the marks are visible. */
+.capture-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Long titles scroll under the field's edge, not flush against Add. */
+.capture-field:not(:last-child) {
+  margin-inline-end: 12px;
+}
+
+.quick-capture .capture-field input {
+  position: relative;
+  z-index: 1;
+}
+
+.capture-highlights {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  font-size: var(--type-control);
+  white-space: pre;
+  color: transparent;
+}
+
+.capture-highlights > span {
+  will-change: transform;
+}
+
+.capture-highlights mark {
+  color: transparent;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border-radius: 3px;
+  /* A spread ring pads the tint without moving the mirrored glyphs. */
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
+  animation: capture-recognized 220ms var(--ease-out);
+}
+
+.capture-token {
+  animation: capture-token-in 200ms var(--ease-out);
+}
+
+@keyframes capture-recognized {
+  from {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+@keyframes capture-token-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
 }
 
 .quick-capture input::placeholder,

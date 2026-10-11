@@ -2,6 +2,7 @@ import { GripVertical } from "lucide-react";
 import { useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { VirtualTaskList } from "./virtual-task-list";
+import { useFlipMotion } from "../use-flip-motion";
 import { TaskListSection } from "../../components/task-list-section";
 import { todayString } from "../../domain/task";
 import {
@@ -189,6 +190,9 @@ function ManualTaskRows({
     ),
   );
   const laneByKey = new Map(lanes.map((lane) => [lane.key, lane]));
+  const virtualized =
+    lanes.reduce((total, lane) => total + lane.rows.length, 0) > 100;
+  useFlipMotion(listRef, "data-manual-order-task", !virtualized);
   const firstTask = lanes.flatMap((lane) => lane.rows)[0]?.task;
   const canMoveAcrossLanes = Boolean(
     firstTask &&
@@ -405,7 +409,7 @@ function ManualTaskRows({
         }
         ref={listRef}
       >
-        {lanes.reduce((total, lane) => total + lane.rows.length, 0) > 100 ? (
+        {virtualized ? (
           <div className={manualOrder ? "manual-order-list" : undefined}>
             <VirtualTaskList
               lanes={lanes}

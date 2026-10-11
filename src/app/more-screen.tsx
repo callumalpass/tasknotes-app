@@ -89,7 +89,7 @@ export function MoreScreen({
     if (narrow || !current) return;
     const frame = requestAnimationFrame(() => {
       const target = document.getElementById(settingsSectionId(current));
-      target?.scrollIntoView({ block: "start" });
+      target?.scrollIntoView?.({ block: "start" });
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
@@ -260,7 +260,7 @@ function SettingsIndex({
                 requestAnimationFrame(() =>
                   document
                     .getElementById(settingsSectionId(key))
-                    ?.scrollIntoView({ block: "start" }),
+                    ?.scrollIntoView?.({ block: "start" }),
                 );
               }}
             >

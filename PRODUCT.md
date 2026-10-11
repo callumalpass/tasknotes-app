@@ -42,7 +42,7 @@ Obsidian UI at phone scale.
 1. Open into the work. Once mdbase is available, show the selected collection without an extra storage layer.
 2. Make authority explicit. Task, Scratchpad note/image-metadata, and view-source capture can return the real local result from the selected mdbase replica before synchronization. Local capture is not authority confirmation. Keep routine sync out of task rows and editor flow: after two seconds, show a quiet “Syncing…” overlay without live announcements. Escalate sustained disconnection or prolonged waits, and keep rejection, conflict, or an unknown outcome visible with explicit read-only check and review actions. Never invent task records or replace an uncertain submission. Definitions and setup remain confirmed-only. Image metadata capture does not claim that the separate binary upload is locally available or authority-confirmed. Known unavailability remains visible even when cached reads succeed. Capture does not force navigation or promise inclusion in the current filtered view.
 3. Keep structure legible. Dates, status, priority, and recurrence should scan clearly without becoming a control panel.
-4. Reveal portability gently. Let users inspect the Markdown record and collection location when they choose.
+4. Reveal portability gently. Every task shows the Markdown file behind it at the foot of its editor, with its path and a link that can be copied straight into Obsidian or any other note, so users can point at a task from elsewhere when they choose.
 5. Use one vocabulary across providers. Hosted and connected-computer collections should behave like the same product.
 6. Improve ordinary lists before introducing special workflows. Section
    collapsing is a display preference, not an overdue-processing mode. Preserve
@@ -77,5 +77,7 @@ calendar toolbar and overflow controls remain 44px. Preserve non-color state
 indicators, reduced-motion support, and predictable
 screen-reader order. Support system, light, and dark appearance settings, and
 test all three without encoding task state by color alone. Focusing an editable
-field alone must not remove navigation. Ordinary pages and editors reflow at
-320px with 200% root text; intentional board/calendar scrolling stays local.
+field alone must not remove navigation. Keyboard users can move through task
+lists and act on a task without the pointer; the shortcut sheet (`?`) lists
+every key, and none fires while typing or while a menu or dialog is open.
+Ordinary pages and editors reflow at 320px with 200% root text; intentional board/calendar scrolling stays local.

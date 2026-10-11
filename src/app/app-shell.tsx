@@ -1,5 +1,6 @@
 import {
   Columns3,
+  Command,
   FilePenLine,
   Plus,
   Search,
@@ -30,6 +31,12 @@ import {
 import { tasknotesMarkUrl } from "./assets";
 import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
 import { useCollectionGate } from "./collection-context";
+import { KeyboardLayer } from "./keyboard-layer";
+import {
+  isApplePlatform,
+  isEditableTarget,
+  shortcutLabel,
+} from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { SearchScreen } from "./search-screen";
@@ -86,6 +93,8 @@ export function AppShell() {
   const { route, workspaceRoute, navigate, detailRef } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [paletteRequest, setPaletteRequest] = useState(0);
+  const openCapture = useCallback(() => setCaptureOpen(true), []);
   const [viewCreationRequest, setViewCreationRequest] = useState(0);
   const [addedNotice, setAddedNotice] = useState<{
     task: TaskSummary;
@@ -247,12 +256,13 @@ export function AppShell() {
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
           className="global-capture-navigation"
+          title={`New task (${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>New task</span>
-          <kbd>⌘N</kbd>
+          {isApplePlatform() ? <kbd>{shortcutLabel("N")}</kbd> : null}
         </button>
         <Navigation
           active={activePage}
@@ -262,6 +272,7 @@ export function AppShell() {
           navigationKeys={navigationKeys}
           views={views ?? []}
           onNavigate={navigate}
+          onCommands={() => setPaletteRequest((request) => request + 1)}
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
@@ -401,6 +412,15 @@ export function AppShell() {
           <span>Add task</span>
         </button>
       ) : null}
+      <KeyboardLayer
+        homeKey={homeKey}
+        navigate={navigate}
+        navigationKeys={navigationKeys}
+        newTask={openCapture}
+        paletteRequest={paletteRequest}
+        route={route}
+        views={views ?? []}
+      />
       <GlobalTaskCapture
         onAdded={reportAdded}
         open={captureOpen}
@@ -645,14 +665,6 @@ function DeletionRecoveryNotice({
   );
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable ||
-      target.matches("input, textarea, select, [role='textbox']"))
-  );
-}
-
 export function StorageErrorScreen({
   authorizeAnotherCollection,
   changeCollection,
@@ -754,6 +766,7 @@ export function Navigation({
   views,
   onNavigate,
   onMove,
+  onCommands,
 }: {
   active: string;
   homeKey?: string;
@@ -762,6 +775,7 @@ export function Navigation({
   views: TaskView[];
   onNavigate(route: Route): void;
   onMove?(key: string, direction: -1 | 1): void;
+  onCommands?(): void;
 }) {
   const navigationEntries: {
     key: string;
@@ -1000,6 +1014,19 @@ export function Navigation({
       ) : null}
       {mode === "desktop" ? (
         <div aria-label="Manage" className="navigation-utility" role="group">
+          {onCommands ? (
+            <button
+              aria-keyshortcuts="Control+K Meta+K"
+              className="navigation-commands"
+              title={`Commands (${shortcutLabel("K")})`}
+              type="button"
+              onClick={onCommands}
+            >
+              <Command aria-hidden="true" size={20} strokeWidth={1.7} />
+              <span>Commands</span>
+              {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
+            </button>
+          ) : null}
           <button
             aria-current={active === "views" ? "page" : undefined}
             className={active === "views" ? "is-active" : undefined}

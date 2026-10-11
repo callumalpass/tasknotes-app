@@ -22,6 +22,7 @@ import {
   type ManualOrderPlacement,
 } from "../../domain/manual-order";
 import { ViewTaskRow } from "./view-task-row";
+import { useFlipMotion } from "../use-flip-motion";
 import type { TaskViewRow } from "../../domain/view";
 import type { ViewProps } from "./view-props";
 
@@ -149,6 +150,7 @@ export function KanbanView({
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
+  useFlipMotion(boardRef, "data-kanban-card-id", !dragging);
   const draggingRef = useRef<{
     row: TaskViewRow;
     sourceKey: string;

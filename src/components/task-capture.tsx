@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -16,6 +17,11 @@ import {
   captureTriggers,
   configuredCaptureSuggestions,
 } from "../domain/capture-autosuggest";
+import {
+  currentCaptureHighlights,
+  recognizedCaptureSpans,
+  reflectedCaptureHighlights,
+} from "../domain/capture-highlights";
 import { preloadTaskCapture, taskCapturePreview } from "../domain/task-capture";
 import {
   CaptureSession,
@@ -198,6 +204,29 @@ export function TaskCapture({
     () => (settled ? taskCapturePreview(settled.input, configuration) : []),
     [configuration, settled],
   );
+  // Recognized phrases come from the same settled reading, so they move in
+  // step with the chips rather than chasing each keystroke.
+  const parsedHighlights = useMemo(
+    () =>
+      settled
+        ? reflectedCaptureHighlights(
+            recognizedCaptureSpans(parsedText, settled.input.title, triggers),
+            settled.input,
+          )
+        : [],
+    [parsedText, settled, triggers],
+  );
+  const highlights = useMemo(
+    () => currentCaptureHighlights(parsedHighlights, parsedText, text),
+    [parsedHighlights, parsedText, text],
+  );
+  const mirrorRef = useRef<HTMLSpanElement>(null);
+  const syncMirror = () => {
+    const input = inputRef.current;
+    if (input && mirrorRef.current)
+      mirrorRef.current.style.transform = `translateX(${-input.scrollLeft}px)`;
+  };
+  useLayoutEffect(syncMirror);
 
   function changeText(value: string, nextCursor = value.length) {
     session.editText(value);
@@ -278,38 +307,46 @@ export function TaskCapture({
         <label className="visually-hidden" htmlFor={inputId}>
           New task title
         </label>
-        <input
-          id={inputId}
-          ref={inputRef}
-          role="combobox"
-          aria-activedescendant={
-            suggestions.length
-              ? `${suggestionsId}-option-${selectedSuggestion}`
-              : undefined
-          }
-          aria-autocomplete="list"
-          aria-controls={suggestionsId}
-          aria-expanded={suggestions.length > 0}
-          autoComplete="off"
-          enterKeyHint="done"
-          placeholder={placeholder}
-          value={text}
-          readOnly={capturing || error?.code === "outcome-unknown"}
-          onChange={(event) =>
-            changeText(
-              event.target.value,
-              event.target.selectionStart ?? event.target.value.length,
-            )
-          }
-          onClick={(event) =>
-            setCursor(event.currentTarget.selectionStart ?? text.length)
-          }
-          onFocus={preloadTaskCapture}
-          onKeyDown={handleCaptureKeyDown}
-          onKeyUp={(event) =>
-            setCursor(event.currentTarget.selectionStart ?? text.length)
-          }
-        />
+        <span className="capture-field">
+          <span aria-hidden="true" className="capture-highlights">
+            <span ref={mirrorRef}>{highlightSegments(text, highlights)}</span>
+          </span>
+          <input
+            id={inputId}
+            ref={inputRef}
+            role="combobox"
+            aria-activedescendant={
+              suggestions.length
+                ? `${suggestionsId}-option-${selectedSuggestion}`
+                : undefined
+            }
+            aria-autocomplete="list"
+            aria-controls={suggestionsId}
+            aria-expanded={suggestions.length > 0}
+            autoComplete="off"
+            enterKeyHint="done"
+            placeholder={placeholder}
+            value={text}
+            readOnly={capturing || error?.code === "outcome-unknown"}
+            onChange={(event) =>
+              changeText(
+                event.target.value,
+                event.target.selectionStart ?? event.target.value.length,
+              )
+            }
+            onClick={(event) =>
+              setCursor(event.currentTarget.selectionStart ?? text.length)
+            }
+            onFocus={preloadTaskCapture}
+            onKeyDown={handleCaptureKeyDown}
+            onKeyUp={(event) => {
+              setCursor(event.currentTarget.selectionStart ?? text.length);
+              syncMirror();
+            }}
+            onScroll={syncMirror}
+            onSelect={syncMirror}
+          />
+        </span>
         {text.trim() ? (
           <button
             disabled={capturing || error?.code === "outcome-unknown"}
@@ -738,6 +775,23 @@ function CaptureList({
       />
     </label>
   );
+}
+
+function highlightSegments(
+  text: string,
+  highlights: readonly { start: number; end: number }[],
+) {
+  const segments = [];
+  let position = 0;
+  for (const { start, end } of highlights) {
+    if (start > position) segments.push(text.slice(position, start));
+    // Keyed by position so a phrase that grows ("tomorrow at 3pm") keeps its
+    // tint instead of fading in again.
+    segments.push(<mark key={start}>{text.slice(start, end)}</mark>);
+    position = end;
+  }
+  segments.push(text.slice(position));
+  return segments;
 }
 
 /** True once `active` has held for `delay` ms without `restart` changing;

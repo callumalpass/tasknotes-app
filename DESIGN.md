@@ -304,6 +304,16 @@ Today             Search       More
   row controls have 44px targets. Linked rows expose the same task-actions menu
   used by task lists, and nested branches can collapse. Loaded history appears
   without fading its readable text.
+- Keyboard speed is additive and never required. A focused task row shows a
+  soft accent fill with a 2px leading bar rather than a box around its title.
+  `j`/`k` (and the arrow keys on a row) move between rows; `o`/Enter, `x`, `t`,
+  `m`, and `w` open, complete, and schedule the focused task for today,
+  tomorrow, or the start of next calendar week through the same mutation paths
+  as the menu, with a polite announcement. Delete has no key. Plain keys yield
+  to typing, IME composition, modifiers, and any open overlay. Cmd/Ctrl+K opens
+  a command palette (navigation, actions, the focused or open task, task
+  search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
+  shows a quiet Commands ⌘K entry in the sidebar utilities.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
@@ -344,7 +354,12 @@ Today             Search       More
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
   Schedule and status have a compact, wrapping disclosure summary; advanced
-  properties and the backing Markdown record remain inspectable. Returning to
+  properties remain inspectable. The editor ends with the task's Markdown
+  file: its collection-relative path in muted mono, with quiet Copy path and
+  Copy wikilink actions (Copy Markdown link when the collection writes
+  Markdown links). Copying confirms inline in a polite status that clears
+  itself; a failure says “Couldn’t copy” rather than raising a notice. The
+  row menu’s Copy submenu offers the same title, link, and path. Returning to
   the list restores the invoking control and scroll position.
 - Desktop saved-view capture retains focus after successful creation. Phone
   saved views with creation defaults have one persistent contextual Add task
@@ -359,6 +374,12 @@ Today             Search       More
   are removable; on touch each chip action has a 44px hit area without larger
   visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
+  Phrases the parser consumed (dates, times, repeats, estimates, and trigger
+  values) take a faint accent tint inside the field itself, drawn on an
+  aria-hidden backdrop so the caret and selection stay native. Tints and chips
+  follow the last settled reading: typing ahead keeps them steady, a tint grows
+  or shrinks in place rather than blinking, removing a chip clears its tint,
+  and newly recognized chips ease in. Reduced motion drops the easing.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible during native capture and survives a refused capture; it
   clears only after a genuine native local result, not authority confirmation.
@@ -423,3 +444,9 @@ This is functional evidence of portability, not permanent technical chrome.
 Use 150 to 220 millisecond ease-out transitions only when state changes need
 orientation. Completing a task may fade and reposition the row. Respect reduced
 motion and avoid entrance choreography.
+
+When a list's order or membership changes (a completion, reschedule, section
+move, or board column move), rows and cards glide 220ms from where they were
+to where they now sit, so the eye can follow the task. Re-renders that keep the
+order, such as a width change, never move rows. Lists long enough to virtualize
+and moves of more than 60 items settle instantly.
