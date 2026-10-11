@@ -358,7 +358,9 @@
 
 .collection-picker-action > span:nth-child(2) {
   display: grid;
+  min-width: 0;
   gap: 1px;
+  overflow-wrap: anywhere;
 }
 
 .collection-picker-action strong {
