@@ -8,7 +8,7 @@
 
 - Use consistent mdbase wording in person-record guidance and collection access help.
 
-- Update the shared collection client and its packaged runtime used by the next-mode app, including the SDK's collection setup assessment support.
+- Update the shared collection client and its packaged runtime used by the next-mode app, including collection setup assessment and exact declared native sign-in callback support.
 
 - Offer an explicit reload when an app update activates, without automatically clearing unsaved input. Keep older cached assets available to tabs still running the previous build.
 
