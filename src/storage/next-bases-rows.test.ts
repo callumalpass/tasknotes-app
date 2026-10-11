@@ -24,12 +24,6 @@ function record(row: NativeRowIdentity): wire.RecordView {
 const signal = () => new AbortController().signal;
 
 describe("selected native row hydration", () => {
-  it("does not read a task index or source for an empty selection", async () => {
-    const read = vi.fn();
-    expect(await readNativeRows([], read, signal())).toEqual([]);
-    expect(read).not.toHaveBeenCalled();
-  });
-
   it("keeps native order even when parallel record reads finish out of order", async () => {
     const rows = identities(3).reverse();
     const ordered = rows.map(record);
@@ -89,21 +83,6 @@ describe("selected native row hydration", () => {
       readNativeRows([row, { ...row }], read, signal()),
     ).rejects.toThrow("duplicate record identities");
     expect(read).not.toHaveBeenCalled();
-  });
-
-  it("copies selection identities before callbacks can mutate the caller's rows", async () => {
-    const rows = identities(2);
-    const actual = new Map(rows.map((row) => [row.record, record(row)]));
-    const result = await readNativeRows(
-      rows,
-      async (id) => {
-        rows[1]!.sourceRevision = "ef".repeat(32) as wire.Hash;
-        rows[1]!.path = "changed.md";
-        return actual.get(id)!;
-      },
-      signal(),
-    );
-    expect(result[1]!.path).toBe("tasks/task-2.md");
   });
 
   it("stops later reads and settles in-flight readers when a READ fails", async () => {

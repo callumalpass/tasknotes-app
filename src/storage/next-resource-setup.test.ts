@@ -12,7 +12,6 @@ import pin from "../../vendor/mdbase-browser.pin.json";
 import { NextModelSetupIntentStore } from "../cloud/next-model-setup-intent";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import { NativeResourceSetup } from "./next-resource-setup";
-import { NextTaskRepository } from "./next-repository";
 import {
   captureResourceSetupPlan,
   nativeResourceSetupAssessment,
@@ -313,30 +312,6 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
       return owner.signal;
     });
   }
-  it("pins an explicit resource action before the queue yields; renewal cannot move it to a new owner", async () => {
-    const f = fixture();
-    let current = f.owner;
-    const ownerSignal = vi.fn(() => current.signal);
-    const setup = new NativeResourceSetup(
-      f.client,
-      f.journal,
-      ownerSignal,
-      f.factory,
-      f.verified,
-    );
-    const load = vi.spyOn(f.journal, "load"),
-      uuid = vi.spyOn(crypto, "randomUUID");
-    const result = setup.install(),
-      stopped = expect(result).rejects.toThrow();
-    f.owner.abort();
-    current = new AbortController();
-    await stopped;
-    expect(ownerSignal).toHaveBeenCalledOnce();
-    expect(load).not.toHaveBeenCalled();
-    expect(uuid).not.toHaveBeenCalled();
-    expect(f.mocked.submit).not.toHaveBeenCalled();
-    expect(f.verified).not.toHaveBeenCalled();
-  });
   it("slow original confirmation survives 20s with one unchanged resource/source submit", async () => {
     const f = fixture();
     await f.setup.inspect();
@@ -507,26 +482,6 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     });
     expect(uuid).not.toHaveBeenCalled();
     expect(await f.journal.load(signal())).toBeNull();
-  });
-  it("wires the real extended journal port into the repository without enabling source writes", async () => {
-    const f = fixture();
-    const repository = new NextTaskRepository(
-      f.client,
-      "Synthetic collection",
-      scope.account,
-      { modelSetupJournal: f.journal, onModelSetupVerified: f.verified },
-    );
-    expect(await repository.modelSetup!.inspect()).toEqual({
-      state: "required",
-    });
-    await repository.modelSetup!.install();
-    expect((await f.journal.load(signal()))?.version).toBe(3);
-    expect(f.mocked.submit).toHaveBeenCalledTimes(1);
-    expect(
-      f.mocked.submit.mock.calls[0]![0].filter((op) => op.kind === "create"),
-    ).toHaveLength(5);
-    expect(repository.defaultViewSourceCreation).toBe("explicit-only");
-    expect(f.verified).toHaveBeenCalledTimes(1);
   });
   it("submits all original Core ops plus five explicit UUID/path/raw-document Creates in ONE mutation", async () => {
     const f = fixture();

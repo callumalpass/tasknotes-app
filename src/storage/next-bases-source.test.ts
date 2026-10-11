@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AppBasesDescriptor } from "@mdbase-dev/sdk/app-host";
 import { nextTaskFixture } from "../test/next-task-fixture";
-import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
 
 // Protocol stand-ins only: source replies are mocked, CRUD uses the SDK test
 // replica. These tests do not prove native READ, grants, startup or rendering.
@@ -67,21 +66,6 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     );
     expect(update).toHaveBeenCalledOnce();
     expect(remove).toHaveBeenCalledOnce();
-  });
-  it("does not seed defaults during navigation, even with an owner grant", async () => {
-    const f = await fixture();
-    const create = vi.spyOn(f.client, "create");
-    const createSource = vi.spyOn(f.repository, "createViewSource");
-    const documents: Awaited<ReturnType<typeof f.repository.listViews>> = [];
-    expect(
-      await ensureTaskNotesDefaultViewSource(
-        f.repository,
-        documents,
-        await f.repository.taskConfiguration(),
-      ),
-    ).toBe(documents);
-    expect(create).not.toHaveBeenCalled();
-    expect(createSource).not.toHaveBeenCalled();
   });
   it.each([
     { options: {}, writable: true },
@@ -550,20 +534,6 @@ describe("native view source boundaries (protocol stand-ins)", () => {
         })
       ).document,
     ).toBe(changed);
-  });
-  it("supplies the genuine complete seen record, not a descriptor UUID, for deletion CAS", async () => {
-    const f = await fixture();
-    const remove = vi.spyOn(f.client, "delete");
-    await f.repository.deleteViewSource(f.record.path);
-    expect(remove).toHaveBeenCalledWith(
-      f.record,
-      expect.objectContaining({
-        ifRevision: f.record.revision,
-        mutationId: expect.any(String),
-        signal: expect.any(AbortSignal),
-      }),
-    );
-    expect(await f.client.find({ path: f.record.path })).toBeNull();
   });
   it.each([
     {

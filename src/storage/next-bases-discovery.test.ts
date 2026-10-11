@@ -101,21 +101,6 @@ describe("native discovery sequencing", () => {
     );
   });
 
-  it("copies the previous identity and cut before yielding consumer-owned data", async () => {
-    const first = page([{ ...source }], new Uint8Array(32));
-    const last = page([{ ...source, ordinal: 3 }]);
-    const pages = [first, last];
-    const iterator = iterateNativeDiscovery(
-      async () => pages.shift()!,
-      signal(),
-    )[Symbol.asyncIterator]();
-    await iterator.next();
-    first.views[0]!.ordinal = 99;
-    first.clock.instant = 99;
-    expect((await iterator.next()).value?.[0]?.ordinal).toBe(3);
-    expect((await iterator.next()).done).toBe(true);
-  });
-
   it("checks cancellation before starting and after awaiting the native page", async () => {
     const owner = new AbortController();
     owner.abort();

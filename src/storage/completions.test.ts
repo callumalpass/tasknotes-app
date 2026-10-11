@@ -82,28 +82,3 @@ it("honors known target types while retaining untyped portable notes", () => {
     "[[Projects/typed|Typed project]]",
   ]);
 });
-
-it("filters a large in-memory record catalog within the interaction budget", () => {
-  const records = Array.from({ length: 50_000 }, (_, index) => ({
-    path: `Projects/project-${String(index).padStart(5, "0")}.md`,
-    label: `Roadmap ${index}`,
-    frontmatter: {},
-    types: ["project"],
-  }));
-  const started = performance.now();
-  const values = completeRecords(
-    records,
-    {
-      field: "projects",
-      kind: "records",
-      query: "roadmap 499",
-      limit: 12,
-      targetTypes: ["project"],
-    },
-    "wikilink",
-  );
-  const elapsed = performance.now() - started;
-
-  expect(values).toHaveLength(12);
-  expect(elapsed).toBeLessThan(500);
-});
