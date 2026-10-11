@@ -448,7 +448,6 @@
 
 .command-palette-option[aria-selected="true"] {
   background: var(--accent-soft);
-  box-shadow: inset 2px 0 var(--accent);
 }
 
 .command-palette-label {
