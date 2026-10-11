@@ -8,4 +8,4 @@ A live `collection_migrating`, `update_required` or `account_suspended` problem 
 
 Collection choices receive `snapshot.collections` verbatim. When the SDK reports availability, named unavailable choices remain visible with `describeError(collection)` guidance and cannot dispatch Open. The app does not infer provider availability, query the control plane directly or work around desktop routing.
 
-The SDK6a intake does not yet expose availability in its production public collection list. The SDK successor containing `9c90075ac` owns that propagation. Optional presentation metadata and unit fixtures are not evidence that the current runtime enumerates Private availability, nor evidence of registration, native admission, custody, physical drain or live acceptance.
+The current SDK993 intake includes the public collection-list availability propagation from `9c90075ac`, which was absent in the historical SDK6a intake. The app still forwards only the original SDK snapshot. Source inspection and presentation fixtures are not evidence of live Private enumeration, registration, native admission, custody, physical drain or acceptance.

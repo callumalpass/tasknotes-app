@@ -1,0 +1,72 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "9935671f0f1f1fdfa3e9a6835bbff10bff3b34ef",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "publicEntry": "b921022e9",
+    "collectionSelection": "11cf1a2fa",
+    "opaquePush": "e3ed79efb92d49879be1aefc0ca9f98095966bbc",
+    "mobileOriginSignIn": "9a2b6cc3fe83e2f907d6f6a6a045099d3c2de209",
+    "sharedSetup": "3184073c4a013e7a13b64fcdc4f1325ba6ef578c",
+    "privateSetup": "b4da8c16824f15f05070cfcc880eec721bcdbbc9",
+    "manifestSupersession": "eddaa8a8a77e3242aebae1cf6b2ff5f25d0ed982",
+    "installationBinding": "fa49f3d0474a3c5961f3b9986052ead07abcc943",
+    "applicationBinding": "9f013753be54f7144b32bdc9724f26a6caabcf25",
+    "listedAvailability": "9c90075ac5e9f1024cbe61da86c3dc29260ae18d"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-9935671f.tgz",
+  "bytes": 4306444,
+  "sha256": "f2cdfae42fcd39220300f3dc3b5f0f63f9f3ebf47a9964c49463d749ef51eb66",
+  "integrity": "sha512-6iyt6oDM2sY3j89vzBxJdjzO9v7uaOAZOdCaUWK/0aWl4DHUm5UDqTNtf3JhA8NY3sncNhvW+6aCKPykYTwXFQ==",
+  "shasum": "4d72264bcb8dcfdc4d3d33a0319a7ba7f731aa00",
+  "protocol": {
+    "sourceCommit": "3c14fc913a8066a23f889e38559c9bb5ff7422e4",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-3c14fc913a80.tgz",
+    "bytes": 71190,
+    "sha256": "3dc48b6b9dbf8651b6c300ab5896408ff90a0e1a7b8f1312e27442914b50ca83",
+    "integrity": "sha512-1cGQC+RKazMrL6NVkt6gFR6vElOruPJb0wLYjtVZU69C88FChTzkr9o12UvoKMFVFUpi0JDa4RPD/iNHUb7d7A==",
+    "originalEmbeddedBytesVerified": true,
+    "allBundledMembersVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Packaging metadata, not runtime readiness or physical drain",
+    "sourceCommit": "fa49f3d0474a3c5961f3b9986052ead07abcc943",
+    "member": "package/dist/native/runtime-lab.wasm",
+    "bytes": 3555291,
+    "sha256": "9f90af73e1591cafe9c35bdd42f18ae49d5a91a0186e78695e841fecabcd833a",
+    "setupAssessExportVerified": true,
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "1936bf6f497f99547a9de82df1d1b7378f1593107cd70405944d6f39d103c639"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "0652fb0d0f535963787a9b41f1d86f4ee103cec0c058661146ad4ac55b42d740"
+    }
+  },
+  "qualification": {
+    "authority": "co0735",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 1338,
+    "normalPackOnceNoRepack": true,
+    "producerColdNpmEmptyRootCache": "passed",
+    "producerFullSdkSuite": "automated light intake skips tests; release co0716 separately reports 306 SDK and 18 Node tests before/after native refresh",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false,
+    "productionQualified": false
+  },
+  "vendorWarnings": [],
+  "purpose": "Exact successor DEV/LAB SDK cut with shared registration diagnostics, availability, setup and collection lifecycle APIs. Production/signing/admission and app activation remain separate."
+}

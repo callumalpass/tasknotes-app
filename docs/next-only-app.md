@@ -25,9 +25,9 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`6a576a5f25231333bd899274ad6fed91f54a19ab`, using the original
-`sdk-dev-6a576a5f.tgz` and provenance in
-`vendor/sdk-dev-6a576a5f.json`. This concrete original coordinator-approved
+`9935671f0f1f1fdfa3e9a6835bbff10bff3b34ef`, using the original
+`sdk-dev-9935671f.tgz` and provenance in
+`vendor/sdk-dev-9935671f.json`. This concrete original coordinator-approved
 DEV/LAB intake is not release-qualified. It includes shared error descriptions,
 status summaries, opaque push helpers, mobile origin/sign-in APIs, setup planning
 and collection availability/lifecycle APIs. App adoption and delivery
@@ -63,9 +63,10 @@ manifest or work around SDK Worker/asset packaging in the app. Manifest generati
 is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
 manifest has a different origin and digest. This source
 intake does not qualify native compatibility. The producer's `native.available: true` means original
-native assets are packaged: runtime9a58 (3553905 bytes, SHA256
-`08bb2dfcfd48e663147a7d1f3ebf2728b81bd82ac59183307c2cd7bc30c9ab67`)
-and the original SQLite bytes. It is not a public runtime readiness signal;
+native assets are packaged: runtimefa49 (3555291 bytes, SHA256
+`9f90af73e1591cafe9c35bdd42f18ae49d5a91a0186e78695e841fecabcd833a`)
+and the original SQLite bytes. The packaged `rt_app_setup_assess` export is
+verified; export presence is not setup execution or native custody evidence. It is not a public runtime readiness signal;
 Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
 browser initialization has its own registration, manifest and asset checks. The shared entry uses the SDK's original packaged assets; it does not take an
 app runtime/trust callback. Historical D70 app-host files remain untouched for
