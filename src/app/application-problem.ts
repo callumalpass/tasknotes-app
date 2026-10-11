@@ -2,6 +2,11 @@ import type { MdbaseApplicationSnapshot } from "@mdbase-dev/sdk";
 import { signInMessage } from "../cloud/sign-in-error";
 
 const applicationMessages: Readonly<Record<string, string>> = {
+  popup_blocked: "Your browser blocked the sign-in window.",
+  application_selection_empty:
+    "This collection link is empty. Choose another collection to continue.",
+  application_selection_metadata:
+    "This collection's approved metadata is unavailable. Keep its stored data and reload TaskNotes.",
   application_registration_binding:
     "This build does not match TaskNotes' registered application. Keep this browser's stored data and use the registered build.",
   application_selection_not_approved:

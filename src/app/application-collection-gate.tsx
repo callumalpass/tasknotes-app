@@ -108,6 +108,8 @@ export function ApplicationCollectionGate({
   const ready =
     snapshot.selection.state === "usable" &&
     snapshot.status === "ready" &&
+    !snapshot.problem &&
+    !snapshot.selection.problem &&
     !snapshot.readiness.checking &&
     !snapshot.readiness.problem &&
     snapshot.readiness.assessment?.status === "ready";
@@ -183,6 +185,7 @@ export function ApplicationCollectionGate({
     held &&
     held.connection.isCurrent() &&
     connection?.generation === held.connection.generation &&
+    connection.records === held.connection.records &&
     ready
       ? held
       : null;
@@ -193,9 +196,29 @@ export function ApplicationCollectionGate({
   const authorizeAnother = () =>
     void run(() => application.approve(null, options()));
   const setup = snapshot.readiness.assessment?.status === "setup_required";
+  const requireCurrentScope = (expected: string | undefined) => {
+    if (
+      !expected ||
+      !entry.connection(expected)?.isCurrent() ||
+      application.getSnapshot().selection.usable?.collectionId !== expected
+    )
+      throw Object.assign(new Error("Collection scope is no longer current."), {
+        code: "application_selection_fenced",
+      });
+  };
+  const configure = () =>
+    run(() => {
+      requireCurrentScope(usable?.collectionId);
+      return application.configure(options());
+    });
 
   return (
     <>
+      {current && error && !picking ? (
+        <p className="connection-error" role="alert">
+          {error}
+        </p>
+      ) : null}
       {current ? (
         <Workspace
           key={current.connection.generation}
@@ -203,7 +226,10 @@ export function ApplicationCollectionGate({
           changeCollection={() => setPicking(true)}
           authorizeAnotherCollection={authorizeAnother}
           reauthorizeCurrentCollection={() =>
-            void run(() => application.reauthorize(options()))
+            void run(() => {
+              requireCurrentScope(current.connection.id);
+              return application.reauthorize(options());
+            })
           }
           discardPendingRecovery={async () => {
             throw new Error(
@@ -216,9 +242,10 @@ export function ApplicationCollectionGate({
           session={snapshot}
           sdk={{ snapshot }}
           error={
-            recovery && snapshot.problem === "outcome_unknown"
+            error ??
+            (recovery && snapshot.problem === "outcome_unknown"
               ? "Opening this collection could not be confirmed. Keep this browser's stored data and retry to check the original request."
-              : message
+              : message)
           }
           startError={null}
           retryCollection={recovery ? () => void select(recovery) : undefined}
@@ -255,17 +282,13 @@ export function ApplicationCollectionGate({
               : undefined
           }
           open={select}
-          configureCollection={
-            setup
-              ? () => void run(() => application.configure(options()))
+          configureCollection={setup ? () => void configure() : undefined}
+          chooseAnotherCollection={
+            request.collectionId || snapshot.selection.state === "invalid"
+              ? chooseAnother
               : undefined
           }
-          chooseAnotherCollection={
-            request.collectionId ? chooseAnother : undefined
-          }
-          applyCollectionSetup={() =>
-            run(() => application.configure(options()))
-          }
+          applyCollectionSetup={configure}
           cancelAuthorization={() => {}}
         />
       )}

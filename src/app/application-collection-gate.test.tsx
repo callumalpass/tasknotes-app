@@ -365,6 +365,41 @@ it.each([
   },
 );
 
+it("shows a genuine Retry refusal rather than hiding it behind the earlier recovery message", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot({
+    ...f.ready(),
+    status: "blocked",
+    problem: "outcome_unknown",
+    signIn: paired(f),
+    selection: { ...f.ready().selection, state: "blocked", usable: null },
+  });
+  f.sdk.controls.setHandler("select", () => {
+    throw Object.assign(new Error("private-refusal-details"), {
+      code: "application_registration_binding",
+    });
+  });
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Workspace}
+    />,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: /^Retry$/ }));
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "does not match TaskNotes' registered application",
+    ),
+  );
+  expect(screen.getByRole("alert")).not.toHaveTextContent(
+    "private-refusal-details",
+  );
+  expect(
+    f.sdk.controls.observedActions().filter((call) => call.action === "select"),
+  ).toHaveLength(1);
+});
+
 it.each(["recovery_required", "refused", "fenced"])(
   "does not retry terminal %s on the public entry",
   async (problem) => {
@@ -393,6 +428,67 @@ it.each(["recovery_required", "refused", "fenced"])(
   },
 );
 
+it("does not retarget an old workspace action after its original SDK scope retires", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot(f.ready());
+  let oldAction: (() => void) | undefined;
+  const Probe = (props: Parameters<typeof OpenedCollection>[0]) => {
+    useEffect(() => {
+      oldAction = props.reauthorizeCurrentCollection;
+    }, [props.reauthorizeCurrentCollection]);
+    return <Workspace {...props} />;
+  };
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Probe}
+    />,
+  );
+  await screen.findByText("Original workspace");
+  act(() => f.sdk.controls.publishSnapshot(initial()));
+  await screen.findByRole("button", { name: "Sign in" });
+  await act(async () => oldAction?.());
+  expect(
+    f.sdk.controls
+      .observedActions()
+      .some((call) => call.action === "reauthorize"),
+  ).toBe(false);
+  expect(screen.getByRole("alert")).toHaveTextContent("no longer current");
+});
+
+it("keeps a current workspace while visibly reporting an SDK reapproval refusal", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot(f.ready());
+  f.sdk.controls.setHandler("reauthorize", () => {
+    throw Object.assign(new Error("private-popup-details"), {
+      reason: "popup_blocked",
+    });
+  });
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Workspace}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Reapprove current" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Your browser blocked the sign-in window.",
+  );
+  expect(screen.getByRole("alert")).not.toHaveTextContent(
+    "private-popup-details",
+  );
+  expect(screen.getByText("Original workspace")).toBeVisible();
+  expect(
+    f.sdk.controls
+      .observedActions()
+      .filter((call) => call.action === "reauthorize"),
+  ).toHaveLength(1);
+});
+
 it("delegates intentional chooseAnother without treating picker dismissal as retirement", async () => {
   const f = await fixture();
   f.sdk.controls.publishSnapshot({
@@ -401,7 +497,7 @@ it("delegates intentional chooseAnother without treating picker dismissal as ret
     selection: {
       ...initial().selection,
       state: "invalid",
-      problem: "collection_request_invalid",
+      problem: "application_selection_invalid",
     },
   });
   render(
