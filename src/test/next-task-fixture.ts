@@ -1,4 +1,10 @@
-import { connect, toValue, type PlainValue, type wire } from "@mdbase-dev/sdk";
+import {
+  connect,
+  toValue,
+  type Connector,
+  type PlainValue,
+  type wire,
+} from "@mdbase-dev/sdk";
 import {
   MemoryReplica,
   type MemoryReplicaOptions,
@@ -23,6 +29,10 @@ export async function nextTaskFixture(
   options: MemoryReplicaOptions = {},
   archive = false,
   modelConfig?: TaskNotesMdbaseOptions["modelConfig"],
+  connectorFactory?: (
+    replica: MemoryReplica,
+    catalog: wire.DescribeResult,
+  ) => Connector,
 ) {
   const replica = new MemoryReplica(options);
   const generated = buildTaskNotesMdbaseResources({
@@ -49,11 +59,6 @@ export async function nextTaskFixture(
     "_types/task.md",
     serializeMarkdownDocument(type, "Task type"),
   );
-  const client = await connect({
-    connector: replica.connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
   const catalog: wire.DescribeResult = {
     specVersion: "0.3.0",
     inclusion: { include: [] },
@@ -84,19 +89,25 @@ export async function nextTaskFixture(
       },
     ],
   };
-  vi.spyOn(client, "describe").mockImplementation(async (signal) => {
-    const resource = await client.resources.get("_types/task.md", signal);
-    const definition = parseFrontmatter(resource.text!)
-      .frontmatter as unknown as typeof type;
-    const current = definition.implements.find(
-      (item) => item.contract === "tasknotes.task",
-    )!;
-    catalog.types[0]!.implements[0]!.fields = new Map(
-      Object.entries(current.fields),
-    );
-    catalog.types[0]!.implements[0]!.binding = toValue(current.binding);
-    return catalog;
+  const client = await connect({
+    connector: connectorFactory?.(replica, catalog) ?? replica.connector(),
+    app: { name: "tasknotes-test", version: "test" },
+    reconnect: false,
   });
+  if (!connectorFactory)
+    vi.spyOn(client, "describe").mockImplementation(async (signal) => {
+      const resource = await client.resources.get("_types/task.md", signal);
+      const definition = parseFrontmatter(resource.text!)
+        .frontmatter as unknown as typeof type;
+      const current = definition.implements.find(
+        (item) => item.contract === "tasknotes.task",
+      )!;
+      catalog.types[0]!.implements[0]!.fields = new Map(
+        Object.entries(current.fields),
+      );
+      catalog.types[0]!.implements[0]!.binding = toValue(current.binding);
+      return catalog;
+    });
   const accountId = crypto.randomUUID();
   const repository = new NextTaskRepository(
     client,

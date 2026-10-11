@@ -222,9 +222,22 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
-- Settings leads with the collection name, its counts, and Refresh now. How
-  tasks are stored, the collection location, and refresh diagnostics sit in a
-  collapsed disclosure. Settings has no capture control of its own.
+- Settings groups choices by who they affect: Collection, Account (when a
+  private account exists), Reminders, On this device, Collection behavior
+  (shared through the collection), and About & help. Device and shared
+  sections name their scope. Phones show the sections as a list, each opening
+  as its own page at `/more/<section>`; wider screens show every section with
+  a section index, sticky beside the panels from 1100px. Collection leads with
+  one card holding the collection name, connection state, counts, Refresh now,
+  and Change collection. How tasks are stored, the location, the mdbase format,
+  and refresh diagnostics sit in a disclosure that remembers its state.
+  Immediately applied on/off settings use switches. Collection behavior is an
+  explicitly saved form grouped as New tasks, Repeating tasks, Archive, and
+  Links and time tracking; a field appears only when the choice that enables it
+  is on. Its unsaved draft survives leaving Settings, is marked in the section
+  index or list, and a sticky bar offers Discard and Save changes. Install
+  appears once as a dismissible banner and remains under About. Settings has
+  no capture control of its own.
 - Projects shows a project count beside a compact native "Jump to project"
   picker rather than a full-width field.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual

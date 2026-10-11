@@ -1061,9 +1061,17 @@ it("moves a task between reusable day sections with the shared list move path", 
     configurable: true,
     value: vi.fn(() => target),
   });
+  expect(screen.queryByText("Drop here")).toBeNull();
+  expect(screen.getAllByText("No tasks")).toHaveLength(2);
+  fireEvent.pointerDown(handle, { pointerId: 9 });
+  expect(screen.getAllByText("Drop here")).toHaveLength(2);
+  fireEvent.pointerCancel(handle, { pointerId: 9 });
+  expect(screen.queryByText("Drop here")).toBeNull();
+  expect(update).not.toHaveBeenCalled();
   fireEvent.pointerDown(handle, { pointerId: 9 });
   fireEvent.pointerMove(handle, { clientX: 20, clientY: 20, pointerId: 9 });
   fireEvent.pointerUp(handle, { pointerId: 9 });
+  expect(screen.queryByText("Drop here")).toBeNull();
 
   await waitFor(() =>
     expect(
@@ -1081,6 +1089,9 @@ it("moves a task between reusable day sections with the shared list move path", 
   );
   expect(screen.getByText("Anytime")).toBeVisible();
   expect(screen.getByText("Later")).toBeVisible();
+  expect(
+    within(screen.getByText("Later").closest("section")!).getByText("No tasks"),
+  ).toBeVisible();
 });
 
 it("moves a grouped list task by mutating the destination property", async () => {

@@ -1,5 +1,7 @@
 # Unreleased
 
+- Keep current navigation and task-detail reads working when leaving a view cancels its shared model read, instead of showing view-loading or task-loading errors. Genuine native read failures remain visible.
+
 - Queue overlapping native view reads so moving a task during a background refresh can finish without a busy-read error. Keep accepted task moves and their displayed positions if a subsequent view refresh fails, instead of reporting that the move failed. Genuine move failures remain visible.
 
 - Planner links use the actual portable collection identifier rather than a local preference namespace, and do not retain another collection's identifier while switching.

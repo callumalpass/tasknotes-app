@@ -231,7 +231,10 @@ export class NextTaskRepository implements TaskRepository {
   private creatorSetupPending: boolean;
   private providers: NextTaskProvider[] = [];
   private models = new Map<string, TaskNotesTaskModel>();
-  private initialization: Promise<void> | null = null;
+  private initialization: {
+    pending: Promise<void>;
+    signal: AbortSignal;
+  } | null = null;
   private indexLoading: Promise<void> | null = null;
   private indexReady = false;
   private hasLoadedIndex = false;
@@ -655,24 +658,46 @@ export class NextTaskRepository implements TaskRepository {
         "Complete this original collection's TaskNotes setup before opening tasks and views.",
       );
     await this.observeChanges(signal);
-    if (!this.initialization) {
-      const revision = this.dataRevision;
-      const loading = (async () => {
-        const providers = await nextTaskProviders(this.client, signal);
+    for (;;) {
+      signal.throwIfAborted();
+      if (!this.initialization) {
+        const revision = this.dataRevision;
+        const loading = (async () => {
+          const providers = await nextTaskProviders(this.client, signal);
+          signal.throwIfAborted();
+          this.assertCurrentData(revision);
+          this.providers = providers;
+          this.models = new Map(providers.map((p) => [p.typeName, p.model]));
+          this.reached(false);
+        })().catch((reason) => {
+          if (this.initialization?.pending === loading)
+            this.initialization = null;
+          this.noteOperationFailure(reason, signal);
+          throw reason;
+        });
+        this.initialization = { pending: loading, signal };
+      }
+      const read = this.initialization;
+      try {
+        await read.pending;
         signal.throwIfAborted();
-        this.assertCurrentData(revision);
-        this.providers = providers;
-        this.models = new Map(providers.map((p) => [p.typeName, p.model]));
-        this.reached(false);
-      })().catch((reason) => {
-        if (this.initialization === loading) this.initialization = null;
-        this.noteOperationFailure(reason, signal);
-        throw reason;
-      });
-      this.initialization = loading;
+        return;
+      } catch (reason) {
+        signal.throwIfAborted();
+        // A shared model READ belongs to its initiating caller. Retiring that
+        // caller must not transfer its RPC cancellation to other current reads.
+        // Only an actually aborted foreign owner permits another READ, under
+        // this caller's original lifecycle/deadline. Native refusals, channel
+        // loss and mutations are not retried or hidden here.
+        if (
+          !read.signal.aborted ||
+          (reason !== read.signal.reason &&
+            (!(reason instanceof MdbaseError) || reason.code !== "cancelled"))
+        )
+          throw reason;
+        if (this.initialization === read) this.initialization = null;
+      }
     }
-    await this.initialization;
-    signal.throwIfAborted();
   }
 
   private async ensureIndex(): Promise<void> {

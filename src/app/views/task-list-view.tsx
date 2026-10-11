@@ -434,7 +434,9 @@ function ManualTaskRows({
               >
                 {lane.rows.map((row) => renderRow(row, lane))}
                 {grouped && manualOrder && !lane.rows.length ? (
-                  <div className="task-list-empty-drop-zone">Drop here</div>
+                  <div className="task-list-empty-drop-zone">
+                    {dragging && canMoveAcrossLanes ? "Drop here" : "No tasks"}
+                  </div>
                 ) : null}
               </div>
             );

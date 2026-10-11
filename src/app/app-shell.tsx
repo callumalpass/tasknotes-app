@@ -279,9 +279,9 @@ export function AppShell() {
         {route.page !== "task" ? (
           <CollectionAvailability
             onSettings={
-              workspacePage === "more"
+              workspace.page === "more" && workspace.section === "collection"
                 ? undefined
-                : () => navigate({ page: "more" })
+                : () => navigate({ page: "more", section: "collection" })
             }
           />
         ) : null}
@@ -304,7 +304,14 @@ export function AppShell() {
         ) : workspacePage === "more" ? (
           <MoreScreen
             calendarPreferences={calendarPreferences}
+            section={workspace.page === "more" ? workspace.section : undefined}
             onCalendarPreferencesChange={updateCalendarPreferences}
+            onSection={(section, replace) =>
+              navigate(
+                section ? { page: "more", section } : { page: "more" },
+                replace,
+              )
+            }
           />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
@@ -362,7 +369,7 @@ export function AppShell() {
           ref={detailRef}
         >
           <CollectionAvailability
-            onSettings={() => navigate({ page: "more" })}
+            onSettings={() => navigate({ page: "more", section: "collection" })}
           />
           {discoveryNotice}
           <TaskScreen
