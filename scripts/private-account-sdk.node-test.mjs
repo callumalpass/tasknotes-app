@@ -7,29 +7,47 @@ const root = new URL("../", import.meta.url);
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
     await readFile(
-      new URL("vendor/mdbase-dev-sdk-b9965703.json", root),
+      new URL("vendor/mdbase-dev-sdk-63ffdb8b.json", root),
       "utf8",
     ),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "b9965703230091004f17e1632fbc91bdb9edb533",
+    "63ffdb8bab24045861dbb726d3ce9a31d2179045",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
     "@mdbase-dev/sdk",
     "@mdbase-dev/sdk/account",
     "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage",
   ]);
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "501d07be2e2a94ea29c35c382735edbbfebd3c6b09f59f78c95f71c33a49a3df",
+    "4b866f7eb1ab6a10e2b3c66f0be40e0061ddb1437724e15953b7dafe8369c50b",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
     `file:vendor/${manifest.artifact}`,
+  );
+  assert.equal(manifest.includedCommits.basesReadFifo, manifest.sourceCommit);
+  assert.equal(
+    pkg.dependencies["@mdbase-dev/connect-protocol"],
+    `file:vendor/${manifest.protocol.artifact}`,
+  );
+  assert.equal(pkg.pnpm.overrides["@mdbase-dev/connect-protocol"], undefined);
+  const protocolBytes = await readFile(
+    new URL(`vendor/${manifest.protocol.artifact}`, root),
+  );
+  assert.equal(
+    createHash("sha256").update(protocolBytes).digest("hex"),
+    manifest.protocol.sha256,
+  );
+  assert.equal(
+    manifest.protocol.sha256,
+    "dfc5db0daf6700874aa2c6235b86570f1d4e444740d0925bf1f97551cf43d3bd",
   );
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, manifest.bytes);

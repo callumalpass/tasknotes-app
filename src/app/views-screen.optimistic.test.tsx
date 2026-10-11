@@ -1195,6 +1195,91 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
 
+it("keeps an accepted manual reorder when only its post-write refresh fails", async () => {
+  const view = manualListView("accepted-reorder");
+  const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+  let accepted = false;
+  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+    accepted = true;
+    const value = tasks.find((candidate) => candidate.id === id)!;
+    value.sortOrder = input.sortOrder ?? undefined;
+    return value;
+  });
+  const repository = manualListRepository(view, tasks, update, () => {
+    if (accepted) throw Error("Read response temporarily unavailable");
+    return {
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: [],
+    };
+  });
+  renderListView(repository, view);
+  fireEvent.keyDown(
+    await screen.findByRole("button", { name: /Reorder Alpha/ }),
+    { key: "ArrowDown" },
+  );
+  await waitFor(() => expect(update).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(
+      screen.queryAllByText(
+        /Could not reorder|The view change could not finish/,
+      ),
+    ).toHaveLength(0),
+  );
+  expect(screen.getByText("Alpha")).toBeVisible();
+  expect(update.mock.calls.filter(([id]) => id === "alpha")).toHaveLength(1);
+  expect(new Set(update.mock.calls.map(([id]) => id)).size).toBe(
+    update.mock.calls.length,
+  );
+});
+
+it("keeps an accepted board move without an action failure banner when its post-write refresh fails", async () => {
+  const execution = boardExecution();
+  let accepted = false;
+  const update = vi.fn<TaskRepository["update"]>(async () => {
+    accepted = true;
+    return { ...execution.rows[0].task, body: "" };
+  });
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => execution.rows.map(({ task }) => task),
+      cachedViewExecution: async () => null,
+      executeView: async () => {
+        if (accepted) throw Error("Read response temporarily unavailable");
+        return execution;
+      },
+      readViewSource: async () => ({
+        ...execution.view.source,
+        document:
+          "views:\n  - type: tasknotesKanban\n    name: Work\n    groupBy: { property: status, direction: ASC }\n",
+      }),
+      update,
+      collectionInfo: testCollectionInfo,
+    },
+    1,
+  );
+  renderListView(repository, execution.view);
+  fireEvent.keyDown(
+    await screen.findByRole("group", { name: /Move on the board\. Drag/ }),
+    { key: "ArrowRight" },
+  );
+  await waitFor(() => expect(update).toHaveBeenCalledOnce());
+  await waitFor(() =>
+    expect(
+      screen.queryAllByText(
+        /The move was saved, but|The view change could not finish/,
+      ),
+    ).toHaveLength(0),
+  );
+  expect(
+    within(
+      screen.getByRole("region", { name: "In progress column" }),
+    ).getByText("Move on the board"),
+  ).toBeVisible();
+});
+
 async function startReordering() {
   fireEvent.click(await screen.findByLabelText("View options"));
   fireEvent.click(await screen.findByRole("button", { name: "Manual order" }));

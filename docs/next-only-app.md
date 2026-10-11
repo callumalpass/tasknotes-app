@@ -25,11 +25,16 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`b9965703230091004f17e1632fbc91bdb9edb533`, with provenance in
-`vendor/mdbase-dev-sdk-b9965703.json`. The original qualified archive includes
+`63ffdb8bab24045861dbb726d3ce9a31d2179045`, with provenance in
+`vendor/mdbase-dev-sdk-63ffdb8b.json`. The original qualified archive retains
 shared factory #819, canonical no-email provider receipts #827, bounded failure
-classification #832 and caller/host signal composition #837. App signal plumbing
-is unchanged; the presence of the shared factory does not activate it or qualify
+classification #832 and caller/host signal composition #837, and queues the three
+native Bases READ operations on their original shared facade. The original
+protocol beta.129 archive is a normal file dependency in `vendor/`; the earlier
+protocol override is removed so it cannot replace the SDK's original dependency.
+Legacy Connect packages retain their ordinary protocol dependencies.
+App signal plumbing is unchanged. The default public application entry remains
+an explicit unavailable shell; this archive does not activate it or qualify
 native compatibility. A source pin does not identify the currently
 served build or authorize a runtime refresh, session enablement or deployment.
 

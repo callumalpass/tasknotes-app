@@ -527,6 +527,7 @@ export function ViewsScreen({
     selectionFeedback();
 
     const operation = manualOrderMutationQueue.current.then(async () => {
+      let accepted = false;
       try {
         await updateTasks([
           ...plan.writes
@@ -543,6 +544,7 @@ export function ViewsScreen({
             },
           },
         ]);
+        accepted = true;
         const refreshed = await repository.executeView(view);
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);
@@ -551,6 +553,10 @@ export function ViewsScreen({
         }
         return true;
       } catch (reason) {
+        // Local acceptance is not a failed move, even if its subsequent READ
+        // fails. Retain the accepted overlay; ordinary change notifications
+        // refresh/reconcile it, and the query session owns actual stale errors.
+        if (accepted) return true;
         if (selectedKeyRef.current === view.key) {
           setViewActionError({
             viewKey: view.key,
@@ -700,13 +706,10 @@ export function ViewsScreen({
       setExecution(refreshed);
       setExecutionError(null);
       reconcileOptimisticExecution(refreshed, selected.key);
-    } catch (reason) {
-      if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
-      if (selectedKeyRef.current === selected.key)
-        setViewActionError({
-          viewKey: selected.key,
-          message: `The move was saved, but this view could not refresh. ${message(reason)}`,
-        });
+    } catch {
+      // The mutation was accepted. Keep its overlay and let the normal query
+      // refresh on the next data notification, without an action-failure claim.
+      // Query-session stale/read failures retain their own truthful notice.
     } finally {
       clearBoardMovePending(row.task.id, sequence);
     }
@@ -1065,7 +1068,7 @@ export function ViewsScreen({
           <OperationErrorNotice
             action="The view change"
             message={currentViewActionError}
-            recovery="Nothing else changed. Try again."
+            recovery="Review the task before making another change."
           />
         ) : null}
         {editing ? (
