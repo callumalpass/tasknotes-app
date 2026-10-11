@@ -6,7 +6,7 @@ import {
   Navigation,
   StorageErrorScreen,
   ViewDiscoveryNotice,
-} from "./app-shell";
+} from "./app-shell-content";
 import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 import { OperationalError } from "../application/operational-error";
 

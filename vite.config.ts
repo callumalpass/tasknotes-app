@@ -22,6 +22,7 @@ export default defineConfig({
     ],
   },
   build: {
+    manifest: true,
     // Collection and cloud runtimes load after the small location gate. Keep
     // warnings focused on unexpectedly large individual chunks.
     chunkSizeWarningLimit: 620,

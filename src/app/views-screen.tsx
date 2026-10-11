@@ -6,7 +6,15 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
@@ -56,7 +64,6 @@ import {
   calendarDateDefaults,
   calendarSelectionDefaults,
 } from "../domain/mini-calendar";
-import { ViewCatalog } from "./views/view-catalog";
 import { ProjectsView } from "./views/projects-view";
 import {
   removeConfirmedBoardMoves,
@@ -81,7 +88,6 @@ import {
 } from "../components/task-completion-motion";
 import { PlannerViewHandoff } from "./views/planner-view-handoff";
 import { usePlannerViewLink } from "./use-planner-view-link";
-import { CalendarViewPresentation } from "./views/calendar-view-presentation";
 import { useCalendarMutations } from "./use-calendar-mutations";
 import type {
   CreateTaskInput,
@@ -98,6 +104,14 @@ import type {
 } from "../domain/view";
 import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
+
+const ViewCatalog = lazy(async () => ({
+  default: (await import("./views/view-catalog")).ViewCatalog,
+}));
+const CalendarViewPresentation = lazy(async () => ({
+  default: (await import("./views/calendar-view-presentation"))
+    .CalendarViewPresentation,
+}));
 
 type ViewEditorRequest = {
   view?: TaskView;
@@ -1132,19 +1146,21 @@ export function ViewsScreen({
           {!documents || !views ? (
             <LoadingRows count={4} />
           ) : (
-            <ViewCatalog
-              documents={documents}
-              navigationViewKeys={navigationViewKeys}
-              views={views}
-              onDelete={(view) => setEditing({ view, confirmDelete: true })}
-              onDuplicate={(view) => setEditing({ view, duplicate: true })}
-              onEdit={(view) => setEditing({ view })}
-              onMoveNavigation={onMoveNavigationView}
-              onOpenScratchpad={onOpenScratchpad}
-              onOpenSearch={onSearch}
-              onOpenView={onOpenView}
-              onToggleNavigation={onToggleNavigationView}
-            />
+            <Suspense fallback={<LoadingRows count={4} />}>
+              <ViewCatalog
+                documents={documents}
+                navigationViewKeys={navigationViewKeys}
+                views={views}
+                onDelete={(view) => setEditing({ view, confirmDelete: true })}
+                onDuplicate={(view) => setEditing({ view, duplicate: true })}
+                onEdit={(view) => setEditing({ view })}
+                onMoveNavigation={onMoveNavigationView}
+                onOpenScratchpad={onOpenScratchpad}
+                onOpenSearch={onSearch}
+                onOpenView={onOpenView}
+                onToggleNavigation={onToggleNavigationView}
+              />
+            </Suspense>
           )}
         </section>
         {editing ? (
@@ -1442,44 +1458,46 @@ export function ViewsScreen({
             "tasknotes.calendar" ||
           presentedExecution.view.presentation?.type ===
             "tasknotes.mini-calendar" ? (
-          <CalendarViewPresentation
-            key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
-            execution={presentedExecution}
-            preferences={calendarPreferences}
-            identityTasks={identityTasks}
-            selected={currentCalendarSelection}
-            selectedCreateValue={currentCalendarCreateValue}
-            titleProperty={configuration.fieldMapping.title}
-            onSelect={(date, createValue = date) =>
-              selected &&
-              setCalendarSelection({
-                key: selected.key,
-                date,
-                createValue,
-              })
-            }
-            onCreate={(date, createValue = date, timeEstimate) => {
-              if (!selected) return;
-              setCalendarSelection({
-                key: selected.key,
-                date,
-                createValue,
-                defaults: calendarSelectionDefaults(
-                  selected,
+          <Suspense fallback={<LoadingRows count={6} />}>
+            <CalendarViewPresentation
+              key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
+              execution={presentedExecution}
+              preferences={calendarPreferences}
+              identityTasks={identityTasks}
+              selected={currentCalendarSelection}
+              selectedCreateValue={currentCalendarCreateValue}
+              titleProperty={configuration.fieldMapping.title}
+              onSelect={(date, createValue = date) =>
+                selected &&
+                setCalendarSelection({
+                  key: selected.key,
+                  date,
                   createValue,
-                  timeEstimate,
-                ),
-                focusRequest: Date.now(),
-              });
-              if (window.matchMedia?.("(max-width: 839px)").matches)
-                setMobileCaptureOpen(true);
-            }}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
-            onUpdate={calendarMutations.updateTask}
-            onUpdateOccurrence={calendarMutations.updateOccurrence}
-            onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
-          />
+                })
+              }
+              onCreate={(date, createValue = date, timeEstimate) => {
+                if (!selected) return;
+                setCalendarSelection({
+                  key: selected.key,
+                  date,
+                  createValue,
+                  defaults: calendarSelectionDefaults(
+                    selected,
+                    createValue,
+                    timeEstimate,
+                  ),
+                  focusRequest: Date.now(),
+                });
+                if (window.matchMedia?.("(max-width: 839px)").matches)
+                  setMobileCaptureOpen(true);
+              }}
+              onOpen={onOpenTask}
+              onToggle={toggleRow}
+              onUpdate={calendarMutations.updateTask}
+              onUpdateOccurrence={calendarMutations.updateOccurrence}
+              onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
+            />
+          </Suspense>
         ) : (
           <TaskListView
             sectionScope={sectionScope}
