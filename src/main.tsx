@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import { TaskNotesApp } from "./app/tasknotes-app";
 import { AppErrorBoundary } from "./components/app-error-boundary";
 import { AppUpdateNotice } from "./components/app-update-notice";
+import { ReturningUserNotice } from "./components/returning-user-notice";
 import { initializePwaInstall } from "./pwa/install";
 import { initializePwaUpdate } from "./pwa/update";
 import {
@@ -45,6 +46,7 @@ const DemoFixture =
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
+      <ReturningUserNotice />
       <AppUpdateNotice />
       {SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
         <Suspense
