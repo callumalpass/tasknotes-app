@@ -1,7 +1,5 @@
 import {
   type ConnectRequestOptions,
-  type ConnectOutcome,
-  type PendingMutation as SdkPendingMutation,
   type JsonObject,
   type MdbaseConnection,
 } from "@mdbase-dev/connect";
@@ -67,27 +65,6 @@ class MdbaseMutationCoordinator {
       () =>
         this.recoverOutstanding(undefined, options, true).then(() => undefined),
     );
-    this.tail = result.then(
-      () => undefined,
-      () => undefined,
-    );
-    return result;
-  }
-
-  recoverHandle(
-    handle: SdkPendingMutation<unknown>,
-    request: ConnectRequestOptions,
-  ): Promise<ConnectOutcome<unknown>> {
-    const recover = async () => {
-      const outcome = await handle.recover(request);
-      const pending = this.pending.get(handle.requestId);
-      if (outcome.ok && pending) {
-        this.pending.delete(handle.requestId);
-        pending.mapRecovered(outcome.value);
-      }
-      return outcome;
-    };
-    const result = this.tail.then(recover, recover);
     this.tail = result.then(
       () => undefined,
       () => undefined,
@@ -186,15 +163,6 @@ export function runMdbaseMutation<Result, Recovered>(
   options: MdbaseMutationOptions<Result, Recovered>,
 ): Promise<Result> {
   return coordinatorFor(connection).run(operation, options);
-}
-
-/** Recovery review must reconnect live receipts to their application intents. */
-export function recoverMdbaseMutationHandle(
-  connection: MdbaseConnection<JsonObject>,
-  handle: SdkPendingMutation<unknown>,
-  options: ConnectRequestOptions,
-): Promise<ConnectOutcome<unknown>> {
-  return coordinatorFor(connection).recoverHandle(handle, options);
 }
 
 /** Recover durable SDK receipts before reading canonical collection state. */
