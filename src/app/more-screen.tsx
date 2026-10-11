@@ -355,7 +355,7 @@ function CollectionSettings() {
               : null}
           </p>
         ) : null}
-        <div className="settings-actions">
+        <div className="settings-collection-actions">
           <button
             className="secondary-action"
             disabled={refreshing}

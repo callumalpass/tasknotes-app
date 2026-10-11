@@ -46,6 +46,7 @@ import {
   useTaskRelationships,
 } from "./repository-context";
 import { TimeTrackingField } from "./task-time-tracking";
+import { rememberOpenedTask } from "./search-history";
 import {
   Choice,
   Fieldset,
@@ -82,6 +83,12 @@ export function TaskScreen({
   onMaterialized(task: Task): void;
 }) {
   const { task, loading, error } = useTask(id);
+  const { repository } = useRepository();
+  const openedId = task?.id;
+  // Search offers recently opened tasks; only tasks that actually loaded count.
+  useEffect(() => {
+    if (openedId) rememberOpenedTask(repository, openedId);
+  }, [openedId, repository]);
   if (loading)
     return (
       <section className="screen task-screen">

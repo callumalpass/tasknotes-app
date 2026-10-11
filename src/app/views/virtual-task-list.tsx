@@ -1,8 +1,16 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
 import { TaskListSection } from "../../components/task-list-section";
 import { ViewTaskRow } from "./view-task-row";
+import { TaskDeparturesContext } from "../../components/task-completion-motion";
+import { settledRowCount } from "../optimistic-view-reconciliation";
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
 
@@ -30,9 +38,11 @@ export function VirtualTaskList({
   onOpen,
   onToggle,
   renderRow,
+  sectionAction,
   showEmpty = false,
 }: {
   renderRow?(row: TaskViewRow, lane: Lane): ReactNode;
+  sectionAction?(lane: Lane): ReactNode;
   showEmpty?: boolean;
   lanes: Lane[];
   grouped: boolean;
@@ -43,6 +53,7 @@ export function VirtualTaskList({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void | Promise<unknown>;
 }) {
+  const departing = useContext(TaskDeparturesContext);
   const [choices, setChoices] = useState<Map<string, boolean>>(() => new Map());
   const preferenceKey = useCallback(
     (lane: Lane) =>
@@ -101,12 +112,13 @@ export function VirtualTaskList({
           )
         ) : (
           <TaskListSection
-            showEmpty={showEmpty}
+            showEmpty={showEmpty || entry.lane.rows.length > 0}
             headingOnly
             className={entry.lane.className}
             laneKey={entry.lane.key}
             label={entry.lane.label ?? "Other"}
-            count={entry.lane.rows.length}
+            count={settledRowCount(entry.lane.rows, departing)}
+            action={sectionAction?.(entry.lane)}
             preferenceKey={preferenceKey(entry.lane)}
             collapsed={isCollapsed(entry.lane)}
             onCollapsedChange={(value) =>

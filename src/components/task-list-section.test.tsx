@@ -11,6 +11,21 @@ const props = {
   laneKey: "overdue",
 };
 describe("collapsible task sections", () => {
+  it("keeps a heading action outside the collapse toggle", () => {
+    render(
+      <TaskListSection
+        {...props}
+        action={<button type="button">Move all to today</button>}
+      >
+        Tasks
+      </TaskListSection>,
+    );
+    const toggle = screen.getByRole("button", { name: "Overdue 9" });
+    const action = screen.getByRole("button", { name: "Move all to today" });
+    expect(screen.getByRole("heading")).toContainElement(toggle);
+    expect(toggle).not.toContainElement(action);
+    expect(screen.getByRole("heading")).not.toContainElement(action);
+  });
   it("temporarily expands during arrangement without overwriting the choice", () => {
     localStorage.setItem(props.preferenceKey, "collapsed");
     const { rerender } = render(

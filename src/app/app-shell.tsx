@@ -14,6 +14,11 @@ import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 import { CollectionAvailability } from "../components/collection-availability";
 import { CollectionWriteStatus } from "../components/collection-write-status";
 import { TaskAddedNotice } from "../components/task-added-notice";
+import { TaskCompletedNotice } from "../components/task-completed-notice";
+import {
+  TaskCompletionReportContext,
+  type TaskCompletion,
+} from "../components/task-completion-motion";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
@@ -48,6 +53,7 @@ import {
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
+import { CaptureFab } from "../components/capture-fab";
 import { ModelSetupScreen } from "./model-setup-screen";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import {
@@ -71,6 +77,8 @@ export function AppShell() {
     deletionError,
     undoTaskDeletion,
     retryTaskDeletion,
+    setTaskCompletion,
+    updateTask,
   } = useRepository();
   const {
     authorizeAnotherCollection,
@@ -101,8 +109,10 @@ export function AppShell() {
     repository: typeof repository;
     route: Route;
   }>();
-  const reportAdded = (task: TaskSummary) =>
+  const reportAdded = (task: TaskSummary) => {
+    setCompletedNotice(undefined);
     setAddedNotice({ task, repository, route });
+  };
   const addedTask = addedNotice?.task;
   if (
     addedNotice &&
@@ -113,6 +123,34 @@ export function AppShell() {
       deletionError)
   ) {
     setAddedNotice(undefined);
+  }
+  // The latest confirmation wins; completing replaces Task added and vice versa.
+  const [completedNotice, setCompletedNotice] = useState<{
+    completion: TaskCompletion;
+    repository: typeof repository;
+    route: Route;
+  }>();
+  const routeRef = useRef(route);
+  useEffect(() => {
+    routeRef.current = route;
+  });
+  const reportCompleted = useCallback(
+    (completion: TaskCompletion) => {
+      setAddedNotice(undefined);
+      setCompletedNotice({ completion, repository, route: routeRef.current });
+    },
+    [repository],
+  );
+  const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
+  if (
+    completedNotice &&
+    (completedNotice.repository !== repository ||
+      completedNotice.route !== route ||
+      captureOpen ||
+      pendingDeletion ||
+      deletionError)
+  ) {
+    setCompletedNotice(undefined);
   }
   const [calendarPreferences, setCalendarPreferences] =
     useState<CalendarPreferences>(loadCalendarPreferences);
@@ -401,16 +439,11 @@ export function AppShell() {
         </nav>
       ) : null}
       {route.page !== "task" && showGlobalCaptureFab ? (
-        <button
+        <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
-          className="global-capture-fab"
-          type="button"
           onClick={() => setCaptureOpen(true)}
-        >
-          <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
-          <span>Add task</span>
-        </button>
+        />
       ) : null}
       <KeyboardLayer
         homeKey={homeKey}
@@ -436,6 +469,22 @@ export function AppShell() {
           route.page !== "task" &&
           (showBottomNavigation || showGlobalCaptureFab)
         }
+      />
+      <TaskCompletedNotice
+        completion={completedNotice?.completion}
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
+        onDismiss={dismissCompleted}
+        onUndo={async ({ task, occurrenceDate, advanced }) => {
+          await setTaskCompletion({
+            id: task.id,
+            occurrenceDate,
+            completed: false,
+          });
+          if (advanced) await updateTask(task.id, advanced);
+        }}
       />
       <DeletionFeedback
         aboveMobileControls={
@@ -463,7 +512,9 @@ export function AppShell() {
         )
       }
     >
-      {shell}
+      <TaskCompletionReportContext.Provider value={reportCompleted}>
+        {shell}
+      </TaskCompletionReportContext.Provider>
     </CollectionWriteStatus>
   );
 }

@@ -86,10 +86,11 @@ remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA
 contrast.
 
-Stored status and priority colors decorate a swatch, not the label's ink or a
-control's outline: a non-default status fills the dot inside an ink-colored
-completion ring. Keep selected and unselected text legible without rewriting
-users' colors.
+Stored priority colors decorate a swatch, not the label's ink. A coloured,
+non-default status draws the completion ring itself, with no inner fill, its
+lightness clamped to keep 3:1 against the paper; the default status and
+uncoloured statuses keep the neutral ring. Keep selected and unselected text
+legible without rewriting users' colors.
 
 `#808080` is a data-layer compatibility value used when parsing legacy task
 color metadata and in its fixtures. It is not an interface color.
@@ -166,21 +167,39 @@ Today             Search       More
   list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
   "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
-  time so overdue rows stay compact. An overdue date takes the
-  danger color beside its visible label. A non-default status adds a filled dot
-  inside the completion circle, so status never relies on color alone. The
+  time so overdue rows stay compact. Only a past due date is overdue and takes
+  the danger color beside its visible label; a missed scheduled date is a plan,
+  not lateness, and stays muted. Inside the Overdue section the heading label
+  alone carries the danger color, and row dates read as ordinary metadata. A
+  coloured non-default status draws the completion ring in that color and names
+  the status in the control's label and tooltip. On list rows, wrapped
+  metadata keeps an even 24px rhythm, and a project, status, or priority value
+  truncates where it starts rather than dropping onto a line of its own. The
   starter Today view shows each task's project as quiet, unlabelled metadata.
   An existing Today view without it gets a one-time, dismissible "Show each
   task's project on Today?" offer; the saved view changes only if accepted.
+- Completing a task from a row draws the check and sweeps a strike through
+  the title once the collection accepts the write; a row that then leaves the
+  list lingers 500ms, folds its height away, and is out of the section count
+  meanwhile. Keyboard focus moves straight to the neighbouring row. A
+  “Completed” notice offers Undo for six seconds (held while hovered or
+  focused); Undo also puts back dates a repeating task advanced. Native builds
+  give the success haptic. Reduced motion completes immediately.
 - On touch, swiping a row right completes (or reopens) the task and swiping
   left opens its actions, which include Schedule today and Schedule tomorrow.
   The revealed side names the action and fills with accent once the swipe
   will act. Buttons keep every action available; board cards never claim
   horizontal swipes. Search explains observed non-title matches with
-  concise labels such as “Matched in notes.”
+  concise labels such as “Matched in notes.” Before typing, Search lists up
+  to five recent searches and recently opened tasks above the field
+  suggestions, each clearable; they are per-device, collection-scoped
+  conveniences, and nothing appears without history.
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
   one unmistakable primary action, not a page full of competing buttons.
+  While the page scrolls down it narrows to its plus, regaining its label when
+  scrolling settles or reverses, and lists reserve enough bottom space for
+  their last row and its menu to scroll clear of it.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
   Text fields, selects, and date/time triggers share a type and height rhythm.
   Keep labels close to their fields (4px), separate related fields by 16px,
@@ -341,7 +360,13 @@ Today             Search       More
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
   manually sorted lists keep measured windowing rather than rendering every row. There is no special
-  overdue-review workflow or automatic hiding of overdue work. Projects likewise
+  overdue-review workflow or automatic hiding of overdue work; the Overdue
+  heading carries one quiet Move all to today action that schedules each row
+  for today exactly as `t` does (Scheduled moves, keeping its time; Due stays)
+  in one batch, with Undo in the notice. When Today and Overdue are empty,
+  Today says “Today is clear,” names the next task coming, and links to
+  Upcoming; a collection with no tasks says so instead. The Today date shows
+  “n of m done” once a task planned for today has been completed. Projects likewise
   have collection/view-scoped collapse choices, visible counts, and a compact
   jump selector that expands and focuses the chosen project.
 - Scheduled and Due retain visible labels, including when both dates occur on
@@ -450,3 +475,9 @@ move, or board column move), rows and cards glide 220ms from where they were
 to where they now sit, so the eye can follow the task. Re-renders that keep the
 order, such as a width change, never move rows. Lists long enough to virtualize
 and moves of more than 60 items settle instantly.
+
+While a task is dragged in a manually ordered list or board column, the rows
+part with the same glide to open its slot, and the dragged row waits there as
+a faded, dashed placeholder; the drop lands exactly where the slot showed.
+Board drags carry a lifted copy of the card under the pointer. Virtualized
+lists and reduced motion keep rows still and mark the slot with a line.

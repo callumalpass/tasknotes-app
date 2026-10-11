@@ -7,10 +7,19 @@ import interactionPlugin, {
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
+import {
+  calendarEntryKind,
+  calendarPriorityLegend,
+  calendarPriorityMarker,
+  withPendingMoves,
+  withPriorityDetail,
+  type CalendarPriorityMarker,
+  type PendingCalendarMove,
+} from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
 import {
   calendarEntryKey,
@@ -49,6 +58,7 @@ import type {
   TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
 
 type CalendarMode =
@@ -128,17 +138,72 @@ export function FullCalendarView({
     [execution, identityTasks, preferences.showTimeEntries, range],
   );
   const { configuration } = useRepository();
-  const events = useMemo(
+  const [pendingMoves, setPendingMoves] = useState<
+    ReadonlyMap<string, PendingCalendarMove>
+  >(() => new Map());
+  const executionRef = useRef(execution);
+  useEffect(() => {
+    executionRef.current = execution;
+  }, [execution]);
+  const baseEvents = useMemo(
     () => fullCalendarEvents(entries, execution, titleProperty, configuration),
     [configuration, entries, execution, titleProperty],
+  );
+  const events = useMemo(
+    () => withPendingMoves(baseEvents, pendingMoves, execution),
+    [baseEvents, execution, pendingMoves],
+  );
+  const legend = useMemo(
+    () =>
+      calendarPriorityLegend(
+        baseEvents.map(
+          (event) =>
+            event.extendedProps?.marker as CalendarPriorityMarker | undefined,
+        ),
+        configuration,
+      ),
+    [baseEvents, configuration],
   );
   const selectedEntries = (entries.get(selected) ?? []).filter(
     (entry) => !entry.timeEntry,
   );
   const listMode = mode === "listWeek";
 
+  // Rows name an elevated priority so the grid's coloured marks read the
+  // same here; without view properties the row's defaults already do.
+  function inspectorDetails(entry: CalendarEntry) {
+    const details = viewPropertyDetails(entry.row, execution.view.properties, {
+      identityProperty: titleProperty,
+      occurrence: entry.occurrence,
+    });
+    if (!details) return undefined;
+    const displayed = entry.occurrence
+      ? occurrenceTask(entry.occurrence)
+      : entry.task;
+    return withPriorityDetail(
+      details,
+      calendarPriorityMarker(displayed, configuration),
+      configuration,
+    );
+  }
+
   function api(): CalendarApi | undefined {
     return calendarRef.current?.getApi();
+  }
+
+  function holdMove(id: string, move: PendingCalendarMove | undefined) {
+    setPendingMoves((current) => {
+      // Drop moves that later view data has already superseded.
+      const next = new Map(
+        [...current].filter(
+          ([, held]) =>
+            !held.settledWith || held.settledWith === executionRef.current,
+        ),
+      );
+      if (move) next.set(id, move);
+      else next.delete(id);
+      return next;
+    });
   }
 
   function changeMode(next: CalendarMode) {
@@ -153,6 +218,15 @@ export function FullCalendarView({
       return;
     }
     setMutationError("");
+    const id = info.event.id;
+    const move: PendingCalendarMove = {
+      start: calendarStorageValue(info.event.start, info.event.allDay),
+      ...(info.event.end
+        ? { end: calendarStorageValue(info.event.end, info.event.allDay) }
+        : {}),
+      allDay: info.event.allDay,
+    };
+    holdMove(id, move);
     try {
       if (metadata.timeEntryIndex !== undefined) {
         await onReplaceTimeEntries(
@@ -164,6 +238,7 @@ export function FullCalendarView({
             info.event.end,
           ),
         );
+        holdMove(id, { ...move, settledWith: executionRef.current });
         return;
       }
       if (!metadata.dateField) throw new Error("The task date is unavailable.");
@@ -182,7 +257,9 @@ export function FullCalendarView({
           allDay: info.event.allDay,
         });
       else await onUpdate(metadata.entry.task, input);
+      holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
+      holdMove(id, undefined);
       info.revert();
       setMutationError(message(reason));
     }
@@ -201,8 +278,19 @@ export function FullCalendarView({
       ),
     );
     setMutationError("");
+    if (metadata.occurrence && metadata.timeEntryIndex === undefined) {
+      info.revert();
+      return;
+    }
+    const id = info.event.id;
+    const move: PendingCalendarMove = {
+      start: calendarStorageValue(info.event.start, false),
+      end: calendarStorageValue(info.event.end, false),
+      allDay: false,
+    };
+    holdMove(id, move);
     try {
-      if (metadata.timeEntryIndex !== undefined) {
+      if (metadata.timeEntryIndex !== undefined)
         await onReplaceTimeEntries(
           metadata.entry.task,
           resizeCalendarTimeEntry(
@@ -211,14 +299,10 @@ export function FullCalendarView({
             info.event.end,
           ),
         );
-        return;
-      }
-      if (metadata.occurrence) {
-        info.revert();
-        return;
-      }
-      await onUpdate(metadata.entry.task, { timeEstimate: minutes });
+      else await onUpdate(metadata.entry.task, { timeEstimate: minutes });
+      holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
+      holdMove(id, undefined);
       info.revert();
       setMutationError(message(reason));
     }
@@ -246,155 +330,181 @@ export function FullCalendarView({
       ref={rootRef}
       className={`full-calendar-view${listMode ? " is-agenda" : ""}`}
     >
-      <div className="full-calendar-commandbar">
-        <div className="full-calendar-navigation">
-          <button
-            aria-label="Previous period"
-            type="button"
-            onClick={() => api()?.prev()}
-          >
-            <ChevronLeft aria-hidden="true" size={19} />
-          </button>
-          <button
-            className="full-calendar-create"
-            type="button"
-            onClick={() => onCreate(selected, selectedCreateValue)}
-          >
-            <Plus aria-hidden="true" size={16} />
-            Add task
-          </button>
-          <button type="button" onClick={() => api()?.today()}>
-            Today
-          </button>
-          <button
-            aria-label="Next period"
-            type="button"
-            onClick={() => api()?.next()}
-          >
-            <ChevronRight aria-hidden="true" size={19} />
-          </button>
-        </div>
-        <h2 aria-live="polite">{title}</h2>
-        <div className="full-calendar-modes" aria-label="Calendar layout">
-          {calendarModes.map(({ value, label, compact }) => (
-            <button
-              aria-pressed={mode === value}
-              className={compact ? undefined : "wide-mode"}
-              key={value}
-              type="button"
-              onClick={() => changeMode(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {mutationError ? (
-        <p className="inline-error" role="alert">
-          The calendar change could not be saved. {mutationError}
-        </p>
-      ) : null}
       <div className="full-calendar-workspace">
-        <div className="full-calendar-surface">
-          <FullCalendar
-            allDaySlot={preferences.allDaySlot}
-            allDayText="All day"
-            listDayFormat={{ weekday: "long", month: "long", day: "numeric" }}
-            listDaySideFormat={false}
-            // Phone months draw every task as a dot and list the selected
-            // day below, so there is no More popover to open.
-            dayMaxEvents={phoneMonth("dayGridMonth") ? false : 3}
-            eventMinHeight={28}
-            moreLinkDidMount={({ el }) => {
-              el.setAttribute("role", "button");
-              el.addEventListener("keydown", activateMoreOnSpace);
-            }}
-            moreLinkWillUnmount={({ el }) =>
-              el.removeEventListener("keydown", activateMoreOnSpace)
-            }
-            dayCellClassNames={(info) =>
-              todayString(info.date) === selected ? ["is-selected-day"] : []
-            }
-            editable
-            eventClick={(info) => openEvent(info, onOpen)}
-            eventDidMount={({ el, view }) => {
-              if (!phoneMonth(view.type)) return;
-              // Phone month dots are indicators; the day list holds the tasks.
-              el.setAttribute("tabindex", "-1");
-              el.setAttribute("aria-hidden", "true");
-            }}
-            eventContent={(info) =>
-              calendarEventContent(info, onOpen, (metadata, x, y) =>
-                setContextAction({
-                  id: Date.now(),
-                  metadata,
-                  x,
-                  y,
-                }),
-              )
-            }
-            eventDrop={(info) => void moveEvent(info)}
-            eventResizableFromStart
-            eventResize={(info) => void resizeEvent(info)}
-            events={events}
-            eventTimeFormat={calendarEventTimeFormat(preferences.hourFormat)}
-            firstDay={preferences.firstDay}
-            headerToolbar={false}
-            height="auto"
-            initialDate={selected}
-            initialView={initialMode}
-            nowIndicator={preferences.nowIndicator}
-            noEventsText="No tasks in this period."
-            plugins={[
-              dayGridPlugin,
-              timeGridPlugin,
-              listPlugin,
-              interactionPlugin,
-            ]}
-            ref={calendarRef}
-            selectable
-            select={(info) => createFromSelection(info)}
-            selectMirror
-            slotDuration={preferences.slotDuration}
-            slotMaxTime={preferences.slotMaxTime}
-            slotMinTime={preferences.slotMinTime}
-            slotLabelFormat={calendarEventTimeFormat(preferences.hourFormat)}
-            weekends={preferences.weekends}
-            views={{
-              timeGridThreeDay: {
-                type: "timeGrid",
-                duration: {
-                  days: numberOption(
-                    execution.view.presentation?.options.customDayCount,
-                    3,
-                  ),
+        {/* The layout switcher belongs to the calendar it changes, so it sits
+            on the date row above the grid or agenda on every screen. */}
+        <div className="full-calendar-main">
+          <div className="full-calendar-commandbar">
+            <div className="full-calendar-navigation">
+              <button
+                aria-label="Previous period"
+                type="button"
+                onClick={() => api()?.prev()}
+              >
+                <ChevronLeft aria-hidden="true" size={19} />
+              </button>
+              <button
+                className="full-calendar-create"
+                type="button"
+                onClick={() => onCreate(selected, selectedCreateValue)}
+              >
+                <Plus aria-hidden="true" size={16} />
+                Add task
+              </button>
+              <button type="button" onClick={() => api()?.today()}>
+                Today
+              </button>
+              <button
+                aria-label="Next period"
+                type="button"
+                onClick={() => api()?.next()}
+              >
+                <ChevronRight aria-hidden="true" size={19} />
+              </button>
+            </div>
+            <h2 aria-live="polite">{title}</h2>
+            <div className="full-calendar-modes" aria-label="Calendar layout">
+              {calendarModes.map(({ value, label, compact }) => (
+                <button
+                  aria-pressed={mode === value}
+                  className={compact ? undefined : "wide-mode"}
+                  key={value}
+                  type="button"
+                  onClick={() => changeMode(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {mutationError ? (
+            <p className="inline-error" role="alert">
+              The calendar change could not be saved. {mutationError}
+            </p>
+          ) : null}
+          <div className="full-calendar-surface">
+            <FullCalendar
+              allDaySlot={preferences.allDaySlot}
+              allDayText="All day"
+              listDayFormat={{ weekday: "long", month: "long", day: "numeric" }}
+              listDaySideFormat={false}
+              // Phone months draw every task as a dot and list the selected
+              // day below, so there is no More popover to open.
+              dayMaxEvents={phoneMonth("dayGridMonth") ? false : 3}
+              eventMinHeight={28}
+              moreLinkDidMount={({ el }) => {
+                el.setAttribute("role", "button");
+                el.addEventListener("keydown", activateMoreOnSpace);
+              }}
+              moreLinkWillUnmount={({ el }) =>
+                el.removeEventListener("keydown", activateMoreOnSpace)
+              }
+              dayCellClassNames={(info) =>
+                todayString(info.date) === selected ? ["is-selected-day"] : []
+              }
+              editable
+              eventClick={(info) => openEvent(info, onOpen)}
+              eventDidMount={({ el, view }) => {
+                if (!phoneMonth(view.type)) return;
+                // Phone month dots are indicators; the day list holds the tasks.
+                el.setAttribute("tabindex", "-1");
+                el.setAttribute("aria-hidden", "true");
+              }}
+              eventContent={(info) =>
+                calendarEventContent(
+                  info,
+                  configuration,
+                  onOpen,
+                  (metadata, x, y) =>
+                    setContextAction({
+                      id: Date.now(),
+                      metadata,
+                      x,
+                      y,
+                    }),
+                )
+              }
+              eventDrop={(info) => void moveEvent(info)}
+              eventResizableFromStart
+              eventResize={(info) => void resizeEvent(info)}
+              events={events}
+              eventTimeFormat={calendarEventTimeFormat(preferences.hourFormat)}
+              firstDay={preferences.firstDay}
+              headerToolbar={false}
+              height="auto"
+              initialDate={selected}
+              initialView={initialMode}
+              nowIndicator={preferences.nowIndicator}
+              noEventsText="No tasks in this period."
+              plugins={[
+                dayGridPlugin,
+                timeGridPlugin,
+                listPlugin,
+                interactionPlugin,
+              ]}
+              ref={calendarRef}
+              selectable
+              select={(info) => createFromSelection(info)}
+              selectMirror
+              slotDuration={preferences.slotDuration}
+              slotMaxTime={preferences.slotMaxTime}
+              slotMinTime={preferences.slotMinTime}
+              slotLabelFormat={calendarEventTimeFormat(preferences.hourFormat)}
+              weekends={preferences.weekends}
+              views={{
+                timeGridThreeDay: {
+                  type: "timeGrid",
+                  duration: {
+                    days: numberOption(
+                      execution.view.presentation?.options.customDayCount,
+                      3,
+                    ),
+                  },
                 },
-              },
-              listWeek: {
-                type: "list",
-                duration: {
-                  days: numberOption(
-                    execution.view.presentation?.options.listDayCount,
-                    7,
-                  ),
+                listWeek: {
+                  type: "list",
+                  // All-day tasks lead each date without a per-row label; only
+                  // timed tasks carry a time.
+                  allDayText: "",
+                  duration: {
+                    days: numberOption(
+                      execution.view.presentation?.options.listDayCount,
+                      7,
+                    ),
+                  },
                 },
-              },
-            }}
-            dateClick={(info: DateClickArg) =>
-              onSelect(
-                info.dateStr.slice(0, 10),
-                calendarStorageValue(info.date, info.allDay),
-              )
-            }
-            datesSet={(info: DatesSetArg) => {
-              setTitle(info.view.title);
-              setMode(calendarMode(info.view.type));
-              setRange({
-                start: new Date(info.start.getTime()),
-                end: new Date(info.end.getTime() - 1),
-              });
-            }}
-          />
+              }}
+              dateClick={(info: DateClickArg) =>
+                onSelect(
+                  info.dateStr.slice(0, 10),
+                  calendarStorageValue(info.date, info.allDay),
+                )
+              }
+              datesSet={(info: DatesSetArg) => {
+                setTitle(info.view.title);
+                setMode(calendarMode(info.view.type));
+                setRange({
+                  start: new Date(info.start.getTime()),
+                  end: new Date(info.end.getTime() - 1),
+                });
+              }}
+            />
+          </div>
+          {legend.length && !listMode ? (
+            <ul className="full-calendar-legend" aria-label="Calendar markers">
+              {legend.map((marker) => (
+                <li
+                  key={marker.value}
+                  style={
+                    { "--event-tone": marker.color } as React.CSSProperties
+                  }
+                >
+                  <i aria-hidden="true" />
+                  {marker.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         {!listMode ? (
           <aside className="full-calendar-inspector" aria-label="Selected day">
@@ -410,14 +520,7 @@ export function FullCalendarView({
                 {selectedEntries.map((entry) => (
                   <TaskRow
                     key={calendarEntryKey(entry)}
-                    details={viewPropertyDetails(
-                      entry.row,
-                      execution.view.properties,
-                      {
-                        identityProperty: titleProperty,
-                        occurrence: entry.occurrence,
-                      },
-                    )}
+                    details={inspectorDetails(entry)}
                     occurrence={entry.occurrence}
                     task={entry.task}
                     onOpen={onOpen}
@@ -462,7 +565,7 @@ function fullCalendarEvents(
   entries: Map<string, CalendarEntry[]>,
   execution: TaskViewExecution,
   titleProperty: string,
-  configuration: Parameters<typeof relativeDateDetail>[2],
+  configuration: TaskCollectionConfiguration,
 ): EventInput[] {
   const result: EventInput[] = [];
   for (const [date, values] of entries) {
@@ -496,7 +599,6 @@ function fullCalendarEvents(
               entry,
               timeEntryIndex: entry.timeEntryIndex,
             } satisfies CalendarEventMetadata,
-            tone: "var(--success)",
             details: [],
             kind: "Tracked time",
           },
@@ -520,11 +622,14 @@ function fullCalendarEvents(
       const editable = entry.occurrence
         ? !entry.occurrence.completed && !entry.occurrence.skipped
         : !entry.task.recurrence;
-      const details = (
+      const marker = calendarPriorityMarker(displayed, configuration);
+      const details = withPriorityDetail(
         viewPropertyDetails(entry.row, execution.view.properties, {
           identityProperty: titleProperty,
           occurrence: entry.occurrence,
-        }) ?? []
+        }) ?? [],
+        marker,
+        configuration,
       ).map((detail) => relativeDateDetail(detail, displayed, configuration));
       result.push({
         id: [calendarEntryKey(entry), dateField, date].join(":"),
@@ -550,7 +655,7 @@ function fullCalendarEvents(
             dateField,
             occurrence: entry.occurrence,
           } satisfies CalendarEventMetadata,
-          tone: eventTone(displayed),
+          marker,
           details,
           // A task can appear on its scheduled and its due day; name the
           // reason on the due-day entry so the repeat is not a mystery.
@@ -564,6 +669,7 @@ function fullCalendarEvents(
 
 function calendarEventContent(
   info: EventContentArg,
+  configuration: TaskCollectionConfiguration,
   onOpen: (task: TaskSummary, occurrenceDate?: string) => void,
   onContextAction: (
     metadata: CalendarEventMetadata,
@@ -571,13 +677,17 @@ function calendarEventContent(
     y: number,
   ) => void,
 ) {
-  const tone = String(info.event.extendedProps.tone ?? "var(--accent)");
+  const marker = eventMarker(info.event.extendedProps.marker);
+  const toneStyle = marker
+    ? ({ "--event-tone": marker.color } as React.CSSProperties)
+    : undefined;
   if (phoneMonth(info.view.type))
+    // Every task is a dot here; only an elevated priority colours it.
     return (
       <span
         aria-hidden="true"
-        className="full-calendar-event-content"
-        style={{ "--event-tone": tone } as React.CSSProperties}
+        className={`full-calendar-event-content${marker ? " has-marker" : ""}`}
+        style={toneStyle}
       >
         <span className="full-calendar-event-primary">
           <i />
@@ -586,17 +696,23 @@ function calendarEventContent(
     );
   const details = eventDetails(info.event.extendedProps.details);
   const metadata = eventMetadata(info.event.extendedProps);
-  const kind =
+  const listView = info.view.type.startsWith("list");
+  const kind = calendarEntryKind(
     typeof info.event.extendedProps.kind === "string"
       ? info.event.extendedProps.kind
-      : undefined;
+      : undefined,
+    details,
+    listView,
+    configuration,
+  );
   return (
     <span
-      aria-label={`${kind ? `${kind}: ` : ""}${calendarEventLabel(info)}`}
-      className={`full-calendar-event-content${info.event.extendedProps.metadata?.occurrence ? " is-recurring" : ""}`}
+      aria-label={`${kind ? `${kind}: ` : ""}${calendarEventLabel(info)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`}
+      className={`full-calendar-event-content${info.event.extendedProps.metadata?.occurrence ? " is-recurring" : ""}${marker ? " has-marker" : ""}`}
       role="button"
-      style={{ "--event-tone": tone } as React.CSSProperties}
+      style={toneStyle}
       tabIndex={0}
+      title={marker?.label}
       onContextMenu={(event) => {
         if (!metadata) return;
         event.preventDefault();
@@ -621,7 +737,8 @@ function calendarEventContent(
       }}
     >
       <span className="full-calendar-event-primary">
-        <i aria-hidden="true" />
+        {/* Agenda rows name the priority in their details instead. */}
+        {marker && !listView ? <i aria-hidden="true" /> : null}
         {info.timeText ? <time>{info.timeText}</time> : null}
         {kind ? <em className="full-calendar-event-kind">{kind}</em> : null}
         <span>{info.event.title}</span>
@@ -701,6 +818,15 @@ function openEvent(
   if (metadata) onOpen(metadata.entry.task, metadata.occurrence?.date);
 }
 
+function eventMarker(value: unknown): CalendarPriorityMarker | undefined {
+  return value &&
+    typeof value === "object" &&
+    typeof (value as CalendarPriorityMarker).color === "string" &&
+    typeof (value as CalendarPriorityMarker).label === "string"
+    ? (value as CalendarPriorityMarker)
+    : undefined;
+}
+
 function eventMetadata(
   extendedProps: Record<string, unknown>,
 ): CalendarEventMetadata | undefined {
@@ -759,13 +885,6 @@ function agendaLabel(value: string): string {
         month: "long",
       }).format(date)
     : value;
-}
-
-function eventTone(task: TaskSummary): string {
-  if (task.completed) return "var(--ink-muted)";
-  if (task.priority === "high") return "var(--danger)";
-  if (task.priority === "low") return "var(--success)";
-  return "var(--accent)";
 }
 
 function numberOption(value: unknown, fallback: number): number {

@@ -1,5 +1,12 @@
-import { ArrowLeft, RefreshCw, Search, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  FileText,
+  History,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { EmptyState } from "../components/empty-state";
 import { PersonSetupLink } from "../components/person-setup-link";
@@ -10,9 +17,17 @@ import { BoundedList } from "../components/bounded-list";
 import { TaskRow } from "../components/task-row";
 import { useRepository, useTaskSearch } from "./repository-context";
 import { searchMatchContext } from "./search-match-context";
+import {
+  clearHistory,
+  forgetHistory,
+  historyScope,
+  readHistory,
+  rememberHistory,
+  type HistoryKind,
+} from "./search-history";
 import { usePeople } from "./use-people";
 
-import type { TaskSummary } from "../domain/task";
+import type { Task, TaskSummary } from "../domain/task";
 
 export function SearchScreen({
   onBack,
@@ -56,6 +71,28 @@ export function SearchScreen({
     setQuery(value);
     setLimit(300);
   };
+  const history = useSearchHistory();
+  const inputRef = useRef<HTMLInputElement>(null);
+  // A query that settled with results is worth offering again, including when
+  // the person simply leaves Search after reading them.
+  const settledQuery =
+    !waiting && !loading && tasks.length ? deferred.trim() : "";
+  const lastSettled = useRef("");
+  useEffect(() => {
+    if (!query.trim()) lastSettled.current = "";
+    else if (settledQuery) lastSettled.current = settledQuery;
+  }, [query, settledQuery]);
+  const rememberSearch = history.rememberSearch;
+  useEffect(
+    () => () => {
+      if (lastSettled.current) rememberSearch(lastSettled.current);
+    },
+    [rememberSearch],
+  );
+  const openResult = (task: TaskSummary) => {
+    if (deferred.trim()) rememberSearch(deferred);
+    onOpen(task);
+  };
   const renderTask = (task: TaskSummary) => (
     <TaskRow
       key={task.id}
@@ -65,7 +102,7 @@ export function SearchScreen({
         deferred,
         bodyMatches.get(task.id) ?? [],
       )}
-      onOpen={onOpen}
+      onOpen={openResult}
       onToggle={(item) =>
         setTaskCompletion({ id: item.id, completed: !taskCompletion(item) })
       }
@@ -98,6 +135,7 @@ export function SearchScreen({
         </label>
         <input
           id="task-search"
+          ref={inputRef}
           autoFocus
           autoCapitalize="none"
           autoCorrect="off"
@@ -105,6 +143,10 @@ export function SearchScreen({
           type="search"
           value={query}
           onChange={(event) => chooseQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.nativeEvent.isComposing)
+              rememberSearch(query);
+          }}
         />
         {query ? (
           <button
@@ -176,6 +218,16 @@ export function SearchScreen({
         <LoadingRows count={4} />
       ) : error && !tasks.length ? null : !searching ? (
         <>
+          <SearchHistory
+            searches={history.searches}
+            tasks={history.tasks}
+            onChoose={chooseQuery}
+            onClear={(kind) => {
+              history.clear(kind);
+              inputRef.current?.focus();
+            }}
+            onOpen={onOpen}
+          />
           <BrowseFields tasks={tasks} onChoose={chooseQuery} />
           {hasMore ? (
             <p role="status">
@@ -227,6 +279,147 @@ export function SearchScreen({
         />
       )}
     </section>
+  );
+}
+
+function useSearchHistory() {
+  const { pendingDeletion, repository, status } = useRepository();
+  const [scope, setScope] = useState<string>();
+  const [searches, setSearches] = useState<string[]>([]);
+  const [taskIds, setTaskIds] = useState<string[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const scopeRef = useRef<string>(undefined);
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    let active = true;
+    void repository
+      .collectionInfo()
+      .then((info) => {
+        if (!active) return;
+        const next = historyScope(info);
+        scopeRef.current = next;
+        setScope(next);
+        setSearches(readHistory("searches", next));
+        setTaskIds(readHistory("tasks", next));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [repository, status]);
+
+  // Opened tasks are stored by ID and read fresh, so renamed tasks show their
+  // current title and deleted ones drop out of the history.
+  useEffect(() => {
+    if (!scope || !taskIds.length) return;
+    let active = true;
+    void Promise.all(
+      taskIds.map((id) =>
+        repository.get(id).then(
+          (task) => ({ id, task }),
+          () => ({ id, task: undefined }),
+        ),
+      ),
+    ).then((results) => {
+      if (!active) return;
+      const missing = results
+        .filter((result) => result.task === null)
+        .map((result) => result.id);
+      if (missing.length) forgetHistory("tasks", scope, missing);
+      setTasks(results.flatMap((result) => (result.task ? [result.task] : [])));
+    });
+    return () => {
+      active = false;
+    };
+  }, [repository, scope, taskIds]);
+
+  const rememberSearch = useCallback((value: string) => {
+    if (scopeRef.current)
+      setSearches(rememberHistory("searches", scopeRef.current, value));
+  }, []);
+  const clear = useCallback((kind: HistoryKind) => {
+    if (!scopeRef.current) return;
+    clearHistory(kind, scopeRef.current);
+    if (kind === "searches") setSearches([]);
+    else setTaskIds([]);
+  }, []);
+
+  return {
+    searches,
+    tasks: tasks.filter(
+      (task) => taskIds.includes(task.id) && task.id !== pendingDeletion?.id,
+    ),
+    rememberSearch,
+    clear,
+  };
+}
+
+function SearchHistory({
+  searches,
+  tasks,
+  onChoose,
+  onClear,
+  onOpen,
+}: {
+  searches: string[];
+  tasks: Task[];
+  onChoose(value: string): void;
+  onClear(kind: HistoryKind): void;
+  onOpen(task: TaskSummary): void;
+}) {
+  if (!searches.length && !tasks.length) return null;
+  return (
+    <div className="search-history">
+      {searches.length ? (
+        <section aria-labelledby="recent-searches-title">
+          <header>
+            <h2 id="recent-searches-title">Recent searches</h2>
+            <button
+              aria-label="Clear recent searches"
+              type="button"
+              onClick={() => onClear("searches")}
+            >
+              Clear
+            </button>
+          </header>
+          <ul>
+            {searches.map((value) => (
+              <li key={value}>
+                <button type="button" onClick={() => onChoose(value)}>
+                  <History aria-hidden="true" size={16} strokeWidth={1.7} />
+                  <span>{value}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {tasks.length ? (
+        <section aria-labelledby="recent-tasks-title">
+          <header>
+            <h2 id="recent-tasks-title">Recently opened</h2>
+            <button
+              aria-label="Clear recently opened tasks"
+              type="button"
+              onClick={() => onClear("tasks")}
+            >
+              Clear
+            </button>
+          </header>
+          <ul>
+            {tasks.map((task) => (
+              <li key={task.id}>
+                <button type="button" onClick={() => onOpen(task)}>
+                  <FileText aria-hidden="true" size={16} strokeWidth={1.7} />
+                  <span>{task.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
   );
 }
 
