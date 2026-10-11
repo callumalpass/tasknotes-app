@@ -227,7 +227,7 @@
   margin-top: 12px;
 }
 
-.collection-picker-row:disabled,
+.collection-picker-row:disabled:not(.unavailable),
 .collection-picker-action:disabled {
   cursor: default;
   opacity: 0.6;
@@ -270,11 +270,11 @@
   background: color-mix(in srgb, var(--accent-soft), transparent 58%);
 }
 
-.collection-picker-row:hover {
+.collection-picker-row:hover:not(:disabled) {
   background: var(--paper-soft);
 }
 
-.collection-picker-row.current:hover {
+.collection-picker-row.current:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent-soft), transparent 42%);
 }
 
@@ -294,6 +294,10 @@
 
 .collection-picker-row strong {
   font-size: var(--type-body);
+  overflow-wrap: anywhere;
+}
+
+.collection-picker-row small {
   overflow-wrap: anywhere;
 }
 

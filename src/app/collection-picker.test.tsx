@@ -5,6 +5,8 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { COLLECTION_UNAVAILABLE_REASONS } from "@mdbase-dev/sdk";
+import { describeError } from "@mdbase-dev/sdk/describe";
 import { useState, type ComponentProps } from "react";
 import { CollectionPicker, type CollectionChoice } from "./collection-picker";
 
@@ -179,6 +181,97 @@ test("in-flight opening disables duplicate actions and does not imply Cancel can
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   for (const call of Object.values(calls)) expect(call).not.toHaveBeenCalled();
+});
+
+test.each(COLLECTION_UNAVAILABLE_REASONS)(
+  "unavailable %s stays named with SDK copy and never selects or dismisses",
+  (reason) => {
+    const unavailable: CollectionChoice = {
+      collectionId: "private-unavailable",
+      displayName: "Private writing",
+      availability: { state: "unavailable", reason },
+    };
+    const copy = describeError(unavailable)!;
+    const { calls } = mount({ connections: [unavailable, ...choices] });
+    const row = screen.getByRole("button", { name: /Private writing/ });
+    expect(row).toBeDisabled();
+    expect(row).toHaveTextContent(copy.title);
+    expect(row).toHaveTextContent(copy.message);
+    if (copy.actionLabel) expect(row).toHaveTextContent(copy.actionLabel);
+    expect(row).toHaveTextContent("Not available");
+    expect(row).not.toHaveTextContent(reason);
+    fireEvent.click(row);
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(calls.select).not.toHaveBeenCalled();
+    expect(calls.close).not.toHaveBeenCalled();
+    expect(calls.authorize).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", {
+        name: /^Work\s*Connected computer\s*Current$/,
+      }),
+    ).toHaveFocus();
+  },
+);
+
+test("all unavailable choices keep Cancel reachable with no selection callback", async () => {
+  const connections: CollectionChoice[] = COLLECTION_UNAVAILABLE_REASONS.map(
+    (reason) => ({
+      collectionId: reason,
+      displayName: `Private ${reason}`,
+      availability: { state: "unavailable", reason },
+    }),
+  );
+  const { calls, trigger } = mount({
+    connections,
+    selectedCollectionId: null,
+    onSelect: undefined,
+  });
+  expect(
+    screen.getByRole("button", { name: "Close collection picker" }),
+  ).toHaveFocus();
+  const rows = screen.getAllByRole("button", { name: /^Private / });
+  expect(rows).toHaveLength(COLLECTION_UNAVAILABLE_REASONS.length);
+  for (const row of rows) {
+    expect(row).toBeDisabled();
+    expect(() => fireEvent.click(row)).not.toThrow();
+  }
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(calls.close).toHaveBeenCalledTimes(1);
+  expect(calls.select).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(trigger).toHaveFocus());
+});
+
+test("opening availability is not ready and cannot invoke selection", () => {
+  const opening: CollectionChoice = {
+    collectionId: "opening",
+    displayName: "Opening private",
+    availability: { state: "opening" },
+  };
+  const { calls } = mount({ connections: [opening, ...choices] });
+  const row = screen.getByRole("button", { name: /Opening private/ });
+  expect(row).toBeDisabled();
+  expect(row).toHaveTextContent("Opening…");
+  fireEvent.click(row);
+  expect(calls.select).not.toHaveBeenCalled();
+});
+
+test("unavailable current row cannot close the picker and initial focus skips it", () => {
+  const current: CollectionChoice = {
+    ...choices[1]!,
+    availability: { state: "unavailable", reason: "device_offline" },
+  };
+  const { calls } = mount({ connections: [current, choices[0]!] });
+  const row = screen.getByRole("button", { name: /Work/ });
+  expect(row).toBeDisabled();
+  expect(row).toHaveAttribute("aria-current", "true");
+  expect(
+    screen.getByRole("button", {
+      name: /^Personal\s*Hosted by mdbase\s*Open$/,
+    }),
+  ).toHaveFocus();
+  fireEvent.click(row);
+  expect(calls.close).not.toHaveBeenCalled();
 });
 
 test("empty choices keep dismissal reachable and do not invent a current collection", () => {

@@ -1,3 +1,5 @@
+import type { CollectionAvailability } from "@mdbase-dev/sdk";
+import { describeError } from "@mdbase-dev/sdk/describe";
 import {
   ArrowRight,
   Check,
@@ -17,6 +19,7 @@ export interface CollectionChoice {
   collectionId: string;
   displayName: string;
   authority?: { kind: "hosted" | "connector" };
+  availability?: CollectionAvailability;
 }
 export function CollectionPicker({
   connections,
@@ -38,7 +41,7 @@ export function CollectionPicker({
   onRetry?(): void;
   onAuthorize(): void;
   onClose(): void;
-  onSelect(collectionId: string): void;
+  onSelect?(collectionId: string): void;
 }) {
   const [search, setSearch] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -55,6 +58,12 @@ export function CollectionPicker({
   const visible = connections.filter((connection) =>
     connection.displayName.toLocaleLowerCase().includes(query),
   );
+  const firstFocusableId = visible.find(
+    (connection) =>
+      connection.availability?.state !== "unavailable" &&
+      connection.availability?.state !== "opening" &&
+      (connection.collectionId === selectedCollectionId || onSelect),
+  )?.collectionId;
   const openingName = connections.find(
     (connection) => connection.collectionId === openingCollectionId,
   )?.displayName;
@@ -138,23 +147,37 @@ export function CollectionPicker({
             </div>
           ) : null}
           <div className="collection-picker-group" aria-busy={working}>
-            <h3>Available collections</h3>
+            <h3>Collections</h3>
             <div>
-              {visible.map((connection, index) => {
+              {visible.map((connection) => {
                 const active = connection.collectionId === selectedCollectionId;
                 const authority = connection.authority?.kind;
+                const unavailable =
+                  connection.availability?.state === "unavailable";
+                const opening = connection.availability?.state === "opening";
+                const description = unavailable
+                  ? describeError(connection)
+                  : null;
+                const disabled =
+                  working || unavailable || opening || (!active && !onSelect);
                 return (
                   <button
                     aria-current={active ? "true" : undefined}
-                    className={`collection-picker-row${active ? " current" : ""}`}
-                    disabled={working}
+                    className={`collection-picker-row${active ? " current" : ""}${unavailable ? " unavailable" : ""}`}
+                    disabled={disabled}
                     key={connection.collectionId}
-                    onClick={() =>
-                      active ? onClose() : onSelect(connection.collectionId)
-                    }
+                    onClick={() => {
+                      if (disabled) return;
+                      if (active) onClose();
+                      else onSelect?.(connection.collectionId);
+                    }}
                     ref={(element) => {
-                      if (index === 0) firstCollectionRef.current = element;
-                      if (active) selectedCollectionRef.current = element;
+                      if (connection.collectionId === firstFocusableId)
+                        firstCollectionRef.current = disabled ? null : element;
+                      if (active)
+                        selectedCollectionRef.current = disabled
+                          ? null
+                          : element;
                     }}
                     type="button"
                   >
@@ -176,14 +199,26 @@ export function CollectionPicker({
                             : "Connected computer"}
                         </small>
                       ) : null}
+                      {description ? (
+                        <>
+                          <small>{description.title}</small>
+                          <small>{description.message}</small>
+                          {description.actionLabel ? (
+                            <small>{description.actionLabel}</small>
+                          ) : null}
+                        </>
+                      ) : null}
                     </span>
                     <span className="collection-picker-row-state">
                       {active ? <Check aria-hidden="true" size={16} /> : null}
-                      {active
-                        ? "Current"
-                        : openingCollectionId === connection.collectionId
+                      {unavailable
+                        ? "Not available"
+                        : opening ||
+                            openingCollectionId === connection.collectionId
                           ? "Opening…"
-                          : "Open"}
+                          : active
+                            ? "Current"
+                            : "Open"}
                     </span>
                   </button>
                 );
