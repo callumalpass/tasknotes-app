@@ -18,6 +18,8 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "../components/use-mutation-state";
 import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
+import { RecordWriteNotice } from "../components/record-write-notice";
+import { useRecordWriteState } from "../components/use-record-write-state";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -217,6 +219,10 @@ function TaskEditor({
   );
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  const writeState = useRecordWriteState(repository, {
+    kind: "task",
+    id: task.id,
+  });
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -505,8 +511,16 @@ function TaskEditor({
               ? "Saving"
               : saveState === "error"
                 ? "Save failed · Retry"
-                : "Saved"}
+                : writeState === "pending"
+                  ? "Saved locally"
+                  : writeState
+                    ? "Review save"
+                    : "Saved"}
         </button>
+        <RecordWriteNotice
+          repository={repository}
+          target={{ kind: "task", id: task.id }}
+        />
         <TaskActions
           beforeAction={flushBeforeAttachmentMutation}
           context="detail"

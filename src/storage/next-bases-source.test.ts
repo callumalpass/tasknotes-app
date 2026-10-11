@@ -49,6 +49,25 @@ async function fixture(options: Parameters<typeof nextTaskFixture>[0] = {}) {
 }
 
 describe("native view source boundaries (protocol stand-ins)", () => {
+  it("older source edit ACKs read current absence after a newer pending delete without reissuing either write", async () => {
+    const f = await fixture({ confirmDelayMs: null });
+    const update = vi.spyOn(f.client, "replaceDocument");
+    const remove = vi.spyOn(f.client, "delete");
+    await f.repository.updateViewSource({
+      path: f.record.path,
+      document: changed,
+    });
+    await f.repository.deleteViewSource(f.record.path);
+    expect(await f.client.find(f.record.id)).toBeNull();
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "source", path: f.record.path }),
+      ).toBeUndefined(),
+    );
+    expect(update).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledOnce();
+  });
   it("does not seed defaults during navigation, even with an owner grant", async () => {
     const f = await fixture();
     const create = vi.spyOn(f.client, "create");
@@ -180,8 +199,8 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       expect(create).not.toHaveBeenCalled();
     },
   );
-  it.each(["id", "path", "document", "hold", "unresolved", "pending"] as const)(
-    "retains the original creation admission on mismatching or unsafe confirmed READ %s",
+  it.each(["id", "path", "document", "hold", "unresolved"] as const)(
+    "retains the original creation admission on mismatching or unsafe local READ %s",
     async (field) => {
       const f = await fixture();
       const create = vi.spyOn(f.client.views, "createSource");
@@ -221,6 +240,29 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       expect(f.generic).not.toHaveBeenCalled();
     },
   );
+  it("returns genuine pending source bytes without reporting authority confirmation", async () => {
+    const f = await fixture();
+    const get = f.client.get.bind(f.client);
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      return {
+        ...record,
+        state: { ...record.state, state: "pending" as const },
+      };
+    });
+    const create = vi.spyOn(f.client.views, "createSource");
+    const source = await f.repository.createViewSource({
+      path: "new.base",
+      document,
+    });
+    expect(source.document).toBe(document);
+    expect(f.repository.writeState({ kind: "source", path: source.path })).toBe(
+      "pending",
+    );
+    expect(create).toHaveBeenCalledOnce();
+    expect(create.mock.calls[0]![1]?.wait).toBe("pending");
+    expect(f.generic).not.toHaveBeenCalled();
+  });
   it.each(["record", "sourceRevision", "ordinal", "path"] as const)(
     "rejects a mismatching native READ %s before editing",
     async (field) => {

@@ -1,5 +1,6 @@
 # Unreleased
 
+- Add privacy-bounded diagnostics for collection-opening failures, preserving the original error without logging account, collection or credential details.
 - Keep the sign-in window open through account approval and collection selection, and wait for the original sign-in reply before opening the collection. Known failures now show specific messages with privacy-bounded diagnostics.
 - Add bounded startup timing diagnostics for collection opening, bootstrap, setup assessment, the first view query and its first render. Diagnostics contain duration values only, not collection or account details.
 - Restore the familiar TaskNotes welcome screen with one Sign in action, automatic approval detection and the signed-in account email when available. Sign-in opens the first-party mdbase popup; collection choices remain in mdbase. The Sign in button uses an arrow rather than an add icon.

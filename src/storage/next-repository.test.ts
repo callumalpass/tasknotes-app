@@ -39,6 +39,24 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("older creation ACKs read current metadata after a newer pending deletion, never recreate the task", async () => {
+    const f = await fixture({ confirmDelayMs: null });
+    const create = vi.spyOn(f.client, "create");
+    const remove = vi.spyOn(f.client, "delete");
+    const task = await f.repository.create({ title: "Locally deleted" });
+    const nativeId = create.mock.calls[0]![0].id!;
+    await f.repository.delete(task.id);
+    expect(await f.client.find(nativeId)).toBeNull();
+    f.replica.confirmAll();
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "task", id: task.id }),
+      ).toBeUndefined(),
+    );
+    expect(await f.repository.get(task.id)).toBeNull();
+    expect(create).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledOnce();
+  });
   it("keeps portable IDs separate and updates the observed native record", async () => {
     const f = await fixture();
     const s = await seed(f);
@@ -157,8 +175,8 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     ).toBe(true);
   });
 
-  it("a rejected transition leaves both occurrence and parent unchanged", async () => {
-    const f = await fixture();
+  it("a locally captured transition reports rejection and rereads both rolled-back records", async () => {
+    const f = await fixture({ confirmDelayMs: null });
     const parent = await f.repository.create({
       title: "Series",
       scheduled: "2026-08-05",
@@ -168,18 +186,34 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       parent.id,
       "2026-08-05",
     );
-    f.replica.setOnline(false);
-    const transition = f.repository.toggle(occurrence.task.id, undefined, true);
+    f.replica.confirmAll();
     await vi.waitFor(async () =>
-      expect((await f.client.pendingWrites()).length).toBe(1),
+      expect(await f.client.pendingWrites()).toEqual([]),
     );
+    f.replica.setOnline(false);
+    const submit = vi.spyOn(f.client, "submit");
+    const local = await f.repository.toggle(
+      occurrence.task.id,
+      undefined,
+      true,
+    );
+    expect(local.completed).toBe(true);
     const pending = (await f.client.pendingWrites())[0]!;
+    expect((await f.client.pendingWrites()).length).toBe(1);
+    expect(
+      f.repository.writeState({ kind: "task", id: occurrence.task.id }),
+    ).toBe("pending");
     f.replica.reject(pending.receipt.mutation, {
       code: "conflict",
       recovery: "refresh",
       message: "Parent revision changed",
     });
-    await expect(transition).rejects.toMatchObject({ code: "conflict" });
+    await vi.waitFor(() =>
+      expect(
+        f.repository.writeState({ kind: "task", id: occurrence.task.id }),
+      ).toBe("failed"),
+    );
+    expect(submit).toHaveBeenCalledOnce();
     expect((await f.repository.get(occurrence.task.id))!.completed).toBe(false);
     expect(
       (await f.repository.get(parent.id))!.completeInstances,
@@ -311,7 +345,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(get.mock.calls.at(-1)![1]).toMatchObject({ body: true });
   });
 
-  it("deduplicates one capture intent only after authoritative confirmation", async () => {
+  it("returns genuine local capture before ACK and deduplicates the original intent without another submit", async () => {
     const f = await fixture({ confirmDelayMs: null });
     const intent: TaskCreateIntent = { id: crypto.randomUUID() };
     const create = vi.spyOn(f.client, "create");
@@ -326,18 +360,35 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     await vi.waitFor(async () =>
       expect((await f.client.pendingWrites()).length).toBe(1),
     );
-    expect(done).toBe(false);
-    f.replica.confirmAll();
     const saved = await result;
+    expect(done).toBe(true);
     expect(saved.id).toBe(intent.id);
+    expect((await f.client.get(intent.id, { body: true })).state.state).toBe(
+      "pending",
+    );
+    const originalRequest = intent.authorityRequestId;
+    expect(originalRequest).toBe(create.mock.calls[0]![1]!.mutationId);
     expect(
       await f.repository.create({ title: "Not another capture" }, intent),
-    ).toBe(saved);
+    ).toMatchObject({
+      id: saved.id,
+      title: "One capture",
+    });
+    expect(intent.authorityRequestId).toBe(originalRequest);
+    expect(create).toHaveBeenCalledOnce();
+    f.replica.confirmAll();
+    await vi.waitFor(() => expect(intent.authorityRequestId).toBeUndefined());
+    expect(
+      await f.repository.create({ title: "Still not another capture" }, intent),
+    ).toMatchObject({
+      id: saved.id,
+      title: "One capture",
+    });
     expect(create).toHaveBeenCalledOnce();
   });
 
-  it("a failed confirmed create read keeps exact capture recovery instead of inviting a replacement create", async () => {
-    const f = await fixture();
+  it("a failed native create read keeps exact capture recovery instead of inviting a replacement create", async () => {
+    const f = await fixture({ confirmDelayMs: null });
     await f.repository.initialize({ deferTaskIndex: true });
     const create = vi.spyOn(f.client, "create");
     const intent = {
@@ -381,8 +432,14 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
         .filter(([target]) => target === intent.id)
         .map(([target]) => target),
     ).toEqual([intent.id, intent.id]);
-    expect(lookup).not.toHaveBeenCalled();
-    expect(intent.authorityRequestId).toBeUndefined();
+    expect(lookup).toHaveBeenCalledWith(requestId, expect.any(AbortSignal));
+    expect(intent.authorityRequestId).toBe(requestId);
+    expect((await f.client.get(intent.id, { body: true })).state.state).toBe(
+      "pending",
+    );
+    f.replica.confirmAll();
+    await vi.waitFor(() => expect(intent.authorityRequestId).toBeUndefined());
+    expect(create).toHaveBeenCalledOnce();
   });
 
   it("recovers a lost create ACK with the original mutation and record ID", async () => {
@@ -408,7 +465,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(spy).toHaveBeenCalledOnce();
   });
 
-  it("a blocked second capture never adopts the earlier capture's request", async () => {
+  it("an independent second local capture never adopts or reissues an earlier uncertain capture", async () => {
     const f = await fixture();
     const first: TaskCreateIntent = { id: crypto.randomUUID() };
     const second: TaskCreateIntent = { id: crypto.randomUUID() };
@@ -423,44 +480,61 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       f.repository.create({ title: "First" }, first),
     ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
     const originalRequest = first.authorityRequestId;
-    await expect(
-      f.repository.create({ title: "Second" }, second),
-    ).rejects.toMatchObject({
-      code: "conflict",
-      reason: "earlier_mutation_pending",
-    });
-    expect(second.authorityRequestId).toBeUndefined();
-    expect(first.authorityRequestId).toBe(originalRequest);
-    expect(spy).toHaveBeenCalledOnce();
-    await f.repository.create({ title: "First" }, first);
     expect((await f.repository.create({ title: "Second" }, second)).title).toBe(
       "Second",
     );
+    expect(spy.mock.calls[1]![1]!.mutationId).not.toBe(originalRequest);
+    expect(first.authorityRequestId).toBe(originalRequest);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(
+      (await f.repository.create({ title: "Must not replace First" }, first))
+        .title,
+    ).toBe("First");
+    expect(
+      (await f.repository.create({ title: "Must not replace Second" }, second))
+        .title,
+    ).toBe("Second");
     expect(spy).toHaveBeenCalledTimes(2);
   });
 
-  it("a definitive create rejection releases only that intent's failed request", async () => {
+  it("a later create rejection remains visible and the same intent cannot reissue it", async () => {
     const f = await fixture({ confirmDelayMs: null });
     const intent: TaskCreateIntent = { id: crypto.randomUUID() };
     const create = vi.spyOn(f.client, "create");
-    const first = f.repository.create({ title: "Rejected input" }, intent);
-    await vi.waitFor(async () =>
-      expect((await f.client.pendingWrites()).length).toBe(1),
-    );
+    expect(
+      (await f.repository.create({ title: "Rejected input" }, intent)).title,
+    ).toBe("Rejected input");
     const rejectedId = intent.authorityRequestId!;
     f.replica.reject(rejectedId, {
       code: "invalid_request",
       recovery: "fix_request",
       message: "Missing required field",
     });
-    await expect(first).rejects.toMatchObject({ code: "invalid_request" });
-    expect(intent.authorityRequestId).toBeUndefined();
-    const retry = f.repository.create({ title: "Corrected input" }, intent);
-    await vi.waitFor(() => expect(create).toHaveBeenCalledTimes(2));
-    expect(intent.authorityRequestId).not.toBe(rejectedId);
+    await vi.waitFor(() =>
+      expect(f.repository.writeState({ kind: "task", id: intent.id })).toBe(
+        "failed",
+      ),
+    );
+    expect(await f.client.find(intent.id)).toBeNull();
+    await f.repository.reconcileWrites();
+    await expect(
+      f.repository.create({ title: "Must not reissue" }, intent),
+    ).rejects.toMatchObject({ mutationId: rejectedId });
+    expect(intent.authorityRequestId).toBe(rejectedId);
+    expect(create).toHaveBeenCalledOnce();
+    // A distinct, explicit new capture is not recovery of the rejected intent.
+    const corrected: TaskCreateIntent = { id: crypto.randomUUID() };
+    expect(
+      (await f.repository.create({ title: "Corrected input" }, corrected))
+        .title,
+    ).toBe("Corrected input");
+    expect(corrected.authorityRequestId).not.toBe(rejectedId);
     f.replica.confirmAll();
-    expect((await retry).title).toBe("Corrected input");
-    expect(intent.authorityRequestId).toBeUndefined();
+    await vi.waitFor(() =>
+      expect(corrected.authorityRequestId).toBeUndefined(),
+    );
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(intent.authorityRequestId).toBe(rejectedId);
   });
 
   it("serializes overlapping edits without reading both from a stale revision", async () => {
@@ -567,18 +641,45 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     const f = await fixture({ confirmDelayMs: null });
     const create = vi.spyOn(f.client, "create");
     const intent: TaskCreateIntent = { id: crypto.randomUUID() };
+    const get = f.client.get.bind(f.client);
+    let entered!: () => void, release!: () => void;
+    const reading = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let delayed = false;
+    vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
+      const record = await get(...args);
+      if (args[0] === intent.id && !delayed) {
+        delayed = true;
+        entered();
+        await gate; // genuine decoded local result arriving after owner abort
+      }
+      return record;
+    });
     const result = f.repository.create(
       { title: "Backgrounded capture" },
       intent,
     );
-    await vi.waitFor(() => expect(create).toHaveBeenCalledOnce());
+    const refused = expect(result).rejects.toMatchObject({
+      problem: { code: "operation_outcome_unknown" },
+    });
+    await reading;
+    expect(create).toHaveBeenCalledOnce();
     await vi.waitFor(async () =>
       expect((await f.client.pendingWrites()).length).toBe(1),
     );
+    const originalRequest = intent.authorityRequestId;
     f.repository.suspend();
-    await expect(result).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
-    });
+    const lateChange = vi.fn();
+    const stop = f.repository.subscribe(lateChange);
+    release();
+    await refused;
+    expect(lateChange).not.toHaveBeenCalled();
+    stop();
+    expect(intent.authorityRequestId).toBe(originalRequest);
     f.replica.confirmAll();
     f.repository.resume();
     expect(

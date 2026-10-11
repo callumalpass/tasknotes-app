@@ -8,6 +8,7 @@ import { relativeDateDetail } from "../domain/view-values";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
+import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
 import { useSwipeActions } from "./use-swipe-actions";
@@ -31,7 +32,7 @@ export function TaskRow({
   supportingText?: string;
 }) {
   const supportingId = useId();
-  const { configuration, mutations } = useRepository();
+  const { configuration, mutations, repository } = useRepository();
   const command = useMutationState(
     mutations,
     completionKey(task.id, occurrence?.date),
@@ -273,6 +274,10 @@ export function TaskRow({
             ))}
           </span>
         ) : null}
+        <RecordWriteNotice
+          repository={repository}
+          target={{ kind: "task", id: task.id }}
+        />
       </div>
       <TaskActions
         task={task}
