@@ -1,5 +1,7 @@
 # Unreleased
 
+- Offer an explicit reload when an app update activates, without automatically clearing unsaved input. Keep older cached assets available to tabs still running the previous build.
+
 - Restore the supported iOS Capacitor URL scheme and align mobile version metadata above the previous app version. SDK mobile sign-in and device validation remain separate.
 
 - Recognize SDK permission and write failures correctly, including the warning when a change may have been applied but its result could not be confirmed. Uncertain writes are not marked safe to retry.

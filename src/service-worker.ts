@@ -17,11 +17,9 @@ worker.addEventListener("install", (event) => {
   event.waitUntil(installAppShell().then(() => worker.skipWaiting()));
 });
 worker.addEventListener("activate", (event) => {
-  event.waitUntil(
-    Promise.all([deleteOldCaches(), worker.clients.claim()]).then(
-      () => undefined,
-    ),
-  );
+  // An older tab may still need its build's lazy chunks and unsaved draft.
+  // Retain prior app-shell caches and never navigate any existing client.
+  event.waitUntil(worker.clients.claim());
 });
 
 worker.addEventListener("fetch", (event) => {
@@ -66,7 +64,7 @@ async function navigationResponse(request: Request): Promise<Response> {
 }
 
 async function cachedResponse(request: Request): Promise<Response> {
-  const cached = await caches.match(request, { ignoreVary: true });
+  const cached = await cachedAppShell(request);
   if (cached) return cached;
   const response = await fetch(request);
   if (cacheable(response)) {
@@ -84,7 +82,7 @@ async function fetchResponse(request: Request): Promise<Response> {
   } catch {
     if (request.mode !== "navigate") return Response.error();
     try {
-      const cached = await caches.match(
+      const cached = await cachedAppShell(
         new URL("./", worker.registration.scope),
       );
       if (cached) return cached;
@@ -106,13 +104,20 @@ function cacheable(response: Response): boolean {
   );
 }
 
-async function deleteOldCaches(): Promise<void> {
-  const names = await caches.keys();
-  await Promise.all(
-    names
-      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME)
-      .map((name) => caches.delete(name)),
-  );
+async function cachedAppShell(
+  request: RequestInfo | URL,
+): Promise<Response | undefined> {
+  const current = await caches.open(CACHE_NAME);
+  const fresh = await current.match(request, { ignoreVary: true });
+  if (fresh) return fresh;
+  // Prefer the new shell, but keep old immutable assets available to old tabs.
+  for (const name of await caches.keys()) {
+    if (!name.startsWith(CACHE_PREFIX) || name === CACHE_NAME) continue;
+    const previous = await caches.open(name);
+    const cached = await previous.match(request, { ignoreVary: true });
+    if (cached) return cached;
+  }
+  return undefined;
 }
 
 async function handlePush(event: PushEvent): Promise<void> {

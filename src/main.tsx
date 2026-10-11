@@ -6,7 +6,9 @@ import { createRoot } from "react-dom/client";
 
 import { TaskNotesApp } from "./app/tasknotes-app";
 import { AppErrorBoundary } from "./components/app-error-boundary";
+import { AppUpdateNotice } from "./components/app-update-notice";
 import { initializePwaInstall } from "./pwa/install";
+import { initializePwaUpdate } from "./pwa/update";
 import {
   clearTaskNotesServiceWorkerForDevelopment,
   registerTaskNotesServiceWorker,
@@ -16,6 +18,7 @@ import "./people.css";
 import "./accessibility.css";
 
 initializePwaInstall();
+if (import.meta.env.PROD) initializePwaUpdate();
 
 // The local e2e build may exercise the real held-repository gate with an SDK
 // protocol stand-in. Neither the fixture module nor this route ships in other modes.
@@ -42,6 +45,7 @@ const DemoFixture =
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
+      <AppUpdateNotice />
       {SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
         <Suspense
           fallback={
