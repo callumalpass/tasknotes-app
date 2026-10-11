@@ -1,4 +1,4 @@
-/** Callum's replace-at-cutover target. LAB remains an explicit isolated build. */
+/** Production stays at the cutover target; LAB binds an explicit loopback port. */
 export const TASKNOTES_PRODUCTION_ORIGIN = "https://app.tasknotes.dev";
 export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
 export const APP_ENVIRONMENT_CONFIG_KEY = "VITE_TASKNOTES_ENVIRONMENT";
@@ -30,13 +30,29 @@ export function requireTaskNotesAppEnvironment(
       appOrigin: TASKNOTES_PRODUCTION_ORIGIN,
     });
   }
-  if (configuredLabOrigin !== TASKNOTES_LAB_ORIGIN)
+  if (!isConfiguredLabOrigin(configuredLabOrigin))
     throw new Error(
-      `${LAB_ORIGIN_CONFIG_KEY} must select the fixed isolated LAB harness origin.`,
+      `${LAB_ORIGIN_CONFIG_KEY} must select an exact HTTP loopback origin with an explicit port.`,
     );
-  if (currentOrigin !== TASKNOTES_LAB_ORIGIN)
+  if (currentOrigin !== configuredLabOrigin)
     throw new Error(
       "TaskNotes LAB must open at its configured isolated harness origin.",
     );
-  return Object.freeze({ environment: "lab", appOrigin: TASKNOTES_LAB_ORIGIN });
+  return Object.freeze({ environment: "lab", appOrigin: configuredLabOrigin });
+}
+
+function isConfiguredLabOrigin(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "http:" &&
+      url.hostname === "127.0.0.1" &&
+      url.port !== "" &&
+      Number(url.port) > 0 &&
+      url.origin === value
+    );
+  } catch {
+    return false;
+  }
 }

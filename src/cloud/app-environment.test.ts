@@ -66,6 +66,33 @@ describe("explicit next-only replace-at-cutover build environment", () => {
       ),
     ).toEqual({ environment: "lab", appOrigin: TASKNOTES_LAB_ORIGIN });
   });
+  it("binds a separate LAB build to its exact configured loopback port", () => {
+    const origin = "http://127.0.0.1:48220";
+    const environment = requireTaskNotesAppEnvironment("lab", origin, origin);
+    expect(environment).toEqual({ environment: "lab", appOrigin: origin });
+    expect(Object.isFrozen(environment)).toBe(true);
+    expect(() =>
+      requireTaskNotesAppEnvironment("lab", origin, TASKNOTES_LAB_ORIGIN),
+    ).toThrow();
+  });
+  it.each([
+    "http://127.0.0.1",
+    "http://127.0.0.1:0",
+    "http://127.0.0.1:65536",
+    "http://127.0.0.1:048220",
+    "http://user@127.0.0.1:48220",
+    "http://127.0.0.1:48220/path",
+    "http://127.0.0.1:48220?mode=lab",
+    "http://127.0.0.1:48220#lab",
+    "http://127.0.0.1.example.test:48220",
+  ])(
+    "refuses noncanonical LAB configuration even at the same origin: %s",
+    (origin) => {
+      expect(() =>
+        requireTaskNotesAppEnvironment("lab", origin, origin),
+      ).toThrow();
+    },
+  );
   it.each([
     undefined,
     "",

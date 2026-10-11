@@ -14,7 +14,9 @@ The old deployment pin is historical evidence only, not an active capture/build/
 
 `VITE_TASKNOTES_ENVIRONMENT` explicitly selects `lab` or `production`. Production has no second-origin input: its fixed approved page is `app.tasknotes.dev`; a LAB origin in a production build refuses. There is no production `VITE_TASKNOTES_NEXT_ORIGIN` concept.
 
-LAB uses `.env.lab.example` and the fixed isolated `VITE_TASKNOTES_LAB_ORIGIN=http://127.0.0.1:48218`, with strict host/port and the separately approved LAB-only Connect C5 allowlist. Release supplies independently authenticated LAB trust/module/tool pins and a compatible native artifact. Old #630 WASM does not implement GET and must not be used for startup. Production never bundles LAB inputs and still requires release's authenticated production trust/artifact.
+LAB requires an explicit canonical `VITE_TASKNOTES_LAB_ORIGIN=http://127.0.0.1:<port>` that exactly matches the page's origin. `.env.lab.example` retains the historical harness default; a separate release-owned helper uses its own vacant port without changing that harness. No runtime-origin inference or app-side allowlist operation is performed. Release supplies independently authenticated LAB trust/module/tool pins and a compatible native artifact. Old #630 WASM does not implement GET and must not be used for startup. Production never bundles LAB inputs and still requires release's authenticated production trust/artifact.
+
+For a separately approved LAB build, set `TASKNOTES_APP_URL` and `VITE_TASKNOTES_LAB_ORIGIN` to the same exact loopback origin, plus `VITE_TASKNOTES_ENVIRONMENT=lab`. The existing manifest generator emits the canonical declaration for that origin; the runtime does not rewrite it. Building or registering that declaration does not authorize serving it. Existing helpers and their ports remain separate.
 
 `requireTaskNotesAppEnvironment` is configuration validation, not authority or startup evidence. Native Worker/controller and ordinary startup wiring are being completed; no old-storage gate is required.
 
@@ -22,7 +24,7 @@ LAB uses `.env.lab.example` and the fixed isolated `VITE_TASKNOTES_LAB_ORIGIN=ht
 
 The authenticated LAB build supplies the registered application ID
 `5cdfa020-c201-4da8-845a-f2cc9969eade` and exact name `TaskNotes` through the
-Worker to the protected SDK sign-in controller. The origin remains the fixed
+Worker to the protected SDK sign-in controller. The origin remains the exact configured
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
 `41c26ca73f6c97551ba4732c35627d626b927f03`, using the original
