@@ -1,7 +1,9 @@
 name: Production smoke
 
 on:
+  # PRs to the next branch rely on local `pnpm verify`; full checks run for main.
   pull_request:
+    branches: [main]
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:

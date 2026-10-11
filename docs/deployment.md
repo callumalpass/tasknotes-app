@@ -27,7 +27,7 @@ A smoke failure fails the deployment run with an error annotation. The deploymen
 has already happened: investigate and, if necessary, perform an explicit operator
 rollback; there is no automatic rollback.
 
-`.github/workflows/production-smoke.yml` retains pull-request artifact checks,
+`.github/workflows/production-smoke.yml` retains artifact checks for pull requests to `main`,
 manual dispatch, and the **six-hour schedule**. Scheduled/manual smoke checks the
 canonical **app.tasknotes.dev** origin. The smoke checks shell/PWA/auth/notification
 and Connect boundaries, not authenticated CRUD in a real collection.
@@ -63,3 +63,6 @@ and Connect boundaries, not authenticated CRUD in a real collection.
 These workflows do not configure environments, secrets, reviewers, or Cloudflare
 settings. Staging validation is an operator/reviewer responsibility, not an
 automated assertion that the same SHA previously passed staging.
+
+Pull requests to other branches do not run the Android, iOS or smoke workflows.
+Run `pnpm verify` locally before merging them.
