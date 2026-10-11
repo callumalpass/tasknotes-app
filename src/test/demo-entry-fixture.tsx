@@ -12,15 +12,8 @@ export function DemoEntryFixture() {
     !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
   )
     throw new Error("Demo fixtures require a local e2e build.");
-  const [{ count, embedded }] = useState(() => {
-    const url = new URL(location.href);
-    const embedded = /\/embed(?:\/|$)/.test(url.pathname);
-    const requested = Number(url.searchParams.get("demo") ?? 0);
-    return { count: embedded && requested <= 0 ? 24 : requested, embedded };
-  });
-  return count > 0 ? (
-    <DemoApp count={count} embedded={embedded} />
-  ) : (
-    <TaskNotesApp />
+  const [count] = useState(() =>
+    Number(new URL(location.href).searchParams.get("demo") ?? 0),
   );
+  return count > 0 ? <DemoApp count={count} /> : <TaskNotesApp />;
 }

@@ -4,13 +4,9 @@ import { resolve } from "node:path";
 const dist = resolve(import.meta.dirname, "..", "dist");
 const index = resolve(dist, "index.html");
 const callbackDirectory = resolve(dist, "auth", "mdbase", "callback");
-const staticRouteDirectories = [
-  "embed",
-  "more",
-  "scratchpad",
-  "search",
-  "views",
-].map((route) => resolve(dist, route));
+const staticRouteDirectories = ["more", "scratchpad", "search", "views"].map(
+  (route) => resolve(dist, route),
+);
 
 await Promise.all([
   mkdir(callbackDirectory, { recursive: true }),

@@ -22,7 +22,7 @@ Deployments are serialized per target and are not cancelled mid-deploy.
 
 Every successful production upload is followed by `pnpm test:production-smoke`
 in the same job. Cloudflare smoke always targets **app.tasknotes.dev**, including
-its production-only embed/header checks; a missing URL variable cannot skip it.
+its production-only frame-denial check; a missing URL variable cannot skip it.
 A smoke failure fails the deployment run with an error annotation. The deployment
 has already happened: investigate and, if necessary, perform an explicit operator
 rollback; there is no automatic rollback.
