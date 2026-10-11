@@ -694,22 +694,6 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
   });
 });
 
-test("keeps an embedded demo inside its frameable route", async ({ page }) => {
-  await page.goto("embed/?demo=12");
-
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Today", exact: true }),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
-  await expect(page).toHaveURL(/\/embed\/scratchpad\?demo=12/);
-  await expect(
-    page.getByRole("heading", { name: "Scratchpad", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
-  await expect(page.getByText("Image file is unavailable")).toBeVisible();
-});
-
 test("keeps view management clear and scalable", async ({ page }) => {
   await page.goto("views/?demo=24");
 

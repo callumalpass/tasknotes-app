@@ -6,11 +6,7 @@ vi.mock("../app/tasknotes-app", () => ({
   TaskNotesApp: () => <p>Native gate</p>,
 }));
 vi.mock("../demo/demo-app", () => ({
-  DemoApp: ({ count, embedded }: { count: number; embedded: boolean }) => (
-    <p>
-      Demo {String(count)} {String(embedded)}
-    </p>
-  ),
+  DemoApp: ({ count }: { count: number }) => <p>Demo {String(count)}</p>,
 }));
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -18,10 +14,9 @@ afterEach(() => {
 });
 
 it.each([
-  ["/?demo=50", "Demo 50 false"],
-  ["/embed", "Demo 24 true"],
-  ["/embed/?demo=0", "Demo 24 true"],
-  ["/embed/?demo=12", "Demo 12 true"],
+  ["/?demo=50", "Demo 50"],
+  ["/embed", "Native gate"],
+  ["/embed/?demo=0", "Native gate"],
   ["/?demo=0", "Native gate"],
   ["/?demo=not-a-number", "Native gate"],
 ])("retains original local test routing for %s", (path, expected) => {

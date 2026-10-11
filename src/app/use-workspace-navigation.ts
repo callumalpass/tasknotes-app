@@ -149,9 +149,8 @@ function routeUrl(route: Route): string {
           ? "/"
           : `/${route.page}`;
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const embed = isEmbeddedDemoPath() ? "/embed" : "";
   const url = new URL(location.href);
-  url.pathname = `${base}${embed}${path}` || "/";
+  url.pathname = `${base}${path}` || "/";
   url.searchParams.delete("occurrence");
   if (route.page === "task" && route.occurrence) {
     url.searchParams.set("occurrence", route.occurrence);
@@ -163,16 +162,7 @@ function appPathname(): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   let path = window.location.pathname;
   if (base && path.startsWith(base)) path = path.slice(base.length) || "/";
-  if (isEmbeddedDemoPath(path)) path = path.slice("/embed".length) || "/";
+
   if (path.length > 1) path = path.replace(/\/+$/u, "");
   return path;
-}
-
-function isEmbeddedDemoPath(pathname = window.location.pathname): boolean {
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const path =
-    base && pathname.startsWith(base)
-      ? pathname.slice(base.length) || "/"
-      : pathname;
-  return path === "/embed" || path.startsWith("/embed/");
 }
