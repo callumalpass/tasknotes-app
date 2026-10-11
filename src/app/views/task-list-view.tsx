@@ -1,6 +1,11 @@
 import { GripVertical } from "lucide-react";
 import { useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import type {
+  DragEvent as ReactDragEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import { VirtualTaskList } from "./virtual-task-list";
 import { useFlipMotion } from "../use-flip-motion";
 import { TaskListSection } from "../../components/task-list-section";
@@ -136,6 +141,8 @@ export function TaskListView({
   );
 }
 
+const ROW_DRAG_THRESHOLD = 6;
+
 function ManualTaskRows({
   orderUnavailable,
   preferenceScope,
@@ -182,6 +189,13 @@ function ManualTaskRows({
     placement: ManualOrderPlacement;
   } | null>(null);
   const dropRef = useRef(drop);
+  const pressRef = useRef<{
+    pointerId: number;
+    taskId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const suppressedClickTaskId = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [announcement, setAnnouncement] = useState("");
   const rowById = new Map(
@@ -353,9 +367,100 @@ function ManualTaskRows({
     );
   }
 
+  function startDrag(
+    row: TaskViewRow,
+    lane: TaskListLane,
+    element: HTMLElement,
+    pointerId: number,
+  ) {
+    pressRef.current = null;
+    element.setPointerCapture(pointerId);
+    const active = { taskId: row.task.id, sourceLaneKey: lane.key };
+    draggingRef.current = active;
+    setDragging(active);
+    setAnnouncement(`Moving ${row.task.title}.`);
+  }
+
+  // The whole row is a drag surface for mouse and pen. A press only becomes
+  // a drag past a few pixels, so clicks on the title and properties still
+  // land; touch keeps native scrolling and swipes, and drags by the handle.
+  const dragHandlers = (row: TaskViewRow, lane: TaskListLane) =>
+    manualOrder
+      ? {
+          onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+            suppressedClickTaskId.current = null;
+            if (
+              orderPending ||
+              orderUnavailable ||
+              !event.isPrimary ||
+              event.button !== 0 ||
+              draggingRef.current ||
+              !(event.target instanceof Element) ||
+              event.target.closest(
+                "input, textarea, select, [contenteditable='true']",
+              )
+            )
+              return;
+            const handle = event.target.closest<HTMLButtonElement>(
+              ".manual-order-handle",
+            );
+            if (handle) {
+              event.preventDefault();
+              handle.focus();
+              startDrag(row, lane, event.currentTarget, event.pointerId);
+              return;
+            }
+            if (event.pointerType === "touch") return;
+            pressRef.current = {
+              pointerId: event.pointerId,
+              taskId: row.task.id,
+              x: event.clientX,
+              y: event.clientY,
+            };
+          },
+          onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+            const press = pressRef.current;
+            if (
+              press?.taskId === row.task.id &&
+              press.pointerId === event.pointerId
+            ) {
+              if (
+                Math.hypot(event.clientX - press.x, event.clientY - press.y) <
+                ROW_DRAG_THRESHOLD
+              )
+                return;
+              window.getSelection()?.removeAllRanges();
+              suppressedClickTaskId.current = row.task.id;
+              startDrag(row, lane, event.currentTarget, event.pointerId);
+            }
+            if (draggingRef.current?.taskId !== row.task.id) return;
+            event.preventDefault();
+            updateDrop(event.clientX, event.clientY);
+          },
+          onPointerUp() {
+            pressRef.current = null;
+            if (draggingRef.current?.taskId === row.task.id) finish(row);
+          },
+          onPointerCancel() {
+            pressRef.current = null;
+            clearDrag();
+          },
+          onClickCapture(event: ReactMouseEvent<HTMLDivElement>) {
+            if (suppressedClickTaskId.current !== row.task.id) return;
+            suppressedClickTaskId.current = null;
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          onDragStart(event: ReactDragEvent<HTMLDivElement>) {
+            event.preventDefault();
+          },
+        }
+      : {};
+
   const renderRow = (row: TaskViewRow, lane: TaskListLane) => (
     <div
-      className={`manual-order-row${dragging?.taskId === row.task.id ? " is-dragging" : ""}${drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
+      {...dragHandlers(row, lane)}
+      className={`manual-order-row${manualOrder && !orderPending && !orderUnavailable ? " is-movable" : ""}${dragging?.taskId === row.task.id ? " is-dragging" : ""}${drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
       data-manual-order-task={row.task.id}
       data-list-lane={lane.key}
       key={row.task.id}
@@ -367,23 +472,6 @@ function ManualTaskRows({
           disabled={orderPending || orderUnavailable}
           type="button"
           onKeyDown={(event) => moveWithKeyboard(event, row, lane)}
-          onPointerDown={(event) => {
-            if (orderPending || orderUnavailable) return;
-            event.preventDefault();
-            event.currentTarget.focus();
-            event.currentTarget.setPointerCapture(event.pointerId);
-            const active = { taskId: row.task.id, sourceLaneKey: lane.key };
-            draggingRef.current = active;
-            setDragging(active);
-            setAnnouncement(`Moving ${row.task.title}.`);
-          }}
-          onPointerMove={(event) => {
-            if (draggingRef.current?.taskId !== row.task.id) return;
-            event.preventDefault();
-            updateDrop(event.clientX, event.clientY);
-          }}
-          onPointerCancel={clearDrag}
-          onPointerUp={() => finish(row)}
         >
           <GripVertical aria-hidden="true" size={16} />
         </button>

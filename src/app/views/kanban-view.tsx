@@ -671,6 +671,9 @@ export function KanbanView({
                       onKeyDown={(event) =>
                         moveCardWithKeyboard(event, row, column, columnIndex)
                       }
+                      onDragStart={(event) => {
+                        if (movable) event.preventDefault();
+                      }}
                       onPointerCancel={clearDrag}
                       onPointerDown={(event) =>
                         startCardPointer(event, row, key)
@@ -731,12 +734,16 @@ export function KanbanView({
   );
 }
 
+/**
+ * The whole card is a drag surface, buttons included: a press that never
+ * crosses the drag threshold is still an ordinary click. Only fields that
+ * own pointer movement themselves (text selection, sliders) stay out.
+ */
 function kanbanDragControl(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  const control = target.closest<HTMLElement>(
-    "button, a, input, textarea, select, [contenteditable='true']",
+  return Boolean(
+    target.closest("input, textarea, select, [contenteditable='true']"),
   );
-  return Boolean(control && !control.classList.contains("task-row-content"));
 }
 
 function kanbanPreviewTransform(

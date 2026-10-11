@@ -13,6 +13,13 @@
   opacity: 0.42;
 }
 
+/* Whole rows and cards drag, so pressing and moving never selects text. */
+.manual-order-row.is-movable,
+.kanban-card.is-movable {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .manual-order-row.is-drop-before::before,
 .manual-order-row.is-drop-after::after {
   position: absolute;
@@ -446,12 +453,16 @@
 
 @media (hover: hover) and (pointer: fine) {
   .kanban-card.is-movable,
-  .kanban-card.is-movable .task-row-content {
+  .kanban-card.is-movable .task-row-content,
+  .manual-order-row.is-movable,
+  .manual-order-row.is-movable .task-row-content {
     cursor: grab;
   }
 
   .kanban-card.is-dragging,
-  .kanban-card.is-dragging .task-row-content {
+  .kanban-card.is-dragging .task-row-content,
+  .manual-order-row.is-dragging,
+  .manual-order-row.is-dragging * {
     cursor: grabbing;
   }
 }
