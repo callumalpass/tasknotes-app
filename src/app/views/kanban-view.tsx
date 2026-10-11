@@ -1,5 +1,11 @@
 import { Plus } from "lucide-react";
-import { useContext, useEffect, useRef, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
@@ -25,6 +31,14 @@ import { ViewTaskRow } from "./view-task-row";
 import { TaskDeparturesContext } from "../../components/task-completion-motion";
 import { settledRowCount } from "../optimistic-view-reconciliation";
 import { useFlipMotion } from "../use-flip-motion";
+import {
+  contentPoint,
+  dropPositionAt,
+  measureDropLayout,
+  prefersReducedMotion,
+  previewDrop,
+  type DropLayout,
+} from "./drop-geometry";
 import type { TaskViewRow } from "../../domain/view";
 import type { ViewProps } from "./view-props";
 
@@ -137,8 +151,11 @@ export function KanbanView({
   const [dragging, setDragging] = useState<{
     row: TaskViewRow;
     sourceKey: string;
+    // Cards part around the drop slot in manually ordered columns.
+    reflow: boolean;
     preview: {
       width: number;
+      height: number;
       x: number;
       y: number;
       offsetX: number;
@@ -153,7 +170,7 @@ export function KanbanView({
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
-  useFlipMotion(boardRef, "data-kanban-card-id", !dragging);
+  useFlipMotion(boardRef, "data-kanban-card-id");
   const draggingRef = useRef<{
     row: TaskViewRow;
     sourceKey: string;
@@ -168,6 +185,7 @@ export function KanbanView({
     x: number;
     y: number;
     width: number;
+    height: number;
     offsetX: number;
     offsetY: number;
     pointerType: string;
@@ -181,6 +199,11 @@ export function KanbanView({
   const overDropRef = useRef<typeof overDrop>(null);
   const autoScrollFrame = useRef<number | null>(null);
   const touchMoveBlocker = useRef<((event: TouchEvent) => void) | null>(null);
+  const layoutRef = useRef<DropLayout | null>(null);
+  const previewContent = useRef<HTMLElement | null>(null);
+  const windowListeners = useRef<(() => void) | null>(null);
+  // The card hands an event to the window listeners after handling it itself.
+  const handledEvent = useRef<Event | null>(null);
 
   useEffect(
     () => () => {
@@ -194,9 +217,16 @@ export function KanbanView({
         });
       if (suppressedClickTimer.current !== null)
         window.clearTimeout(suppressedClickTimer.current);
+      windowListeners.current?.();
     },
     [],
   );
+
+  // The preview is a still copy of the card as it looked when lifted.
+  useLayoutEffect(() => {
+    const content = previewContent.current;
+    if (dragging && content) previewRef.current?.replaceChildren(content);
+  }, [dragging]);
 
   function beginMove(
     row: TaskViewRow,
@@ -205,10 +235,32 @@ export function KanbanView({
   ) {
     const active = { row, sourceKey };
     draggingRef.current = active;
+    const board = boardRef.current;
+    const layout =
+      board && manualOrder
+        ? measureDropLayout(
+            board,
+            [
+              ...board.querySelectorAll<HTMLElement>(
+                "[data-kanban-column-key]",
+              ),
+            ].flatMap((element) =>
+              element.dataset.kanbanColumnKey
+                ? [{ key: element.dataset.kanbanColumnKey, element }]
+                : [],
+            ),
+            "[data-kanban-card-id]",
+            (card) => card.dataset.kanbanCardId,
+          )
+        : null;
+    layoutRef.current = layout;
+    previewContent.current = kanbanPreviewContent(pointer.card);
     setDragging({
       ...active,
+      reflow: layout !== null && !prefersReducedMotion(),
       preview: {
         width: pointer.width,
+        height: pointer.height,
         x: pointer.x,
         y: pointer.y,
         offsetX: pointer.offsetX,
@@ -234,6 +286,10 @@ export function KanbanView({
       });
       touchMoveBlocker.current = null;
     }
+    windowListeners.current?.();
+    windowListeners.current = null;
+    layoutRef.current = null;
+    previewContent.current = null;
     draggingRef.current = null;
     pointerDrag.current = null;
     pointerPosition.current = null;
@@ -270,6 +326,30 @@ export function KanbanView({
       suppressedClickTimer.current = null;
     }, 700);
     beginMove(pointer.row, pointer.sourceKey, pointer);
+    // Cards part and move between columns while dragging, and React may
+    // re-insert or remount the dragged card, which drops pointer capture; the
+    // rest of the gesture is followed on the window instead.
+    const own = (event: PointerEvent) =>
+      event !== handledEvent.current &&
+      pointerDrag.current?.pointerId === event.pointerId;
+    const move = (event: PointerEvent) => {
+      if (own(event)) live.current.followPointer(event);
+    };
+    const up = (event: PointerEvent) => {
+      if (own(event)) live.current.releasePointer(event);
+    };
+    const cancel = (event: PointerEvent) => {
+      if (own(event)) live.current.clearDrag();
+    };
+    windowListeners.current?.();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    windowListeners.current = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+    };
   }
 
   function positionPreview(pointer: NonNullable<typeof pointerDrag.current>) {
@@ -281,6 +361,7 @@ export function KanbanView({
       pointer.offsetX,
       pointer.offsetY,
       pointer.width,
+      pointer.height,
     );
   }
 
@@ -352,13 +433,25 @@ export function KanbanView({
         clientY > Math.min(window.innerHeight, bounds.bottom))
     )
       return null;
+    const active = draggingRef.current;
+    if (!active) return null;
+    const layout = layoutRef.current;
+    if (board && layout) {
+      // Resolved against where cards sat when the drag began, since they part
+      // and slide under the pointer while it moves.
+      const drop = dropPositionAt(
+        layout,
+        contentPoint(board, clientX, clientY),
+        active.row.task.id,
+        { reach: Infinity, slack: 16 },
+      );
+      return drop ? { ...drop, columnKey: drop.laneKey } : null;
+    }
     const element = document.elementFromPoint(clientX, clientY);
     const column = element?.closest<HTMLElement>("[data-kanban-column-key]");
     const columnKey = column?.dataset.kanbanColumnKey;
     if (!columnKey) return null;
-    const active = draggingRef.current;
-    if (!active || (!manualOrder && columnKey === active.sourceKey))
-      return null;
+    if (!manualOrder && columnKey === active.sourceKey) return null;
     if (!manualOrder) return { columnKey, placement: "after" };
     const card = element?.closest<HTMLElement>("[data-kanban-card-id]");
     const targetId = card?.dataset.kanbanCardId;
@@ -435,6 +528,7 @@ export function KanbanView({
       x: event.clientX,
       y: event.clientY,
       width: bounds.width,
+      height: bounds.height,
       offsetX: Math.min(
         Math.max(event.clientX - bounds.left, 12),
         Math.max(12, bounds.width - 12),
@@ -456,6 +550,11 @@ export function KanbanView({
   }
 
   function moveCardPointer(event: ReactPointerEvent<HTMLDivElement>) {
+    handledEvent.current = event.nativeEvent;
+    followPointer(event);
+  }
+
+  function followPointer(event: PointerEvent | ReactPointerEvent) {
     const pointer = pointerDrag.current;
     if (!pointer || pointer.pointerId !== event.pointerId) return;
     pointer.x = event.clientX;
@@ -484,6 +583,11 @@ export function KanbanView({
   }
 
   function endCardPointer(event: ReactPointerEvent<HTMLDivElement>) {
+    handledEvent.current = event.nativeEvent;
+    releasePointer(event);
+  }
+
+  function releasePointer(event: PointerEvent | ReactPointerEvent) {
     const pointer = pointerDrag.current;
     if (!pointer || pointer.pointerId !== event.pointerId) return;
     if (!pointer.active) {
@@ -498,6 +602,31 @@ export function KanbanView({
       overDropRef.current ?? dropAt(event.clientX, event.clientY),
     );
   }
+
+  const live = useRef({ followPointer, releasePointer, clearDrag });
+  useLayoutEffect(() => {
+    live.current = { followPointer, releasePointer, clearDrag };
+  });
+
+  // While reflowing, the dragged card already sits where it will land and the
+  // cards around it have parted; only a drop the board accepts is previewed.
+  const reflowing = Boolean(
+    dragging?.reflow &&
+    manualOrder &&
+    overDrop &&
+    (overDrop.columnKey === dragging.sourceKey || writable),
+  );
+  const shownColumns = reflowing
+    ? previewDrop(
+        orderedColumns.map((column) => ({
+          ...column,
+          key: valueKey(column.value),
+        })),
+        (row: TaskViewRow) => row.task.id,
+        dragging!.row.task.id,
+        overDrop && { ...overDrop, laneKey: overDrop.columnKey },
+      )
+    : orderedColumns;
 
   function moveCardWithKeyboard(
     event: ReactKeyboardEvent<HTMLDivElement>,
@@ -584,7 +713,8 @@ export function KanbanView({
         }}
         ref={boardRef}
       >
-        {orderedColumns.map((column, columnIndex) => {
+        {shownColumns.map((shown, columnIndex) => {
+          const column = orderedColumns[columnIndex]!;
           const key = valueKey(column.value);
           const label = kanbanColumnLabel(column, propertyName);
           return (
@@ -611,7 +741,7 @@ export function KanbanView({
                   {label}
                 </h2>
                 <div>
-                  <span>{settledRowCount(column.rows, departing)}</span>
+                  <span>{settledRowCount(shown.rows, departing)}</span>
                   {writable && canCreateInColumn(property, column.value) ? (
                     <button
                       aria-label={`Add task to ${label}`}
@@ -627,7 +757,7 @@ export function KanbanView({
                 </div>
               </header>
               <div className="kanban-column-cards">
-                {column.rows.map((row) => {
+                {shown.rows.map((row) => {
                   const pending =
                     pendingMoveTaskIds.has(row.task.id) ||
                     orderPendingTaskIds.has(row.task.id);
@@ -643,7 +773,7 @@ export function KanbanView({
                           : undefined
                       }
                       aria-busy={pending}
-                      className={`kanban-card${movable ? " is-movable" : ""}${pending ? " is-pending" : ""}${draggingThisCard ? " is-dragging" : ""}${manualOrder && overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
+                      className={`kanban-card${movable ? " is-movable" : ""}${pending ? " is-pending" : ""}${draggingThisCard ? " is-dragging" : ""}${manualOrder && !dragging?.reflow && overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
                       data-kanban-card-id={row.task.id}
                       key={row.task.id}
                       role={movable ? "group" : undefined}
@@ -696,7 +826,7 @@ export function KanbanView({
                   );
                 })}
                 {dragging &&
-                column.rows.length === 0 &&
+                shown.rows.length === 0 &&
                 (manualOrder || key !== dragging.sourceKey) ? (
                   <div
                     aria-hidden="true"
@@ -723,12 +853,11 @@ export function KanbanView({
               dragging.preview.offsetX,
               dragging.preview.offsetY,
               dragging.preview.width,
+              dragging.preview.height,
             ),
             width: dragging.preview.width,
           }}
-        >
-          <span>{dragging.row.task.title}</span>
-        </div>
+        />
       ) : null}
       <p className="visually-hidden" aria-live="polite">
         {announcement}
@@ -755,6 +884,7 @@ function kanbanPreviewTransform(
   offsetX: number,
   offsetY: number,
   width: number,
+  height: number,
 ): string {
   const inset = 8;
   const x = Math.min(
@@ -763,9 +893,36 @@ function kanbanPreviewTransform(
   );
   const y = Math.min(
     Math.max(pointerY - offsetY, inset),
-    Math.max(inset, window.innerHeight - 82),
+    Math.max(inset, window.innerHeight - height - inset),
   );
   return `translate3d(${x}px, ${y}px, 0)`;
+}
+
+/**
+ * A still, inert copy of the card for the drag preview. Cloning the rendered
+ * card keeps it identical (wrapped title, chips, colours) without mounting a
+ * second live task row with its own shortcuts and subscriptions; identity
+ * and accessibility attributes are dropped so the copy is never found.
+ */
+function kanbanPreviewContent(card: HTMLElement): HTMLElement {
+  const copy = card.cloneNode(true) as HTMLElement;
+  copy.classList.remove("is-dragging", "is-pending", "is-movable");
+  for (const name of [...copy.classList])
+    if (name.startsWith("is-drop-")) copy.classList.remove(name);
+  for (const element of [copy, ...copy.querySelectorAll("*")]) {
+    for (const { name } of [...element.attributes])
+      if (
+        name === "id" ||
+        name === "role" ||
+        name === "tabindex" ||
+        name === "for" ||
+        name.startsWith("aria-") ||
+        name.startsWith("data-")
+      )
+        element.removeAttribute(name);
+  }
+  copy.inert = true;
+  return copy;
 }
 
 function edgeScrollDistance(
