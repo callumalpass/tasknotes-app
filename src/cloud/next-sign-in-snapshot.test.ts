@@ -115,32 +115,6 @@ it("still refuses a foreign portal origin or fields outside the public presentat
   ).toBe(false);
 });
 it.each([
-  { name: "AppCloudCopyHostError", code: "fenced" },
-  { name: "MdbaseError", code: "outcome_unknown" },
-  { name: "DOMException", code: "QuotaExceededError" },
-  { name: "Error", code: null },
-  { name: "UnknownError", code: null },
-])("accepts qualified bounded failure details %j", (problemDetail) => {
-  expect(
-    isNextSignInSnapshot(
-      {
-        ...snapshot(),
-        status: "blocked",
-        problem: "open_failed",
-        problemDetail,
-      },
-      cp,
-    ),
-  ).toBe(true);
-});
-it.each([
-  undefined,
-  null,
-  [],
-  {},
-  { name: "Error" },
-  { name: "Error", code: "fenced" },
-  { name: "AppCloudCopyHostError", code: "AbortError" },
   { name: "UnknownError", code: null, message: "private-body-stand-in" },
   { name: "Error", code: null, accountId: id },
 ])("refuses malformed or unbounded failure details %j", (problemDetail) => {

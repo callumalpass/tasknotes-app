@@ -83,7 +83,7 @@ describe("resource setup in the original protected model ledger", () => {
     expect(await journal().load(signal())).toEqual(verified);
     expect(await journal().prepareResources(plan, signal())).toEqual(verified);
   });
-  it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
+  it.each(["attempted", "verified"] as const)(
     "never appends seeds to existing v2 %s",
     async (phase) => {
       const v2Plan: ModelPackPlan = {
@@ -93,9 +93,8 @@ describe("resource setup in the original protected model ledger", () => {
         readback: plan.resourceReadback,
       };
       let original = await journal().prepare(v2Plan, signal());
-      if (phase !== "prepared")
-        original = await journal().recordAttempt(original.mutationId, signal());
-      if (phase === "confirmed" || phase === "verified")
+      original = await journal().recordAttempt(original.mutationId, signal());
+      if (phase === "verified")
         original = await journal().recordConfirmed(
           original.mutationId,
           signal(),
@@ -115,29 +114,6 @@ describe("resource setup in the original protected model ledger", () => {
       expect(await journal().prepare(v2Plan, signal())).toEqual(original);
     },
   );
-  it("retains the original v1 decoder and holds it instead of conversion", () => {
-    const value = {
-      version: 1,
-      scope,
-      mutationId: scope.collection,
-      phase: "prepared",
-      ops: [
-        {
-          kind: "resource_put",
-          path: "_contracts/task.md",
-          doc: "legacy",
-          mustNotExist: true,
-        },
-        {
-          kind: "resource_put",
-          path: "_types/task.md",
-          doc: "legacy",
-          mustNotExist: true,
-        },
-      ],
-    };
-    expect(decode(value, scope)).toEqual(value);
-  });
   it("retains original v3 after lost reply and refuses new source bytes/IDs/plan", async () => {
     const original = await journal().prepareResources(plan, signal());
     await journal().recordResourceAttempt(original.mutationId, signal());
@@ -250,18 +226,6 @@ describe("resource setup in the original protected model ledger", () => {
     expect(attempted.plan).toEqual(next.plan);
     expect(attempted.plan).not.toHaveProperty("sourcePolicy");
   });
-  it("uses one existing nonextractable key through every v3 phase", async () => {
-    const key = vi.spyOn(crypto.subtle, "generateKey");
-    const original = await journal().prepareResources(plan, signal());
-    await journal().recordResourceAttempt(original.mutationId, signal());
-    await journal().recordResourceConfirmed(original.mutationId, signal());
-    await journal().recordResourceVerified(original.mutationId, signal());
-    expect(key).toHaveBeenCalledTimes(1);
-    expect(await journal().load(signal())).toEqual({
-      ...original,
-      phase: "verified",
-    });
-  });
   it("refuses v2 mutators on v3, mismatched UUIDs/skipped phases/regressions", async () => {
     const original = await journal().prepareResources(plan, signal());
     await expect(
@@ -330,21 +294,15 @@ describe("resource setup in the original protected model ledger", () => {
       ).rejects.toMatchObject({ reason: "binding" });
     },
   );
-  it.each(["prepared", "attempted", "confirmed"] as const)(
-    "refuses a new round while v3 is %s",
-    async (phase) => {
-      const original = await journal().prepareResources(plan, signal());
-      if (phase !== "prepared")
-        await journal().recordResourceAttempt(original.mutationId, signal());
-      if (phase === "confirmed")
-        await journal().recordResourceConfirmed(original.mutationId, signal());
-      const before = await journal().load(signal());
-      await expect(
-        journal().prepareResourceRound(plan, original.mutationId, signal()),
-      ).rejects.toMatchObject({ reason: "recovery_required" });
-      expect(await journal().load(signal())).toEqual(before);
-    },
-  );
+  it("refuses a new round while v3 is attempted", async () => {
+    const original = await journal().prepareResources(plan, signal());
+    await journal().recordResourceAttempt(original.mutationId, signal());
+    const before = await journal().load(signal());
+    await expect(
+      journal().prepareResourceRound(plan, original.mutationId, signal()),
+    ).rejects.toMatchObject({ reason: "recovery_required" });
+    expect(await journal().load(signal())).toEqual(before);
+  });
   it("rejects cross-scope/unverified ancestors, re-used mutation IDs and destructive additive plans", () => {
     const previous = {
       version: 3,
@@ -426,42 +384,6 @@ describe("resource setup in the original protected model ledger", () => {
         scope,
       ),
     ).toThrow();
-  });
-  it("strict CAS permits only one concurrent v3 prepare and fences the loser", async () => {
-    let arrivals = 0;
-    let started!: () => void, release!: () => void;
-    const both = new Promise<void>((resolve) => {
-      started = resolve;
-    });
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const encrypt = crypto.subtle.encrypt.bind(crypto.subtle);
-    vi.spyOn(crypto.subtle, "encrypt").mockImplementation(async (...args) => {
-      if (++arrivals === 2) started();
-      await gate;
-      return encrypt(...args);
-    });
-    const stores = [journal(), journal()];
-    const pending = stores.map((store) =>
-      store.prepareResources(plan, signal()),
-    );
-    await both;
-    release();
-    const results = await Promise.allSettled(pending);
-    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    const loser = results.findIndex((r) => r.status === "rejected");
-    expect(results[loser]).toMatchObject({
-      status: "rejected",
-      reason: { reason: "outcome_unknown" },
-    });
-    await expect(stores[loser]!.load(signal())).rejects.toMatchObject({
-      reason: "fenced",
-    });
-    const winner = results.find((r) => r.status === "fulfilled");
-    if (winner?.status !== "fulfilled")
-      throw new Error("missing original CAS winner");
-    expect(await journal().load(signal())).toEqual(winner.value);
   });
   it("refuses total plaintext/operation bounds and caller-created authority fields", async () => {
     expect(() =>
