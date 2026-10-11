@@ -29,7 +29,7 @@ const config: CapacitorConfig = {
   server: {
     hostname: nativeApplicationUrl.hostname,
     androidScheme: nativeApplicationUrl.protocol.slice(0, -1),
-    iosScheme: nativeApplicationUrl.protocol.slice(0, -1),
+    iosScheme: "capacitor",
   },
   android: {
     backgroundColor: "#fbfcfe",

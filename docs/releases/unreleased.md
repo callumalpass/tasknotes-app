@@ -1,5 +1,7 @@
 # Unreleased
 
+- Restore the supported iOS Capacitor URL scheme and align mobile version metadata above the previous app version. SDK mobile sign-in and device validation remain separate.
+
 - Recognize SDK permission and write failures correctly, including the warning when a change may have been applied but its result could not be confirmed. Uncertain writes are not marked safe to retry.
 
 - Restore image attachment controls and assignee selection in shared-SDK collections through the original SDK connection. File actions follow the current grant, and downloads verify the selected file's identity and current content revision. Assignees come from the selected collection's person records; saved links use the SDK's resolution.
