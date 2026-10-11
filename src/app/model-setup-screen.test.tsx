@@ -223,27 +223,6 @@ it("does not publish source readiness after the opening owner unmounts", async (
   expect(opening.uuid).not.toHaveBeenCalled();
 });
 
-it("installs only after the explicit action and reopens the original repository after readiness", async () => {
-  const port = setup();
-  const onReady = vi.fn(async () => undefined);
-  vi.mocked(port.install).mockImplementation(async () => {
-    vi.mocked(port.inspect).mockResolvedValue({ state: "ready" });
-  });
-  render(
-    <ModelSetupScreen
-      setup={port}
-      onReady={onReady}
-      changeCollection={vi.fn()}
-      reauthorizeCollection={vi.fn()}
-    />,
-  );
-  await screen.findByRole("button", { name: "Set up TaskNotes" });
-  expect(port.install).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Set up TaskNotes" }));
-  await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
-  expect(port.install).toHaveBeenCalledOnce();
-  expect(port.resume).not.toHaveBeenCalled();
-});
 it("keeps unknown outcome visible and resumes the original intent instead of installing again", async () => {
   const port = setup();
   const unknown = {

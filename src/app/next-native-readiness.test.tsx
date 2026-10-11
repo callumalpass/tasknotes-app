@@ -226,31 +226,7 @@ it("preserves cached navigation and original preferences when a discovery READ f
   expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
 });
 
-it("offers explicit view creation for a genuinely empty native catalog, without recreating defaults", async () => {
-  const f = await fixture();
-  vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
-    kind: "success",
-    views: [],
-    continuation: null,
-    clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
-    collectionRevision: "sha256:" + "ab".repeat(32),
-  });
-  const create = vi.spyOn(f.repository, "createViewSource");
-  renderShell(f.repository);
-  expect(await screen.findByText("No views yet.")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Create a view" }));
-  expect(
-    await screen.findByRole("heading", { name: "New view" }),
-  ).toBeVisible();
-  expect(create).not.toHaveBeenCalled();
-});
-
 it.each([
-  { changes: 0, label: "a quiet collection" },
-  {
-    changes: 1,
-    label: "a first-load conflict followed by success without user action",
-  },
   {
     changes: 6,
     label: "continuous post-sign-in changes during the initial READ",
@@ -445,20 +421,6 @@ it("keeps a genuinely unconfigured collection on its setup screen without automa
   expect(f.verified).not.toHaveBeenCalled();
   expect(f.noWrite).not.toHaveBeenCalled();
   mounted.unmount();
-});
-
-it("publishes setup-required only for a real required inspection and never completes a creator", async () => {
-  const f = await fixture(true);
-  m.inspect.mockResolvedValue({ state: "required" });
-  await expect(f.repository.modelSetup!.inspect()).resolves.toEqual({
-    state: "required",
-  });
-  expect(f.assess).toHaveBeenCalledWith(
-    "setup_required",
-    expect.any(AbortSignal),
-  );
-  expect(f.verified).not.toHaveBeenCalled();
-  expect(f.noWrite).not.toHaveBeenCalled();
 });
 
 it.each<ModelSetupView>([

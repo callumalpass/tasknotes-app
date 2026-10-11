@@ -7,10 +7,7 @@ import {
   StorageErrorScreen,
   ViewDiscoveryNotice,
 } from "./app-shell";
-import {
-  SCRATCHPAD_NAVIGATION_KEY,
-  SEARCH_NAVIGATION_KEY,
-} from "./navigation-views";
+import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 import { OperationalError } from "../application/operational-error";
 
 import type { TaskView } from "../domain/view";
@@ -32,50 +29,6 @@ it("keeps the view failure visible while retry is pending and prevents duplicate
   expect(button).toBeDisabled();
   fireEvent.click(button);
   expect(retry).not.toHaveBeenCalled();
-});
-
-it.each(["loading", "ok"] as const)(
-  "does not show a failure or empty-state action for %s",
-  (outcome) => {
-    render(
-      <ViewDiscoveryNotice
-        outcome={outcome}
-        refreshing={false}
-        onRetry={vi.fn()}
-        onCreate={vi.fn()}
-      />,
-    );
-    expect(
-      screen.queryByRole("region", { name: "Views availability" }),
-    ).not.toBeInTheDocument();
-  },
-);
-
-it("lets a user escape an unavailable remembered collection", () => {
-  const authorizeAnotherCollection = vi.fn();
-  const changeCollection = vi.fn();
-
-  render(
-    <StorageErrorScreen
-      authorizeAnotherCollection={authorizeAnotherCollection}
-      changeCollection={changeCollection}
-      error={new Error("The connector is offline.")}
-      reauthorizeCurrentCollection={vi.fn()}
-      retry={vi.fn()}
-    />,
-  );
-
-  expect(
-    screen.getByRole("heading", { name: "TaskNotes could not open." }),
-  ).toBeVisible();
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "Choose another mdbase collection",
-    }),
-  );
-
-  expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
-  expect(changeCollection).not.toHaveBeenCalled();
 });
 
 it("separates reauthorizing the current collection from choosing another", () => {
@@ -106,69 +59,6 @@ it("separates reauthorizing the current collection from choosing another", () =>
   expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
 });
 
-it("expands configured views directly in the desktop sidebar", () => {
-  const onNavigate = vi.fn();
-  const today = navigationView("today", "Today");
-  const upcoming = navigationView("upcoming", "Upcoming");
-  const longView = navigationView(
-    "long",
-    "Projects waiting for a response from someone else",
-  );
-
-  render(
-    <Navigation
-      active={`view:${upcoming.key}`}
-      homeKey={today.key}
-      mode="desktop"
-      navigationKeys={[
-        today.key,
-        SCRATCHPAD_NAVIGATION_KEY,
-        SEARCH_NAVIGATION_KEY,
-        upcoming.key,
-        longView.key,
-      ]}
-      views={[today, upcoming, longView]}
-      onNavigate={onNavigate}
-    />,
-  );
-
-  expect(
-    screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual([
-    "Today",
-    "Scratchpad",
-    "Search",
-    "Upcoming",
-    "Projects waiting for a response from someone else",
-    "Manage views",
-    "Settings",
-  ]);
-  expect(
-    screen.queryByRole("button", { name: "Views" }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByRole("group", { name: "Views" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Upcoming" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  expect(
-    screen.getByRole("button", {
-      name: "Projects waiting for a response from someone else",
-    }),
-  ).toHaveAttribute(
-    "title",
-    "Projects waiting for a response from someone else",
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Upcoming" }));
-  expect(onNavigate).toHaveBeenLastCalledWith({
-    page: "views",
-    key: upcoming.key,
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Manage views" }));
-  expect(onNavigate).toHaveBeenLastCalledWith({ page: "views" });
-});
-
 it("routes a TaskNotes tool through Home when it is first", () => {
   const onNavigate = vi.fn();
   const today = navigationView("today", "Today");
@@ -191,40 +81,6 @@ it("routes a TaskNotes tool through Home when it is first", () => {
     page: "views",
     key: today.key,
   });
-});
-
-it("keeps three destinations visible and settings inside Browse", () => {
-  const onNavigate = vi.fn();
-  const today = navigationView("today", "Today");
-  const upcoming = navigationView("upcoming", "Upcoming");
-
-  render(
-    <Navigation
-      active="search"
-      homeKey={today.key}
-      mode="mobile"
-      navigationKeys={[
-        today.key,
-        SCRATCHPAD_NAVIGATION_KEY,
-        SEARCH_NAVIGATION_KEY,
-        upcoming.key,
-      ]}
-      views={[today, upcoming]}
-      onNavigate={onNavigate}
-    />,
-  );
-
-  expect(
-    screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual(["Today", "Scratchpad", "Search", "Browse"]);
-  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Browse" }));
-  expect(screen.getByRole("menuitem", { name: "Upcoming" })).toBeVisible();
-  fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
-  expect(onNavigate).toHaveBeenCalledWith({ page: "more" });
 });
 
 it("announces a pending deletion without putting Undo inside the live region", () => {

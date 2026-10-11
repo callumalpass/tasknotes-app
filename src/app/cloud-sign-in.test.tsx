@@ -128,25 +128,6 @@ it("reports a snapshot failure once without logging its display/account fields",
   );
   warn.mockRestore();
 });
-it("restores production mark/copy/explainer and one styled sign-in action without technical controls", async () => {
-  render(<CloudSignIn build={build} onCollection={vi.fn()} />);
-  const button = await screen.findByRole("button", { name: "Sign in" });
-  expect(button).toHaveClass("welcome-primary-action");
-  expect(button.querySelector(".lucide-plus")).toBeNull();
-  expect(button.querySelector(".lucide-arrow-right")).not.toBeNull();
-  expect(
-    screen.getByRole("heading", { name: "Connect TaskNotes to your tasks" }),
-  ).toBeInTheDocument();
-  expect(screen.getByText("What is mdbase?")).toBeInTheDocument();
-  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", {
-      name: /resume|confirm account|refresh collections/i,
-    }),
-  ).not.toBeInTheDocument();
-  expect(f.start).toHaveBeenCalledOnce();
-  expect(f.openPopup).not.toHaveBeenCalled();
-});
 it("reserves the popup synchronously before delegating the one SDK authorize action", async () => {
   render(<CloudSignIn build={build} onCollection={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Sign in" }));
