@@ -1,7 +1,7 @@
 # Unreleased
 
 - Show the shared SDK's connection guidance and collection upgrade status without clearing unsaved input from a usable workspace. Registration refusals keep technical manifest details in developer diagnostics only.
-- Keep unavailable collection choices visible with the SDK's reason and suggested action when availability is reported, rather than offering an unusable Open action.
+- Keep unavailable collection choices visible with the SDK's reason and suggested action when availability is reported, rather than offering an unusable Open action. Use the SDK's updated guidance and action labels for collection upgrades and access problems.
 
 - Use consistent mdbase wording in person-record guidance and collection access help.
 

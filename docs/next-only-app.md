@@ -25,9 +25,9 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`9935671f0f1f1fdfa3e9a6835bbff10bff3b34ef`, using the original
-`sdk-dev-9935671f.tgz` and provenance in
-`vendor/sdk-dev-9935671f.json`. This concrete original coordinator-approved
+`41c26ca73f6c97551ba4732c35627d626b927f03`, using the original
+`sdk-dev-41c26ca7.tgz` and provenance in
+`vendor/sdk-dev-41c26ca7.json`. This concrete original coordinator-approved
 DEV/LAB intake is not release-qualified. It includes shared error descriptions,
 status summaries, opaque push helpers, mobile origin/sign-in APIs, setup planning
 and collection availability/lifecycle APIs. App adoption and delivery
@@ -41,9 +41,9 @@ original device, keys and operation, requires current approval and clean stop,
 and uses fresh proof against the prior enrollment tuple. Only positively
 classified pre-enrollment challenge exhaustion has bounded retry. Permanent
 refusals and failed-stop recovery do not receive this action.
-The original protocol beta.129/3c14fc91 archive is a normal file dependency in
-`vendor/`; the earlier protocol override stays removed so it cannot replace the
-SDK's original dependency. The SDK's bundled protocol matches that same original
+The original protocol beta.129/c280cd19 archive is a normal file dependency in
+`vendor/`; the historical 3c14fc91 archive remains intact. The earlier protocol
+override stays removed so it cannot replace the SDK's original dependency. The SDK's bundled protocol matches that same original
 archive. The active successor has no vendor warnings or unused protocol archive.
 The retained historical first DEV cut, `4b955381`, contains an unused
 `vendor/mdbase-dev-connect-protocol-0.1.0-beta.129.tgz`, SHA256
