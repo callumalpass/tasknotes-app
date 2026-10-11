@@ -1,0 +1,60 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "2e2ae687f96d0a0c074ef6bc46bb77b97089f325",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "publicEntry": "b921022e9",
+    "collectionSelection": "11cf1a2fa"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-2e2ae687-n1.tgz",
+  "bytes": 4208744,
+  "sha256": "58bc19022164eed1ef2236e392786db7fba6447d32b9bc3f2163c247d1c42faf",
+  "integrity": "sha512-jXEuBeyzl3tIGERWYVRXqiFva0UcTDQq6l3tqSaXE0McN+d7AZm9D6/DHkXknSI/8hH0QaQg7+vZW5FEpcOehA==",
+  "shasum": "648e7eb0786f450bbcff3d2643793e172e73d8f2",
+  "protocol": {
+    "sourceCommit": "d765e675c3da29fe1693deab53c4c2a922bb86f1",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-d765e675c3da.tgz",
+    "bytes": 70702,
+    "sha256": "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
+    "originalEmbeddedBytesVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Packaging metadata, not runtime readiness or physical drain",
+    "sourceCommit": "8441a5a0ed78d1d7bed6858a2d5596a7209d75cc",
+    "member": "package/dist/native/runtime-lab.wasm",
+    "bytes": 3462973,
+    "sha256": "6762b92e4b57b1a4df965c7991a064efe05eb950a66ec332e0504f73a8e42b72",
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "72b36f2586c3d7885d38502ea0c9f94c3726acb1d544efaa6524276245cf1dc9"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "91b001f13e1f39f25b86c6e582fd2f5783b6c534204989b60e081b0e4ebd9668"
+    }
+  },
+  "qualification": {
+    "authority": "co0524/co0532",
+    "cutAuthority": "co0517",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 1291,
+    "normalPackOnceNoRepack": true,
+    "producerColdNpmEmptyRootCache": "passed",
+    "producerFullSdkSuite": "skipped for light dev intake",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "purpose": "Original immutable producer cut with normal bundled protocol cold-install fix and native file grants/upload/replacement support. Consumer files adapter qualification is separate from native/LAB acceptance."
+}

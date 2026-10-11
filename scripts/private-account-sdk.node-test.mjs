@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-d53d7d76.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-2e2ae687-n1.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "d53d7d761c1a7caf100e065a1378384dcc5f6449",
+    "2e2ae687f96d0a0c074ef6bc46bb77b97089f325",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "8b76b3fd687d9e557f3438f25313ac4c55bc0a8994c066bbbfb7c66e0f96cd1d",
+    "58bc19022164eed1ef2236e392786db7fba6447d32b9bc3f2163c247d1c42faf",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-d53d7d76.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-2e2ae687-n1.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
