@@ -4,6 +4,7 @@ import {
   toPlain,
   toValue,
   type MdbaseClient,
+  type MdbasePeopleClient,
   type ChangesWatch,
   type PlainValue,
   type UpdateInput as NativeUpdateInput,
@@ -137,6 +138,7 @@ import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { BoundedCache } from "./bounded-cache";
+import { NextCollectionFileStore } from "./next-files";
 import {
   CollectionChangeWindow,
   waitForChangeWindow,
@@ -224,6 +226,7 @@ function plainFields(fields: wire.FmMap): Record<string, unknown> {
  * Unsupported native metadata is explicit, never reconstructed in the app.
  */
 export class NextTaskRepository implements TaskRepository {
+  readonly files: NextCollectionFileStore;
   readonly modelSetup?: TaskNotesModelSetup;
   readonly defaultViewSourceCreation = "explicit-only" as const;
   private scope = new AbortController();
@@ -307,6 +310,7 @@ export class NextTaskRepository implements TaskRepository {
   });
   private changesWatch: ChangesWatch | null = null;
   private readonly clientOwnership: "owned" | "borrowed";
+  private readonly peopleClient?: Pick<MdbasePeopleClient, "directory">;
 
   constructor(
     private readonly client: MdbaseClient,
@@ -315,6 +319,7 @@ export class NextTaskRepository implements TaskRepository {
     options: {
       /** Host-owned clients survive this adapter's disposal; default remains owned. */
       clientOwnership?: "owned" | "borrowed";
+      peopleClient?: Pick<MdbasePeopleClient, "directory">;
       modelSetupJournal?: ModelSetupJournal;
       /** Actual original-controller completion flag, not resource readiness. */
       requiresTaskNotesModelSetup?: boolean;
@@ -328,6 +333,11 @@ export class NextTaskRepository implements TaskRepository {
     } = {},
   ) {
     this.clientOwnership = options.clientOwnership ?? "owned";
+    this.peopleClient = options.peopleClient;
+    this.files = new NextCollectionFileStore(
+      client.files,
+      () => this.scope.signal,
+    );
     this.readCurrentWrites = async (
       ids: readonly string[],
       signal: AbortSignal,

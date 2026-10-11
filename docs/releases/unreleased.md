@@ -1,5 +1,7 @@
 # Unreleased
 
+- Restore image attachment controls in shared-SDK collections through the original SDK files connection. File actions follow the current grant, and downloads verify the selected file's identity and current content revision.
+
 - Use the shared mdbase sign-in owner and collection selection. Collection links retain their requested target until approval; cancelling the collection picker keeps the current workspace and route. Setup and reapproval stay explicit.
 
 - Offer a clear Retry when the SDK can recover opening an approved collection after a temporary sign-in service failure. Uncertain requests keep their original device and operation, and recovery requires an explicit click rather than automatic replay.
@@ -9,7 +11,7 @@
 - Queue overlapping native view reads so moving a task during a background refresh can finish without a busy-read error. Keep accepted task moves and their displayed positions if a subsequent view refresh fails, instead of reporting that the move failed. Genuine move failures remain visible.
 
 - Planner links use the actual portable collection identifier rather than a local preference namespace, and do not retain another collection's identifier while switching.
-- The reusable collection chooser supports name search, marks the current collection, and shows opening progress and failures with Retry. Dismissing it leaves the current page unchanged; the next shared-runtime integration remains pending.
+- The reusable collection chooser supports name search, marks the current collection, and shows opening progress and failures with Retry. Dismissing it leaves the current page unchanged.
 
 - Coalesce collection-change refreshes while synchronization catches up, and reread retired view snapshots without showing a view-loading error. Reads keep their original deadline and cancellation, and genuine failures still offer Retry.
 

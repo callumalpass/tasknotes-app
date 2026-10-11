@@ -133,7 +133,7 @@ export function ApplicationCollectionGate({
         connection.records,
         connection.displayName,
         connection.scope.account,
-        { clientOwnership: "borrowed" },
+        { clientOwnership: "borrowed", peopleClient: connection.people },
       ),
     };
     // Only app-owned stages: no invented native/Worker durations or extra reads.
