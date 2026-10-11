@@ -53,96 +53,120 @@ export function useNavigationViews(): {
     navigationKeys: [],
   });
   const requestSequence = useRef({ value: 0 });
+  const inFlight = useRef<{
+    repository: TaskRepository;
+    sequence: number;
+    pending: Promise<void>;
+  } | null>(null);
   const [discovery, setDiscovery] = useState<"loading" | ViewDiscoveryOutcome>(
     "loading",
   );
   const [refreshing, setRefreshing] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (status !== "ready") return;
+  const refresh = useCallback(() => {
+    if (status !== "ready") return Promise.resolve();
     const sequence = requestSequence.current;
+    const active = inFlight.current;
+    if (active?.repository === repository && active.sequence === sequence.value)
+      return active.pending;
     const request = ++sequence.value;
-    const started = performance.now();
-    let outcome: ViewDiscoveryOutcome = "error";
-    let viewCount: number | null = null;
-    let stage: "metadata" | "discovery" = "metadata";
-    let discoveryMs: number | null = null;
-    let failure: unknown;
-    let published = false;
-    let info: Awaited<ReturnType<TaskRepository["collectionInfo"]>> | undefined;
-    let cachedDocuments: TaskViewDocument[];
-    let cachedCatalog: ViewCatalog | null = null;
-    try {
-      // Start asynchronously when invoked by the mount effect. Superseded
-      // owners cannot publish state or launch an extra discovery READ.
-      await Promise.resolve();
-      if (request !== sequence.value) return;
-      setRefreshing(true);
-      [info, cachedDocuments] = await Promise.all([
-        repository.collectionInfo(),
-        repository.cachedViews().catch(() => []),
-      ]);
-      if (request !== sequence.value) return;
-      cachedCatalog = resolveNavigationViewCatalog(info, cachedDocuments, true);
-      const scope = navigationViewScope(info);
-      setCatalog((current) => {
-        if (current.scope === scope && current.documents !== null)
-          return current;
-        return (
-          cachedCatalog ?? {
-            documents: null,
-            error: "",
-            scope,
-            navigationKeys: [],
-          }
-        );
-      });
-      stage = "discovery";
-      const readStarted = performance.now();
-      let providerDocuments: TaskViewDocument[];
+    const pending = (async () => {
+      const started = performance.now();
+      let outcome: ViewDiscoveryOutcome = "error";
+      let viewCount: number | null = null;
+      let stage: "metadata" | "discovery" = "metadata";
+      let discoveryMs: number | null = null;
+      let failure: unknown;
+      let published = false;
+      let info:
+        Awaited<ReturnType<TaskRepository["collectionInfo"]>> | undefined;
+      let cachedDocuments: TaskViewDocument[];
+      let cachedCatalog: ViewCatalog | null = null;
       try {
-        // Discovery is read-only. Setup and explicit Create view own writes;
-        // missing/deleted defaults must never be silently recreated here.
-        providerDocuments = await repository.listViews();
-      } finally {
-        discoveryMs = performance.now() - readStarted;
-      }
-      viewCount = flattenViewDocuments(providerDocuments).length;
-      outcome = viewCount ? "ok" : "empty";
-      if (request !== sequence.value) return;
-      setCatalog(resolveNavigationViewCatalog(info, providerDocuments, false)!);
-      setDiscovery(outcome);
-      published = true;
-    } catch (reason) {
-      failure = reason;
-      outcome = "error";
-      if (request !== sequence.value) return;
-      // A failed READ is not an authoritative empty catalog. Preserve cached
-      // views and preferences without pruning or writing navigation choices.
-      setCatalog((current) => ({
-        ...(info && current.scope === navigationViewScope(info)
-          ? current
-          : (cachedCatalog ?? {
+        // Start asynchronously when invoked by the mount effect. Superseded
+        // owners cannot publish state or launch an extra discovery READ.
+        await Promise.resolve();
+        if (request !== sequence.value) return;
+        setRefreshing(true);
+        [info, cachedDocuments] = await Promise.all([
+          repository.collectionInfo(),
+          repository.cachedViews().catch(() => []),
+        ]);
+        if (request !== sequence.value) return;
+        cachedCatalog = resolveNavigationViewCatalog(
+          info,
+          cachedDocuments,
+          true,
+        );
+        const scope = navigationViewScope(info);
+        setCatalog((current) => {
+          if (current.scope === scope && current.documents !== null)
+            return current;
+          return (
+            cachedCatalog ?? {
               documents: null,
-              scope: info ? navigationViewScope(info) : "",
+              error: "",
+              scope,
               navigationKeys: [],
-            })),
-        error: "Couldn't load your views.",
-      }));
-      setDiscovery("error");
-      published = true;
-    } finally {
-      if (request === sequence.value) setRefreshing(false);
-      logViewDiscovery({
-        outcome,
-        viewCount,
-        stage,
-        error: failure,
-        published,
-        totalMs: performance.now() - started,
-        discoveryMs,
-      });
-    }
+            }
+          );
+        });
+        stage = "discovery";
+        const readStarted = performance.now();
+        let providerDocuments: TaskViewDocument[];
+        try {
+          // Discovery is read-only. Setup and explicit Create view own writes;
+          // missing/deleted defaults must never be silently recreated here.
+          providerDocuments = await repository.listViews();
+        } finally {
+          discoveryMs = performance.now() - readStarted;
+        }
+        viewCount = flattenViewDocuments(providerDocuments).length;
+        outcome = viewCount ? "ok" : "empty";
+        if (request !== sequence.value) return;
+        setCatalog(
+          resolveNavigationViewCatalog(info, providerDocuments, false)!,
+        );
+        setDiscovery(outcome);
+        published = true;
+      } catch (reason) {
+        failure = reason;
+        outcome = "error";
+        if (request !== sequence.value) return;
+        // A failed READ is not an authoritative empty catalog. Preserve cached
+        // views and preferences without pruning or writing navigation choices.
+        setCatalog((current) => ({
+          ...(info && current.scope === navigationViewScope(info)
+            ? current
+            : (cachedCatalog ?? {
+                documents: null,
+                scope: info ? navigationViewScope(info) : "",
+                navigationKeys: [],
+              })),
+          error: "Couldn't load your views.",
+        }));
+        setDiscovery("error");
+        published = true;
+      } finally {
+        if (request === sequence.value) setRefreshing(false);
+        logViewDiscovery({
+          outcome,
+          viewCount,
+          stage,
+          error: failure,
+          published,
+          totalMs: performance.now() - started,
+          discoveryMs,
+        });
+      }
+    })();
+    inFlight.current = { repository, sequence: request, pending };
+    void pending
+      .finally(() => {
+        if (inFlight.current?.pending === pending) inFlight.current = null;
+      })
+      .catch(() => {});
+    return pending;
   }, [repository, status]);
 
   useEffect(() => {
@@ -151,11 +175,16 @@ export function useNavigationViews(): {
     queueMicrotask(() => {
       if (active) void refresh();
     });
+    const stop = repository.subscribe((change) => {
+      if (active && (change?.kind === "data" || change?.kind === "lifecycle"))
+        void refresh();
+    });
     return () => {
       active = false;
+      stop();
       sequence.value++;
     };
-  }, [refresh]);
+  }, [refresh, repository]);
 
   const setNavigationKeys = useCallback(
     (update: (keys: string[]) => string[]) => {
