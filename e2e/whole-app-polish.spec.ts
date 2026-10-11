@@ -380,7 +380,7 @@ test("working screens reflow at 320px with 200% text", async ({ page }) => {
     [view("work-board"), ".kanban-column"],
     ["search?demo=50", ".browse-fields button"],
     ["scratchpad?demo=50", ".scratchpad-row"],
-    ["more?demo=50", ".setting-row"],
+    ["more/device?demo=50", ".setting-row"],
     ["views?demo=50", ".view-catalog"],
   ];
   for (const [route, ready] of cases) {

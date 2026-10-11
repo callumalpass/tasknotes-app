@@ -48,6 +48,13 @@ async function nav(page: Page, name: string) {
     await page.getByRole("menuitem", { name, exact: true }).click();
   }
 }
+async function openSettings(page: Page, section: string) {
+  await nav(page, "Settings");
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByText(section, { exact: true })
+    .click();
+}
 async function operations(page: Page) {
   return page.evaluate(
     () => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.operations,
@@ -125,10 +132,8 @@ test("opens the original held client without relay traffic and preserves navigat
   await expect(
     page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();
-  await nav(page, "Settings");
-  await expect(
-    page.getByRole("heading", { name: "Notifications" }),
-  ).toBeVisible();
+  await openSettings(page, "Reminders");
+  await expect(page.getByRole("heading", { name: "Reminders" })).toBeVisible();
   await expect(page.getByText("Not available", { exact: true })).toBeVisible();
   await expect(
     page.getByText(
@@ -139,6 +144,7 @@ test("opens the original held client without relay traffic and preserves navigat
     page.getByRole("button", { name: "Turn on reminders", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
+  await openSettings(page, "Collection");
   await page
     .getByRole("button", { name: "Change collection", exact: true })
     .click();
@@ -612,7 +618,7 @@ test("keeps collection availability visible across cached search and explicit re
   await expect(
     page.getByText("Availability test task", { exact: true }),
   ).toBeVisible();
-  await nav(page, "Settings");
+  await openSettings(page, "Collection");
   await page.evaluate(() => {
     window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.offline = true;
   });
