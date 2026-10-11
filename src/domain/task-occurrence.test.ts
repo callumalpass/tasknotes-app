@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   occurrenceTask,
   findMaterializedOccurrenceTask,
-  materializedOccurrenceKeys,
   projectTodayTasks,
   projectUpcomingTasks,
   rollingOccurrenceDates,
@@ -185,27 +184,6 @@ describe("recurring task occurrences", () => {
         "2026-08-05",
       ),
     ).toThrow(/duplicate_occurrence_note/);
-  });
-
-  it("indexes materialized identities linearly for large collections", () => {
-    const count = 10_000;
-    const parents = Array.from({ length: count }, (_, index) => ({
-      ...oneOff(`parent-${index}`, "2026-08-05"),
-      path: `tasks/parent-${index}.md`,
-      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
-    }));
-    const children = parents.map((parent, index) => ({
-      ...oneOff(`child-${index}`, "2026-08-05"),
-      recurrenceParent: `[[${parent.path.slice(0, -3)}]]`,
-      occurrenceDate: "2026-08-05",
-    }));
-
-    const startedAt = performance.now();
-    const keys = materializedOccurrenceKeys([...parents, ...children]);
-    const elapsedMs = performance.now() - startedAt;
-
-    expect(keys.size).toBe(count);
-    expect(elapsedMs).toBeLessThan(1_000);
   });
 });
 

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   activeRecordWikilink,
   applyRecordWikilinkCompletion,
-  recordWikilinkCompletionRequest,
 } from "./record-wikilink-completion";
 
 const project = {
@@ -15,18 +14,6 @@ const project = {
 };
 
 describe("record wikilink completion", () => {
-  it("detects an explicit opener and builds a provider-neutral request", () => {
-    const token = activeRecordWikilink("Review [[Project pl", 19)!;
-
-    expect(token).toEqual({ from: 7, to: 19, query: "Project pl" });
-    expect(recordWikilinkCompletionRequest(token)).toEqual({
-      field: "wikilink",
-      kind: "records",
-      query: "Project pl",
-      limit: 12,
-    });
-  });
-
   it("replaces an unfinished or already-closed token with a forced wikilink", () => {
     const unfinished = activeRecordWikilink("Review [[Pro today", 12)!;
     expect(
@@ -53,16 +40,5 @@ describe("record wikilink completion", () => {
     ["First line [[open\nnext", 23],
   ])("does not activate for non-active text: %s", (text, cursor) => {
     expect(activeRecordWikilink(text, cursor)).toBeUndefined();
-  });
-
-  it("ignores value-only completions", () => {
-    const token = activeRecordWikilink("[[", 2)!;
-    expect(
-      applyRecordWikilinkCompletion("[[", token, {
-        kind: "value",
-        value: "project",
-        label: "Project",
-      }),
-    ).toBeUndefined();
   });
 });

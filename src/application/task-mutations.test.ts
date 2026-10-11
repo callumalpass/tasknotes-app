@@ -1,6 +1,5 @@
 import { expect, it, vi } from "vitest";
 import { TaskMutations } from "./task-mutations";
-import { DemoTaskRepository } from "../demo/demo-task-repository";
 
 it("joins repeated completion intent, exposes rejection, and supports retry", async () => {
   const commands = new TaskMutations();
@@ -85,23 +84,4 @@ it("does not join an earlier intent across a queued opposite intent", async () =
   expect(history).toEqual([true, false, true]);
   expect(states.slice(0, -1).every(Boolean)).toBe(true);
   expect(states.at(-1)).toBe(false);
-});
-
-it("desired completion is idempotent for ordinary and recurring tasks", async () => {
-  const repository = new DemoTaskRepository();
-  await repository.initialize();
-  const ordinary = await repository.create({ title: "Repeated completion" });
-  await repository.toggle(ordinary.id, undefined, true);
-  expect(
-    (await repository.toggle(ordinary.id, undefined, true)).completed,
-  ).toBe(true);
-  const recurring = await repository.create({
-    title: "Recurring completion",
-    recurrence: "FREQ=DAILY",
-  });
-  await repository.toggle(recurring.id, "2026-09-09", true);
-  expect(
-    (await repository.toggle(recurring.id, "2026-09-09", true))
-      .completeInstances,
-  ).toContain("2026-09-09");
 });

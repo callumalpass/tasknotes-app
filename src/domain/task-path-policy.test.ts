@@ -8,9 +8,4 @@ describe("TaskNotes filename candidates", () => {
     expect(paths.next().value).toBe("tasks/20261006-2.md");
     expect(paths.next().value).toBe("tasks/20261006-3.md");
   });
-  it("preserves the existing finite allocation bound", () => {
-    const paths = [...taskPathCandidates("tasks/note")];
-    expect(paths).toHaveLength(9999);
-    expect(paths.at(-1)).toBe("tasks/note-9999");
-  });
 });

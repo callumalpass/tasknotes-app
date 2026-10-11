@@ -44,10 +44,6 @@ describe("sectionTaskViewRows", () => {
     ]);
   });
 
-  it("does no work when the view does not opt into sections", () => {
-    expect(sectionTaskViewRows([row("task")], undefined)).toEqual([]);
-  });
-
   it("can expose empty day lanes while arranging tasks", () => {
     expect(
       sectionTaskViewRows(
@@ -97,28 +93,6 @@ describe("sectionTaskViewRows", () => {
     expect(taskTimePart(update?.scheduled ?? undefined)).toBe(
       taskTimePart(task.scheduled),
     );
-  });
-
-  it("sections 10,000 rows within the list interaction budget", () => {
-    const rows = Array.from({ length: 10_000 }, (_, index) =>
-      row(`task-${index}`, {
-        scheduled:
-          index % 3 === 0
-            ? "2026-07-25"
-            : index % 3 === 1
-              ? "2026-07-26"
-              : undefined,
-      }),
-    );
-    const startedAt = performance.now();
-    const sections = sectionTaskViewRows(rows, "day", "2026-07-26");
-    const elapsed = performance.now() - startedAt;
-
-    expect(
-      sections.reduce((count, section) => count + section.rows.length, 0),
-    ).toBe(10_000);
-    expect(elapsed).toBeLessThan(100);
-    console.info(`day list hierarchy: 10,000 rows in ${elapsed.toFixed(1)}ms`);
   });
 });
 

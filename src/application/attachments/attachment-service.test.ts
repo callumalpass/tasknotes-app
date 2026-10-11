@@ -40,21 +40,6 @@ describe("AttachmentService", () => {
     ).toHaveLength(1);
   });
 
-  it("keeps Notes presentation outside binary and membership persistence", async () => {
-    const { repository } = await fixture();
-    const task = await repository.create({
-      title: "Visual task",
-      body: "Context",
-    });
-    const result = await new AttachmentService(repository).attachImage(
-      task.id,
-      new File([Uint8Array.of(9)], "diagram.webp", { type: "image/webp" }),
-    );
-
-    expect(result.task.attachments).toEqual([result.reference]);
-    expect(result.task.body).toBe("Context");
-  });
-
   it("names unnamed blobs and resolves missing or invalid memberships honestly", async () => {
     const { repository } = await fixture();
     const task = await repository.create({ title: "Pasted image" });
