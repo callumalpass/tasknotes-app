@@ -25,8 +25,10 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`9ab0f31d43ae801241acb5fbc11f3be4ceefa76b`, with provenance in
-`vendor/mdbase-dev-sdk-9ab0f31d.json`. A source pin does not identify the currently
+`729b5391f9e8e8c192d93a7112324ce65078d106`, with provenance in
+`vendor/mdbase-dev-sdk-729b5391.json`. The original qualified archive includes
+shared factory #819 and canonical no-email provider receipts #827; their presence
+does not activate the shared factory or qualify native compatibility. A source pin does not identify the currently
 served build or authorize a runtime refresh, session enablement or deployment.
 
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
@@ -35,6 +37,14 @@ only an explicit user sign-in may start a new flow. There is no alias migration,
 automatic fresh-mode retry, or device replacement. This caller/source intake does
 not change the native runtime or trust pins and is not combined-runtime or
 live sign-in acceptance.
+
+Canonical no-email SDK snapshots carry null `accountEmail`,
+`accountProvider:"github"` and a nonblank login of at most 100 UTF-8 bytes,
+without whitespace or control characters. Partial, mixed and unknown-provider
+presentation fields are refused. The renderer labels the paired account with
+its authenticated GitHub login; login never substitutes for the original account
+UUID, email, installation identifier, namespace or custody input. Earlier SDK
+provenance remains historical evidence.
 
 ## Completed setup and current readiness
 

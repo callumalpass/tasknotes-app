@@ -3,7 +3,7 @@
 - Keep the sign-in window open through account approval and collection selection, and wait for the original sign-in reply before opening the collection. Known failures now show specific messages with privacy-bounded diagnostics.
 - Add bounded startup timing diagnostics for collection opening, bootstrap, setup assessment, the first view query and its first render. Diagnostics contain duration values only, not collection or account details.
 - Restore the familiar TaskNotes welcome screen with one Sign in action, automatic approval detection and the signed-in account email when available. Sign-in opens the first-party mdbase popup; collection choices remain in mdbase. The Sign in button uses an arrow rather than an add icon.
-- Update the pinned SDK while retaining explicit authenticated build-environment selection. This does not enable People or shared-session features.
+- Update the pinned SDK while retaining explicit authenticated build-environment selection. Accounts without email can show their authenticated GitHub login instead. This does not enable People or the shared collection factory.
 - Clarify native Scratchpad recovery limits: opening or listing notes may write, and reloading does not prove recovery of an earlier uncertain operation.
 - Older file operations report incomplete metadata if a modification timestamp is unavailable, rather than submitting an incomplete descriptor.
 - Opening Scratchpad or starting a new note accepts the portable identity assigned by the native type's creation policy, while retaining the original native record and exact recovery. Existing-note identity checks remain unchanged.
