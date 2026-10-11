@@ -6,6 +6,7 @@ import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
+import { historyScope, readHistory } from "./search-history";
 import { TaskScreen } from "./task-screen";
 
 import type { Task } from "../domain/task";
@@ -36,6 +37,14 @@ describe("TaskScreen", () => {
     const title = await screen.findByLabelText("Task title", { exact: true });
     fireEvent.change(title, { target: { value: "Unsaved important draft" } });
   }
+
+  it("remembers an opened task for Search", async () => {
+    renderTask();
+    await screen.findByLabelText("Task title", { exact: true });
+    const scope = historyScope(await repository.collectionInfo());
+    await waitFor(() => expect(readHistory("tasks", scope)).toEqual([task.id]));
+    localStorage.clear();
+  });
 
   it("never labels a dirty draft Saved during the autosave debounce", async () => {
     const update = vi.spyOn(repository, "update");

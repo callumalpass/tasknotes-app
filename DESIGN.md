@@ -177,7 +177,10 @@ Today             Search       More
   The revealed side names the action and fills with accent once the swipe
   will act. Buttons keep every action available; board cards never claim
   horizontal swipes. Search explains observed non-title matches with
-  concise labels such as “Matched in notes.”
+  concise labels such as “Matched in notes.” Before typing, Search lists up
+  to five recent searches and recently opened tasks above the field
+  suggestions, each clearable; they are per-device, collection-scoped
+  conveniences, and nothing appears without history.
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
   one unmistakable primary action, not a page full of competing buttons.
