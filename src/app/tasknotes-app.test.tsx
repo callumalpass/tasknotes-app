@@ -2,8 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
 
-vi.mock("./next-collection-gate", () => ({
-  NextCollectionGate: () => <main>Original synced collection gate</main>,
+vi.mock("./application-collection-gate", () => ({
+  ApplicationCollectionGate: () => <main>Original synced collection gate</main>,
 }));
 vi.mock("../demo/demo-app", () => {
   throw new Error("Production entry must not import the demo app");
