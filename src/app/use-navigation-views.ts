@@ -13,6 +13,7 @@ import { useRepository } from "./repository-context";
 import {
   moveNavigationViewKey,
   navigationViewScope,
+  legacyNavigationViewScope,
   readLegacyPrimaryViewKey,
   readPreviousNavigationViewKeys,
   readNavigationViewKeys,
@@ -257,19 +258,17 @@ export function resolveNavigationViewCatalog(
   );
   available.add(SCRATCHPAD_NAVIGATION_KEY);
   available.add(SEARCH_NAVIGATION_KEY);
+  const previousScope = legacyNavigationViewScope(info);
   let stored = readNavigationViewKeys(storage, scope);
-  if (!stored && info.id) {
-    stored = readNavigationViewKeys(storage, `${info.kind}:${info.location}`);
+  if (!stored && previousScope) {
+    stored = readNavigationViewKeys(storage, previousScope);
     if (stored) writeNavigationViewKeys(storage, scope, stored);
   }
   if (!stored) {
     const previous =
       readPreviousNavigationViewKeys(storage, scope) ??
-      (info.id
-        ? readPreviousNavigationViewKeys(
-            storage,
-            `${info.kind}:${info.location}`,
-          )
+      (previousScope
+        ? readPreviousNavigationViewKeys(storage, previousScope)
         : undefined);
     if (previous) {
       stored = withDefaultTools(previous);
@@ -279,8 +278,8 @@ export function resolveNavigationViewCatalog(
   if (!stored) {
     const legacy =
       readLegacyPrimaryViewKey(storage, scope) ??
-      (info.id
-        ? readLegacyPrimaryViewKey(storage, `${info.kind}:${info.location}`)
+      (previousScope
+        ? readLegacyPrimaryViewKey(storage, previousScope)
         : undefined);
     if (legacy) {
       stored = withDefaultTools([legacy]);

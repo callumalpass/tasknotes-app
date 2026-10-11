@@ -21,6 +21,90 @@ const info = {
 };
 
 describe("home view restoration", () => {
+  const nextInfo = {
+    ...info,
+    id: "next:original-account:collection-home",
+    collectionId: "collection-home",
+    location: "Tasks",
+  };
+
+  it("restores the original portable collection's home and ordered pins into the next account scope", () => {
+    const keys = [
+      "Views/work.md#open",
+      SCRATCHPAD_NAVIGATION_KEY,
+      SEARCH_NAVIGATION_KEY,
+    ];
+    const storage = memoryStorage();
+    writeNavigationViewKeys(storage, "connect:collection-home", keys);
+    const original = storage.getItem("tasknotes:navigation-views:v4");
+    const restored = resolveNavigationViewCatalog(
+      nextInfo,
+      [workViews()],
+      false,
+      storage,
+    );
+    expect(restored?.navigationKeys).toEqual(keys);
+    expect(
+      readNavigationViewKeys(
+        storage,
+        "connect:next:original-account:collection-home",
+      ),
+    ).toEqual(keys);
+    expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
+      keys,
+    );
+    expect(JSON.parse(original!)["connect:collection-home"]).toEqual(keys);
+  });
+
+  it("keeps the new account-scoped key once it exists, even if old preferences change", () => {
+    const storage = memoryStorage();
+    const scope = "connect:next:original-account:collection-home";
+    writeNavigationViewKeys(storage, "connect:collection-home", [
+      "Views/work.md#open",
+    ]);
+    writeNavigationViewKeys(storage, scope, [
+      SEARCH_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+    const before = storage.getItem("tasknotes:navigation-views:v4");
+    const resolved = resolveNavigationViewCatalog(
+      nextInfo,
+      [workViews()],
+      false,
+      storage,
+    );
+    expect(resolved?.navigationKeys).toEqual([
+      SEARCH_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+    expect(storage.getItem("tasknotes:navigation-views:v4")).toBe(before);
+  });
+
+  it("restores migration choices in memory even when preference storage is full", () => {
+    const backing = memoryStorage();
+    writeNavigationViewKeys(backing, "connect:collection-home", [
+      SEARCH_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+    const before = backing.getItem("tasknotes:navigation-views:v4");
+    const storage = {
+      getItem: backing.getItem,
+      setItem: () => {
+        throw new DOMException("Storage full", "QuotaExceededError");
+      },
+    };
+    const restored = resolveNavigationViewCatalog(
+      nextInfo,
+      [workViews()],
+      false,
+      storage,
+    );
+    expect(restored?.navigationKeys).toEqual([
+      SEARCH_NAVIGATION_KEY,
+      "Views/work.md#open",
+    ]);
+    expect(backing.getItem("tasknotes:navigation-views:v4")).toBe(before);
+  });
   it.each([
     ["tasknotes:navigation-views:v3", ["views/tasknotes-app.base#today"]],
     ["tasknotes:navigation-views:v2", ["views/tasknotes-app.base#today"]],
