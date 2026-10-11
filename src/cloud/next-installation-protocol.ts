@@ -224,6 +224,7 @@ const publicErrorCodes = new Set([
   "busy",
   "binding",
   "response",
+  "open_failed",
   "recovery_required",
   "account_confirmation_required",
   "outcome_unknown",

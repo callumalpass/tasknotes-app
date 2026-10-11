@@ -25,10 +25,12 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`729b5391f9e8e8c192d93a7112324ce65078d106`, with provenance in
-`vendor/mdbase-dev-sdk-729b5391.json`. The original qualified archive includes
-shared factory #819 and canonical no-email provider receipts #827; their presence
-does not activate the shared factory or qualify native compatibility. A source pin does not identify the currently
+`b9965703230091004f17e1632fbc91bdb9edb533`, with provenance in
+`vendor/mdbase-dev-sdk-b9965703.json`. The original qualified archive includes
+shared factory #819, canonical no-email provider receipts #827, bounded failure
+classification #832 and caller/host signal composition #837. App signal plumbing
+is unchanged; the presence of the shared factory does not activate it or qualify
+native compatibility. A source pin does not identify the currently
 served build or authorize a runtime refresh, session enablement or deployment.
 
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
@@ -45,6 +47,13 @@ presentation fields are refused. The renderer labels the paired account with
 its authenticated GitHub login; login never substitutes for the original account
 UUID, email, installation identifier, namespace or custody input. Earlier SDK
 provenance remains historical evidence.
+
+Optional SDK failure details accept exactly the bounded public `{name,code}`
+shape, with codes correlated to their allowlisted class category. Absence remains
+valid; a successful snapshot cannot retain failure details. No message, stack,
+cause, response, URL or identity fields are accepted. `open_failed` has fixed
+preserve-storage copy rather than implying recovery or retry safety. These
+presentation details never authorize new operations, native cleanup or readiness.
 
 ## Completed setup and current readiness
 

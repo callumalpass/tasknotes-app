@@ -11,6 +11,8 @@ const messages: Record<string, string> = {
   expired: "This sign-in request expired. Sign in again to continue.",
   account_confirmation_required:
     "Confirm your account in the mdbase window to continue.",
+  open_failed:
+    "This collection could not be opened. Keep this browser's stored data and reload TaskNotes.",
   recovery_required:
     "This device's earlier sign-in needs recovery. Keep this browser's stored data and reload TaskNotes.",
   outcome_unknown:

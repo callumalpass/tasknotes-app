@@ -12,6 +12,7 @@ const codes = [
   "expired",
   "account_confirmation_required",
   "recovery_required",
+  "open_failed",
   "outcome_unknown",
   "fenced",
   "closed",
@@ -68,6 +69,11 @@ it.each([
   expect(signInErrorCode(reason)).toBe("unknown");
   expect(signInMessage(reason)).toBe(
     "Sign-in was interrupted. Please try again.",
+  );
+});
+it("an unexpected open failure preserves stored data without promising retry safety", () => {
+  expect(signInMessage("open_failed")).toBe(
+    "This collection could not be opened. Keep this browser's stored data and reload TaskNotes.",
   );
 });
 it("diagnostics contain only a fixed phase/code and cannot mask the original failure", () => {
