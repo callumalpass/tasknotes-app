@@ -31,10 +31,12 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useOverlay } from "./overlays/use-overlay";
 import { useRepository } from "../app/repository-context";
-import { linkLabel, linkTarget, recordCompletion } from "../domain/completion";
+import { linkLabel, linkTarget } from "../domain/completion";
 import { activeTimeEntry, todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
+import { writeClipboard } from "../native/clipboard";
+import { taskRecordLink } from "../domain/task-links";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
@@ -271,17 +273,7 @@ export function TaskActions({
 
   const today = todayString();
   const tomorrow = shiftTaskDate(today, 1);
-  const projectLink = task.path
-    ? recordCompletion(
-        {
-          path: task.path,
-          label: task.title,
-          frontmatter: task.frontmatter,
-          types: ["task"],
-        },
-        configuration.linkWriteFormat,
-      ).value
-    : "";
+  const projectLink = taskRecordLink(task, configuration.linkWriteFormat);
   const rootRole =
     panel === "delete"
       ? "alertdialog"
@@ -994,10 +986,4 @@ function dateSummary(task: TaskSummary): string {
   if (task.due) return "Due set";
   if (task.scheduled) return "Scheduled";
   return "";
-}
-
-async function writeClipboard(value: string): Promise<void> {
-  if (!navigator.clipboard?.writeText)
-    throw new Error("Clipboard access is not available.");
-  await navigator.clipboard.writeText(value);
 }

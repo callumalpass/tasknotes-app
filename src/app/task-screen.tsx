@@ -19,6 +19,7 @@ import { useMutationState } from "../components/use-mutation-state";
 import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
 import { RecordWriteNotice } from "../components/record-write-notice";
+import { TaskRecordFile } from "../components/task-record-file";
 import { useRecordWriteState } from "../components/use-record-write-state";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
@@ -934,10 +935,10 @@ function TaskEditor({
           />
         </TaskFormSection>
 
-        <details className="record-path">
-          <summary>Markdown record</summary>
-          <code>{task.path}</code>
-        </details>
+        <TaskRecordFile
+          linkFormat={configuration.linkWriteFormat}
+          task={task}
+        />
       </div>
     </section>
   );

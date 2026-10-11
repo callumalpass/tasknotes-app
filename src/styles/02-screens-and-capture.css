@@ -48,8 +48,7 @@
 }
 
 .eyebrow,
-.section-heading,
-.record-path > span {
+.section-heading {
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-mono-micro);
   font-weight: 500;

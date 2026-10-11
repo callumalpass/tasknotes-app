@@ -95,8 +95,7 @@
 .choice-field legend,
 .notes-field > span,
 .form-field > span,
-.form-field > label,
-.record-path > span {
+.form-field > label {
   display: block;
   margin: 0 0 var(--space-xs);
   color: var(--ink-muted);
@@ -1812,27 +1811,67 @@
   border-bottom: 0;
 }
 
-.record-path {
+/* The task's file is quiet reference: muted mono path, muted actions that
+   only gain ink on hover or focus, and a status that clears itself. */
+.record-file {
   padding: 20px 2px 25px;
   color: var(--ink-muted);
 }
 
-.record-path summary {
+.record-file-path {
   display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+
+.record-file-path svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.record-file-path code {
+  min-width: 0;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.record-file-actions {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  width: max-content;
+  column-gap: 16px;
+  margin-top: 4px;
+  margin-left: 24px;
+}
+
+.record-file-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: var(--control-min-size);
-  margin-bottom: 9px;
+  padding: 0 2px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
   cursor: pointer;
+}
+
+.record-file-actions button:is(:hover, :focus-visible) {
+  color: var(--ink);
+}
+
+.record-file-status {
+  color: var(--ink-soft);
   font-size: var(--type-supporting);
 }
 
-.record-path code {
-  display: block;
-  color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  overflow-wrap: anywhere;
+.record-file-status:empty {
+  display: none;
 }
 
 .task-delete-layer,

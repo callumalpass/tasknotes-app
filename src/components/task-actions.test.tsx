@@ -43,6 +43,33 @@ describe("TaskActions", () => {
     );
   }
 
+  it("copies the task's wikilink and path from the Copy submenu", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      renderRow();
+      await openMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
+      fireEvent.click(screen.getByRole("menuitem", { name: /Copy task link/ }));
+      await waitFor(() =>
+        expect(writeText).toHaveBeenCalledWith(
+          `[[${task.path.replace(/\.md$/, "")}|Menu parent]]`,
+        ),
+      );
+      await openMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Copy path" }));
+      await waitFor(() =>
+        expect(writeText).toHaveBeenLastCalledWith(task.path),
+      );
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
   it("updates contract-defined status, priority, and date shortcuts", async () => {
     renderRow();
 
