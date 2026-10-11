@@ -94,8 +94,8 @@ export function CloudConnectionView({
           </summary>
           <p>
             mdbase keeps your tasks as portable Markdown files while giving
-            compatible apps a shared way to understand them. mdbase Connect lets
-            you choose a collection and approve TaskNotes’ access—whether it’s
+            compatible apps a shared way to understand them. In mdbase, you
+            choose a collection and approve TaskNotes’ access, whether it’s
             hosted by mdbase or available from a connected computer.
           </p>
         </details>

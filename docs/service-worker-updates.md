@@ -18,10 +18,12 @@ eviction and unavailable assets that were never cached can still prevent a
 load; retention is not a guarantee of indefinite offline availability.
 
 After a collection cutover, an older SDK may refuse a save and show only its
-existing connection error. For example, the SDK cut `2e2ae687` cancels the body
-of unsuccessful log responses and maps them to `unavailable`, so the server's
-new human-readable 409 copy does not reach that client's UI. New code cannot
-repair an already-running old SDK. The tab keeps its unsubmitted text visible
+existing connection error. The SDK cut `2e2ae687`, used only on LAB/next builds
+and never shipped to production users, cancels the body of unsuccessful log
+responses and maps them to `unavailable`. The server's new human-readable 409
+copy therefore does not reach that LAB client's UI. This LAB-only limitation
+is separate from production users' legacy Connect update handling. New code
+cannot repair an already-running old SDK. The tab keeps its unsubmitted text visible
 and copyable; copy that text before manually reloading if it cannot be saved.
 No mutation is automatically replayed.
 

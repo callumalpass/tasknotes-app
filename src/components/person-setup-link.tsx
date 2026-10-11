@@ -17,7 +17,7 @@ export function PersonSetupLink({
     >
       <UserRound size={18} aria-hidden="true" />
       <span className="people-profile-label">
-        <span>Choose or create your person record in Connect</span>
+        <span>Choose or create your person record</span>{" "}
         <span className="people-action-caption">Opens in a new tab</span>
       </span>
       <ArrowUpRight size={18} aria-hidden="true" />
