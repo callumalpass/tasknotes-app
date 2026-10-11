@@ -4,7 +4,10 @@ import {
   defaultNavigationViewKeys,
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
-import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
+import {
+  logViewDiscovery,
+  type ViewDiscoveryOutcome,
+} from "./view-discovery-diagnostic";
 import { flattenViewDocuments } from "../domain/view";
 import { useRepository } from "./repository-context";
 import {
@@ -36,6 +39,8 @@ export function useNavigationViews(): {
   navigationKeys: string[];
   homeKey?: string;
   loading: boolean;
+  discovery: "loading" | ViewDiscoveryOutcome;
+  refreshing: boolean;
   refresh(): Promise<void>;
   toggleNavigationView(key: string): void;
   moveNavigationView(key: string, direction: -1 | 1): void;
@@ -47,52 +52,109 @@ export function useNavigationViews(): {
     scope: "",
     navigationKeys: [],
   });
-  const requestSequence = useRef(0);
+  const requestSequence = useRef({ value: 0 });
+  const [discovery, setDiscovery] = useState<"loading" | ViewDiscoveryOutcome>(
+    "loading",
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
     if (status !== "ready") return;
-    const request = ++requestSequence.current;
+    const sequence = requestSequence.current;
+    const request = ++sequence.value;
+    const started = performance.now();
+    let outcome: ViewDiscoveryOutcome = "error";
+    let viewCount: number | null = null;
+    let stage: "metadata" | "discovery" = "metadata";
+    let discoveryMs: number | null = null;
+    let failure: unknown;
+    let published = false;
     let info: Awaited<ReturnType<TaskRepository["collectionInfo"]>> | undefined;
-    let cachedDocuments: TaskViewDocument[] = [];
+    let cachedDocuments: TaskViewDocument[];
+    let cachedCatalog: ViewCatalog | null = null;
     try {
+      // Start asynchronously when invoked by the mount effect. Superseded
+      // owners cannot publish state or launch an extra discovery READ.
+      await Promise.resolve();
+      if (request !== sequence.value) return;
+      setRefreshing(true);
       [info, cachedDocuments] = await Promise.all([
         repository.collectionInfo(),
         repository.cachedViews().catch(() => []),
       ]);
-      if (request !== requestSequence.current) return;
-      const cached = resolveNavigationViewCatalog(info, cachedDocuments, true);
-      if (cached)
-        setCatalog((current) =>
-          current.documents === null || current.scope !== cached.scope
-            ? cached
-            : current,
-        );
-
-      const providerDocuments = await ensureTaskNotesDefaultViewSource(
-        repository,
-        await repository.listViews(),
-        await repository.taskConfiguration(),
-      );
-      if (request !== requestSequence.current) return;
-      setCatalog(resolveNavigationViewCatalog(info, providerDocuments, false)!);
-    } catch (reason) {
-      if (request !== requestSequence.current) return;
-      const fallback = info
-        ? resolveNavigationViewCatalog(info, cachedDocuments, false)
-        : null;
+      if (request !== sequence.value) return;
+      cachedCatalog = resolveNavigationViewCatalog(info, cachedDocuments, true);
+      const scope = navigationViewScope(info);
       setCatalog((current) => {
-        const resolved =
-          current.documents !== null ? current : (fallback ?? current);
-        return {
-          ...resolved,
-          error: reason instanceof Error ? reason.message : String(reason),
-        };
+        if (current.scope === scope && current.documents !== null)
+          return current;
+        return (
+          cachedCatalog ?? {
+            documents: null,
+            error: "",
+            scope,
+            navigationKeys: [],
+          }
+        );
+      });
+      stage = "discovery";
+      const readStarted = performance.now();
+      let providerDocuments: TaskViewDocument[];
+      try {
+        // Discovery is read-only. Setup and explicit Create view own writes;
+        // missing/deleted defaults must never be silently recreated here.
+        providerDocuments = await repository.listViews();
+      } finally {
+        discoveryMs = performance.now() - readStarted;
+      }
+      viewCount = flattenViewDocuments(providerDocuments).length;
+      outcome = viewCount ? "ok" : "empty";
+      if (request !== sequence.value) return;
+      setCatalog(resolveNavigationViewCatalog(info, providerDocuments, false)!);
+      setDiscovery(outcome);
+      published = true;
+    } catch (reason) {
+      failure = reason;
+      outcome = "error";
+      if (request !== sequence.value) return;
+      // A failed READ is not an authoritative empty catalog. Preserve cached
+      // views and preferences without pruning or writing navigation choices.
+      setCatalog((current) => ({
+        ...(info && current.scope === navigationViewScope(info)
+          ? current
+          : (cachedCatalog ?? {
+              documents: null,
+              scope: info ? navigationViewScope(info) : "",
+              navigationKeys: [],
+            })),
+        error: "Couldn't load your views.",
+      }));
+      setDiscovery("error");
+      published = true;
+    } finally {
+      if (request === sequence.value) setRefreshing(false);
+      logViewDiscovery({
+        outcome,
+        viewCount,
+        stage,
+        error: failure,
+        published,
+        totalMs: performance.now() - started,
+        discoveryMs,
       });
     }
   }, [repository, status]);
 
   useEffect(() => {
-    void refresh();
+    const sequence = requestSequence.current;
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void refresh();
+    });
+    return () => {
+      active = false;
+      sequence.value++;
+    };
   }, [refresh]);
 
   const setNavigationKeys = useCallback(
@@ -144,7 +206,9 @@ export function useNavigationViews(): {
     navigationViews,
     navigationKeys: catalog.navigationKeys,
     homeKey: catalog.navigationKeys[0],
-    loading: catalog.documents === null,
+    loading: catalog.documents === null && discovery !== "error",
+    discovery,
+    refreshing,
     refresh,
     toggleNavigationView,
     moveNavigationView,
