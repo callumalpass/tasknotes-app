@@ -498,10 +498,8 @@
 }
 
 .task-row-title-text {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 .task-row.is-complete .task-row-title {

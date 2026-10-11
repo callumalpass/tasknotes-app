@@ -997,14 +997,6 @@
     margin-left: 16px;
   }
 
-  .task-row-title {
-    display: -webkit-box;
-    overflow: hidden;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
   .task-row-meta {
     min-width: 0;
     flex-wrap: wrap;
