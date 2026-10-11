@@ -48,6 +48,7 @@ import {
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { ViewsScreen } from "./views-screen";
+import { CaptureFab } from "../components/capture-fab";
 import { ModelSetupScreen } from "./model-setup-screen";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import {
@@ -401,16 +402,11 @@ export function AppShell() {
         </nav>
       ) : null}
       {route.page !== "task" && showGlobalCaptureFab ? (
-        <button
+        <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
-          className="global-capture-fab"
-          type="button"
           onClick={() => setCaptureOpen(true)}
-        >
-          <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
-          <span>Add task</span>
-        </button>
+        />
       ) : null}
       <KeyboardLayer
         homeKey={homeKey}

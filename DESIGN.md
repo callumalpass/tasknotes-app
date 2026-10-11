@@ -181,6 +181,9 @@ Today             Search       More
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
   one unmistakable primary action, not a page full of competing buttons.
+  While the page scrolls down it narrows to its plus, regaining its label when
+  scrolling settles or reverses, and lists reserve enough bottom space for
+  their last row and its menu to scroll clear of it.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
   Text fields, selects, and date/time triggers share a type and height rhythm.
   Keep labels close to their fields (4px), separate related fields by 16px,
@@ -341,7 +344,13 @@ Today             Search       More
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
   manually sorted lists keep measured windowing rather than rendering every row. There is no special
-  overdue-review workflow or automatic hiding of overdue work. Projects likewise
+  overdue-review workflow or automatic hiding of overdue work; the Overdue
+  heading carries one quiet Move all to today action that schedules each row
+  for today exactly as `t` does (Scheduled moves, keeping its time; Due stays)
+  in one batch, with Undo in the notice. When Today and Overdue are empty,
+  Today says “Today is clear,” names the next task coming, and links to
+  Upcoming; a collection with no tasks says so instead. The Today date shows
+  “n of m done” once a task planned for today has been completed. Projects likewise
   have collection/view-scoped collapse choices, visible counts, and a compact
   jump selector that expands and focuses the chosen project.
 - Scheduled and Due retain visible labels, including when both dates occur on

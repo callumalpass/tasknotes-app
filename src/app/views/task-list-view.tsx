@@ -1,6 +1,7 @@
 import { GripVertical } from "lucide-react";
 import { useRef, useState } from "react";
 import type {
+  ReactNode,
   DragEvent as ReactDragEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
@@ -41,7 +42,16 @@ export function TaskListView({
   onMove,
   onOpen,
   onToggle,
+  sectionAction,
+  emptyState,
+  daySectionsClear,
 }: ViewProps & {
+  /** A quiet heading control for a lane, such as Overdue's reschedule. */
+  sectionAction?(lane: TaskListLane): ReactNode;
+  /** Replaces the generic empty state when the view has no rows at all. */
+  emptyState?: ReactNode;
+  /** Shown above day sections once Today and Overdue have no rows left. */
+  daySectionsClear?: ReactNode;
   orderUnavailable: boolean;
   sectionScope?: string;
   configuration: TaskCollectionConfiguration;
@@ -58,7 +68,11 @@ export function TaskListView({
   ): void;
 }) {
   if (!execution.rows.length)
-    return <ViewEmptyState view={execution.view} stale={execution.stale} />;
+    return (
+      emptyState ?? (
+        <ViewEmptyState view={execution.view} stale={execution.stale} />
+      )
+    );
   const groups = groupTaskViewRows(execution);
   let lanes: TaskListLane[];
   let grouped = false;
@@ -100,26 +114,41 @@ export function TaskListView({
     }
   }
   lanes = applyOptimisticListMoves(lanes, execution.rows, moves, manualOrder);
+  const clear =
+    daySections &&
+    daySectionsClear &&
+    !lanes.some(
+      (lane) =>
+        (lane.key === "section:today" || lane.key === "section:overdue") &&
+        lane.rows.length,
+    )
+      ? daySectionsClear
+      : null;
   if (!manualOrder && execution.rows.length > 100)
     return (
-      <VirtualTaskList
-        key={`${sectionScope}:${execution.view.key}`}
-        preferenceScope={
-          sectionScope
-            ? JSON.stringify([sectionScope, execution.view.key])
-            : undefined
-        }
-        lanes={lanes}
-        grouped={grouped}
-        daySections={daySections}
-        properties={execution.view.properties}
-        titleProperty={titleProperty}
-        onOpen={onOpen}
-        onToggle={onToggle}
-      />
+      <>
+        {clear}
+        <VirtualTaskList
+          key={`${sectionScope}:${execution.view.key}`}
+          preferenceScope={
+            sectionScope
+              ? JSON.stringify([sectionScope, execution.view.key])
+              : undefined
+          }
+          lanes={lanes}
+          grouped={grouped}
+          daySections={daySections}
+          properties={execution.view.properties}
+          titleProperty={titleProperty}
+          onOpen={onOpen}
+          onToggle={onToggle}
+          sectionAction={sectionAction}
+        />
+      </>
     );
   return (
     <ManualTaskRows
+      daySectionsClear={clear}
       orderUnavailable={orderUnavailable}
       preferenceScope={
         sectionScope
@@ -137,6 +166,7 @@ export function TaskListView({
       onOpen={onOpen}
       onMove={onMove}
       onToggle={onToggle}
+      sectionAction={sectionAction}
     />
   );
 }
@@ -157,7 +187,11 @@ function ManualTaskRows({
   onOpen,
   onMove,
   onToggle,
+  sectionAction,
+  daySectionsClear,
 }: {
+  sectionAction?(lane: TaskListLane): ReactNode;
+  daySectionsClear: ReactNode;
   orderUnavailable: boolean;
   configuration: TaskCollectionConfiguration;
   preferenceScope?: string;
@@ -486,8 +520,14 @@ function ManualTaskRows({
     </div>
   );
 
+  // Manual order keeps empty sections as drop targets, so a clear day is
+  // told inside the empty Today section rather than above an empty heading.
+  const clearInTodayLane = Boolean(
+    daySectionsClear && manualOrder && grouped && !virtualized,
+  );
   return (
     <>
+      {daySectionsClear && !clearInTodayLane ? daySectionsClear : null}
       <div
         aria-busy={orderPending}
         className={
@@ -508,6 +548,9 @@ function ManualTaskRows({
               titleProperty={titleProperty}
               onOpen={onOpen}
               onToggle={onToggle}
+              sectionAction={(lane) =>
+                sectionAction?.(laneByKey.get(lane.key)!)
+              }
               showEmpty={Boolean(manualOrder)}
               renderRow={(row, lane) =>
                 renderRow(row, laneByKey.get(lane.key)!)
@@ -521,7 +564,12 @@ function ManualTaskRows({
                 className={`saved-task-list${grouped && manualOrder ? " manual-order-list" : ""}`}
               >
                 {lane.rows.map((row) => renderRow(row, lane))}
-                {grouped && manualOrder && !lane.rows.length ? (
+                {clearInTodayLane &&
+                !dragging &&
+                lane.key === "section:today" &&
+                !lane.rows.length ? (
+                  daySectionsClear
+                ) : grouped && manualOrder && !lane.rows.length ? (
                   <div className="task-list-empty-drop-zone">
                     {dragging && canMoveAcrossLanes ? "Drop here" : "No tasks"}
                   </div>
@@ -546,6 +594,7 @@ function ManualTaskRows({
                 }
                 label={lane.label ?? "Other"}
                 count={lane.rows.length}
+                action={sectionAction?.(lane)}
                 showEmpty={Boolean(manualOrder)}
               >
                 {rows}
