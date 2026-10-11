@@ -50,7 +50,10 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-stream-actions {
   display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 7px;
 }
 
@@ -58,7 +61,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-image-action {
   display: inline-flex;
   width: auto;
-  min-height: 38px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -69,8 +72,7 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-image-action {
-  width: 38px;
-  padding: 0;
+  padding: 0 12px;
   background: transparent;
 }
 
@@ -1551,7 +1553,7 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-new-action,
   .scratchpad-image-action {
-    min-height: 38px;
+    min-height: 44px;
     padding-right: 8px;
     padding-left: 8px;
     font-size: 0.86rem;

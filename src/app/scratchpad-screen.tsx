@@ -1079,6 +1079,7 @@ export function ScratchpadScreen({
                 onClick={() => setImageCaptureOpen((open) => !open)}
               >
                 <ImagePlus aria-hidden="true" size={18} />
+                <span>Add image</span>
               </button>
               <button
                 aria-label="New note"
