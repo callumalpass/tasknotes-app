@@ -142,6 +142,86 @@
   border-color: transparent;
 }
 
+/* Recent searches and opened tasks: quiet single-line rows above the chips. */
+.search-history {
+  display: grid;
+  gap: var(--space-xl);
+  padding-top: 28px;
+}
+
+.search-history header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.search-history h2 {
+  margin: 0;
+  color: var(--ink-muted);
+  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-size: var(--type-mono-micro);
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.search-history header button {
+  min-height: var(--control-min-size);
+  padding: 0 2px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.search-history ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.search-history li button {
+  display: flex;
+  width: 100%;
+  min-height: var(--control-min-size);
+  align-items: center;
+  gap: 10px;
+  padding: 0 var(--space-sm);
+  margin-inline: calc(-1 * var(--space-sm));
+  box-sizing: content-box;
+  color: var(--ink);
+  font-size: var(--type-body);
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.search-history li button svg {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+}
+
+.search-history li button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-history header button:hover,
+.search-history li button:hover {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
+.search-history + .browse-fields {
+  padding-top: 28px;
+}
+
 .settings-section {
   margin-top: var(--space-xl);
   scroll-margin-top: var(--space-xl);
@@ -361,9 +441,56 @@
   padding-top: 0;
 }
 
+/* Identity, connection, and its two actions read as one calm block: the
+   actions sit beside the name where there is room and follow it on phones. */
 .settings-collection-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm) var(--space-lg);
   padding: var(--space-lg) 0;
   border-bottom: 1px solid var(--line);
+}
+
+.settings-collection-card > .section-copy {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.settings-collection-card > .settings-collection-actions {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+@media (max-width: 560px) {
+  .settings-collection-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-collection-card > .settings-collection-actions {
+    grid-row: auto;
+    grid-column: 1;
+    padding-top: var(--space-xs);
+  }
+}
+
+.settings-collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.settings-collection-actions .secondary-action {
+  padding: 0 var(--space-md);
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  font-weight: 400;
+  border-color: var(--line);
+}
+
+.settings-collection-actions .secondary-action:not(:disabled):hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 .settings-collection-identity {
