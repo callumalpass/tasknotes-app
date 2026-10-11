@@ -1,28 +1,57 @@
-import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
-import { ArrowRight, Check, Cloud, Monitor, Plus, X } from "lucide-react";
-import { useRef } from "react";
+import {
+  ArrowRight,
+  Check,
+  Cloud,
+  Folder,
+  Monitor,
+  Plus,
+  X,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-
-import { isHostedCloudConnection } from "../cloud/connect";
 import { useOverlay } from "../components/overlays/use-overlay";
 
+/** Presentation metadata from the selected SDK owner. Unknown authority stays
+ * unknown; the picker neither infers a provider nor owns selection or URLs. */
+export interface CollectionChoice {
+  collectionId: string;
+  displayName: string;
+  authority?: { kind: "hosted" | "connector" };
+}
 export function CollectionPicker({
   connections,
   selectedCollectionId,
+  openingCollectionId = null,
+  busy = false,
+  error = null,
+  onRetry,
   onAuthorize,
   onClose,
   onSelect,
 }: {
-  connections: MdbaseConnectionInfo[];
+  connections: readonly CollectionChoice[];
   selectedCollectionId: string | null;
+  openingCollectionId?: string | null;
+  busy?: boolean;
+  error?: string | null;
+  onRetry?(): void;
   onAuthorize(): void;
   onClose(): void;
   onSelect(collectionId: string): void;
 }) {
+  const [search, setSearch] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
   const firstCollectionRef = useRef<HTMLButtonElement>(null);
   const selectedCollectionRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
+  const working = busy || openingCollectionId !== null;
+  const query = search.trim().toLocaleLowerCase();
+  const visible = connections.filter((connection) =>
+    connection.displayName.toLocaleLowerCase().includes(query),
+  );
+  const openingName = connections.find(
+    (connection) => connection.collectionId === openingCollectionId,
+  )?.displayName;
   useOverlay({
     open: true,
     rootRef: dialogRef,
@@ -48,7 +77,7 @@ export function CollectionPicker({
           <div>
             <p className="eyebrow">TaskNotes collection</p>
             <h2 id="collection-picker-title">Choose where to work</h2>
-            <p>TaskNotes opens the collection at its authoritative location.</p>
+            <p>Choose a collection without leaving your current page.</p>
           </div>
           <button
             aria-label="Close collection picker"
@@ -62,18 +91,57 @@ export function CollectionPicker({
           </button>
         </header>
         <div className="collection-picker-content">
-          <div className="collection-picker-group">
+          {connections.length >= 6 ? (
+            <label className="collection-picker-search">
+              <span>Search collections</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+          ) : null}
+          {working ? (
+            <p className="connection-status" role="status">
+              {openingCollectionId
+                ? openingName
+                  ? `Opening ${openingName}…`
+                  : "Opening collection…"
+                : "Opening mdbase…"}
+            </p>
+          ) : null}
+          {error ? (
+            <div className="collection-picker-error">
+              <p className="inline-error" role="alert">
+                {error}
+              </p>
+              {onRetry ? (
+                <button
+                  className="text-action"
+                  disabled={working}
+                  onClick={onRetry}
+                  type="button"
+                >
+                  Retry
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="collection-picker-group" aria-busy={working}>
             <h3>Available collections</h3>
             <div>
-              {connections.map((connection, index) => {
+              {visible.map((connection, index) => {
                 const active = connection.collectionId === selectedCollectionId;
-                const hosted = isHostedCloudConnection(connection);
+                const authority = connection.authority?.kind;
                 return (
                   <button
                     aria-current={active ? "true" : undefined}
                     className={`collection-picker-row${active ? " current" : ""}`}
+                    disabled={working}
                     key={connection.collectionId}
-                    onClick={() => onSelect(connection.collectionId)}
+                    onClick={() =>
+                      active ? onClose() : onSelect(connection.collectionId)
+                    }
                     ref={(element) => {
                       if (index === 0) firstCollectionRef.current = element;
                       if (active) selectedCollectionRef.current = element;
@@ -81,28 +149,40 @@ export function CollectionPicker({
                     type="button"
                   >
                     <span className="collection-picker-row-icon">
-                      {hosted ? (
+                      {authority === "hosted" ? (
                         <Cloud aria-hidden="true" size={19} />
-                      ) : (
+                      ) : authority === "connector" ? (
                         <Monitor aria-hidden="true" size={19} />
+                      ) : (
+                        <Folder aria-hidden="true" size={19} />
                       )}
                     </span>
                     <span>
                       <strong>{connection.displayName}</strong>
-                      <small>
-                        {hosted ? "Hosted by mdbase" : "Connected computer"}
-                      </small>
+                      {authority ? (
+                        <small>
+                          {authority === "hosted"
+                            ? "Hosted by mdbase"
+                            : "Connected computer"}
+                        </small>
+                      ) : null}
                     </span>
                     <span className="collection-picker-row-state">
                       {active ? <Check aria-hidden="true" size={16} /> : null}
-                      {active ? "Current" : "Open"}
+                      {active
+                        ? "Current"
+                        : openingCollectionId === connection.collectionId
+                          ? "Opening…"
+                          : "Open"}
                     </span>
                   </button>
                 );
               })}
-              {!connections.length ? (
+              {!visible.length ? (
                 <p className="collection-picker-empty">
-                  No collections are connected to TaskNotes on this device yet.
+                  {connections.length
+                    ? `No collections match “${search.trim()}”.`
+                    : "No collections are connected to TaskNotes on this device yet."}
                 </p>
               ) : null}
             </div>
@@ -111,6 +191,7 @@ export function CollectionPicker({
         <footer className="collection-picker-footer">
           <button
             className="collection-picker-action"
+            disabled={working}
             onClick={onAuthorize}
             type="button"
           >
