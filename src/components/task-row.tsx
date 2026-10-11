@@ -12,6 +12,7 @@ import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
 import { useSwipeActions } from "./use-swipe-actions";
+import { useTaskShortcuts } from "./use-task-shortcuts";
 
 import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -32,7 +33,7 @@ export function TaskRow({
   supportingText?: string;
 }) {
   const supportingId = useId();
-  const { configuration, mutations, repository } = useRepository();
+  const { configuration, mutations, repository, updateTask } = useRepository();
   const command = useMutationState(
     mutations,
     completionKey(task.id, occurrence?.date),
@@ -42,16 +43,18 @@ export function TaskRow({
   const [localError, setLocalError] = useState("");
   const pending = command.pending || localPending;
   const error = mutations ? command.error?.message : localError;
-  async function complete() {
-    if (pendingRef.current || command.pending) return;
+  async function complete(): Promise<boolean> {
+    if (pendingRef.current || command.pending) return false;
     pendingRef.current = true;
     setLocalPending(true);
     setLocalError("");
     try {
       await onToggle(task, occurrence?.date);
       actionFeedback();
+      return true;
     } catch (reason) {
       setLocalError(reason instanceof Error ? reason.message : String(reason));
+      return false;
     } finally {
       pendingRef.current = false;
       setLocalPending(false);
@@ -91,6 +94,26 @@ export function TaskRow({
     })
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   const rowRef = useRef<HTMLDivElement>(null);
+  useTaskShortcuts(rowRef, {
+    task,
+    completed: displayedTask.completed,
+    reschedulable: !(occurrence && task.recurrence && !task.occurrenceDate),
+    open: () => onOpen(task, occurrence?.date),
+    toggle: async () => {
+      if (!(await complete())) throw new Error("Completion failed");
+    },
+    schedule: async (scheduled) => {
+      try {
+        await updateTask(task.id, { scheduled });
+        actionFeedback();
+      } catch (reason) {
+        setLocalError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+        throw reason;
+      }
+    },
+  });
   const swipe = useSwipeActions({
     disabled: pending,
     onSwipe: (direction) => {
@@ -105,6 +128,10 @@ export function TaskRow({
     <div
       {...swipe.handlers}
       className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      data-task-id={task.id}
+      data-task-title={task.title}
+      data-task-completed={displayedTask.completed ? "true" : undefined}
+      data-occurrence={occurrence?.date}
       data-swipe-hint={
         swipe.offset > 0
           ? displayedTask.completed

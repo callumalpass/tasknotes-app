@@ -291,6 +291,16 @@ Today             Search       More
   row controls have 44px targets. Linked rows expose the same task-actions menu
   used by task lists, and nested branches can collapse. Loaded history appears
   without fading its readable text.
+- Keyboard speed is additive and never required. A focused task row shows a
+  soft accent fill with a 2px leading bar rather than a box around its title.
+  `j`/`k` (and the arrow keys on a row) move between rows; `o`/Enter, `x`, `t`,
+  `m`, and `w` open, complete, and schedule the focused task for today,
+  tomorrow, or the start of next calendar week through the same mutation paths
+  as the menu, with a polite announcement. Delete has no key. Plain keys yield
+  to typing, IME composition, modifiers, and any open overlay. Cmd/Ctrl+K opens
+  a command palette (navigation, actions, the focused or open task, task
+  search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
+  shows a quiet Commands ⌘K entry in the sidebar utilities.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.

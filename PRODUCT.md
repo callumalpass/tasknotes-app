@@ -77,5 +77,7 @@ calendar toolbar and overflow controls remain 44px. Preserve non-color state
 indicators, reduced-motion support, and predictable
 screen-reader order. Support system, light, and dark appearance settings, and
 test all three without encoding task state by color alone. Focusing an editable
-field alone must not remove navigation. Ordinary pages and editors reflow at
-320px with 200% root text; intentional board/calendar scrolling stays local.
+field alone must not remove navigation. Keyboard users can move through task
+lists and act on a task without the pointer; the shortcut sheet (`?`) lists
+every key, and none fires while typing or while a menu or dialog is open.
+Ordinary pages and editors reflow at 320px with 200% root text; intentional board/calendar scrolling stays local.
