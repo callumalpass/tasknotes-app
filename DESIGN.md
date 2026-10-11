@@ -331,7 +331,12 @@ Today             Search       More
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
   Schedule and status have a compact, wrapping disclosure summary; advanced
-  properties and the backing Markdown record remain inspectable. Returning to
+  properties remain inspectable. The editor ends with the task's Markdown
+  file: its collection-relative path in muted mono, with quiet Copy path and
+  Copy wikilink actions (Copy Markdown link when the collection writes
+  Markdown links). Copying confirms inline in a polite status that clears
+  itself; a failure says “Couldn’t copy” rather than raising a notice. The
+  row menu’s Copy submenu offers the same title, link, and path. Returning to
   the list restores the invoking control and scroll position.
 - Desktop saved-view capture retains focus after successful creation. Phone
   saved views with creation defaults have one persistent contextual Add task
