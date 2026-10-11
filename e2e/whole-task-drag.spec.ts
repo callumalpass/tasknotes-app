@@ -22,12 +22,10 @@ async function dragBetween(page: Page, from: Locator, to: Locator) {
   await page.mouse.up();
 }
 
-test.beforeEach(({}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "desktop",
-    "Touch drags by the handle or a long press",
-  );
-});
+test.skip(
+  ({ isMobile }) => isMobile,
+  "Touch drags by the handle or a long press",
+);
 
 test("list rows drag by their title and still open on click", async ({
   page,
