@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
 import { CollectionAvailability } from "../components/collection-availability";
+import { CollectionWriteStatus } from "../components/collection-write-status";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
@@ -55,6 +56,7 @@ export function AppShell() {
   const keyboardOccluded = useKeyboardOcclusion();
   const {
     repository,
+    connection,
     status,
     error,
     refresh,
@@ -225,7 +227,7 @@ export function AppShell() {
       }}
     />
   );
-  return (
+  const shell = (
     <div
       className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
@@ -419,6 +421,23 @@ export function AppShell() {
         onUndo={undoTaskDeletion}
       />
     </div>
+  );
+  return (
+    <CollectionWriteStatus
+      repository={repository}
+      connection={connection}
+      onReview={(target) =>
+        navigate(
+          target.kind === "task"
+            ? { page: "task", id: target.id }
+            : target.kind === "source"
+              ? { page: "views" }
+              : { page: "scratchpad" },
+        )
+      }
+    >
+      {shell}
+    </CollectionWriteStatus>
   );
 }
 

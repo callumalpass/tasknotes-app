@@ -2521,20 +2521,18 @@ function ScratchpadDocumentEditor({
               }}
             />
           ) : null}
-          {!nativeSaveState || saveState !== "saved" ? (
-            <span
-              className={`scratchpad-save-state is-${saveState}`}
-              role="status"
-            >
-              {saveState === "saving"
-                ? "Saving"
-                : saveState === "error"
-                  ? nativeSaveState
-                    ? "Save needs review"
-                    : "Not saved"
-                  : "Saved"}
-            </span>
-          ) : null}
+          <span
+            className={`scratchpad-save-state is-${saveState}`}
+            role={saveState === "error" ? "status" : undefined}
+          >
+            {saveState === "error"
+              ? nativeSaveState
+                ? "Save needs review"
+                : "Not saved"
+              : saveState === "saving" || nativeSaveState
+                ? ""
+                : "Saved"}
+          </span>
           {onReactivate ? (
             <button
               className="text-action scratchpad-reactivate-action"

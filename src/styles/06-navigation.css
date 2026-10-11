@@ -290,6 +290,76 @@
 .app-shell:has(.fc-more-popover) .global-capture-fab {
   visibility: hidden;
 }
+
+/* Collection save feedback is one overlay, never part of a task row or header.
+   Routine sync is quiet; only sustained waits or actual outcomes get actions. */
+.collection-write-status {
+  position: fixed;
+  z-index: 5;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  max-width: min(31rem, calc(100% - 40px));
+  padding: 4px 8px;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border-radius: var(--radius-control);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms var(--ease-out),
+    visibility 0s 160ms;
+}
+.collection-write-status.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.collection-write-status > svg {
+  flex: 0 0 auto;
+}
+.collection-write-status > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-write-status.needs-attention {
+  padding: 4px 12px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+  pointer-events: auto;
+}
+.collection-write-status.needs-attention > svg {
+  color: var(--danger);
+}
+.collection-write-status button {
+  min-height: 44px;
+  padding: 4px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.collection-write-status button:disabled {
+  color: var(--ink-muted);
+  cursor: wait;
+}
+@media (max-width: 839px) {
+  .collection-write-status {
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 80px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-write-status {
+    transition: none;
+  }
+}
 @media (max-width: 839px) {
   :root {
     --nav-height: max(72px, calc(3rem + 24px));

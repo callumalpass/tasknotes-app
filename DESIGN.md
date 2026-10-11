@@ -348,9 +348,13 @@ Today             Search       More
   and link values show their display label.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible during native capture and survives a refused capture; it
-  clears only after a genuine native local result. “Saved locally · Waiting to
-  sync” distinguishes this from authority confirmation; subsequent rejection,
-  conflict, and unknown outcomes have separate record status. Date shortcuts
+  clears only after a genuine native local result, not authority confirmation.
+  Routine sync never inserts a row or changes editor geometry: a single quiet
+  overlay appears after two seconds, without a live announcement. Sustained
+  disconnection (five seconds), prolonged waits (30 seconds), rejection,
+  conflict, and unknown outcomes use polite feedback and explicit read-only
+  check/review actions. Known problems survive filtering or navigation until
+  current write metadata clears them; collection changes reset the feedback. Date shortcuts
   preserve an existing time. Closing
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to

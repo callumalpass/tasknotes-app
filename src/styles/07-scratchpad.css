@@ -495,13 +495,15 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-editor.is-writing .scratchpad-save-state {
-  display: inline;
+  display: inline-block;
   position: static;
-  width: auto;
+  width: 6ch;
+  min-height: 1.4em;
   height: auto;
   overflow: visible;
   clip: auto;
   clip-path: none;
+  text-align: right;
   font-size: var(--type-label);
 }
 
@@ -671,7 +673,6 @@ html.scratchpad-route .page-surface {
   letter-spacing: 0.025em;
 }
 
-.scratchpad-save-state.is-saving::before,
 .scratchpad-save-state.is-error::before {
   display: inline-block;
   width: 6px;
@@ -682,7 +683,8 @@ html.scratchpad-route .page-surface {
   content: "";
 }
 
-.scratchpad-save-state.is-saved {
+.scratchpad-save-state.is-saved,
+.scratchpad-save-state.is-saving {
   position: absolute;
   width: 1px;
   height: 1px;

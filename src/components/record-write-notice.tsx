@@ -1,12 +1,13 @@
-import { useState } from "react";
 import type {
   RecordWriteTarget,
   TaskRepository,
 } from "../application/ports/task-repository";
-
 import { useRecordWriteState } from "./use-record-write-state";
+import { WriteStatusOverlay } from "./collection-write-status";
+import { useRegisterWriteStatus } from "./record-write-status-context";
 
-/** Provider-neutral local capture versus authority outcome. Checking never writes. */
+/** Report the existing record outcome to the workspace's single quiet overlay.
+ * Standalone editors use the same presentation without adding in-flow chrome. */
 export function RecordWriteNotice({
   repository,
   target,
@@ -15,34 +16,13 @@ export function RecordWriteNotice({
   target: RecordWriteTarget;
 }) {
   const state = useRecordWriteState(repository, target);
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState(false);
-  if (!state) return null;
+  const registered = useRegisterWriteStatus(target, state);
+  if (registered) return null;
   return (
-    <span className="save-state" role="status">
-      {state === "pending"
-        ? "Saved locally · Waiting to sync"
-        : state === "failed"
-          ? "Change rejected · Review this record"
-          : state === "conflicted"
-            ? "Conflicting changes · Review this record"
-            : "Save outcome unknown"}
-      {state === "unknown" && repository.reconcileWrites ? (
-        <button
-          type="button"
-          disabled={checking}
-          onClick={() => {
-            setChecking(true);
-            setError(false);
-            void repository.reconcileWrites!()
-              .catch(() => setError(true))
-              .finally(() => setChecking(false));
-          }}
-        >
-          {checking ? "Checking" : "Check save"}
-        </button>
-      ) : null}
-      {error ? " · Could not check; the original change is retained" : null}
-    </span>
+    <WriteStatusOverlay
+      repository={repository}
+      pending={state === "pending" ? 1 : 0}
+      problem={state && state !== "pending" ? { target, state } : undefined}
+    />
   );
 }

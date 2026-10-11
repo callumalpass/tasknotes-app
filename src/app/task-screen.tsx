@@ -502,7 +502,9 @@ function TaskEditor({
           aria-label={
             saveState === "error"
               ? `Save failed. ${saveError ?? "Tap to retry."}`
-              : undefined
+              : writeState === "pending"
+                ? "Saved on this device; waiting for sync"
+                : undefined
           }
         >
           {!draft.title.trim()
@@ -512,7 +514,7 @@ function TaskEditor({
               : saveState === "error"
                 ? "Save failed · Retry"
                 : writeState === "pending"
-                  ? "Saved locally"
+                  ? ""
                   : writeState
                     ? "Review save"
                     : "Saved"}

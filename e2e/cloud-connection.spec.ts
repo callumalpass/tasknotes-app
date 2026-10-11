@@ -268,9 +268,18 @@ test("acknowledges local capture before confirmation and prefetches actual recor
       exact: true,
     }),
   });
-  await expect(createdRow.getByRole("status")).toContainText(
-    "Saved locally · Waiting to sync",
+  await expect(createdRow).toBeVisible();
+  const beforeSync = await createdRow.boundingBox();
+  await expect(createdRow.getByRole("status")).toHaveCount(0);
+  await expect(page.getByTestId("collection-write-status")).toBeHidden();
+  await expect(page.getByTestId("collection-write-status")).toContainText(
+    "Syncing…",
   );
+  await expect(page.getByTestId("collection-write-status")).toHaveAttribute(
+    "aria-live",
+    "off",
+  );
+  expect(await createdRow.boundingBox()).toEqual(beforeSync);
   const mobileCapture = (page.viewportSize()?.width ?? 1000) <= 560;
   if (mobileCapture) {
     // Phone capture closes after local acceptance. Reopening must offer an
@@ -292,6 +301,8 @@ test("acknowledges local capture before confirmation and prefetches actual recor
   );
   await page.evaluate(() => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.confirm());
   await expect(createdRow.getByRole("status")).toHaveCount(0);
+  await expect(page.getByTestId("collection-write-status")).toBeHidden();
+  expect(await createdRow.boundingBox()).toEqual(beforeSync);
   expect((await operations(page)).filter((op) => op === "create")).toHaveLength(
     1,
   );

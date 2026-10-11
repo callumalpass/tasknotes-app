@@ -476,8 +476,8 @@ test("offers a quiet writing surface with selection-preserving tools", async ({
   await expect(current.getByText("4 words", { exact: true })).toHaveCount(0);
   await expect(current.getByText(/Markdown supported/)).toHaveCount(0);
   await expect(current.locator(".cm-placeholder")).toHaveCount(0);
-  await expect(current.getByRole("status")).toHaveText("Saved");
-  await expect(current.getByRole("status")).toBeVisible();
+  await expect(current.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(current.getByRole("status")).toHaveCount(0);
   await source.press("ControlOrMeta+z");
   await expect(source).toHaveText("A thought worth keeping");
   const result = await new AxeBuilder({ page })

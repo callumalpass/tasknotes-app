@@ -88,8 +88,11 @@ describe("ScratchpadScreen", () => {
     Object.assign(repository, { writeState });
     renderScratchpad();
     await screen.findByRole("textbox", { name: "Draft task: empty" });
-    expect(screen.getByText("Saved locally · Waiting to sync")).toBeVisible();
+    expect(screen.queryByText("Syncing…")).toBeNull();
     expect(screen.queryByText("Saved", { exact: true })).toBeNull();
+    expect(
+      await screen.findByText("Syncing…", {}, { timeout: 3_000 }),
+    ).toBeVisible();
     expect(writeState).toHaveBeenCalledWith({
       kind: "scratchpad",
       id: current.id,

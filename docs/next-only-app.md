@@ -152,10 +152,12 @@ never complete query/render diagnostics. Timing failures do not change an
 operation's success, rejection, abort or readiness. These are measurement
 boundaries, not evidence that any phase is fast or that native startup is qualified.
 
-Saved follows original confirmations. A genuine native local result is labelled
-Saved locally · Waiting to sync, not authority-saved; rejection, conflict and
-unknown outcomes remain visible with read-only Check save, never replacement
-submissions. Definitions, model settings and setup remain confirmed-only.
+Saved follows original confirmations; native local capture is not authority
+confirmation. Routine pending feedback stays out of rows and editor flow,
+waits two seconds, then uses a quiet Syncing… overlay without live announcements.
+Sustained disconnection and prolonged waits escalate politely; rejection,
+conflict and unknown outcomes remain visible with explicit read-only Check save
+and review actions, never replacement submissions. Definitions, model settings and setup remain confirmed-only.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.
 Unsupported reminders, file metadata and authenticated record authors remain

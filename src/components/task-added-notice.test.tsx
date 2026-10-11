@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+afterEach(() => vi.useRealTimers());
 import type {
   RecordWriteStatus,
   TaskRepository,
@@ -51,12 +52,15 @@ function fixture(initial?: RecordWriteStatus) {
   };
 }
 
-it("keeps capture status visible even if no task row matches the current view", () => {
+it("keeps prolonged capture status outside the confirmation even if no task row matches the current view", async () => {
+  vi.useFakeTimers();
   const f = fixture("pending");
-  expect(screen.getByText("Saved locally · Waiting to sync")).toBeVisible();
+  expect(screen.queryByText("Syncing…")).toBeNull();
+  await act(() => vi.advanceTimersByTime(2_000));
+  expect(screen.getByText("Syncing…")).toBeVisible();
   expect(screen.getByRole("button", { name: "Open" })).toBeEnabled();
   f.set();
-  expect(screen.queryByText("Saved locally · Waiting to sync")).toBeNull();
+  expect(screen.queryByText("Syncing…")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Open" }));
   expect(f.onOpen).toHaveBeenCalledOnce();
   expect(f.onDismiss).toHaveBeenCalledOnce();
@@ -65,9 +69,7 @@ it("keeps capture status visible even if no task row matches the current view", 
 it("shows late rejection without an Open action to a disappeared create or a replacement submit", () => {
   const f = fixture("pending");
   f.set("failed");
-  expect(
-    screen.getByText("Change rejected · Review this record"),
-  ).toBeVisible();
+  expect(screen.getByText("Change rejected")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Open" })).toBeNull();
   expect(f.onOpen).not.toHaveBeenCalled();
   expect(f.reconcile).not.toHaveBeenCalled();
