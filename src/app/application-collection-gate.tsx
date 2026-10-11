@@ -1,0 +1,289 @@
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+} from "react";
+import type {
+  MdbaseApplicationConnection,
+  MdbaseApplicationEntry,
+} from "@mdbase-dev/sdk";
+import { taskNotesApplicationEntry } from "../cloud/tasknotes-application";
+import { NextTaskRepository } from "../storage/next-repository";
+import { registerStartupTiming } from "../observability/startup-timing";
+import { CloudConnectionView } from "./cloud-connection-view";
+import { OpenedCollection } from "./opened-collection";
+import {
+  applicationProblemMessage,
+  applicationRecoveryTarget,
+} from "./application-problem";
+
+export interface ApplicationPickerProps {
+  connections: readonly { collectionId: string; displayName: string }[];
+  selectedCollectionId: string | null;
+  openingCollectionId?: string | null;
+  busy?: boolean;
+  error?: string | null;
+  onRetry?(): void;
+  onAuthorize(): void;
+  onClose(): void;
+  onSelect(collectionId: string): void;
+}
+interface HeldRepository {
+  connection: MdbaseApplicationConnection;
+  repository: NextTaskRepository;
+}
+
+/** SDK declaration/lifecycle only. No app Worker, URL controller, native setup
+ * journal or popup factory. Every repository borrows the original SDK client. */
+export function ApplicationCollectionGate({
+  entry: supplied,
+  Picker,
+  Workspace = OpenedCollection,
+}: {
+  entry?: MdbaseApplicationEntry;
+  Picker: ComponentType<ApplicationPickerProps>;
+  Workspace?: ComponentType<Parameters<typeof OpenedCollection>[0]>;
+}) {
+  const [entry] = useState(() => supplied ?? taskNotesApplicationEntry());
+  const [application] = useState(() => entry.application());
+  const snapshot = useSyncExternalStore(
+    application.subscribe,
+    application.getSnapshot,
+    application.getSnapshot,
+  );
+  const [held, setHeld] = useState<HeldRepository | null>(null);
+  const repository = useRef<HeldRepository | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const action = useRef(false);
+  const lifetime = useRef({
+    mounts: 0,
+    started: false,
+    owner: new AbortController(),
+  });
+
+  useEffect(() => {
+    const original = lifetime.current;
+    original.mounts++;
+    const foreground = () => {
+      try {
+        application.setForeground(document.visibilityState !== "hidden");
+      } catch (reason) {
+        setError(applicationProblemMessage(reason));
+      }
+    };
+    foreground();
+    document.addEventListener("visibilitychange", foreground);
+    if (!original.started) {
+      original.started = true;
+      void application
+        .start({ signal: original.owner.signal })
+        .catch((reason: unknown) => {
+          if (!original.owner.signal.aborted)
+            setError(applicationProblemMessage(reason));
+        });
+    }
+    return () => {
+      document.removeEventListener("visibilitychange", foreground);
+      original.mounts--;
+      // React effect replay retains ONE entry and original initialization.
+      queueMicrotask(() => {
+        if (original.mounts) return;
+        original.owner.abort();
+        repository.current?.repository.dispose();
+        repository.current = null;
+        // Physical Worker/SQL/lease drain and failed-stop quarantine stay SDK-owned.
+        void application.close().catch(() => {
+          /* The terminal original owner stays quarantined; no replacement. */
+        });
+      });
+    };
+  }, [application]);
+
+  const usable = snapshot.selection.usable;
+  const connection = usable ? entry.connection(usable.collectionId) : null;
+  const ready =
+    snapshot.selection.state === "usable" &&
+    snapshot.status === "ready" &&
+    !snapshot.readiness.checking &&
+    !snapshot.readiness.problem &&
+    snapshot.readiness.assessment?.status === "ready";
+  useEffect(() => {
+    const old = repository.current;
+    if (
+      old &&
+      (!connection ||
+        !old.connection.isCurrent() ||
+        old.connection.generation !== connection.generation ||
+        old.connection.records !== connection.records)
+    ) {
+      old.repository.dispose();
+      repository.current = null;
+      setHeld(null);
+    }
+    if (!ready || !connection?.isCurrent() || repository.current) return;
+    const next = {
+      connection,
+      repository: new NextTaskRepository(
+        connection.records,
+        connection.displayName,
+        connection.scope.account,
+        { clientOwnership: "borrowed" },
+      ),
+    };
+    // Only app-owned stages: no invented native/Worker durations or extra reads.
+    registerStartupTiming(next.repository);
+    repository.current = next;
+    setHeld(next);
+  }, [connection, ready]);
+
+  async function run(operation: () => Promise<unknown>) {
+    if (action.current || lifetime.current.owner.signal.aborted) return;
+    action.current = true;
+    setWorking(true);
+    setError(null);
+    try {
+      // Executes synchronously in the user gesture: SDK reserves its own popup
+      // BEFORE its first await. This is a presentation latch, not a native FIFO.
+      await operation();
+    } catch (reason) {
+      if (!lifetime.current.owner.signal.aborted)
+        setError(applicationProblemMessage(reason));
+    } finally {
+      action.current = false;
+      if (!lifetime.current.owner.signal.aborted) setWorking(false);
+    }
+  }
+  const options = () => ({ signal: lifetime.current.owner.signal });
+  const select = (id: string) =>
+    run(async () => {
+      await application.select(id, options());
+      if (application.getSnapshot().selection.usable?.collectionId === id)
+        setPicking(false);
+    });
+  const recovery = applicationRecoveryTarget(snapshot);
+  const busy =
+    working ||
+    snapshot.readiness.checking ||
+    ["starting", "authorizing", "opening"].includes(snapshot.status) ||
+    ["opening", "approving"].includes(snapshot.selection.state);
+  const message =
+    error ??
+    (snapshot.problem
+      ? applicationProblemMessage(snapshot.problem)
+      : snapshot.selection.problem
+        ? applicationProblemMessage(snapshot.selection.problem)
+        : snapshot.readiness.problem
+          ? applicationProblemMessage(snapshot.readiness.problem.code)
+          : null);
+  const current =
+    held &&
+    held.connection.isCurrent() &&
+    connection?.generation === held.connection.generation &&
+    ready
+      ? held
+      : null;
+  const request = snapshot.selection.requested;
+  const chooseAnother = () =>
+    void run(() => application.chooseAnother(options()));
+  const approve = () => run(() => application.approve(undefined, options()));
+  const authorizeAnother = () =>
+    void run(() => application.approve(null, options()));
+  const setup = snapshot.readiness.assessment?.status === "setup_required";
+
+  return (
+    <>
+      {current ? (
+        <Workspace
+          key={current.connection.generation}
+          repository={current.repository}
+          changeCollection={() => setPicking(true)}
+          authorizeAnotherCollection={authorizeAnother}
+          reauthorizeCurrentCollection={() =>
+            void run(() => application.reauthorize(options()))
+          }
+          discardPendingRecovery={async () => {
+            throw new Error(
+              "Original pending collection changes cannot be discarded here.",
+            );
+          }}
+        />
+      ) : (
+        <CloudConnectionView
+          session={snapshot}
+          sdk={{ snapshot }}
+          error={
+            recovery && snapshot.problem === "outcome_unknown"
+              ? "Opening this collection could not be confirmed. Keep this browser's stored data and retry to check the original request."
+              : message
+          }
+          startError={null}
+          retryCollection={recovery ? () => void select(recovery) : undefined}
+          reviewingCollection={setup}
+          firstVisit={
+            snapshot.signIn?.state !== "paired" &&
+            snapshot.collections.length === 0
+          }
+          busy={busy}
+          sdkWaiting={
+            snapshot.status === "authorizing" ||
+            snapshot.selection.state === "approving"
+          }
+          authorizationPending={
+            working && snapshot.selection.state === "approving"
+          }
+          opening={
+            working && snapshot.selection.state === "approving"
+              ? "another"
+              : null
+          }
+          openingCollectionId={
+            snapshot.selection.state === "opening" ? request.collectionId : null
+          }
+          selectedCollectionId={usable?.collectionId ?? null}
+          selectedConnection={usable ?? undefined}
+          availableConnections={snapshot.collections.filter(
+            (item) => item.collectionId !== usable?.collectionId,
+          )}
+          connect={() => approve()}
+          connectLabel={
+            snapshot.selection.state === "approval_required"
+              ? "Approve requested collection"
+              : undefined
+          }
+          open={select}
+          configureCollection={
+            setup
+              ? () => void run(() => application.configure(options()))
+              : undefined
+          }
+          chooseAnotherCollection={
+            request.collectionId ? chooseAnother : undefined
+          }
+          applyCollectionSetup={() =>
+            run(() => application.configure(options()))
+          }
+          cancelAuthorization={() => {}}
+        />
+      )}
+      {picking ? (
+        <Picker
+          connections={snapshot.collections}
+          selectedCollectionId={usable?.collectionId ?? null}
+          openingCollectionId={
+            snapshot.selection.state === "opening" ? request.collectionId : null
+          }
+          busy={busy}
+          error={message}
+          onRetry={recovery ? () => void select(recovery) : undefined}
+          onAuthorize={authorizeAnother}
+          onClose={() => setPicking(false)}
+          onSelect={(id) => void select(id)}
+        />
+      ) : null}
+    </>
+  );
+}

@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-8a557ad6.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-d53d7d76.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "8a557ad68290e04146e456df94c4946d6f033ea7",
+    "d53d7d761c1a7caf100e065a1378384dcc5f6449",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "773126b8414b0d2b9b4afd3ec5b94b32b1b5fef51707a01e9db0ea324fbcfdae",
+    "8b76b3fd687d9e557f3438f25313ac4c55bc0a8994c066bbbfb7c66e0f96cd1d",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-8a557ad6.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-d53d7d76.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -96,14 +96,17 @@ test("packaged native assets are original bytes, not public application readines
       .digest("hex"),
     manifest.native.sqliteSha256,
   );
-  // Public shell only: no Worker, popup, network, storage or native client.
+  // Node has no browser Worker host: its honest shell performs no IO.
+  // This is not a claim that the browser entry is still unavailable.
   const { MdbaseConnect } = await import("@mdbase-dev/sdk");
   const entry = new MdbaseConnect({
     id: "5cdfa020-c201-4da8-845a-f2cc9969eade",
     name: "TaskNotes",
     origin: "http://127.0.0.1:48218",
     environment: "lab",
-    manifest: { id: "dev.tasknotes.tasknotes" },
+    manifest: JSON.parse(
+      await readFile(new URL("src/generated/mdbase-app.json", root), "utf8"),
+    ),
   });
   assert.equal(entry.application().getSnapshot().status, "blocked");
   assert.equal(
@@ -111,6 +114,10 @@ test("packaged native assets are original bytes, not public application readines
     "application_not_yet_available",
   );
   assert.equal(entry.connection("not-selected"), null);
+  assert.equal(entry.application().getSnapshot().selection.state, "none");
+  assert.equal(typeof entry.application().approve, "function");
+  assert.equal(typeof entry.application().reauthorize, "function");
+  assert.equal(typeof entry.application().chooseAnother, "function");
 });
 
 test("SDK environment stays bound to the authenticated LAB build tuple", async () => {

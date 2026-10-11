@@ -25,8 +25,8 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`8a557ad68290e04146e456df94c4946d6f033ea7`, with provenance in
-`vendor/sdk-dev-8a557ad6.json`. This concrete original coordinator-approved dev
+`d53d7d761c1a7caf100e065a1378384dcc5f6449`, with provenance in
+`vendor/sdk-dev-d53d7d76.json`. This concrete original coordinator-approved dev
 intake is not release-qualified. It retains shared factory #819, canonical
 no-email provider receipts #827, bounded failure classification #832, signal
 composition #837 and the original shared-facade Bases READ FIFO. It also retains SDK563's
@@ -41,14 +41,25 @@ The original protocol beta.129/d765e675 archive is a normal file dependency in
 `vendor/`; the earlier protocol override stays removed so it cannot replace the
 SDK's original dependency.
 Legacy Connect packages retain their ordinary protocol dependencies.
-App signal plumbing is unchanged. The default public application entry remains
-an explicit unavailable shell; this archive does not activate it or qualify
-native compatibility. The producer's `native.available: true` means original
+This archive includes the live browser singleton and SDK-owned requested versus
+usable collection selection. Node/SSR without a browser Worker host remain
+honestly unavailable. Every production route now uses the single SDK application
+entry, its selection snapshot and its borrowed original records client. Popup,
+URL/history, setup, physical close and reapproval stay SDK-owned; cancelling the
+app's presentation-only picker leaves the usable workspace and route intact.
+This cut includes the SDK-owned fixes for complete-manifest validation and
+literal Vite Worker/WASM asset emission. Do not normalize the app's registered
+manifest or work around SDK Worker/asset packaging in the app. Manifest generation
+is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
+manifest has a different origin and digest. This source
+intake does not qualify native compatibility. The producer's `native.available: true` means original
 native assets are packaged: runtime515 (3427675 bytes, SHA256
 `6c4ea51534b785c5165bfb671d40116535b1a60fafad035bd384708ea288de83`)
 and the original SQLite bytes. It is not a public runtime readiness signal;
-`MdbaseConnect` still reports `application_not_yet_available`. Existing app
-D70 runtime and trust pins remain unchanged. The immutable concrete archive,
+Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
+browser initialization has its own registration, manifest and asset checks. The shared entry uses the SDK's original packaged assets; it does not take an
+app runtime/trust callback. Historical D70 app-host files remain untouched for
+reference and local fixtures, but are no longer the production entry. The immutable concrete archive,
 not `sdk-dev-latest`, is the consumer authority. A source pin does not identify
 the currently served build or authorize a runtime refresh, session enablement
 or deployment.
@@ -56,9 +67,9 @@ or deployment.
 Existing protected app IDs, origins, environments, accounts, devices, namespaces,
 and key derivations are not rewritten. Refused original restoration stays refused;
 only an explicit user sign-in may start a new flow. There is no alias migration,
-automatic fresh-mode retry, or device replacement. This caller/source intake does
-not change the native runtime or trust pins and is not combined-runtime or
-live sign-in acceptance.
+automatic fresh-mode retry, or device replacement. The declaration supplies no replacement runtime or trust pins. The SDK package
+retains its own original integrity-pinned inputs. This source adaptation is not
+combined-runtime or live sign-in acceptance.
 
 Canonical no-email SDK snapshots carry null `accountEmail`,
 `accountProvider:"github"` and a nonblank login of at most 100 UTF-8 bytes,

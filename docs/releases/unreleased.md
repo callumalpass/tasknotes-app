@@ -1,5 +1,7 @@
 # Unreleased
 
+- Use the shared mdbase sign-in owner and collection selection. Collection links retain their requested target until approval; cancelling the collection picker keeps the current workspace and route. Setup and reapproval stay explicit.
+
 - Offer a clear Retry when the SDK can recover opening an approved collection after a temporary sign-in service failure. Uncertain requests keep their original device and operation, and recovery requires an explicit click rather than automatic replay.
 
 - Keep current navigation and task-detail reads working when leaving a view cancels its shared model read, instead of showing view-loading or task-loading errors. Genuine native read failures remain visible.

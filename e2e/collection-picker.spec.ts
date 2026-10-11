@@ -82,7 +82,9 @@ test("explicit callback selection disables duplicate actions without claiming a 
   await page
     .getByRole("button", { name: "Work Connected computer Open" })
     .click();
-  await expect(page.getByRole("status")).toHaveText("Opening Work…");
+  await expect(page.getByRole("dialog").getByRole("status")).toHaveText(
+    "Opening Work…",
+  );
   await expect(
     page.getByRole("button", { name: "Close collection picker" }),
   ).toBeDisabled();

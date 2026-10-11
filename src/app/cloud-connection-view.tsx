@@ -10,6 +10,9 @@ export interface CloudConnectionViewProps {
   startError: string | null;
   retryAuthorization?: () => void;
   retryCollection?: (() => void) | undefined;
+  connectLabel?: string | undefined;
+  configureCollection?: (() => void) | undefined;
+  chooseAnotherCollection?: (() => void) | undefined;
   reviewingCollection: boolean;
   firstVisit: boolean;
   busy: boolean;
@@ -38,6 +41,9 @@ export function CloudConnectionView({
   startError,
   retryAuthorization,
   retryCollection,
+  connectLabel,
+  configureCollection,
+  chooseAnotherCollection,
   reviewingCollection,
   firstVisit,
   busy,
@@ -197,6 +203,36 @@ export function CloudConnectionView({
           </button>
         </section>
       ) : null}
+      {configureCollection ? (
+        <section
+          className="connection-update"
+          aria-labelledby="sdk-setup-title"
+        >
+          <h2 id="sdk-setup-title">Set up this collection</h2>
+          <p>
+            TaskNotes needs its required collection settings and definitions
+            before your tasks can open.
+          </p>
+          <button
+            className="outline-action"
+            disabled={busy}
+            onClick={configureCollection}
+            type="button"
+          >
+            Set up this collection
+          </button>
+        </section>
+      ) : null}
+      {chooseAnotherCollection ? (
+        <button
+          className="text-action"
+          disabled={busy}
+          onClick={chooseAnotherCollection}
+          type="button"
+        >
+          Choose another collection
+        </button>
+      ) : null}
       <div className="welcome-actions">
         {availableConnections.length ? (
           <section
@@ -276,13 +312,14 @@ export function CloudConnectionView({
                   <Plus aria-hidden="true" size={18} />
                 ) : null}
                 <span>
-                  {reviewingCollection
-                    ? "Choose a different collection in mdbase"
-                    : firstVisit
-                      ? sdk && sdk.snapshot.signIn?.state !== "paired"
-                        ? "Sign in"
-                        : "Choose a collection"
-                      : "Choose another collection in mdbase"}
+                  {connectLabel ??
+                    (reviewingCollection
+                      ? "Choose a different collection in mdbase"
+                      : firstVisit
+                        ? sdk && sdk.snapshot.signIn?.state !== "paired"
+                          ? "Sign in"
+                          : "Choose a collection"
+                        : "Choose another collection in mdbase")}
                 </span>
                 <ArrowRight aria-hidden="true" size={18} />
               </>

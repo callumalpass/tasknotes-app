@@ -1,6 +1,7 @@
-import { NextCollectionGate } from "./next-collection-gate";
+import { ApplicationCollectionGate } from "./application-collection-gate";
+import { CollectionPicker } from "./collection-picker";
 
-/** Every production route uses the original synced collection gate. */
+/** All routes share one SDK-owned application and its original scoped client. */
 export function TaskNotesApp() {
-  return <NextCollectionGate />;
+  return <ApplicationCollectionGate Picker={CollectionPicker} />;
 }

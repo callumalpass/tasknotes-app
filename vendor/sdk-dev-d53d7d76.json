@@ -1,0 +1,60 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "d53d7d761c1a7caf100e065a1378384dcc5f6449",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "publicEntry": "b921022e9",
+    "collectionSelection": "11cf1a2fa",
+    "consumerPackagingAndManifestFix": "d53d7d761c1a7caf100e065a1378384dcc5f6449"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-d53d7d76.tgz",
+  "bytes": 3506698,
+  "sha256": "8b76b3fd687d9e557f3438f25313ac4c55bc0a8994c066bbbfb7c66e0f96cd1d",
+  "integrity": "sha512-2S9cS+jzGaCz4dYXDOePPqW/ZiQrNH99M9dQY81IUZYPRd/goK8jkzslqrKAc+I5YM+1wrtJFgUmrXXkeuZKDw==",
+  "shasum": "36abf621bbd6e2fc4014fa740a7bd7b276ff35d2",
+  "protocol": {
+    "sourceCommit": "d765e675c3da29fe1693deab53c4c2a922bb86f1",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-d765e675c3da.tgz",
+    "bytes": 70702,
+    "sha256": "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
+    "originalEmbeddedBytesVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Producer packaging flag: original native assets included, not live runtime readiness",
+    "sourceCommit": "515a7f8b17ebfb9d2d059eeda418fdc0953b5613",
+    "member": "package/dist/native/runtime-lab.wasm",
+    "bytes": 3427675,
+    "sha256": "6c4ea51534b785c5165bfb671d40116535b1a60fafad035bd384708ea288de83",
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "00aeba90024b17bfa999e297e6240e050d10fd13348ac0833b98eb7eb2cbf266"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "523f9c933eaf215a5bc167a39dda95c7078139295c8b100fa3e168f2acff9961"
+    }
+  },
+  "qualification": {
+    "authority": "co0438/co0447/co0448",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 369,
+    "normalPackOnceNoRepack": true,
+    "producerFullSdkSuite": "skipped for light dev intake",
+    "nativeRuntimeCompatibility": "not qualified by packaging availability",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "purpose": "Concrete original fixed SDK dev cut with live browser singleton, SDK selection, original protocol/native assets, Vite Worker/WASM packaging and canonical compiler plain-JSON boundary. Retains original enrollment recovery/FIFO. Node/SSR honestly remain unavailable. No app manifest rewrite, private SDK patch, latest alias or LAB action. Native packaging does not prove native custody/drain or qualify People/mapped-query activation. TaskNotes live-entry integration needs separate consumer verification."
+}

@@ -95,7 +95,8 @@ export async function nextTaskFixture(
     reconnect: false,
   });
   if (!connectorFactory)
-    vi.spyOn(client, "describe").mockImplementation(async (signal) => {
+    vi.spyOn(client, "describe").mockImplementation(async (input) => {
+      const signal = input && "aborted" in input ? input : input?.signal;
       const resource = await client.resources.get("_types/task.md", signal);
       const definition = parseFrontmatter(resource.text!)
         .frontmatter as unknown as typeof type;

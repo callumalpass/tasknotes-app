@@ -342,7 +342,8 @@ async function fixture({
         result: Promise<wire.DescribeResult>;
       }
     | undefined;
-  vi.spyOn(client, "describe").mockImplementation(async (signal) => {
+  vi.spyOn(client, "describe").mockImplementation(async (input) => {
+    const signal = input && "aborted" in input ? input : input?.signal;
     const listed = await client.resources.list({ text: true, signal });
     const resources = Object.fromEntries(
       listed.resources.map((resource) => [resource.path, resource.text!]),

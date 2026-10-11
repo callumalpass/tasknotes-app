@@ -106,7 +106,8 @@ async function fixture(
   });
   const journal = new TestJournal(scope);
   const owner = new AbortController();
-  vi.spyOn(client, "describe").mockImplementation(async (signal) => {
+  vi.spyOn(client, "describe").mockImplementation(async (input) => {
+    const signal = input && "aborted" in input ? input : input?.signal;
     const sources = await client.resources.list({ text: true, signal });
     const contract = sources.resources.find(
       (r) => r.path === "_contracts/tasknotes.task.md",

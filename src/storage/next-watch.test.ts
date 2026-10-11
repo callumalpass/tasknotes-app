@@ -380,10 +380,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const signals: (AbortSignal | undefined)[] = [];
       if (kind === "catalog") {
         const original = vi.mocked(f.client.describe).getMockImplementation()!;
-        vi.mocked(f.client.describe).mockImplementation(async (signal) => {
+        vi.mocked(f.client.describe).mockImplementation(async (input) => {
           count++;
-          signals.push(signal);
-          const result = await original(signal);
+          signals.push(input && "aborted" in input ? input : input?.signal);
+          const result = await original(input);
           if (count <= 6) changes(batch);
           return result;
         });

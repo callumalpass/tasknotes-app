@@ -1,0 +1,26 @@
+import { expect, it } from "vitest";
+import manifest from "../generated/mdbase-app.json";
+import { taskNotesApplicationDeclaration } from "./tasknotes-application";
+
+it("passes exact generated manifest and original compatibility storage data to the SDK", () => {
+  const declaration = taskNotesApplicationDeclaration({
+    environment: "lab",
+    appOrigin: "http://127.0.0.1:48218",
+  });
+  expect(declaration.id).toBe("5cdfa020-c201-4da8-845a-f2cc9969eade");
+  expect(declaration.name).toBe("TaskNotes");
+  expect(declaration.manifest).toBe(manifest);
+  expect(declaration.storage).toEqual({
+    applicationNamespace: "tasknotes-web",
+    joinDatabaseName: "tasknotes.native-collection-join.v1",
+    setupDatabaseName: "tasknotes.native-model-setup.v1",
+  });
+  expect(Object.keys(declaration).sort()).toEqual([
+    "environment",
+    "id",
+    "manifest",
+    "name",
+    "origin",
+    "storage",
+  ]);
+});

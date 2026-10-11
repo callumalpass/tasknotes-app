@@ -167,7 +167,8 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
         message: "Synthetic collection unavailable.",
       });
   };
-  client.describe = async (signal) => {
+  client.describe = async (input) => {
+    const signal = input && "aborted" in input ? input : input?.signal;
     available();
     control.operations.push("describe");
     const resource = await client.resources.get("_types/task.md", signal);
