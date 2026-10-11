@@ -86,6 +86,8 @@ export function isNextSignInSnapshot(
         "state",
         "accountId",
         "accountEmail",
+        "accountProvider",
+        "accountLogin",
         "collectionSelection",
         "collectionIds",
         "createCollections",
@@ -115,6 +117,27 @@ export function isNextSignInSnapshot(
       !text(view.verificationUri, 8192)
     )
       return false;
+    // Canonical SDK827 display metadata is all-or-none, with null email.
+    // Login is presentation only: the original account UUID remains required.
+    if (
+      Object.hasOwn(view, "accountProvider") ||
+      Object.hasOwn(view, "accountLogin")
+    ) {
+      if (
+        view.accountEmail !== null ||
+        view.accountProvider !== "github" ||
+        !uuid(view.accountId) ||
+        typeof view.accountLogin !== "string" ||
+        !view.accountLogin.length ||
+        new TextEncoder().encode(view.accountLogin).byteLength > 100 ||
+        /\s/.test(view.accountLogin) ||
+        Array.from(view.accountLogin).some(
+          (character) =>
+            character.charCodeAt(0) <= 31 || character.charCodeAt(0) === 127,
+        )
+      )
+        return false;
+    }
     const uri = new URL(view.verificationUri as string);
     if (uri.origin !== cpOrigin || uri.username || uri.password) return false;
     if (
