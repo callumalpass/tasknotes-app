@@ -249,7 +249,7 @@ it("allows a Today move's post-write Bases refresh alongside navigation discover
     const target = screen
       .getByText("Already Today")
       .closest<HTMLElement>("[data-manual-order-task]")!;
-    Object.defineProperties(handle, {
+    Object.defineProperties(handle.closest("[data-manual-order-task]")!, {
       hasPointerCapture: { configurable: true, value: () => true },
       releasePointerCapture: { configurable: true, value: () => {} },
       setPointerCapture: { configurable: true, value: () => {} },
@@ -258,9 +258,10 @@ it("allows a Today move's post-write Bases refresh alongside navigation discover
       configurable: true,
       value: () => target,
     });
-    fireEvent.pointerDown(handle, { pointerId: 9 });
-    fireEvent.pointerMove(handle, { clientX: 20, clientY: 20, pointerId: 9 });
-    fireEvent.pointerUp(handle, { pointerId: 9 });
+    const press = { button: 0, isPrimary: true, pointerId: 9 };
+    fireEvent.pointerDown(handle, press);
+    fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
+    fireEvent.pointerUp(handle, press);
     await waitFor(() => expect(heldReplies.length).toBe(1));
     await waitFor(() =>
       expect(
