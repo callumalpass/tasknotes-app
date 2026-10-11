@@ -216,6 +216,39 @@ it("CP-created selections JOIN once and expose one stable data-only handle, neve
   await adapter.close();
   expect(fixtureValue.host.close).not.toHaveBeenCalled();
 });
+it("publishes current semantic readiness from the original handed-off repository, including demotion", async () => {
+  const value = fixture();
+  const adapter = await f.options.openCollection!(value.context);
+  f.connection = adapter.connection;
+  value.wrapper.takeConnection(collection);
+  const listener = vi.fn();
+  const stop = adapter.subscribe!(listener);
+  value.wrapper.assess(collection, "ready");
+  expect(adapter.state).toBe("ready");
+  expect(listener).toHaveBeenCalledOnce();
+  value.wrapper.assess(collection, "ready");
+  expect(listener).toHaveBeenCalledOnce();
+  value.wrapper.assess(collection, "setup_required");
+  expect(adapter.state).toBe("setup_required");
+  expect(listener).toHaveBeenCalledTimes(2);
+  stop();
+  value.wrapper.assess(collection, "ready");
+  expect(listener).toHaveBeenCalledTimes(2);
+  await adapter.close();
+  expect(() => value.wrapper.assess(collection, "ready")).toThrow();
+});
+it("refuses readiness before the original handoff or for a different collection", async () => {
+  const value = fixture();
+  const adapter = await f.options.openCollection!(value.context);
+  f.connection = adapter.connection;
+  expect(() => value.wrapper.assess(collection, "ready")).toThrow();
+  value.wrapper.takeConnection(collection);
+  expect(() => value.wrapper.assess(account, "ready")).toThrow();
+  expect(adapter.state).toBe("setup_required");
+  value.parent.abort();
+  expect(() => value.wrapper.assess(collection, "ready")).toThrow();
+  await adapter.close();
+});
 it("restores the original attempted join without a fresh bootstrap", async () => {
   const fixtureValue = fixture();
   expect(
