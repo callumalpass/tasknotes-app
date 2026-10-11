@@ -410,3 +410,9 @@ This is functional evidence of portability, not permanent technical chrome.
 Use 150 to 220 millisecond ease-out transitions only when state changes need
 orientation. Completing a task may fade and reposition the row. Respect reduced
 motion and avoid entrance choreography.
+
+When a list's order or membership changes (a completion, reschedule, section
+move, or board column move), rows and cards glide 220ms from where they were
+to where they now sit, so the eye can follow the task. Re-renders that keep the
+order, such as a width change, never move rows. Lists long enough to virtualize
+and moves of more than 60 items settle instantly.
