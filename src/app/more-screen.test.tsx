@@ -8,6 +8,8 @@ const fixture = vi.hoisted(() => ({
   status: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
+  reauthorize: vi.fn(),
+  reminderAuthority: "connect",
   connection: { state: "connected" } as { state: string; message?: string },
   repository: {},
 }));
@@ -18,7 +20,9 @@ vi.mock("../native/mdbase-notifications", () => ({
     disable: fixture.disable,
   },
 }));
-vi.mock("../cloud/connect", () => ({ cloudSession: { authorize: vi.fn() } }));
+vi.mock("../cloud/connect", () => {
+  throw new Error("Settings must not construct a legacy Connect owner");
+});
 vi.mock("./use-narrow-layout", () => ({
   useNarrowLayout: () => fixture.narrow,
 }));
@@ -34,11 +38,14 @@ vi.mock("./repository-context", () => ({
     lastRefresh: null,
     refresh: vi.fn(async () => undefined),
     refreshing: false,
-    reminderAuthority: "connect",
+    reminderAuthority: fixture.reminderAuthority,
   }),
 }));
 vi.mock("./collection-context", () => ({
-  useCollectionGate: () => ({ changeCollection: vi.fn() }),
+  useCollectionGate: () => ({
+    changeCollection: vi.fn(),
+    reauthorizeCurrentCollection: fixture.reauthorize,
+  }),
 }));
 vi.mock("../pwa/install", () => ({
   usePwaInstall: () => "available",
@@ -55,6 +62,8 @@ import { MoreScreen } from "./more-screen";
 
 beforeEach(() => {
   fixture.narrow = false;
+  fixture.reminderAuthority = "connect";
+  fixture.reauthorize.mockReset();
   fixture.connection = { state: "connected" };
   fixture.status
     .mockReset()
@@ -135,10 +144,33 @@ it("turns reminders on and off with one switch", async () => {
   });
   expect(reminders).not.toBeChecked();
   fireEvent.click(reminders);
-  expect(fixture.enable).toHaveBeenCalledOnce();
+  await vi.waitFor(() => expect(fixture.enable).toHaveBeenCalledOnce());
   await vi.waitFor(() => expect(reminders).toBeChecked());
   fireEvent.click(reminders);
-  expect(fixture.disable).toHaveBeenCalledOnce();
+  await vi.waitFor(() => expect(fixture.disable).toHaveBeenCalledOnce());
+});
+
+it("delegates notification access review to the original SDK collection gate", async () => {
+  fixture.status.mockResolvedValue({
+    state: "reauthorization_required",
+    optedIn: false,
+  });
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Review notification access" }),
+  );
+  expect(fixture.reauthorize).toHaveBeenCalledOnce();
+  expect(fixture.enable).not.toHaveBeenCalled();
+});
+
+it("does not load or authorize reminders without delivery authority", () => {
+  fixture.reminderAuthority = "none";
+  render(settings());
+  expect(
+    screen.queryByRole("button", { name: "Review notification access" }),
+  ).not.toBeInTheDocument();
+  expect(fixture.status).not.toHaveBeenCalled();
+  expect(fixture.reauthorize).not.toHaveBeenCalled();
 });
 
 it("explains reminder failures before their technical detail", async () => {

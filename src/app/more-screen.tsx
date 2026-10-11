@@ -22,12 +22,7 @@ import { HeldEditsReview } from "../components/held-edits";
 import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { SettingsSwitch } from "../components/settings-controls";
-import {
-  mdbaseNotifications,
-  type MdbaseNotificationStatus,
-} from "../native/mdbase-notifications";
-import { cloudSession } from "../cloud/connect";
-import { requireConnectOutcome } from "../cloud/outcome";
+import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
 import { requestPwaInstall, usePwaInstall } from "../pwa/install";
 import {
   applyThemePreference,
@@ -416,6 +411,7 @@ function CollectionSettings() {
 type ReminderSettingsState = ReturnType<typeof useReminderSettings>;
 
 function useReminderSettings() {
+  const { reauthorizeCurrentCollection } = useCollectionGate();
   const { reminderAuthority } = useRepository();
   const delivers = reminderAuthority !== "none";
   const [status, setStatus] = useState<MdbaseNotificationStatus>({
@@ -428,8 +424,8 @@ function useReminderSettings() {
   useEffect(() => {
     if (!delivers) return;
     let active = true;
-    void mdbaseNotifications
-      .status()
+    void import("../native/mdbase-notifications")
+      .then(({ mdbaseNotifications }) => mdbaseNotifications.status())
       .then((next) => {
         if (active) setStatus(next);
       })
@@ -449,6 +445,8 @@ function useReminderSettings() {
     setBusy(true);
     setError(null);
     try {
+      const { mdbaseNotifications } =
+        await import("../native/mdbase-notifications");
       setStatus(
         enabled
           ? await mdbaseNotifications.enable()
@@ -462,12 +460,9 @@ function useReminderSettings() {
   }
 
   function reviewAccess() {
-    void cloudSession
-      .authorize("selected", { presentation: "popup" })
-      .then(requireConnectOutcome)
-      .catch((reason: unknown) =>
-        setError(reason instanceof Error ? reason.message : String(reason)),
-      );
+    if (!delivers) return;
+    // The collection gate delegates to the one SDK entry and checks its scope.
+    reauthorizeCurrentCollection();
   }
 
   return {

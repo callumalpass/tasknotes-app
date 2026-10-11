@@ -27,7 +27,6 @@ import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
-import { mdbaseNotifications } from "../native/mdbase-notifications";
 import {
   useWorkspaceNavigation,
   type Route,
@@ -70,6 +69,7 @@ export function AppShell() {
   const {
     repository,
     connection,
+    reminderAuthority,
     status,
     error,
     refresh,
@@ -181,11 +181,25 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    return mdbaseNotifications.listen(({ opened }) => {
-      void refresh().catch(() => undefined);
-      if (opened) navigate({ page: "home" }, true);
-    });
-  }, [navigate, refresh]);
+    // The next entry has no reminder authority. Do not load a legacy owner or
+    // register/listen to notifications just because its workspace rendered.
+    if (reminderAuthority !== "connect") return;
+    let active = true;
+    let stop: (() => void) | undefined;
+    void import("../native/mdbase-notifications")
+      .then(({ mdbaseNotifications }) => {
+        if (!active) return;
+        stop = mdbaseNotifications.listen(({ opened }) => {
+          void refresh().catch(() => undefined);
+          if (opened) navigate({ page: "home" }, true);
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      stop?.();
+    };
+  }, [navigate, refresh, reminderAuthority]);
 
   if (status === "opening") {
     return (
