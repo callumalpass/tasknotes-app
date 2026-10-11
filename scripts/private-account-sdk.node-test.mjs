@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-2e2ae687-n1.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-4b955381.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "2e2ae687f96d0a0c074ef6bc46bb77b97089f325",
+    "4b9553819ddb769ff1487170c05494321d23ab8b",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "58bc19022164eed1ef2236e392786db7fba6447d32b9bc3f2163c247d1c42faf",
+    "9874074d6a68287780de2092a069c1cb4e81d3558e432b719b7525974eb6b0ad",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -57,7 +57,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   );
   assert.equal(
     manifest.protocol.sha256,
-    "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
+    "3dc48b6b9dbf8651b6c300ab5896408ff90a0e1a7b8f1312e27442914b50ca83",
   );
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, manifest.bytes);
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-2e2ae687-n1.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-4b955381.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -118,6 +118,53 @@ test("packaged native assets are original bytes, not public application readines
   assert.equal(typeof entry.application().approve, "function");
   assert.equal(typeof entry.application().reauthorize, "function");
   assert.equal(typeof entry.application().chooseAnother, "function");
+});
+
+test("the unused protocol warning applies only to the exact first DEV cut", async () => {
+  const manifest = JSON.parse(
+    await readFile(new URL("vendor/sdk-dev-4b955381.json", root), "utf8"),
+  );
+  assert.equal(manifest.qualification.productionQualified, false);
+  assert.deepEqual(
+    manifest.vendorWarnings.map(({ authority, source, path, sha256 }) => ({
+      authority,
+      source,
+      path,
+      sha256,
+    })),
+    [
+      {
+        authority: "co0648",
+        source: "4b9553819ddb769ff1487170c05494321d23ab8b",
+        path: "vendor/mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
+        sha256:
+          "dfc5db0daf6700874aa2c6235b86570f1d4e444740d0925bf1f97551cf43d3bd",
+      },
+    ],
+  );
+  const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
+  const unused = execFileSync(
+    "tar",
+    ["-xOf", archive, `package/${manifest.vendorWarnings[0].path}`],
+    { maxBuffer: 5_000_000 },
+  );
+  assert.equal(
+    createHash("sha256").update(unused).digest("hex"),
+    manifest.vendorWarnings[0].sha256,
+  );
+  const sdkPackage = JSON.parse(
+    execFileSync("tar", ["-xOf", archive, "package/package.json"]),
+  );
+  assert.equal(
+    sdkPackage.dependencies["@mdbase-dev/connect-protocol"],
+    `file:vendor/${manifest.protocol.artifact}`,
+  );
+  assert.equal(
+    Object.values(sdkPackage.dependencies).includes(
+      `file:${manifest.vendorWarnings[0].path}`,
+    ),
+    false,
+  );
 });
 
 test("SDK environment stays bound to the authenticated LAB build tuple", async () => {

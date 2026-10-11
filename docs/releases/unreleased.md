@@ -1,5 +1,7 @@
 # Unreleased
 
+- Update the shared collection client used by the next-mode app.
+
 - Offer an explicit reload when an app update activates, without automatically clearing unsaved input. Keep older cached assets available to tabs still running the previous build.
 
 - Restore the supported iOS Capacitor URL scheme and align mobile version metadata above the previous app version. SDK mobile sign-in and device validation remain separate.
