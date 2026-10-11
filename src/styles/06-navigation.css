@@ -209,6 +209,7 @@
 
 .global-capture-navigation kbd {
   margin-left: auto;
+  white-space: nowrap;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
@@ -552,6 +553,7 @@
 /* The sidebar's palette entry reads as a utility, its key hint muted. */
 .navigation-commands kbd {
   margin-left: auto;
+  white-space: nowrap;
   color: var(--ink-muted);
   font-family: var(--font-mono);
   font-size: var(--type-label);

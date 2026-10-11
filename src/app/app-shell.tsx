@@ -32,7 +32,11 @@ import { tasknotesMarkUrl } from "./assets";
 import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
 import { useCollectionGate } from "./collection-context";
 import { KeyboardLayer } from "./keyboard-layer";
-import { isEditableTarget } from "./keyboard-shortcuts";
+import {
+  isApplePlatform,
+  isEditableTarget,
+  shortcutLabel,
+} from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { SearchScreen } from "./search-screen";
@@ -252,12 +256,13 @@ export function AppShell() {
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
           className="global-capture-navigation"
+          title={`New task (${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>New task</span>
-          <kbd>⌘N</kbd>
+          {isApplePlatform() ? <kbd>{shortcutLabel("N")}</kbd> : null}
         </button>
         <Navigation
           active={activePage}
@@ -1006,12 +1011,13 @@ export function Navigation({
             <button
               aria-keyshortcuts="Control+K Meta+K"
               className="navigation-commands"
+              title={`Commands (${shortcutLabel("K")})`}
               type="button"
               onClick={onCommands}
             >
               <Command aria-hidden="true" size={20} strokeWidth={1.7} />
               <span>Commands</span>
-              <kbd>⌘K</kbd>
+              {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
           ) : null}
           <button
