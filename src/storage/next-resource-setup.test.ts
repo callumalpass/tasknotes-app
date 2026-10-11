@@ -266,6 +266,42 @@ afterEach(() => {
 });
 
 describe("original resource setup sequencing (protocol stand-ins)", () => {
+  it("reads an already-configured collection as ready in a fresh browser with no local setup journal", async () => {
+    const f = fixture();
+    await f.setup.install();
+    const originalRecords = structuredClone([...f.records]);
+    const originalResources = [...f.resources];
+    f.mocked.submit.mockClear();
+    f.factory.mockClear();
+    f.verified.mockClear();
+    f.journal.close();
+    // Only this unit's isolated fake IDB changes; original collection data and
+    // all account/installation/collection identities remain exactly the same.
+    vi.stubGlobal("indexedDB", new IDBFactory());
+    const journal = new NextModelSetupIntentStore({
+      scope,
+      appOrigin: "http://127.0.0.1:48319",
+      cpOrigin: "https://connect-lab.mdbase.dev",
+      isCurrent: () => !f.owner.signal.aborted,
+    });
+    const setup = new NativeResourceSetup(
+      f.client,
+      journal,
+      () => f.owner.signal,
+      f.factory,
+      f.verified,
+    );
+    const uuid = vi.spyOn(crypto, "randomUUID");
+    expect(await journal.load(f.owner.signal)).toBeNull();
+    await expect(setup.inspect()).resolves.toEqual({ state: "ready" });
+    expect(f.mocked.submit).not.toHaveBeenCalled();
+    expect(f.factory).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(uuid).not.toHaveBeenCalled();
+    expect([...f.records]).toEqual(originalRecords);
+    expect([...f.resources]).toEqual(originalResources);
+    journal.close();
+  });
   function fakeSetupClock() {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {

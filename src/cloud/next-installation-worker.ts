@@ -661,6 +661,39 @@ export class NextInstallationWorker {
         {
           modelSetupJournal: this.modelJournal,
           requiresTaskNotesModelSetup: opened.requiresTaskNotesModelSetup,
+          ...(this.sessionCpOrigin
+            ? {
+                onModelSetupAssessment: async (
+                  state: "ready" | "setup_required",
+                  signal: AbortSignal,
+                ) => {
+                  const repository = this.repository;
+                  const check = () => {
+                    signal.throwIfAborted();
+                    if (
+                      !repository ||
+                      this.repository !== repository ||
+                      this.stopped ||
+                      this.closing ||
+                      this.signal?.aborted ||
+                      this.getSnapshot()?.selectedCollectionId !== collectionId
+                    )
+                      throw Error(
+                        "Original collection assessment unavailable.",
+                      );
+                  };
+                  check();
+                  await this.pending?.promise;
+                  check();
+                  await this.call({
+                    kind: "session-assess",
+                    collectionId,
+                    state,
+                  });
+                  check();
+                },
+              }
+            : {}),
           onModelSetupVerified: async (signal) => {
             signal.throwIfAborted();
             await this.pending?.promise;
