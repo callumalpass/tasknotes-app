@@ -212,11 +212,11 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
 
   return (
     <section
-      className="settings-section private-account-settings"
+      className="private-account-settings"
       aria-labelledby="private-account-title"
     >
-      <h2 id="private-account-title">Private account recovery</h2>
-      <div className="settings-content">
+      <h3 id="private-account-title">Private account recovery</h3>
+      <div>
         <p className="section-copy">
           Your password unlocks private collections on approved devices. It is
           processed on this device, not sent to mdbase.

@@ -1,9 +1,8 @@
-import { CalendarClock } from "lucide-react";
-
 import {
   orderedWeekdays,
   type CalendarPreferences,
 } from "../app/calendar-preferences";
+import { SettingsSwitch } from "./settings-controls";
 import { TaskNotesSelectField } from "./tasknotes-controls";
 
 export function CalendarPreferencesEditor({
@@ -19,15 +18,6 @@ export function CalendarPreferencesEditor({
 
   return (
     <div className="calendar-preferences">
-      <div className="setting-row">
-        <CalendarClock aria-hidden="true" size={20} strokeWidth={1.6} />
-        <span>Calendar display</span>
-        <small>On this device</small>
-      </div>
-      <p className="section-copy">
-        These choices affect calendar layout here without changing the shared
-        collection.
-      </p>
       <div className="task-model-settings-grid">
         <TaskNotesSelectField
           label="Week starts"
@@ -77,50 +67,29 @@ export function CalendarPreferencesEditor({
           onChange={(slotDuration) => change({ slotDuration })}
         />
       </div>
-      <div className="task-model-toggles">
-        <Toggle
+      <div className="settings-switch-list">
+        <SettingsSwitch
           checked={value.weekends}
           label="Show weekends"
           onChange={(weekends) => change({ weekends })}
         />
-        <Toggle
+        <SettingsSwitch
           checked={value.allDaySlot}
           label="Show all-day area"
           onChange={(allDaySlot) => change({ allDaySlot })}
         />
-        <Toggle
+        <SettingsSwitch
           checked={value.nowIndicator}
           label="Show current time"
           onChange={(nowIndicator) => change({ nowIndicator })}
         />
-        <Toggle
+        <SettingsSwitch
           checked={value.showTimeEntries}
           label="Show tracked time"
           onChange={(showTimeEntries) => change({ showTimeEntries })}
         />
       </div>
     </div>
-  );
-}
-
-function Toggle({
-  checked,
-  label,
-  onChange,
-}: {
-  checked: boolean;
-  label: string;
-  onChange(value: boolean): void;
-}) {
-  return (
-    <label className="task-model-toggle">
-      <input
-        checked={checked}
-        type="checkbox"
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <span>{label}</span>
-    </label>
   );
 }
 

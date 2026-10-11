@@ -57,6 +57,7 @@ it("contains a rejected Settings refresh while showing cached search and retaini
         <MoreScreen
           calendarPreferences={defaultCalendarPreferences()}
           onCalendarPreferencesChange={() => undefined}
+          onSection={() => undefined}
         />
       </>
     );
@@ -77,7 +78,7 @@ it("contains a rejected Settings refresh while showing cached search and retaini
   );
   expect(mdbaseNotifications.status).not.toHaveBeenCalled();
   expect(screen.getByText("Not available", { exact: true })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Notifications" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Reminders" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: /^Turn on reminders$/ }),
   ).toBeNull();
