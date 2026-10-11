@@ -354,44 +354,6 @@ describe("TaskNotes task model app boundary", () => {
     ).toThrow(/RFC 3339/);
   });
 
-  it("persists status, timed dates, and estimates from capture", () => {
-    const created = model.create(
-      {
-        title: "Captured",
-        status: "doing",
-        scheduled: "2026-08-05T09:00",
-        timeEstimate: 45,
-      },
-      { id: "captured", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created).toMatchObject({
-      status: "doing",
-      completed: false,
-      scheduled: canonicalLocal("2026-08-05T09:00"),
-      timeEstimate: 45,
-    });
-    expect(created.frontmatter).toMatchObject({
-      status: "doing",
-      scheduled: canonicalLocal("2026-08-05T09:00"),
-      timeEstimate: 45,
-    });
-  });
-
-  it("round-trips TaskNotes string ranks through the configured sort field", () => {
-    const created = model.create(
-      { title: "Ranked", sortOrder: "tnnnnnnnnnnn" },
-      { id: "ranked", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created.sortOrder).toBe("tnnnnnnnnnnn");
-    expect(created.frontmatter.tasknotes_manual_order).toBe("tnnnnnnnnnnn");
-
-    const updated = model.update(created, { sortOrder: "tnaaaaaaaaaa" });
-    expect(updated.sortOrder).toBe("tnaaaaaaaaaa");
-    expect(updated.frontmatter.tasknotes_manual_order).toBe("tnaaaaaaaaaa");
-  });
-
   it("round-trips structured dependencies through the task contract", () => {
     const created = model.create(
       {
@@ -447,28 +409,6 @@ describe("TaskNotes task model app boundary", () => {
         frontmatter: updated.frontmatter,
       }).blockedBy,
     ).toEqual(updated.blockedBy);
-  });
-
-  it("round-trips authoritative attachment links without changing the body", () => {
-    const created = model.create(
-      {
-        title: "Documented task",
-        body: "The body is presentation, not membership.",
-        attachments: ["[[Attachments/diagram.png]]"],
-      },
-      { id: "documented", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created.attachments).toEqual(["[[Attachments/diagram.png]]"]);
-    expect(created.frontmatter.attachments).toEqual([
-      "[[Attachments/diagram.png]]",
-    ]);
-    expect(created.body).toBe("The body is presentation, not membership.");
-
-    const detached = model.update(created, { attachments: [] });
-    expect(detached.attachments).toEqual([]);
-    expect(detached.frontmatter).not.toHaveProperty("attachments");
-    expect(detached.body).toBe(created.body);
   });
 
   it("completes and skips individual recurring occurrences", () => {

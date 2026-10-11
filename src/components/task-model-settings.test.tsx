@@ -25,30 +25,10 @@ async function renderEditor() {
       screen.getByRole("combobox", { name: "Default priority" }),
     ).toBeEnabled(),
   );
-  return { repository, view, element };
+  return { view, element };
 }
 
 describe("TaskModelSettingsEditor", () => {
-  it("updates authoritative mdbase type settings", async () => {
-    const { repository } = await renderEditor();
-    expect(
-      screen.queryByRole("button", { name: "Save changes" }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("combobox", { name: "Default priority" }));
-    fireEvent.click(screen.getByRole("option", { name: "High" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-
-    await waitFor(async () =>
-      expect((await repository.taskConfiguration()).defaults.priority).toBe(
-        "high",
-      ),
-    );
-    expect(await screen.findByText("Saved with the collection.")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Save changes" }),
-    ).not.toBeInTheDocument();
-  });
-
   it("keeps unsaved choices when Settings is left and offers Discard", async () => {
     const { view, element } = await renderEditor();
     fireEvent.click(

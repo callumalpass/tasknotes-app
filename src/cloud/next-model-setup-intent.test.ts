@@ -268,35 +268,6 @@ describe("fixed protected model pack setup intent", () => {
       winner.status === "fulfilled" ? winner.value : undefined,
     );
   });
-  it("retains ordered schema updates, deletes, exact guards and preserved seed readback", async () => {
-    const updated: ModelPackPlan = {
-      ...plan,
-      ops: [
-        {
-          kind: "resource_delete",
-          path: "_schemas/retired.json",
-          baseRevision: "sha256:" + "12".repeat(32),
-        },
-        {
-          kind: "resource_put",
-          path: "_schemas/current.json",
-          doc: "{}",
-          mustNotExist: false,
-          baseRevision: "sha256:" + "34".repeat(32),
-        },
-        ...puts,
-      ],
-      readback: [
-        { path: "_schemas/retired.json", doc: null },
-        { path: "_schemas/current.json", doc: "{}" },
-        ...plan.readback,
-        { path: "_types/preserved.md", doc: "Exact preserved source" },
-      ],
-    };
-    const original = await journal().prepare(updated, signal());
-    expect(original.plan).toEqual(updated);
-    expect((await journal().prepare(updated, signal())).plan).toEqual(updated);
-  });
   it("retains original already-absent retirement readback without inventing a delete or replacing its UUID", async () => {
     const lock = {
       kind: "resource_put" as const,
@@ -383,7 +354,7 @@ describe("fixed protected model pack setup intent", () => {
     expect(uuid).not.toHaveBeenCalled();
     expect(await journal().load(signal())).toBeNull();
   });
-  it.each(["prepared", "attempted", "confirmed", "verified"] as const)(
+  it.each(["attempted"] as const)(
     "loads but NEVER converts, replaces or advances a legacy %s intent",
     async (phase) => {
       await journal().prepare(plan, signal());

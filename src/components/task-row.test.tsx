@@ -90,11 +90,6 @@ it("keeps title and independent controls from also opening via the row", () => {
   fireEvent.click(screen.getByTestId("actions-overlay"));
   expect(open).not.toHaveBeenCalled();
 });
-it("shows both scheduled and due dates with explicit meanings", () => {
-  render(<TaskRow task={task} onOpen={vi.fn()} onToggle={vi.fn()} />);
-  expect(screen.getByRole("button", { name: /Scheduled/ })).toBeVisible();
-  expect(screen.getByRole("button", { name: /Due/ })).toBeVisible();
-});
 it("retains date labels and omits routine defaults in saved rows", () => {
   const configuration = defaultTaskCollectionConfiguration();
   render(

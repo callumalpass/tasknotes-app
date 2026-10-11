@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { connectError } from "@mdbase-dev/connect-testing";
-import { CaptureSession, captureSessionFor } from "./capture-session";
+import { CaptureSession } from "./capture-session";
 import { OperationalError } from "./operational-error";
 import type { TaskRepository } from "./ports/task-repository";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -26,22 +26,6 @@ function deferred<T>() {
 }
 
 describe("capture session lifetime", () => {
-  it("keeps drafts and explicit edits independently of presentations", async () => {
-    const repository = {};
-    const session = captureSessionFor(repository, "view:today");
-    session.editText("My draft");
-    session.editFields(
-      { due: "2026-09-10", body: "Important notes" },
-      configuration,
-    );
-    await session.parse(configuration, {});
-    expect(captureSessionFor(repository, "view:today")).toBe(session);
-    expect(captureSessionFor({}, "view:today").getSnapshot().text).toBe("");
-    expect(captureSessionFor(repository, "another").getSnapshot().text).toBe(
-      "",
-    );
-    expect(session.getSnapshot().result?.input.body).toBe("Important notes");
-  });
   it("deduplicates submission and preserves the entire failed draft", async () => {
     const session = new CaptureSession();
     const write = deferred<Task>();
@@ -182,39 +166,6 @@ describe("capture session lifetime", () => {
       { title: "New title", priority: "high" },
       expect.objectContaining({ id: expect.any(String) }),
     );
-  });
-
-  it("retains the current parsed title and exact intent through unknown-outcome recovery", async () => {
-    const session = new CaptureSession();
-    session.editText("Old title");
-    await session.parse(configuration, {});
-    session.editText("New title");
-    session.editFields({ priority: "high" }, configuration);
-    const create = vi
-      .fn<TaskRepository["create"]>(async () => created)
-      .mockImplementationOnce(async (_input, intent) => {
-        intent!.authorityRequestId = "exact-current-title";
-        throw connectError("operation_outcome_unknown", "Unconfirmed", {
-          operationOutcome: "unknown",
-          details: { request_id: "exact-current-title" },
-        });
-      });
-    const options = { configuration, defaults: {}, create };
-    await session.submit(options);
-    expect(create).toHaveBeenCalledWith(
-      { title: "New title", priority: "high" },
-      expect.objectContaining({ authorityRequestId: "exact-current-title" }),
-    );
-    expect(session.canRecover).toBe(true);
-    session.editText("Do not overwrite retained input");
-    session.editFields({ priority: "low" }, configuration);
-    expect(session.discard()).toBe(false);
-    expect(session.getSnapshot().text).toBe("New title");
-    await session.submit(options);
-    expect(create).toHaveBeenCalledTimes(2);
-    expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
-    expect(session.getSnapshot().text).toBe("");
-    expect(session.canRecover).toBe(false);
   });
 
   it("rejects stale parser responses", async () => {

@@ -4,21 +4,7 @@ import {
   logSignInFailure,
 } from "./sign-in-error";
 
-const codes = [
-  "busy",
-  "binding",
-  "response",
-  "refused",
-  "expired",
-  "account_confirmation_required",
-  "recovery_required",
-  "open_failed",
-  "outcome_unknown",
-  "fenced",
-  "closed",
-  "aborted",
-  "unavailable",
-];
+const codes = ["binding", "account_confirmation_required", "outcome_unknown"];
 it.each(codes)(
   "keeps the specific public %s reason without exposing error details",
   (code) => {

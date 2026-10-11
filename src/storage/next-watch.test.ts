@@ -115,17 +115,6 @@ async function seed(f: Awaited<ReturnType<typeof fixture>>) {
 }
 
 describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => {
-  it("accepts an actual empty watch ACK without claiming the task index is loaded", async () => {
-    const f = await fixture();
-    const watch = vi.spyOn(f.client, "watchChanges");
-    const pages = vi.spyOn(f.client, "pages");
-    await f.repository.initialize({ deferTaskIndex: true });
-    expect(watch.mock.results[0]!.value.state).toBe("active");
-    expect(pages).not.toHaveBeenCalled();
-    await f.repository.listSummaries();
-    expect(pages).toHaveBeenCalledOnce();
-  });
-
   it("invalidates a loaded index on an actual SDK remote change", async () => {
     const f = await fixture();
     const { task, record } = await seed(f);

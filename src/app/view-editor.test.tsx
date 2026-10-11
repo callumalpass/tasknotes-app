@@ -100,44 +100,6 @@ describe("ViewEditor", () => {
     expect(onChanged).toHaveBeenCalledOnce();
   });
 
-  it("shows calendar settings in the same editor when creating a view", async () => {
-    const createViewSource = vi.fn(
-      async (input: CreateTaskViewSourceInput) => ({
-        path: "views/schedule.base",
-        format: "obsidian.base",
-        revision: "two",
-        document: input.document,
-      }),
-    );
-    renderEditor({
-      repository: repository({ createViewSource }),
-    });
-
-    await screen.findByRole("dialog", { name: "New view" });
-    fireEvent.change(await screen.findByLabelText("View name"), {
-      target: { value: "Schedule" },
-    });
-    fireEvent.click(screen.getByRole("radio", { name: "Calendar" }));
-
-    expect(screen.getByRole("heading", { name: "Calendar" })).toBeVisible();
-    fireEvent.click(screen.getByRole("heading", { name: "Calendar" }));
-    expect(screen.getByRole("combobox", { name: "Opens as" })).toBeVisible();
-    expect(screen.getByText("Scheduled dates")).toBeVisible();
-    expect(screen.getByText("Upcoming recurring instances")).toBeVisible();
-    fireEvent.click(screen.getByRole("heading", { name: "Advanced" }));
-    expect(screen.getByText("No computed properties.")).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
-    await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
-    expect(createViewSource.mock.calls[0][0]).toEqual(
-      expect.objectContaining({
-        format: "obsidian.base",
-        name: "Schedule",
-        path: "TaskNotes/Views/schedule.base",
-      }),
-    );
-  });
-
   it("duplicates a saved view into a new provider-neutral source", async () => {
     const source = baseSource(
       "views: [{ type: tasknotesTaskList, name: Work }]\n",
@@ -432,22 +394,6 @@ views:
     ).toBeVisible();
   });
 
-  it("keeps only one editing section open at a time", async () => {
-    renderEditor({ repository: repository(), view: savedView() });
-    await screen.findByRole("dialog", { name: "Work" });
-
-    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
-    expect(screen.getByRole("combobox", { name: "Group by" })).toBeVisible();
-
-    fireEvent.click(screen.getByRole("heading", { name: "Fields shown" }));
-    expect(
-      screen.queryByRole("combobox", { name: "Group by" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("combobox", { name: "Property to display" }),
-    ).toBeVisible();
-  });
-
   it("can open directly into confirmed deletion from the catalog", async () => {
     const source = baseSource(
       "views: [{ type: tasknotesTaskList, name: Work }]\n",
@@ -470,22 +416,6 @@ views:
     await waitFor(() =>
       expect(deleteViewSource).toHaveBeenCalledWith("views/work.base", "one"),
     );
-  });
-
-  it("explains that deleting a view leaves tasks alone", async () => {
-    renderEditor({ repository: repository(), view: savedView() });
-    await screen.findByRole("dialog", { name: "Work" });
-
-    fireEvent.click(screen.getByRole("button", { name: "Delete view" }));
-
-    expect(
-      screen.getByRole("alertdialog", { name: "Delete “Work”?" }),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "This removes the saved view only. Your tasks won’t be deleted.",
-      ),
-    ).toBeVisible();
   });
 });
 

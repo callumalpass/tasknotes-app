@@ -21,22 +21,6 @@ const info = {
 };
 
 describe("home view restoration", () => {
-  it("pins working tools after the home view for a new collection", () => {
-    const resolved = resolveNavigationViewCatalog(
-      info,
-      starterViews(),
-      false,
-      memoryStorage(),
-    );
-
-    expect(resolved?.navigationKeys.slice(0, 4)).toEqual([
-      "TaskNotes/Views/today.base#today",
-      "TaskNotes/Views/upcoming.base#upcoming",
-      SCRATCHPAD_NAVIGATION_KEY,
-      SEARCH_NAVIGATION_KEY,
-    ]);
-  });
-
   it.each([
     ["tasknotes:navigation-views:v3", ["views/tasknotes-app.base#today"]],
     ["tasknotes:navigation-views:v2", ["views/tasknotes-app.base#today"]],

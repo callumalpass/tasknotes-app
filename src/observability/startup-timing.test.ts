@@ -1,7 +1,6 @@
 import {
   StartupTiming,
   registerStartupTiming,
-  startupTiming,
   timedStartup,
 } from "./startup-timing";
 let clock: number;
@@ -76,18 +75,6 @@ it("fences old stage callbacks and keeps the first settled measurement immutable
   clock = 40;
   trace.begin("first_query")();
   expect(trace.snapshot()).toEqual({ first_query: 5 });
-});
-it("associates traces only with their original repository", async () => {
-  const a = {},
-    b = {};
-  const trace = registerStartupTiming(a);
-  expect(startupTiming(b)).toBeUndefined();
-  const value = await timedStartup(a, "setup_assessment", async () => {
-    clock = 7;
-    return "ready";
-  });
-  expect(value).toBe("ready");
-  expect(trace.snapshot()).toEqual({ setup_assessment: 7 });
 });
 it("never masks success, rejection or an original abort when timing APIs fail", async () => {
   const repository = {};

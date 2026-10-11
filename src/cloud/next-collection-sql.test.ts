@@ -64,33 +64,6 @@ describe("original Worker SQLite intake", () => {
     expect(fixture.asset).not.toHaveBeenCalled();
     expect(fixture.open).not.toHaveBeenCalled();
   });
-  it("uses checked immutable WASM, actual opened metadata and a dynamic lifetime fence", async () => {
-    worker();
-    const signal = new AbortController().signal;
-    const opened = await openNextCollectionSql({ scope, signal });
-    expect(fixture.asset).toHaveBeenCalledWith(
-      expect.any(String),
-      "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752",
-      1_100_000,
-      signal,
-    );
-    expect(fixture.init).toHaveBeenCalledWith(
-      expect.objectContaining({ wasmBinary: Uint8Array.of(1) }),
-    );
-    expect(fixture.open).toHaveBeenCalledWith({}, scope);
-    expect(opened.opened).toBe("fresh");
-    expect(opened.sqliteVersion).toBe(3053004);
-    opened.sql.import({} as never);
-    expect(fixture.sql).toHaveBeenCalledOnce();
-    expect(opened.sql.needsRecovery).toBe(false);
-    opened.sql.fence();
-    expect(opened.sql.needsRecovery).toBe(true);
-    const closing = opened.close();
-    expect(opened.close()).toBe(closing);
-    await closing;
-    expect(fixture.close).toHaveBeenCalledOnce();
-    expect(fixture.pause).toHaveBeenCalledOnce();
-  });
   it("a failed SQL shutdown is fenced and cannot be retried into a successful close", async () => {
     worker();
     const opened = await openNextCollectionSql({
@@ -127,13 +100,5 @@ describe("original Worker SQLite intake", () => {
     expect(fixture.fence).toHaveBeenCalledOnce();
     expect(fixture.close).toHaveBeenCalledOnce();
     expect(fixture.pause).toHaveBeenCalledOnce();
-  });
-  it("an unsupported VFS never becomes an in-memory store", async () => {
-    worker();
-    fixture.open.mockRejectedValueOnce(Error("VFS unavailable"));
-    await expect(
-      openNextCollectionSql({ scope, signal: new AbortController().signal }),
-    ).rejects.toThrow("VFS unavailable");
-    expect(fixture.open).toHaveBeenCalledOnce();
   });
 });

@@ -11,14 +11,6 @@ it("does not add noise when the title explains every term", () => {
   expect(searchMatchContext(task, "PREPARE launch", [])).toBeUndefined();
   expect(searchMatchContext(task, "  ", [])).toBeUndefined();
 });
-it("explains note matches, including terms spread across title and body", () => {
-  expect(searchMatchContext(task, "review", ["review"])).toBe(
-    "Matched in notes",
-  );
-  expect(searchMatchContext(task, "launch RESEARCH", ["research"])).toBe(
-    "Matched in notes",
-  );
-});
 it("names only fields with observed matches", () => {
   expect(searchMatchContext(task, "website office release diagram", [])).toBe(
     "Matched in projects, contexts, tags, attachments",

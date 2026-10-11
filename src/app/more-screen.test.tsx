@@ -66,8 +66,13 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ state: "off", optedIn: false });
   window.localStorage.clear();
+  // jsdom has no layout, so it does not implement scrollIntoView.
+  Element.prototype.scrollIntoView = () => undefined;
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  delete (Element.prototype as Partial<Element>).scrollIntoView;
+});
 
 function settings(
   section?: SettingsSection,

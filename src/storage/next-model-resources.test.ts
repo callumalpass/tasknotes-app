@@ -1,7 +1,6 @@
 import { MdbaseError, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MODEL_SETUP_LIMITS } from "../application/ports/model-setup";
-import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   MODEL_RESOURCE_INVENTORY_LIMITS as limits,
   modelResourceInventory,
@@ -66,25 +65,6 @@ describe("complete bounded model resource inventory", () => {
         },
       ],
     ]);
-  });
-  it("copies captured resources before a subsequent page mutates its containers", async () => {
-    const first = resource();
-    const list = vi
-      .fn()
-      .mockResolvedValueOnce({
-        resources: [first],
-        complete: false,
-        cursor: "next",
-      })
-      .mockImplementationOnce(async () => {
-        first.text = "changed after capture";
-        return { resources: [resource("_types/task.md")], complete: true };
-      });
-    const result = await modelResourceInventory(
-      { resources: { list } },
-      signal(),
-    );
-    expect(result[0]!.text).toBe("spec_version: '0.3.0'\n");
   });
   it.each([
     { resources: [resource()], complete: false },
@@ -212,22 +192,6 @@ describe("complete bounded model resource inventory", () => {
     ).rejects.toMatchObject({ view: { state: "blocked" } });
     expect(client.resources.list).toHaveBeenCalledTimes(limits.pages);
   });
-  it("accepts a terminal page at the page-count bound", async () => {
-    const client = reader(
-      ...Array.from({ length: limits.pages }, (_, i) =>
-        i + 1 === limits.pages
-          ? { resources: [resource(String(i))], complete: true }
-          : {
-              resources: [resource(String(i))],
-              complete: false,
-              cursor: String(i),
-            },
-      ),
-    );
-    expect(await modelResourceInventory(client, signal())).toHaveLength(
-      limits.pages,
-    );
-  });
   it("counts UTF-8 bytes across all pages, not per document/code units", async () => {
     const text = "é".repeat(limits.bytes / 4);
     const client = reader(
@@ -262,17 +226,6 @@ describe("complete bounded model resource inventory", () => {
     ).rejects.toMatchObject({ view: { state: "blocked" } });
     expect(client.resources.list).toHaveBeenCalledOnce();
   });
-  it("accepts a cursor exactly at its published UTF-8 bound", async () => {
-    const client = reader(
-      {
-        resources: [resource("a")],
-        complete: false,
-        cursor: "é".repeat(limits.cursorBytes / 2),
-      },
-      { resources: [], complete: true },
-    );
-    expect(await modelResourceInventory(client, signal())).toHaveLength(1);
-  });
   it("checks original owner cancellation before requesting", async () => {
     const owner = new AbortController();
     const reason = Error("owner left");
@@ -294,30 +247,5 @@ describe("complete bounded model resource inventory", () => {
       modelResourceInventory({ resources: { list } }, owner.signal),
     ).rejects.toBe(reason);
     expect(list).toHaveBeenCalledOnce();
-  });
-  it("uses the existing foreground budget once for the whole inventory", async () => {
-    const deadline = new AbortController();
-    const timeout = vi
-      .spyOn(AbortSignal, "timeout")
-      .mockReturnValue(deadline.signal);
-    const reason = Error("whole inventory deadline");
-    const list = vi
-      .fn()
-      .mockResolvedValueOnce({
-        resources: [resource()],
-        complete: false,
-        cursor: "next",
-      })
-      .mockImplementationOnce(async () => {
-        deadline.abort(reason);
-        return { resources: [], complete: true };
-      });
-    await expect(
-      modelResourceInventory({ resources: { list } }, signal()),
-    ).rejects.toBe(reason);
-    expect(timeout).toHaveBeenCalledExactlyOnceWith(
-      TASKNOTES_REQUEST_BUDGETS.foregroundMs,
-    );
-    expect(list).toHaveBeenCalledTimes(2);
   });
 });

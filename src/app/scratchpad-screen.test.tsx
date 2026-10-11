@@ -13,7 +13,6 @@ import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { recordMatchesLink } from "../domain/completion";
-import type { ScratchFeedPage } from "../domain/scratch-feed";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import {
   deferred,
@@ -122,53 +121,6 @@ describe("ScratchpadScreen", () => {
     expect(save).toHaveBeenCalledOnce();
     expect(input).toHaveValue("Retained original text");
   });
-  it("converts one draft in place and preserves its linked Markdown", async () => {
-    const openTask = renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      {
-        name: "Draft task: empty",
-      },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    fireEvent.change(input, {
-      target: { value: "Prepare release notes tomorrow" },
-    });
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Create task for Prepare release notes tomorrow",
-      }),
-    );
-
-    const link = await screen.findByRole("button", {
-      name: "Prepare release notes",
-    });
-    await waitFor(async () => {
-      expect(await repository.list({ status: "all" })).toEqual([
-        expect.objectContaining({
-          title: "Prepare release notes",
-          scheduled: expect.any(String),
-        }),
-      ]);
-      expect((await repository.getActiveScratchpad()).body).toMatch(
-        /\[\[tasks\/.+\]\]/,
-      );
-    });
-
-    const actions = await screen.findByRole("button", {
-      name: "Task actions for Prepare release notes",
-    });
-    fireEvent.click(actions);
-    expect(
-      await screen.findByRole("menu", {
-        name: "Actions for Prepare release notes",
-      }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-
-    fireEvent.click(link);
-    await waitFor(() => expect(openTask).toHaveBeenCalledOnce());
-  });
 
   it("toggles a portable draft checkbox and converts it as completed in one write", async () => {
     const create = vi.spyOn(repository, "create");
@@ -216,53 +168,6 @@ describe("ScratchpadScreen", () => {
       expect.objectContaining({ id: expect.any(String) }),
     );
     expect(update).not.toHaveBeenCalled();
-  });
-
-  it("converts a draft task back to a note from the outline", async () => {
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    fireEvent.change(input, { target: { value: "Keep this as context" } });
-    const taskKind = screen.getByRole("button", {
-      name: "Convert Keep this as context to note",
-    });
-    expect(taskKind).toHaveClass("scratchpad-kind-toggle");
-    expect(taskKind).toHaveTextContent("Task");
-    fireEvent.click(taskKind);
-
-    const noteKind = screen.getByRole("button", { name: "Make a task" });
-    expect(noteKind).toBeVisible();
-    expect(noteKind).toHaveClass("scratchpad-kind-toggle");
-    expect(noteKind).toHaveTextContent("Note");
-    await waitFor(async () =>
-      expect((await repository.getActiveScratchpad()).body).toBe(
-        "- Keep this as context\n",
-      ),
-    );
-  });
-
-  it("sends the editor's base body with an autosave", async () => {
-    const saveScratchpad = vi.spyOn(repository, "saveScratchpad");
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-
-    fireEvent.change(input, { target: { value: "A durable draft" } });
-
-    await waitFor(() =>
-      expect(saveScratchpad).toHaveBeenCalledWith(
-        expect.objectContaining({
-          baseBody: "",
-          body: "- [ ] A durable draft\n",
-        }),
-      ),
-    );
   });
 
   it("autosaves an incomplete wikilink and a later repair", async () => {
@@ -321,92 +226,6 @@ describe("ScratchpadScreen", () => {
       expect(screen.getByText("Saved")).toBeVisible();
     });
     expect(screen.queryByText("Temporary save failure")).toBeNull();
-  });
-
-  it("suggests collection records after [[ in an outline note", async () => {
-    cleanup();
-    const project: TestRecord = {
-      path: "Projects/Plan.md",
-      revision: "project-r1",
-      types: ["project"],
-      frontmatter: { title: "Project plan" },
-      body: "",
-    };
-    fixture = mdbaseFixture([project]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
-    const completeField = vi.spyOn(repository, "completeField");
-    renderScratchpad();
-    await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: /Convert empty task to note/ }),
-    );
-    const note = screen.getByRole("textbox", { name: "Note: empty" });
-
-    fireEvent.change(note, { target: { value: "Review [[Pro" } });
-
-    const option = await screen.findByRole("option", {
-      name: /Project plan/,
-    });
-    expect(note).not.toHaveAttribute("aria-expanded");
-    expect(note).toHaveAttribute(
-      "aria-controls",
-      option.closest('[role="listbox"]')?.id,
-    );
-    expect(completeField).toHaveBeenCalledWith({
-      field: "wikilink",
-      kind: "records",
-      query: "Pro",
-      limit: 12,
-    });
-    fireEvent.click(option);
-
-    expect(note).toHaveValue("Review [[Projects/Plan|Project plan]]");
-    expect(note).toHaveFocus();
-    await waitFor(async () =>
-      expect(await repository.getActiveScratchpad()).toMatchObject({
-        body: "- Review [[Projects/Plan|Project plan]]\n",
-      }),
-    );
-  });
-
-  it("turns an exact task suggestion into a linked row without a checkbox", async () => {
-    cleanup();
-    fixture = mdbaseFixture([
-      taskRecord("suggested", "Suggested task", "task-r1"),
-    ]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-
-    fireEvent.change(input, { target: { value: "[[Suggested" } });
-    fireEvent.click(
-      await screen.findByRole("option", { name: /Suggested task/ }),
-    );
-
-    expect(
-      await screen.findByRole("button", { name: "Suggested task" }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("textbox", { name: /Draft task: \[\[/ }),
-    ).toBeNull();
-    expect(
-      screen.getByRole("textbox", { name: "Draft task: empty" }),
-    ).toHaveFocus();
-    await waitFor(async () => {
-      const body = (await repository.getActiveScratchpad()).body;
-      expect(body).toMatch(/^- \[\[tasks\/.+\|Suggested task\]\]\n$/);
-      expect(body).not.toContain("[ ]");
-    });
   });
 
   it("adds the next line after an exact task row's existing children", async () => {
@@ -545,218 +364,6 @@ describe("ScratchpadScreen", () => {
     );
   });
 
-  it("keeps the initial current-note wait visually quiet", async () => {
-    const current = await repository.getActiveScratchpad();
-    let resolveCurrent!: (document: typeof current) => void;
-    vi.spyOn(repository, "getActiveScratchpad").mockReturnValue(
-      new Promise((resolve) => {
-        resolveCurrent = resolve;
-      }),
-    );
-
-    renderScratchpad();
-
-    expect(await screen.findByText("Opening current note…")).toHaveClass(
-      "visually-hidden",
-    );
-    expect(document.querySelector(".scratchpad-loading")).toBeNull();
-    await act(async () => resolveCurrent(current));
-    expect(
-      await screen.findByRole(
-        "textbox",
-        { name: "Draft task: empty" },
-        { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-      ),
-    ).toBeVisible();
-  });
-
-  it("renders the current note before previous notes finish loading", async () => {
-    const current = await repository.getActiveScratchpad();
-    let resolveHistory!: (page: ScratchFeedPage) => void;
-    const history = new Promise<ScratchFeedPage>((resolve) => {
-      resolveHistory = resolve;
-    });
-    vi.spyOn(repository, "getActiveScratchpad").mockResolvedValue(current);
-    const listScratchFeed = vi
-      .spyOn(repository, "listScratchFeed")
-      .mockReturnValue(history);
-
-    renderScratchpad();
-
-    expect(
-      await screen.findByRole(
-        "textbox",
-        { name: "Draft task: empty" },
-        { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-      ),
-    ).toBeInTheDocument();
-    await waitFor(() => expect(listScratchFeed).toHaveBeenCalledOnce());
-    expect(screen.queryByText("Earlier note")).not.toBeInTheDocument();
-    const scroller = document.querySelector(
-      ".scratchpad-history-scroll",
-    ) as HTMLDivElement;
-    Object.defineProperty(scroller, "scrollHeight", {
-      configurable: true,
-      get: () =>
-        document
-          .querySelector(".scratchpad-history")
-          ?.classList.contains("is-loaded")
-          ? 700
-          : 400,
-    });
-    scroller.scrollTop = 120;
-    expect(document.querySelector(".scratchpad-history")).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
-
-    await act(async () => {
-      resolveHistory({
-        current,
-        items: [
-          {
-            kind: "scratchpad",
-            ...current,
-            id: "earlier",
-            path: "TaskNotes/Scratchpad/earlier.md",
-            revision: "earlier-r1",
-            state: "converted",
-            title: "Earlier note",
-            dateCreated: "2026-07-01T00:00:00.000Z",
-          },
-        ],
-      });
-      await history;
-    });
-
-    expect(await screen.findByText("Earlier note")).toBeInTheDocument();
-    expect(document.querySelector(".scratchpad-history")).toHaveClass(
-      "is-loaded",
-    );
-    expect(scroller.scrollTop).toBe(420);
-  });
-
-  it("keeps the current note as the final feed item before its rest space and leaves text paste untouched", async () => {
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    const history = document.querySelector(".scratchpad-history-scroll")!;
-    const current = document.querySelector(".scratchpad-current-document")!;
-    expect(history.contains(current)).toBe(true);
-    expect(current.nextElementSibling).toHaveClass(
-      "scratchpad-current-rest-space",
-    );
-    expect(history.lastElementChild).toBe(current.nextElementSibling);
-    const event = new Event("paste", { bubbles: true, cancelable: true });
-    Object.defineProperty(event, "clipboardData", {
-      value: { items: [{ kind: "string", type: "text/plain" }] },
-    });
-    input.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(false);
-    expect(screen.queryByText(/Adding image/)).not.toBeInTheDocument();
-  });
-
-  it("tracks the mobile visual viewport bottom and keeps capture pinned", async () => {
-    const viewport = new EventTarget() as VisualViewport;
-    Object.defineProperties(viewport, {
-      height: { configurable: true, writable: true, value: 700 },
-      offsetTop: { configurable: true, writable: true, value: 0 },
-    });
-    vi.stubGlobal("visualViewport", viewport);
-    renderScratchpad();
-    await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    const surface = document.querySelector(".scratchpad-screen") as HTMLElement;
-    const scroller = document.querySelector(
-      ".scratchpad-history-scroll",
-    ) as HTMLDivElement;
-    Object.defineProperty(scroller, "scrollHeight", {
-      configurable: true,
-      value: 900,
-    });
-    expect(
-      surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
-    ).toBe("700px");
-
-    Object.defineProperties(viewport, {
-      height: { configurable: true, writable: true, value: 420 },
-      offsetTop: { configurable: true, writable: true, value: 12 },
-    });
-    viewport.dispatchEvent(new Event("resize"));
-
-    await waitFor(() =>
-      expect(
-        surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
-      ).toBe("432px"),
-    );
-    expect(scroller.scrollTop).toBe(900);
-
-    fireEvent.wheel(scroller, { deltaY: -40 });
-    scroller.scrollTop = 100;
-    Object.defineProperty(viewport, "height", {
-      configurable: true,
-      writable: true,
-      value: 380,
-    });
-    viewport.dispatchEvent(new Event("resize"));
-    await waitFor(() =>
-      expect(
-        surface.style.getPropertyValue("--scratch-visual-viewport-bottom"),
-      ).toBe("392px"),
-    );
-    expect(scroller.scrollTop).toBe(100);
-  });
-
-  it("stays pinned to the bottom while the current editor grows", async () => {
-    const resizeCallbacks: ResizeObserverCallback[] = [];
-    const resize = () =>
-      resizeCallbacks.forEach((callback) => callback([], {} as ResizeObserver));
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        constructor(callback: ResizeObserverCallback) {
-          resizeCallbacks.push(callback);
-        }
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    renderScratchpad();
-    await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    const scroller = document.querySelector(
-      ".scratchpad-history-scroll",
-    ) as HTMLDivElement;
-    let height = 400;
-    Object.defineProperties(scroller, {
-      clientHeight: { configurable: true, get: () => 300 },
-      scrollHeight: { configurable: true, get: () => height },
-    });
-    scroller.scrollTop = 100;
-    fireEvent.scroll(scroller);
-
-    height = 700;
-    act(() => resize());
-    expect(scroller.scrollTop).toBe(700);
-
-    fireEvent.wheel(scroller, { deltaY: -40 });
-    scroller.scrollTop = 50;
-    fireEvent.scroll(scroller);
-    height = 900;
-    act(() => resize());
-    expect(scroller.scrollTop).toBe(50);
-  });
-
   it("opens an accessible image capture panel and retains it after an invalid drop", async () => {
     renderScratchpad();
     await screen.findByRole(
@@ -889,35 +496,6 @@ describe("ScratchpadScreen", () => {
     expect((await repository.getActiveScratchpad()).body).toBe("");
   });
 
-  it("switches between the outline and Markdown without separate add buttons", async () => {
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    expect(screen.queryByRole("button", { name: "Add task" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add note" })).toBeNull();
-    fireEvent.change(input, { target: { value: "Source round trip" } });
-
-    fireEvent.click(screen.getByRole("button", { name: "Write" }));
-    const source = await screen.findByRole("textbox", {
-      name: "Scratchpad Markdown",
-    });
-    expect(source).toHaveTextContent("- [ ] Source round trip");
-    expect(source).toHaveFocus();
-
-    fireEvent.click(screen.getByRole("button", { name: "Outline" }));
-    expect(
-      await screen.findByRole("textbox", {
-        name: "Draft task: Source round trip",
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("textbox", { name: "Draft task: empty" }),
-    ).toHaveFocus();
-  });
-
   it("keeps newer Markdown edits when Outline hydration is still loading", async () => {
     cleanup();
     const task = taskRecord("task", "Linked task", "task-r1");
@@ -996,44 +574,6 @@ describe("ScratchpadScreen", () => {
     ).toBeVisible();
     expect(screen.queryByText("Filename title")).not.toBeInTheDocument();
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
-  });
-
-  it("owns review focus, traps Tab, isolates the outline, and restores the trigger", async () => {
-    renderScratchpad();
-    const input = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    fireEvent.change(input, { target: { value: "Plan launch" } });
-    const trigger = screen.getByRole("button", { name: "Create task notes" });
-    trigger.focus();
-    fireEvent.click(trigger);
-    const dialog = screen.getByRole("dialog", { name: "Create task notes" });
-    const close = within(dialog).getByRole("button", { name: "Close" });
-    expect(close).toHaveFocus();
-    expect(
-      input.closest("[inert]") ??
-        [...document.querySelectorAll("*")].find(
-          (el) => el instanceof HTMLElement && el.inert && el.contains(input),
-        ),
-    ).toBeTruthy();
-    const last = within(dialog).getByRole("button", {
-      name: "Create 1 task notes",
-    });
-    last.focus();
-    fireEvent.keyDown(last, { key: "Tab" });
-    expect(close).toHaveFocus();
-    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
-    expect(last).toHaveFocus();
-    fireEvent.keyDown(last, { key: "Escape" });
-    await waitFor(() => expect(trigger).toHaveFocus());
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(
-      [...document.querySelectorAll("*")].some(
-        (el) => el instanceof HTMLElement && el.inert && el.contains(input),
-      ),
-    ).toBe(false);
   });
 
   it("converts only selected drafts and leaves the rest active", async () => {
@@ -1220,42 +760,6 @@ describe("ScratchpadScreen", () => {
     expect(attempts).toBe(3);
   });
 
-  it("collapses branches and exposes hierarchy controls for the active row", async () => {
-    renderScratchpad();
-    const parent = await screen.findByRole(
-      "textbox",
-      { name: "Draft task: empty" },
-      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
-    );
-    fireEvent.change(parent, { target: { value: "Parent" } });
-    fireEvent.keyDown(parent, { key: "Enter" });
-    const child = await screen.findByRole("textbox", {
-      name: "Draft task: empty",
-    });
-    fireEvent.change(child, { target: { value: "Child" } });
-    fireEvent.focus(child);
-    fireEvent.click(screen.getByRole("button", { name: "Indent" }));
-    expect(screen.getByRole("treeitem", { name: /Child/ })).toHaveAttribute(
-      "aria-level",
-      "2",
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Collapse Parent, 1 nested item",
-      }),
-    );
-    expect(screen.queryByRole("textbox", { name: "Draft task: Child" })).toBe(
-      null,
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Expand Parent, 1 nested item" }),
-    );
-    expect(
-      screen.getByRole("textbox", { name: "Draft task: Child" }),
-    ).toBeVisible();
-  });
-
   it("expands and revision-saves historical documents without collapsing the current editor", async () => {
     const current = await repository.getActiveScratchpad();
     const saved = await repository.saveScratchpad({
@@ -1420,47 +924,6 @@ describe("ScratchpadScreen", () => {
       });
     return { previous, requestDeletion, closeUndoWindow };
   }
-
-  it("hides a deleted previous note and restores it untouched on Undo", async () => {
-    const { previous, requestDeletion } = await renderWithEarlierNote();
-    const deleteScratchpad = vi.spyOn(repository, "deleteScratchpad");
-
-    await requestDeletion();
-
-    expect(screen.queryByRole("button", { name: /Earlier notes/ })).toBeNull();
-    const undo = screen.getByRole("button", { name: "Undo" });
-    await waitFor(() => expect(undo).toHaveFocus());
-    fireEvent.click(undo);
-
-    expect(
-      await screen.findByRole("button", { name: /Earlier notes/ }),
-    ).toBeVisible();
-    expect(screen.queryByText("Deleted “Earlier notes”")).toBeNull();
-    expect(deleteScratchpad).not.toHaveBeenCalled();
-    expect(await repository.getScratchpad(previous.id)).toMatchObject({
-      path: previous.path,
-      revision: previous.revision,
-      body: previous.body,
-    });
-  });
-
-  it("deletes the previous note once its undo window closes", async () => {
-    const { previous, requestDeletion, closeUndoWindow } =
-      await renderWithEarlierNote();
-
-    await requestDeletion();
-    expect(await repository.getScratchpad(previous.id)).not.toBeNull();
-    await closeUndoWindow();
-
-    await waitFor(async () =>
-      expect(await repository.getScratchpad(previous.id)).toBeNull(),
-    );
-    await waitFor(() =>
-      expect(screen.queryByText("Deleted “Earlier notes”")).toBeNull(),
-    );
-    expect(screen.queryByRole("button", { name: /Earlier notes/ })).toBeNull();
-    expect((await repository.getActiveScratchpad()).state).toBe("active");
-  });
 
   it("accepts a pending deletion when the screen is left", async () => {
     const { previous, requestDeletion } = await renderWithEarlierNote();

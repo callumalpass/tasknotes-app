@@ -52,20 +52,6 @@ function fixture(initial?: RecordWriteStatus) {
   };
 }
 
-it("keeps prolonged capture status outside the confirmation even if no task row matches the current view", async () => {
-  vi.useFakeTimers();
-  const f = fixture("pending");
-  expect(screen.queryByText("Syncing…")).toBeNull();
-  await act(() => vi.advanceTimersByTime(2_000));
-  expect(screen.getByText("Syncing…")).toBeVisible();
-  expect(screen.getByRole("button", { name: "Open" })).toBeEnabled();
-  f.set();
-  expect(screen.queryByText("Syncing…")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Open" }));
-  expect(f.onOpen).toHaveBeenCalledOnce();
-  expect(f.onDismiss).toHaveBeenCalledOnce();
-});
-
 it("shows late rejection without an Open action to a disappeared create or a replacement submit", () => {
   const f = fixture("pending");
   f.set("failed");

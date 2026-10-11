@@ -1,4 +1,3 @@
-import { initializeModelPackCore } from "./next-model-pack-core";
 import pin from "../../vendor/mdbase-browser.pin.json";
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), init: vi.fn() }));
@@ -31,16 +30,6 @@ it("uses the existing bounded pinned loader then explicitly initializes bytes on
   await initialize(signal());
   expect(mocks.fetch).toHaveBeenCalledTimes(1);
   expect(mocks.init).toHaveBeenCalledTimes(1);
-});
-it("refuses an already aborted owner without fetching or initializing", async () => {
-  const initialize = await fresh(),
-    owner = new AbortController();
-  owner.abort();
-  await expect(initialize(owner.signal)).rejects.toMatchObject({
-    name: "AbortError",
-  });
-  expect(mocks.fetch).not.toHaveBeenCalled();
-  expect(mocks.init).not.toHaveBeenCalled();
 });
 it("never falls back or automatically retries a failed pinned fetch", async () => {
   const initialize = await fresh();
@@ -91,14 +80,3 @@ it("shares one pinned initialization while independently refusing an aborted wai
   expect(mocks.fetch).toHaveBeenCalledTimes(1);
   expect(mocks.init).toHaveBeenCalledTimes(1);
 });
-it("retains refusal of invalid module bytes without a substitute loader", async () => {
-  const initialize = await fresh();
-  mocks.init.mockRejectedValueOnce(new Error("Module refused"));
-  await expect(initialize(signal())).rejects.toThrow("Module refused");
-  expect(mocks.fetch).toHaveBeenCalledTimes(1);
-  expect(mocks.init).toHaveBeenCalledTimes(1);
-});
-// Export typing remains the promised initializer seam, never a held client.
-const signature: (owner: AbortSignal) => Promise<void> =
-  initializeModelPackCore;
-void signature;

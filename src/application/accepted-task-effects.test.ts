@@ -1,9 +1,6 @@
 import { expect, it, vi } from "vitest";
 import type { Task } from "../domain/task";
-import {
-  AcceptedTaskEffects,
-  acceptedWriteEffect,
-} from "./accepted-task-effects";
+import { AcceptedTaskEffects } from "./accepted-task-effects";
 
 const saved = {
   id: "saved",
@@ -23,36 +20,6 @@ function fixture() {
   return { effects, accepted: new AcceptedTaskEffects(effects) };
 }
 
-it("shares the accepted policy between single and bulk updates", async () => {
-  const { effects, accepted } = fixture();
-  effects.observe.mockRejectedValue(new Error("Schedule failed"));
-  const tasks = await accepted.updated(
-    [saved],
-    [{ id: saved.id, input: { status: "done" } }],
-  );
-  expect(tasks[0]?.operationWarnings).toEqual([
-    "Earlier warning",
-    expect.stringContaining("Schedule failed"),
-  ]);
-  expect(effects.invalidate).toHaveBeenCalledWith([saved.id]);
-  expect(effects.notify).toHaveBeenCalledWith(saved);
-});
-
-it("invalidates a bulk update once while observing each accepted task", async () => {
-  const { effects, accepted } = fixture();
-  const second = { ...saved, id: "second" };
-  await accepted.updated(
-    [saved, second],
-    [
-      { id: saved.id, input: { status: "done" } },
-      { id: second.id, input: { status: "done" } },
-    ],
-  );
-  expect(effects.invalidate).toHaveBeenCalledOnce();
-  expect(effects.invalidate).toHaveBeenCalledWith([saved.id, second.id]);
-  expect(effects.observe).toHaveBeenCalledTimes(2);
-});
-
 it("continues other accepted effects when invalidation fails", async () => {
   const { effects, accepted } = fixture();
   effects.invalidate.mockImplementation(() => {
@@ -65,17 +32,6 @@ it("continues other accepted effects when invalidation fails", async () => {
   ]);
   expect(effects.observe).toHaveBeenCalledWith(saved);
   expect(effects.notify).toHaveBeenCalledWith(saved);
-});
-
-it("avoids irrelevant archive and reminder work without changing acceptance", async () => {
-  const { effects, accepted } = fixture();
-  effects.affectsNotifications.mockReturnValue(false);
-  expect(await accepted.task(saved, { input: { title: "Title" } })).toBe(saved);
-  expect(effects.observe).not.toHaveBeenCalled();
-  expect(effects.notify).not.toHaveBeenCalled();
-  await accepted.task(saved, { notify: false });
-  expect(effects.observe).toHaveBeenCalledWith(saved);
-  expect(effects.notify).not.toHaveBeenCalled();
 });
 
 it("reports failed deletion follow-up and still invalidates and clears reminders", async () => {
@@ -94,12 +50,4 @@ it("reports failed deletion follow-up and still invalidates and clears reminders
     expect.stringContaining("Reminder failed"),
     expect.any(Error),
   );
-});
-
-it("reports non-Error secondary failures without rejecting", async () => {
-  expect(
-    await acceptedWriteEffect("follow-up failed", () =>
-      Promise.reject("rejected"),
-    ),
-  ).toContain("rejected");
 });

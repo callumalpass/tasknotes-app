@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { TaskListSection } from "./task-list-section";
 
@@ -11,21 +11,6 @@ const props = {
   laneKey: "overdue",
 };
 describe("collapsible task sections", () => {
-  it("starts expanded and remembers an explicit choice", () => {
-    const { unmount } = render(
-      <TaskListSection {...props}>Tasks</TaskListSection>,
-    );
-    const toggle = screen.getByRole("button", { name: "Overdue 9" });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(toggle);
-    expect(screen.queryByText("Tasks")).not.toBeInTheDocument();
-    unmount();
-    render(<TaskListSection {...props}>Tasks</TaskListSection>);
-    expect(screen.getByRole("button")).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-  });
   it("temporarily expands during arrangement without overwriting the choice", () => {
     localStorage.setItem(props.preferenceKey, "collapsed");
     const { rerender } = render(

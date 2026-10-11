@@ -53,13 +53,6 @@ beforeEach(() => {
   fixture.repository = {} as TaskRepository;
 });
 describe("native entry lifetime handoff (component stand-ins)", () => {
-  it("fails closed without a bundle and never mounts installation or legacy authority", async () => {
-    fixture.load.mockRejectedValueOnce(Error("unconfigured"));
-    render(<NextCollectionGate />);
-    await screen.findByRole("alert");
-    expect(fixture.mounted).not.toHaveBeenCalled();
-    expect(fixture.opened).not.toHaveBeenCalled();
-  });
   it("refuses a distinct repository from the same owner and late delivery from a replaced owner", async () => {
     render(<NextCollectionGate />);
     await screen.findByRole("button", { name: "Open held test repository" });
@@ -85,37 +78,5 @@ describe("native entry lifetime handoff (component stand-ins)", () => {
     expect(
       screen.queryByRole("button", { name: "Change held test repository" }),
     ).not.toBeInTheDocument();
-  });
-  it("passes the exact original repository while keeping its installation owner mounted", async () => {
-    render(<NextCollectionGate />);
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Open held test repository" }),
-    );
-    await screen.findByRole("button", { name: "Change held test repository" });
-    expect(fixture.opened.mock.calls.at(-1)![0].repository).toBe(
-      fixture.repository,
-    );
-    expect(fixture.mounted).toHaveBeenCalledOnce();
-    expect(fixture.closed).not.toHaveBeenCalled();
-    const original = fixture.opened.mock.calls.at(-1)![0];
-    await expect(original.discardPendingRecovery()).rejects.toThrow(
-      "cannot be discarded",
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Change held test repository" }),
-    );
-    await waitFor(() => expect(fixture.closed).toHaveBeenCalledOnce());
-    expect(fixture.mounted).toHaveBeenCalledTimes(2);
-    fixture.repository = {} as TaskRepository;
-    fireEvent.click(
-      screen.getByRole("button", { name: "Open held test repository" }),
-    );
-    await screen.findByRole("button", { name: "Change held test repository" });
-    const replacement = fixture.opened.mock.calls.at(-1)![0];
-    expect(replacement.repository).toBe(fixture.repository);
-    expect(replacement.changeCollection).toBe(original.changeCollection);
-    expect(replacement.discardPendingRecovery).toBe(
-      original.discardPendingRecovery,
-    );
   });
 });

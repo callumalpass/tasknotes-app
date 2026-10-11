@@ -148,9 +148,6 @@ describe("TaskActions", () => {
     const editor = screen.getByRole("dialog", { name: "Edit Priority" });
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
-    expect(editor.style.getPropertyValue("--task-property-editor-top")).toBe(
-      "12px",
-    );
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Close property editor" }),

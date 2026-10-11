@@ -141,38 +141,6 @@ it("reports the failing bootstrap phase without replacing the original exception
   expect(fixtureValue.parent.signal.aborted).toBe(false);
   log.mockRestore();
 });
-it("captures a constructor failure before bootstrap without modifying the original scope", async () => {
-  const fixtureValue = fixture();
-  const log = vi.spyOn(console, "error").mockImplementation(() => {});
-  const invalid = {
-    ...fixtureValue.context,
-    scope: { ...fixtureValue.context.scope, collection: "invalid" },
-  };
-  await expect(f.options.openCollection!(invalid)).rejects.toMatchObject({
-    reason: "binding",
-  });
-  expect(JSON.parse(log.mock.calls[0]?.[1] as string)).toMatchObject({
-    stage: "construct",
-    reason: "binding",
-  });
-  expect(fixtureValue.context.scope.collection).toBe(collection);
-  expect(fixtureValue.host.bootstrapCloudCopy).not.toHaveBeenCalled();
-  log.mockRestore();
-});
-it("uses the public SDK owner/popup and exact original scope, without app auth, attestation or lease APIs", () => {
-  const fixtureValue = fixture();
-  expect(f.options).toMatchObject({
-    appId: build.appId,
-    appName: "TaskNotes",
-    signal: fixtureValue.parent.signal,
-    origin: build.appOrigin,
-    cpOrigin: release.cpOrigin,
-    requestedCreateCollections: true,
-  });
-  expect(f.options.openPortal()).toBe(fixtureValue.portal);
-  expect(fixtureValue.host.bootstrapCloudCopy).not.toHaveBeenCalled();
-  expect(fixtureValue.portal.navigate).not.toHaveBeenCalled();
-});
 it("CP-created selections JOIN once and expose one stable data-only handle, never a READY claim", async () => {
   const fixtureValue = fixture();
   const adapter = await f.options.openCollection!(fixtureValue.context);

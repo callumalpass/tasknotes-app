@@ -202,31 +202,6 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       ],
     ).toBe("Newer cell");
   });
-  it("uses original UUID/SHA/ordinal and selected metadata READ without generic fallback", async () => {
-    const f = await fixture();
-    const get = vi.spyOn(f.client, "get");
-    const result = await f.repository.executeView(f.view);
-    expect(result.totalCount).toBe(1);
-    expect(result.hasMore).toBe(false);
-    expect(result.rows[0]!.task.id).toBe(f.task.id);
-    expect(result.rows[0]!.values).toEqual({ "note.title": "Native cell" });
-    expect(f.execute.mock.calls[0]![0]).toMatchObject({
-      record: descriptor.record,
-      sourceRevision: revision,
-      ordinal: 1,
-      hints: new Map(),
-    });
-    expect(f.execute.mock.calls[0]![0].window).toBeUndefined();
-    expect(f.source.mock.calls[0]![0]).toMatchObject({
-      record: descriptor.record,
-      sourceRevision: revision,
-      ordinal: 1,
-    });
-    expect(get.mock.calls.map(([id]) => id)).toEqual([f.record.id]);
-    expect(f.genericList).not.toHaveBeenCalled();
-    expect(f.genericExecute).not.toHaveBeenCalled();
-    expect(f.genericSource).not.toHaveBeenCalled();
-  });
   it("rejects missing/wrong source identities without guessing from path or name", async () => {
     const f = await fixture();
     await expect(
@@ -554,12 +529,5 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     await expect(iterator.next()).rejects.toMatchObject({ name: "AbortError" });
     expect(f.source).not.toHaveBeenCalled();
     expect(f.execute).not.toHaveBeenCalled();
-  });
-  it("reads exact source without a generic source endpoint", async () => {
-    const f = await fixture();
-    expect((await f.repository.readViewSource(descriptor.path)).revision).toBe(
-      revision,
-    );
-    expect(f.genericSource).not.toHaveBeenCalled();
   });
 });

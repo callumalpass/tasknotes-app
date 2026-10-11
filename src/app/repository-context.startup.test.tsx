@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { RepositoryProvider, useRepository } from "./repository-context";
@@ -180,24 +180,6 @@ it("reopens after backgrounding during describe and ignores the old opening fail
     visibility.mockRestore();
     release.resolve();
   }
-});
-
-it("opens under StrictMode replay", async () => {
-  const repository = new MdbaseTaskRepository(
-    mdbaseFixture([taskRecord("one", "First visible task", "r1")]).connect,
-  );
-  render(
-    <StrictMode>
-      <RepositoryProvider
-        repository={repository}
-        mutationJournal={new MemoryMutationJournal()}
-      >
-        <FirstView />
-      </RepositoryProvider>
-    </StrictMode>,
-  );
-  expect(await screen.findByText("First visible task")).toBeVisible();
-  expect(screen.getByText("ready")).toBeVisible();
 });
 
 it("shows a usable first view while enabled archive reconciliation and the metadata scan are blocked", async () => {

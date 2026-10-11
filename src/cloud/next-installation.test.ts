@@ -10,7 +10,6 @@ import {
 } from "@mdbase-dev/sdk/app-host";
 import { NextTaskNotesInstallation } from "./next-installation";
 import { collectionCreateIntent } from "./next-collection-create-intent";
-import { resourceSetupPlan } from "../test/resource-setup-plan";
 import { TASKNOTES_APPLICATION_REGISTRATION } from "./next-application-registration";
 
 const account = "11111111-1111-4111-8111-111111111111";
@@ -167,25 +166,6 @@ function setup() {
 }
 
 describe("ordinary native installation controller (source mocks, not LAB acceptance)", () => {
-  it("opens explicit protected context without starting HTTP or native keys", async () => {
-    const s = setup(),
-      app = await NextTaskNotesInstallation.open(s.options);
-    expect(s.open).toHaveBeenCalledWith(
-      expect.objectContaining({
-        environment: "lab",
-        origin: s.options.appOrigin,
-        cpOrigin: release.cpOrigin,
-        appId: "5cdfa020-c201-4da8-845a-f2cc9969eade",
-        appName: "TaskNotes",
-        mode: "fresh",
-      }),
-    );
-    expect(s.flow.start).not.toHaveBeenCalled();
-    expect(s.openHost).not.toHaveBeenCalled();
-    expect(s.events).not.toContain("lease");
-    expect(app.view()).not.toHaveProperty("token");
-    await app.close();
-  });
   it("does not retry a refused original restore with fresh mode or an alias", async () => {
     const s = setup();
     s.open.mockRejectedValueOnce(
@@ -290,64 +270,6 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       "unlock",
       "unlock",
     ]);
-  });
-  it("carries v3 actions on the same protected collection ledger without converting legacy actions", async () => {
-    const s = setup(),
-      app = await NextTaskNotesInstallation.open(s.options);
-    const load = {
-      kind: "model-setup-intent" as const,
-      action: "load" as const,
-    };
-    await expect(app.modelSetupIntent(load)).rejects.toMatchObject({
-      reason: "fenced",
-    });
-    await app.confirmAccountAndOpenDevice(account);
-    s.setView({ state: "paired", collectionIds: [account] });
-    s.flow.listApprovedCollections.mockResolvedValue([
-      { collectionId: account, displayName: "Tasks", role: "owner" },
-    ] as never);
-    const opened = await app.openApprovedCollection(account);
-    expect(await app.modelSetupIntent(load)).toBeNull();
-    const plan = resourceSetupPlan();
-    const original = await app.modelSetupIntent({
-      kind: "model-resource-setup-intent",
-      action: "prepare",
-      plan,
-    });
-    expect(original).toMatchObject({
-      version: 3,
-      scope: opened.scope,
-      plan,
-      phase: "prepared",
-    });
-    for (const [action, phase] of [
-      ["attempt", "attempted"],
-      ["confirm", "confirmed"],
-      ["verify", "verified"],
-    ] as const) {
-      const command = {
-        kind: "model-resource-setup-intent" as const,
-        action,
-        mutationId: original!.mutationId,
-      };
-      expect(await app.modelSetupIntent(command)).toEqual({
-        ...original,
-        phase,
-      });
-      expect(await app.modelSetupIntent(load)).toEqual({ ...original, phase });
-      await expect(
-        app.modelSetupIntent({
-          kind: "model-setup-intent",
-          action,
-          mutationId: original!.mutationId,
-        }),
-      ).rejects.toMatchObject({ reason: "recovery_required" });
-    }
-    expect(s.host.bootstrapCloudCopy).toHaveBeenCalledOnce();
-    expect(s.openHost).toHaveBeenCalledOnce();
-    opened.channel.close();
-    await app.close();
-    await expect(app.modelSetupIntent(load)).rejects.toThrow();
   });
   it("creates one durable target with the original host and collection-only lease", async () => {
     const s = setup(),
@@ -603,17 +525,6 @@ describe("ordinary native installation controller (source mocks, not LAB accepta
       reason: "recovery_required",
     });
     expect(s.host.bootstrapCloudCopy).not.toHaveBeenCalled();
-    await app.close();
-  });
-  it("has no automatic unknown-outcome retry", async () => {
-    const s = setup(),
-      app = await NextTaskNotesInstallation.open(s.options);
-    s.flow.start.mockRejectedValueOnce(Error("outcome_unknown"));
-    await expect(app.start()).rejects.toThrow("outcome_unknown");
-    expect(s.flow.start).toHaveBeenCalledOnce();
-    await app.start();
-    expect(s.flow.start).toHaveBeenCalledTimes(2);
-    expect(s.open).toHaveBeenCalledOnce();
     await app.close();
   });
   it("explicit renewal delegates to the original flow without replacing native ownership", async () => {

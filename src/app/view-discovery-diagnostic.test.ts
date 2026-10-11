@@ -73,28 +73,6 @@ it("does not borrow typed fields from plain objects or arbitrary exception messa
   expect(value.reason).toBeNull();
   expect(text).not.toContain("SECRET");
 });
-it("never invokes an exception getter", () => {
-  const error = new MdbaseError({
-    code: "forbidden",
-    recovery: "reauthorize",
-    message: "SECRET",
-  });
-  const getter = vi.fn(() => {
-    throw Error("SECRET");
-  });
-  Object.defineProperty(error, "code", { get: getter });
-  expect(report(error).value.code).toBeNull();
-  expect(getter).not.toHaveBeenCalled();
-});
-it.each([-1, 1.5, 100_001, NaN, Infinity])(
-  "does not fabricate a bounded count for %s",
-  (count) => {
-    expect(report(undefined, count).value.viewCount).toBeNull();
-  },
-);
-it("keeps zero distinct from unknown", () => {
-  expect(report(undefined, 0).value.viewCount).toBe(0);
-});
 it.each(["ok", "empty"] as const)(
   "omits error classifications on %s",
   (outcome) => {

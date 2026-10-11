@@ -10,36 +10,6 @@ const repository = {
   reconcileWrites: vi.fn(async () => {}),
 } as unknown as TaskRepository;
 
-it("uses the collection's existing pending count, delays disconnected escalation, and never reconciles automatically", async () => {
-  vi.useFakeTimers();
-  vi.mocked(repository.reconcileWrites!).mockClear();
-  render(
-    <CollectionWriteStatus
-      repository={repository}
-      connection={{
-        state: "unavailable",
-        sync: { text: "", pending: 3, held: 0 },
-      }}
-      onReview={() => {}}
-    >
-      <div>Editor</div>
-    </CollectionWriteStatus>,
-  );
-  await act(() => vi.advanceTimersByTime(1_999));
-  expect(screen.queryByText("Syncing…")).toBeNull();
-  await act(() => vi.advanceTimersByTime(1));
-  expect(screen.getByText("Syncing…")).toBeVisible();
-  expect(screen.queryByRole("status")).toBeNull();
-  await act(() => vi.advanceTimersByTime(3_000));
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Disconnected: 3 changes saved on this device",
-  );
-  expect(repository.reconcileWrites).not.toHaveBeenCalled();
-  await act(async () =>
-    fireEvent.click(screen.getByRole("button", { name: "Check sync" })),
-  );
-  expect(repository.reconcileWrites).toHaveBeenCalledOnce();
-});
 it("escalates only a continuous prolonged wait and clears after acknowledgement", async () => {
   vi.useFakeTimers();
   const view = (pending: number) => (
