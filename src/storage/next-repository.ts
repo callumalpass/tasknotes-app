@@ -3,6 +3,7 @@ import {
   MdbaseError,
   toPlain,
   toValue,
+  resolveRecordLinks,
   type MdbaseClient,
   type MdbasePeopleClient,
   type ChangesWatch,
@@ -136,6 +137,7 @@ import {
 } from "../application/ports/model-setup";
 import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
+import { peopleView } from "./mdbase-people";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { BoundedCache } from "./bounded-cache";
 import { NextCollectionFileStore } from "./next-files";
@@ -1672,6 +1674,46 @@ export class NextTaskRepository implements TaskRepository {
       },
       signal,
     );
+  }
+
+  async people(extra?: AbortSignal) {
+    const signal = this.signal(extra);
+    if (!this.peopleClient)
+      throw nativeUnsupported(
+        "The selected collection's people service is unavailable.",
+      );
+    const directory = await this.peopleClient.directory({
+      signal,
+      members: "if-approved",
+    });
+    signal.throwIfAborted();
+    return peopleView(directory);
+  }
+
+  async resolveAssignees(taskId: string, extra?: AbortSignal) {
+    const signal = this.signal(extra);
+    await this.loadIndex(signal);
+    signal.throwIfAborted();
+    const cached = this.cache.get(taskId);
+    if (!cached) throw new Error("The task is no longer available.");
+    const revision = this.dataRevision;
+    const links = await resolveRecordLinks(
+      this.client,
+      {
+        path: cached.task.path,
+        field: cached.model.config.fieldMapping.assignees,
+      },
+      {
+        signal,
+        isCurrent: () =>
+          !this.disposed &&
+          revision === this.dataRevision &&
+          this.cache.get(taskId)?.recordId === cached.recordId &&
+          this.cache.get(taskId)?.task.path === cached.task.path,
+      },
+    );
+    signal.throwIfAborted();
+    return new Map(links.map(({ raw, path }) => [raw, path]));
   }
 
   private async assignedPaths(
