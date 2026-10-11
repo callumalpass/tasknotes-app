@@ -48,38 +48,67 @@ export function attachTaskNotesWebSignInOwner(
         build.environment === "lab" ? build.appOrigin : undefined,
         origin,
       );
-      if (!(build.runtime instanceof Uint8Array) || !build.runtime.byteLength ||
+      if (
+        !(build.runtime instanceof Uint8Array) ||
+        !build.runtime.byteLength ||
         build.runtime.byteLength > NATIVE_WASM_MAX_BYTES ||
-        !/^[0-9a-f]{64}$/.test(build.runtimeSha256)) throw Error("artifact binding");
+        !/^[0-9a-f]{64}$/.test(build.runtimeSha256)
+      )
+        throw Error("artifact binding");
       const runtime = new Uint8Array(build.runtime);
-      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", runtime));
+      const digest = new Uint8Array(
+        await crypto.subtle.digest("SHA-256", runtime),
+      );
       lifetime.signal.throwIfAborted();
-      const actual = Array.from(digest, b => b.toString(16).padStart(2, "0")).join("");
+      const actual = Array.from(digest, (b) =>
+        b.toString(16).padStart(2, "0"),
+      ).join("");
       if (actual !== build.runtimeSha256) throw Error("artifact binding");
       session = createTaskNotesWebSignInSession({
-        build: { ...build, runtime }, signal: lifetime.signal, locks,
-        ...(command.requestedCreateCollections === undefined ? {} : {
-          requestedCreateCollections: command.requestedCreateCollections,
-        }),
+        build: { ...build, runtime },
+        signal: lifetime.signal,
+        locks,
+        ...(command.requestedCreateCollections === undefined
+          ? {}
+          : {
+              requestedCreateCollections: command.requestedCreateCollections,
+            }),
         openPortal: () => ({
-          navigate: uri => send({ schema: "tasknotes-web-sign-in-portal/1", action: "navigate", uri }),
-          close: () => send({ schema: "tasknotes-web-sign-in-portal/1", action: "close" }),
+          navigate: (uri) =>
+            send({
+              schema: "tasknotes-web-sign-in-portal/1",
+              action: "navigate",
+              uri,
+            }),
+          close: () =>
+            send({ schema: "tasknotes-web-sign-in-portal/1", action: "close" }),
         }),
-        handoff: handoff => send({ schema: "tasknotes-web-sign-in-handoff/1", handoff },
-          [handoff.dataPort, handoff.controlPort]),
+        handoff: (handoff) =>
+          send({ schema: "tasknotes-web-sign-in-handoff/1", handoff }, [
+            handoff.dataPort,
+            handoff.controlPort,
+          ]),
       });
-      stopSnapshot = session.subscribe(() => send({
-        schema: "tasknotes-web-sign-in-snapshot/1", snapshot: session!.snapshot(),
-      }));
+      stopSnapshot = session.subscribe(() =>
+        send({
+          schema: "tasknotes-web-sign-in-snapshot/1",
+          snapshot: session!.snapshot(),
+        }),
+      );
       return session.snapshot();
     }
     if (!session || lifetime.signal.aborted) throw Error("closed");
     switch (command.kind) {
-      case "start": return session.start();
-      case "authorize": return session.authorize();
-      case "renew-expired": return session.renewExpiredPairing();
-      case "select": return session.select(command.collectionId);
-      case "clear-selection": return session.clearSelection();
+      case "start":
+        return session.start();
+      case "authorize":
+        return session.authorize();
+      case "renew-expired":
+        return session.renewExpiredPairing();
+      case "select":
+        return session.select(command.collectionId);
+      case "clear-selection":
+        return session.clearSelection();
       case "set-foreground":
         session.setForeground(command.active);
         session.connection()?.setForeground(command.active);
@@ -88,13 +117,14 @@ export function attachTaskNotesWebSignInOwner(
         // Abort is internal to the public session; wait for native/SQL/lease
         // stop. A failed close keeps the same session/observer here quarantined.
         await session.close();
-        stopSnapshot?.(); stopSnapshot = null;
+        stopSnapshot?.();
+        stopSnapshot = null;
         lifetime.abort();
         session = null;
         return null;
     }
   }
-  port.onmessage = event => {
+  port.onmessage = (event) => {
     if (!isNextWebSignInRequest(event.data) || event.data.id <= lastId) {
       lifetime.abort(); // SDK closes its original owner; never force termination.
       return;
@@ -102,20 +132,50 @@ export function attachTaskNotesWebSignInOwner(
     const request = event.data;
     lastId = request.id;
     // Foreground is a synchronous public SDK hint, not a queued journal action.
-    if (request.command.kind === "set-foreground" && session && !lifetime.signal.aborted) {
+    if (
+      request.command.kind === "set-foreground" &&
+      session &&
+      !lifetime.signal.aborted
+    ) {
       session.setForeground(request.command.active);
       session.connection()?.setForeground(request.command.active);
-      send({ schema: "tasknotes-web-sign-in-reply/1", id: request.id, ok: true, snapshot: session.snapshot() });
+      send({
+        schema: "tasknotes-web-sign-in-reply/1",
+        id: request.id,
+        ok: true,
+        snapshot: session.snapshot(),
+      });
       return;
     }
     if (busy) {
-      send({ schema: "tasknotes-web-sign-in-reply/1", id: request.id, ok: false, reason: "busy" });
+      send({
+        schema: "tasknotes-web-sign-in-reply/1",
+        id: request.id,
+        ok: false,
+        reason: "busy",
+      });
       return;
     }
     busy = true;
-    void dispatch(request).then(
-      snapshot => send({ schema: "tasknotes-web-sign-in-reply/1", id: request.id, ok: true, snapshot }),
-      error => send({ schema: "tasknotes-web-sign-in-reply/1", id: request.id, ok: false, reason: installationErrorCode(error) }),
-    ).finally(() => { busy = false; });
+    void dispatch(request)
+      .then(
+        (snapshot) =>
+          send({
+            schema: "tasknotes-web-sign-in-reply/1",
+            id: request.id,
+            ok: true,
+            snapshot,
+          }),
+        (error) =>
+          send({
+            schema: "tasknotes-web-sign-in-reply/1",
+            id: request.id,
+            ok: false,
+            reason: installationErrorCode(error),
+          }),
+      )
+      .finally(() => {
+        busy = false;
+      });
   };
 }
