@@ -450,3 +450,9 @@ move, or board column move), rows and cards glide 220ms from where they were
 to where they now sit, so the eye can follow the task. Re-renders that keep the
 order, such as a width change, never move rows. Lists long enough to virtualize
 and moves of more than 60 items settle instantly.
+
+While a task is dragged in a manually ordered list or board column, the rows
+part with the same glide to open its slot, and the dragged row waits there as
+a faded, dashed placeholder; the drop lands exactly where the slot showed.
+Board drags carry a lifted copy of the card under the pointer. Virtualized
+lists and reduced motion keep rows still and mark the slot with a line.
