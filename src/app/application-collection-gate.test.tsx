@@ -155,6 +155,74 @@ async function fixture() {
   return { native, connection, sdk, ready };
 }
 
+it.each(["refused", "expired"])(
+  "keeps a %s sign-in renewable through the original SDK approve gesture",
+  async (problem) => {
+    const f = await fixture();
+    f.sdk.controls.publishSnapshot({
+      ...initial(),
+      status: "blocked",
+      problem,
+    });
+    render(
+      <ApplicationCollectionGate
+        entry={f.sdk.entry}
+        Picker={Picker}
+        Workspace={Workspace}
+      />,
+    );
+    const description = describeError(f.sdk.entry.application().getSnapshot());
+    expect(description?.action).toBe("sign_in");
+    expect(screen.getByText(description!.title)).toBeVisible();
+    expect(screen.getByText(description!.message)).toBeVisible();
+    const signIn = screen.getByRole("button", { name: "Sign in" });
+    expect(signIn).toBeEnabled();
+    fireEvent.click(signIn);
+    await waitFor(() =>
+      expect(
+        f.sdk.controls
+          .observedActions()
+          .filter((call) => call.action === "approve"),
+      ).toHaveLength(1),
+    );
+    expect(
+      f.sdk.controls
+        .observedActions()
+        .some((call) =>
+          ["select", "clearSelection", "chooseAnother"].includes(call.action),
+        ),
+    ).toBe(false);
+  },
+);
+
+it("keeps Sign in enabled while authorizing and forwards every retry gesture to the same SDK owner", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot({ ...initial(), status: "authorizing" });
+  let finish!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  f.sdk.controls.setHandler("approve", () => waiting);
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Workspace}
+    />,
+  );
+  const signIn = screen.getByRole("button", { name: "Sign in" });
+  expect(signIn).toBeEnabled();
+  fireEvent.click(signIn);
+  expect(signIn).toBeEnabled();
+  fireEvent.click(signIn);
+  expect(
+    f.sdk.controls
+      .observedActions()
+      .filter((call) => call.action === "approve"),
+  ).toHaveLength(2);
+  await act(async () => finish());
+});
+
 it("keeps the original workspace and unsaved input through a live migration and SDK resumption", async () => {
   const f = await fixture();
   f.sdk.controls.publishSnapshot(f.ready());

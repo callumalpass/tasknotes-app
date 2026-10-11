@@ -23,6 +23,8 @@ export interface CloudConnectionViewProps {
   reviewingCollection: boolean;
   firstVisit: boolean;
   busy: boolean;
+  /** Original SDK sign-in may accept a new gesture while waiting. Other actions stay busy. */
+  connectBusy?: boolean;
   sdkWaiting: boolean;
   authorizationPending: boolean;
   opening: "another" | "reconnect" | null;
@@ -56,6 +58,7 @@ export function CloudConnectionView({
   reviewingCollection,
   firstVisit,
   busy,
+  connectBusy,
   sdkWaiting,
   authorizationPending,
   opening,
@@ -340,7 +343,7 @@ export function CloudConnectionView({
                 ? "welcome-primary-action"
                 : "outline-action welcome-secondary-action"
             }
-            disabled={busy}
+            disabled={connectBusy ?? busy}
             type="button"
             onClick={() => void connect("another")}
           >

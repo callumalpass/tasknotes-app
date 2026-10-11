@@ -1,5 +1,7 @@
 # Unreleased
 
+- Keep Sign in available while waiting for approval, and show the SDK's retry guidance when sign-in is refused or expires. An explicit retry uses the original SDK sign-in owner.
+
 - Show a one-time mdbase upgrade notice to returning users without blocking work or changing their stored collection data.
 - Carry existing collection Home and ordered pinned-view choices into the account-scoped next app preferences. Existing next-mode choices take precedence, and full browser storage no longer interrupts restoring views.
 

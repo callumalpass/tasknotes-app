@@ -182,6 +182,8 @@ export function ApplicationCollectionGate({
     snapshot.readiness.checking ||
     ["starting", "authorizing", "opening"].includes(snapshot.status) ||
     ["opening", "approving"].includes(snapshot.selection.state);
+  const repeatableSignIn =
+    snapshot.status === "authorizing" && snapshot.signIn?.state !== "paired";
   const problem =
     error ??
     (snapshot.problem
@@ -209,7 +211,18 @@ export function ApplicationCollectionGate({
   const request = snapshot.selection.requested;
   const chooseAnother = () =>
     void run(() => application.chooseAnother(options()));
-  const approve = () => run(() => application.approve(undefined, options()));
+  const approve = async () => {
+    if (!repeatableSignIn)
+      return run(() => application.approve(undefined, options()));
+    // Each retry is an explicit gesture on the SAME SDK owner. The SDK alone
+    // reserves the popup and decides renewal versus original-request recovery.
+    setError(null);
+    try {
+      await application.approve(undefined, options());
+    } catch (reason) {
+      if (!lifetime.current.owner.signal.aborted) setError(reason);
+    }
+  };
   const authorizeAnother = () =>
     void run(() => application.approve(null, options()));
   const setup = snapshot.readiness.assessment?.status === "setup_required";
@@ -289,6 +302,7 @@ export function ApplicationCollectionGate({
             snapshot.collections.length === 0
           }
           busy={busy}
+          connectBusy={repeatableSignIn ? false : busy}
           sdkWaiting={
             snapshot.status === "authorizing" ||
             snapshot.selection.state === "approving"
