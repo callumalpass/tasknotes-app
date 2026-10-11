@@ -5,7 +5,7 @@ import { nextTaskFixture } from "../test/next-task-fixture";
 
 type Files = Pick<
   MdbaseClient["files"],
-  "grant" | "list" | "get" | "upload" | "downloadStream" | "move" | "delete"
+  "grant" | "listPage" | "get" | "upload" | "downloadStream" | "move" | "delete"
 >;
 const id = "11111111-1111-4111-8111-111111111111";
 const digest: `sha256:${string}` = `sha256:${"a".repeat(64)}`;
@@ -32,9 +32,9 @@ function fixture() {
       actions: ["list", "read", "add", "replace", "move", "delete"],
       scope: { kind: "collection" },
     } as Files["grant"],
-    list: vi.fn<Files["list"]>().mockImplementation(async function* () {
-      yield view();
-    }),
+    listPage: vi
+      .fn<Files["listPage"]>()
+      .mockResolvedValue({ files: [view()], complete: true }),
     get: vi.fn<Files["get"]>().mockImplementation(async () => view()),
     upload: vi.fn<Files["upload"]>().mockImplementation(async () => write()),
     downloadStream: vi.fn<Files["downloadStream"]>(),
@@ -74,12 +74,14 @@ describe("original SDK collection files adapter", () => {
       modifiedAt: "1970-01-01T00:00:00.000Z",
       mediaType: "image/png",
     });
-    expect(api.list).toHaveBeenCalledWith({
+    expect(api.listPage).toHaveBeenCalledWith({
       folder: "Attachments",
+      cursor: undefined,
       signal: expect.any(AbortSignal),
     });
-    api.list.mockImplementation(async function* () {
-      yield { ...view(), mtime: undefined, mediaType: undefined };
+    api.listPage.mockResolvedValue({
+      files: [{ ...view(), mtime: undefined, mediaType: undefined }],
+      complete: true,
     });
     expect((await store.list())[0]).not.toHaveProperty("modifiedAt");
     expect((await store.list())[0]).not.toHaveProperty("mediaType");
@@ -92,6 +94,44 @@ describe("original SDK collection files adapter", () => {
     expect(store.authorizedActions().size).toBe(0);
     owner.abort();
     expect(store.authorizedActions().size).toBe(0);
+  });
+
+  it("finishes all file pages with one original signal and folder scope", async () => {
+    const { api, store } = fixture();
+    api.listPage
+      .mockResolvedValueOnce({
+        files: [view()],
+        cursor: "page-two",
+        complete: false,
+      })
+      .mockResolvedValueOnce({
+        files: [{ ...view(), path: "Attachments/second.png" }],
+        complete: true,
+      });
+    expect(await store.list({ folder: "Attachments" })).toHaveLength(2);
+    expect(api.listPage.mock.calls[1][0]).toEqual({
+      folder: "Attachments",
+      cursor: "page-two",
+      signal: api.listPage.mock.calls[0][0]?.signal,
+    });
+  });
+
+  it("refuses an incomplete final page instead of presenting partial files as complete", async () => {
+    const { api, store } = fixture();
+    api.listPage.mockResolvedValue({ files: [view()], complete: false });
+    await expect(store.list()).rejects.toThrow("file list is incomplete");
+    expect(api.listPage).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a repeating file cursor rather than looping", async () => {
+    const { api, store } = fixture();
+    api.listPage.mockResolvedValue({
+      files: [view()],
+      cursor: "same-page",
+      complete: false,
+    });
+    await expect(store.list()).rejects.toThrow("could not be completed");
+    expect(api.listPage).toHaveBeenCalledTimes(2);
   });
 
   it("waits for the original upload confirmation and reads its actual native ID", async () => {
@@ -243,7 +283,7 @@ describe("original SDK collection files adapter", () => {
     const caller = new AbortController();
     caller.abort(error);
     await expect(store.list({ signal: caller.signal })).rejects.toBe(error);
-    expect(api.list).not.toHaveBeenCalled();
+    expect(api.listPage).not.toHaveBeenCalled();
     owner.abort(error);
     await expect(
       store.delete({

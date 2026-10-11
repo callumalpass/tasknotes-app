@@ -25,8 +25,9 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`d53d7d761c1a7caf100e065a1378384dcc5f6449`, with provenance in
-`vendor/sdk-dev-d53d7d76.json`. This concrete original coordinator-approved dev
+`2e2ae687f96d0a0c074ef6bc46bb77b97089f325`, using the original
+`sdk-dev-2e2ae687-n1.tgz` and provenance in
+`vendor/sdk-dev-2e2ae687-n1.json`. This concrete original coordinator-approved dev
 intake is not release-qualified. It retains shared factory #819, canonical
 no-email provider receipts #827, bounded failure classification #832, signal
 composition #837 and the original shared-facade Bases READ FIFO. It also retains SDK563's
@@ -53,8 +54,8 @@ manifest or work around SDK Worker/asset packaging in the app. Manifest generati
 is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
 manifest has a different origin and digest. This source
 intake does not qualify native compatibility. The producer's `native.available: true` means original
-native assets are packaged: runtime515 (3427675 bytes, SHA256
-`6c4ea51534b785c5165bfb671d40116535b1a60fafad035bd384708ea288de83`)
+native assets are packaged: runtime8441 (3462973 bytes, SHA256
+`6762b92e4b57b1a4df965c7991a064efe05eb950a66ec332e0504f73a8e42b72`)
 and the original SQLite bytes. It is not a public runtime readiness signal;
 Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
 browser initialization has its own registration, manifest and asset checks. The shared entry uses the SDK's original packaged assets; it does not take an
@@ -144,6 +145,30 @@ This allows metadata rehydration over the same native client without closing the
 live caller or creating a replacement session. It does not extend a retired host's
 lifetime or qualify process restart/custody.
 
+## Collection files
+
+`NextTaskRepository.files` borrows the selected original SDK records client's
+files port. Actions reflect its current grant; the SDK enforces the folder scope
+and every operation. The adapter's original lifetime, caller signal and request
+budget remain attached to transfers and mutations. Disposal does not close a
+borrowed SDK client or establish physical native drain.
+
+Upload, replacement, move and delete await the original write's confirmation,
+not local pending delivery or publication. Replacement retains the original
+native file ID and current digest expectation. Move and delete pass the original
+mutation ID when supplied and use digest CAS. Errors and unknown outcomes do not
+trigger another application submission. Returned metadata comes from the SDK;
+media type is Core-derived rather than substituted with the upload hint.
+
+Saved file revisions are **current-digest expectations, not historical lookup
+keys**. The SDK stream is opened with the explicit expected revision, and its
+returned ID, digest, size and path are checked before exposing bytes. Byte counts
+are checked through EOF. The buffered convenience read is capped at 64 MiB;
+streaming is available separately. An already-open stream can retain earlier
+content, but fresh reopening after replacement or reload cannot retrieve an old
+revision. This source adapter and its synthetic SDK transport tests do not
+qualify native/LAB binary persistence or restart recovery.
+
 ## Source intake and remaining work
 
 Native repository/domain/recovery/watch tests are carried from scaffolding while preserving main's protected-edit UI. The dual account factory, mixed Connect development archives and legacy timer factory were not carried. Immutable standalone view compiler bytes are a hash-checked test oracle, not a runtime fallback.
@@ -191,8 +216,8 @@ conflict and unknown outcomes remain visible with explicit read-only Check save
 and review actions, never replacement submissions. Definitions, model settings and setup remain confirmed-only.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.
-Unsupported reminders, file metadata and authenticated record authors remain
-explicit; they are not emulated through legacy. An optional file timestamp does
-not make native Files available.
+Unsupported reminders and authenticated record authors remain explicit; they
+are not emulated through legacy. Native Files persistence remains separately
+qualified from the normal SDK files adapter and optional file timestamps.
 
 Publication versions/manifests/trust and production cutover/promotion remain separately owned. No production deployment or mobile submission is authorized by this source branch.

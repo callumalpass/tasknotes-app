@@ -13,7 +13,7 @@ import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 
 type Files = Pick<
   MdbaseClient["files"],
-  "grant" | "list" | "get" | "upload" | "downloadStream" | "move" | "delete"
+  "grant" | "listPage" | "get" | "upload" | "downloadStream" | "move" | "delete"
 >;
 type ReadOptions = {
   signal?: AbortSignal;
@@ -38,15 +38,28 @@ export class NextCollectionFileStore implements CollectionFileStore {
   ): Promise<CollectionFile[]> {
     const signal = this.signal(options.signal);
     const result: CollectionFile[] = [];
-    for await (const file of this.files.list({
-      folder: options.folder,
-      signal,
-    })) {
+    const seen = new Set<string>();
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await this.files.listPage({
+        folder: options.folder,
+        cursor,
+        signal,
+      });
       signal.throwIfAborted();
-      result.push(collectionFile(file));
+      result.push(...page.files.map(collectionFile));
+      if (!page.cursor) {
+        if (!page.complete)
+          throw new Error(
+            "The collection's file list is incomplete. Refresh before trying again.",
+          );
+        return result;
+      }
+      if (seen.has(page.cursor))
+        throw new Error("The collection's file list could not be completed.");
+      seen.add(page.cursor);
+      cursor = page.cursor;
     }
-    signal.throwIfAborted();
-    return result;
   }
 
   async upload(
