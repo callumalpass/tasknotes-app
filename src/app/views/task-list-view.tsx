@@ -1,5 +1,5 @@
 import { GripVertical } from "lucide-react";
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import type {
   ReactNode,
   DragEvent as ReactDragEvent,
@@ -22,9 +22,11 @@ import { ViewTaskRow } from "./view-task-row";
 import { ViewEmptyState } from "../view-empty-state";
 import {
   applyOptimisticListMoves,
+  settledRowCount,
   taskListLaneMoveInput,
   type TaskListLane,
 } from "../optimistic-view-reconciliation";
+import { TaskDeparturesContext } from "../../components/task-completion-motion";
 import type { TaskSummary } from "../../domain/task";
 import type { TaskCollectionConfiguration } from "../../domain/task-configuration";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
@@ -231,6 +233,7 @@ function ManualTaskRows({
   } | null>(null);
   const suppressedClickTaskId = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const departing = useContext(TaskDeparturesContext);
   const [announcement, setAnnouncement] = useState("");
   const rowById = new Map(
     lanes.flatMap((lane) =>
@@ -593,9 +596,9 @@ function ManualTaskRows({
                     : undefined
                 }
                 label={lane.label ?? "Other"}
-                count={lane.rows.length}
+                count={settledRowCount(lane.rows, departing)}
                 action={sectionAction?.(lane)}
-                showEmpty={Boolean(manualOrder)}
+                showEmpty={Boolean(manualOrder) || lane.rows.length > 0}
               >
                 {rows}
               </TaskListSection>

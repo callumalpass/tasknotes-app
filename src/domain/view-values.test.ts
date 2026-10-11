@@ -248,3 +248,40 @@ describe("saved-view values", () => {
     );
   });
 });
+
+describe("relativeDateDetail overdue", () => {
+  const configuration = defaultTaskCollectionConfiguration();
+  const detail = (key: string, rawValue: string) => ({
+    key,
+    label: key,
+    value: rawValue,
+    rawValue,
+  });
+
+  it("flags a past due date", () => {
+    expect(
+      relativeDateDetail(detail("note.due", "2000-01-03"), task, configuration)
+        .overdue,
+    ).toBe(true);
+  });
+
+  it("does not treat a missed scheduled date as late", () => {
+    expect(
+      relativeDateDetail(
+        detail("note.scheduled", "2000-01-03"),
+        task,
+        configuration,
+      ).overdue,
+    ).toBe(false);
+  });
+
+  it("never flags completed work", () => {
+    expect(
+      relativeDateDetail(
+        detail("note.due", "2000-01-03"),
+        { completed: true },
+        configuration,
+      ).overdue,
+    ).toBe(false);
+  });
+});

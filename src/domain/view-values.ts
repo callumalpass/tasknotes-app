@@ -190,7 +190,10 @@ function notePropertyName(key: string): string | undefined {
   return match?.[2];
 }
 
-/** Scheduled and due dates read relative to today and flag overdue work. */
+/**
+ * Scheduled and due dates read relative to today. Only a past due date is
+ * overdue: a scheduled date is a plan, so missing it is not lateness.
+ */
 export function relativeDateDetail<
   Detail extends {
     key: string;
@@ -216,6 +219,6 @@ export function relativeDateDetail<
   return {
     ...detail,
     value: formatRelativeTaskDate(detail.rawValue),
-    overdue: !task.completed && isTaskDateOverdue(detail.rawValue),
+    overdue: due && !task.completed && isTaskDateOverdue(detail.rawValue),
   };
 }

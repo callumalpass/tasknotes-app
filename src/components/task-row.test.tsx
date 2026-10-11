@@ -3,6 +3,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Task } from "../domain/task";
 import { TaskRow } from "./task-row";
+import {
+  TaskCompletionReportContext,
+  TaskDeparturesContext,
+} from "./task-completion-motion";
 import { createPortal } from "react-dom";
 vi.mock("../app/repository-context", () => ({
   useRepository: () => ({
@@ -124,4 +128,84 @@ it("retains date labels and omits routine defaults in saved rows", () => {
   expect(screen.getByText("Due")).toBeVisible();
   expect(screen.queryByText("Normal")).not.toBeInTheDocument();
   expect(screen.queryByText("Open")).not.toBeInTheDocument();
+});
+it("draws a coloured status as the ring and names it, without a fill", () => {
+  const { container, rerender } = render(
+    <TaskRow
+      task={{ ...task, status: "in-progress" } as Task}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  const control = screen.getByRole("button", {
+    name: "Complete Write brief, In progress",
+  });
+  expect(control).toHaveClass("has-status");
+  expect(control).toHaveAttribute("title", "In progress");
+  expect(control.style.getPropertyValue("--status-color")).toBe("#0066cc");
+  rerender(<TaskRow task={task} onOpen={vi.fn()} onToggle={vi.fn()} />);
+  const neutral = container.querySelector(".completion-control")!;
+  expect(neutral).not.toHaveClass("has-status");
+  expect(neutral).not.toHaveAttribute("title");
+});
+it("animates only a completion made in the row and reports it for Undo", async () => {
+  const report = vi.fn();
+  let resolve!: () => void;
+  const toggle = vi.fn(
+    () =>
+      new Promise<void>((done) => {
+        resolve = done;
+      }),
+  );
+  const { container, rerender } = render(
+    <TaskCompletionReportContext.Provider value={report}>
+      <TaskRow task={task} onOpen={vi.fn()} onToggle={toggle} />
+    </TaskCompletionReportContext.Provider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Complete Write brief" }));
+  resolve();
+  await vi.waitFor(() =>
+    expect(report).toHaveBeenCalledWith({ task, occurrenceDate: undefined }),
+  );
+  const done = { ...task, completed: true, status: "done" } as Task;
+  rerender(
+    <TaskCompletionReportContext.Provider value={report}>
+      <TaskRow task={done} onOpen={vi.fn()} onToggle={toggle} />
+    </TaskCompletionReportContext.Provider>,
+  );
+  const row = container.querySelector(".task-row")!;
+  expect(row).toHaveClass("is-complete", "is-just-completed");
+  // Reopening is not a completion and clears the animation.
+  rerender(
+    <TaskCompletionReportContext.Provider value={report}>
+      <TaskRow task={task} onOpen={vi.fn()} onToggle={toggle} />
+    </TaskCompletionReportContext.Provider>,
+  );
+  expect(row).not.toHaveClass("is-just-completed");
+  cleanup();
+  const loaded = render(
+    <TaskRow task={done} onOpen={vi.fn()} onToggle={vi.fn()} />,
+  );
+  expect(loaded.container.querySelector(".task-row")).not.toHaveClass(
+    "is-just-completed",
+  );
+  expect(report).toHaveBeenCalledOnce();
+});
+it("makes a departing row inert and moves keyboard focus to its neighbour", () => {
+  const other = { ...task, id: "two", title: "Book room" } as Task;
+  const view = (departing: ReadonlyMap<string, number | null>) => (
+    <main id="main-content">
+      <TaskDeparturesContext.Provider value={departing}>
+        <TaskRow task={task} onOpen={vi.fn()} onToggle={vi.fn()} />
+        <TaskRow task={other} onOpen={vi.fn()} onToggle={vi.fn()} />
+      </TaskDeparturesContext.Provider>
+    </main>
+  );
+  const { container, rerender } = render(view(new Map()));
+  const title = screen.getByRole("button", { name: "Write brief" });
+  title.focus();
+  rerender(view(new Map([["one", Date.now()]])));
+  const [departing] = container.querySelectorAll<HTMLElement>(".task-row");
+  expect(departing!.inert).toBe(true);
+  expect(screen.getByRole("button", { name: "Book room" })).toHaveFocus();
 });

@@ -219,3 +219,67 @@ export function taskListLaneMoveInput(
     );
   return null;
 }
+
+/** A just-completed row held in place while its completion finishes. */
+export interface CompletionDeparture {
+  viewKey: string;
+  row: TaskViewRow;
+  index: number;
+  /** The groups shown at completion, so an emptied group stays for the fold. */
+  groups: TaskViewExecution["groups"];
+  /** When the completion was accepted; null while it is unconfirmed. */
+  acceptedAt: number | null;
+}
+
+/**
+ * Keep just-completed rows where they were after a refreshed result drops
+ * them, shown as complete, so they can linger and fold away instead of
+ * vanishing. A task the result still contains (a list that shows completed
+ * work, or a repeating task's next occurrence) is never duplicated.
+ */
+export function executionWithDepartures(
+  execution: TaskViewExecution,
+  departures: ReadonlyMap<string, CompletionDeparture>,
+  viewKey: string,
+): {
+  execution: TaskViewExecution;
+  departing: ReadonlyMap<string, number | null>;
+} {
+  const present = new Set(execution.rows.map((row) => row.task.id));
+  const held = [...departures.entries()]
+    .filter(
+      ([taskId, departure]) =>
+        departure.viewKey === viewKey && !present.has(taskId),
+    )
+    .sort(([, left], [, right]) => left.index - right.index);
+  if (!held.length) return { execution, departing: new Map() };
+  const rows = [...execution.rows];
+  const departing = new Map<string, number | null>();
+  for (const [taskId, departure] of held) {
+    rows.splice(Math.min(departure.index, rows.length), 0, {
+      ...departure.row,
+      task: { ...departure.row.task, completed: true },
+    });
+    departing.set(taskId, departure.acceptedAt);
+  }
+  const groupKey = (group: { values: Record<string, unknown> }) =>
+    JSON.stringify(group.values);
+  const groups = [...execution.groups];
+  const shown = new Set(groups.map(groupKey));
+  for (const [, departure] of held)
+    departure.groups.forEach((group, index) => {
+      if (shown.has(groupKey(group))) return;
+      shown.add(groupKey(group));
+      groups.splice(Math.min(index, groups.length), 0, group);
+    });
+  return { execution: { ...execution, rows, groups }, departing };
+}
+
+/** Section and column counts leave out rows that are only folding away. */
+export function settledRowCount(
+  rows: readonly TaskViewRow[],
+  departing: ReadonlyMap<string, unknown>,
+): number {
+  if (!departing.size) return rows.length;
+  return rows.filter((row) => !departing.has(row.task.id)).length;
+}
