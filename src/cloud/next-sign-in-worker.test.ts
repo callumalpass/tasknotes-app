@@ -125,6 +125,46 @@ async function fixture() {
   await start;
   return { owner, worker };
 }
+it("keeps a returning-account popup through the SDK's pre-authorizing timing push", async () => {
+  const { owner, worker } = await fixture();
+  worker.push(snapshot("unselected", true));
+  const portal = { navigate: vi.fn(), close: vi.fn() };
+  owner.reservePortal(() => portal);
+  const authorization = owner.authorizeSession();
+  // SDK9ab authorize() publishes timing synchronously while retaining the
+  // preceding paired/unselected state, before async consent becomes authorizing.
+  worker.push({
+    ...snapshot("unselected", true),
+    timing: { firstScreenMs: null, readyMs: null },
+  });
+  const closedBeforeConsent = portal.close.mock.calls.length;
+  worker.reply(worker.pending!, snapshot("authorizing", true));
+  await authorization;
+  await owner.close();
+  expect(closedBeforeConsent).toBe(0);
+});
+it("does not reject the original data handoff while its session command reply is still pending", async () => {
+  const { owner, worker } = await fixture();
+  const authorization = owner.authorizeSession();
+  const failure = vi.fn();
+  const handoff = owner.openCollection(collection);
+  void handoff.catch(failure);
+  await Promise.resolve();
+  await Promise.resolve();
+  const failedBeforeReply = failure.mock.calls.length;
+  worker.reply(worker.pending!, snapshot("authorizing", true));
+  await authorization;
+  expect(worker.pending?.command.kind).toBe("session-connection");
+  worker.emit({
+    version: 1,
+    id: worker.pending!.id,
+    ok: false,
+    reason: "refused",
+  });
+  await expect(handoff).rejects.toThrow("refused");
+  await owner.close();
+  expect(failedBeforeReply).toBe(0);
+});
 it("public snapshot/portal pushes cannot settle an unrelated command reply", async () => {
   const { owner, worker } = await fixture();
   const portal = { navigate: vi.fn(), close: vi.fn() };
@@ -151,14 +191,57 @@ it("closes the owned popup only after genuine approval, not an already-paired ad
   const { owner, worker } = await fixture(),
     portal = { navigate: vi.fn(), close: vi.fn() };
   owner.reservePortal(() => portal);
+  const authorization = owner.authorizeSession();
   worker.push(snapshot("authorizing", true));
   expect(portal.close).not.toHaveBeenCalled();
   worker.push(snapshot("unselected", true));
   expect(portal.close).toHaveBeenCalledOnce();
   worker.push(snapshot("unselected", true));
+  worker.reply(worker.pending!, snapshot("unselected", true));
+  await authorization;
   await owner.close();
   expect(portal.close).toHaveBeenCalledOnce();
 });
+it.each(["blocked", "closed"] as const)(
+  "closes on terminal %s even before authorizing, without aborting an exchange on a timing-only push",
+  async (status) => {
+    const signal = new AbortController();
+    const owner = await NextInstallationWorker.openSession(
+      build,
+      signal.signal,
+    );
+    const worker = FakeWorker.latest;
+    const start = owner.startSession();
+    worker.reply(worker.pending!, snapshot());
+    await start;
+    const portal = { navigate: vi.fn(), close: vi.fn() };
+    owner.reservePortal(() => portal);
+    const authorization = owner.authorizeSession();
+    const request = worker.pending!;
+    worker.push({
+      ...snapshot("signed_out"),
+      timing: { firstScreenMs: null, readyMs: null },
+    });
+    expect(portal.close).not.toHaveBeenCalled();
+    expect(signal.signal.aborted).toBe(false);
+    expect(
+      worker.sent.some(
+        (value) =>
+          typeof value === "object" &&
+          value &&
+          "event" in value &&
+          value.event === "session-close",
+      ),
+    ).toBe(false);
+    expect(worker.terminate).not.toHaveBeenCalled();
+    worker.push(snapshot(status));
+    expect(portal.close).toHaveBeenCalledOnce();
+    worker.reply(request, snapshot(status));
+    await authorization;
+    await owner.close();
+    expect(portal.close).toHaveBeenCalledOnce();
+  },
+);
 it("rejects a foreign-origin portal push and closes the original owner rather than navigating", async () => {
   const { owner, worker } = await fixture(),
     portal = { navigate: vi.fn(), close: vi.fn() };

@@ -41,6 +41,7 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
 import { readViewDraft, updateViewDocument } from "../domain/view-document";
@@ -925,6 +926,12 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
+            {selected ? (
+              <RecordWriteNotice
+                repository={repository}
+                target={{ kind: "source", path: selected.source.path }}
+              />
+            ) : null}
             {selected?.name === "Today" ? (
               <p className="view-date">
                 {new Intl.DateTimeFormat(undefined, {

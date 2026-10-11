@@ -88,9 +88,19 @@ export async function qualifyNativeTaskNotesUi(options: {
           "pending",
         "UI confirmation-blocking window not exercised",
       );
+      await until(
+        () => badge()?.textContent?.trim() === "Saved locally",
+        "UI never displayed local capture before log drive",
+      );
+      const locallySaved = await repository.get(taskId);
       check(
-        badge()?.textContent?.trim() === "Saving",
-        "UI lacks pending feedback",
+        locallySaved?.id === taskId &&
+          locallySaved.title === UI_TITLE &&
+          repository.writeState({ kind: "task", id: taskId }) === "pending" &&
+          (await client.receipt(original, AbortSignal.timeout(5000))).state ===
+            "pending" &&
+          submitted.length === before + 1,
+        "local UI state lacks original pending native READ/receipt",
       );
       await until(
         () => badge()?.textContent?.trim() === "Saved",
@@ -123,6 +133,7 @@ export async function qualifyNativeTaskNotesUi(options: {
         actualTaskScreen: true,
         actualRepositoryProvider: true,
         actualApplicationJournal: true,
+        uiLocalCaptureQualified: fresh,
         uiSavedBadgeQualified: true,
       },
       dispose,

@@ -7,6 +7,10 @@ import {
   type AppLockPort,
 } from "@mdbase-dev/sdk/app-host";
 import { StartupTiming } from "../observability/startup-timing";
+import {
+  logCollectionOpenFailure,
+  type CollectionOpenStage,
+} from "./next-collection-open-diagnostic";
 import { collectionJoinIntent } from "./next-collection-join-intent";
 import { findCollectionCreation } from "./next-collection-create-intent";
 import { openNextCollectionSql } from "./next-collection-sql";
@@ -61,19 +65,27 @@ export function createNextSignInSession({
       return new Uint8Array(runtime);
     },
     openCollection: async (context) => {
-      const next = new NextSessionCollection(
-        context,
-        build.appOrigin,
-        environment.cpOrigin,
-        environment.allowLoopbackHttp,
-        (timing ??= new StartupTiming()),
-      );
-      adapter = next;
-      endNativeOpen ??= timing.begin("native_open");
+      let next: NextSessionCollection | null = null;
       try {
+        next = new NextSessionCollection(
+          context,
+          build.appOrigin,
+          environment.cpOrigin,
+          environment.allowLoopbackHttp,
+          (timing ??= new StartupTiming()),
+        );
+        adapter = next;
+        endNativeOpen ??= timing.begin("native_open");
         return await next.open();
+      } catch (error) {
+        logCollectionOpenFailure(
+          next?.openStage ?? "construct",
+          error,
+          typeof location === "undefined" ? undefined : location.href,
+        );
+        throw error;
       } finally {
-        endNativeOpen();
+        endNativeOpen?.();
       }
     },
   });
@@ -134,6 +146,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
   // Native READ/discovery/history is not current semantic readiness. The UI's
   // existing repository/setup gate still assesses the full compatible model.
   readonly state = "setup_required" as const;
+  openStage: CollectionOpenStage = "current_check";
   private readonly lifetime = new AbortController();
   private readonly signal: AbortSignal;
   private readonly scope;
@@ -184,6 +197,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
     const { host } = this.context,
       signal = this.signal;
     try {
+      this.openStage = "creation_intent";
       const creation = await findCollectionCreation(
         this.context.installation.scope,
         this.scope.collection,
@@ -197,10 +211,12 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
       // New CP-selected collections already exist: JOIN, never create them.
       // Retained legacy creation witnesses preserve their original EXISTING
       // bootstrap identity/purpose, without a fresh create or replacement.
+      this.openStage = "join_intent";
       const mode = creation
         ? "existing"
         : await collectionJoinIntent(this.scope, signal, "prepare");
       this.check();
+      this.openStage = "bootstrap";
       const endBootstrap = this.timing.begin("bootstrap");
       try {
         await host.bootstrapCloudCopy({
@@ -219,13 +235,16 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
         endBootstrap();
       }
       this.check();
+      this.openStage = "join_complete";
       if (!creation) await collectionJoinIntent(this.scope, signal, "complete");
       this.check();
+      this.openStage = "receipt";
       const receipt = host.registeredReceipt();
       if (receipt.installationId !== this.scope.installation)
         throw Object.assign(Error("Original collection binding."), {
           reason: "binding",
         });
+      this.openStage = "sql_open";
       const endSql = this.timing.begin("sql_open");
       try {
         await host.openCollectionSql({
@@ -238,6 +257,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
         endSql();
       }
       this.check();
+      this.openStage = "verified_read";
       const endRead = this.timing.begin("verified_read");
       try {
         await host.startCollectionLog({
@@ -250,6 +270,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
         endRead();
       }
       this.check();
+      this.openStage = "data_facade";
       this.channel = new MessageChannel();
       host.attachDataFacade(this.channel.port1);
       this.attached = true;

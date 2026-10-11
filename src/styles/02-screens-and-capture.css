@@ -599,6 +599,13 @@
   flex: 1 1 10rem;
   min-width: 0;
 }
+.task-added-notice > .save-state {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
 .task-added-notice > button {
   flex: 0 0 auto;
 }
