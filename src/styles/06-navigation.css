@@ -237,12 +237,32 @@
   cursor: pointer;
   transition:
     opacity 150ms ease,
-    transform 150ms ease;
+    transform 150ms ease,
+    padding 200ms var(--ease-out),
+    gap 200ms var(--ease-out);
   border-color: transparent;
 }
 
 .global-capture-fab span {
+  max-width: 8em;
+  overflow: hidden;
   line-height: 1;
+  white-space: nowrap;
+  transition:
+    max-width 200ms var(--ease-out),
+    opacity 150ms var(--ease-out);
+}
+
+/* Scrolling down narrows the button to its icon; the label returns on
+   settle or reversal. The accessible name never changes. */
+.global-capture-fab.is-collapsed {
+  gap: 0;
+  padding: 0 13px;
+}
+
+.global-capture-fab.is-collapsed span {
+  max-width: 0;
+  opacity: 0;
 }
 
 .undo-toast {

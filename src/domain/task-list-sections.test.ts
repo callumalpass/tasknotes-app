@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  scheduleRowsTodayUpdates,
   sectionTaskViewRows,
   taskListSectionMoveInput,
 } from "./task-list-sections";
@@ -93,6 +94,58 @@ describe("sectionTaskViewRows", () => {
     expect(taskTimePart(update?.scheduled ?? undefined)).toBe(
       taskTimePart(task.scheduled),
     );
+  });
+});
+
+describe("scheduleRowsTodayUpdates", () => {
+  it("schedules overdue rows today like the t shortcut, keeping Due", () => {
+    const rows = [
+      row("scheduled", { scheduled: "2026-07-20T09:30", due: "2026-07-30" }),
+      row("due-only", { due: "2026-07-24" }),
+      row("repeating", {
+        scheduled: "2026-07-22",
+        recurrence: "FREQ=DAILY",
+      }),
+      row("done", { scheduled: "2026-07-21", completed: true }),
+    ];
+
+    expect(scheduleRowsTodayUpdates(rows, "2026-07-26")).toEqual([
+      {
+        id: "scheduled",
+        input: { scheduled: "2026-07-26T09:30" },
+        undo: { scheduled: "2026-07-20T09:30" },
+      },
+      {
+        id: "due-only",
+        input: { scheduled: "2026-07-26" },
+        undo: { scheduled: null },
+      },
+      {
+        id: "repeating",
+        input: { scheduled: "2026-07-26" },
+        undo: { scheduled: "2026-07-22" },
+      },
+    ]);
+  });
+
+  it("places every rescheduled row in the Today section", () => {
+    const rows = [
+      row("scheduled", { scheduled: "2026-07-20T09:30" }),
+      row("due-only", { due: "2026-07-24" }),
+    ];
+    const moved = scheduleRowsTodayUpdates(rows, "2026-07-26").map(
+      ({ input }, index) => ({
+        ...rows[index],
+        task: { ...rows[index].task, scheduled: input.scheduled ?? undefined },
+      }),
+    );
+
+    expect(
+      sectionTaskViewRows(moved, "day", "2026-07-26").map(({ key, rows }) => [
+        key,
+        rows.length,
+      ]),
+    ).toEqual([["today", 2]]);
   });
 });
 

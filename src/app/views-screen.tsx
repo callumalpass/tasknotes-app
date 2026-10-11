@@ -24,6 +24,13 @@ import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
 import { todayString } from "../domain/task";
 import {
+  scheduleRowsTodayUpdates,
+  sectionTaskViewRows,
+} from "../domain/task-list-sections";
+import { summarizeToday } from "../domain/today-summary";
+import { TodayClear, TodayFirstRun } from "./today-clear";
+import { CaptureFab } from "../components/capture-fab";
+import {
   appendManualOrderRank,
   disableManualOrderSort,
   enableManualOrderSort,
@@ -160,6 +167,13 @@ export function ViewsScreen({
   const [listMoves, setListMoves] = useState<Map<string, OptimisticListMove>>(
     () => new Map(),
   );
+  const [rescheduled, setRescheduled] = useState<{
+    viewKey: string;
+    count: number;
+    undo: { id: string; input: UpdateTaskInput }[];
+  } | null>(null);
+  const [reschedulePending, setReschedulePending] = useState(false);
+  const rescheduleUndoRef = useRef<HTMLButtonElement | null>(null);
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
@@ -230,14 +244,27 @@ export function ViewsScreen({
     `view:${viewKey ?? "catalog"}`,
   );
   const plannerHref = usePlannerViewLink(repository, selected);
+  const todayScreen =
+    selected?.presentation?.options.sections === "day" &&
+    (selected.id === "today" || selected.name === "Today");
   const needsIdentityTasks =
+    todayScreen ||
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar" ||
     selected?.presentation?.type === "tasknotes.projects";
-  const { tasks: identityTasks } = useTasks({
+  const {
+    tasks: identityTasks,
+    loading: identityTasksLoading,
+    error: identityTasksError,
+  } = useTasks({
     status: "all",
     limit: needsIdentityTasks ? 50_000 : 0,
   });
+  const today = todayString();
+  const todaySummary = useMemo(
+    () => (todayScreen ? summarizeToday(identityTasks, today) : null),
+    [identityTasks, today, todayScreen],
+  );
   const selectedKey = selected?.key;
   const selectedKeyRef = useRef(selectedKey);
   useEffect(() => {
@@ -369,6 +396,45 @@ export function ViewsScreen({
     selected?.key,
     visibleExecution,
   ]);
+  const todayProgress = useMemo(() => {
+    if (
+      !todayScreen ||
+      !todaySummary?.completedToday ||
+      identityTasksLoading ||
+      !presentedExecution ||
+      presentedExecution.hasMore
+    )
+      return null;
+    // Open rows the Today section shows, including optimistic moves into it.
+    const todayLane = sectionTaskViewRows(presentedExecution.rows, "day", today)
+      .find(({ key }) => key === "today")
+      ?.rows.map(({ task }) => task.id);
+    const open = presentedExecution.rows.filter(({ task }) => {
+      if (task.completed) return false;
+      const move = listMoves.get(task.id);
+      return move?.viewKey === selected?.key
+        ? move.laneKey === "section:today"
+        : todayLane?.includes(task.id);
+    }).length;
+    const done = todaySummary.completedToday;
+    return { done, total: done + open };
+  }, [
+    identityTasksLoading,
+    listMoves,
+    presentedExecution,
+    selected?.key,
+    today,
+    todayScreen,
+    todaySummary,
+  ]);
+  useEffect(() => {
+    if (!rescheduled) return;
+    const timeout = window.setTimeout(() => setRescheduled(null), 30_000);
+    return () => window.clearTimeout(timeout);
+  }, [rescheduled]);
+  const upcomingView = views?.find(
+    (view) => view.id === "upcoming" && view.key !== selected?.key,
+  );
   const currentExecutionRefreshing =
     refreshingExecution ===
     (selected ? `${selected.key}:${selected.source.revision}` : null);
@@ -785,6 +851,106 @@ export function ViewsScreen({
       });
   }
 
+  /**
+   * Move a set of rows to another day section as one batch: rows move
+   * optimistically, the repository writes them together, and the view is
+   * re-read so the overlay reconciles exactly as single moves do.
+   */
+  async function moveRowsToSection(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+    laneKey: string,
+  ): Promise<boolean> {
+    if (!selected || !updates.length) return false;
+    const view = selected;
+    const sequences = new Map(
+      updates.map(({ id }) => {
+        const sequence = (viewMutationSequence.current.get(id) ?? 0) + 1;
+        viewMutationSequence.current.set(id, sequence);
+        return [id, sequence] as const;
+      }),
+    );
+    setViewActionError(null);
+    setListMoves((moves) => {
+      const next = new Map(moves);
+      for (const { id, input } of updates)
+        next.set(id, {
+          viewKey: view.key,
+          laneKey,
+          input,
+          sequence: sequences.get(id)!,
+        });
+      return next;
+    });
+    selectionFeedback();
+    try {
+      await updateTasks(updates);
+    } catch (reason) {
+      setListMoves((moves) => {
+        const next = new Map(moves);
+        for (const [id, sequence] of sequences)
+          if (next.get(id)?.sequence === sequence) next.delete(id);
+        return next;
+      });
+      if (selectedKeyRef.current === view.key)
+        setViewActionError({
+          viewKey: view.key,
+          message: `Could not reschedule ${updates.length === 1 ? "the task" : `${updates.length} tasks`}. ${message(reason)}`,
+        });
+      return false;
+    }
+    try {
+      const refreshed = await repository.executeView(view);
+      if (selectedKeyRef.current === view.key) {
+        setExecution(refreshed);
+        setExecutionError(null);
+        reconcileOptimisticExecution(refreshed, view.key);
+      }
+    } catch {
+      // Accepted writes keep their overlay until the next refresh reconciles.
+    }
+    return true;
+  }
+
+  async function moveOverdueToToday(rows: readonly TaskViewRow[]) {
+    if (!selected || reschedulePending) return;
+    const view = selected;
+    const updates = scheduleRowsTodayUpdates(rows);
+    if (!updates.length) return;
+    setReschedulePending(true);
+    setRescheduled(null);
+    // The Overdue heading leaves with its rows; keep focus in the page.
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+    try {
+      const saved = await moveRowsToSection(
+        updates.map(({ id, input }) => ({ id, input })),
+        "section:today",
+      );
+      if (saved && selectedKeyRef.current === view.key) {
+        setRescheduled({
+          viewKey: view.key,
+          count: updates.length,
+          undo: updates.map(({ id, undo }) => ({ id, input: undo })),
+        });
+        window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
+      }
+    } finally {
+      setReschedulePending(false);
+    }
+  }
+
+  async function undoReschedule() {
+    if (!rescheduled || reschedulePending) return;
+    const { undo } = rescheduled;
+    setRescheduled(null);
+    setReschedulePending(true);
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+    try {
+      await moveRowsToSection(undo, "section:overdue");
+    } finally {
+      setReschedulePending(false);
+    }
+  }
+
   async function createTaskForView(
     input: CreateTaskInput,
     intent?: import("../application/ports/task-repository").TaskCreateIntent,
@@ -950,6 +1116,12 @@ export function ViewsScreen({
                   month: "long",
                   day: "numeric",
                 }).format(new Date())}
+                {todayProgress ? (
+                  <span className="today-progress">
+                    {" "}
+                    · {todayProgress.done} of {todayProgress.total} done
+                  </span>
+                ) : null}
               </p>
             ) : null}
             {visibleExecution && currentExecutionRefreshing ? (
@@ -1088,15 +1260,11 @@ export function ViewsScreen({
         ) : null}
         {captureDefaults ? (
           <>
-            <button
-              className="global-capture-fab view-context-capture"
-              type="button"
+            <CaptureFab
+              className="view-context-capture"
               aria-label="New task"
               onClick={() => setMobileCaptureOpen(true)}
-            >
-              <Plus aria-hidden="true" size={24} />
-              <span>Add task</span>
-            </button>
+            />
             <GlobalTaskCapture
               createTask={createTaskForView}
               session={captureSession}
@@ -1265,8 +1433,78 @@ export function ViewsScreen({
             }
             onOpen={onOpenTask}
             onToggle={toggleRow}
+            sectionAction={(lane) =>
+              lane.key === "section:overdue" && lane.rows.length ? (
+                <button
+                  className="section-heading-action"
+                  type="button"
+                  aria-label={`Move all to today, ${lane.rows.length} overdue ${lane.rows.length === 1 ? "task" : "tasks"}`}
+                  disabled={reschedulePending}
+                  onClick={() => void moveOverdueToToday(lane.rows)}
+                >
+                  Move all to today
+                </button>
+              ) : null
+            }
+            emptyState={
+              todayScreen &&
+              !presentedExecution.stale &&
+              !identityTasksLoading &&
+              !identityTasksError &&
+              !identityTasks.length ? (
+                <TodayFirstRun />
+              ) : todayScreen &&
+                !presentedExecution.stale &&
+                identityTasksLoading ? (
+                <div className="today-clear" aria-busy="true" />
+              ) : todayScreen && !presentedExecution.stale ? (
+                <TodayClear
+                  loading={identityTasksLoading}
+                  next={todaySummary?.next}
+                  onOpenTask={onOpenTask}
+                  onOpenUpcoming={
+                    upcomingView ? () => onOpenView(upcomingView) : undefined
+                  }
+                />
+              ) : undefined
+            }
+            daySectionsClear={
+              todayScreen ? (
+                <TodayClear
+                  loading={identityTasksLoading}
+                  next={todaySummary?.next}
+                  onOpenTask={onOpenTask}
+                  onOpenUpcoming={
+                    upcomingView ? () => onOpenView(upcomingView) : undefined
+                  }
+                />
+              ) : undefined
+            }
           />
         )}
+        {rescheduled && rescheduled.viewKey === selected?.key ? (
+          <>
+            <p aria-atomic="true" className="visually-hidden" role="status">
+              Moved {rescheduled.count}{" "}
+              {rescheduled.count === 1 ? "task" : "tasks"} to today.
+            </p>
+            {!pendingDeletion ? (
+              <div className="undo-toast is-above-mobile-controls">
+                <span>
+                  Moved {rescheduled.count}{" "}
+                  {rescheduled.count === 1 ? "task" : "tasks"} to today
+                </span>
+                <button
+                  ref={rescheduleUndoRef}
+                  type="button"
+                  onClick={() => void undoReschedule()}
+                >
+                  Undo
+                </button>
+              </div>
+            ) : null}
+          </>
+        ) : null}
         {paging.key === selected?.key && paging.used && !error ? (
           <button
             className="text-action view-pagination-action"

@@ -18,6 +18,7 @@ export function TaskListSection({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   headingOnly = false,
+  action,
 }: {
   preferenceKey?: string;
   label: string;
@@ -30,6 +31,8 @@ export function TaskListSection({
   collapsed?: boolean;
   onCollapsedChange?(collapsed: boolean): void;
   headingOnly?: boolean;
+  /** A quiet control beside the heading; it never joins the toggle's name. */
+  action?: ReactNode;
 }) {
   const id = useId();
   const [localCollapsed, setCollapsed] = useState(() =>
@@ -38,28 +41,36 @@ export function TaskListSection({
   const collapsed = controlledCollapsed ?? localCollapsed;
   const expanded = arranging || !collapsed;
   if (!count && !arranging && !showEmpty) return null;
+  const toggle = (
+    <button
+      type="button"
+      className="task-section-toggle"
+      aria-label={`${label} ${count}`}
+      aria-expanded={expanded}
+      aria-controls={headingOnly ? undefined : id}
+      disabled={arranging}
+      onClick={() => {
+        const next = !collapsed;
+        setCollapsed(next);
+        onCollapsedChange?.(next);
+        saveSectionCollapsed(preferenceKey, next);
+      }}
+    >
+      <ChevronRight aria-hidden="true" size={14} />
+      <span>{label}</span>
+      <span className="task-section-count">{count}</span>
+    </button>
+  );
   return (
     <section className={`task-section ${className}`} data-list-lane={laneKey}>
-      <h2 className="section-heading">
-        <button
-          type="button"
-          className="task-section-toggle"
-          aria-label={`${label} ${count}`}
-          aria-expanded={expanded}
-          aria-controls={headingOnly ? undefined : id}
-          disabled={arranging}
-          onClick={() => {
-            const next = !collapsed;
-            setCollapsed(next);
-            onCollapsedChange?.(next);
-            saveSectionCollapsed(preferenceKey, next);
-          }}
-        >
-          <ChevronRight aria-hidden="true" size={14} />
-          <span>{label}</span>
-          <span className="task-section-count">{count}</span>
-        </button>
-      </h2>
+      {action ? (
+        <div className="section-heading has-action">
+          <h2>{toggle}</h2>
+          {action}
+        </div>
+      ) : (
+        <h2 className="section-heading">{toggle}</h2>
+      )}
       {!headingOnly ? (
         <div id={id} hidden={!expanded}>
           {expanded ? children : null}

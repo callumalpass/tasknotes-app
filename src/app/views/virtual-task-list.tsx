@@ -30,9 +30,11 @@ export function VirtualTaskList({
   onOpen,
   onToggle,
   renderRow,
+  sectionAction,
   showEmpty = false,
 }: {
   renderRow?(row: TaskViewRow, lane: Lane): ReactNode;
+  sectionAction?(lane: Lane): ReactNode;
   showEmpty?: boolean;
   lanes: Lane[];
   grouped: boolean;
@@ -107,6 +109,7 @@ export function VirtualTaskList({
             laneKey={entry.lane.key}
             label={entry.lane.label ?? "Other"}
             count={entry.lane.rows.length}
+            action={sectionAction?.(entry.lane)}
             preferenceKey={preferenceKey(entry.lane)}
             collapsed={isCollapsed(entry.lane)}
             onCollapsedChange={(value) =>
