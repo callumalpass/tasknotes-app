@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { connectError } from "@mdbase-dev/connect-testing";
 
-import { DeletionFeedback, Navigation, StorageErrorScreen } from "./app-shell";
+import {
+  DeletionFeedback,
+  Navigation,
+  StorageErrorScreen,
+  ViewDiscoveryNotice,
+} from "./app-shell";
 import {
   SCRATCHPAD_NAVIGATION_KEY,
   SEARCH_NAVIGATION_KEY,
@@ -9,6 +14,42 @@ import {
 import { OperationalError } from "../application/operational-error";
 
 import type { TaskView } from "../domain/view";
+
+it("keeps the view failure visible while retry is pending and prevents duplicate clicks", () => {
+  const retry = vi.fn();
+  render(
+    <ViewDiscoveryNotice
+      outcome="error"
+      refreshing={true}
+      onRetry={retry}
+      onCreate={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Couldn't load your views.",
+  );
+  const button = screen.getByRole("button", { name: "Retrying…" });
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(retry).not.toHaveBeenCalled();
+});
+
+it.each(["loading", "ok"] as const)(
+  "does not show a failure or empty-state action for %s",
+  (outcome) => {
+    render(
+      <ViewDiscoveryNotice
+        outcome={outcome}
+        refreshing={false}
+        onRetry={vi.fn()}
+        onCreate={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("region", { name: "Views availability" }),
+    ).not.toBeInTheDocument();
+  },
+);
 
 it("lets a user escape an unavailable remembered collection", () => {
   const authorizeAnotherCollection = vi.fn();

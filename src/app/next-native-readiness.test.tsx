@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type {
   AppBasesDescriptor,
   AppBasesResult,
@@ -94,8 +100,153 @@ async function fixture(creator = false) {
   return { ...f, repository, journal, assess, verified, noWrite };
 }
 
+function renderShell(repository: NextTaskRepository) {
+  return render(
+    <CollectionGateContext.Provider
+      value={{
+        authorizeAnotherCollection: vi.fn(),
+        changeCollection: vi.fn(),
+        reauthorizeCurrentCollection: vi.fn(),
+      }}
+    >
+      <RepositoryProvider
+        repository={repository}
+        mutationJournal={new MemoryMutationJournal()}
+        reminderAuthority="none"
+      >
+        <AppShell />
+      </RepositoryProvider>
+    </CollectionGateContext.Provider>,
+  );
+}
+
+it("shows a visible discovery refusal with Retry instead of an empty catalog or a silent Scratchpad fallback", async () => {
+  const f = await fixture();
+  const discovery = vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
+    kind: "refusal",
+    problem: {
+      code: "forbidden",
+      reason: "insufficient_access",
+      recovery: "reauthorize",
+      message: "Private record contents must not appear in the shell or logs",
+    },
+  });
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
+  const create = vi.spyOn(f.repository, "createViewSource");
+  renderShell(f.repository);
+  expect(await screen.findByText("Couldn't load your views.")).toBeVisible();
+  expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
+  expect(screen.queryByText(/Private record contents/)).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("heading", { name: "Scratchpad" }),
+  ).not.toBeInTheDocument();
+  expect(create).not.toHaveBeenCalled();
+  expect(log).toHaveBeenCalledOnce();
+  expect(log.mock.calls[0]?.[0]).toBe("[TaskNotes view discovery]");
+  expect(JSON.parse(String(log.mock.calls[0]?.[1]))).toMatchObject({
+    outcome: "error",
+    viewCount: null,
+    code: "forbidden",
+    reason: "insufficient_access",
+  });
+  discovery.mockResolvedValue({
+    kind: "success",
+    views: [],
+    continuation: null,
+    clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
+    collectionRevision: "sha256:" + "ab".repeat(32),
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  expect(await screen.findByText("No views yet.")).toBeVisible();
+  expect(
+    screen.queryByText("Couldn't load your views."),
+  ).not.toBeInTheDocument();
+  expect(log).toHaveBeenCalledTimes(2);
+  expect(JSON.parse(String(log.mock.calls[1]?.[1]))).toMatchObject({
+    outcome: "empty",
+    viewCount: 0,
+    code: null,
+    reason: null,
+  });
+  expect(create).not.toHaveBeenCalled();
+});
+
+it("preserves cached navigation and original preferences when a discovery READ fails", async () => {
+  const f = await fixture();
+  const source = {
+    path: taskNotesViewSourcePath("today"),
+    revision: "cached-revision",
+    format: "obsidian.base",
+    writable: true,
+  };
+  const key = "original-view#0";
+  vi.spyOn(f.repository, "cachedViews").mockResolvedValue([
+    {
+      id: "original-view",
+      name: "Today",
+      source,
+      views: [
+        {
+          key,
+          documentId: "original-view",
+          documentName: "Today",
+          id: "0",
+          name: "Today",
+          properties: [],
+          source,
+        },
+      ],
+    },
+  ]);
+  const info = await f.repository.collectionInfo();
+  const preferences = JSON.stringify({
+    [`${info.kind}:${info.id}`]: [key, "uncached-original-view#1"],
+  });
+  localStorage.setItem("tasknotes:navigation-views:v4", preferences);
+  vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
+    kind: "refusal",
+    problem: {
+      code: "unavailable",
+      recovery: "retry",
+      message: "Original discovery unavailable",
+    },
+  });
+  renderShell(f.repository);
+  expect(await screen.findByText("Couldn't load your views.")).toBeVisible();
+  expect(
+    within(screen.getByRole("complementary", { name: "Primary" })).getByRole(
+      "button",
+      { name: "Today" },
+    ),
+  ).toBeVisible();
+  expect(localStorage.getItem("tasknotes:navigation-views:v4")).toBe(
+    preferences,
+  );
+  expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
+});
+
+it("offers explicit view creation for a genuinely empty native catalog, without recreating defaults", async () => {
+  const f = await fixture();
+  vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
+    kind: "success",
+    views: [],
+    continuation: null,
+    clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
+    collectionRevision: "sha256:" + "ab".repeat(32),
+  });
+  const create = vi.spyOn(f.repository, "createViewSource");
+  renderShell(f.repository);
+  expect(await screen.findByText("No views yet.")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Create a view" }));
+  expect(
+    await screen.findByRole("heading", { name: "New view" }),
+  ).toBeVisible();
+  expect(create).not.toHaveBeenCalled();
+});
+
 it("opens a fresh browser into the existing Today navigation and task rows, without setup or new writes", async () => {
   const f = await fixture();
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
   const seed = await f.repository.create({ title: "Existing Today task" });
   f.replica.confirmAll();
   await vi.waitFor(async () =>
@@ -173,6 +324,18 @@ it("opens a fresh browser into the existing Today navigation and task rows, with
   ).toBeVisible();
   expect(await screen.findByRole("heading", { name: "Today" })).toBeVisible();
   expect(await screen.findByText("Existing Today task")).toBeVisible();
+  expect(
+    screen.queryByText("Couldn't load your views."),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
+  expect(log).toHaveBeenCalledOnce();
+  expect(JSON.parse(String(log.mock.calls[0]?.[1]))).toMatchObject({
+    outcome: "ok",
+    viewCount: 1,
+    published: true,
+    code: null,
+    reason: null,
+  });
   expect(f.assess).toHaveBeenCalledWith("ready", expect.any(AbortSignal));
   expect(
     screen.queryByRole("button", { name: "Set up TaskNotes" }),

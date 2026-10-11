@@ -1,5 +1,25 @@
 /* Bottom navigation, the desktop sidebar, capture button, and notices. */
 
+.view-discovery-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-lg);
+  margin: var(--space-lg) var(--space-xl);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.view-discovery-notice p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.view-discovery-notice button {
+  min-height: 44px;
+  white-space: normal;
+}
+
 .bottom-navigation {
   position: fixed;
   z-index: 10;
