@@ -258,3 +258,106 @@ it("unmount closes the owned lifetime without asking for a fresh sign-in or sile
   expect(f.open).toHaveBeenCalledOnce();
   expect(f.authorize).not.toHaveBeenCalled();
 });
+
+it.each([
+  ["blocked", "outcome_unknown"],
+  ["unselected", "unavailable"],
+] as const)(
+  "%s/%s offers explicit same-target Retry without a replacement authorization",
+  async (status, problem) => {
+    value = {
+      ...initial(),
+      status,
+      problem,
+      selectedCollectionId: id,
+      collections: [
+        { collectionId: id, displayName: "Original collection", role: "owner" },
+      ],
+      signIn: { ...initial().signIn!, state: "paired", accountId: id },
+    };
+    let finish!: () => void;
+    f.select.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+    const retry = await screen.findByRole("button", { name: /^Retry$/ });
+    expect(f.select).not.toHaveBeenCalled();
+    fireEvent.click(retry);
+    expect(retry).toBeDisabled();
+    fireEvent.click(retry);
+    expect(f.select).toHaveBeenCalledExactlyOnceWith(id);
+    expect(f.open).toHaveBeenCalledOnce();
+    expect(f.authorize).not.toHaveBeenCalled();
+    expect(f.renew).not.toHaveBeenCalled();
+    expect(f.openPopup).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("Complete your selection in the mdbase window."),
+    ).not.toBeInTheDocument();
+    await act(async () => finish());
+    expect(retry).toBeEnabled();
+    warn.mockRestore();
+  },
+);
+
+it.each(["recovery_required", "refused", "fenced"])(
+  "does not offer collection recovery for terminal %s",
+  async (problem) => {
+    value = {
+      ...initial(),
+      status: "blocked",
+      problem,
+      selectedCollectionId: id,
+      collections: [
+        { collectionId: id, displayName: "Original collection", role: "owner" },
+      ],
+      signIn: { ...initial().signIn!, state: "paired", accountId: id },
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+    await screen.findByRole("alert");
+    expect(
+      screen.queryByRole("button", { name: /^Retry$/ }),
+    ).not.toBeInTheDocument();
+    expect(f.select).not.toHaveBeenCalled();
+    warn.mockRestore();
+  },
+);
+
+it.each(["unpaired", "missing_target", "not_approved"])(
+  "does not infer a recoverable collection from %s metadata",
+  async (missing) => {
+    value = {
+      ...initial(),
+      status: "blocked",
+      problem: "outcome_unknown",
+      selectedCollectionId: missing === "missing_target" ? null : id,
+      collections:
+        missing === "not_approved"
+          ? []
+          : [
+              {
+                collectionId: id,
+                displayName: "Original collection",
+                role: "owner",
+              },
+            ],
+      signIn: {
+        ...initial().signIn!,
+        state: missing === "unpaired" ? "pending" : "paired",
+        accountId: id,
+      },
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+    await screen.findByRole("alert");
+    expect(
+      screen.queryByRole("button", { name: /^Retry$/ }),
+    ).not.toBeInTheDocument();
+    expect(f.select).not.toHaveBeenCalled();
+    warn.mockRestore();
+  },
+);

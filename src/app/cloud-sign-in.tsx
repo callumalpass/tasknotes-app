@@ -5,6 +5,7 @@ import type { NextInstallationBuildInput } from "../cloud/next-installation-prot
 import { NextInstallationWorker } from "../cloud/next-installation-worker";
 import { openConnectPopup } from "../cloud/connect-popup";
 import { CloudConnectionView } from "./cloud-connection-view";
+import { collectionRecoveryTarget } from "./cloud-collection-recovery";
 import {
   logSignInFailure,
   signInErrorCode,
@@ -26,6 +27,9 @@ export function CloudSignIn({
   const [snapshot, setSnapshot] = useState<AppWebSignInSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  const [workingAction, setWorkingAction] = useState<
+    "authorization" | "selection" | null
+  >(null);
   const action = useRef(false);
   const owner = useRef<NextInstallationWorker | null>(null);
   const current = useRef<AbortSignal | null>(null);
@@ -146,9 +150,13 @@ export function CloudSignIn({
       </main>
     );
   }
-  const run = async (operation: () => Promise<unknown>) => {
+  const run = async (
+    operation: () => Promise<unknown>,
+    kind: "authorization" | "selection" = "authorization",
+  ) => {
     if (action.current) return;
     action.current = true;
+    setWorkingAction(kind);
     setWorking(true);
     setError(null);
     try {
@@ -160,16 +168,41 @@ export function CloudSignIn({
         );
     } finally {
       action.current = false;
-      if (!current.current?.aborted) setWorking(false);
+      if (!current.current?.aborted) {
+        setWorking(false);
+        setWorkingAction(null);
+      }
     }
   };
+  const select = (collectionId: string) =>
+    run(async () => {
+      const original = owner.current;
+      if (!original || current.current?.aborted)
+        throw Error("Sign-in was interrupted. Please try again.");
+      try {
+        await original.selectSession(collectionId);
+      } catch (reason) {
+        original.closePortal();
+        throw Error(failure("select", reason), { cause: reason });
+      }
+    }, "selection");
   const selectedCollectionId = snapshot.selectedCollectionId;
+  const recoveryTarget = collectionRecoveryTarget(snapshot);
+  const canRetryCollection = recoveryTarget !== null;
   return (
     <CloudConnectionView
       session={snapshot}
       sdk={{ snapshot }}
-      error={error}
+      error={
+        canRetryCollection && snapshot.problem === "outcome_unknown"
+          ? "Opening this collection could not be confirmed. Keep this browser's stored data and retry to check the original request."
+          : (error ??
+            (canRetryCollection ? signInMessage(snapshot.problem) : null))
+      }
       startError={null}
+      retryCollection={
+        recoveryTarget !== null ? () => void select(recoveryTarget) : undefined
+      }
       reviewingCollection={snapshot.status === "setup_required"}
       firstVisit={
         snapshot.collections.length === 0 &&
@@ -182,9 +215,11 @@ export function CloudSignIn({
         )
       }
       sdkWaiting={snapshot.status === "authorizing"}
-      authorizationPending={working}
-      opening={working ? "another" : null}
-      openingCollectionId={null}
+      authorizationPending={working && workingAction === "authorization"}
+      opening={working && workingAction === "authorization" ? "another" : null}
+      openingCollectionId={
+        workingAction === "selection" ? selectedCollectionId : null
+      }
       selectedCollectionId={selectedCollectionId}
       selectedConnection={snapshot.collections.find(
         (item) => item.collectionId === selectedCollectionId,
@@ -193,19 +228,7 @@ export function CloudSignIn({
         (item) => item.collectionId !== selectedCollectionId,
       )}
       connect={() => run(authorize)}
-      open={(collectionId) =>
-        run(async () => {
-          const original = owner.current;
-          if (!original || current.current?.aborted)
-            throw Error("Sign-in was interrupted. Please try again.");
-          try {
-            await original.selectSession(collectionId);
-          } catch (reason) {
-            original.closePortal();
-            throw Error(failure("select", reason), { cause: reason });
-          }
-        })
-      }
+      open={select}
       applyCollectionSetup={async () => {
         throw Error("Setup review is unavailable in this sign-in view.");
       }}

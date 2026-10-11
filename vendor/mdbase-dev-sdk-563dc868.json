@@ -1,0 +1,56 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-563dc868.tgz",
+  "bytes": 1359076,
+  "sha256": "8892aaff198437ad51d490dca86faad893275d991f6f848f758e457f4e7a1250",
+  "integrity": "sha512-1veJNEBzhCS24NU/N7md3jG/GD84yVfQF3E4H2tsREaBG/eO6jES6Q5Uwqtr9JweIO/YNu6AVyPlT2FmE6WiAw==",
+  "shasum": "bf3b309c3e0dba4d564056e1a2c5c6798357addf",
+  "protocol": {
+    "sourceCommit": "d765e675c3da29fe1693deab53c4c2a922bb86f1",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-d765e675c3da.tgz",
+    "bytes": 70702,
+    "sha256": "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
+    "originalEmbeddedBytesVerified": true
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "1ac759e44ad15ad6d9716f36c6a904c5a367952c98ea21583926f2ded23785ee"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "0baf93e36cbc81fbe81da841188d9084c32bd8fa9196987dd04bd774011be062"
+    }
+  },
+  "qualification": {
+    "authority": "co0364/co0371/co0375",
+    "label": "dev intake, not release-qualified",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "fullSdkSuiteSkipped": "co0371: SDK owner already ran it",
+    "archiveFileMembers": 347,
+    "allNonMetadataArchiveMemberBytesVerified": true,
+    "completePackageMetadataSemanticallyEqualDuplicateFree": true,
+    "normalPackOnceNoRepack": true,
+    "ordinaryTwoFileDependenciesVerified": true,
+    "standaloneStrictPublicTypesAndValueImports": "PASS",
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": false,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "purpose": "Original coordinator-approved SDK563 dev archive for enrollment 503 recovery, retaining the prior Bases FIFO. Original newer protocol bytes are ordinary file dependencies, not repacked or aliased. Enrollment uncertainty requires an explicit original-target action, never automatic replay. Native runtime, trust, control-plane and SQLite pins remain unchanged. This intake does not activate the public application runtime, People or native mapped-query support."
+}

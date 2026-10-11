@@ -1,5 +1,7 @@
 # Unreleased
 
+- Offer a clear Retry when the SDK can recover opening an approved collection after a temporary sign-in service failure. Uncertain requests keep their original device and operation, and recovery requires an explicit click rather than automatic replay.
+
 - Keep current navigation and task-detail reads working when leaving a view cancels its shared model read, instead of showing view-loading or task-loading errors. Genuine native read failures remain visible.
 
 - Queue overlapping native view reads so moving a task during a background refresh can finish without a busy-read error. Keep accepted task moves and their displayed positions if a subsequent view refresh fails, instead of reporting that the move failed. Genuine move failures remain visible.

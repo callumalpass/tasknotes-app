@@ -25,13 +25,20 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the fixed
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`63ffdb8bab24045861dbb726d3ce9a31d2179045`, with provenance in
-`vendor/mdbase-dev-sdk-63ffdb8b.json`. The original qualified archive retains
-shared factory #819, canonical no-email provider receipts #827, bounded failure
-classification #832 and caller/host signal composition #837, and queues the three
-native Bases READ operations on their original shared facade. The original
-protocol beta.129 archive is a normal file dependency in `vendor/`; the earlier
-protocol override is removed so it cannot replace the SDK's original dependency.
+`563dc868fd5847abe272bd8cead1b044cd46fbe0`, with provenance in
+`vendor/mdbase-dev-sdk-563dc868.json`. This original coordinator-approved dev
+intake is not release-qualified. It retains shared factory #819, canonical
+no-email provider receipts #827, bounded failure classification #832, signal
+composition #837 and the original shared-facade Bases READ FIFO. Enrollment
+503/network loss stays an unknown outcome; a visible Retry invokes only the
+SDK's explicit original-target selection/reconciliation. The SDK retains the
+original device, keys and operation, requires current approval and clean stop,
+and uses fresh proof against the prior enrollment tuple. Only positively
+classified pre-enrollment challenge exhaustion has bounded retry. Permanent
+refusals and failed-stop recovery do not receive this action.
+The original protocol beta.129/d765e675 archive is a normal file dependency in
+`vendor/`; the earlier protocol override stays removed so it cannot replace the
+SDK's original dependency.
 Legacy Connect packages retain their ordinary protocol dependencies.
 App signal plumbing is unchanged. The default public application entry remains
 an explicit unavailable shell; this archive does not activate it or qualify

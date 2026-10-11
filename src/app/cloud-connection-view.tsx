@@ -9,6 +9,7 @@ export interface CloudConnectionViewProps {
   error: string | null;
   startError: string | null;
   retryAuthorization?: () => void;
+  retryCollection?: (() => void) | undefined;
   reviewingCollection: boolean;
   firstVisit: boolean;
   busy: boolean;
@@ -36,6 +37,7 @@ export function CloudConnectionView({
   error,
   startError,
   retryAuthorization,
+  retryCollection,
   reviewingCollection,
   firstVisit,
   busy,
@@ -97,6 +99,16 @@ export function CloudConnectionView({
           <p className="inline-error" role="alert">
             {error ?? startError}
           </p>
+          {error && retryCollection ? (
+            <button
+              className="outline-action"
+              disabled={busy}
+              onClick={retryCollection}
+              type="button"
+            >
+              Retry
+            </button>
+          ) : null}
           {error && retryAuthorization ? (
             <button
               className="outline-action"
@@ -276,12 +288,22 @@ export function CloudConnectionView({
               </>
             )}
           </button>
-          <p role={authorizationPending || sdkWaiting ? "status" : undefined}>
-            {sdkWaiting
-              ? "Waiting for approval in the mdbase window…"
-              : authorizationPending
-                ? "Complete your selection in the mdbase window."
-                : "mdbase will open so you can choose a collection and approve access."}
+          <p
+            role={
+              authorizationPending ||
+              sdkWaiting ||
+              (sdk && session.status === "opening")
+                ? "status"
+                : undefined
+            }
+          >
+            {sdk && session.status === "opening"
+              ? "Opening your collection…"
+              : sdkWaiting
+                ? "Waiting for approval in the mdbase window…"
+                : authorizationPending
+                  ? "Complete your selection in the mdbase window."
+                  : "mdbase will open so you can choose a collection and approve access."}
           </p>
         </div>
         {selectedCollectionId &&

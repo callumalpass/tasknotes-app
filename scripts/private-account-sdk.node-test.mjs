@@ -7,14 +7,14 @@ const root = new URL("../", import.meta.url);
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
     await readFile(
-      new URL("vendor/mdbase-dev-sdk-63ffdb8b.json", root),
+      new URL("vendor/mdbase-dev-sdk-563dc868.json", root),
       "utf8",
     ),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "563dc868fd5847abe272bd8cead1b044cd46fbe0",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -26,13 +26,24 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "4b866f7eb1ab6a10e2b3c66f0be40e0061ddb1437724e15953b7dafe8369c50b",
+    "8892aaff198437ad51d490dca86faad893275d991f6f848f758e457f4e7a1250",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
     `file:vendor/${manifest.artifact}`,
   );
-  assert.equal(manifest.includedCommits.basesReadFifo, manifest.sourceCommit);
+  assert.equal(
+    manifest.includedCommits.basesReadFifo,
+    "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+  );
+  assert.equal(
+    manifest.includedCommits.enrollmentReconciliation,
+    manifest.sourceCommit,
+  );
+  assert.equal(
+    manifest.qualification.label,
+    "dev intake, not release-qualified",
+  );
   assert.equal(
     pkg.dependencies["@mdbase-dev/connect-protocol"],
     `file:vendor/${manifest.protocol.artifact}`,
@@ -47,7 +58,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   );
   assert.equal(
     manifest.protocol.sha256,
-    "dfc5db0daf6700874aa2c6235b86570f1d4e444740d0925bf1f97551cf43d3bd",
+    "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
   );
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, manifest.bytes);
