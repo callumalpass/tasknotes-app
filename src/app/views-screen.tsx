@@ -62,7 +62,16 @@ import {
   type OptimisticBoardMove,
   type OptimisticListMove,
   type OptimisticManualRank,
+  executionWithDepartures,
+  type CompletionDeparture,
 } from "./optimistic-view-reconciliation";
+import {
+  COMPLETION_FOLD_MS,
+  COMPLETION_LINGER_MS,
+  TaskCompletionHoldsContext,
+  TaskDeparturesContext,
+  prefersReducedMotion,
+} from "../components/task-completion-motion";
 import { PlannerViewHandoff } from "./views/planner-view-handoff";
 import { usePlannerViewLink } from "./use-planner-view-link";
 import { CalendarViewPresentation } from "./views/calendar-view-presentation";
@@ -136,12 +145,58 @@ export function ViewsScreen({
     configuration,
     pendingDeletion,
   } = useRepository();
-  const toggleRow = (task: TaskSummary, occurrenceDate?: string) =>
-    setTaskCompletion({
-      id: task.id,
-      occurrenceDate,
-      completed: !taskCompletion(task, occurrenceDate),
-    });
+  // A completed row that leaves the results is held where it was, so it can
+  // linger and fold away; rows that stay (or move) are left to the result.
+  const [departures, setDepartures] = useState<
+    ReadonlyMap<string, CompletionDeparture>
+  >(() => new Map());
+  const presentedRef = useRef<TaskViewExecution | null>(null);
+  const toggleRow = async (task: TaskSummary, occurrenceDate?: string) => {
+    const completed = !taskCompletion(task, occurrenceDate);
+    const shown = presentedRef.current;
+    const index =
+      completed && shown && !prefersReducedMotion()
+        ? shown.rows.findIndex((row) => row.task.id === task.id)
+        : -1;
+    const departure: CompletionDeparture | undefined =
+      shown && index >= 0
+        ? {
+            viewKey: shown.view.key,
+            row: shown.rows[index]!,
+            index,
+            groups: shown.groups,
+            acceptedAt: null,
+          }
+        : undefined;
+    const settle = (next?: CompletionDeparture) =>
+      setDepartures((current) => {
+        if (current.get(task.id)?.row !== departure?.row) return current;
+        const updated = new Map(current);
+        if (next) updated.set(task.id, next);
+        else updated.delete(task.id);
+        return updated;
+      });
+    if (departure)
+      setDepartures((current) => new Map(current).set(task.id, departure));
+    try {
+      const saved = await setTaskCompletion({
+        id: task.id,
+        occurrenceDate,
+        completed,
+      });
+      if (departure) {
+        settle({ ...departure, acceptedAt: Date.now() });
+        window.setTimeout(
+          () => settle(),
+          COMPLETION_LINGER_MS + COMPLETION_FOLD_MS + 40,
+        );
+      }
+      return saved;
+    } catch (reason) {
+      if (departure) settle();
+      throw reason;
+    }
+  };
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
   const [handledCreationRequest, setHandledCreationRequest] = useState(0);
   if (creationRequest !== handledCreationRequest) {
@@ -347,7 +402,7 @@ export function ViewsScreen({
     selectedManualOrderOperations.map(({ taskId }) => taskId),
   );
   const manualOrderPendingForSelected = manualOrderPendingTaskIds.size > 0;
-  const presentedExecution = useMemo(() => {
+  const { execution: presentedExecution, departing } = useMemo(() => {
     const ranked =
       visibleExecution && manualOrder
         ? executionWithManualRanks(
@@ -358,17 +413,38 @@ export function ViewsScreen({
             configuration.fieldMapping.sortOrder,
           )
         : visibleExecution;
-    return ranked && pendingDeletion
-      ? executionWithoutTask(ranked, pendingDeletion.id)
-      : ranked;
+    const held =
+      ranked && selected
+        ? executionWithDepartures(ranked, departures, selected.key)
+        : { execution: ranked, departing: new Map<string, number | null>() };
+    return {
+      execution:
+        held.execution && pendingDeletion
+          ? executionWithoutTask(held.execution, pendingDeletion.id)
+          : held.execution,
+      departing: held.departing,
+    };
   }, [
     configuration.fieldMapping.sortOrder,
+    departures,
     manualOrder,
     manualRanks,
     pendingDeletion,
-    selected?.key,
+    selected,
     visibleExecution,
   ]);
+  useEffect(() => {
+    presentedRef.current = presentedExecution;
+  });
+  const holds = useMemo(
+    () =>
+      new Map(
+        [...departures]
+          .filter(([, departure]) => departure.viewKey === selected?.key)
+          .map(([taskId, departure]) => [taskId, departure.acceptedAt]),
+      ),
+    [departures, selected?.key],
+  );
   const currentExecutionRefreshing =
     refreshingExecution ===
     (selected ? `${selected.key}:${selected.source.revision}` : null);
@@ -919,7 +995,7 @@ export function ViewsScreen({
   }
 
   return (
-    <>
+    <CompletionMotion holds={holds} departing={departing}>
       <section
         className={`screen views-screen view-detail${
           captureDefaults &&
@@ -1285,7 +1361,26 @@ export function ViewsScreen({
           </button>
         ) : null}
       </section>
-    </>
+    </CompletionMotion>
+  );
+}
+
+/** Completion holds for the selected view, for its presentations' rows. */
+function CompletionMotion({
+  holds,
+  departing,
+  children,
+}: {
+  holds: ReadonlyMap<string, number | null>;
+  departing: ReadonlyMap<string, number | null>;
+  children: React.ReactNode;
+}) {
+  return (
+    <TaskCompletionHoldsContext.Provider value={holds}>
+      <TaskDeparturesContext.Provider value={departing}>
+        {children}
+      </TaskDeparturesContext.Provider>
+    </TaskCompletionHoldsContext.Provider>
   );
 }
 

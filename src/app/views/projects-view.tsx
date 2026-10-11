@@ -1,11 +1,15 @@
 import { ChevronRight, Plus } from "lucide-react";
-import { useId, useState } from "react";
+import { useContext, useId, useState } from "react";
 import {
   sectionCollapsed,
   saveSectionCollapsed,
 } from "../../application/section-preferences";
 
 import { TaskRow } from "../../components/task-row";
+import {
+  TaskCompletionHoldsContext,
+  TaskDeparturesContext,
+} from "../../components/task-completion-motion";
 import {
   linkLabel,
   linkTarget,
@@ -45,7 +49,19 @@ export function ProjectsView({
     setCollapsed((current) => ({ ...current, [key]: value }));
     saveSectionCollapsed(preferenceKey(key), value);
   };
-  const activeTasks = tasks.filter((task) => !task.completed && !task.archived);
+  // A just-completed task stays in its project until its row has folded.
+  const holds = useContext(TaskCompletionHoldsContext);
+  const departing = new Map(
+    tasks
+      .filter((task) => task.completed && holds.has(task.id))
+      .map((task) => [task.id, holds.get(task.id) ?? null]),
+  );
+  const activeTasks = useHeldOrder(
+    tasks.filter(
+      (task) => (!task.completed || departing.has(task.id)) && !task.archived,
+    ),
+    departing.size > 0,
+  );
   const records = indexProjectRecords(
     (execution.records ?? []).map(({ record }) => record),
   );
@@ -92,7 +108,11 @@ export function ProjectsView({
   }
 
   const ordered = [...groups.entries()]
-    .map(([key, project]) => ({ key, ...project }))
+    .map(([key, project]) => ({
+      key,
+      ...project,
+      count: project.tasks.filter((task) => !departing.has(task.id)).length,
+    }))
     .sort(
       (left, right) =>
         left.label.localeCompare(right.label) ||
@@ -130,8 +150,7 @@ export function ProjectsView({
           {ordered.map((project, index) => (
             <option key={project.key} value={index}>
               {project.label}
-              {project.path ? ` — ${project.path}` : ""} ({project.tasks.length}
-              )
+              {project.path ? ` — ${project.path}` : ""} ({project.count})
             </option>
           ))}
         </select>
@@ -160,8 +179,7 @@ export function ProjectsView({
                     <ChevronRight aria-hidden="true" size={16} />
                     <span>{project.label}</span>
                     <span className="project-count">
-                      {project.tasks.length}{" "}
-                      {project.tasks.length === 1 ? "task" : "tasks"}
+                      {project.count} {project.count === 1 ? "task" : "tasks"}
                     </span>
                   </button>
                 </h2>
@@ -177,20 +195,39 @@ export function ProjectsView({
               </button>
             </header>
             <div id={listId} className="saved-task-list" hidden={isCollapsed}>
-              {!isCollapsed &&
-                project.tasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onOpen={onOpen}
-                    onToggle={onToggle}
-                  />
-                ))}
+              <TaskDeparturesContext.Provider value={departing}>
+                {!isCollapsed &&
+                  project.tasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onOpen={onOpen}
+                      onToggle={onToggle}
+                    />
+                  ))}
+              </TaskDeparturesContext.Provider>
             </div>
           </section>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Completing can move a task within the source list; while a completion is
+ * held, tasks keep the order they were last shown in so the row stays put.
+ */
+function useHeldOrder(tasks: TaskSummary[], holding: boolean): TaskSummary[] {
+  const ids = tasks.map((task) => task.id);
+  const [shown, setShown] = useState(ids);
+  if (!holding && shown.join("\n") !== ids.join("\n")) setShown(ids);
+  if (!holding) return tasks;
+  const position = new Map(shown.map((id, index) => [id, index]));
+  return [...tasks].sort(
+    (left, right) =>
+      (position.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+      (position.get(right.id) ?? Number.MAX_SAFE_INTEGER),
   );
 }
 

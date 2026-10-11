@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
@@ -22,6 +22,8 @@ import {
   type ManualOrderPlacement,
 } from "../../domain/manual-order";
 import { ViewTaskRow } from "./view-task-row";
+import { TaskDeparturesContext } from "../../components/task-completion-motion";
+import { settledRowCount } from "../optimistic-view-reconciliation";
 import { useFlipMotion } from "../use-flip-motion";
 import type { TaskViewRow } from "../../domain/view";
 import type { ViewProps } from "./view-props";
@@ -71,6 +73,7 @@ export function KanbanView({
   onCreateInColumn(property: string, value: unknown, label: string): void;
   canCreateInColumn(property: string, value: unknown): boolean;
 }) {
+  const departing = useContext(TaskDeparturesContext);
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<
     string,
@@ -565,7 +568,7 @@ export function KanbanView({
         columns={orderedColumns.map((column) => ({
           key: valueKey(column.value),
           label: kanbanColumnLabel(column, propertyName),
-          count: column.rows.length,
+          count: settledRowCount(column.rows, departing),
         }))}
       />
       <div
@@ -608,7 +611,7 @@ export function KanbanView({
                   {label}
                 </h2>
                 <div>
-                  <span>{column.rows.length}</span>
+                  <span>{settledRowCount(column.rows, departing)}</span>
                   {writable && canCreateInColumn(property, column.value) ? (
                     <button
                       aria-label={`Add task to ${label}`}

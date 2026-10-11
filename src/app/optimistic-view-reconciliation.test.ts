@@ -3,9 +3,13 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { kanbanRowValue } from "./views/kanban-columns";
 import {
+  executionWithDepartures,
   removeConfirmedBoardMoves,
+  settledRowCount,
+  type CompletionDeparture,
   type OptimisticBoardMove,
 } from "./optimistic-view-reconciliation";
+import type { TaskViewExecution, TaskViewRow } from "../domain/view";
 
 // Provider-neutral projected-row fixtures; not a native READ reproduction.
 const task = new TaskNotesTaskModel().create(
@@ -122,5 +126,81 @@ describe("authoritative board move reconciliation", () => {
       contexts: ["home", "office", "shop"],
     });
     expect(input({})).toEqual({ contexts: ["shop"] });
+  });
+});
+
+describe("completion departures", () => {
+  const listRow = (id: string): TaskViewRow => ({
+    task: { ...task, id, title: id },
+    values: {},
+  });
+  const execution = (
+    rows: TaskViewRow[],
+    groups: TaskViewExecution["groups"] = [],
+  ) =>
+    ({
+      view: { key: "today" },
+      rows,
+      totalCount: rows.length,
+      hasMore: false,
+      groups,
+    }) as unknown as TaskViewExecution;
+  const departure = (
+    id: string,
+    index: number,
+    extra: Partial<CompletionDeparture> = {},
+  ): [string, CompletionDeparture] => [
+    id,
+    {
+      viewKey: "today",
+      row: listRow(id),
+      index,
+      groups: [],
+      acceptedAt: 10,
+      ...extra,
+    },
+  ];
+
+  it("holds dropped rows in place, completed, in index order", () => {
+    const result = executionWithDepartures(
+      execution([listRow("a"), listRow("d")]),
+      new Map([departure("c", 2), departure("b", 1)]),
+      "today",
+    );
+    expect(result.execution.rows.map((row) => row.task.id)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+    expect(result.execution.rows[1]!.task.completed).toBe(true);
+    expect(result.execution.totalCount).toBe(2);
+    expect([...result.departing]).toEqual([
+      ["b", 10],
+      ["c", 10],
+    ]);
+    expect(settledRowCount(result.execution.rows, result.departing)).toBe(2);
+  });
+
+  it("never duplicates a row the result still shows, or holds another view's", () => {
+    const shown = execution([listRow("a"), listRow("b")]);
+    const result = executionWithDepartures(
+      shown,
+      new Map([departure("b", 0), departure("z", 0, { viewKey: "other" })]),
+      "today",
+    );
+    expect(result.execution).toBe(shown);
+    expect(result.departing.size).toBe(0);
+  });
+
+  it("keeps an emptied group so the held row folds where it was", () => {
+    const work = { values: { project: "work" }, count: 1, summaries: {} };
+    const home = { values: { project: "home" }, count: 1, summaries: {} };
+    const result = executionWithDepartures(
+      execution([listRow("a")], [home]),
+      new Map([departure("b", 0, { groups: [work, home] })]),
+      "today",
+    );
+    expect(result.execution.groups).toEqual([work, home]);
   });
 });

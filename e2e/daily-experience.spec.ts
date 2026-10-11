@@ -284,6 +284,61 @@ test("touch rows complete on a right swipe and open actions on a left swipe", as
   ).toHaveCount(0);
 });
 
+test("a completed row lingers checked, folds away, and Undo restores it", async ({
+  page,
+}) => {
+  await page.goto("?demo=12");
+  const overdue = page.locator(".task-section.is-overdue");
+  const count = overdue.locator(".task-section-count");
+  await expect(count).toHaveText("4");
+  const title = "Review the mobile navigation notes";
+  await page
+    .getByRole("button", { name: `Complete ${title}`, exact: true })
+    .click();
+  // The row stays in place, checked and struck through, while the count
+  // already reflects the completion.
+  const row = page.locator(".task-row", { hasText: title });
+  await expect(row).toHaveClass(/is-just-completed/);
+  await expect(row.locator(".completion-control")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(count).toHaveText("3");
+  await expect(row).toHaveCount(0);
+  const notice = page.locator(".task-completed-notice");
+  await expect(notice).toContainText(`Completed “${title}”`);
+  await notice.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: `Complete ${title}`, exact: true }),
+  ).toBeVisible();
+  await expect(count).toHaveText("4");
+  await expect(notice).toHaveCount(0);
+});
+
+test("dates inside Overdue read as ordinary metadata", async ({ page }) => {
+  await page.goto("?demo=12");
+  const dangerColour = await page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--danger)";
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  });
+  const overdue = page.locator(".task-section.is-overdue");
+  await expect(overdue.locator(".task-row").first()).toBeVisible();
+  const colours = await overdue
+    .locator(".task-row-property, .task-section-count")
+    .evaluateAll((nodes) =>
+      nodes.flatMap((node) =>
+        [node, ...node.querySelectorAll("*")].map(
+          (element) => getComputedStyle(element).color,
+        ),
+      ),
+    );
+  expect(colours).not.toContain(dangerColour);
+});
+
 test("desktop sidebar destinations reorder by keyboard and drag", async ({
   page,
 }) => {
