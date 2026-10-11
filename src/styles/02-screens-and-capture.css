@@ -110,6 +110,11 @@
   overflow: hidden;
 }
 
+/* Long titles scroll under the field's edge, not flush against Add. */
+.capture-field:not(:last-child) {
+  margin-inline-end: 12px;
+}
+
 .quick-capture .capture-field input {
   position: relative;
   z-index: 1;
