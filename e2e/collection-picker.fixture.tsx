@@ -52,7 +52,7 @@ function Fixture() {
     setCalls((previous) => [...previous, action]);
   return (
     <main style={{ padding: 24 }}>
-      <h1>
+      <h1 style={{ overflowWrap: "anywhere" }}>
         Workspace:{" "}
         {choices.find((choice) => choice.collectionId === current)
           ?.displayName ?? "None"}
