@@ -1,4 +1,5 @@
 import type { AppWebSignInSnapshot } from "@mdbase-dev/sdk/app-host";
+import { isNextSignInProblemDetail } from "./next-sign-in-problem-detail";
 
 const uuid = (value: unknown) =>
   typeof value === "string" &&
@@ -27,6 +28,7 @@ export function isNextSignInSnapshot(
         "collections",
         "selectedCollectionId",
         "problem",
+        "problemDetail",
         "timing",
       ]) ||
       ![
@@ -58,6 +60,12 @@ export function isNextSignInSnapshot(
           text(item.displayName, 4096) &&
           ["owner", "editor", "viewer"].includes(item.role as string),
       )
+    )
+      return false;
+    if (
+      Object.hasOwn(value, "problemDetail") &&
+      (value.problem === null ||
+        !isNextSignInProblemDetail(value.problemDetail))
     )
       return false;
     if (value.timing !== null) {

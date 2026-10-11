@@ -125,6 +125,30 @@ async function fixture() {
   await start;
   return { owner, worker };
 }
+it("preserves qualified failure details through both snapshot pushes and the original reply", async () => {
+  const { owner, worker } = await fixture();
+  const detail = { name: "AppCloudCopyHostError", code: "fenced" };
+  const failure = {
+    ...snapshot("blocked", true),
+    problem: "open_failed",
+    problemDetail: detail,
+  };
+  const command = owner.startSession();
+  let replied = false;
+  void command.then(() => {
+    replied = true;
+  });
+  const sends = worker.sent.length;
+  worker.push(failure);
+  await Promise.resolve();
+  expect(owner.getSnapshot()).toEqual(failure);
+  expect(replied).toBe(false);
+  const original = worker.pending!;
+  worker.reply(original, failure);
+  expect(await command).toEqual(failure);
+  expect(worker.sent).toHaveLength(sends);
+  await owner.close();
+});
 it("keeps a returning-account popup through the SDK's pre-authorizing timing push", async () => {
   const { owner, worker } = await fixture();
   worker.push(snapshot("unselected", true));

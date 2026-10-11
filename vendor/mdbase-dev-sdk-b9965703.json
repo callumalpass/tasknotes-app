@@ -1,0 +1,49 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "b9965703230091004f17e1632fbc91bdb9edb533",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedMerges": {
+    "factory819": "19bdeee1d17eb2195d9d6945202274f9945042fe",
+    "providerReceipt827": "729b5391f9e8e8c192d93a7112324ce65078d106",
+    "problemDetail832": "15c7b4dadd186ea2cfe27d70c43fd7b083924347",
+    "callerSignalRootFix837": "b9965703230091004f17e1632fbc91bdb9edb533"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-b9965703.tgz",
+  "bytes": 750928,
+  "sha256": "501d07be2e2a94ea29c35c382735edbbfebd3c6b09f59f78c95f71c33a49a3df",
+  "integrity": "sha512-38+zfiaytqIqDOkLMKZ26eM7VrHExm9z/eDrWmBXkdUZwqOCo/cFKqakPpguOJe4joOgt/FYPAbM42UEcTxW/A==",
+  "shasum": "fd8ec356e9213693c3455ba9196f72e2327f499b",
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "4b3729f5d3cd6a57760dc75f0e826e182f6e05990bd4a21815b97e0caccafce9"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "ebc3ad5e7ab73e9b4b2464f715fa0ad4697477f437376160752da7207001dc9c"
+    }
+  },
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "sdkTestsPassed": 1678,
+    "testFilesPassed": 84,
+    "browserTestsPassed": 5,
+    "existingSkipped": 3,
+    "skippedTestScope": "runtime.wasm-gated tests; not runtime qualification",
+    "sourceClean": true,
+    "allArchiveMemberBytesVerified": true,
+    "archiveFileMembers": 278,
+    "dependencyVersionsAndIntegrityLockExact": true,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "factoryNativeAbiAndPerAppCompatibilityQualified": false,
+    "browserAcceptance": false,
+    "perAppTrustOriginCustodyAndOperationQualification": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Release co2335r/co0119r qualified and delegated original-byte source archive intake after actual SDK837 merge. This archive fixes public caller/host child-signal composition and includes SDK832 bounded optional problem details. App signal plumbing, protected identity, runtime/trust pins and previous archives remain unchanged. No shared-factory activation, native ABI qualification, People enablement or serving refresh follows from this source pin."
+}
