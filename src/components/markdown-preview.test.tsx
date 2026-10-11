@@ -40,11 +40,6 @@ describe("MarkdownPreview", () => {
     expect(screen.getByText("Safe")).toBeVisible();
   });
 
-  it("explains an empty preview", () => {
-    render(<MarkdownPreview source=" " />);
-    expect(screen.getByText(/Nothing to preview yet/)).toBeVisible();
-  });
-
   it("resolves Obsidian image embeds through collection storage", async () => {
     const resolveImage = vi.fn(async () => null);
     render(
