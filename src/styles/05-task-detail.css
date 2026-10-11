@@ -1439,7 +1439,9 @@
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 2px 12px;
+  gap: 2px 4px;
+  /* Labels pad their focus ring; hang it so the text stays on the edges. */
+  margin-inline: -6px;
 }
 
 .task-attachment-add-actions input {
@@ -1454,16 +1456,30 @@
   border: 0;
 }
 
-.task-attachment-add-actions label {
+/* Secondary actions match the pane's other quiet controls (Copy path) rather
+   than the bold accent text-action, so they never outrank the headings. */
+.task-attachment-add-actions label.text-action {
   display: inline-flex;
   min-height: var(--control-min-size);
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  padding: 0 6px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  font-weight: 400;
+  border-radius: var(--radius-control);
   cursor: pointer;
 }
 
+.task-attachment-add-actions label.text-action:hover {
+  color: var(--ink);
+}
+
+/* The file input is visually hidden, so its label carries the focus ring. */
 .task-attachment-add-actions input:focus-visible + label {
-  box-shadow: inset 0 -1px var(--ink-muted);
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .task-attachment-add-actions input:disabled + label {
