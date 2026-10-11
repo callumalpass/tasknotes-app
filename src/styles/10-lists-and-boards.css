@@ -108,7 +108,7 @@
   min-height: 44px;
   place-items: center;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
+  font-family: inherit;
   font-size: var(--type-label);
   border-bottom: 1px solid var(--line);
 }
@@ -472,10 +472,8 @@
   min-height: 68px;
   margin-top: 8px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
+  font-family: inherit;
+  font-size: var(--type-label);
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius-control);
 }
