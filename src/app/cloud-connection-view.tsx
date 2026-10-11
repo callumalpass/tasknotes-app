@@ -53,6 +53,14 @@ export function CloudConnectionView({
   cancelAuthorization,
   onTryDemo,
 }: CloudConnectionViewProps) {
+  const identity = sdk?.snapshot.signIn;
+  const accountDisplay =
+    identity?.state === "paired"
+      ? identity.accountEmail ||
+        (identity.accountProvider === "github" && identity.accountLogin
+          ? `${identity.accountLogin} (GitHub)`
+          : null)
+      : null;
   return (
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">
@@ -100,11 +108,8 @@ export function CloudConnectionView({
           ) : null}
         </>
       ) : null}
-      {sdk?.snapshot.signIn?.state === "paired" &&
-      sdk.snapshot.signIn.accountEmail ? (
-        <p className="connection-status">
-          Signed in as {sdk.snapshot.signIn.accountEmail}
-        </p>
+      {accountDisplay ? (
+        <p className="connection-status">Signed in as {accountDisplay}</p>
       ) : null}
       {session.status === "checking_setup" ? (
         <p className="connection-status" role="status">

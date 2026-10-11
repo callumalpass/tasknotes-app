@@ -185,6 +185,46 @@ it("uses actual snapshot pushes for approval waiting and genuine signed-in email
   expect(f.authorize).not.toHaveBeenCalled();
   expect(f.start).toHaveBeenCalledOnce();
 });
+it("shows the canonical authenticated GitHub login without inventing an email or another account", async () => {
+  render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+  await screen.findByRole("button", { name: "Sign in" });
+  act(() => {
+    value = {
+      ...value,
+      status: "unselected",
+      signIn: {
+        ...value.signIn!,
+        state: "paired",
+        accountId: id,
+        accountEmail: null,
+        accountProvider: "github",
+        accountLogin: "test-login",
+      },
+    };
+    notify();
+  });
+  expect(
+    screen.getByText("Signed in as test-login (GitHub)"),
+  ).toBeInTheDocument();
+  expect(value.signIn?.accountId).toBe(id);
+  expect(value.signIn?.accountEmail).toBeNull();
+  expect(screen.queryByText(/test-login@/)).not.toBeInTheDocument();
+  expect(f.authorize).not.toHaveBeenCalled();
+  expect(f.open).toHaveBeenCalledOnce();
+});
+it("does not display unconfirmed provider metadata", async () => {
+  value = {
+    ...initial(),
+    signIn: {
+      ...initial().signIn!,
+      accountProvider: "github",
+      accountLogin: "test-login",
+    },
+  };
+  render(<CloudSignIn build={build} onCollection={vi.fn()} />);
+  await screen.findByRole("button", { name: "Sign in" });
+  expect(screen.queryByText(/Signed in as/)).not.toBeInTheDocument();
+});
 it("blocked popup creates no SDK authorization or alternative original device", async () => {
   f.openPopup.mockImplementation(() => {
     throw Error("blocked");
