@@ -120,6 +120,45 @@ function fixture() {
   };
   return { wrapper, parent, portal, host, context };
 }
+it("reports the failing bootstrap phase without replacing the original exception or logging its private message", async () => {
+  const fixtureValue = fixture();
+  const error = TypeError("private-response-token");
+  fixtureValue.host.bootstrapCloudCopy.mockRejectedValue(error);
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await expect(f.options.openCollection!(fixtureValue.context)).rejects.toBe(
+    error,
+  );
+  expect(log).toHaveBeenCalledOnce();
+  const report = JSON.parse(log.mock.calls[0]?.[1] as string);
+  expect(report).toMatchObject({
+    stage: "bootstrap",
+    name: "TypeError",
+    reason: "unknown",
+    message: "unclassified exception (message redacted)",
+  });
+  expect(JSON.stringify(report)).not.toContain("private-response-token");
+  expect(fixtureValue.host.openCollectionSql).not.toHaveBeenCalled();
+  expect(fixtureValue.parent.signal.aborted).toBe(false);
+  log.mockRestore();
+});
+it("captures a constructor failure before bootstrap without modifying the original scope", async () => {
+  const fixtureValue = fixture();
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  const invalid = {
+    ...fixtureValue.context,
+    scope: { ...fixtureValue.context.scope, collection: "invalid" },
+  };
+  await expect(f.options.openCollection!(invalid)).rejects.toMatchObject({
+    reason: "binding",
+  });
+  expect(JSON.parse(log.mock.calls[0]?.[1] as string)).toMatchObject({
+    stage: "construct",
+    reason: "binding",
+  });
+  expect(fixtureValue.context.scope.collection).toBe(collection);
+  expect(fixtureValue.host.bootstrapCloudCopy).not.toHaveBeenCalled();
+  log.mockRestore();
+});
 it("uses the public SDK owner/popup and exact original scope, without app auth, attestation or lease APIs", () => {
   const fixtureValue = fixture();
   expect(f.options).toMatchObject({
