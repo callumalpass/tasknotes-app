@@ -8,6 +8,8 @@ import {
 } from "@testing-library/react";
 import {
   MdbasePeopleClient,
+  describeError,
+  summarizeStatus,
   type MdbaseApplicationSnapshot,
   type MdbaseApplicationConnection,
 } from "@mdbase-dev/sdk";
@@ -152,6 +154,177 @@ async function fixture() {
   });
   return { native, connection, sdk, ready };
 }
+
+it("keeps the original workspace and unsaved input through a live migration and SDK resumption", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot(f.ready());
+  function DraftWorkspace(props: Parameters<typeof OpenedCollection>[0]) {
+    return (
+      <>
+        <Workspace {...props} />
+        <input aria-label="Unsaved task" defaultValue="Initial draft" />
+      </>
+    );
+  }
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={DraftWorkspace}
+    />,
+  );
+  const input = await screen.findByRole("textbox", { name: "Unsaved task" });
+  fireEvent.change(input, { target: { value: "Keep my exact draft" } });
+  const originalClient = f.sdk.entry.connection(f.connection.id)!.records;
+  await act(async () => {
+    f.sdk.controls.publishSnapshot({
+      ...f.ready(),
+      problem: "collection_migrating",
+    });
+  });
+  expect(screen.getByRole("textbox", { name: "Unsaved task" })).toBe(input);
+  expect(input).toHaveValue("Keep my exact draft");
+  const migrationStatus = summarizeStatus(
+    originalClient.status,
+    "collection_migrating",
+  ).text;
+  expect(screen.getByRole("status")).toHaveTextContent(migrationStatus);
+  expect(
+    screen.getByText(describeError("collection_migrating")!.message),
+  ).toBeVisible();
+  expect(f.sdk.entry.connection(f.connection.id)!.records).toBe(originalClient);
+  await act(async () => f.sdk.controls.publishSnapshot(f.ready()));
+  expect(screen.getByRole("textbox", { name: "Unsaved task" })).toBe(input);
+  expect(input).toHaveValue("Keep my exact draft");
+  expect(screen.queryByText(migrationStatus)).toBeNull();
+  expect(
+    f.sdk.controls.observedActions().filter((call) => call.action === "start"),
+  ).toHaveLength(1);
+  expect(
+    f.sdk.controls
+      .observedActions()
+      .filter((call) =>
+        ["select", "approve", "configure", "close"].includes(call.action),
+      ),
+  ).toHaveLength(0);
+});
+
+it("uses shared registration-refusal copy and logs only its SDK developer description", async () => {
+  const f = await fixture();
+  const snapshot: MdbaseApplicationSnapshot = {
+    ...initial(),
+    status: "blocked",
+    problem: "application_registration_refused",
+    problemDetail: {
+      name: "MdbaseError",
+      code: "forbidden",
+      registration: {
+        code: "invalid_application_manifest",
+        paths: ["/homepage", "/icon"],
+      },
+    },
+  };
+  const description = describeError(snapshot)!;
+  const diagnostic = vi
+    .spyOn(console, "warn")
+    .mockImplementation(() => undefined);
+  try {
+    f.sdk.controls.publishSnapshot(snapshot);
+    render(
+      <ApplicationCollectionGate
+        entry={f.sdk.entry}
+        Picker={Picker}
+        Workspace={Workspace}
+      />,
+    );
+    expect(await screen.findByText(description.title)).toBeVisible();
+    expect(screen.getByText(description.message)).toBeVisible();
+    expect(screen.queryByText("Sign-in was interrupted")).toBeNull();
+    expect(
+      screen.queryByText(/invalid_application_manifest|\/homepage|\/icon/),
+    ).toBeNull();
+    await waitFor(() =>
+      expect(diagnostic).toHaveBeenCalledWith(
+        "[TaskNotes]",
+        description.developerMessage,
+      ),
+    );
+    expect(screen.queryByRole("button", { name: /^Retry$/ })).toBeNull();
+  } finally {
+    diagnostic.mockRestore();
+  }
+});
+
+it("forwards optional SDK collection metadata verbatim to the picker without claiming availability", async () => {
+  const f = await fixture();
+  const collection = {
+    ...f.ready().collections[0]!,
+    availability: {
+      state: "unavailable" as const,
+      reason: "device_offline" as const,
+    },
+  };
+  // Synthetic public presentation metadata only. SDK6a does not yet enumerate
+  // this field in production; SDK9c90075 owns that successor fix.
+  f.sdk.controls.publishSnapshot({ ...f.ready(), collections: [collection] });
+  let choices: ApplicationPickerProps["connections"] | undefined;
+  function MetadataPicker(props: ApplicationPickerProps) {
+    useEffect(() => {
+      choices = props.connections;
+    }, [props.connections]);
+    return <Picker {...props} />;
+  }
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={MetadataPicker}
+      Workspace={Workspace}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Change collection" }),
+  );
+  expect(choices).toBe(f.sdk.entry.application().getSnapshot().collections);
+  expect(choices?.[0]?.availability).toEqual(collection.availability);
+  expect(
+    f.sdk.controls.observedActions().some((call) => call.action === "select"),
+  ).toBe(false);
+});
+
+it("keeps a named unavailable SDK choice visible on the welcome screen without dispatching Open", async () => {
+  const f = await fixture();
+  const collection = {
+    ...f.ready().collections[0]!,
+    availability: {
+      state: "unavailable" as const,
+      reason: "desktop_update_required" as const,
+    },
+  };
+  f.sdk.controls.publishSnapshot({
+    ...initial(),
+    status: "unselected",
+    collections: [collection],
+  });
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Workspace}
+    />,
+  );
+  const description = describeError(collection)!;
+  const row = await screen.findByRole("button", {
+    name: `${collection.displayName}, ${description.title}`,
+  });
+  expect(row).toBeDisabled();
+  expect(row).toHaveTextContent(collection.displayName);
+  expect(row).toHaveTextContent(description.message);
+  expect(row).toHaveTextContent(description.actionLabel!);
+  fireEvent.click(row);
+  expect(
+    f.sdk.controls.observedActions().some((call) => call.action === "select"),
+  ).toBe(false);
+});
 
 it("retains one public owner through StrictMode replay and delegates approval synchronously", async () => {
   const f = await fixture();

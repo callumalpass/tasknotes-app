@@ -1,5 +1,11 @@
 import { ArrowRight, ChevronDown, Cloud, Monitor, Plus } from "lucide-react";
 import type { AppWebSignInSnapshot } from "@mdbase-dev/sdk/app-host";
+import type {
+  CollectionAvailability,
+  MdbaseErrorDescription,
+} from "@mdbase-dev/sdk";
+import { describeError } from "@mdbase-dev/sdk/describe";
+import { ApplicationProblemNotice } from "./application-problem-notice";
 import type { useCloudSessionSnapshot } from "../cloud/use-session";
 import { tasknotesMarkUrl } from "./assets";
 import { collectionErrorMessage as message } from "./collection-error";
@@ -8,6 +14,7 @@ export interface CloudConnectionViewProps {
   sdk?: { snapshot: AppWebSignInSnapshot };
   error: string | null;
   startError: string | null;
+  problemDescription?: MdbaseErrorDescription | null;
   retryAuthorization?: () => void;
   retryCollection?: (() => void) | undefined;
   connectLabel?: string | undefined;
@@ -25,6 +32,7 @@ export interface CloudConnectionViewProps {
   availableConnections: readonly {
     collectionId: string;
     displayName: string;
+    availability?: CollectionAvailability;
   }[];
   authorityFor?: (collectionId: string) => boolean | null;
   connect(kind: "another" | "reconnect"): Promise<void>;
@@ -39,6 +47,7 @@ export function CloudConnectionView({
   sdk,
   error,
   startError,
+  problemDescription,
   retryAuthorization,
   retryCollection,
   connectLabel,
@@ -102,9 +111,17 @@ export function CloudConnectionView({
       </div>
       {error || startError ? (
         <>
-          <p className="inline-error" role="alert">
-            {error ?? startError}
-          </p>
+          {problemDescription ? (
+            <ApplicationProblemNotice
+              alert
+              description={problemDescription}
+              message={error ?? startError ?? undefined}
+            />
+          ) : (
+            <p className="inline-error" role="alert">
+              {error ?? startError}
+            </p>
+          )}
           {error && retryCollection ? (
             <button
               className="outline-action"
@@ -246,6 +263,11 @@ export function CloudConnectionView({
             </h2>
             <div className="welcome-collection-list">
               {availableConnections.map((connection) => {
+                // Availability is an SDK fact, not inferred provider/readiness.
+                const unavailable =
+                  connection.availability != null &&
+                  connection.availability.state !== "available";
+                const unavailableDescription = describeError(connection);
                 // Discovery does not expose provider metadata. Do not guess.
                 const hosted = authorityFor?.(connection.collectionId) ?? null;
                 const authorityLabel =
@@ -258,11 +280,19 @@ export function CloudConnectionView({
                   session.status === "setup_review_required" ? "Use" : "Open";
                 return (
                   <button
-                    aria-label={`${action} ${connection.displayName}${authorityLabel ? `, ${authorityLabel}` : ""}`}
+                    aria-label={
+                      unavailable
+                        ? `${connection.displayName}, ${unavailableDescription?.title ?? "Opening"}`
+                        : `${action} ${connection.displayName}${authorityLabel ? `, ${authorityLabel}` : ""}`
+                    }
                     className="welcome-collection-row"
-                    disabled={busy}
+                    data-unavailable={unavailable || undefined}
+                    disabled={busy || unavailable}
                     key={connection.collectionId}
-                    onClick={() => void open(connection.collectionId)}
+                    onClick={() => {
+                      if (!busy && !unavailable)
+                        void open(connection.collectionId);
+                    }}
                     type="button"
                   >
                     {authorityLabel ? (
@@ -277,9 +307,21 @@ export function CloudConnectionView({
                     <span className="welcome-collection-copy">
                       <strong>{connection.displayName}</strong>
                       {authorityLabel ? <small>{authorityLabel}</small> : null}
+                      {unavailableDescription ? (
+                        <>
+                          <small>{unavailableDescription.title}</small>
+                          <small>{unavailableDescription.message}</small>
+                          {unavailableDescription.actionLabel ? (
+                            <small>{unavailableDescription.actionLabel}</small>
+                          ) : null}
+                        </>
+                      ) : null}
                     </span>
                     <span className="welcome-collection-open">
-                      {openingCollectionId === connection.collectionId ? (
+                      {unavailableDescription ? (
+                        "Not available"
+                      ) : openingCollectionId === connection.collectionId ||
+                        connection.availability?.state === "opening" ? (
                         "Opening…"
                       ) : (
                         <ArrowRight aria-hidden="true" size={18} />

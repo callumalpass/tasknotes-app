@@ -1,4 +1,4 @@
-import type { MdbaseApplicationSnapshot } from "@mdbase-dev/sdk";
+import { describeError, type MdbaseApplicationSnapshot } from "@mdbase-dev/sdk";
 import { signInMessage } from "../cloud/sign-in-error";
 
 const applicationMessages: Readonly<Record<string, string>> = {
@@ -26,6 +26,7 @@ const applicationMessages: Readonly<Record<string, string>> = {
 
 /** Only fixed codes/data descriptors, never error messages, getters or IDs. */
 export function applicationProblemMessage(problem: unknown): string {
+  const description = describeError(problem);
   let code = typeof problem === "string" ? problem : null;
   if (problem instanceof Error) {
     for (const key of ["reason", "code"]) {
@@ -40,6 +41,10 @@ export function applicationProblemMessage(problem: unknown): string {
       }
     }
   }
+  // This is an app-owned stale-gesture fence, not SDK retry authority.
+  if (code === "application_selection_fenced")
+    return `${description?.message ?? ""} ${applicationMessages[code]}`.trim();
+  if (description && description.key !== "unknown") return description.message;
   if (code && Object.hasOwn(applicationMessages, code))
     return applicationMessages[code];
   return signInMessage(code);

@@ -670,6 +670,10 @@
   opacity: 0.55;
 }
 
+.welcome-collection-row[data-unavailable="true"]:disabled {
+  opacity: 1;
+}
+
 .welcome-collection-icon {
   display: grid;
   color: var(--ink-soft);

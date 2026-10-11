@@ -5,14 +5,19 @@ import {
   useSyncExternalStore,
   type ComponentType,
 } from "react";
-import type {
-  MdbaseApplicationConnection,
-  MdbaseApplicationEntry,
+import {
+  describeError,
+  summarizeStatus,
+  type CollectionAvailability,
+  type MdbaseErrorDescription,
+  type MdbaseApplicationConnection,
+  type MdbaseApplicationEntry,
 } from "@mdbase-dev/sdk";
 import { taskNotesApplicationEntry } from "../cloud/tasknotes-application";
 import { NextTaskRepository } from "../storage/next-repository";
 import { registerStartupTiming } from "../observability/startup-timing";
 import { CloudConnectionView } from "./cloud-connection-view";
+import { ApplicationProblemNotice } from "./application-problem-notice";
 import { OpenedCollection } from "./opened-collection";
 import {
   applicationProblemMessage,
@@ -20,7 +25,11 @@ import {
 } from "./application-problem";
 
 export interface ApplicationPickerProps {
-  connections: readonly { collectionId: string; displayName: string }[];
+  connections: readonly {
+    collectionId: string;
+    displayName: string;
+    availability?: CollectionAvailability;
+  }[];
   selectedCollectionId: string | null;
   openingCollectionId?: string | null;
   busy?: boolean;
@@ -57,7 +66,7 @@ export function ApplicationCollectionGate({
   const repository = useRef<HeldRepository | null>(null);
   const [picking, setPicking] = useState(false);
   const [working, setWorking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const action = useRef(false);
   const lifetime = useRef({
     mounts: 0,
@@ -72,7 +81,7 @@ export function ApplicationCollectionGate({
       try {
         application.setForeground(document.visibilityState !== "hidden");
       } catch (reason) {
-        setError(applicationProblemMessage(reason));
+        setError(reason);
       }
     };
     foreground();
@@ -82,8 +91,7 @@ export function ApplicationCollectionGate({
       void application
         .start({ signal: original.owner.signal })
         .catch((reason: unknown) => {
-          if (!original.owner.signal.aborted)
-            setError(applicationProblemMessage(reason));
+          if (!original.owner.signal.aborted) setError(reason);
         });
     }
     return () => {
@@ -108,7 +116,10 @@ export function ApplicationCollectionGate({
   const ready =
     snapshot.selection.state === "usable" &&
     snapshot.status === "ready" &&
-    !snapshot.problem &&
+    (!snapshot.problem ||
+      ["collection_migrating", "update_required", "account_suspended"].includes(
+        snapshot.problem,
+      )) &&
     !snapshot.selection.problem &&
     !snapshot.readiness.checking &&
     !snapshot.readiness.problem &&
@@ -152,8 +163,7 @@ export function ApplicationCollectionGate({
       // BEFORE its first await. This is a presentation latch, not a native FIFO.
       await operation();
     } catch (reason) {
-      if (!lifetime.current.owner.signal.aborted)
-        setError(applicationProblemMessage(reason));
+      if (!lifetime.current.owner.signal.aborted) setError(reason);
     } finally {
       action.current = false;
       if (!lifetime.current.owner.signal.aborted) setWorking(false);
@@ -172,15 +182,22 @@ export function ApplicationCollectionGate({
     snapshot.readiness.checking ||
     ["starting", "authorizing", "opening"].includes(snapshot.status) ||
     ["opening", "approving"].includes(snapshot.selection.state);
-  const message =
+  const problem =
     error ??
     (snapshot.problem
-      ? applicationProblemMessage(snapshot.problem)
-      : snapshot.selection.problem
-        ? applicationProblemMessage(snapshot.selection.problem)
-        : snapshot.readiness.problem
-          ? applicationProblemMessage(snapshot.readiness.problem.code)
-          : null);
+      ? snapshot
+      : (snapshot.selection.problem ?? snapshot.readiness));
+  const description = describeError(problem);
+  const message =
+    description || error || snapshot.selection.problem
+      ? applicationProblemMessage(problem)
+      : null;
+  const developerMessage = description?.developerMessage;
+  useEffect(() => {
+    // The SDK derives this solely from typed registration codes/manifest paths.
+    // Never log the original error, server body, identifiers or credentials.
+    if (developerMessage) console.warn("[TaskNotes]", developerMessage);
+  }, [developerMessage]);
   const current =
     held &&
     held.connection.isCurrent() &&
@@ -214,10 +231,25 @@ export function ApplicationCollectionGate({
 
   return (
     <>
-      {current && error && !picking ? (
-        <p className="connection-error" role="alert">
-          {error}
-        </p>
+      {current && error != null && !picking ? (
+        description ? (
+          <ApplicationProblemNotice
+            alert
+            description={description}
+            message={message ?? undefined}
+          />
+        ) : (
+          <p className="connection-error" role="alert">
+            {message}
+          </p>
+        )
+      ) : null}
+      {current && snapshot.problem && description && error == null ? (
+        <LiveCollectionProblem
+          connection={current.connection}
+          problem={snapshot.problem}
+          description={description}
+        />
       ) : null}
       {current ? (
         <Workspace
@@ -241,11 +273,13 @@ export function ApplicationCollectionGate({
         <CloudConnectionView
           session={snapshot}
           sdk={{ snapshot }}
+          problemDescription={description}
           error={
-            error ??
-            (recovery && snapshot.problem === "outcome_unknown"
-              ? "Opening this collection could not be confirmed. Keep this browser's stored data and retry to check the original request."
-              : message)
+            error != null
+              ? message
+              : recovery && snapshot.problem === "outcome_unknown"
+                ? "Opening this collection could not be confirmed. Keep this browser's stored data and retry to check the original request."
+                : message
           }
           startError={null}
           retryCollection={recovery ? () => void select(recovery) : undefined}
@@ -308,5 +342,26 @@ export function ApplicationCollectionGate({
         />
       ) : null}
     </>
+  );
+}
+
+function LiveCollectionProblem({
+  connection,
+  problem,
+  description,
+}: {
+  connection: MdbaseApplicationConnection;
+  problem: string;
+  description: MdbaseErrorDescription;
+}) {
+  const records = connection.records;
+  const [status, setStatus] = useState(() => records.status);
+  useEffect(() => records.onStatus(setStatus), [records]);
+  const summary = summarizeStatus(status, problem);
+  return (
+    <ApplicationProblemNotice
+      description={description}
+      summary={summary.text}
+    />
   );
 }
