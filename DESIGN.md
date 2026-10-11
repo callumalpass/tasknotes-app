@@ -346,6 +346,12 @@ Today             Search       More
   are removable; on touch each chip action has a 44px hit area without larger
   visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
+  Phrases the parser consumed (dates, times, repeats, estimates, and trigger
+  values) take a faint accent tint inside the field itself, drawn on an
+  aria-hidden backdrop so the caret and selection stay native. Tints and chips
+  follow the last settled reading: typing ahead keeps them steady, a tint grows
+  or shrinks in place rather than blinking, removing a chip clears its tint,
+  and newly recognized chips ease in. Reduced motion drops the easing.
   Explicit property edits survive subsequent title typing. The complete draft
   remains visible during native capture and survives a refused capture; it
   clears only after a genuine native local result, not authority confirmation.
