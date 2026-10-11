@@ -1,5 +1,8 @@
 # Unreleased
 
+- Planner links use the actual portable collection identifier rather than a local preference namespace, and do not retain another collection's identifier while switching.
+- The reusable collection chooser supports name search, marks the current collection, and shows opening progress and failures with Retry. Dismissing it leaves the current page unchanged; the next shared-runtime integration remains pending.
+
 - Coalesce collection-change refreshes while synchronization catches up, and reread retired view snapshots without showing a view-loading error. Reads keep their original deadline and cancellation, and genuine failures still offer Retry.
 
 - Show view-loading failures with Retry throughout the workspace, distinguish them from an empty view catalog, and offer explicit view creation without recreating defaults. View discovery reports bounded outcome and timing diagnostics without record or account details.

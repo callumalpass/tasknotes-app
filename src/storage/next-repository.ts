@@ -3198,6 +3198,7 @@ export class NextTaskRepository implements TaskRepository {
     return {
       kind: "connect" as const,
       id: `next:${this.accountId}:${this.client.collection}`,
+      collectionId: this.client.collection,
       name: this.displayName,
       location: this.displayName,
       runtime: Capacitor.isNativePlatform()

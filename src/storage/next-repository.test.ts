@@ -39,6 +39,14 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("keeps portable selection identity distinct from the stable account-scoped preference identity", async () => {
+    const f = await fixture();
+    const info = await f.repository.collectionInfo();
+    expect(info.collectionId).toBe(f.client.collection);
+    expect(info.id).not.toBe(info.collectionId);
+    expect(info.id).toMatch(/^next:/);
+    expect(info.id.endsWith(`:${f.client.collection}`)).toBe(true);
+  });
   it("older creation ACKs read current metadata after a newer pending deletion, never recreate the task", async () => {
     const f = await fixture({ confirmDelayMs: null });
     const create = vi.spyOn(f.client, "create");
