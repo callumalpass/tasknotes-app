@@ -1330,6 +1330,10 @@
   border-bottom: 1px solid var(--line);
 }
 
+.notes-field:has(textarea:focus-visible) {
+  border-bottom-color: var(--accent);
+}
+
 .notes-field-heading {
   display: flex;
   flex-wrap: wrap;
