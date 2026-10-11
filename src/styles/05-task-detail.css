@@ -1989,10 +1989,6 @@
 .task-title-line > .title-field {
   min-width: 0;
 }
-.detail-inspector:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
 .task-date-shortcuts {
   display: flex;
   flex-wrap: wrap;
