@@ -71,7 +71,8 @@ export function AppShell() {
   const {
     documents,
     views,
-    error: viewsError,
+    discovery,
+    refreshing: discoveringViews,
     navigationViews,
     navigationKeys,
     homeKey,
@@ -83,6 +84,7 @@ export function AppShell() {
   const { route, workspaceRoute, navigate, detailRef } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [viewCreationRequest, setViewCreationRequest] = useState(0);
   const [addedNotice, setAddedNotice] = useState<{
     task: TaskSummary;
     repository: typeof repository;
@@ -183,6 +185,8 @@ export function AppShell() {
           ? "search"
           : "view"
       : workspace.page;
+  if (workspacePage !== "views" && viewCreationRequest)
+    setViewCreationRequest(0);
   const workspaceViewKey =
     workspacePage === "view"
       ? homeKey
@@ -210,6 +214,17 @@ export function AppShell() {
       : workspacePage === "views"
         ? "views"
         : workspacePage;
+  const discoveryNotice = (
+    <ViewDiscoveryNotice
+      outcome={discovery}
+      refreshing={discoveringViews}
+      onRetry={() => void refreshViews()}
+      onCreate={() => {
+        setViewCreationRequest((request) => request + 1);
+        navigate({ page: "views" });
+      }}
+    />
+  );
   return (
     <div
       className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
@@ -257,7 +272,10 @@ export function AppShell() {
             }
           />
         ) : null}
-        {workspacePage === "search" ? (
+        {route.page !== "task" ? discoveryNotice : null}
+        {workspace.page === "home" &&
+        discovery === "error" &&
+        documents === null ? null : workspacePage === "search" ? (
           <SearchScreen
             onBack={
               workspace.page === "home"
@@ -282,7 +300,7 @@ export function AppShell() {
             onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}
-            error={viewsError}
+            creationRequest={viewCreationRequest}
             navigationViewKeys={navigationKeys}
             operational={workspaceIsNavigationView}
             views={views}
@@ -333,6 +351,7 @@ export function AppShell() {
           <CollectionAvailability
             onSettings={() => navigate({ page: "more" })}
           />
+          {discoveryNotice}
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
@@ -400,6 +419,43 @@ export function AppShell() {
         onUndo={undoTaskDeletion}
       />
     </div>
+  );
+}
+
+export function ViewDiscoveryNotice({
+  outcome,
+  refreshing,
+  onRetry,
+  onCreate,
+}: {
+  outcome: "loading" | "ok" | "empty" | "error";
+  refreshing: boolean;
+  onRetry(): void;
+  onCreate(): void;
+}) {
+  if (outcome !== "error" && outcome !== "empty") return null;
+  return (
+    <section
+      className="view-discovery-notice"
+      aria-label="Views availability"
+      aria-busy={refreshing}
+    >
+      <p role={outcome === "error" ? "alert" : "status"}>
+        {outcome === "error" ? "Couldn't load your views." : "No views yet."}
+      </p>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing}
+        onClick={outcome === "error" ? onRetry : onCreate}
+      >
+        {outcome === "error"
+          ? refreshing
+            ? "Retrying…"
+            : "Retry"
+          : "Create a view"}
+      </button>
+    </section>
   );
 }
 

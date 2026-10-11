@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show view-loading failures with Retry throughout the workspace, distinguish them from an empty view catalog, and offer explicit view creation without recreating defaults. View discovery reports bounded outcome and timing diagnostics without record or account details.
+
 - Native sign-in now updates collection readiness after the actual TaskNotes model and source checks, instead of remaining marked as needing setup when an existing collection is ready.
 - Update the native sign-in SDK to accept collection cancellation signals correctly. Unexpected opening failures now preserve stored-data guidance and bounded failure categories rather than being treated as sign-in recovery.
 - Add privacy-bounded diagnostics for collection-opening failures, preserving the original error without logging account, collection or credential details.

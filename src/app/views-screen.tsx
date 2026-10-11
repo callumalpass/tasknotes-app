@@ -95,6 +95,7 @@ export function ViewsScreen({
   documents,
   views,
   error: viewsError,
+  creationRequest = 0,
   navigationViewKeys,
   operational = false,
   onBack,
@@ -112,6 +113,8 @@ export function ViewsScreen({
   documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
   error?: string;
+  /** Explicit shell action opens the existing editor; discovery never writes. */
+  creationRequest?: number;
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
@@ -140,6 +143,11 @@ export function ViewsScreen({
       completed: !taskCompletion(task, occurrenceDate),
     });
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
+  const [handledCreationRequest, setHandledCreationRequest] = useState(0);
+  if (creationRequest !== handledCreationRequest) {
+    setHandledCreationRequest(creationRequest);
+    if (creationRequest > 0) setEditing({});
+  }
   const [arrangingViewKey, setArrangingViewKey] = useState<string>();
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
   const closeMobileCapture = useCallback(() => setMobileCaptureOpen(false), []);
