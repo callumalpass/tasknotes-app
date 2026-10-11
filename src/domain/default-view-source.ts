@@ -329,14 +329,15 @@ function effectiveTaskDayFilter(
       {
         and: [
           `${scheduled}.isEmpty() == false`,
-          `date(${scheduled}) <= today()`,
+          // `.date()` drops the time, so 09:00 today still counts as today.
+          `date(${scheduled}).date() <= today()`,
         ],
       },
       {
         and: [
           `${scheduled}.isEmpty()`,
           {
-            or: [`${due}.isEmpty()`, `date(${due}) <= today()`],
+            or: [`${due}.isEmpty()`, `date(${due}).date() <= today()`],
           },
         ],
       },

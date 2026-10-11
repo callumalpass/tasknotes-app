@@ -24,6 +24,10 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   await expect(
     section(page, "Today").getByText("Confirm next week’s interviews"),
   ).toBeVisible();
+  // A kept time later today still belongs to Today.
+  await expect(
+    section(page, "Today").getByText("Prepare quarterly planning session"),
+  ).toBeVisible();
   const undo = page.getByRole("button", { name: "Undo" });
   await expect(
     page.getByText("Moved 4 tasks to today", { exact: true }),
