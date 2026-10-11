@@ -87,6 +87,9 @@ async function dispatch({
       return result(await owner.session.select(command.collectionId));
     case "session-connection":
       return owner.takeConnection(command.collectionId);
+    case "session-assess":
+      owner.assess(command.collectionId, command.state);
+      return null;
     case "model-setup-intent":
     case "model-resource-setup-intent":
       return owner.journal(command);

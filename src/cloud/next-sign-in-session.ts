@@ -123,6 +123,13 @@ export function createNextSignInSession({
         });
       return adapter.journal(command);
     },
+    assess(collectionId: string, state: "ready" | "setup_required") {
+      if (!adapter || session.connection()?.scope.collection !== collectionId)
+        throw Object.assign(Error("Original collection unavailable."), {
+          reason: "fenced",
+        });
+      adapter.assess(state);
+    },
     async verified() {
       if (!session.connection() || !adapter)
         throw Object.assign(Error("Original journal unavailable."), {
@@ -143,9 +150,30 @@ type CollectionContext = Parameters<
   >
 >[0];
 class NextSessionCollection implements AppWebCollectionConnection<NextOpenedCollection> {
-  // Native READ/discovery/history is not current semantic readiness. The UI's
-  // existing repository/setup gate still assesses the full compatible model.
-  readonly state = "setup_required" as const;
+  // Native READ/discovery/history is not semantic readiness. Until the original
+  // UI repository assesses its model, keep the SDK's conservative handoff state.
+  private readiness: "ready" | "setup_required" = "setup_required";
+  private readonly assessmentListeners = new Set<() => void>();
+  get state() {
+    return this.readiness;
+  }
+  subscribe(listener: () => void) {
+    this.check();
+    this.assessmentListeners.add(listener);
+    return () => {
+      this.assessmentListeners.delete(listener);
+    };
+  }
+  assess(state: "ready" | "setup_required") {
+    this.check();
+    if (!this.handedOff)
+      throw Object.assign(Error("Original facade not handed off."), {
+        reason: "fenced",
+      });
+    if (state === this.readiness) return;
+    this.readiness = state;
+    for (const listener of this.assessmentListeners) listener();
+  }
   openStage: CollectionOpenStage = "current_check";
   private readonly lifetime = new AbortController();
   private readonly signal: AbortSignal;
@@ -382,6 +410,7 @@ class NextSessionCollection implements AppWebCollectionConnection<NextOpenedColl
   close(): Promise<void> {
     if (this.closing) return this.closing;
     this.lifetime.abort();
+    this.assessmentListeners.clear();
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = null;
     this.closing = Promise.resolve().then(async () => {

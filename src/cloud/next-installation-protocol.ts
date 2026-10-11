@@ -28,6 +28,11 @@ export type NextInstallationCommand =
   | { kind: "session-select"; collectionId: string }
   | { kind: "session-connection"; collectionId: string }
   | {
+      kind: "session-assess";
+      collectionId: string;
+      state: "ready" | "setup_required";
+    }
+  | {
       kind: "open";
       build: NextInstallationBuildInput;
       mode: "fresh" | "existing";
@@ -122,6 +127,15 @@ export function isNextInstallationCommand(
         keys === "build,kind" &&
         !!command.build &&
         typeof command.build === "object"
+      );
+    case "session-assess":
+      return (
+        keys === "collectionId,kind,state" &&
+        typeof command.collectionId === "string" &&
+        /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(
+          command.collectionId,
+        ) &&
+        (command.state === "ready" || command.state === "setup_required")
       );
     case "session-start":
     case "session-authorize":

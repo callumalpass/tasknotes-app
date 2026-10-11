@@ -1,5 +1,6 @@
 # Unreleased
 
+- Native sign-in now updates collection readiness after the actual TaskNotes model and source checks, instead of remaining marked as needing setup when an existing collection is ready.
 - Update the native sign-in SDK to accept collection cancellation signals correctly. Unexpected opening failures now preserve stored-data guidance and bounded failure categories rather than being treated as sign-in recovery.
 - Add privacy-bounded diagnostics for collection-opening failures, preserving the original error without logging account, collection or credential details.
 - Keep the sign-in window open through account approval and collection selection, and wait for the original sign-in reply before opening the collection. Known failures now show specific messages with privacy-bounded diagnostics.

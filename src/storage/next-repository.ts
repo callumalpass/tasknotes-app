@@ -309,6 +309,11 @@ export class NextTaskRepository implements TaskRepository {
       requiresTaskNotesModelSetup?: boolean;
       /** Completion recording only after the original client's receipt/readback. */
       onModelSetupVerified?: (signal: AbortSignal) => Promise<void>;
+      /** Display/session assessment, never creator completion or write authority. */
+      onModelSetupAssessment?: (
+        state: "ready" | "setup_required",
+        signal: AbortSignal,
+      ) => Promise<void>;
     } = {},
   ) {
     this.clientOwnership = options.clientOwnership ?? "owned";
@@ -418,8 +423,31 @@ export class NextTaskRepository implements TaskRepository {
         inspect: async () => {
           const waiting = setupAvailability(client.status);
           if (waiting) return waiting;
+          const assessmentSignal = this.signal();
+          const owner = this.scope;
+          const revision = this.dataRevision;
           const inspected = await setup.inspect();
-          return setupAvailability(client.status) ?? inspected;
+          const result = setupAvailability(client.status) ?? inspected;
+          if (
+            options.onModelSetupAssessment &&
+            (result.state === "ready" || result.state === "required")
+          ) {
+            // The current READ must also load a usable task provider. An inspect
+            // result alone cannot bypass an original creator-completion gate.
+            if (result.state === "ready")
+              await this.initialize({ deferTaskIndex: true });
+            assessmentSignal.throwIfAborted();
+            owner.signal.throwIfAborted();
+            this.assertCurrentData(revision);
+            await options.onModelSetupAssessment(
+              result.state === "ready" ? "ready" : "setup_required",
+              assessmentSignal,
+            );
+            assessmentSignal.throwIfAborted();
+            owner.signal.throwIfAborted();
+            this.assertCurrentData(revision);
+          }
+          return setupAvailability(client.status) ?? result;
         },
         onReadinessChange: (listener: () => void) => {
           let previous = setupAvailability(client.status)?.reason;
