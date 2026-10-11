@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -244,112 +245,165 @@ it("offers explicit view creation for a genuinely empty native catalog, without 
   expect(create).not.toHaveBeenCalled();
 });
 
-it("opens a fresh browser into the existing Today navigation and task rows, without setup or new writes", async () => {
-  const f = await fixture();
-  const log = vi.spyOn(console, "info").mockImplementation(() => {});
-  const seed = await f.repository.create({ title: "Existing Today task" });
-  f.replica.confirmAll();
-  await vi.waitFor(async () =>
-    expect(await f.client.pendingWrites()).toEqual([]),
-  );
-  const record = (await f.client.query({ types: ["task"] })).records.find(
-    (candidate) => candidate.path === seed.path,
-  )!;
-  const revision = "sha256:" + "ab".repeat(32);
-  const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
-  const view: AppBasesDescriptor = {
-    record: "00000000-0000-4000-8000-000000000001",
-    path: taskNotesViewSourcePath("today"),
-    sourceRevision: revision,
-    ordinal: 0,
-    name: "Today",
-    viewType: "tasknotesTaskList",
-    implementations: [],
-  };
-  vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
-    kind: "success",
-    views: [view],
-    clock,
-    collectionRevision: revision,
-    continuation: null,
-  });
-  vi.spyOn(f.client, "readAppBasesViewSource").mockResolvedValue({
-    kind: "success",
-    view,
-    clock,
-    collectionRevision: revision,
-    source: "views:\n  - name: Today\n    type: tasknotesTaskList\n",
-  });
-  const result: Extract<AppBasesResult, { kind: "success" }> = {
-    kind: "success",
-    view,
-    columns: ["note.title"],
-    unavailableColumns: [],
-    rows: [
-      {
-        record: record.id,
-        path: record.path,
-        sourceRevision: record.revision,
-        cells: [{ kind: "text", value: "Existing Today task" }],
+it.each([
+  { changes: 0, label: "a quiet collection" },
+  {
+    changes: 1,
+    label: "a first-load conflict followed by success without user action",
+  },
+  {
+    changes: 6,
+    label: "continuous post-sign-in changes during the initial READ",
+  },
+])(
+  "opens $label into the existing Today navigation and task rows, without setup or new writes",
+  async ({ changes }) => {
+    const f = await fixture();
+    const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    const originalWatch = f.client.watchChanges.bind(f.client);
+    let onChanges: Parameters<typeof f.client.watchChanges>[1] | undefined;
+    vi.spyOn(f.client, "watchChanges").mockImplementation(
+      (cursor, listener) => {
+        onChanges = listener;
+        return originalWatch(cursor, listener);
       },
-    ],
-    groups: [],
-    clock,
-    collectionRevision: revision,
-  };
-  vi.spyOn(f.client, "executeAppBases").mockResolvedValue(result);
-  const create = vi.spyOn(f.client, "create");
-  const mounted = render(
-    <CollectionGateContext.Provider
-      value={{
-        authorizeAnotherCollection: vi.fn(),
-        changeCollection: vi.fn(),
-        reauthorizeCurrentCollection: vi.fn(),
-      }}
-    >
-      <RepositoryProvider
-        repository={f.repository}
-        mutationJournal={new MemoryMutationJournal()}
-        reminderAuthority="none"
+    );
+    const seed = await f.repository.create({ title: "Existing Today task" });
+    f.replica.confirmAll();
+    await vi.waitFor(async () =>
+      expect(await f.client.pendingWrites()).toEqual([]),
+    );
+    const record = (await f.client.query({ types: ["task"] })).records.find(
+      (candidate) => candidate.path === seed.path,
+    )!;
+    const revision = "sha256:" + "ab".repeat(32);
+    const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
+    const view: AppBasesDescriptor = {
+      record: "00000000-0000-4000-8000-000000000001",
+      path: taskNotesViewSourcePath("today"),
+      sourceRevision: revision,
+      ordinal: 0,
+      name: "Today",
+      viewType: "tasknotesTaskList",
+      implementations: [],
+    };
+    let remainingChanges = changes;
+    const discovery = vi
+      .spyOn(f.client, "listAppBasesViews")
+      .mockImplementation(async () => {
+        // Declared change-feed stand-in through the original public watch callback.
+        // Each completed READ is retired until catch-up reaches a quiet window.
+        if (remainingChanges-- > 0)
+          onChanges?.({
+            changes: [],
+            cursor: `synthetic-change-${remainingChanges}`,
+            reset: true,
+          });
+        return {
+          kind: "success",
+          views: [view],
+          clock,
+          collectionRevision: revision,
+          continuation: null,
+        };
+      });
+    vi.spyOn(f.client, "readAppBasesViewSource").mockResolvedValue({
+      kind: "success",
+      view,
+      clock,
+      collectionRevision: revision,
+      source: "views:\n  - name: Today\n    type: tasknotesTaskList\n",
+    });
+    const result: Extract<AppBasesResult, { kind: "success" }> = {
+      kind: "success",
+      view,
+      columns: ["note.title"],
+      unavailableColumns: [],
+      rows: [
+        {
+          record: record.id,
+          path: record.path,
+          sourceRevision: record.revision,
+          cells: [{ kind: "text", value: "Existing Today task" }],
+        },
+      ],
+      groups: [],
+      clock,
+      collectionRevision: revision,
+    };
+    vi.spyOn(f.client, "executeAppBases").mockResolvedValue(result);
+    const create = vi.spyOn(f.client, "create");
+    const mounted = render(
+      <CollectionGateContext.Provider
+        value={{
+          authorizeAnotherCollection: vi.fn(),
+          changeCollection: vi.fn(),
+          reauthorizeCurrentCollection: vi.fn(),
+        }}
       >
-        <AppShell />
-      </RepositoryProvider>
-    </CollectionGateContext.Provider>,
-  );
-  const navigation = await screen.findByRole("complementary", {
-    name: "Primary",
-  });
-  expect(
-    await within(navigation).findByRole("button", { name: "Today" }),
-  ).toBeVisible();
-  expect(await screen.findByRole("heading", { name: "Today" })).toBeVisible();
-  expect(await screen.findByText("Existing Today task")).toBeVisible();
-  expect(
-    screen.queryByText("Couldn't load your views."),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
-  expect(log).toHaveBeenCalledOnce();
-  expect(JSON.parse(String(log.mock.calls[0]?.[1]))).toMatchObject({
-    outcome: "ok",
-    viewCount: 1,
-    published: true,
-    code: null,
-    reason: null,
-  });
-  expect(f.assess).toHaveBeenCalledWith("ready", expect.any(AbortSignal));
-  expect(
-    screen.queryByRole("button", { name: "Set up TaskNotes" }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByText("Finish opening TaskNotes"),
-  ).not.toBeInTheDocument();
-  expect(m.install).not.toHaveBeenCalled();
-  expect(m.resume).not.toHaveBeenCalled();
-  expect(f.verified).not.toHaveBeenCalled();
-  expect(f.noWrite).not.toHaveBeenCalled();
-  expect(create).not.toHaveBeenCalled();
-  mounted.unmount();
-});
+        <RepositoryProvider
+          repository={f.repository}
+          mutationJournal={new MemoryMutationJournal()}
+          reminderAuthority="none"
+        >
+          <AppShell />
+        </RepositoryProvider>
+      </CollectionGateContext.Provider>,
+    );
+    const navigation = await screen.findByRole("complementary", {
+      name: "Primary",
+    });
+    expect(
+      await within(navigation).findByRole("button", { name: "Today" }),
+    ).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeVisible();
+    expect(await screen.findByText("Existing Today task")).toBeVisible();
+    expect(discovery.mock.calls.length).toBeGreaterThanOrEqual(changes + 1);
+    expect(
+      screen.queryByText("Couldn't load your views."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("No views yet.")).not.toBeInTheDocument();
+    expect(log).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(log.mock.calls[0]?.[1]))).toMatchObject({
+      outcome: "ok",
+      viewCount: 1,
+      published: true,
+      code: null,
+      reason: null,
+    });
+    expect(f.assess).toHaveBeenCalledWith("ready", expect.any(AbortSignal));
+    expect(
+      screen.queryByRole("button", { name: "Set up TaskNotes" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Finish opening TaskNotes"),
+    ).not.toBeInTheDocument();
+    expect(m.install).not.toHaveBeenCalled();
+    expect(m.resume).not.toHaveBeenCalled();
+    expect(f.verified).not.toHaveBeenCalled();
+    expect(f.noWrite).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    const initialReads = discovery.mock.calls.length;
+    await act(async () => {
+      for (let i = 0; i < 50; i++)
+        onChanges?.({
+          changes: [],
+          cursor: `synthetic-burst-${i}`,
+          reset: true,
+        });
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+    await waitFor(() =>
+      expect(discovery.mock.calls.length).toBeGreaterThan(initialReads),
+    );
+    expect(discovery.mock.calls.length).toBeLessThanOrEqual(initialReads + 2);
+    expect(screen.getByRole("heading", { name: "Today" })).toBeVisible();
+    expect(
+      screen.queryByText("Couldn't load your views."),
+    ).not.toBeInTheDocument();
+    mounted.unmount();
+  },
+);
 
 it("keeps a genuinely unconfigured collection on its setup screen without automatically installing", async () => {
   const f = await fixture();

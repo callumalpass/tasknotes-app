@@ -1,5 +1,7 @@
 # Unreleased
 
+- Coalesce collection-change refreshes while synchronization catches up, and reread retired view snapshots without showing a view-loading error. Reads keep their original deadline and cancellation, and genuine failures still offer Retry.
+
 - Show view-loading failures with Retry throughout the workspace, distinguish them from an empty view catalog, and offer explicit view creation without recreating defaults. View discovery reports bounded outcome and timing diagnostics without record or account details.
 
 - Native sign-in now updates collection readiness after the actual TaskNotes model and source checks, instead of remaining marked as needing setup when an existing collection is ready.

@@ -155,14 +155,26 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         }),
     );
     const pending = f.repository.executeView(f.view);
-    const rejected = expect(pending).rejects.toMatchObject({
-      reason: "collection_changed",
-    });
     await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
     await f.repository.create({ title: "Concurrent change" });
-    release(f.reply);
-    await rejected;
+    release({
+      ...f.reply,
+      rows: [
+        {
+          ...f.reply.rows[0]!,
+          cells: [{ kind: "text", value: "Retired cut must never publish" }],
+        },
+      ],
+    });
     expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
+    const current = await pending;
+    expect(current.rows[0]!.values["note.title"]).toBe("Native cell");
+    expect(f.execute).toHaveBeenCalledTimes(2);
+    expect(
+      (await f.repository.cachedViewExecution(f.view))!.rows[0]!.values[
+        "note.title"
+      ],
+    ).toBe("Native cell");
   });
   it("a slower earlier execution cannot replace a newer cached execution", async () => {
     const f = await fixture();

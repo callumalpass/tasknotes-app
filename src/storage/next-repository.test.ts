@@ -466,7 +466,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
   });
 
   it("an independent second local capture never adopts or reissues an earlier uncertain capture", async () => {
-    const f = await fixture();
+    // Keep admission pending deterministically; a slower quiet-window READ may
+    // otherwise allow the original's genuine automatic confirmation to arrive.
+    const f = await fixture({ confirmDelayMs: null });
     const first: TaskCreateIntent = { id: crypto.randomUUID() };
     const second: TaskCreateIntent = { id: crypto.randomUUID() };
     const create = f.client.create.bind(f.client);

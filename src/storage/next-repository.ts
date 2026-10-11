@@ -138,6 +138,10 @@ import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { BoundedCache } from "./bounded-cache";
 import {
+  CollectionChangeWindow,
+  waitForChangeWindow,
+} from "./collection-change-window";
+import {
   connectedTaskRelationships,
   connectedTaskStats,
 } from "./connected-task-cache";
@@ -294,6 +298,10 @@ export class NextTaskRepository implements TaskRepository {
   }
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
+  private readonly changeWindow = new CollectionChangeWindow(() => {
+    if (!this.disposed && !this.scope.signal.aborted)
+      this.listeners.forEach((listener) => listener({ kind: "data" }));
+  });
   private changesWatch: ChangesWatch | null = null;
   private readonly clientOwnership: "owned" | "borrowed";
 
@@ -535,12 +543,16 @@ export class NextTaskRepository implements TaskRepository {
       });
   }
 
-  private invalidateRemoteData() {
+  private invalidateRemoteData(coalesce = false) {
     this.initialization = null;
     this.indexReady = false;
     this.viewCatalog = [];
     this.nativeViews.clear();
-    this.emit("data");
+    if (coalesce) {
+      // Retire the cut immediately; only UI reload notifications are delayed.
+      this.invalidateDataGeneration();
+      this.changeWindow.changed();
+    } else this.emit("data");
   }
 
   private async observeChanges(signal: AbortSignal): Promise<void> {
@@ -552,7 +564,7 @@ export class NextTaskRepository implements TaskRepository {
         scope === this.scope &&
         this.changesWatch === watch;
       const watch = this.client.watchChanges(undefined, () => {
-        if (current()) this.invalidateRemoteData();
+        if (current()) this.invalidateRemoteData(true);
       });
       this.changesWatch = watch;
       watch.subscribe((state, error) => {
@@ -599,27 +611,31 @@ export class NextTaskRepository implements TaskRepository {
     });
   }
 
-  /** A receipt/change may retire a READ in flight. Discard it and reread once,
-   * under the original owner/deadline; never retry a mutation or publish stale
-   * rows. Continuous changes and all other failures still refuse the read. */
-  private async readCurrentGeneration(
+  /** Catch-up may retire several READ cuts. Wait for quiet and reread using
+   * the original owner/deadline, not an arbitrary one-retry limit. Every cut
+   * must still pass its generation/native fences; mutations are never retried. */
+  private async readCurrentGeneration<Result>(
     signal: AbortSignal,
-    read: () => Promise<void>,
-  ): Promise<void> {
-    for (let attempt = 0; ; attempt++) {
+    read: () => Promise<Result>,
+  ): Promise<Result> {
+    for (;;) {
       signal.throwIfAborted();
+      if (this.changeWindow.unsettled) await this.changeWindow.quiet(signal);
       try {
-        await read();
+        const result = await read();
         signal.throwIfAborted();
-        return;
+        return result;
       } catch (reason) {
         signal.throwIfAborted();
         if (
-          attempt !== 0 ||
           !(reason instanceof MdbaseError) ||
+          reason.code !== "conflict" ||
           reason.reason !== "collection_changed"
         )
           throw reason;
+        // A currentness refusal is a retired READ, not a failed collection.
+        // Also bound pacing when no local change event accompanied the refusal.
+        await waitForChangeWindow(250, signal);
       }
     }
   }
@@ -2594,75 +2610,84 @@ export class NextTaskRepository implements TaskRepository {
     return structuredClone(this.viewCatalog);
   }
   async listViews(): Promise<TaskViewDocument[]> {
-    const signal = this.signal();
-    await this.initialize({ deferTaskIndex: true });
-    const revision = this.dataRevision;
-    const descriptors = new Map<string, AppBasesDescriptor>();
-    const documents = new Map<string, TaskViewDocument>();
-    const timezone = runtimeTimezone();
-    for await (const views of iterateNativeDiscovery(async (continuation) => {
-      const result = await this.client.listAppBasesViews(
-        { captureTimezone: timezone, limit: 128, continuation },
-        signal,
-      );
-      if (result.kind === "refusal") throw new MdbaseError(result.problem);
-      return result;
-    }, signal)) {
-      this.assertCurrentData(revision);
-      for (const descriptor of views) {
-        const key = taskViewKey(descriptor.record, String(descriptor.ordinal));
-        descriptors.set(key, structuredClone(descriptor));
-        this.sourceRecords.set(descriptor.path, descriptor.record);
-        let document = documents.get(descriptor.record);
-        if (!document) {
-          document = {
-            id: descriptor.record,
-            name: descriptor.path,
-            source: {
+    return this.discoverNativeViews(this.signal());
+  }
+  private async discoverNativeViews(
+    signal: AbortSignal,
+  ): Promise<TaskViewDocument[]> {
+    return this.readCurrentGeneration(signal, async () => {
+      await this.initializeModel(signal);
+      const revision = this.dataRevision;
+      const descriptors = new Map<string, AppBasesDescriptor>();
+      const documents = new Map<string, TaskViewDocument>();
+      const timezone = runtimeTimezone();
+      for await (const views of iterateNativeDiscovery(async (continuation) => {
+        const result = await this.client.listAppBasesViews(
+          { captureTimezone: timezone, limit: 128, continuation },
+          signal,
+        );
+        if (result.kind === "refusal") throw new MdbaseError(result.problem);
+        return result;
+      }, signal)) {
+        this.assertCurrentData(revision);
+        for (const descriptor of views) {
+          const key = taskViewKey(
+            descriptor.record,
+            String(descriptor.ordinal),
+          );
+          descriptors.set(key, structuredClone(descriptor));
+          this.sourceRecords.set(descriptor.path, descriptor.record);
+          let document = documents.get(descriptor.record);
+          if (!document) {
+            document = {
+              id: descriptor.record,
+              name: descriptor.path,
+              source: {
+                path: descriptor.path,
+                revision: descriptor.sourceRevision,
+                format: "obsidian.base",
+                writable: this.hasViewSourceGrant("records.edit"),
+              },
+              views: [],
+            };
+            documents.set(descriptor.record, document);
+          }
+          document.views.push({
+            key,
+            declaration: {
+              recordId: descriptor.record,
               path: descriptor.path,
               revision: descriptor.sourceRevision,
-              format: "obsidian.base",
-              writable: this.hasViewSourceGrant("records.edit"),
+              ordinal: descriptor.ordinal,
+              name: descriptor.name,
             },
-            views: [],
-          };
-          documents.set(descriptor.record, document);
+            documentId: descriptor.record,
+            documentName: descriptor.path,
+            id: String(descriptor.ordinal),
+            name: descriptor.name ?? "",
+            properties: [],
+            source: { ...document.source },
+            presentation: {
+              type: normalizePresentationType(descriptor.viewType),
+              mappings: {},
+              options: {},
+            },
+          });
         }
-        document.views.push({
-          key,
-          declaration: {
-            recordId: descriptor.record,
-            path: descriptor.path,
-            revision: descriptor.sourceRevision,
-            ordinal: descriptor.ordinal,
-            name: descriptor.name,
-          },
-          documentId: descriptor.record,
-          documentName: descriptor.path,
-          id: String(descriptor.ordinal),
-          name: descriptor.name ?? "",
-          properties: [],
-          source: { ...document.source },
-          presentation: {
-            type: normalizePresentationType(descriptor.viewType),
-            mappings: {},
-            options: {},
-          },
-        });
       }
-    }
-    signal.throwIfAborted();
-    this.assertCurrentData(revision);
-    this.nativeViews = descriptors;
-    this.viewCatalog = [...documents.values()];
-    const live = new Set(
-      this.viewCatalog.flatMap((document) =>
-        document.views.map((view) => view.key),
-      ),
-    );
-    for (const key of this.viewExecutions.keys())
-      if (!live.has(key)) this.viewExecutions.delete(key);
-    return structuredClone(this.viewCatalog);
+      signal.throwIfAborted();
+      this.assertCurrentData(revision);
+      this.nativeViews = descriptors;
+      this.viewCatalog = [...documents.values()];
+      const live = new Set(
+        this.viewCatalog.flatMap((document) =>
+          document.views.map((view) => view.key),
+        ),
+      );
+      for (const key of this.viewExecutions.keys())
+        if (!live.has(key)) this.viewExecutions.delete(key);
+      return structuredClone(this.viewCatalog);
+    });
   }
   private viewExecutionSignature(view: TaskView, timezone: string): string {
     return JSON.stringify([timezone, view]);
@@ -2780,104 +2805,114 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
     window?: AppBasesWindow,
   ): Promise<TaskViewExecution> {
-    await this.initialize({ deferTaskIndex: true });
-    signal.throwIfAborted();
-    // A data push can invalidate discovery before the selected view reloads.
-    // Rediscover through the original client, then enforce the same exact
-    // source identity; never execute a retained descriptor as a stale fallback.
-    if (!this.nativeViews.has(view.key)) await this.listViews();
-    signal.throwIfAborted();
-    const revision = this.dataRevision;
-    const descriptor = this.nativeView(view);
-    const timezone = runtimeTimezone();
-    const signature = this.viewExecutionSignature(view, timezone);
-    const previous = this.viewExecutions.get(view.key);
-    const slot = {
-      signature,
-      execution: previous?.signature === signature ? previous.execution : null,
-    };
-    this.viewExecutions.set(view.key, slot);
-    const selected = await this.readNativeSource(descriptor, signal, timezone);
-    this.assertCurrentData(revision);
-    const result = await this.client.executeAppBases(
-      {
-        ...nativeViewSelection(descriptor),
-        hints: new Map(),
-        captureTimezone: timezone,
-        ...(window === undefined ? {} : { window }),
-      },
-      signal,
-    );
-    if (result.kind === "refusal") throw new MdbaseError(result.problem);
-    if (
-      result.view.record !== descriptor.record ||
-      result.view.sourceRevision !== descriptor.sourceRevision ||
-      result.view.ordinal !== descriptor.ordinal ||
-      result.view.path !== descriptor.path
-    )
-      throw new Error("Native execution changed its selected source identity.");
-    const metadata = nativePresentation(
-      selected.source,
-      result.view,
-      result.columns,
-    );
-    if (result.groups.length && metadata.groupProperty === undefined)
-      throw nativeUnsupported(
-        "The native grouped view did not declare its group property.",
-      );
-    const values = nativeRowValues(
-      result.columns,
-      result.rows,
-      result.groups,
-      metadata.groupProperty,
-    );
-    const records = await readNativeRows(
-      result.rows,
-      (id, current) => this.client.get(id, { effective: true }, current),
-      signal,
-    );
-    signal.throwIfAborted();
-    this.assertCurrentData(revision);
-    const totalCount = result.window?.totalMatchedRows ?? result.rows.length;
-    let rowIndex = 0;
-    const normalized = normalizeViewExecution(
-      {
-        ...view,
-        properties: metadata.properties,
-        presentation: metadata.presentation,
-      },
-      {
-        results: records.map((record, index) => ({
-          path: record.path,
-          effectiveFrontmatter: Object.fromEntries(
-            [...(record.effective ?? record.frontmatter)].map(
-              ([key, value]) => [key, toPlain(value)],
-            ),
-          ),
-          types: [...record.types],
-          values: values[index]!,
-        })),
-        meta: {
-          totalCount,
-          hasMore:
-            result.window !== undefined &&
-            result.window.offset + result.rows.length < totalCount,
-          groups: result.groups.map((group, index) => ({
-            values: { [metadata.groupProperty!]: nativeCellValue(group.key) },
-            count:
-              result.window?.groupPlacements[index]?.totalGroupRows ??
-              group.rowIndices.length,
-            summaries: {},
-          })),
-        },
-      },
-      () => nextTaskSummary(records[rowIndex++]!, this.models),
-    );
-    if (this.viewExecutions.get(view.key) === slot) {
-      slot.execution = structuredClone(normalized);
+    return this.readCurrentGeneration(signal, async () => {
+      await this.initializeModel(signal);
+      signal.throwIfAborted();
+      // A data push can invalidate discovery before the selected view reloads.
+      // Rediscover through the original client, then enforce the same exact
+      // source identity; never execute a retained descriptor as a stale fallback.
+      if (!this.nativeViews.has(view.key))
+        await this.discoverNativeViews(signal);
+      signal.throwIfAborted();
+      const revision = this.dataRevision;
+      const descriptor = this.nativeView(view);
+      const timezone = runtimeTimezone();
+      const signature = this.viewExecutionSignature(view, timezone);
+      const previous = this.viewExecutions.get(view.key);
+      const slot = {
+        signature,
+        execution:
+          previous?.signature === signature ? previous.execution : null,
+      };
       this.viewExecutions.set(view.key, slot);
-    }
-    return normalized;
+      const selected = await this.readNativeSource(
+        descriptor,
+        signal,
+        timezone,
+      );
+      this.assertCurrentData(revision);
+      const result = await this.client.executeAppBases(
+        {
+          ...nativeViewSelection(descriptor),
+          hints: new Map(),
+          captureTimezone: timezone,
+          ...(window === undefined ? {} : { window }),
+        },
+        signal,
+      );
+      if (result.kind === "refusal") throw new MdbaseError(result.problem);
+      if (
+        result.view.record !== descriptor.record ||
+        result.view.sourceRevision !== descriptor.sourceRevision ||
+        result.view.ordinal !== descriptor.ordinal ||
+        result.view.path !== descriptor.path
+      )
+        throw new Error(
+          "Native execution changed its selected source identity.",
+        );
+      const metadata = nativePresentation(
+        selected.source,
+        result.view,
+        result.columns,
+      );
+      if (result.groups.length && metadata.groupProperty === undefined)
+        throw nativeUnsupported(
+          "The native grouped view did not declare its group property.",
+        );
+      const values = nativeRowValues(
+        result.columns,
+        result.rows,
+        result.groups,
+        metadata.groupProperty,
+      );
+      const records = await readNativeRows(
+        result.rows,
+        (id, current) => this.client.get(id, { effective: true }, current),
+        signal,
+      );
+      signal.throwIfAborted();
+      this.assertCurrentData(revision);
+      const totalCount = result.window?.totalMatchedRows ?? result.rows.length;
+      let rowIndex = 0;
+      const normalized = normalizeViewExecution(
+        {
+          ...view,
+          properties: metadata.properties,
+          presentation: metadata.presentation,
+        },
+        {
+          results: records.map((record, index) => ({
+            path: record.path,
+            effectiveFrontmatter: Object.fromEntries(
+              [...(record.effective ?? record.frontmatter)].map(
+                ([key, value]) => [key, toPlain(value)],
+              ),
+            ),
+            types: [...record.types],
+            values: values[index]!,
+          })),
+          meta: {
+            totalCount,
+            hasMore:
+              result.window !== undefined &&
+              result.window.offset + result.rows.length < totalCount,
+            groups: result.groups.map((group, index) => ({
+              values: { [metadata.groupProperty!]: nativeCellValue(group.key) },
+              count:
+                result.window?.groupPlacements[index]?.totalGroupRows ??
+                group.rowIndices.length,
+              summaries: {},
+            })),
+          },
+        },
+        () => nextTaskSummary(records[rowIndex++]!, this.models),
+      );
+      if (this.viewExecutions.get(view.key) === slot) {
+        slot.execution = structuredClone(normalized);
+        this.viewExecutions.set(view.key, slot);
+      }
+      return normalized;
+    });
   }
   async executeView(view: TaskView): Promise<TaskViewExecution> {
     return this.executeNativeView(view, this.signal());
@@ -3189,6 +3224,7 @@ export class NextTaskRepository implements TaskRepository {
     return () => this.listeners.delete(listener);
   }
   suspend() {
+    this.changeWindow.clear();
     this.changesWatch?.();
     this.changesWatch = null;
     this.scope.abort(
@@ -3208,6 +3244,7 @@ export class NextTaskRepository implements TaskRepository {
     }
   }
   dispose() {
+    this.changeWindow.clear();
     this.disposed = true;
     this.scope.abort();
     this.changesWatch?.();
@@ -3257,18 +3294,19 @@ export class NextTaskRepository implements TaskRepository {
       lastReachedAt: new Date().toISOString(),
     };
   }
+  private invalidateDataGeneration() {
+    this.dataRevision++;
+    this.viewExecutions.clear();
+    // Every data event, including accepted local writes, invalidates in-flight
+    // snapshot promises. New readers must not join an obsolete generation.
+    // The old revision guards remain; identity-checked cleanup cannot erase
+    // a newer load. Existing remembered task data still needs native reads.
+    this.initialization = null;
+    this.indexLoading = null;
+    this.scratchFeedSnapshot = undefined;
+  }
   private emit(kind: RepositoryChange["kind"]) {
-    if (kind === "data") {
-      this.dataRevision++;
-      this.viewExecutions.clear();
-      // Every data event, including accepted local writes, invalidates in-flight
-      // snapshot promises. New readers must not join an obsolete generation.
-      // The old revision guards remain; identity-checked cleanup cannot erase
-      // a newer load. Existing remembered task data still needs native reads.
-      this.initialization = null;
-      this.indexLoading = null;
-      this.scratchFeedSnapshot = undefined;
-    }
+    if (kind === "data") this.invalidateDataGeneration();
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }

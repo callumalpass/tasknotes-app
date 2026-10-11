@@ -373,7 +373,7 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
   });
 
   it.each(["catalog", "index"])(
-    "refuses continuous %s invalidation after one read-only retry",
+    "converges after repeated %s invalidation using the original read-only owner and deadline",
     async (kind) => {
       const f = await fixture(),
         control = heldWatch();
@@ -388,31 +388,101 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       control.active();
       await opened;
       let count = 0;
+      const signals: (AbortSignal | undefined)[] = [];
       if (kind === "catalog") {
         const original = vi.mocked(f.client.describe).getMockImplementation()!;
         vi.mocked(f.client.describe).mockImplementation(async (signal) => {
           count++;
+          signals.push(signal);
           const result = await original(signal);
-          changes(batch);
+          if (count <= 6) changes(batch);
           return result;
         });
         changes(batch);
       } else {
-        vi.spyOn(f.client, "pages").mockImplementation(async function* () {
-          count++;
-          yield { records: [], complete: true, asOf: 0 };
-          changes(batch);
-        });
+        vi.spyOn(f.client, "pages").mockImplementation(
+          async function* (_query, _include, signal) {
+            count++;
+            signals.push(signal);
+            yield { records: [], complete: true, asOf: 0 };
+            if (count <= 6) changes(batch);
+          },
+        );
       }
-      await expect(
-        kind === "catalog"
-          ? f.repository.initialize({ deferTaskIndex: true })
-          : f.repository.listSummaries(),
-      ).rejects.toMatchObject({
-        code: "conflict",
-        reason: "collection_changed",
+      if (kind === "catalog")
+        await expect(
+          f.repository.initialize({ deferTaskIndex: true }),
+        ).resolves.toBeUndefined();
+      else await expect(f.repository.listSummaries()).resolves.toEqual([]);
+      expect(count).toBe(7);
+      expect(signals.every((signal) => signal === signals[0])).toBe(true);
+      expect(signals[0]).toBeInstanceOf(AbortSignal);
+    },
+  );
+
+  it.each(["suspend", "dispose"] as const)(
+    "%s cancels quiet-window catch-up without renewing the READ owner",
+    async (action) => {
+      const f = await fixture(),
+        control = heldWatch();
+      let changes!: (batch: wire.ChangesResult) => void;
+      vi.spyOn(f.client, "watchChanges").mockImplementation(
+        (_cursor, callback) => {
+          changes = callback;
+          return control.watch;
+        },
+      );
+      const original = vi.mocked(f.client.describe).getMockImplementation()!;
+      const describe = vi
+        .spyOn(f.client, "describe")
+        .mockImplementation(async (signal) => {
+          const result = await original(signal);
+          changes(batch);
+          return result;
+        });
+      const pending = f.repository.initialize({ deferTaskIndex: true });
+      const rejected = expect(pending).rejects.toMatchObject({
+        name: "AbortError",
       });
-      expect(count).toBe(2);
+      control.active();
+      await vi.waitFor(() =>
+        expect(describe.mock.calls.length).toBeGreaterThanOrEqual(3),
+      );
+      f.repository[action]();
+      await rejected;
+      expect(control.stop).toHaveBeenCalledOnce();
+      const calls = describe.mock.calls.length;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(describe).toHaveBeenCalledTimes(calls);
+    },
+  );
+
+  it.each([
+    new MdbaseError({
+      code: "invalid_request",
+      reason: "collection_changed",
+      recovery: "fix_request",
+      message: "A real error with a mismatched reason",
+    }),
+    new MdbaseError({
+      code: "conflict",
+      reason: "concurrent_modification",
+      recovery: "refresh",
+      message: "A real native refusal",
+    }),
+  ])(
+    "does not retry or replace a real error: $code/$reason",
+    async (problem) => {
+      const f = await fixture(),
+        control = heldWatch();
+      vi.spyOn(f.client, "watchChanges").mockReturnValue(control.watch);
+      const describe = vi
+        .spyOn(f.client, "describe")
+        .mockRejectedValue(problem);
+      const pending = f.repository.initialize({ deferTaskIndex: true });
+      control.active();
+      await expect(pending).rejects.toBe(problem);
+      expect(describe).toHaveBeenCalledOnce();
     },
   );
 
