@@ -126,6 +126,7 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     expect(f.mutations.recordWriteState(recordId)).toEqual({
       mutationId: mid,
       state: "rejected",
+      problem: expect.objectContaining({ code: "conflict" }),
     });
     expect(submit).toHaveBeenCalledOnce();
   });

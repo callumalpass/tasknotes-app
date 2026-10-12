@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
 import { historyScope, readHistory } from "./search-history";
 import { TaskScreen } from "./task-screen";
@@ -318,5 +319,102 @@ describe("TaskScreen", () => {
     releaseDownload();
     await waitFor(() => expect(target.location.href).toMatch(/^blob:/));
     expect(target.close).not.toHaveBeenCalled();
+  });
+});
+
+describe("TaskScreen with a refused native save", () => {
+  let f: Awaited<ReturnType<typeof nextTaskFixture>>;
+  afterEach(() => f.close());
+
+  async function rejectedNotesEdit(
+    problem?: Parameters<typeof f.replica.reject>[1],
+  ) {
+    f = await nextTaskFixture({ confirmDelayMs: null });
+    await f.repository.initialize();
+    const task = await f.repository.create({ title: "Shared task" });
+    f.replica.confirmAll();
+    const update = vi.spyOn(f.client, "update");
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={f.repository}
+      >
+        <TaskScreen id={task.id} onBack={vi.fn()} onMaterialized={vi.fn()} />
+      </RepositoryProvider>,
+    );
+    fireEvent.change(await screen.findByLabelText("Notes"), {
+      target: { value: "My local notes" },
+    });
+    await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
+      timeout: 3_000,
+    });
+    const record = f.replica.allRecords.find((r) => r.path === task.path)!;
+    f.replica.reject(update.mock.calls[0]![2]!.mutationId!, problem);
+    // Another app's newer version arrives after the refusal.
+    f.replica.seed({
+      id: record.id,
+      path: record.path,
+      types: record.types,
+      frontmatter: Object.fromEntries(record.frontmatter),
+      body: "Edited elsewhere",
+    });
+    return { update, recordId: record.id };
+  }
+
+  it("keeps the draft and re-applies it on the latest revision only when asked", async () => {
+    const { update, recordId } = await rejectedNotesEdit();
+    expect(
+      await screen.findByText(
+        "This task changed somewhere else, so your edit wasn't saved.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Notes")).toHaveValue("My local notes");
+    expect(
+      screen.getByRole("button", { name: "Not saved. Review your edit." }),
+    ).toBeEnabled();
+    // Further typing never silently overwrites the other app's change.
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "My local notes, extended" },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(update).toHaveBeenCalledOnce();
+
+    const latest = await f.client.get(recordId, { body: true });
+    fireEvent.click(screen.getByRole("button", { name: "Keep my edit" }));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+    expect(update.mock.calls[1]![1]).toMatchObject({
+      body: "My local notes, extended",
+      ifRevision: latest.revision,
+    });
+    f.replica.confirmAll();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("alert", { name: "Edit not saved" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect((await f.client.get(recordId, { body: true })).body).toBe(
+      "My local notes, extended",
+    );
+  });
+
+  it("shows other refusals without offering to re-apply, and discards to the latest", async () => {
+    const { update } = await rejectedNotesEdit({
+      code: "invalid_record",
+      recovery: "fix_request",
+      message: "Notes are too long.",
+    });
+    expect(await screen.findByText("Notes are too long.")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Keep my edit" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Discard my edit" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("alert", { name: "Edit not saved" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText("Notes")).toHaveValue("Edited elsewhere");
+    expect(screen.getByRole("button", { name: "Saved" })).toBeDisabled();
+    expect(update).toHaveBeenCalledOnce();
   });
 });

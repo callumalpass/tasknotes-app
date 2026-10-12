@@ -63,6 +63,8 @@ export interface NativeRecordWriteState {
   readonly mutationId: string;
   readonly state:
     "pending" | "confirmed" | "rejected" | "unknown" | "conflicted";
+  /** The receipt's reason for a rejection; never present otherwise. */
+  readonly problem?: wire.Problem;
 }
 interface LocalMutation {
   readonly id: string;
@@ -203,8 +205,41 @@ export class NextMutations {
     let result: NativeRecordWriteState | undefined;
     for (const entry of this.localWrites.values())
       if (entry.recordIds.has(recordId))
-        result = { mutationId: entry.id, state: entry.state };
+        result =
+          entry.state === "rejected" && entry.receipt?.problem
+            ? {
+                mutationId: entry.id,
+                state: entry.state,
+                problem: entry.receipt.problem,
+              }
+            : { mutationId: entry.id, state: entry.state };
     return result;
+  }
+
+  /** Forget rejected changes to a record once the person has chosen what to
+   * keep. A rejection is proof of non-admission, so nothing is left to check. */
+  dismissRejected(recordId: string): void {
+    let changed = false;
+    for (const [id, entry] of this.localWrites)
+      if (entry.state === "rejected" && entry.recordIds.has(recordId)) {
+        this.localWrites.delete(id);
+        changed = true;
+      }
+    if (changed) this.changed();
+  }
+
+  /** A confirmed write supersedes older rejected writes to the same records,
+   * so a retired confirmation never resurfaces an earlier rejection. */
+  private retire(confirmed: LocalMutation): void {
+    for (const [id, entry] of this.localWrites) {
+      if (entry === confirmed) break;
+      if (
+        entry.state === "rejected" &&
+        [...entry.recordIds].some((record) => confirmed.recordIds.has(record))
+      )
+        this.localWrites.delete(id);
+    }
+    this.localWrites.delete(confirmed.id);
   }
 
   private localQueue<Result>(run: () => Promise<Result>): Promise<Result> {
@@ -262,7 +297,7 @@ export class NextMutations {
         await this.readDelivered([...entry.recordIds], signal);
       else await entry.read?.(receipt, signal);
       signal.throwIfAborted();
-      if (entry.delivered) this.localWrites.delete(entry.id);
+      if (entry.delivered) this.retire(entry);
       this.changed();
     }).catch(() => {
       // Admission is known, but the result is not. Preserve exact recovery ID.
@@ -344,7 +379,7 @@ export class NextMutations {
           throw new RejectedNextMutation(id, entry.receipt.problem);
         entry.delivered = true;
         if (receipt.state === "confirmed" && entry.state === "confirmed")
-          this.localWrites.delete(id);
+          this.retire(entry);
         signal.throwIfAborted();
         this.changed();
         return value;

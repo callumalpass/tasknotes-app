@@ -62,6 +62,12 @@ export type RecordWriteTarget =
   | { kind: "task" | "scratchpad" | "image"; id: string }
   | { kind: "source"; path: string };
 export type RecordWriteStatus = "pending" | "failed" | "unknown" | "conflicted";
+/** Why the latest change to a record was refused. `changedElsewhere` means the
+ * record had a newer revision, so the same edit can be re-applied on top of it. */
+export interface RecordWriteRejection {
+  readonly changedElsewhere: boolean;
+  readonly message: string;
+}
 
 /**
  * Application-facing collection boundary. Storage and provider adapters
@@ -76,6 +82,10 @@ export interface TaskRepository {
   writeState?(target: RecordWriteTarget): RecordWriteStatus | undefined;
   /** Read existing native queue/receipts only; never retries a submission. */
   reconcileWrites?(): Promise<void>;
+  /** The refusal behind a "failed" write state, when the receipt names one. */
+  writeRejection?(target: RecordWriteTarget): RecordWriteRejection | undefined;
+  /** Forget a refused change after the person chose to discard it. */
+  dismissWriteRejection?(target: RecordWriteTarget): void;
   /** Account/person discovery is unavailable in non-account demo repositories. */
   people?(
     signal?: AbortSignal,

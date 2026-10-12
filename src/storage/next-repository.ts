@@ -24,6 +24,7 @@ import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import type {
   TaskRepository,
   TaskCreateIntent,
+  RecordWriteRejection,
   RecordWriteTarget,
   RecordWriteStatus,
   RepositoryChange,
@@ -276,14 +277,31 @@ export class NextTaskRepository implements TaskRepository {
   private readonly knownTaskRecords = new Map<string, string>();
   private readonly scratchRecords = new Map<string, string>();
 
-  writeState(target: RecordWriteTarget): RecordWriteStatus | undefined {
-    const id =
-      target.kind === "task"
-        ? (this.cache.get(target.id)?.recordId ??
+  private writeRecordId(target: RecordWriteTarget): string | undefined {
+    return target.kind === "task"
+      ? (this.cache.get(target.id)?.recordId ??
           this.knownTaskRecords.get(target.id))
-        : target.kind === "source"
-          ? this.sourceRecords.get(target.path)
-          : this.scratchRecords.get(`${target.kind}:${target.id}`);
+      : target.kind === "source"
+        ? this.sourceRecords.get(target.path)
+        : this.scratchRecords.get(`${target.kind}:${target.id}`);
+  }
+  writeRejection(target: RecordWriteTarget): RecordWriteRejection | undefined {
+    const id = this.writeRecordId(target);
+    const state = id ? this.mutations.recordWriteState(id) : undefined;
+    if (state?.state !== "rejected") return undefined;
+    const problem = state.problem;
+    return {
+      changedElsewhere:
+        problem?.code === "conflict" && problem.reason === "revision",
+      message: problem?.message ?? "mdbase refused the change.",
+    };
+  }
+  dismissWriteRejection(target: RecordWriteTarget): void {
+    const id = this.writeRecordId(target);
+    if (id) this.mutations.dismissRejected(id);
+  }
+  writeState(target: RecordWriteTarget): RecordWriteStatus | undefined {
+    const id = this.writeRecordId(target);
     if (!id) return undefined;
     if (this.nativeWriteStates.get(id) === "conflicted") return "conflicted";
     const state = this.mutations.recordWriteState(id)?.state;

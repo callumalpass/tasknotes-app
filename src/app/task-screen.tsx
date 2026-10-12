@@ -20,7 +20,12 @@ import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { TaskRecordFile } from "../components/task-record-file";
-import { useRecordWriteState } from "../components/use-record-write-state";
+import {
+  useRecordWriteRejection,
+  useRecordWriteState,
+} from "../components/use-record-write-state";
+import { useRecordWriteReview } from "../components/record-write-status-context";
+import { WriteRejectionNotice } from "../components/write-rejection-notice";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -231,6 +236,44 @@ function TaskEditor({
     kind: "task",
     id: task.id,
   });
+  const reportedRejection = useRecordWriteRejection(repository, {
+    kind: "task",
+    id: task.id,
+  });
+  // A refused save keeps the draft on screen until the person chooses.
+  const rejection =
+    writeState === "failed"
+      ? (reportedRejection ?? {
+          changedElsewhere: false,
+          message: "mdbase refused the change.",
+        })
+      : undefined;
+  // Saving again would overwrite the other change without an explicit choice.
+  const awaitingChoice = rejection?.changedElsewhere === true;
+  const awaitingChoiceRef = useRef(awaitingChoice);
+  useLayoutEffect(() => {
+    awaitingChoiceRef.current = awaitingChoice;
+  }, [awaitingChoice]);
+  const rejectionRef = useRef<HTMLDivElement>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const reviewRejection = useCallback(() => {
+    const notice = rejectionRef.current;
+    notice?.scrollIntoView?.({ block: "nearest" });
+    notice?.focus();
+  }, []);
+  useRecordWriteReview(
+    { kind: "task", id: task.id },
+    Boolean(rejection),
+    reviewRejection,
+  );
+  const rejected = writeState === "failed";
+  useEffect(() => {
+    if (!rejected) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [rejected]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -336,18 +379,23 @@ function TaskEditor({
   );
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty || awaitingChoice) return;
     const version = editVersion.current;
     const timeout = window.setTimeout(
       () => void persist(draft, version).catch(() => undefined),
       520,
     );
     return () => window.clearTimeout(timeout);
-  }, [dirty, draft, persist]);
+  }, [awaitingChoice, dirty, draft, persist]);
 
   useEffect(() => {
     const flush = () => {
-      if (!dirtyRef.current || !draftRef.current.title.trim()) return;
+      if (
+        !dirtyRef.current ||
+        awaitingChoiceRef.current ||
+        !draftRef.current.title.trim()
+      )
+        return;
       void persist(draftRef.current, editVersion.current).catch(
         () => undefined,
       );
@@ -382,11 +430,66 @@ function TaskEditor({
     change({ customProperties });
   }
 
+  function requireChoice(): void {
+    if (!awaitingChoiceRef.current) return;
+    reviewRejection();
+    throw new Error(
+      "Keep or discard your unsaved edit before making another change.",
+    );
+  }
+
+  async function keepRejectedEdit() {
+    if (resolving) return;
+    setResolving(true);
+    setResolveError(null);
+    // A new save reads the latest revision and applies the whole draft to it.
+    editVersion.current += 1;
+    try {
+      await persist(draftRef.current, editVersion.current);
+    } catch (reason) {
+      if (mounted.current)
+        setResolveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setResolving(false);
+    }
+  }
+
+  async function discardRejectedEdit() {
+    if (resolving) return;
+    setResolving(true);
+    setResolveError(null);
+    try {
+      const latest = await repository.get(task.id);
+      if (!latest) throw new Error("This task is no longer available.");
+      if (!mounted.current) return;
+      editVersion.current += 1;
+      const next = toDraft(latest);
+      draftRef.current = next;
+      dirtyRef.current = false;
+      setDraft(next);
+      setDirty(false);
+      setSaveState("saved");
+      setSaveError(null);
+      repository.dismissWriteRejection?.({ kind: "task", id: task.id });
+    } catch (reason) {
+      if (mounted.current)
+        setResolveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setResolving(false);
+    }
+  }
+
   async function flushBeforeAttachmentMutation(): Promise<void> {
+    requireChoice();
     if (dirtyRef.current) await persist(draftRef.current, editVersion.current);
   }
 
   async function insertAttachmentInline(reference: string): Promise<void> {
+    requireChoice();
     const embed = `!${reference}`;
     if (draftRef.current.body.includes(embed)) return;
     editVersion.current += 1;
@@ -402,6 +505,11 @@ function TaskEditor({
 
   async function leave() {
     if (leaving) return;
+    if (rejection) {
+      // Leaving would drop the refused draft; the choice stays in view.
+      reviewRejection();
+      return;
+    }
     if (!draft.title.trim()) {
       setSaveState("error");
       return;
@@ -478,6 +586,7 @@ function TaskEditor({
     setTimeAction(true);
     setTimeError(null);
     try {
+      requireChoice();
       if (dirty) await persist(draft, editVersion.current);
       await action();
     } catch (reason) {
@@ -501,31 +610,39 @@ function TaskEditor({
           <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
         </button>
         <button
-          className={`save-state is-${saveState}`}
-          disabled={saveState !== "error" || !draft.title.trim()}
+          className={`save-state is-${rejection ? "error" : saveState}`}
+          disabled={
+            !rejection && (saveState !== "error" || !draft.title.trim())
+          }
           type="button"
           onClick={() =>
-            void persist(draft, editVersion.current).catch(() => undefined)
+            rejection
+              ? reviewRejection()
+              : void persist(draft, editVersion.current).catch(() => undefined)
           }
           aria-label={
-            saveState === "error"
-              ? `Save failed. ${saveError ?? "Tap to retry."}`
-              : writeState === "pending"
-                ? "Saved on this device; waiting for sync"
-                : undefined
+            rejection
+              ? "Not saved. Review your edit."
+              : saveState === "error"
+                ? `Save failed. ${saveError ?? "Tap to retry."}`
+                : writeState === "pending"
+                  ? "Saved on this device; waiting for sync"
+                  : undefined
           }
         >
-          {!draft.title.trim()
-            ? "Title required"
-            : saveState === "saving"
-              ? "Saving"
-              : saveState === "error"
-                ? "Save failed · Retry"
-                : writeState === "pending"
-                  ? ""
-                  : writeState
-                    ? "Review save"
-                    : "Saved"}
+          {rejection
+            ? "Not saved · Review"
+            : !draft.title.trim()
+              ? "Title required"
+              : saveState === "saving"
+                ? "Saving"
+                : saveState === "error"
+                  ? "Save failed · Retry"
+                  : writeState === "pending"
+                    ? ""
+                    : writeState
+                      ? "Review save"
+                      : "Saved"}
         </button>
         <RecordWriteNotice
           repository={repository}
@@ -548,6 +665,17 @@ function TaskEditor({
           }}
         />
       </header>
+
+      {rejection ? (
+        <WriteRejectionNotice
+          ref={rejectionRef}
+          rejection={rejection}
+          busy={resolving}
+          error={resolveError}
+          onKeep={() => void keepRejectedEdit()}
+          onDiscard={() => void discardRejectedEdit()}
+        />
+      ) : null}
 
       {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
         <div className="occurrence-banner">

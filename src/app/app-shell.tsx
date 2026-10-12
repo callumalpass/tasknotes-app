@@ -55,6 +55,7 @@ import { ViewsScreen } from "./views-screen";
 import { CaptureFab } from "../components/capture-fab";
 import { ModelSetupScreen } from "./model-setup-screen";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
+import { requestRecordWriteReview } from "../components/record-write-status-context";
 import {
   loadCalendarPreferences,
   saveCalendarPreferences,
@@ -516,15 +517,17 @@ export function AppShell() {
     <CollectionWriteStatus
       repository={repository}
       connection={connection}
-      onReview={(target) =>
+      onReview={(target) => {
+        // An editor already showing this record presents its own resolution.
+        if (requestRecordWriteReview(target)) return;
         navigate(
           target.kind === "task"
             ? { page: "task", id: target.id }
             : target.kind === "source"
               ? { page: "views" }
               : { page: "scratchpad" },
-        )
-      }
+        );
+      }}
     >
       <TaskCompletionReportContext.Provider value={reportCompleted}>
         {shell}
