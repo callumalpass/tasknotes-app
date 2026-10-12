@@ -172,7 +172,11 @@ describe("TaskScreen across an immediate reload", () => {
     replica.editElsewhere(path, { frontmatter: { scheduled: "2026-10-16" } });
     replica.stallConfirmations(false);
 
-    const second = await openPage(replica, await device(), async () => first.id);
+    const second = await openPage(
+      replica,
+      await device(),
+      async () => first.id,
+    );
     expect(
       await screen.findByText(
         "This task changed somewhere else, so your edit wasn't saved.",
