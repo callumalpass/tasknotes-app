@@ -219,8 +219,34 @@ describe("home view restoration", () => {
       ...defaults.slice(2),
     ];
     expect(resolved?.navigationKeys).toEqual(expected);
+    expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual([
+      "Views/work.md#open",
+    ]);
+  });
+
+  it("returns saved views to navigation after a discovery briefly finds none", () => {
+    const storage = memoryStorage();
+    const saved = [
+      "Views/work.md#open",
+      SCRATCHPAD_NAVIGATION_KEY,
+      SEARCH_NAVIGATION_KEY,
+    ];
+    writeNavigationViewKeys(storage, "connect:collection-home", saved);
+
+    const empty = resolveNavigationViewCatalog(info, [], false, storage);
+    expect(empty?.navigationKeys).toEqual([
+      SCRATCHPAD_NAVIGATION_KEY,
+      SEARCH_NAVIGATION_KEY,
+    ]);
+    const back = resolveNavigationViewCatalog(
+      info,
+      [workViews()],
+      false,
+      storage,
+    );
+    expect(back?.navigationKeys).toEqual(saved);
     expect(readNavigationViewKeys(storage, "connect:collection-home")).toEqual(
-      expected,
+      saved,
     );
   });
 

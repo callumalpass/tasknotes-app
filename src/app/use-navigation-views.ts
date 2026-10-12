@@ -311,13 +311,9 @@ export function resolveNavigationViewCatalog(
       if (first) navigationKeys.push(first.key);
     }
   }
-  if (
-    !requireStoredViews &&
-    stored &&
-    (stored.length !== navigationKeys.length ||
-      stored.some((key, index) => key !== navigationKeys[index]))
-  )
-    writeNavigationViewKeys(storage, scope, navigationKeys);
+  // Filter missing views in memory only. A discovery that lacks a saved view
+  // (another device's change, a sync gap, a re-opened collection) must not
+  // erase the person's choices: the view returns to navigation when it does.
   return {
     documents,
     error: "",
