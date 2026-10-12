@@ -86,7 +86,7 @@ test("sustained disconnection escalates politely", async ({ page }) => {
     "polite",
   );
   await expect(page.getByTestId("collection-write-status")).toContainText(
-    "Disconnected: 3 changes saved on this device",
+    "Saved on this device; waiting for sync",
   );
   expect((await stats(page)).updates).toBe(0);
 });

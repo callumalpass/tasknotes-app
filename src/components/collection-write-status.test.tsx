@@ -37,6 +37,26 @@ it("escalates only a continuous prolonged wait and clears after acknowledgement"
   expect(screen.queryByText("Syncing…")).toBeNull();
   expect(screen.queryByRole("status")).toBeNull();
 });
+it("explains changes kept on this device while mdbase is unreachable", async () => {
+  vi.useFakeTimers();
+  render(
+    <CollectionWriteStatus
+      repository={repository}
+      connection={{
+        state: "connected",
+        savedOnDevice: true,
+        sync: { text: "", pending: 2, held: 0 },
+      }}
+      onReview={() => {}}
+    >
+      <div>Editor</div>
+    </CollectionWriteStatus>,
+  );
+  await act(() => vi.advanceTimersByTime(5_000));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Saved on this device; waiting for sync",
+  );
+});
 it("starts a fresh pending grace period when the repository changes", async () => {
   vi.useFakeTimers();
   const view = (current: TaskRepository) => (

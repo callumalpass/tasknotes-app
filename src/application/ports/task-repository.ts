@@ -236,6 +236,9 @@ export interface RepositoryConnectionStatus {
   lastReachedAt?: string;
   message?: string;
   sync?: { text: string; pending: number; held: number };
+  /** The SDK is keeping unsynced changes on this device because it cannot
+   * reach mdbase right now (offline, unreachable or busy). */
+  savedOnDevice?: boolean;
   heldEdits?: HeldEdit[];
 }
 

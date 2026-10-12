@@ -324,7 +324,7 @@ function CollectionSettings() {
         <div className="settings-collection-identity">
           <strong>{info?.name ?? "mdbase collection"}</strong>
           <span
-            className={`settings-connection is-${connection.state}`}
+            className={`settings-connection is-${connection.savedOnDevice ? "unavailable" : connection.state}`}
             role="status"
           >
             <span aria-hidden="true" className="settings-connection-dot" />
@@ -757,5 +757,6 @@ function connectionLabel(
 ): string {
   if (connection.state === "connecting") return "Connecting";
   if (connection.state === "unavailable") return "Collection unavailable";
+  if (connection.savedOnDevice) return "Saved on this device; waiting for sync";
   return "Connected";
 }

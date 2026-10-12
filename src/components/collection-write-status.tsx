@@ -88,7 +88,10 @@ export function CollectionWriteStatus({
       <WriteStatusOverlay
         repository={repository}
         pending={pending}
-        disconnected={connection.state === "unavailable"}
+        disconnected={
+          connection.state === "unavailable" ||
+          connection.savedOnDevice === true
+        }
         problem={problems[0]}
         problemCount={problems.length}
         onReview={onReview}
@@ -140,7 +143,7 @@ export function WriteStatusOverlay({
         ? "Conflicting changes"
         : "Save outcome unknown"
     : offline
-      ? `Disconnected: ${pending} ${pending === 1 ? "change" : "changes"} saved on this device`
+      ? "Saved on this device; waiting for sync"
       : slow
         ? "Sync is taking longer than usual"
         : syncing

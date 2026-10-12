@@ -1,5 +1,7 @@
 # Unreleased
 
+- Say "Saved on this device; waiting for sync" while you are offline or mdbase cannot be reached and changes are waiting to sync, instead of "Sync is taking longer than usual". The collection settings no longer show Connected in that state.
+
 - Show a Scratchpad note title or text changed in another tab or device while the note is open. A title or text you are still editing is kept rather than replaced.
 
 - Keep a task edit made offline when another app changes the same task before it syncs. After a reload the refused edit is shown again, and Keep my edit applies only the fields you changed on top of the latest version, so the other app's change to other fields is kept too. Previously Keep my edit could save the latest version over your edit, leaving Notes empty.

@@ -3336,6 +3336,9 @@ export class NextTaskRepository implements TaskRepository {
     return {
       ...this.status,
       ...(this.sync ? { sync: this.sync } : {}),
+      ...(this.client.ledger.getSnapshot().saveState === "saved_on_device"
+        ? { savedOnDevice: true }
+        : {}),
       ...(this.heldEdits.length ? { heldEdits: this.heldEdits } : {}),
     };
   }
