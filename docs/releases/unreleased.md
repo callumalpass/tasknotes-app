@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show long collection names in full in the collection switcher list, and on up to two lines in the switcher button. A longer name is shortened there, with the full name in its tooltip.
+
 - Show changes made in another tab or device in an open task. Fields without an unsaved edit, such as the title or Notes, follow the newer version, while a field you are still editing keeps your edit. Previously the task kept showing its old title and said Saved until it was reopened.
 
 - Say "Saved on this device; waiting for sync" while you are offline or mdbase cannot be reached and changes are waiting to sync, instead of "Sync is taking longer than usual". The collection settings no longer show Connected in that state.
