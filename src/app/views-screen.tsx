@@ -98,6 +98,9 @@ import type {
 } from "../domain/view";
 import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
+import { StarterViewsOffer } from "./views/starter-views-offer";
+import { useStableCallback, useStableView } from "./use-stable-identity";
+import { hasTaskNotesStarterViews } from "../application/ensure-default-view-source";
 
 type ViewEditorRequest = {
   view?: TaskView;
@@ -204,6 +207,11 @@ export function ViewsScreen({
       throw reason;
     }
   };
+  const openTask = useStableCallback(onOpenTask);
+  const toggleTask = useStableCallback(
+    (task: TaskSummary, occurrenceDate?: string) =>
+      void toggleRow(task, occurrenceDate),
+  );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
   const [handledCreationRequest, setHandledCreationRequest] = useState(0);
   if (creationRequest !== handledCreationRequest) {
@@ -293,7 +301,7 @@ export function ViewsScreen({
     return () => window.clearTimeout(timeout);
   }, [hasWritableViews]);
 
-  const selected = views?.find((view) => view.key === viewKey);
+  const selected = useStableView(views?.find((view) => view.key === viewKey));
   const captureSession = captureSessionFor(
     repository,
     `view:${viewKey ?? "catalog"}`,
@@ -356,6 +364,7 @@ export function ViewsScreen({
     executionError,
     setExecutionError,
     refreshingExecution,
+    revalidatingExecution,
     paging,
   } = useViewExecution(
     repository,
@@ -516,10 +525,16 @@ export function ViewsScreen({
     (selected ? `${selected.key}:${selected.source.revision}` : null);
   const error =
     executionError?.key === selected?.key ? executionError?.reason : viewsError;
+  // A background re-query keeps controls as they are on screen, but manual
+  // order still waits for it before planning a move from the shown ranks.
+  const currentExecutionRevalidating =
+    revalidatingExecution ===
+    (selected ? `${selected.key}:${selected.source.revision}` : null);
   const orderUnavailable =
     Boolean(error) ||
     currentExecutionRefreshing ||
     !canReorderExecution(presentedExecution);
+  const reorderBlocked = orderUnavailable || currentExecutionRevalidating;
   const currentViewActionError =
     viewActionError && viewActionError.viewKey === selected?.key
       ? viewActionError.message
@@ -630,7 +645,7 @@ export function ViewsScreen({
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
   ): Promise<boolean> {
-    if (!selected || !manualOrder || orderUnavailable) return false;
+    if (!selected || !manualOrder || reorderBlocked) return false;
     const plan = planManualOrder(
       rows.map(({ task }) => task),
       dragged.task,
@@ -1129,6 +1144,9 @@ export function ViewsScreen({
               recovery="Retry by reopening Manage views or refreshing the collection."
             />
           ) : null}
+          {documents && !hasTaskNotesStarterViews(documents) ? (
+            <StarterViewsOffer onAdded={onViewsChanged} />
+          ) : null}
           {!documents || !views ? (
             <LoadingRows count={4} />
           ) : (
@@ -1399,8 +1417,8 @@ export function ViewsScreen({
               if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
           />
         ) : presentedExecution.view.presentation?.type ===
           "tasknotes.kanban" ? (
@@ -1435,8 +1453,8 @@ export function ViewsScreen({
             }
             onCreateInColumn={createInBoardColumn}
             canCreateInColumn={canCreateInBoardColumn}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
           />
         ) : presentedExecution.view.presentation?.type ===
             "tasknotes.calendar" ||
@@ -1474,8 +1492,8 @@ export function ViewsScreen({
               if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
             onUpdate={calendarMutations.updateTask}
             onUpdateOccurrence={calendarMutations.updateOccurrence}
             onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
@@ -1507,8 +1525,8 @@ export function ViewsScreen({
                 placement,
               )
             }
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
             sectionAction={(lane) =>
               lane.key === "section:overdue" && lane.rows.length ? (
                 <button

@@ -25,7 +25,10 @@ import { ViewsScreen } from "./views-screen";
 
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
-import type { TaskRepository } from "../application/ports/task-repository";
+import type {
+  RepositoryChange,
+  TaskRepository,
+} from "../application/ports/task-repository";
 
 it.each(["status", "note.status"])(
   "moves an authoritative-null %s card despite matching raw destination, then retains its optimistic overlay",
@@ -682,6 +685,120 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   await waitFor(() =>
     expect(screen.queryByText("Updating view")).not.toBeInTheDocument(),
   );
+});
+
+it("keeps an edit on screen through its refreshes, without a loading or older cached frame", async () => {
+  const view = manualListView("steady");
+  const kept = listTask("kept", "Unchanged task");
+  const result = (title: string): TaskViewExecution => ({
+    view: structuredClone(view),
+    rows: [
+      { task: structuredClone(kept), values: {} },
+      { task: listTask("edited", title), values: {} },
+    ],
+    totalCount: 2,
+    hasMore: false,
+    groups: [],
+    hasSkippedRecords: false,
+  });
+  let title = "Before edit";
+  // A native view READ takes a network round trip.
+  let latency = 0;
+  const wait = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  const executeView = vi.fn(async () => {
+    const shown = title;
+    await wait(latency);
+    return result(shown);
+  });
+  const listeners = new Set<(change?: RepositoryChange) => void>();
+  const notify = () =>
+    act(() => listeners.forEach((listener) => listener({ kind: "data" })));
+  const repository = {
+    ...manualListRepository(view, [kept], vi.fn(), () => result(title)),
+    // The repository cache still holds the pre-edit result.
+    cachedViewExecution: async () => result("Before edit"),
+    executeView,
+    subscribe: (listener: (change?: RepositoryChange) => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  } satisfies TaskRepository;
+  const screenFor = (shown: TaskView) => (
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
+      <ViewsScreen
+        documents={[
+          {
+            id: shown.documentId,
+            name: shown.documentName,
+            source: shown.source,
+            views: [shown],
+          },
+        ]}
+        navigationViewKeys={[shown.key]}
+        operational
+        viewKey={shown.key}
+        views={[shown]}
+        onBack={() => undefined}
+        onOpenTask={() => undefined}
+        onOpenView={() => undefined}
+        onSearch={() => undefined}
+        onMoveNavigationView={() => undefined}
+        onToggleNavigationView={() => undefined}
+        onViewsChanged={async () => undefined}
+      />
+    </RepositoryProvider>
+  );
+  const idle = () =>
+    waitFor(() =>
+      expect(screen.queryByText("Updating view")).not.toBeInTheDocument(),
+    );
+  const { rerender } = render(screenFor(view));
+  expect(await screen.findByText("Before edit")).toBeVisible();
+  await idle();
+  title = "After edit";
+  notify();
+  expect(await screen.findByText("After edit")).toBeVisible();
+  await idle();
+
+  const keptRow = screen
+    .getByText("Unchanged task")
+    .closest("[data-manual-order-task]");
+  const frames = new Set<string>();
+  const observer = new MutationObserver(() => {
+    if (screen.queryByRole("status", { name: "Loading tasks" }))
+      frames.add("loading");
+    if (screen.queryByText("Before edit")) frames.add("older result");
+    if (screen.queryByText("Last available result")) frames.add("stale");
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+  const queries = executeView.mock.calls.length;
+  latency = 40;
+  // The write's echo, a confirmation and a catalog refresh that rebuilds an
+  // identical view object arrive a few tens of milliseconds apart.
+  notify();
+  await act(() => wait(30));
+  rerender(screenFor(structuredClone(view)));
+  notify();
+  await act(() => wait(30));
+  notify();
+  await act(() => wait(400));
+  await idle();
+  observer.disconnect();
+
+  expect([...frames]).toEqual([]);
+  expect(executeView).toHaveBeenCalledTimes(queries + 1);
+  expect(screen.getByText("After edit")).toBeVisible();
+  expect(
+    screen.getByText("Unchanged task").closest("[data-manual-order-task]"),
+  ).toBe(keptRow);
 });
 
 it("toggles manual order at the top while preserving fallback sorts", async () => {

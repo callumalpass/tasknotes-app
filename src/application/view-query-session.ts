@@ -41,7 +41,8 @@ export class ViewQuerySession {
     private readonly observer: {
       result(execution: TaskViewExecution): void;
       error(reason: unknown): void;
-      pending(pending: boolean): void;
+      /** `start` re-queries the view; `page` loads further rows on request. */
+      pending(pending: boolean, phase: "start" | "page"): void;
     },
     private readonly minimumRows = 0,
   ) {}
@@ -87,7 +88,7 @@ export class ViewQuerySession {
     );
   }
   start() {
-    return this.run(async () => {
+    return this.run("start", async () => {
       this.controller.signal.throwIfAborted();
       const previousRows = this.execution?.rows.length ?? 0;
       await this.iterator?.return?.().catch(() => undefined);
@@ -142,7 +143,7 @@ export class ViewQuerySession {
     if (this.running) await this.running;
     if (this.controller.signal.aborted) return false;
     if (this.canLoadMore)
-      await this.run(async () => {
+      await this.run("page", async () => {
         while (this.execution?.hasMore) {
           await this.advance();
           this.observer.result(this.execution!);
@@ -157,7 +158,7 @@ export class ViewQuerySession {
   loadMore() {
     if (this.running) return this.running;
     if (!this.canLoadMore) return Promise.resolve();
-    return this.run(async () => {
+    return this.run("page", async () => {
       await this.advance();
       this.observer.result(this.execution!);
     });
@@ -180,10 +181,13 @@ export class ViewQuerySession {
       if (!this.execution.hasMore) await this.iterator!.return?.();
     }
   }
-  private run(operation: () => Promise<void>): Promise<void> {
+  private run(
+    phase: "start" | "page",
+    operation: () => Promise<void>,
+  ): Promise<void> {
     if (this.running) return this.running;
     if (this.controller.signal.aborted) return Promise.resolve();
-    this.observer.pending(true);
+    this.observer.pending(true, phase);
     const promise = this.read(operation)
       .catch((reason) => {
         if (this.controller.signal.aborted) return;
@@ -205,7 +209,8 @@ export class ViewQuerySession {
       .finally(() => {
         this.acceptingCached = false;
         this.running = null;
-        if (!this.controller.signal.aborted) this.observer.pending(false);
+        if (!this.controller.signal.aborted)
+          this.observer.pending(false, phase);
       });
     this.running = promise;
     return promise;

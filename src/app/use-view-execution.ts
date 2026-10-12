@@ -10,6 +10,11 @@ import { ViewQuerySession } from "../application/view-query-session";
 import type { TaskRepository } from "../application/ports/task-repository";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 import { useRepositoryRevision } from "./repository-context";
+import { shareUnchangedRows } from "./view-execution-sharing";
+
+/** Data notifications for one edit (the local write, its echo, a catalog
+ * refresh) arrive within a few hundred milliseconds. Re-query once for them. */
+export const VIEW_REFRESH_COALESCE_MS = 150;
 
 export function useViewExecution(
   repository: TaskRepository,
@@ -26,8 +31,25 @@ export function useViewExecution(
     available: false,
     used: false,
   });
-  const revision = useRepositoryRevision(`view:${viewKey ?? "catalog"}`);
+  const scope = `view:${viewKey ?? "catalog"}` as const;
+  const revision = useRepositoryRevision(scope);
+  const [settled, setSettled] = useState({ scope, revision });
+  // Opening another view queries at once; only repeat notifications wait.
+  if (settled.scope !== scope) setSettled({ scope, revision });
+  const settledRevision = settled.revision;
+  useEffect(() => {
+    if (revision === settledRevision) return;
+    const timer = window.setTimeout(
+      () => setSettled({ scope, revision }),
+      VIEW_REFRESH_COALESCE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [revision, scope, settledRevision]);
   const [execution, setExecution] = useState<TaskViewExecution | null>(null);
+  const shown = useRef<TaskViewExecution | null>(null);
+  useEffect(() => {
+    shown.current = execution;
+  }, [execution]);
   const [executionError, setExecutionError] = useState<{
     key: string;
     reason: unknown;
@@ -36,6 +58,11 @@ export function useViewExecution(
   const [refreshingExecution, setRefreshingExecution] = useState<string | null>(
     null,
   );
+  // A re-query behind a current result for the same view. It must not change
+  // what is on screen: no loading state, no busy controls, no stale flash.
+  const [revalidatingExecution, setRevalidatingExecution] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!viewKey || !selected) return;
@@ -47,7 +74,18 @@ export function useViewExecution(
       selected,
       {
         result: (result) => {
-          setExecution(result);
+          setExecution((current) => {
+            // A replacement session's cached first paint can predate what is
+            // already on screen (for example the edit that caused this read).
+            if (
+              result.stale &&
+              current &&
+              !current.stale &&
+              current.view.key === result.view.key
+            )
+              return current;
+            return shareUnchangedRows(current, result);
+          });
           if (!result.stale) {
             endQuery?.();
             if (!timing?.has("first_render"))
@@ -59,8 +97,15 @@ export function useViewExecution(
           setExecutionError(null);
         },
         error: (reason) => setExecutionError({ key: selected.key, reason }),
-        pending: (pending) => {
-          setRefreshingExecution(pending ? executionKey : null);
+        pending: (pending, phase) => {
+          const current = shown.current;
+          const background =
+            phase === "start" &&
+            current !== null &&
+            !current.stale &&
+            current.view.key === selected.key;
+          setRefreshingExecution(pending && !background ? executionKey : null);
+          setRevalidatingExecution(pending && background ? executionKey : null);
           setPaging((previous) => ({
             key: selected.key,
             available: session.canLoadMore,
@@ -84,7 +129,7 @@ export function useViewExecution(
     repository,
     selected,
     viewKey,
-    revision,
+    settledRevision,
     retry,
   ]);
 
@@ -108,6 +153,7 @@ export function useViewExecution(
     executionError,
     setExecutionError,
     refreshingExecution,
+    revalidatingExecution,
     paging,
   };
 }

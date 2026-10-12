@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { TaskRow } from "../../components/task-row";
 import { viewPropertyDetails } from "../../domain/view-values";
 
@@ -5,7 +7,9 @@ import type { TaskSummary } from "../../domain/task";
 import type { TaskOccurrence } from "../../domain/task-occurrence";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
 
-export function ViewTaskRow({
+/** Memoized: a re-query reuses unchanged row objects, so only edited rows
+ * re-render. */
+export const ViewTaskRow = memo(function ViewTaskRow({
   row,
   properties,
   titleProperty,
@@ -36,4 +40,4 @@ export function ViewTaskRow({
       onToggle={onToggle}
     />
   );
-}
+});
