@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show a Scratchpad note title or text changed in another tab or device while the note is open. A title or text you are still editing is kept rather than replaced.
+
 - Keep a task edit made offline when another app changes the same task before it syncs. After a reload the refused edit is shown again, and Keep my edit applies only the fields you changed on top of the latest version, so the other app's change to other fields is kept too. Previously Keep my edit could save the latest version over your edit, leaving Notes empty.
 
 - Keep task edits made just before a reload or closed tab. Leaving the title with Tab or Enter saves it straight away, and edits mdbase had not yet captured are kept in this browser and offered back for review (Restore or Discard) the next time the task opens.

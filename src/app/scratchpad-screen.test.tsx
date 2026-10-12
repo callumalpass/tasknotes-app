@@ -356,6 +356,55 @@ describe("ScratchpadScreen", () => {
     );
   });
 
+  async function saveTitleFromAnotherTab(nextTitle: string) {
+    const otherTab = new MdbaseTaskRepository(fixture.connect);
+    await otherTab.initialize();
+    const current = await otherTab.getActiveScratchpad();
+    await otherTab.saveScratchpad({
+      id: current.id,
+      path: current.path,
+      revision: current.revision,
+      baseBody: current.body,
+      body: current.body,
+      title: nextTitle,
+    });
+    // The collection reports the other tab's change to this tab.
+    await act(async () => void (await repository.refresh()));
+  }
+
+  it("shows a note title changed in another tab", async () => {
+    renderScratchpad();
+    const title = await screen.findByRole(
+      "textbox",
+      { name: "Note title" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    expect(title).toHaveValue("");
+
+    await saveTitleFromAnotherTab("From another tab");
+
+    await waitFor(() => expect(title).toHaveValue("From another tab"));
+  });
+
+  it("keeps an unsaved title when another tab changes the note", async () => {
+    const save = vi
+      .spyOn(repository, "saveScratchpad")
+      .mockImplementation(() => new Promise(() => undefined));
+    renderScratchpad();
+    const title = await screen.findByRole(
+      "textbox",
+      { name: "Note title" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(title, { target: { value: "My title" } });
+    await waitFor(() => expect(save).toHaveBeenCalled());
+
+    await saveTitleFromAnotherTab("From another tab");
+
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(title).toHaveValue("My title");
+  });
+
   it("opens an accessible image capture panel and retains it after an invalid drop", async () => {
     renderScratchpad();
     await screen.findByRole(
