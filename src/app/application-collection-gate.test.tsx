@@ -23,11 +23,15 @@ import {
 } from "./application-collection-gate";
 import type { OpenedCollection } from "./opened-collection";
 import type { TaskRepository } from "../application/ports/task-repository";
+import { NextTaskRepository } from "../storage/next-repository";
 
 // Public SDK UI fixture + original MemoryReplica clients. Not registration,
 // native custody/drain, manifest binding or LAB evidence.
 const closes: (() => void)[] = [];
-afterEach(() => closes.splice(0).forEach((close) => close()));
+afterEach(() => {
+  closes.splice(0).forEach((close) => close());
+  vi.restoreAllMocks();
+});
 const declaration = taskNotesApplicationDeclaration({
   environment: "lab",
   appOrigin: "http://127.0.0.1:48218",
@@ -89,16 +93,22 @@ function Workspace(props: Parameters<typeof OpenedCollection>[0]) {
       <button onClick={props.reauthorizeCurrentCollection}>
         Reapprove current
       </button>
+      <button onClick={props.authorizeAnotherCollection}>
+        Connect another
+      </button>
     </main>
   );
 }
-async function fixture() {
-  const native = await nextTaskFixture();
-  closes.push(native.close);
-  const connection: MdbaseApplicationConnection = {
+type NativeFixture = Awaited<ReturnType<typeof nextTaskFixture>>;
+function connectionFor(
+  native: NativeFixture,
+  displayName: string,
+  generation: string,
+): MdbaseApplicationConnection {
+  return {
     id: native.client.hello.collection,
-    displayName: "Original tasks",
-    generation: "original-generation",
+    displayName,
+    generation,
     scope: {
       account: native.accountId,
       installation: crypto.randomUUID(),
@@ -115,23 +125,16 @@ async function fixture() {
     }),
     isCurrent: () => true,
   };
-  const sdk = createApplicationFixture({
-    declaration,
-    connections: [connection],
-    initialSnapshot: initial(),
-  });
-  closes.push(sdk.controls.close);
-  const ready = (): MdbaseApplicationSnapshot => ({
+}
+function readyFor(
+  connection: MdbaseApplicationConnection,
+  collections: MdbaseApplicationSnapshot["collections"],
+): MdbaseApplicationSnapshot {
+  return {
     ...initial(),
     status: "ready",
     selectedCollectionId: connection.id,
-    collections: [
-      {
-        collectionId: connection.id,
-        displayName: connection.displayName,
-        role: "owner",
-      },
-    ],
+    collections,
     readiness: {
       ...initial().readiness,
       assessment: { status: "ready", problem: null },
@@ -151,9 +154,158 @@ async function fixture() {
       },
       problem: null,
     },
+  };
+}
+async function fixture() {
+  const native = await nextTaskFixture();
+  closes.push(native.close);
+  const connection = connectionFor(
+    native,
+    "Original tasks",
+    "original-generation",
+  );
+  const sdk = createApplicationFixture({
+    declaration,
+    connections: [connection],
+    initialSnapshot: initial(),
   });
+  closes.push(sdk.controls.close);
+  const ready = (): MdbaseApplicationSnapshot =>
+    readyFor(connection, [
+      {
+        collectionId: connection.id,
+        displayName: connection.displayName,
+        role: "owner",
+      },
+    ]);
   return { native, connection, sdk, ready };
 }
+
+/** A second, empty collection, as created by "New collection…" in Connect. */
+async function createdCollection(f: Awaited<ReturnType<typeof fixture>>) {
+  const native = await nextTaskFixture({ collection: crypto.randomUUID() });
+  closes.push(native.close);
+  const connection = connectionFor(native, "New tasks", "new-generation");
+  f.sdk.controls.setConnections([f.connection, connection]);
+  const collections = [f.connection, connection].map((item) => ({
+    collectionId: item.id,
+    displayName: item.displayName,
+    role: "owner" as const,
+  }));
+  // The SDK reports which collection the approval opened only after approve()
+  // resolved, together with the portal pick; opening follows.
+  const opened = (
+    target: MdbaseApplicationConnection,
+    lastApproval: MdbaseApplicationSnapshot["selection"]["lastApproval"],
+  ): MdbaseApplicationSnapshot => {
+    const value = readyFor(target, collections);
+    return { ...value, selection: { ...value.selection, lastApproval } };
+  };
+  // The memory transport has no native Bases discovery: every collection
+  // starts with no views, and created starter sources are recorded per
+  // collection without changing the gate's own repository.
+  const created = new Map<string, string[]>();
+  vi.spyOn(NextTaskRepository.prototype, "listViews").mockResolvedValue([]);
+  vi.spyOn(NextTaskRepository.prototype, "createViewSource").mockImplementation(
+    async function (this: NextTaskRepository, input) {
+      const id = (
+        this as unknown as { client: { hello: { collection: string } } }
+      ).client.hello.collection;
+      created.set(id, [...(created.get(id) ?? []), input.path ?? ""]);
+      return {} as Awaited<ReturnType<NextTaskRepository["createViewSource"]>>;
+    },
+  );
+  const starters = (id: string) => created.get(id) ?? [];
+  return { native, connection, opened, starters };
+}
+
+it.each([
+  ["initial Sign in", "Sign in", false],
+  ["Connect another collection", "Connect another", true],
+])(
+  "adds starter views once to a collection created during %s, which opens after approve() resolved",
+  async (_path, button, fromWorkspace) => {
+    const f = await fixture();
+    const created = await createdCollection(f);
+    if (fromWorkspace) f.sdk.controls.publishSnapshot(f.ready());
+    // approve() resolves with the selection unchanged (old collection or none).
+    f.sdk.controls.setHandler("approve", () => undefined);
+    render(
+      <ApplicationCollectionGate
+        entry={f.sdk.entry}
+        Picker={Picker}
+        Workspace={Workspace}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: button }));
+    await waitFor(() =>
+      expect(
+        f.sdk.controls
+          .observedActions()
+          .filter((call) => call.action === "approve"),
+      ).toHaveLength(1),
+    );
+    await act(async () => {});
+    act(() =>
+      f.sdk.controls.publishSnapshot(
+        created.opened(created.connection, {
+          kind: "add",
+          outcome: "added",
+          collectionId: created.connection.id,
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(created.starters(created.connection.id)).toHaveLength(5),
+    );
+    expect(created.starters(f.connection.id)).toEqual([]);
+  },
+);
+
+it("never adds starter views to the collection open behind approval, nor after a later navigation", async () => {
+  const f = await fixture();
+  const created = await createdCollection(f);
+  f.sdk.controls.publishSnapshot(f.ready());
+  f.sdk.controls.setHandler("approve", () => undefined);
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={Workspace}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Connect another" }),
+  );
+  await act(async () => {});
+  // The person kept the already-open collection in Connect.
+  act(() =>
+    f.sdk.controls.publishSnapshot(
+      created.opened(f.connection, {
+        kind: "add",
+        outcome: "unchanged",
+        collectionId: f.connection.id,
+      }),
+    ),
+  );
+  await act(async () => {});
+  // Later, plain navigation opens the empty collection: the intent is gone.
+  act(() =>
+    f.sdk.controls.publishSnapshot(
+      created.opened(created.connection, {
+        kind: "add",
+        outcome: "unchanged",
+        collectionId: f.connection.id,
+      }),
+    ),
+  );
+  expect(await screen.findByText("Original workspace")).toBeInTheDocument();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+  expect(created.starters(created.connection.id)).toEqual([]);
+  expect(created.starters(f.connection.id)).toEqual([]);
+});
 
 it.each(["refused", "expired"])(
   "keeps a %s sign-in renewable through the original SDK approve gesture",

@@ -40,6 +40,10 @@ export interface ApplicationPickerProps {
   onClose(): void;
   onSelect(collectionId: string): void;
 }
+interface ApprovalIntent {
+  /** The collection open behind the approval window; never armed. */
+  readonly previous: string | null;
+}
 interface HeldRepository {
   connection: MdbaseApplicationConnection;
   repository: NextTaskRepository;
@@ -79,6 +83,14 @@ export function ApplicationCollectionGate({
   // Starter views are written once, after the person completed setup or
   // approval for a collection. Opening or navigating never arms this.
   const starterViews = useRef<string | null>(null);
+  // The approval in progress. approve() resolves before the SDK applies the
+  // portal's pick (a new collection included), so the collection it opened is
+  // only known later, from selection.lastApproval. `settledApproval` is the
+  // same intent once approve() resolved; it re-runs the starter effect.
+  const approval = useRef<ApprovalIntent | null>(null);
+  const [settledApproval, setSettledApproval] = useState<ApprovalIntent | null>(
+    null,
+  );
   const lifetime = useRef({
     mounts: 0,
     started: false,
@@ -164,7 +176,23 @@ export function ApplicationCollectionGate({
     setHeld(next);
   }, [connection, ready]);
 
+  const lastApproval = snapshot.selection.lastApproval ?? null;
   useEffect(() => {
+    const intent = approval.current;
+    if (intent && intent === settledApproval && lastApproval) {
+      // Any outcome after approve() resolved belongs to this approval (the SDK
+      // clears it when an approval starts). Arm only a collection the approval
+      // opened, never the one that was already open behind the window.
+      approval.current = null;
+      const id = lastApproval.collectionId;
+      if (
+        id &&
+        id !== intent.previous &&
+        (lastApproval.outcome === "added" ||
+          lastApproval.outcome === "unchanged")
+      )
+        starterViews.current = id;
+    }
     const armed = starterViews.current;
     if (!held || !ready || armed !== held.connection.id) return;
     starterViews.current = null;
@@ -179,21 +207,7 @@ export function ApplicationCollectionGate({
         }),
       )
       .catch(() => undefined);
-  }, [held, ready]);
-
-  const selectedCollection = () => {
-    const selection = application.getSnapshot().selection;
-    return (
-      selection.requested.collectionId ?? selection.usable?.collectionId ?? null
-    );
-  };
-  const armStarterViews = (previous?: string | null) => {
-    const next = selectedCollection();
-    // Approval arms only a collection it newly opened, never the one that was
-    // already open behind the approval window.
-    if (next && (previous === undefined || next !== previous))
-      starterViews.current = next;
-  };
+  }, [held, ready, settledApproval, lastApproval]);
 
   async function run(operation: () => Promise<unknown>) {
     if (action.current || lifetime.current.owner.signal.aborted) return;
@@ -212,6 +226,22 @@ export function ApplicationCollectionGate({
     }
   }
   const options = () => ({ signal: lifetime.current.owner.signal });
+  /** Runs one approve() gesture and records it as the starter-view intent.
+   * The intent expires if approval rejects or ends declined/closed. */
+  const approveTracked = async (collectionId: undefined | null) => {
+    const intent: ApprovalIntent = {
+      previous:
+        application.getSnapshot().selection.usable?.collectionId ?? null,
+    };
+    approval.current = intent;
+    try {
+      await application.approve(collectionId, options());
+    } catch (reason) {
+      if (approval.current === intent) approval.current = null;
+      throw reason;
+    }
+    if (approval.current === intent) setSettledApproval(intent);
+  };
   const select = (id: string) =>
     run(async () => {
       await application.select(id, options());
@@ -266,26 +296,20 @@ export function ApplicationCollectionGate({
   const approve = async () => {
     if (!repeatableSignIn)
       return run(async () => {
-        const previous = selectedCollection();
-        await application.approve(undefined, options());
-        armStarterViews(previous);
+        await approveTracked(undefined);
       });
     // Each retry is an explicit gesture on the SAME SDK owner. The SDK alone
     // reserves the popup and decides renewal versus original-request recovery.
     setError(null);
     try {
-      const previous = selectedCollection();
-      await application.approve(undefined, options());
-      armStarterViews(previous);
+      await approveTracked(undefined);
     } catch (reason) {
       if (!lifetime.current.owner.signal.aborted) setError(reason);
     }
   };
   const authorizeAnother = () =>
     void run(async () => {
-      const previous = selectedCollection();
-      await application.approve(null, options());
-      armStarterViews(previous);
+      await approveTracked(null);
     });
   const setup = snapshot.readiness.assessment?.status === "setup_required";
   const requireCurrentScope = (expected: string | undefined) => {
@@ -300,9 +324,17 @@ export function ApplicationCollectionGate({
   };
   const configure = () =>
     run(async () => {
-      requireCurrentScope(usable?.collectionId);
-      await application.configure(options());
-      armStarterViews();
+      const target = usable?.collectionId;
+      requireCurrentScope(target);
+      // Armed before configuring: the collection may become ready before
+      // configure() resolves. Setup is not ready yet, so nothing fires early.
+      starterViews.current = target ?? null;
+      try {
+        await application.configure(options());
+      } catch (reason) {
+        if (starterViews.current === target) starterViews.current = null;
+        throw reason;
+      }
     });
 
   return (
