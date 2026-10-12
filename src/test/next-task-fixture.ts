@@ -2,6 +2,7 @@ import {
   connect,
   toValue,
   type Connector,
+  type MdbaseClient,
   type PlainValue,
   type wire,
 } from "@mdbase-dev/sdk";
@@ -35,6 +36,34 @@ export async function nextTaskFixture(
   ) => Connector,
 ) {
   const replica = new MemoryReplica(options);
+  return attachTaskNotes(replica, undefined, {
+    archive,
+    modelConfig,
+    connectorFactory,
+  });
+}
+
+/** TaskNotes' type and catalog on `replica`, and a repository over `client`
+ * (or a new client). Connecting again to the same replica is what a reload
+ * does: the device keeps its replica, the page gets a new client. */
+export async function attachTaskNotes(
+  replica: MemoryReplica,
+  existing?: MdbaseClient,
+  {
+    archive = false,
+    modelConfig,
+    connectorFactory,
+    accountId = crypto.randomUUID(),
+  }: {
+    archive?: boolean;
+    modelConfig?: TaskNotesMdbaseOptions["modelConfig"];
+    connectorFactory?: (
+      replica: MemoryReplica,
+      catalog: wire.DescribeResult,
+    ) => Connector;
+    accountId?: string;
+  } = {},
+) {
   const generated = buildTaskNotesMdbaseResources({
     profiles: ["core-lite"],
     modelConfig,
@@ -89,11 +118,13 @@ export async function nextTaskFixture(
       },
     ],
   };
-  const client = await connect({
-    connector: connectorFactory?.(replica, catalog) ?? replica.connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
+  const client =
+    existing ??
+    (await connect({
+      connector: connectorFactory?.(replica, catalog) ?? replica.connector(),
+      app: { name: "tasknotes-test", version: "test" },
+      reconnect: false,
+    }));
   if (!connectorFactory)
     vi.spyOn(client, "describe").mockImplementation(async (input) => {
       const signal = input && "aborted" in input ? input : input?.signal;
@@ -109,7 +140,6 @@ export async function nextTaskFixture(
       catalog.types[0]!.implements[0]!.binding = toValue(current.binding);
       return catalog;
     });
-  const accountId = crypto.randomUUID();
   const repository = new NextTaskRepository(
     client,
     "Native test tasks",

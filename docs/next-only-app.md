@@ -226,7 +226,7 @@ waits two seconds, then uses a quiet Syncing… overlay without live announcemen
 Sustained disconnection and prolonged waits escalate politely; rejection,
 conflict and unknown outcomes remain visible with a review action, never
 replacement submissions. Save state comes from the SDK's write ledger, which
-restores unconfirmed writes after a reload and settles them from receipts. Definitions, model settings and setup remain confirmed-only.
+restores unconfirmed writes after a reload and settles them from receipts. Task-editor edits that have not yet reached the SDK (autosave debounce, or reads before capture) are copied synchronously to localStorage per collection and task, cleared once the save is captured, and offered back for explicit review on the next open. Definitions, model settings and setup remain confirmed-only.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.
 Unsupported reminders and authenticated record authors remain explicit; they

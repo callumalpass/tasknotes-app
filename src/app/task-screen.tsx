@@ -26,6 +26,7 @@ import {
 } from "../components/use-record-write-state";
 import { useRecordWriteReview } from "../components/record-write-status-context";
 import { WriteRejectionNotice } from "../components/write-rejection-notice";
+import { RecoveredEditNotice } from "../components/recovered-edit-notice";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -66,6 +67,13 @@ import {
   toDraft,
   type Draft,
 } from "./task-editor-draft";
+import {
+  changedFields,
+  readTaskEdit,
+  taskEditScope,
+  writeTaskEdit,
+  type StoredTaskEdit,
+} from "./task-edit-recovery";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
@@ -288,6 +296,28 @@ function TaskEditor({
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
   const savesInFlight = useRef(new Map<number, Promise<void>>());
+  // The task as opened; local copies hold only the fields edited since.
+  const openedDraft = useRef(draft);
+  const editScope = useRef<string | null>(null);
+  const [recovered, setRecovered] = useState<StoredTaskEdit | null>(null);
+  const recoveredRef = useRef<StoredTaskEdit | null>(null);
+  const [backupUnavailable, setBackupUnavailable] = useState(false);
+  /** Keep this device's copy of every edit mdbase has not yet captured, plus
+   * a recovered edit still waiting for the person's choice. */
+  const storeEdit = useCallback(
+    (unsaved: boolean) => {
+      const scope = editScope.current;
+      if (!scope) return;
+      const kept = writeTaskEdit(scope, task.id, {
+        ...recoveredRef.current?.fields,
+        ...(unsaved
+          ? changedFields(openedDraft.current, draftRef.current)
+          : {}),
+      });
+      if (mounted.current) setBackupUnavailable(!kept);
+    },
+    [task.id],
+  );
   const resizeTitle = useCallback(() => {
     const field = titleRef.current;
     if (!field) return;
@@ -308,6 +338,25 @@ function TaskEditor({
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    let live = true;
+    void repository
+      .collectionInfo()
+      .then((info) => {
+        if (!live) return;
+        const scope = taskEditScope(info);
+        editScope.current = scope;
+        const stored = readTaskEdit(scope, task.id, openedDraft.current);
+        recoveredRef.current = stored;
+        setRecovered(stored);
+        if (dirtyRef.current || stored) storeEdit(dirtyRef.current);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [repository, storeEdit, task.id]);
 
   const persist = useCallback(
     (value: Draft, version: number): Promise<void> => {
@@ -354,6 +403,8 @@ function TaskEditor({
           };
           await updateTask(task.id, input);
           if (editVersion.current === version) {
+            // mdbase holds the save on this device now.
+            storeEdit(false);
             dirtyRef.current = false;
             if (mounted.current) {
               setDirty(false);
@@ -375,7 +426,7 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [task.assignees, task.id, updateTask],
+    [storeEdit, task.assignees, task.id, updateTask],
   );
 
   useEffect(() => {
@@ -388,18 +439,18 @@ function TaskEditor({
     return () => window.clearTimeout(timeout);
   }, [awaitingChoice, dirty, draft, persist]);
 
+  /** Save a committed edit now rather than after the debounce. */
+  const flush = useCallback(() => {
+    if (
+      !dirtyRef.current ||
+      awaitingChoiceRef.current ||
+      !draftRef.current.title.trim()
+    )
+      return;
+    void persist(draftRef.current, editVersion.current).catch(() => undefined);
+  }, [persist]);
+
   useEffect(() => {
-    const flush = () => {
-      if (
-        !dirtyRef.current ||
-        awaitingChoiceRef.current ||
-        !draftRef.current.title.trim()
-      )
-        return;
-      void persist(draftRef.current, editVersion.current).catch(
-        () => undefined,
-      );
-    };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
     };
@@ -409,18 +460,31 @@ function TaskEditor({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flush);
     };
-  }, [persist]);
+  }, [flush]);
 
   function change(patch: Partial<Draft>) {
     setSaveState("saving");
     editVersion.current += 1;
-    setDraft((value) => {
-      const next = { ...value, ...patch };
-      draftRef.current = next;
-      return next;
-    });
+    const next = { ...draftRef.current, ...patch };
+    draftRef.current = next;
+    setDraft(next);
     dirtyRef.current = true;
     setDirty(true);
+    // Synchronously, so a reload straight after the edit cannot lose it.
+    storeEdit(true);
+  }
+
+  function restoreRecoveredEdit() {
+    const edit = recoveredRef.current;
+    recoveredRef.current = null;
+    setRecovered(null);
+    if (edit) change(edit.fields);
+  }
+
+  function discardRecoveredEdit() {
+    recoveredRef.current = null;
+    setRecovered(null);
+    storeEdit(dirtyRef.current);
   }
 
   function changeCustomProperty(key: string, value: unknown) {
@@ -472,6 +536,7 @@ function TaskEditor({
       setDirty(false);
       setSaveState("saved");
       setSaveError(null);
+      storeEdit(false);
       repository.dismissWriteRejection?.({ kind: "task", id: task.id });
     } catch (reason) {
       if (mounted.current)
@@ -677,6 +742,20 @@ function TaskEditor({
         />
       ) : null}
 
+      {recovered ? (
+        <RecoveredEditNotice
+          fields={recovered.fields}
+          onRestore={restoreRecoveredEdit}
+          onDiscard={discardRecoveredEdit}
+        />
+      ) : null}
+      {backupUnavailable ? (
+        <p className="inline-error" role="alert">
+          Unsaved edits cannot be backed up in this browser. Keep this tab open
+          until saving finishes.
+        </p>
+      ) : null}
+
       {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
         <div className="occurrence-banner">
           <div>
@@ -781,6 +860,18 @@ function TaskEditor({
             rows={1}
             value={draft.title}
             onChange={(event) => change({ title: event.target.value })}
+            onBlur={flush}
+            onKeyDown={(event) => {
+              if (
+                event.key !== "Enter" ||
+                event.shiftKey ||
+                event.nativeEvent.isComposing
+              )
+                return;
+              // A title is one line: Enter commits it.
+              event.preventDefault();
+              flush();
+            }}
           />
         </div>
         {completionError ? (
