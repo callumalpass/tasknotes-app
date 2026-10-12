@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -339,25 +340,6 @@ function TaskEditor({
     };
   }, []);
 
-  useEffect(() => {
-    let live = true;
-    void repository
-      .collectionInfo()
-      .then((info) => {
-        if (!live) return;
-        const scope = taskEditScope(info);
-        editScope.current = scope;
-        const stored = readTaskEdit(scope, task.id, openedDraft.current);
-        recoveredRef.current = stored;
-        setRecovered(stored);
-        if (dirtyRef.current || stored) storeEdit(dirtyRef.current);
-      })
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [repository, storeEdit, task.id]);
-
   const persist = useCallback(
     (value: Draft, version: number): Promise<void> => {
       const existing = savesInFlight.current.get(version);
@@ -403,8 +385,11 @@ function TaskEditor({
           };
           await updateTask(task.id, input);
           if (editVersion.current === version) {
-            // mdbase holds the save on this device now.
-            storeEdit(false);
+            // The device copy stays until mdbase confirms the save: a write
+            // kept offline can still be refused, and the ledger does not
+            // keep its content.
+            if (!repository.writeState?.({ kind: "task", id: task.id }))
+              storeEdit(false);
             dirtyRef.current = false;
             if (mounted.current) {
               setDirty(false);
@@ -426,8 +411,14 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [storeEdit, task.assignees, task.id, updateTask],
+    [repository, storeEdit, task.assignees, task.id, updateTask],
   );
+
+  // Once mdbase confirms every save, the device copy is no longer needed.
+  useEffect(() => {
+    if (writeState || dirty || savesInFlight.current.size) return;
+    storeEdit(false);
+  }, [dirty, storeEdit, writeState]);
 
   useEffect(() => {
     if (!dirty || awaitingChoice) return;
@@ -487,6 +478,42 @@ function TaskEditor({
     storeEdit(dirtyRef.current);
   }
 
+  // An edit refused after a reload comes back from the device copy, so the
+  // person keeps or discards their own edit rather than the latest version.
+  const restoreRefusedEdit = useEffectEvent(() => {
+    const target = { kind: "task", id: task.id } as const;
+    if (
+      recoveredRef.current &&
+      repository.writeState?.(target) === "failed" &&
+      repository.writeRejection?.(target)?.changedElsewhere
+    )
+      restoreRecoveredEdit();
+  });
+  useEffect(
+    () => repository.subscribe(() => restoreRefusedEdit()),
+    [repository],
+  );
+
+  useEffect(() => {
+    let live = true;
+    void repository
+      .collectionInfo()
+      .then((info) => {
+        if (!live) return;
+        const scope = taskEditScope(info);
+        editScope.current = scope;
+        const stored = readTaskEdit(scope, task.id, openedDraft.current);
+        recoveredRef.current = stored;
+        setRecovered(stored);
+        if (dirtyRef.current || stored) storeEdit(dirtyRef.current);
+        restoreRefusedEdit();
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [repository, storeEdit, task.id]);
+
   function changeCustomProperty(key: string, value: unknown) {
     const customProperties = { ...draft.customProperties };
     if (isEmptyFieldValue(value)) delete customProperties[key];
@@ -506,10 +533,25 @@ function TaskEditor({
     if (resolving) return;
     setResolving(true);
     setResolveError(null);
-    // A new save reads the latest revision and applies the whole draft to it.
-    editVersion.current += 1;
     try {
-      await persist(draftRef.current, editVersion.current);
+      // Only the fields this person changed go on top of the latest version,
+      // so a change made elsewhere to other fields is kept too.
+      const mine = changedFields(openedDraft.current, draftRef.current);
+      if (!Object.keys(mine).length)
+        throw new Error(
+          "Your edit is no longer available on this device. Discard it to load the latest version.",
+        );
+      const latest = await repository.get(task.id);
+      if (!latest) throw new Error("This task is no longer available.");
+      if (!mounted.current) return;
+      const base = toDraft(latest);
+      const next = { ...base, ...mine };
+      openedDraft.current = base;
+      draftRef.current = next;
+      setDraft(next);
+      editVersion.current += 1;
+      storeEdit(true);
+      await persist(next, editVersion.current);
     } catch (reason) {
       if (mounted.current)
         setResolveError(

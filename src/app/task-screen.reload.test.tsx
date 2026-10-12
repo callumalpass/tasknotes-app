@@ -1,6 +1,11 @@
 import "fake-indexeddb/auto";
 
-import { connect, type MdbaseClient } from "@mdbase-dev/sdk";
+import {
+  connect,
+  type MdbaseClient,
+  type WriteLedgerEntry,
+  type WriteLedgerStore,
+} from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -121,5 +126,70 @@ describe("TaskScreen across an immediate reload", () => {
       await screen.findByRole("button", { name: "Restore unsaved edits" }),
     );
     expect(await titleField()).toHaveValue("[test] typed, not committed");
+  });
+
+  it("keeps an offline notes edit refused by a newer change elsewhere, and that change", async () => {
+    // The device keeps its replica and its write ledger across the reload.
+    const rows = new Map<string, WriteLedgerEntry>();
+    const ledger: WriteLedgerStore = {
+      list: async () => [...rows.values()],
+      put: async (entry) => void rows.set(entry.mutationId, entry),
+      remove: async (id) => void rows.delete(id),
+    };
+    const mdbase = await createTestMdbase();
+    const replica = mdbase.fixture.replica();
+    const device = () =>
+      connect({
+        connector: replica.connector(),
+        app: { name: "tasknotes-test", version: "test" },
+        reconnect: false,
+        ledger,
+      });
+    const firstClient = await device();
+    const update = vi.spyOn(firstClient, "update");
+    const first = await openPage(replica, firstClient, async (r) => {
+      const task = await r.create({
+        title: "[test] shared task",
+        scheduled: "2026-10-15",
+      });
+      replica.confirmAll();
+      return task.id;
+    });
+    // Offline: the save is captured on this device and waits for sync.
+    replica.stallConfirmations();
+    fireEvent.change(await screen.findByLabelText("Notes"), {
+      target: { value: "My offline notes" },
+    });
+    await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
+      timeout: 3_000,
+    });
+    const path = (await first.repository.get(first.id))!.path;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    first.unload();
+
+    // Another app moves the date; the log refuses the stale offline write.
+    replica.reject(update.mock.calls[0]![2]!.mutationId!);
+    replica.editElsewhere(path, { frontmatter: { scheduled: "2026-10-16" } });
+    replica.stallConfirmations(false);
+
+    const second = await openPage(replica, await device(), async () => first.id);
+    expect(
+      await screen.findByText(
+        "This task changed somewhere else, so your edit wasn't saved.",
+      ),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Notes")).toHaveValue("My offline notes"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Keep my edit" }));
+    await waitFor(
+      async () => {
+        replica.confirmAll();
+        const saved = await second.repository.get(first.id);
+        expect(saved?.body.trim()).toBe("My offline notes");
+        expect(saved?.scheduled).toBe("2026-10-16");
+      },
+      { timeout: 3_000 },
+    );
   });
 });
