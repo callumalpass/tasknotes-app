@@ -46,6 +46,13 @@ interface HeldRepository {
 
 /** SDK declaration/lifecycle only. No app Worker, URL controller, native setup
  * journal or popup factory. Every repository borrows the original SDK client. */
+// Stable identity: the workspace must not restart when the gate re-renders.
+async function preserveOriginalPending(): Promise<void> {
+  throw new Error(
+    "Original pending collection changes cannot be discarded here.",
+  );
+}
+
 export function ApplicationCollectionGate({
   entry: supplied,
   Picker,
@@ -286,11 +293,7 @@ export function ApplicationCollectionGate({
               return application.reauthorize(options());
             })
           }
-          discardPendingRecovery={async () => {
-            throw new Error(
-              "Original pending collection changes cannot be discarded here.",
-            );
-          }}
+          discardPendingRecovery={preserveOriginalPending}
         />
       ) : (
         <CloudConnectionView

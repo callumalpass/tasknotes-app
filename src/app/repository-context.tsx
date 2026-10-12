@@ -168,6 +168,13 @@ export function RepositoryProvider({
   privateAccount?: PrivateAccountUi;
 }) {
   const [repository] = useState<TaskRepository>(() => supplied);
+  // Callback identity must never restart the repository lifecycle: a restart
+  // suspends the repository and cancels every in-flight READ and write result.
+  const discardRef = useRef(discardPendingRecovery);
+  useEffect(() => {
+    discardRef.current = discardPendingRecovery;
+  }, [discardPendingRecovery]);
+  const canDiscardPending = Boolean(discardPendingRecovery);
   const [mutationJournal] = useState<MutationJournal>(
     () => suppliedMutationJournal,
   );
@@ -346,9 +353,9 @@ export function RepositoryProvider({
           taskCommands = new TaskCommandService({
             repository,
             journal: mutationJournal,
-            ...(discardPendingRecovery
+            ...(canDiscardPending
               ? {
-                  discardPendingRequest: async () => discardPendingRecovery(),
+                  discardPendingRequest: async () => discardRef.current?.(),
                 }
               : {}),
             onDeleted: (id) => effects.deleted(id),
@@ -432,7 +439,7 @@ export function RepositoryProvider({
     invalidation,
     loadConnection,
     mutationJournal,
-    discardPendingRecovery,
+    canDiscardPending,
     refresh,
     reminderAuthority,
     repository,

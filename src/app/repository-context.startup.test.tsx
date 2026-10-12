@@ -263,3 +263,35 @@ function FirstView() {
     </>
   );
 }
+
+it("a parent re-render with a new recovery callback never suspends the open repository or cancels its work", async () => {
+  const repository = new MdbaseTaskRepository(
+    mdbaseFixture([taskRecord("one", "One", "r1")]).connect,
+  );
+  const suspend = vi.spyOn(repository, "suspend");
+  const journal = new MemoryMutationJournal();
+  const view = (label: string) => (
+    <RepositoryProvider
+      repository={repository}
+      mutationJournal={journal}
+      // A fresh function each render, as an inline parent prop.
+      discardPendingRecovery={async () => {}}
+    >
+      <Status label={label} />
+    </RepositoryProvider>
+  );
+  function Status({ label }: { label: string }) {
+    return (
+      <p>
+        {label} {useRepository().status}
+      </p>
+    );
+  }
+  const { rerender } = render(view("first"));
+  await screen.findByText("first ready");
+  for (const label of ["second", "third", "fourth"]) {
+    rerender(view(label));
+    await screen.findByText(`${label} ready`);
+  }
+  expect(suspend).not.toHaveBeenCalled();
+});
