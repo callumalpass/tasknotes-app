@@ -42,9 +42,8 @@ export function taskNotesMdbase(): Mdbase {
     import.meta.env.VITE_TASKNOTES_LAB_ORIGIN,
     window.location.origin,
   );
-  // Returning from the Connect window or another app re-checks at once.
-  entry = createMdbase(taskNotesApplicationDeclaration(environment), {
-    followVisibility: true,
-  });
+  // No followVisibility: this SDK cut calls it before the entry exists.
+  // Foreground defaults to on.
+  entry = createMdbase(taskNotesApplicationDeclaration(environment));
   return entry;
 }
