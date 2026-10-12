@@ -10,7 +10,10 @@ import {
   viewSourceFormat,
   viewSourceRecord,
 } from "./default-view-source";
-import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
+import {
+  addTaskNotesStarterViews,
+  ensureTaskNotesDefaultViewSource,
+} from "../application/ensure-default-view-source";
 
 import type { TaskViewDocument } from "./view";
 import type { TaskRepository } from "../application/ports/task-repository";
@@ -234,6 +237,77 @@ describe("TaskNotes starter views", () => {
       ),
     ).rejects.toThrow("create_view_source is unavailable");
     expect(repository.connectionStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("explicit starter views after setup", () => {
+  // One shared collection seen by two explicit-only tabs. A create at an
+  // occupied path is refused, as the native repository's find-then-create is.
+  function collection() {
+    const stored: TaskViewDocument[] = [];
+    const creates: string[] = [];
+    const tab = () =>
+      ({
+        defaultViewSourceCreation: "explicit-only",
+        listViews: vi.fn(async () => [...stored]),
+        createViewSource: vi.fn(async (input: { path: string }) => {
+          await Promise.resolve();
+          if (stored.some((document) => document.source.path === input.path))
+            throw new Error("A record already occupies this view source path.");
+          creates.push(input.path);
+          stored.push(
+            starterDocument(
+              input.path.slice("TaskNotes/Views/".length, -".base".length),
+            ),
+          );
+          return { path: input.path, format: "obsidian.base", revision: "1" };
+        }),
+      }) as unknown as TaskRepository;
+    return { stored, creates, tab };
+  }
+
+  it("creates the five starters once; repeating is a no-op", async () => {
+    const shared = collection();
+    const tab = shared.tab();
+    const configuration = defaultTaskCollectionConfiguration();
+    await expect(
+      addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true }),
+    ).resolves.toHaveLength(5);
+    await addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true });
+    await addTaskNotesStarterViews(tab, configuration);
+    expect(shared.creates).toEqual(
+      taskNotesDefaultBaseSources(configuration).map(({ path }) => path),
+    );
+    // Navigation keeps #218's guarantee: it never writes.
+    await ensureTaskNotesDefaultViewSource(tab, [], configuration);
+    expect(shared.creates).toHaveLength(5);
+  });
+
+  it("is safe when two tabs finish setup at the same time", async () => {
+    const shared = collection();
+    const configuration = defaultTaskCollectionConfiguration();
+    const results = await Promise.all([
+      addTaskNotesStarterViews(shared.tab(), configuration, {
+        onlyIfNoViews: true,
+      }),
+      addTaskNotesStarterViews(shared.tab(), configuration, {
+        onlyIfNoViews: true,
+      }),
+    ]);
+    expect(results.map((documents) => documents.length)).toEqual([5, 5]);
+    expect(new Set(shared.creates).size).toBe(5);
+    expect(shared.creates).toHaveLength(5);
+  });
+
+  it("leaves a collection that already has views untouched after setup", async () => {
+    const shared = collection();
+    shared.stored.push(starterDocument("upcoming"));
+    await addTaskNotesStarterViews(
+      shared.tab(),
+      defaultTaskCollectionConfiguration(),
+      { onlyIfNoViews: true },
+    );
+    expect(shared.creates).toEqual([]);
   });
 });
 

@@ -15,6 +15,7 @@ import {
 } from "@mdbase-dev/sdk";
 import { taskNotesApplicationEntry } from "../cloud/tasknotes-application";
 import { NextTaskRepository } from "../storage/next-repository";
+import { addTaskNotesStarterViews } from "../application/ensure-default-view-source";
 import { registerStartupTiming } from "../observability/startup-timing";
 import { CloudConnectionView } from "./cloud-connection-view";
 import { ApplicationProblemNotice } from "./application-problem-notice";
@@ -75,6 +76,9 @@ export function ApplicationCollectionGate({
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const action = useRef(false);
+  // Starter views are written once, after the person completed setup or
+  // approval for a collection. Opening or navigating never arms this.
+  const starterViews = useRef<string | null>(null);
   const lifetime = useRef({
     mounts: 0,
     started: false,
@@ -160,6 +164,37 @@ export function ApplicationCollectionGate({
     setHeld(next);
   }, [connection, ready]);
 
+  useEffect(() => {
+    const armed = starterViews.current;
+    if (!held || !ready || armed !== held.connection.id) return;
+    starterViews.current = null;
+    const target = held.repository;
+    // A collection that already has any view source is left untouched. On
+    // refusal the empty state keeps offering Add starter views.
+    void target
+      .taskConfiguration()
+      .then((configuration) =>
+        addTaskNotesStarterViews(target, configuration, {
+          onlyIfNoViews: true,
+        }),
+      )
+      .catch(() => undefined);
+  }, [held, ready]);
+
+  const selectedCollection = () => {
+    const selection = application.getSnapshot().selection;
+    return (
+      selection.requested.collectionId ?? selection.usable?.collectionId ?? null
+    );
+  };
+  const armStarterViews = (previous?: string | null) => {
+    const next = selectedCollection();
+    // Approval arms only a collection it newly opened, never the one that was
+    // already open behind the approval window.
+    if (next && (previous === undefined || next !== previous))
+      starterViews.current = next;
+  };
+
   async function run(operation: () => Promise<unknown>) {
     if (action.current || lifetime.current.owner.signal.aborted) return;
     action.current = true;
@@ -230,18 +265,28 @@ export function ApplicationCollectionGate({
     void run(() => application.chooseAnother(options()));
   const approve = async () => {
     if (!repeatableSignIn)
-      return run(() => application.approve(undefined, options()));
+      return run(async () => {
+        const previous = selectedCollection();
+        await application.approve(undefined, options());
+        armStarterViews(previous);
+      });
     // Each retry is an explicit gesture on the SAME SDK owner. The SDK alone
     // reserves the popup and decides renewal versus original-request recovery.
     setError(null);
     try {
+      const previous = selectedCollection();
       await application.approve(undefined, options());
+      armStarterViews(previous);
     } catch (reason) {
       if (!lifetime.current.owner.signal.aborted) setError(reason);
     }
   };
   const authorizeAnother = () =>
-    void run(() => application.approve(null, options()));
+    void run(async () => {
+      const previous = selectedCollection();
+      await application.approve(null, options());
+      armStarterViews(previous);
+    });
   const setup = snapshot.readiness.assessment?.status === "setup_required";
   const requireCurrentScope = (expected: string | undefined) => {
     if (
@@ -254,9 +299,10 @@ export function ApplicationCollectionGate({
       });
   };
   const configure = () =>
-    run(() => {
+    run(async () => {
       requireCurrentScope(usable?.collectionId);
-      return application.configure(options());
+      await application.configure(options());
+      armStarterViews();
     });
 
   return (

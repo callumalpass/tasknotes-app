@@ -51,6 +51,7 @@ import {
 } from "./navigation-views";
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
+import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
 import { CaptureFab } from "../components/capture-fab";
 import { ModelSetupScreen } from "./model-setup-screen";
@@ -283,6 +284,7 @@ export function AppShell() {
       outcome={discovery}
       refreshing={discoveringViews}
       onRetry={() => void refreshViews()}
+      onStarterViewsAdded={refreshViews}
       onCreate={() => {
         setViewCreationRequest((request) => request + 1);
         navigate({ page: "views" });
@@ -541,12 +543,23 @@ export function ViewDiscoveryNotice({
   refreshing,
   onRetry,
   onCreate,
+  onStarterViewsAdded,
 }: {
   outcome: "loading" | "ok" | "empty" | "error";
   refreshing: boolean;
   onRetry(): void;
   onCreate(): void;
+  /** Present only where the person can explicitly add the starter views. */
+  onStarterViewsAdded?(): Promise<void>;
 }) {
+  if (outcome === "empty" && onStarterViewsAdded)
+    return (
+      <EmptyViewsNotice
+        refreshing={refreshing}
+        onCreate={onCreate}
+        onStarterViewsAdded={onStarterViewsAdded}
+      />
+    );
   if (outcome !== "error" && outcome !== "empty") return null;
   return (
     <section
@@ -569,6 +582,44 @@ export function ViewDiscoveryNotice({
             : "Retry"
           : "Create a view"}
       </button>
+    </section>
+  );
+}
+
+function EmptyViewsNotice({
+  refreshing,
+  onCreate,
+  onStarterViewsAdded,
+}: {
+  refreshing: boolean;
+  onCreate(): void;
+  onStarterViewsAdded(): Promise<void>;
+}) {
+  const { add, adding, error } = useAddStarterViews(onStarterViewsAdded);
+  return (
+    <section
+      className="view-discovery-notice"
+      aria-label="Views availability"
+      aria-busy={refreshing || adding}
+    >
+      <p role="status">No views yet.</p>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing || adding}
+        onClick={() => void add()}
+      >
+        {adding ? "Adding starter views…" : "Add starter views"}
+      </button>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing || adding}
+        onClick={onCreate}
+      >
+        Create a view
+      </button>
+      {error ? <p role="alert">{error}</p> : null}
     </section>
   );
 }

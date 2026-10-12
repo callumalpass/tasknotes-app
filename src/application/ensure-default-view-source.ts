@@ -1,4 +1,7 @@
-import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
+import {
+  TASKNOTES_DEFAULT_VIEW_SOURCES,
+  taskNotesDefaultBaseSources,
+} from "../domain/default-view-source";
 
 import type { TaskRepository } from "./ports/task-repository";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -11,6 +14,41 @@ export async function ensureTaskNotesDefaultViewSource(
 ): Promise<TaskViewDocument[]> {
   if (repository.defaultViewSourceCreation === "explicit-only")
     return documents;
+  return createMissingStarterSources(repository, documents, configuration);
+}
+
+/** Explicit starter-view creation. Call only from a user action (Add starter
+ * views) or right after the person completed collection setup or approval;
+ * never from navigation, discovery or render.
+ *
+ * `onlyIfNoViews` is for the post-setup moment: a collection that already has
+ * any view source is left alone, so deleted starters are never recreated.
+ * Repeating it is a no-op, and a concurrent tab's create is adopted by
+ * re-listing instead of failing.
+ */
+export async function addTaskNotesStarterViews(
+  repository: TaskRepository,
+  configuration: TaskCollectionConfiguration,
+  options: { onlyIfNoViews?: boolean } = {},
+): Promise<TaskViewDocument[]> {
+  const documents = await repository.listViews();
+  if (options.onlyIfNoViews && documents.length) return documents;
+  return createMissingStarterSources(repository, documents, configuration);
+}
+
+export function hasTaskNotesStarterViews(
+  documents: readonly TaskViewDocument[],
+): boolean {
+  return TASKNOTES_DEFAULT_VIEW_SOURCES.some((source) =>
+    hasSource(documents, source.path),
+  );
+}
+
+async function createMissingStarterSources(
+  repository: TaskRepository,
+  documents: TaskViewDocument[],
+  configuration: TaskCollectionConfiguration,
+): Promise<TaskViewDocument[]> {
   const sources = taskNotesDefaultBaseSources(configuration);
   if (sources.every((source) => hasSource(documents, source.path))) {
     return documents;

@@ -1836,3 +1836,29 @@
 .section-title-with-count > h2 {
   min-width: 0;
 }
+
+.starter-views-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.starter-views-offer h3,
+.starter-views-offer p {
+  margin: 0;
+}
+
+.starter-views-offer p {
+  margin-top: var(--space-xs);
+  color: var(--ink-muted);
+}
+
+.starter-views-offer button {
+  min-height: 44px;
+}
