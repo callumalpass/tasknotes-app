@@ -33,7 +33,8 @@ import {
   type WorkspaceRoute,
 } from "./use-workspace-navigation";
 import { tasknotesMarkUrl } from "./assets";
-import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
+import { isAuthorizationError } from "./auth-error";
+import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
@@ -82,11 +83,8 @@ export function AppShell() {
     setTaskCompletion,
     updateTask,
   } = useRepository();
-  const {
-    authorizeAnotherCollection,
-    changeCollection,
-    reauthorizeCurrentCollection,
-  } = useCollectionGate();
+  const { collectionUi, changeCollection, reauthorizeCurrentCollection } =
+    useCollectionGate();
   const {
     documents,
     views,
@@ -214,7 +212,7 @@ export function AppShell() {
           type="button"
           onClick={changeCollection}
         >
-          Choose another mdbase collection
+          Choose a different collection
         </button>
       </main>
     );
@@ -231,7 +229,6 @@ export function AppShell() {
       );
     return (
       <StorageErrorScreen
-        authorizeAnotherCollection={authorizeAnotherCollection}
         changeCollection={changeCollection}
         error={error}
         reauthorizeCurrentCollection={reauthorizeCurrentCollection}
@@ -307,6 +304,13 @@ export function AppShell() {
           <img alt="" src={tasknotesMarkUrl} />
           <span>TaskNotes</span>
         </button>
+        {collectionUi ? (
+          <CollectionSwitcher
+            {...collectionUi}
+            className="rail-collection-switcher"
+            variant="compact"
+          />
+        ) : null}
         <button
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
@@ -331,6 +335,11 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
+        {collectionUi && route.page !== "task" ? (
+          <div className="mobile-collection-bar">
+            <CollectionSwitcher {...collectionUi} variant="compact" />
+          </div>
+        ) : null}
         {route.page !== "task" ? (
           <CollectionAvailability
             onSettings={
@@ -785,13 +794,11 @@ function DeletionRecoveryNotice({
 }
 
 export function StorageErrorScreen({
-  authorizeAnotherCollection,
   changeCollection,
   error,
   reauthorizeCurrentCollection,
   retry,
 }: {
-  authorizeAnotherCollection(): void;
   changeCollection(): void;
   error: Error | null;
   reauthorizeCurrentCollection(): void;
@@ -803,58 +810,36 @@ export function StorageErrorScreen({
       <img alt="" src={tasknotesMarkUrl} />
       <h1>
         {authorizationExpired
-          ? "Reconnect to mdbase."
+          ? "Review TaskNotes’ access"
           : "TaskNotes could not open."}
       </h1>
       <p>
         {authorizationExpired
-          ? "Your connection has expired. Reconnect to continue."
+          ? "TaskNotes needs your approval in mdbase again before it can open this collection."
           : "The collection is unavailable right now."}
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
-          <>
-            <button
-              className="outline-action"
-              type="button"
-              onClick={reauthorizeCurrentCollection}
-            >
-              Reconnect this collection
-            </button>
-            <button
-              className="text-action"
-              type="button"
-              onClick={authorizeAnotherCollection}
-            >
-              Choose another mdbase collection
-            </button>
-          </>
+          <button
+            className="outline-action"
+            type="button"
+            onClick={reauthorizeCurrentCollection}
+          >
+            Review access
+          </button>
         ) : (
-          <>
-            <button className="outline-action" type="button" onClick={retry}>
-              Try again
-            </button>
-            <button
-              className="text-action"
-              type="button"
-              onClick={authorizeAnotherCollection}
-            >
-              Choose another mdbase collection
-            </button>
-          </>
+          <button className="outline-action" type="button" onClick={retry}>
+            Try again
+          </button>
         )}
         <button
           className="text-action"
           type="button"
           onClick={changeCollection}
         >
-          Open a saved collection
+          Choose a different collection
         </button>
       </div>
-      <details className="technical-details">
-        <summary>Technical details</summary>
-        <p>{technicalErrorMessage(error)}</p>
-      </details>
     </main>
   );
 }

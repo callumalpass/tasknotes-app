@@ -11,7 +11,7 @@ export function DemoApp({ count }: { count: number }) {
   const mutationJournal = useMemo(() => new DemoMutationJournal(), []);
   const collectionActions = useMemo(
     () => ({
-      authorizeAnotherCollection: exitDemo,
+      collectionUi: null,
       changeCollection: exitDemo,
       reauthorizeCurrentCollection: exitDemo,
     }),

@@ -3,22 +3,21 @@ import { useEffect, useMemo, useRef } from "react";
 import { IndexedDbMutationJournal } from "../storage/application-journal";
 
 import { AppShell } from "./app-shell";
-import { CollectionGateContext } from "./collection-context";
+import {
+  CollectionGateContext,
+  type CollectionGateContextValue,
+} from "./collection-context";
 import { RepositoryProvider } from "./repository-context";
 
 import type { TaskRepository } from "../application/ports/task-repository";
 
 export function OpenedCollection({
-  authorizeAnotherCollection,
-  changeCollection,
+  actions,
   discardPendingRecovery,
-  reauthorizeCurrentCollection,
   repository,
 }: {
-  authorizeAnotherCollection(): void;
-  changeCollection(): void;
+  actions: CollectionGateContextValue;
   discardPendingRecovery(): Promise<void>;
-  reauthorizeCurrentCollection(): void;
   repository: TaskRepository;
 }) {
   const mutationJournal = useMemo(() => new IndexedDbMutationJournal(), []);
@@ -35,20 +34,8 @@ export function OpenedCollection({
       });
     };
   }, [mutationJournal]);
-  const value = useMemo(
-    () => ({
-      authorizeAnotherCollection,
-      changeCollection,
-      reauthorizeCurrentCollection,
-    }),
-    [
-      authorizeAnotherCollection,
-      changeCollection,
-      reauthorizeCurrentCollection,
-    ],
-  );
   return (
-    <CollectionGateContext.Provider value={value}>
+    <CollectionGateContext.Provider value={actions}>
       <RepositoryProvider
         mutationJournal={mutationJournal}
         discardPendingRecovery={discardPendingRecovery}

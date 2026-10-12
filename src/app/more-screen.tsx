@@ -30,6 +30,7 @@ import {
   saveThemePreference,
   type ThemePreference,
 } from "../theme";
+import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
@@ -312,7 +313,7 @@ function SettingsPanel({
 function CollectionSettings() {
   const { info, stats, loading } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
-  const { changeCollection } = useCollectionGate();
+  const { collectionUi, changeCollection } = useCollectionGate();
   const [showStorage, setShowStorage] = useStoredFlag(
     "tasknotes:settings-storage-open:v1",
     false,
@@ -359,13 +360,17 @@ function CollectionSettings() {
           >
             {refreshing ? "Refreshing" : "Refresh now"}
           </button>
-          <button
-            className="secondary-action"
-            type="button"
-            onClick={changeCollection}
-          >
-            Change collection
-          </button>
+          {collectionUi ? (
+            <CollectionSwitcher {...collectionUi} variant="full" />
+          ) : (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={changeCollection}
+            >
+              Change collection
+            </button>
+          )}
         </div>
       </div>
       {connection.heldEdits?.length ? (

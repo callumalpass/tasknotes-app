@@ -63,7 +63,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 const callbacks = {
-  authorizeAnotherCollection: () => undefined,
+  collectionUi: null,
   changeCollection: () => undefined,
   reauthorizeCurrentCollection: () => undefined,
 };

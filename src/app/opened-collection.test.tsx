@@ -31,9 +31,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 const callbacks = {
-  authorizeAnotherCollection: () => undefined,
-  changeCollection: () => undefined,
-  reauthorizeCurrentCollection: () => undefined,
+  actions: {
+    collectionUi: null,
+    changeCollection: () => undefined,
+    reauthorizeCurrentCollection: () => undefined,
+  },
   discardPendingRecovery: async () => undefined,
 };
 

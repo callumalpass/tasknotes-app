@@ -12,9 +12,3 @@ export function isAuthorizationError(reason: unknown): boolean {
     problem.category === "authorization" || problem.recovery === "reauthorize"
   );
 }
-
-export function technicalErrorMessage(reason: unknown): string {
-  return reason instanceof Error && reason.message
-    ? reason.message
-    : "The collection could not be opened.";
-}

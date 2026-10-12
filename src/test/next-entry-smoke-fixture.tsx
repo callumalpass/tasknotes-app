@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   connect,
   MdbaseError,
@@ -20,8 +20,7 @@ import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import type { AppBasesDescriptor } from "@mdbase-dev/sdk/app-host";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { NextTaskRepository } from "../storage/next-repository";
-import { NextCollectionGate } from "../app/next-collection-gate";
-import type { NextInstallationBuildInput } from "../cloud/next-installation-protocol";
+import { OpenedCollection } from "../app/opened-collection";
 
 export interface NextSmokeInput {
   records: Array<{
@@ -365,20 +364,33 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
   };
   return repository;
 }
-const fixtureBuild = async (): Promise<NextInstallationBuildInput> =>
-  ({ environment: "lab" }) as NextInstallationBuildInput;
-function FixtureInstallation({
-  onCollection,
-}: {
-  onCollection(repository: TaskRepository): Promise<void>;
-}) {
+const fixtureActions = {
+  collectionUi: null,
+  changeCollection: () => {},
+  reauthorizeCurrentCollection: () => {},
+};
+async function preservePending(): Promise<void> {
+  throw new Error(
+    "Native pending changes must be reconciled with the original collection; they cannot be discarded here.",
+  );
+}
+function FixtureInstallation() {
   const held = useRef<Promise<TaskRepository> | null>(null);
+  const [repository, setRepository] = useState<TaskRepository | null>(null);
   useEffect(
     () => () => {
       if (held.current) void held.current.then((repo) => repo.dispose?.());
     },
     [],
   );
+  if (repository)
+    return (
+      <OpenedCollection
+        actions={fixtureActions}
+        repository={repository}
+        discardPendingRecovery={preservePending}
+      />
+    );
   return (
     <main className="opening-screen">
       <h1>Open TaskNotes</h1>
@@ -386,7 +398,7 @@ function FixtureInstallation({
       <button
         onClick={() => {
           held.current ??= heldFixture(window.__TASKNOTES_NEXT_SMOKE__!);
-          void held.current.then(onCollection);
+          void held.current.then(setRepository);
         }}
       >
         Open synced fixture collection
@@ -401,10 +413,5 @@ export function NextEntrySmokeFixture() {
     !window.__TASKNOTES_NEXT_SMOKE__
   )
     throw Error("Smoke fixtures require the explicit local e2e build.");
-  return (
-    <NextCollectionGate
-      loadBuild={fixtureBuild}
-      InstallationScreen={FixtureInstallation}
-    />
-  );
+  return <FixtureInstallation />;
 }

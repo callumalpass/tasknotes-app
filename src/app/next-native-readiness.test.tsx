@@ -105,7 +105,7 @@ function renderShell(repository: NextTaskRepository) {
   return render(
     <CollectionGateContext.Provider
       value={{
-        authorizeAnotherCollection: vi.fn(),
+        collectionUi: null,
         changeCollection: vi.fn(),
         reauthorizeCurrentCollection: vi.fn(),
       }}
@@ -312,7 +312,7 @@ it.each([
     const mounted = render(
       <CollectionGateContext.Provider
         value={{
-          authorizeAnotherCollection: vi.fn(),
+          collectionUi: null,
           changeCollection: vi.fn(),
           reauthorizeCurrentCollection: vi.fn(),
         }}
@@ -390,7 +390,7 @@ it("keeps a genuinely unconfigured collection on its setup screen without automa
   const mounted = render(
     <CollectionGateContext.Provider
       value={{
-        authorizeAnotherCollection: vi.fn(),
+        collectionUi: null,
         changeCollection: vi.fn(),
         reauthorizeCurrentCollection: vi.fn(),
       }}

@@ -43,6 +43,7 @@ vi.mock("./repository-context", () => ({
 }));
 vi.mock("./collection-context", () => ({
   useCollectionGate: () => ({
+    collectionUi: null,
     changeCollection: vi.fn(),
     reauthorizeCurrentCollection: fixture.reauthorize,
   }),

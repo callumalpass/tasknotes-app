@@ -97,7 +97,7 @@ Object.defineProperty(window, "syncPresentationStats", {
 createRoot(document.getElementById("root")!).render(
   <CollectionGateContext.Provider
     value={{
-      authorizeAnotherCollection: () => {},
+      collectionUi: null,
       changeCollection: () => {},
       reauthorizeCurrentCollection: () => {},
     }}

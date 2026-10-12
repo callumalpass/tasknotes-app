@@ -1,4 +1,5 @@
-import { signInErrorCode } from "./sign-in-error";
+import { isInstallationErrorCode } from "./next-installation-protocol";
+
 export type CollectionOpenStage =
   | "construct"
   | "current_check"
@@ -104,4 +105,41 @@ export function logCollectionOpenFailure(
   } catch {
     /* Diagnostics never replace or mask the original thrown value. */
   }
+}
+
+/** Only fixed public codes may reach diagnostics. Never log Error objects,
+ * messages, HTTP bodies, account/collection fields or nested SDK credentials. */
+export function signInErrorCode(reason: unknown): string {
+  if (isInstallationErrorCode(reason)) return reason;
+  if (reason instanceof Error) {
+    if ("reason" in reason && isInstallationErrorCode(reason.reason))
+      return reason.reason;
+    const prefix = "TaskNotes native sign-in: ";
+    if (reason.message.startsWith(prefix)) {
+      const code = reason.message.slice(prefix.length);
+      if (isInstallationErrorCode(code)) return code;
+    }
+    if (reason.message === "TaskNotes native sign-in is busy.") return "busy";
+    if (
+      reason.message === "TaskNotes native Worker is closed." ||
+      reason.message === "TaskNotes sign-in owner closed."
+    )
+      return "closed";
+    if (
+      reason.message ===
+      "TaskNotes native outcome unknown; preserve storage and resume the original installation."
+    )
+      return "outcome_unknown";
+    if (
+      reason.message ===
+      "TaskNotes native Worker stopped; preserve storage and resume the original installation."
+    )
+      return "worker_stopped";
+    if (
+      reason.message === "popup_blocked" ||
+      reason.message === "Your browser blocked the sign-in window."
+    )
+      return "popup_blocked";
+  }
+  return "unknown";
 }

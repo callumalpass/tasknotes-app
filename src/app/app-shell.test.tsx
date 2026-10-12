@@ -31,32 +31,28 @@ it("keeps the view failure visible while retry is pending and prevents duplicate
   expect(retry).not.toHaveBeenCalled();
 });
 
-it("separates reauthorizing the current collection from choosing another", () => {
-  const authorizeAnotherCollection = vi.fn();
+it("separates reviewing the current collection's access from choosing another", () => {
+  const changeCollection = vi.fn();
   const reauthorizeCurrentCollection = vi.fn();
 
   render(
     <StorageErrorScreen
-      authorizeAnotherCollection={authorizeAnotherCollection}
-      changeCollection={vi.fn()}
+      changeCollection={changeCollection}
       error={connectError("authorization_expired", "The grant expired.")}
       reauthorizeCurrentCollection={reauthorizeCurrentCollection}
       retry={vi.fn()}
     />,
   );
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Reconnect this collection" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Review access" }));
   expect(reauthorizeCurrentCollection).toHaveBeenCalledOnce();
-  expect(authorizeAnotherCollection).not.toHaveBeenCalled();
+  expect(changeCollection).not.toHaveBeenCalled();
 
   fireEvent.click(
-    screen.getByRole("button", {
-      name: "Choose another mdbase collection",
-    }),
+    screen.getByRole("button", { name: "Choose a different collection" }),
   );
-  expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
+  expect(changeCollection).toHaveBeenCalledOnce();
+  expect(screen.queryByText("The grant expired.")).toBeNull();
 });
 
 it("routes a TaskNotes tool through Home when it is first", () => {

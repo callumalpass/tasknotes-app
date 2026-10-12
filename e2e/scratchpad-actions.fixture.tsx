@@ -20,9 +20,11 @@ const unavailable = () => {
 createRoot(document.getElementById("root")!).render(
   <OpenedCollection
     repository={new DemoTaskRepository(0)}
-    changeCollection={unavailable}
-    authorizeAnotherCollection={unavailable}
-    reauthorizeCurrentCollection={unavailable}
+    actions={{
+      collectionUi: null,
+      changeCollection: unavailable,
+      reauthorizeCurrentCollection: unavailable,
+    }}
     discardPendingRecovery={async () => unavailable()}
   />,
 );

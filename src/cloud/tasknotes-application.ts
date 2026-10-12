@@ -1,7 +1,7 @@
 import {
-  MdbaseConnect,
+  createMdbase,
+  type Mdbase,
   type MdbaseApplicationDeclaration,
-  type MdbaseApplicationEntry,
 } from "@mdbase-dev/sdk";
 import manifest from "../generated/mdbase-app.json";
 import {
@@ -32,16 +32,19 @@ export function taskNotesApplicationDeclaration(
   };
 }
 
-let entry: MdbaseApplicationEntry | null = null;
+let entry: Mdbase | null = null;
 /** One public owner for this document. A terminal/failed close never creates a
  * replacement client or retries enrollment by constructing another entry. */
-export function taskNotesApplicationEntry(): MdbaseApplicationEntry {
+export function taskNotesMdbase(): Mdbase {
   if (entry) return entry;
   const environment = requireTaskNotesAppEnvironment(
     import.meta.env.VITE_TASKNOTES_ENVIRONMENT,
     import.meta.env.VITE_TASKNOTES_LAB_ORIGIN,
     window.location.origin,
   );
-  entry = new MdbaseConnect(taskNotesApplicationDeclaration(environment));
+  // Returning from the Connect window or another app re-checks at once.
+  entry = createMdbase(taskNotesApplicationDeclaration(environment), {
+    followVisibility: true,
+  });
   return entry;
 }
