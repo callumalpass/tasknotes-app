@@ -14,7 +14,7 @@ function stats(page: Page) {
   return page.evaluate(() =>
     (
       window as unknown as {
-        syncPresentationStats: () => { checks: number; updates: number };
+        syncPresentationStats: () => { updates: number };
       }
     ).syncPresentationStats(),
   );
@@ -33,7 +33,7 @@ test("an acknowledgement under two seconds never displays or announces sync stat
   await expect(
     page.locator(".task-toolbar [role=status], .task-row [role=status]"),
   ).toHaveCount(0);
-  expect(await stats(page)).toEqual({ checks: 0, updates: 0 });
+  expect(await stats(page)).toEqual({ updates: 0 });
 });
 
 test("rapid autosaves and acknowledgement do not move the editor or toolbar", async ({
@@ -67,16 +67,14 @@ test("rapid autosaves and acknowledgement do not move the editor or toolbar", as
   await expect(
     page.locator(".task-toolbar [role=status], .task-row [role=status]"),
   ).toHaveCount(0);
-  expect(await stats(page)).toEqual({ checks: 0, updates: 8 });
+  expect(await stats(page)).toEqual({ updates: 8 });
   await page.clock.runFor(1_500);
   await expect(notice).toHaveAttribute("aria-hidden", "true");
   for (let n = 0; n < targets.length; n++)
     expect(await targets[n]!.boundingBox()).toEqual(original[n]);
 });
 
-test("sustained disconnection escalates politely and only checks on request", async ({
-  page,
-}) => {
+test("sustained disconnection escalates politely", async ({ page }) => {
   await open(page, "offline");
   await page.clock.runFor(4_999);
   await expect(page.getByTestId("collection-write-status")).toHaveText(
@@ -90,9 +88,7 @@ test("sustained disconnection escalates politely and only checks on request", as
   await expect(page.getByTestId("collection-write-status")).toContainText(
     "Disconnected: 3 changes saved on this device",
   );
-  expect((await stats(page)).checks).toBe(0);
-  await page.getByRole("button", { name: "Check sync", exact: true }).click();
-  expect(await stats(page)).toEqual({ checks: 1, updates: 0 });
+  expect((await stats(page)).updates).toBe(0);
 });
 
 for (const [phase, text] of [
@@ -100,7 +96,7 @@ for (const [phase, text] of [
   ["conflicted", "Conflicting changes"],
   ["unknown", "Save outcome unknown"],
 ]) {
-  test(`${phase} remains a polite problem with explicit read-only action`, async ({
+  test(`${phase} remains a polite problem with a review action`, async ({
     page,
   }) => {
     await open(page, phase!);
@@ -110,10 +106,7 @@ for (const [phase, text] of [
     await expect(
       page.getByRole("button", { name: "Review record" }),
     ).toBeVisible();
-    expect(await stats(page)).toEqual({ checks: 0, updates: 0 });
-    await page.getByRole("button", { name: "Check save", exact: true }).click();
-    expect(await stats(page)).toEqual({ checks: 1, updates: 0 });
-    await expect(notice).toContainText(text!);
+    expect((await stats(page)).updates).toBe(0);
   });
 }
 

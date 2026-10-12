@@ -7,7 +7,6 @@ import { RecordWriteNotice } from "./record-write-notice";
 afterEach(() => vi.useRealTimers());
 const repository = {
   subscribe: () => () => {},
-  reconcileWrites: vi.fn(async () => {}),
 } as unknown as TaskRepository;
 
 it("escalates only a continuous prolonged wait and clears after acknowledgement", async () => {
@@ -61,38 +60,6 @@ it("starts a fresh pending grace period when the repository changes", async () =
   expect(screen.queryByText("Syncing…")).toBeNull();
   await act(() => vi.advanceTimersByTime(1));
   expect(screen.getByText("Syncing…")).toBeVisible();
-});
-it("does not attribute an old collection's late check failure to the new collection", async () => {
-  let reject!: (error: Error) => void;
-  const old = {
-    ...repository,
-    writeState: () => "unknown" as const,
-    reconcileWrites: () =>
-      new Promise<void>((_, fail) => {
-        reject = fail;
-      }),
-  };
-  const current = { ...repository, writeState: () => "unknown" as const };
-  const view = (repo: TaskRepository) => (
-    <CollectionWriteStatus
-      repository={repo}
-      connection={{ state: "connected" }}
-      onReview={() => {}}
-    >
-      <RecordWriteNotice
-        repository={repo}
-        target={{ kind: "task", id: "original-task" }}
-      />
-    </CollectionWriteStatus>
-  );
-  const { rerender } = render(view(old));
-  fireEvent.click(screen.getByRole("button", { name: "Check save" }));
-  rerender(view(current));
-  await act(async () => {
-    reject(new Error("Old collection no longer available"));
-  });
-  expect(screen.getByRole("button", { name: "Check save" })).toBeEnabled();
-  expect(screen.queryByText(/Could not check/)).toBeNull();
 });
 it("deduplicates a task shown in the list, detail and capture confirmation and preserves the review target", () => {
   const target = { kind: "task" as const, id: "original-task" };
@@ -182,33 +149,4 @@ it("does not carry an old collection outcome into a new repository", () => {
     </CollectionWriteStatus>,
   );
   expect(screen.queryByRole("status")).toBeNull();
-});
-it("retains a problem while an explicit readonly check fails", async () => {
-  const failed = {
-    ...repository,
-    writeState: () => "unknown" as const,
-    reconcileWrites: vi.fn(async () => {
-      throw Error("unavailable");
-    }),
-  };
-  render(
-    <CollectionWriteStatus
-      repository={failed}
-      connection={{ state: "connected" }}
-      onReview={() => {}}
-    >
-      <RecordWriteNotice
-        repository={failed}
-        target={{ kind: "source", path: "view.base" }}
-      />
-    </CollectionWriteStatus>,
-  );
-  await act(async () =>
-    fireEvent.click(screen.getByRole("button", { name: "Check save" })),
-  );
-  expect(screen.getByRole("status")).toHaveTextContent("Save outcome unknown");
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "original changes are retained",
-  );
-  expect(failed.reconcileWrites).toHaveBeenCalledOnce();
 });

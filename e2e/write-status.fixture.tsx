@@ -25,7 +25,6 @@ const phase = new URL(location.href).searchParams.get("phase") ?? "edit";
 class FixtureRepository extends DemoTaskRepository {
   targetId = "";
   state: RecordWriteStatus | undefined;
-  checks = 0;
   updates = 0;
   private fixtureListeners = new Set<(change?: RepositoryChange) => void>();
   private acknowledgement?: ReturnType<typeof setTimeout>;
@@ -59,10 +58,6 @@ class FixtureRepository extends DemoTaskRepository {
     this.state = state;
     this.notify();
   }
-  async reconcileWrites() {
-    this.checks++;
-    this.notify();
-  }
   override async update(id: string, input: UpdateTaskInput) {
     this.updates++;
     this.targetId = id;
@@ -92,7 +87,7 @@ if (phase !== "edit")
 if (phase === "fast") setTimeout(() => repository.setOutcome(undefined), 1_200);
 history.replaceState({}, "", `/task/${encodeURIComponent(task.id)}`);
 Object.defineProperty(window, "syncPresentationStats", {
-  value: () => ({ checks: repository.checks, updates: repository.updates }),
+  value: () => ({ updates: repository.updates }),
 });
 createRoot(document.getElementById("root")!).render(
   <CollectionGateContext.Provider

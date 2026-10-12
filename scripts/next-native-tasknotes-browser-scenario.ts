@@ -309,7 +309,6 @@ export async function qualifyNativeTaskNotes(options: {
             submitted.length === before + 1,
           "original edit did not confirm without replacement submission",
         );
-        await reopened.reconcileWrites();
         const confirmed = await reopened.get(portableId);
         requireTest(
           confirmed?.id === portableId &&

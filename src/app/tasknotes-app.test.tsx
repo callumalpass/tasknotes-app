@@ -47,16 +47,20 @@ function approveAdded(mdbase: TestMdbase, id: string) {
       selection: { ...before.selection, state: "approving" },
     } as never),
   );
-  controls.setHandler("approve", () => ({
-    ...before,
-    selectedCollectionId: id,
-    selection: {
-      ...before.selection,
-      usable: collection,
-      requested: { ...before.selection.requested, collectionId: id },
-      lastApproval: { kind: "add", outcome: "added", collectionId: id },
-    },
-  }) as never);
+  controls.setHandler(
+    "approve",
+    () =>
+      ({
+        ...before,
+        selectedCollectionId: id,
+        selection: {
+          ...before.selection,
+          usable: collection,
+          requested: { ...before.selection.requested, collectionId: id },
+          lastApproval: { kind: "add", outcome: "added", collectionId: id },
+        },
+      }) as never,
+  );
 }
 
 function Workspace({

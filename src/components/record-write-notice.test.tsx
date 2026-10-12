@@ -14,10 +14,8 @@ function fixture(
 ) {
   let state = initial;
   const listeners = new Set<() => void>();
-  const reconcile = vi.fn(async () => {});
   const repository = {
     writeState: vi.fn(() => state),
-    reconcileWrites: reconcile,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {
@@ -31,7 +29,6 @@ function fixture(
   return {
     ...view,
     repository,
-    reconcile,
     set: (next?: RecordWriteStatus) =>
       act(() => {
         state = next;
@@ -58,5 +55,4 @@ it("resets the delay between rapid acknowledged edits and cancels timers on unmo
   f.unmount();
   expect(f.listeners.size).toBe(0);
   expect(vi.getTimerCount()).toBe(0);
-  expect(f.reconcile).not.toHaveBeenCalled();
 });

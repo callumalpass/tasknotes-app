@@ -133,13 +133,6 @@ export function WriteStatusOverlay({
   const syncing = useProlonged(repository, pending > 0, 2_000);
   const slow = useProlonged(repository, pending > 0, 30_000);
   const offline = useProlonged(repository, pending > 0 && disconnected, 5_000);
-  const [check, setCheck] = useState({
-    repository,
-    checking: false,
-    failed: false,
-  });
-  const checking = check.repository === repository && check.checking;
-  const checkFailed = check.repository === repository && check.failed;
   const message = problem
     ? problem.state === "failed"
       ? "Change rejected"
@@ -176,35 +169,6 @@ export function WriteStatusOverlay({
         <button type="button" onClick={() => onReview(problem.target)}>
           Review record
         </button>
-      ) : null}
-      {needsAttention && repository.reconcileWrites ? (
-        <button
-          type="button"
-          disabled={checking}
-          onClick={() => {
-            setCheck({ repository, checking: true, failed: false });
-            void repository.reconcileWrites!()
-              .catch(() =>
-                setCheck((previous) =>
-                  previous.repository === repository
-                    ? { ...previous, failed: true }
-                    : previous,
-                ),
-              )
-              .finally(() =>
-                setCheck((previous) =>
-                  previous.repository === repository
-                    ? { ...previous, checking: false }
-                    : previous,
-                ),
-              );
-          }}
-        >
-          {checking ? "Checking…" : problem ? "Check save" : "Check sync"}
-        </button>
-      ) : null}
-      {checkFailed && needsAttention ? (
-        <span>Could not check; the original changes are retained</span>
       ) : null}
     </div>,
     document.body,

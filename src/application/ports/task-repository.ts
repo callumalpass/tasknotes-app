@@ -80,8 +80,6 @@ export interface TaskRepository {
   readonly files?: CollectionFileStore;
   /** Local capture and authority confirmation are separate; no document replica. */
   writeState?(target: RecordWriteTarget): RecordWriteStatus | undefined;
-  /** Read existing native queue/receipts only; never retries a submission. */
-  reconcileWrites?(): Promise<void>;
   /** The refusal behind a "failed" write state, when the receipt names one. */
   writeRejection?(target: RecordWriteTarget): RecordWriteRejection | undefined;
   /** Forget a refused change after the person chose to discard it. */

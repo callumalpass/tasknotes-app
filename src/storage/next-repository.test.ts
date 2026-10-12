@@ -344,11 +344,8 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
 
   it("returns summaries without body reads and hydrates only requested documents", async () => {
     const f = await fixture();
-    const get = vi.spyOn(f.client, "get");
     const s = await seed(f);
-    // The repository's own read of the seeded write's confirmation is not a summary read.
-    await vi.waitFor(() => expect(get).toHaveBeenCalled());
-    get.mockClear();
+    const get = vi.spyOn(f.client, "get");
     const summaries = await f.repository.listSummaries();
     expect(summaries[0]).not.toHaveProperty("body");
     expect(get).not.toHaveBeenCalled();
@@ -529,7 +526,6 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       ),
     );
     expect(await f.client.find(intent.id)).toBeNull();
-    await f.repository.reconcileWrites();
     await expect(
       f.repository.create({ title: "Must not reissue" }, intent),
     ).rejects.toMatchObject({ mutationId: rejectedId });

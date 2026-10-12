@@ -224,8 +224,9 @@ Saved follows original confirmations; native local capture is not authority
 confirmation. Routine pending feedback stays out of rows and editor flow,
 waits two seconds, then uses a quiet Syncing… overlay without live announcements.
 Sustained disconnection and prolonged waits escalate politely; rejection,
-conflict and unknown outcomes remain visible with explicit read-only Check save
-and review actions, never replacement submissions. Definitions, model settings and setup remain confirmed-only.
+conflict and unknown outcomes remain visible with a review action, never
+replacement submissions. Save state comes from the SDK's write ledger, which
+restores unconfirmed writes after a reload and settles them from receipts. Definitions, model settings and setup remain confirmed-only.
 Real ordinary startup, current-account/revoke and restart/offline must be
 qualified. A build-graph gate excludes all classic repositories/transports/runtime.
 Unsupported reminders and authenticated record authors remain explicit; they

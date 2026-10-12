@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 afterEach(() => vi.useRealTimers());
 import type {
@@ -12,7 +12,6 @@ import { TaskAddedNotice } from "./task-added-notice";
 function fixture(initial?: RecordWriteStatus) {
   let state = initial;
   const listeners = new Set<() => void>();
-  const reconcile = vi.fn(async () => {});
   const onOpen = vi.fn(),
     onDismiss = vi.fn();
   const task = new TaskNotesTaskModel().create(
@@ -23,7 +22,6 @@ function fixture(initial?: RecordWriteStatus) {
   );
   const repository = {
     writeState: () => state,
-    reconcileWrites: reconcile,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {
@@ -41,7 +39,6 @@ function fixture(initial?: RecordWriteStatus) {
     />,
   );
   return {
-    reconcile,
     onOpen,
     onDismiss,
     set: (next?: RecordWriteStatus) =>
@@ -58,15 +55,10 @@ it("shows late rejection without an Open action to a disappeared create or a rep
   expect(screen.getByText("Change rejected")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Open" })).toBeNull();
   expect(f.onOpen).not.toHaveBeenCalled();
-  expect(f.reconcile).not.toHaveBeenCalled();
 });
 
-it("retains unknown capture and offers only a readonly save check", async () => {
+it("retains an unknown capture outcome", () => {
   const f = fixture("unknown");
-  await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Check save" }));
-  });
-  expect(f.reconcile).toHaveBeenCalledOnce();
   expect(screen.getByText("Save outcome unknown")).toBeVisible();
   expect(f.onDismiss).not.toHaveBeenCalled();
 });

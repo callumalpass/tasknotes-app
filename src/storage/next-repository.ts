@@ -14,6 +14,7 @@ import {
   syncStatusText,
   type Hold,
   type SyncStatus,
+  type WriteLedgerEntry,
 } from "@mdbase-dev/sdk";
 import { linksTo } from "@mdbase-dev/connect";
 import {
@@ -258,6 +259,7 @@ export class NextTaskRepository implements TaskRepository {
   private sync: RepositoryConnectionStatus["sync"];
   private heldEdits: HeldEdit[] = [];
   private readonly stopStatus: () => void;
+  private readonly stopLedger: () => void;
   private readonly stopHolds: () => void;
   private viewCatalog: TaskViewDocument[] = [];
   private readonly viewExecutions = new BoundedCache<{
@@ -273,7 +275,8 @@ export class NextTaskRepository implements TaskRepository {
   );
   private nativeViews = new Map<string, AppBasesDescriptor>();
   private readonly sourceRecords = new Map<string, string>();
-  private readonly nativeWriteStates = new Map<string, RecordWriteStatus>();
+  /** Records whose current read carries a hold or an unresolved conflict. */
+  private readonly conflictedRecords = new Set<string>();
   private readonly knownTaskRecords = new Map<string, string>();
   private readonly scratchRecords = new Map<string, string>();
 
@@ -285,42 +288,74 @@ export class NextTaskRepository implements TaskRepository {
         ? this.sourceRecords.get(target.path)
         : this.scratchRecords.get(`${target.kind}:${target.id}`);
   }
+  /** The SDK ledger's newest refused write to a record. */
+  private refusedWrite(recordId: string) {
+    let newest: WriteLedgerEntry | undefined;
+    for (const entry of this.client.ledger.getSnapshot().rejected)
+      if (
+        entry.records.includes(recordId) &&
+        (!newest || entry.createdAt >= newest.createdAt)
+      )
+        newest = entry;
+    return newest;
+  }
   writeRejection(target: RecordWriteTarget): RecordWriteRejection | undefined {
     const id = this.writeRecordId(target);
-    const state = id ? this.mutations.recordWriteState(id) : undefined;
-    if (state?.state !== "rejected") return undefined;
-    const problem = state.problem;
+    const problem = id ? this.refusedWrite(id)?.problem : undefined;
+    if (!problem || problem.code === "outcome_unknown") return undefined;
     return {
       changedElsewhere:
-        problem?.code === "conflict" && problem.reason === "revision",
-      message: problem?.message ?? "mdbase refused the change.",
+        problem.code === "conflict" && problem.reason === "revision",
+      message: problem.message ?? "mdbase refused the change.",
     };
   }
   dismissWriteRejection(target: RecordWriteTarget): void {
     const id = this.writeRecordId(target);
-    if (id) this.mutations.dismissRejected(id);
+    if (!id) return;
+    const ledger = this.client.ledger;
+    for (const entry of ledger.getSnapshot().rejected)
+      if (entry.records.includes(id))
+        void ledger.acknowledge(entry.mutationId).catch(() => {});
   }
   writeState(target: RecordWriteTarget): RecordWriteStatus | undefined {
     const id = this.writeRecordId(target);
     if (!id) return undefined;
-    if (this.nativeWriteStates.get(id) === "conflicted") return "conflicted";
-    const state = this.mutations.recordWriteState(id)?.state;
-    if (state === "rejected") return "failed";
-    if (state && state !== "confirmed") return state;
-    return this.nativeWriteStates.get(id);
+    if (this.conflictedRecords.has(id)) return "conflicted";
+    const refused = this.refusedWrite(id);
+    if (refused)
+      return refused.problem?.code === "outcome_unknown" ? "unknown" : "failed";
+    return this.client.ledger.stateOf(id) === "saved" ? undefined : "pending";
   }
-  async reconcileWrites(): Promise<void> {
-    await this.mutations.restorePending(this.scope.signal);
-    this.scope.signal.throwIfAborted();
-    this.indexReady = false;
-    this.emit("data");
+  /** The records an unconfirmed or refused write touches, once the SDK ledger
+   * has restored the writes from before this session. */
+  private async ledgerRecords(
+    mutationId: string,
+    signal: AbortSignal,
+  ): Promise<readonly string[]> {
+    const ledger = this.client.ledger;
+    if (!ledger.getSnapshot().restored)
+      await new Promise<void>((resolve) => {
+        const done = () => {
+          if (!ledger.getSnapshot().restored && !signal.aborted) return;
+          stop();
+          signal.removeEventListener("abort", done);
+          resolve();
+        };
+        const stop = ledger.subscribe(done);
+        signal.addEventListener("abort", done, { once: true });
+        done();
+      });
+    signal.throwIfAborted();
+    const { pending, rejected } = ledger.getSnapshot();
+    return (
+      [...pending, ...rejected].find((entry) => entry.mutationId === mutationId)
+        ?.records ?? []
+    );
   }
   private rememberWriteState(record: wire.RecordView): void {
     if (record.state.hold || record.state.unresolved)
-      this.nativeWriteStates.set(record.id, "conflicted");
-    else if (record.state.state === "pending")
-      this.nativeWriteStates.set(record.id, "pending");
-    else this.nativeWriteStates.delete(record.id);
+      this.conflictedRecords.add(record.id);
+    else this.conflictedRecords.delete(record.id);
   }
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
@@ -370,7 +405,7 @@ export class NextTaskRepository implements TaskRepository {
         );
         signal.throwIfAborted();
         if (!record) {
-          this.nativeWriteStates.delete(id);
+          this.conflictedRecords.delete(id);
           continue;
         }
         if (record.id !== id)
@@ -403,15 +438,10 @@ export class NextTaskRepository implements TaskRepository {
       }
       this.emit("data");
     };
-    this.mutations = new NextMutations(
-      client,
-      () => {
-        if (this.disposed || this.scope.signal.aborted) return;
-        this.emit("status");
-      },
-      this.readCurrentWrites,
-      this.readCurrentWrites,
-    );
+    this.mutations = new NextMutations(client, this.readCurrentWrites);
+    this.stopLedger = client.ledger.subscribe(() => {
+      if (!this.disposed && !this.scope.signal.aborted) this.emit("status");
+    });
     this.creatorSetupPending = options.requiresTaskNotesModelSetup === true;
     if (
       this.creatorSetupPending &&
@@ -519,7 +549,6 @@ export class NextTaskRepository implements TaskRepository {
         held: status.holds,
       };
       this.emit("status");
-      void this.mutations.restorePending(this.scope.signal).catch(() => {});
     });
     this.stopHolds = client.onHolds((holds: Hold[]) => {
       if (this.disposed) return;
@@ -959,7 +988,7 @@ export class NextTaskRepository implements TaskRepository {
       signal.throwIfAborted();
       if (!record) {
         // An admitted older change can now be absent after a newer deletion.
-        this.nativeWriteStates.delete(nativeId);
+        this.conflictedRecords.delete(nativeId);
         continue;
       }
       if (record.id !== nativeId)
@@ -1470,7 +1499,7 @@ export class NextTaskRepository implements TaskRepository {
               "The original scratchpad deletion is not visible in the native layer.",
             );
           requestSignal.throwIfAborted();
-          this.nativeWriteStates.delete(nativeId);
+          this.conflictedRecords.delete(nativeId);
           this.reached();
           this.emit("data");
         },
@@ -1685,7 +1714,7 @@ export class NextTaskRepository implements TaskRepository {
               "The original image metadata deletion is not visible in the native layer.",
             );
           requestSignal.throwIfAborted();
-          this.nativeWriteStates.delete(nativeId);
+          this.conflictedRecords.delete(nativeId);
           this.reached();
           this.emit("data");
         },
@@ -1937,9 +1966,9 @@ export class NextTaskRepository implements TaskRepository {
     owner.throwIfAborted();
     const accepted = this.acceptedCreates.get(intent);
     if (accepted) {
-      const state = this.mutations.recordWriteState(intent.id);
-      if (state?.state === "rejected")
-        throw new RejectedNextMutation(state.mutationId);
+      const refused = this.refusedWrite(intent.id);
+      if (refused && refused.problem?.code !== "outcome_unknown")
+        throw new RejectedNextMutation(refused.mutationId, refused.problem);
       const record = await this.client.get(
         intent.id,
         { body: true, document: true, effective: true },
@@ -1957,7 +1986,7 @@ export class NextTaskRepository implements TaskRepository {
           key: JSON.stringify(["task:create", intent.id]),
           ack: async (receipt, signal) => {
             await this.readCurrentWrites(
-              this.mutations.recordIds(receipt.mutation),
+              [intent.id, ...(receipt.records ?? []).map((r) => r.id)],
               signal,
             );
             if (
@@ -2566,8 +2595,10 @@ export class NextTaskRepository implements TaskRepository {
     if (!this.cache.has(id) && !options.authorityRequestId) return;
     let recordId = this.cache.get(id)?.recordId;
     if (options.authorityRequestId) {
-      await this.mutations.restorePending(owner);
-      const original = this.mutations.recordIds(options.authorityRequestId);
+      const original = await this.ledgerRecords(
+        options.authorityRequestId,
+        owner,
+      );
       recordId = original.length === 1 ? original[0] : undefined;
     }
     await this.mutations.runRecord(
@@ -2598,7 +2629,7 @@ export class NextTaskRepository implements TaskRepository {
               "The original native record is still present after deletion.",
             );
           if (this.cache.get(id)?.recordId === recordId) this.cache.delete(id);
-          this.nativeWriteStates.delete(recordId);
+          this.conflictedRecords.delete(recordId);
           this.emit("data");
         },
       },
@@ -3281,7 +3312,7 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The original native source is still present after deletion.",
             );
-          this.nativeWriteStates.delete(target.id);
+          this.conflictedRecords.delete(target.id);
           this.forgetNativeSource(target.id);
         },
       },
@@ -3347,10 +3378,11 @@ export class NextTaskRepository implements TaskRepository {
     this.changesWatch = null;
     this.stopLink();
     this.stopStatus();
+    this.stopLedger();
     this.stopHolds();
     if (this.clientOwnership === "owned") this.client.close();
     this.cache.clear();
-    this.nativeWriteStates.clear();
+    this.conflictedRecords.clear();
     this.sourceRecords.clear();
     this.viewCatalog = [];
     this.viewExecutions.clear();
