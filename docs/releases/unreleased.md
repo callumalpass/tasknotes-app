@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show changes made in another tab or device in an open task. Fields without an unsaved edit, such as the title or Notes, follow the newer version, while a field you are still editing keeps your edit. Previously the task kept showing its old title and said Saved until it was reopened.
+
 - Say "Saved on this device; waiting for sync" while you are offline or mdbase cannot be reached and changes are waiting to sync, instead of "Sync is taking longer than usual". The collection settings no longer show Connected in that state.
 
 - Show a Scratchpad note title or text changed in another tab or device while the note is open. A title or text you are still editing is kept rather than replaced.

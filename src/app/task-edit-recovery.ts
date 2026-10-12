@@ -55,6 +55,47 @@ export function changedFields(base: Draft, draft: Draft): Partial<Draft> {
   return out as Partial<Draft>;
 }
 
+/**
+ * Follow a newer version of the task in every field without a local edit, and
+ * return the draft to show, or null when it is unchanged.
+ *
+ * `known` holds the version the editor last saw, field by field. A field whose
+ * draft differs from it is an edit in progress and is kept, unless it already
+ * equals the incoming value (this editor's own save). With nothing unsaved or
+ * saving (`pending` false), every local value has been saved, so any
+ * difference from the incoming version is newer or normalised data. Adopted
+ * fields also move `opened`, so they never count as this person's edit.
+ */
+export function followIncomingDraft(
+  baselines: { known: { current: Draft }; opened: { current: Draft } },
+  local: Draft,
+  remote: Draft,
+  pending: boolean,
+): Draft | null {
+  const { known, opened } = baselines;
+  let adopted: Partial<Draft>;
+  if (!pending) {
+    adopted = changedFields(local, remote);
+    known.current = remote;
+  } else {
+    const editedLocally = changedFields(known.current, local);
+    const differsFromRemote = changedFields(remote, local);
+    const nextKnown: Record<string, unknown> = { ...known.current };
+    const fields: Record<string, unknown> = {};
+    for (const field of Object.keys(changedFields(known.current, remote))) {
+      if (field in editedLocally && field in differsFromRemote) continue;
+      nextKnown[field] = remote[field as keyof Draft];
+      if (!(field in editedLocally))
+        fields[field] = remote[field as keyof Draft];
+    }
+    known.current = nextKnown as Draft;
+    adopted = fields as Partial<Draft>;
+  }
+  if (!Object.keys(adopted).length) return null;
+  opened.current = { ...opened.current, ...adopted };
+  return { ...local, ...adopted };
+}
+
 /** False when this browser cannot keep the copy (storage full or blocked). */
 export function writeTaskEdit(
   scope: string,

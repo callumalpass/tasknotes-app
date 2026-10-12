@@ -70,6 +70,7 @@ import {
 } from "./task-editor-draft";
 import {
   changedFields,
+  followIncomingDraft,
   readTaskEdit,
   taskEditScope,
   writeTaskEdit,
@@ -299,6 +300,9 @@ function TaskEditor({
   const savesInFlight = useRef(new Map<number, Promise<void>>());
   // The task as opened; local copies hold only the fields edited since.
   const openedDraft = useRef(draft);
+  // The version this editor last saw from mdbase, field by field. A field
+  // whose draft still matches it has no local edit and follows newer versions.
+  const knownDraft = useRef(draft);
   const editScope = useRef<string | null>(null);
   const [recovered, setRecovered] = useState<StoredTaskEdit | null>(null);
   const recoveredRef = useRef<StoredTaskEdit | null>(null);
@@ -494,6 +498,24 @@ function TaskEditor({
     [repository],
   );
 
+  // A change saved elsewhere (another tab, device or app) is shown in every
+  // field this editor has not changed. A field with an edit in progress keeps
+  // it, and saving applies it on top of the latest version, as Keep my edit
+  // does. A refused save keeps its own review flow.
+  const followIncomingTask = useEffectEvent((incoming: Task) => {
+    if (rejected) return;
+    const next = followIncomingDraft(
+      { known: knownDraft, opened: openedDraft },
+      draftRef.current,
+      toDraft(incoming),
+      dirtyRef.current || savesInFlight.current.size > 0,
+    );
+    if (!next) return;
+    draftRef.current = next;
+    setDraft(next);
+  });
+  useEffect(() => followIncomingTask(task), [task]);
+
   useEffect(() => {
     let live = true;
     void repository
@@ -547,6 +569,7 @@ function TaskEditor({
       const base = toDraft(latest);
       const next = { ...base, ...mine };
       openedDraft.current = base;
+      knownDraft.current = base;
       draftRef.current = next;
       setDraft(next);
       editVersion.current += 1;
@@ -572,6 +595,7 @@ function TaskEditor({
       if (!mounted.current) return;
       editVersion.current += 1;
       const next = toDraft(latest);
+      knownDraft.current = next;
       draftRef.current = next;
       dirtyRef.current = false;
       setDraft(next);

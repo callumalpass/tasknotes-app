@@ -1,9 +1,18 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import {
+  createTestMdbaseRepository,
+  mdbaseFixture,
+} from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
@@ -319,6 +328,63 @@ describe("TaskScreen", () => {
     releaseDownload();
     await waitFor(() => expect(target.location.href).toMatch(/^blob:/));
     expect(target.close).not.toHaveBeenCalled();
+  });
+});
+
+describe("TaskScreen with a change made in another tab", () => {
+  let fixture: ReturnType<typeof mdbaseFixture>;
+  let repository: MdbaseTaskRepository;
+  let task: Task;
+
+  beforeEach(async () => {
+    fixture = mdbaseFixture([]);
+    repository = new MdbaseTaskRepository(fixture.connect);
+    await repository.initialize();
+    task = await repository.create({ title: "Alpha" });
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskScreen id={task.id} onBack={vi.fn()} onMaterialized={vi.fn()} />
+      </RepositoryProvider>,
+    );
+  });
+
+  async function saveFromAnotherTab(input: { title: string; body?: string }) {
+    const otherTab = new MdbaseTaskRepository(fixture.connect);
+    await otherTab.initialize();
+    await otherTab.update(task.id, input);
+    // The collection reports the other tab's change to this tab.
+    await act(async () => void (await repository.refresh()));
+  }
+
+  it("shows a title changed elsewhere after this tab saved its own", async () => {
+    const title = await screen.findByLabelText("Task title", { exact: true });
+    fireEvent.change(title, { target: { value: "Beta" } });
+    await waitFor(
+      () => expect(screen.getByRole("button", { name: "Saved" })).toBeVisible(),
+      { timeout: 3_000 },
+    );
+
+    await saveFromAnotherTab({ title: "Gamma" });
+
+    await waitFor(() => expect(title).toHaveValue("Gamma"));
+    expect(screen.getByRole("button", { name: "Saved" })).toBeVisible();
+  });
+
+  it("keeps a title being edited and shows other fields changed elsewhere", async () => {
+    const title = await screen.findByLabelText("Task title", { exact: true });
+    fireEvent.change(title, { target: { value: "My unsaved title" } });
+
+    await saveFromAnotherTab({ title: "Gamma", body: "Notes from elsewhere" });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Notes")).toHaveValue(
+        "Notes from elsewhere",
+      ),
+    );
+    expect(title).toHaveValue("My unsaved title");
   });
 });
 
