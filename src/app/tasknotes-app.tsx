@@ -12,6 +12,7 @@ import {
   CollectionGate,
   CollectionProblem,
   type CollectionUiOptions,
+  type CollectionView,
 } from "@mdbase-dev/ui/collections";
 import "@mdbase-dev/ui/collections.css";
 
@@ -46,7 +47,7 @@ export function TaskNotesApp({
   useMdbaseLifetime(mdbase);
   const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
   return (
-    <CollectionGate {...ui} extraActions={<MdbaseExplainer />}>
+    <CollectionGate {...ui} extraActions={signedOutExplainer}>
       {(connection) => (
         <ReadyCollection
           arming={arming}
@@ -59,17 +60,13 @@ export function TaskNotesApp({
   );
 }
 
-/** Start once; close when the app really unmounts (not on effect replay). */
+/** The gate starts the SDK; close it when the app really unmounts (not on
+ * effect replay). */
 function useMdbaseLifetime(mdbase: Mdbase) {
-  const lifetime = useRef({ mounts: 0, started: false });
+  const lifetime = useRef({ mounts: 0 });
   useEffect(() => {
     const current = lifetime.current;
     current.mounts++;
-    if (!current.started) {
-      current.started = true;
-      // Failures are on the snapshot; the gate shows them with their fix.
-      void mdbase.start().catch(() => undefined);
-    }
     return () => {
       current.mounts--;
       queueMicrotask(() => {
@@ -186,6 +183,9 @@ function useHeldRepository(
   }, [repository]);
   return repository;
 }
+
+const signedOutExplainer = (view: CollectionView) =>
+  view.kind === "signed_out" ? <MdbaseExplainer /> : null;
 
 function MdbaseExplainer() {
   return (

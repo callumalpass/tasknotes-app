@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
-import type { Mdbase } from "@mdbase-dev/sdk";
+import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";
 
 const starterViews = vi.hoisted(() => vi.fn(async () => []));
 vi.mock("../application/ensure-default-view-source", () => ({
@@ -26,114 +26,89 @@ vi.mock("../demo/demo-app", () => {
 
 import { TaskNotesApp } from "./tasknotes-app";
 
-type Snapshot = ReturnType<Mdbase["getSnapshot"]>;
-
-function connection(id: string) {
-  return {
-    id,
-    displayName: id,
-    generation: `${id}-1`,
-    records: { id },
-    scope: { account: "account" },
-    people: {},
-    isCurrent: () => true,
-  };
+function testMdbase() {
+  return createTestMdbase({
+    collections: [{ name: "Alpha" }, { name: "Beta" }],
+  });
 }
-const collections = ["a", "b"].map((id) => ({
-  collectionId: id,
-  displayName: id === "a" ? "Alpha" : "Beta",
-  role: "owner",
-}));
-const ready = (id: string) => ({
-  kind: "ready",
-  collectionId: id,
-  collection: collections.find((c) => c.collectionId === id),
-  connection: connection(id),
-  problem: null,
-});
 
-function fakeMdbase(phase: Record<string, unknown>) {
-  let snapshot = {
-    status: "ready",
-    collections,
-    signIn: { state: "paired", accountEmail: "me@example.com" },
+const collectionId = (mdbase: TestMdbase, index: number) =>
+  mdbase.getSnapshot().collections[index]!.collectionId;
+
+/** The Connect window is open; approving in it adds and opens `id`. */
+function approveAdded(mdbase: TestMdbase, id: string) {
+  const { controls, application } = mdbase.fixture;
+  const before = application.getSnapshot();
+  const collection = before.collections.find((c) => c.collectionId === id);
+  act(() =>
+    controls.publishSnapshot({
+      ...before,
+      status: "authorizing",
+      selection: { ...before.selection, state: "approving" },
+    } as never),
+  );
+  controls.setHandler("approve", () => ({
+    ...before,
+    selectedCollectionId: id,
     selection: {
-      state: "usable",
-      lastApproval: null,
-      requested: { collectionId: null, displayName: null },
+      ...before.selection,
+      usable: collection,
+      requested: { ...before.selection.requested, collectionId: id },
+      lastApproval: { kind: "add", outcome: "added", collectionId: id },
     },
-    readiness: {},
-    links: null,
-    phase,
-  } as unknown as Snapshot;
-  const listeners = new Set<() => void>();
-  const mdbase = {
-    getSnapshot: () => snapshot,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    start: vi.fn(async () => snapshot),
-    close: vi.fn(async () => undefined),
-    signOut: vi.fn(async () => snapshot),
-  };
-  const set = (next: Record<string, unknown>, lastApproval: unknown = null) =>
-    act(() => {
-      snapshot = {
-        ...snapshot,
-        phase: next,
-        selection: { ...snapshot.selection, lastApproval },
-      } as unknown as Snapshot;
-      listeners.forEach((listener) => listener());
-    });
-  return { mdbase, set };
+  }) as never);
 }
 
 function Workspace({
   repository,
 }: {
-  repository: { records: { id: string } };
+  repository: { records: { collection: string } };
 }) {
-  return <main>Workspace {repository.records.id}</main>;
+  return <main>Workspace {repository.records.collection}</main>;
 }
 
 it("adds starter views to the collection an approval opened, not on opening", async () => {
   starterViews.mockClear();
-  const { mdbase, set } = fakeMdbase(ready("a"));
+  const mdbase = await testMdbase();
+  const [a, b] = [collectionId(mdbase, 0), collectionId(mdbase, 1)];
   render(
     <StrictMode>
-      <TaskNotesApp
-        mdbase={mdbase as unknown as Mdbase}
-        Workspace={Workspace as never}
-      />
+      <TaskNotesApp mdbase={mdbase} Workspace={Workspace as never} />
     </StrictMode>,
   );
-  expect(await screen.findByText("Workspace a")).toBeVisible();
+  expect(await screen.findByText(`Workspace ${a}`)).toBeVisible();
 
-  set({ kind: "authorizing", purpose: "add", collectionId: null });
+  approveAdded(mdbase, b);
   expect(
     screen.getByRole("heading", { name: "Continue in the mdbase window" }),
   ).toBeVisible();
-  set(ready("b"), { kind: "add", outcome: "added", collectionId: "b" });
-  expect(await screen.findByText("Workspace b")).toBeVisible();
+  await act(() => mdbase.addCollection());
+  expect(await screen.findByText(`Workspace ${b}`)).toBeVisible();
   await waitFor(() => expect(starterViews).toHaveBeenCalledOnce());
   expect(starterViews).toHaveBeenCalledWith(
-    expect.objectContaining({ records: { id: "b" } }),
+    expect.objectContaining({ records: mdbase.fixture.client(b) }),
     {},
     { onlyIfNoViews: true },
   );
 
   // Switching back is navigation: nothing is written.
-  set(ready("a"), { kind: "add", outcome: "added", collectionId: "b" });
-  expect(await screen.findByText("Workspace a")).toBeVisible();
+  await act(() => mdbase.select(a));
+  expect(await screen.findByText(`Workspace ${a}`)).toBeVisible();
   expect(starterViews).toHaveBeenCalledOnce();
 });
 
 it("signs out through the SDK and never just closes the entry", async () => {
-  const { mdbase } = fakeMdbase({ kind: "choosing", lastApproval: null });
+  const mdbase = await testMdbase();
+  mdbase.fixture.set("choosing");
   window.history.replaceState(null, "", "/?demo=50");
-  render(<TaskNotesApp mdbase={mdbase as unknown as Mdbase} />);
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-  await waitFor(() => expect(mdbase.signOut).toHaveBeenCalledOnce());
-  expect(mdbase.close).not.toHaveBeenCalled();
+  render(<TaskNotesApp mdbase={mdbase} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+  await waitFor(() =>
+    expect(mdbase.getSnapshot().phase.kind).toBe("signed_out"),
+  );
+  const actions = mdbase.fixture.controls
+    .observedActions()
+    .map((call) => call.action);
+  expect(actions).toContain("signOut");
+  expect(actions).not.toContain("close");
 });

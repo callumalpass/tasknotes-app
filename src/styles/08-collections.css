@@ -289,37 +289,24 @@
 :root {
   --mdbase-collections-accent: var(--accent);
   --mdbase-collections-on-accent: var(--color-on-accent);
-  /* Same colour; the white surface carries the accent's hue so the shared
-     UI's oklch tints stay blue instead of passing through magenta. */
-  --mdbase-collections-surface: oklch(from var(--paper-raised) l c 250);
+  --mdbase-collections-surface: var(--paper-raised);
   --mdbase-collections-canvas: var(--paper);
   --mdbase-collections-text: var(--ink);
   --mdbase-collections-text-soft: var(--ink-soft);
   --mdbase-collections-border: var(--line-strong);
   --mdbase-collections-danger: var(--danger);
-  --mdbase-collections-radius: var(--radius-control);
   --mdbase-collections-font: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --mdbase-collections-font-size: var(--type-body);
+  --mdbase-collections-font-size-caption: var(--type-supporting);
+  --mdbase-collections-font-size-section: var(--type-control);
+  --mdbase-collections-font-size-heading: var(--type-page);
+  --mdbase-collections-font-weight-strong: 700;
+  --mdbase-collections-radius-sm: var(--radius-control);
+  --mdbase-collections-radius: var(--radius-control);
+  --mdbase-collections-radius-lg: var(--radius-sheet);
+  --mdbase-collections-elevation-low: 0 10px 28px var(--color-shadow-soft);
+  --mdbase-collections-elevation-high: 0 24px 70px var(--color-shadow);
   --mdbase-collections-control-height: var(--control-min-size);
-}
-
-.mdbase-collections {
-  --font-size-ui: var(--type-body);
-  --font-size-caption: var(--type-supporting);
-  --font-size-section: var(--type-control);
-  --font-size-heading: var(--type-page);
-  --font-weight-semibold: 700;
-  --radius-sm: var(--radius-control);
-  --radius-md: var(--radius-control);
-  --radius-lg: var(--radius-sheet);
-  --elevation-low: 0 10px 28px var(--color-shadow-soft);
-  --elevation-high: 0 24px 70px var(--color-shadow);
-  --motion-spin: 700ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mdbase-collections {
-    --motion-spin: 0ms;
-  }
 }
 
 /* "What is mdbase?" sits beside Sign in and opens below it. */

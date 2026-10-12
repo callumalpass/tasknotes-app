@@ -308,6 +308,7 @@ export function AppShell() {
           <CollectionSwitcher
             {...collectionUi}
             className="rail-collection-switcher"
+            icon="mark"
             variant="compact"
           />
         ) : null}
@@ -337,7 +338,11 @@ export function AppShell() {
       <main id="main-content" className="page-surface" tabIndex={-1}>
         {collectionUi && route.page !== "task" ? (
           <div className="mobile-collection-bar">
-            <CollectionSwitcher {...collectionUi} variant="compact" />
+            <CollectionSwitcher
+              {...collectionUi}
+              icon="mark"
+              variant="compact"
+            />
           </div>
         ) : null}
         {route.page !== "task" ? (
