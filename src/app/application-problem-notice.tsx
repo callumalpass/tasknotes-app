@@ -1,6 +1,7 @@
 import type { MdbaseErrorDescription } from "@mdbase-dev/sdk";
 
-/** Copy and suggestions only. The original SDK owner supplies any action. */
+/** Copy and suggestions only. The original SDK owner supplies any action.
+ * An action label is shown only as a working control, never as plain text. */
 export function ApplicationProblemNotice({
   description,
   message = description.message,
@@ -48,9 +49,7 @@ export function ApplicationProblemNotice({
           >
             {description.actionLabel}
           </button>
-        ) : (
-          <p>{description.actionLabel}</p>
-        )
+        ) : null
       ) : null}
     </div>
   );
