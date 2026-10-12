@@ -82,12 +82,12 @@ test("packaged native assets are original bytes, not public application readines
   assert.equal(manifest.native.available, true);
   assert.equal(
     manifest.native.sourceCommit,
-    "fa49f3d0474a3c5961f3b9986052ead07abcc943",
+    "3a1266b523670a9f0ca94a267d22ff238c2d862a",
   );
-  assert.equal(manifest.native.bytes, 3555291);
+  assert.equal(manifest.native.bytes, 3555626);
   assert.equal(
     manifest.native.sha256,
-    "9f90af73e1591cafe9c35bdd42f18ae49d5a91a0186e78695e841fecabcd833a",
+    "d8d9eec1786a3aaff252733a5cfb9768b7ea3819d681f07c6e51697a608f9aa4",
   );
   assert.equal(native.byteLength, manifest.native.bytes);
   assert.equal(

@@ -65,8 +65,8 @@ manifest or work around SDK Worker/asset packaging in the app. Manifest generati
 is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
 manifest has a different origin and digest. This source
 intake does not qualify native compatibility. The producer's `native.available: true` means original
-native assets are packaged: runtimefa49 (3555291 bytes, SHA256
-`9f90af73e1591cafe9c35bdd42f18ae49d5a91a0186e78695e841fecabcd833a`)
+native assets are packaged: runtime 3a1266b5 (3555626 bytes, SHA256
+`d8d9eec1786a3aaff252733a5cfb9768b7ea3819d681f07c6e51697a608f9aa4`)
 and the original SQLite bytes. The packaged `rt_app_setup_assess` export is
 verified; export presence is not setup execution or native custody evidence. It is not a public runtime readiness signal;
 Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
