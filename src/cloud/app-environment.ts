@@ -1,4 +1,5 @@
-/** Production stays at the cutover target; LAB binds an explicit loopback port. */
+/** Production stays at the cutover target; LAB binds the exact origin its build
+ * was configured for: a loopback port or a public HTTPS preview (e.g. Pages). */
 export const TASKNOTES_PRODUCTION_ORIGIN = "https://app.tasknotes.dev";
 export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
 export const APP_ENVIRONMENT_CONFIG_KEY = "VITE_TASKNOTES_ENVIRONMENT";
@@ -32,7 +33,7 @@ export function requireTaskNotesAppEnvironment(
   }
   if (!isConfiguredLabOrigin(configuredLabOrigin))
     throw new Error(
-      `${LAB_ORIGIN_CONFIG_KEY} must select an exact HTTP loopback origin with an explicit port.`,
+      `${LAB_ORIGIN_CONFIG_KEY} must select an exact HTTP loopback origin with an explicit port, or an exact HTTPS origin.`,
     );
   if (currentOrigin !== configuredLabOrigin)
     throw new Error(
@@ -45,12 +46,15 @@ function isConfiguredLabOrigin(value: unknown): value is string {
   if (typeof value !== "string") return false;
   try {
     const url = new URL(value);
+    if (url.origin !== value || value === TASKNOTES_PRODUCTION_ORIGIN)
+      return false;
+    if (url.protocol === "https:")
+      return url.port === "" && !/^[\d.]+$|^\[/.test(url.hostname);
     return (
       url.protocol === "http:" &&
       url.hostname === "127.0.0.1" &&
       url.port !== "" &&
-      Number(url.port) > 0 &&
-      url.origin === value
+      Number(url.port) > 0
     );
   } catch {
     return false;

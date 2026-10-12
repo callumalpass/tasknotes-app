@@ -75,6 +75,27 @@ describe("explicit next-only replace-at-cutover build environment", () => {
       requireTaskNotesAppEnvironment("lab", origin, TASKNOTES_LAB_ORIGIN),
     ).toThrow();
   });
+  it("binds a public HTTPS LAB preview to its exact configured origin", () => {
+    const origin = "https://lab.tasknotes-app.pages.dev";
+    expect(requireTaskNotesAppEnvironment("lab", origin, origin)).toEqual({
+      environment: "lab",
+      appOrigin: origin,
+    });
+    expect(() =>
+      requireTaskNotesAppEnvironment("lab", origin, "https://other.pages.dev"),
+    ).toThrow();
+  });
+  it.each([
+    "https://lab.tasknotes-app.pages.dev/",
+    "https://lab.tasknotes-app.pages.dev:8443",
+    "https://user@lab.tasknotes-app.pages.dev",
+    "https://203.0.113.7",
+    TASKNOTES_PRODUCTION_ORIGIN,
+  ])("refuses a noncanonical or production HTTPS LAB origin: %s", (origin) => {
+    expect(() =>
+      requireTaskNotesAppEnvironment("lab", origin, origin),
+    ).toThrow();
+  });
   it.each([
     "http://127.0.0.1",
     "http://127.0.0.1:0",
