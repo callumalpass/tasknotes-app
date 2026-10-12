@@ -16,7 +16,10 @@ export function taskNotesApplicationDeclaration(
   environment: TaskNotesAppEnvironment,
 ): MdbaseApplicationDeclaration {
   return {
-    id: TASKNOTES_APPLICATION_REGISTRATION.appId,
+    // The logical, origin-independent identity. mdbase registers each exact
+    // manifest under its own UUID; declaring one of those made every changed
+    // manifest a "superseded ID". Storage stays pinned, so local data never moves.
+    id: manifest.id,
     name: TASKNOTES_APPLICATION_REGISTRATION.appName,
     origin: environment.appOrigin,
     environment: environment.environment,

@@ -7,7 +7,9 @@ it("passes exact generated manifest and original compatibility storage data to t
     environment: "lab",
     appOrigin: "http://127.0.0.1:48218",
   });
-  expect(declaration.id).toBe("5cdfa020-c201-4da8-845a-f2cc9969eade");
+  // Logical manifest identity, never a per-manifest registration UUID.
+  expect(declaration.id).toBe("dev.tasknotes.app");
+  expect(declaration.id).toBe(manifest.id);
   expect(declaration.name).toBe("TaskNotes");
   expect(declaration.manifest).toBe(manifest);
   expect(declaration.storage).toEqual({
