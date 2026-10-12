@@ -35,6 +35,14 @@ it("arms the collection an approval opened, never the one open behind it", () =>
     snap({ kind: "ready", collectionId: "b" }, approval("b", "unchanged")),
   );
   expect(arming.getArmed()).toBeNull();
+
+  // An outcome that lands while the window still reads open counts, once.
+  const late = approval("c");
+  arming.observe(snap({ kind: "authorizing", purpose: "add" }, late));
+  arming.observe(ready("c"));
+  expect(arming.take("c")).toBe(true);
+  arming.observe(snap({ kind: "ready", collectionId: "c" }, late));
+  expect(arming.getArmed()).toBeNull();
 });
 
 it("never arms on navigation, a reload or a declined approval", () => {

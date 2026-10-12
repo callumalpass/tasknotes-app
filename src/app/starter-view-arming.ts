@@ -4,23 +4,24 @@ type Observed = Pick<MdbaseSnapshot, "phase" | "selection">;
 type Phase = Observed["phase"];
 type Approval = NonNullable<Observed["selection"]["lastApproval"]>;
 
-interface Intent {
-  /** The collection open behind the Connect window; never armed by it. */
-  readonly previous: string | null;
-  /** Signing in reports no approval outcome: the collection it opens counts. */
-  readonly signIn: boolean;
-}
-
 /**
  * Decides which collection gets TaskNotes' starter views. Only a collection the
- * person just approved in this tab (sign in, add, approve) or just finished
- * setting up is armed. Opening, switching or reloading never arms anything, so
+ * person just approved in this tab or just finished setting up is armed. The
+ * SDK's approval outcome is the signal, whichever UI started the approval (the
+ * gate, the shared switcher or a direct SDK call). Each outcome is handled once:
+ * opening, switching, re-rendering or reloading never arms anything, so
  * navigation never writes. The write itself is `onlyIfNoViews` and tolerates a
  * second tab doing the same.
  */
 export class StarterViewArming {
-  private lastApproval: Approval | null;
-  private intent: Intent | null = null;
+  /** The last outcome dealt with; the SDK freezes one object per approval. */
+  private handled: Approval | null;
+  /** The collection open when the Connect window opened; never armed by it.
+   * Undefined when this tab never saw the window open. */
+  private behind: string | null | undefined;
+  private authorizing = false;
+  /** Signing in reports no approval outcome: the collection it opens counts. */
+  private signingIn = false;
   private setupFor: string | null = null;
   private openId: string | null = null;
   private armed: string | null = null;
@@ -28,7 +29,7 @@ export class StarterViewArming {
 
   constructor(initial: Observed) {
     // An outcome from before this page started belongs to nobody here.
-    this.lastApproval = initial.selection.lastApproval ?? null;
+    this.handled = initial.selection.lastApproval ?? null;
     this.observe(initial);
   }
 
@@ -58,35 +59,36 @@ export class StarterViewArming {
 
   observe(snapshot: Observed): void {
     const phase = snapshot.phase;
-    const approval = snapshot.selection.lastApproval ?? null;
-    const settled = approval !== null && approval !== this.lastApproval;
-    this.lastApproval = approval;
     const id = collectionOf(phase);
 
     if (phase.kind === "authorizing") {
-      this.intent ??= {
-        previous: this.openId,
-        signIn: phase.purpose === "sign_in",
-      };
-    } else if (this.intent) {
-      const intent = this.intent;
-      if (settled) {
-        this.intent = null;
-        if (
-          approval.collectionId &&
-          approval.collectionId !== intent.previous &&
-          (approval.outcome === "added" || approval.outcome === "unchanged")
-        )
-          this.arm(approval.collectionId);
-      } else if (!intent.signIn) {
-        // approve() ended without an outcome (it failed): nothing was approved.
-        this.intent = null;
-      } else if (id) {
-        this.intent = null;
-        if (id !== intent.previous) this.arm(id);
-      } else if (phase.kind !== "starting") {
-        this.intent = null;
+      if (!this.authorizing) {
+        this.behind = this.openId;
+        this.signingIn = phase.purpose === "sign_in";
       }
+      this.authorizing = true;
+    } else this.authorizing = false;
+
+    const approval = snapshot.selection.lastApproval ?? null;
+    if (approval !== null && approval !== this.handled) {
+      this.handled = approval;
+      this.signingIn = false;
+      const behind = this.behind === undefined ? this.openId : this.behind;
+      this.behind = undefined;
+      const target = approval.collectionId;
+      // `added` was not approved before this approval began, so it cannot be
+      // the collection open behind the window. Declined or closed arms nothing.
+      if (
+        target &&
+        (approval.outcome === "added" ||
+          (approval.outcome === "unchanged" && target !== behind))
+      )
+        this.arm(target);
+    } else if (this.signingIn && !this.authorizing) {
+      if (id) {
+        this.signingIn = false;
+        if (id !== (this.behind ?? null)) this.arm(id);
+      } else if (phase.kind !== "starting") this.signingIn = false;
     }
 
     if (phase.kind === "needs_setup") this.setupFor = phase.collectionId;

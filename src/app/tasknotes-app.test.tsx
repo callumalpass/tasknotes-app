@@ -8,6 +8,7 @@ import {
 import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
 import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";
+import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
 
 const starterViews = vi.hoisted(() => vi.fn(async () => []));
 vi.mock("../application/ensure-default-view-source", () => ({
@@ -37,16 +38,25 @@ const collectionId = (mdbase: TestMdbase, index: number) =>
 
 /** The Connect window is open; approving in it adds and opens `id`. */
 function approveAdded(mdbase: TestMdbase, id: string) {
-  const { controls, application } = mdbase.fixture;
-  const before = application.getSnapshot();
-  const collection = before.collections.find((c) => c.collectionId === id);
+  const before = mdbase.fixture.application.getSnapshot();
   act(() =>
-    controls.publishSnapshot({
+    mdbase.fixture.controls.publishSnapshot({
       ...before,
       status: "authorizing",
       selection: { ...before.selection, state: "approving" },
     } as never),
   );
+  approvalAdds(mdbase, id, before);
+}
+
+/** The next approval, whoever starts it, adds and opens `id`. */
+function approvalAdds(
+  mdbase: TestMdbase,
+  id: string,
+  before = mdbase.fixture.application.getSnapshot(),
+) {
+  const { controls } = mdbase.fixture;
+  const collection = before.collections.find((c) => c.collectionId === id);
   controls.setHandler(
     "approve",
     () =>
@@ -99,6 +109,48 @@ it("adds starter views to the collection an approval opened, not on opening", as
   await act(() => mdbase.select(a));
   expect(await screen.findByText(`Workspace ${a}`)).toBeVisible();
   expect(starterViews).toHaveBeenCalledOnce();
+});
+
+function SwitcherWorkspace({
+  actions,
+  repository,
+}: {
+  actions: { collectionUi: Parameters<typeof CollectionSwitcher>[0] };
+  repository: { records: { collection: string } };
+}) {
+  return (
+    <main>
+      <CollectionSwitcher {...actions.collectionUi} variant="compact" />
+      Workspace {repository.records.collection}
+    </main>
+  );
+}
+
+it("adds starter views when the shared switcher's Add a collection approves one", async () => {
+  starterViews.mockClear();
+  const mdbase = await testMdbase();
+  const [a, b] = [collectionId(mdbase, 0), collectionId(mdbase, 1)];
+  render(
+    <StrictMode>
+      <TaskNotesApp mdbase={mdbase} Workspace={SwitcherWorkspace as never} />
+    </StrictMode>,
+  );
+  expect(await screen.findByText(`Workspace ${a}`)).toBeVisible();
+
+  // The switcher calls the SDK itself; TaskNotes sees only the outcome.
+  approvalAdds(mdbase, b);
+  fireEvent.click(screen.getByRole("button", { name: /switch collection/i }));
+  fireEvent.click(await screen.findByText("Add a collection…"));
+  expect(await screen.findByText(`Workspace ${b}`)).toBeVisible();
+  await waitFor(() => expect(starterViews).toHaveBeenCalledOnce());
+  expect(starterViews).toHaveBeenCalledWith(
+    expect.objectContaining({ records: mdbase.fixture.client(b) }),
+    {},
+    { onlyIfNoViews: true },
+  );
+  expect(
+    mdbase.fixture.controls.observedActions().map((call) => call.action),
+  ).toContain("approve");
 });
 
 it("signs out through the SDK and never just closes the entry", async () => {
