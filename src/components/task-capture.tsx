@@ -355,7 +355,7 @@ export function TaskCapture({
             {capturing ? "Adding" : "Add"}
           </button>
         ) : null}
-        {session.canRecover ? (
+        {session.canRecover && !session.recovering ? (
           <button disabled={capturing} type="submit">
             Recover task
           </button>
@@ -473,7 +473,11 @@ export function TaskCapture({
         />
       ) : null}
 
-      {error ? (
+      {error?.code === "outcome-unknown" && session.recovering ? (
+        <p className="capture-pending" role="status">
+          Confirming that “{text.trim()}” was saved…
+        </p>
+      ) : error ? (
         <OperationErrorNotice
           action="The task"
           message={error}

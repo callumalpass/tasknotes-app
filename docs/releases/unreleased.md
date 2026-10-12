@@ -1,5 +1,7 @@
 # Unreleased
 
+- Confirm a change whose result was interrupted automatically, instead of asking you to recover it. A new task shows that it is being confirmed and finishes by itself; only a definite failure is shown as an error. Keep the workspace open while the collection re-checks a change, so saves and view discovery are no longer interrupted.
+
 - Keep Sign in available while waiting for approval, and show the SDK's retry guidance when sign-in is refused or expires. An explicit retry uses the original SDK sign-in owner.
 
 - Show a one-time mdbase upgrade notice to returning users without blocking work or changing their stored collection data.

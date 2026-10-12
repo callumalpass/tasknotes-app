@@ -241,7 +241,7 @@ it("preserves structured unknown acceptance and asks for exact recovery, not ord
   expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 });
 
-it("hands capture recovery to the retained exact intent instead of a fresh create", async () => {
+it("confirms an unconfirmed capture automatically with the retained exact intent, never a fresh create or a user retry", async () => {
   const create = vi
     .fn<TaskRepository["create"]>(async (input) => task(input))
     .mockImplementationOnce(async (_input, intent) => {
@@ -260,9 +260,11 @@ it("hands capture recovery to the retained exact intent instead of a fresh creat
   const input = screen.getByLabelText("New task title");
   fireEvent.change(input, { target: { value: "Keep this draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
-  await screen.findByText("Unconfirmed");
-  expect(input).toHaveAttribute("readonly");
-  fireEvent.click(screen.getByRole("button", { name: "Recover task" }));
+  expect(
+    await screen.findByText(/Confirming that “Keep this draft” was saved/),
+  ).toBeVisible();
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Recover task" })).toBeNull();
   await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
   expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
   expect(create.mock.calls[1]).toEqual([

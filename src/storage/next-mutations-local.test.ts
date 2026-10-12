@@ -1,4 +1,9 @@
-import { connect, type MdbaseClient, type wire } from "@mdbase-dev/sdk";
+import {
+  connect,
+  MdbaseError,
+  type MdbaseClient,
+  type wire,
+} from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextMutations } from "./next-mutations";
@@ -8,7 +13,7 @@ afterEach(() => {
   clients.splice(0).forEach((client) => client.close());
   vi.restoreAllMocks();
 });
-async function fixture() {
+async function fixture(reconcileWindowMs?: number) {
   const replica = new MemoryReplica({ confirmDelayMs: null });
   const client = await connect({
     connector: replica.connector(),
@@ -21,7 +26,13 @@ async function fixture() {
     replica,
     client,
     changed,
-    mutations: new NextMutations(client, changed),
+    mutations: new NextMutations(
+      client,
+      changed,
+      undefined,
+      undefined,
+      reconcileWindowMs,
+    ),
     signal: new AbortController().signal,
   };
 }
@@ -150,8 +161,46 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     expect(result).toHaveBeenCalledOnce();
   });
 
-  it("retains the original local reader and ID after a lost response, without reissue", async () => {
+  it("a cancelled result READ after capture reconciles itself and returns the original result, never an unknown outcome", async () => {
     const f = await fixture();
+    const recordId = crypto.randomUUID();
+    const submit = vi.spyOn(f.client, "submit");
+    let reads = 0;
+    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+      // The first READ is cancelled, as when a re-check aborted it.
+      if (reads++ === 0)
+        throw new MdbaseError({
+          code: "cancelled",
+          recovery: "retry",
+          message: "get cancelled",
+        });
+      return f.client.get(recordId, { body: true, document: true }, signal);
+    };
+    const record = await f.mutations.run(
+      {
+        key: "cancelled read",
+        recordIds: () => [recordId],
+        prepare: async (mutationId, signal) => () =>
+          f.client.create(
+            { id: recordId, path: "asdd.md", body: "captured" },
+            { mutationId, signal, wait: "pending" },
+          ),
+        local: read,
+        confirmed: read,
+      },
+      f.signal,
+    );
+    expect(record).toMatchObject({ id: recordId, body: "captured" });
+    expect(submit).toHaveBeenCalledOnce();
+    expect(f.mutations.recordWriteState(recordId)?.state).toBe("pending");
+  });
+
+  it("retains the original local reader and ID after a lost response, without reissue, and settles in the background", async () => {
+    const f = await fixture(50);
+    // Receipts are unreadable for the foreground window: the result stays unknown.
+    const receipt = vi
+      .spyOn(f.client, "receipt")
+      .mockRejectedValue(Error("receipt unavailable"));
     const recordId = crypto.randomUUID();
     const originalRead = vi.fn((_receipt: wire.Receipt, signal: AbortSignal) =>
       f.client.get(recordId, { body: true, document: true }, signal),
@@ -187,6 +236,7 @@ describe("native local-result orchestration (protocol stand-in, not native quali
       state: "unknown",
     });
     const replacement = vi.fn();
+    const unknownState = f.mutations.recordWriteState(recordId);
     const replacedReader = vi.fn();
     await expect(
       f.mutations.run(
@@ -205,6 +255,15 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     });
     expect(replacedReader).not.toHaveBeenCalled();
     expect(replacement).not.toHaveBeenCalled();
+    expect(unknownState?.state).toBe("unknown");
+    // Once receipts are readable, background reconciliation settles the
+    // ledger by itself; nobody has to ask for recovery.
+    receipt.mockRestore();
+    await vi.waitFor(
+      () =>
+        expect(f.mutations.recordWriteState(recordId)?.state).toBe("pending"),
+      { timeout: 3_000 },
+    );
     const record = await f.mutations.run(
       {
         key: "original",

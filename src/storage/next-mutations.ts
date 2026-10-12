@@ -7,6 +7,39 @@ import {
 import { pendingRecoveryError } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 
+/** How long a foreground write keeps reconciling its own result before it
+ * hands the write to background reconciliation. */
+const NEXT_RECONCILE_FOREGROUND_MS = 8_000;
+
+/** A cancelled, interrupted or temporarily unavailable READ says nothing
+ * about the write; a deterministic READ refusal is not retried inline. */
+function transientReadFailure(reason: unknown): boolean {
+  if (reason instanceof MdbaseError)
+    return (
+      reason.code === "cancelled" ||
+      reason.code === "unavailable" ||
+      reason.code === "rate_limited" ||
+      reason.code === "outcome_unknown"
+    );
+  return (
+    reason instanceof DOMException &&
+    (reason.name === "AbortError" || reason.name === "TimeoutError")
+  );
+}
+
+function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) return resolve();
+    const done = () => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal.addEventListener("abort", done, { once: true });
+  });
+}
+
 interface NativeMutation<Result> {
   /** Includes the logical action and its input, not generated timestamps. */
   key: string;
@@ -134,6 +167,7 @@ export class NextMutations {
           if (signal.aborted) break;
           entry.state = "unknown";
           this.changed();
+          this.scheduleReconcile(owner);
         }
       }
     })();
@@ -157,6 +191,7 @@ export class NextMutations {
       ids: readonly string[],
       signal: AbortSignal,
     ) => Promise<void>,
+    private readonly reconcileWindowMs = NEXT_RECONCILE_FOREGROUND_MS,
   ) {}
 
   recordIds(mutationId: string): readonly string[] {
@@ -235,6 +270,7 @@ export class NextMutations {
         entry.state = "unknown";
         entry.finished = false;
         this.changed();
+        this.scheduleReconcile(ownerSignal);
       }
     });
   }
@@ -289,8 +325,32 @@ export class NextMutations {
       entry.local ??= operation.local;
       entry.read ??= operation.confirmed;
       this.localWrites.set(id, entry);
-      let receipt: wire.Receipt;
+      // The heterogeneous ledger retains the original operation's reader.
+      // Recovery must not substitute a newly supplied result callback.
+      const complete = async (
+        receipt: wire.Receipt,
+        signal: AbortSignal,
+      ): Promise<Result> => {
+        if (receipt.state === "rejected")
+          throw new RejectedNextMutation(id, receipt.problem);
+        if (receipt.state !== "pending" && receipt.state !== "confirmed")
+          throw new Error(`The native change remains ${receipt.state}.`);
+        const local = entry.local as NonNullable<
+          NativeMutation<Result>["local"]
+        >;
+        const value = await local(receipt, signal);
+        signal.throwIfAborted();
+        if (entry.receipt?.state === "rejected")
+          throw new RejectedNextMutation(id, entry.receipt.problem);
+        entry.delivered = true;
+        if (receipt.state === "confirmed" && entry.state === "confirmed")
+          this.localWrites.delete(id);
+        signal.throwIfAborted();
+        this.changed();
+        return value;
+      };
       try {
+        let receipt: wire.Receipt;
         if (submit) {
           const write = await submit();
           receipt = write.receipt;
@@ -312,46 +372,92 @@ export class NextMutations {
           receipt = await this.client.receipt(id, signal);
           this.publishReceipt(entry, receipt);
         }
-        if (receipt.state === "rejected")
-          throw new RejectedNextMutation(id, receipt.problem);
-        if (receipt.state !== "pending" && receipt.state !== "confirmed")
-          throw new Error(`The native change remains ${receipt.state}.`);
-        // The heterogeneous ledger retains the original operation's reader.
-        // Recovery must not substitute a newly supplied result callback.
-        const local = entry.local as NonNullable<
-          NativeMutation<Result>["local"]
-        >;
-        const value = await local(receipt, signal);
-        signal.throwIfAborted();
-        if (entry.receipt?.state === "rejected")
-          throw new RejectedNextMutation(id, entry.receipt.problem);
-        entry.delivered = true;
-        if (receipt.state === "confirmed" && entry.state === "confirmed")
-          this.localWrites.delete(id);
-        signal.throwIfAborted();
-        this.changed();
-        return value;
+        return await complete(receipt, signal);
       } catch (reason) {
         if (reason instanceof RejectedNextMutation) throw reason;
-        // A result READ can race rollback before its receipt push arrives.
-        // Observe the original MID once, within this same owner/deadline; never
-        // wait for authority or reissue its submission to diagnose that failure.
-        if (!signal.aborted && entry.receipt?.state !== "rejected") {
-          try {
-            const observed = await this.client.receipt(id, signal);
-            signal.throwIfAborted();
-            this.finishLocal(entry, observed, ownerSignal);
-          } catch {
-            /* Preserve the original uncertain failure if READ fails. */
-          }
-        }
+        // A failed or cancelled result READ is not a failed write. Reconcile
+        // the original MID by receipt until there is a definite answer; never
+        // reissue its submission, and never hand that job to the user.
+        const settled = transientReadFailure(reason)
+          ? await this.reconcileLocal(entry, ownerSignal, complete)
+          : null;
+        if (settled) return settled.value;
         if (entry.receipt?.state === "rejected")
           throw new RejectedNextMutation(id, entry.receipt.problem);
         if (entry.state !== "conflicted") entry.state = "unknown";
         this.changed();
+        // Keep reconciling in the background; the ledger settles on its own.
+        this.scheduleReconcile(ownerSignal);
         throw pendingRecoveryError(id, reason);
       }
     });
+  }
+
+  /** Observe the original MID by receipt, with backoff, within a bounded
+   * foreground window. Resolves with the result, or null when the window
+   * closes without a definite answer. A rejection is definite and thrown. */
+  private async reconcileLocal<Result>(
+    entry: LocalMutation,
+    ownerSignal: AbortSignal,
+    complete: (receipt: wire.Receipt, signal: AbortSignal) => Promise<Result>,
+  ): Promise<{ value: Result } | null> {
+    if (ownerSignal.aborted) return null;
+    const signal = AbortSignal.any([
+      ownerSignal,
+      AbortSignal.timeout(this.reconcileWindowMs),
+    ]);
+    for (let attempt = 0; !signal.aborted; attempt++) {
+      if (attempt)
+        await abortableDelay(Math.min(2_000, 100 * 2 ** attempt), signal);
+      if (signal.aborted) break;
+      try {
+        const receipt = await this.client.receipt(entry.id, signal);
+        signal.throwIfAborted();
+        this.publishReceipt(entry, receipt);
+        if (receipt.state === "rejected")
+          throw new RejectedNextMutation(entry.id, receipt.problem);
+        if (receipt.state !== "pending" && receipt.state !== "confirmed")
+          continue;
+        return { value: await complete(receipt, signal) };
+      } catch (reason) {
+        if (reason instanceof RejectedNextMutation) throw reason;
+      }
+    }
+    return null;
+  }
+
+  private reconcileTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconcileAttempts = 0;
+
+  /** Background reconciliation of unconfirmed writes, with capped backoff,
+   * until every write has a definite answer or the owner closes. */
+  private scheduleReconcile(owner: AbortSignal): void {
+    if (this.reconcileTimer || owner.aborted) return;
+    const delay = Math.min(15_000, 500 * 2 ** this.reconcileAttempts++);
+    const timer = setTimeout(() => {
+      this.reconcileTimer = null;
+      if (owner.aborted) return;
+      void this.restorePending(owner)
+        .catch(() => {})
+        .finally(() => {
+          if (
+            [...this.localWrites.values()].some(
+              (entry) => entry.state === "unknown" && !entry.finished,
+            )
+          )
+            this.scheduleReconcile(owner);
+          else this.reconcileAttempts = 0;
+        });
+    }, delay);
+    this.reconcileTimer = timer;
+    owner.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        if (this.reconcileTimer === timer) this.reconcileTimer = null;
+      },
+      { once: true },
+    );
   }
 
   run<Result>(
