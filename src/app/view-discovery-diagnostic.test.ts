@@ -69,7 +69,7 @@ it("does not borrow typed fields from plain objects or arbitrary exception messa
     message: "SECRET",
     stack: "SECRET",
   });
-  expect(value.code).toBeNull();
+  expect(value.code).toBe("internal");
   expect(value.reason).toBeNull();
   expect(text).not.toContain("SECRET");
 });

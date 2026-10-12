@@ -2,6 +2,8 @@ import { MdbaseError } from "@mdbase-dev/sdk";
 
 export type ViewDiscoveryOutcome = "ok" | "empty" | "error";
 export const VIEW_DISCOVERY_DIAGNOSTIC = "[TaskNotes view discovery]";
+/** A newer refresh replaced this one before it published anything. */
+export const DISCOVERY_SUPERSEDED: unique symbol = Symbol("superseded");
 const reasons: Readonly<Record<string, readonly string[]>> = {
   invalid_request: [
     "unknown_param",
@@ -11,7 +13,9 @@ const reasons: Readonly<Record<string, readonly string[]>> = {
   ],
   conflict: ["collection_changed", "source_changed", "catalog_changed"],
   forbidden: ["insufficient_access"],
+  cancelled: ["superseded"],
   unavailable: [
+    "timeout",
     "collection_unusable",
     "disconnected",
     "session_closed",
@@ -40,6 +44,8 @@ function classification(error: unknown): {
   code: string | null;
   reason: string | null;
 } {
+  if (error === DISCOVERY_SUPERSEDED)
+    return { code: "cancelled", reason: "superseded" };
   try {
     if (error instanceof MdbaseError) {
       // Read own data fields only; never invoke arbitrary exception getters.
@@ -62,10 +68,13 @@ function classification(error: unknown): {
     }
     if (error instanceof DOMException && error.name === "AbortError")
       return { code: "cancelled", reason: null };
+    if (error instanceof DOMException && error.name === "TimeoutError")
+      return { code: "unavailable", reason: "timeout" };
   } catch {
-    /* Hostile exceptions remain unclassified, never logged verbatim. */
+    /* Hostile exceptions are classified generically, never logged verbatim. */
   }
-  return { code: null, reason: null };
+  // Every failure carries a code; anything unrecognised is internal.
+  return { code: "internal", reason: null };
 }
 function duration(value: number | null): number | null {
   return value !== null &&

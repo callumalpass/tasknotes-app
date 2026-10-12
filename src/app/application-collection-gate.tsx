@@ -200,12 +200,22 @@ export function ApplicationCollectionGate({
     // Never log the original error, server body, identifiers or credentials.
     if (developerMessage) console.warn("[TaskNotes]", developerMessage);
   }, [developerMessage]);
+  // A collection change makes the SDK re-check readiness. Re-checking is not a
+  // verdict: keep the open workspace (its in-flight reads, writes and drafts)
+  // until readiness settles. Only a settled non-ready result closes it.
+  const rechecking =
+    snapshot.selection.state === "usable" &&
+    !snapshot.selection.problem &&
+    !snapshot.problem &&
+    ["opening", "ready"].includes(snapshot.status) &&
+    !snapshot.readiness.problem &&
+    (snapshot.readiness.checking || snapshot.readiness.assessment === null);
   const current =
     held &&
     held.connection.isCurrent() &&
     connection?.generation === held.connection.generation &&
     connection.records === held.connection.records &&
-    ready
+    (ready || rechecking)
       ? held
       : null;
   const request = snapshot.selection.requested;

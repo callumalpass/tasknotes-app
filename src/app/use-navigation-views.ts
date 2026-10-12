@@ -5,6 +5,7 @@ import {
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
 import {
+  DISCOVERY_SUPERSEDED,
   logViewDiscovery,
   type ViewDiscoveryOutcome,
 } from "./view-discovery-diagnostic";
@@ -87,13 +88,19 @@ export function useNavigationViews(): {
         // Start asynchronously when invoked by the mount effect. Superseded
         // owners cannot publish state or launch an extra discovery READ.
         await Promise.resolve();
-        if (request !== sequence.value) return;
+        if (request !== sequence.value) {
+          failure = DISCOVERY_SUPERSEDED;
+          return;
+        }
         setRefreshing(true);
         [info, cachedDocuments] = await Promise.all([
           repository.collectionInfo(),
           repository.cachedViews().catch(() => []),
         ]);
-        if (request !== sequence.value) return;
+        if (request !== sequence.value) {
+          failure = DISCOVERY_SUPERSEDED;
+          return;
+        }
         cachedCatalog = resolveNavigationViewCatalog(
           info,
           cachedDocuments,

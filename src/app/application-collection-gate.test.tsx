@@ -277,6 +277,52 @@ it("keeps the original workspace and unsaved input through a live migration and 
   ).toHaveLength(0);
 });
 
+it("keeps the open workspace, repository and in-flight work while readiness re-checks a change", async () => {
+  const f = await fixture();
+  f.sdk.controls.publishSnapshot(f.ready());
+  const mounts: TaskRepository[] = [];
+  function CountingWorkspace(props: Parameters<typeof OpenedCollection>[0]) {
+    useEffect(() => {
+      mounts.push(props.repository);
+    }, [props.repository]);
+    return <Workspace {...props} />;
+  }
+  render(
+    <ApplicationCollectionGate
+      entry={f.sdk.entry}
+      Picker={Picker}
+      Workspace={CountingWorkspace}
+    />,
+  );
+  expect(await screen.findByText("Original workspace")).toBeVisible();
+  const recheck = (): MdbaseApplicationSnapshot => ({
+    ...f.ready(),
+    status: "opening",
+    readiness: { ...f.ready().readiness, checking: true, assessment: null },
+  });
+  // Every collection change (own writes included) re-checks readiness. A
+  // teardown per re-check suspended the repository, cancelling discovery and
+  // write confirmation, then remounted and rediscovered: the discovery storm.
+  for (let index = 0; index < 5; index++) {
+    await act(async () => f.sdk.controls.publishSnapshot(recheck()));
+    expect(screen.getByText("Original workspace")).toBeVisible();
+    await act(async () => f.sdk.controls.publishSnapshot(f.ready()));
+  }
+  expect(mounts).toHaveLength(1);
+  // A settled non-ready verdict still closes it.
+  await act(async () =>
+    f.sdk.controls.publishSnapshot({
+      ...f.ready(),
+      status: "setup_required",
+      readiness: {
+        ...f.ready().readiness,
+        assessment: { status: "setup_required", problem: null },
+      },
+    }),
+  );
+  expect(screen.queryByText("Original workspace")).not.toBeInTheDocument();
+});
+
 it("uses shared registration-refusal copy and logs only its SDK developer description", async () => {
   const f = await fixture();
   const snapshot: MdbaseApplicationSnapshot = {
