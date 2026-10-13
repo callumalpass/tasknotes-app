@@ -1,5 +1,7 @@
 # Unreleased
 
+- Explain repeating-task timing with “Planned dates” and keep the raw schedule rule behind “Advanced rule”, instead of showing “Fixed schedule” and “Edit RRULE”.
+
 - Open person-record setup in the Editor configured for this TaskNotes environment, instead of following an outdated Editor address.
 
 - Finish adding a Private collection when its approval window returns to TaskNotes. The window hands the result to the waiting tab and closes, instead of starting a second copy of TaskNotes and leaving the request waiting.

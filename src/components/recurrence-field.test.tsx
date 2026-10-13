@@ -130,6 +130,38 @@ describe("RecurrenceField", () => {
     );
   });
 
+  it("explains repeat timing in plain language and keeps raw rules advanced", () => {
+    const anchorChanged = vi.fn();
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        scheduled="2030-08-05"
+        value="DTSTART:20300805;FREQ=WEEKLY;BYDAY=MO"
+        onAnchorChange={anchorChanged}
+        onChange={changed}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit pattern" }));
+    expect(screen.queryByText("Edit RRULE")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fixed schedule")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Recurrence rule")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "Repeat from" }));
+    const list = screen.getByRole("listbox", { name: "Repeat from" });
+    expect(
+      within(list).getByRole("option", { name: /^Planned dates/ }),
+    ).toHaveTextContent("Keep the planned dates, even if you finish late.");
+    fireEvent.click(
+      within(list).getByRole("option", { name: /^Completion date/ }),
+    );
+    expect(anchorChanged).toHaveBeenCalledWith("completion");
+    fireEvent.click(screen.getByRole("button", { name: "Advanced rule" }));
+    expect(screen.getByLabelText("Recurrence rule")).toHaveValue(
+      "DTSTART:20300805;FREQ=WEEKLY;BYDAY=MO",
+    );
+    expect(changed).not.toHaveBeenCalled();
+  });
+
   it("creates a complete preset from the scheduled value", () => {
     const changed = vi.fn();
     render(

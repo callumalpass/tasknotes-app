@@ -296,13 +296,15 @@ export function RecurrenceField({
               options={[
                 {
                   value: "scheduled",
-                  label: "Fixed schedule",
-                  description: "Keep dates anchored to the pattern.",
+                  label: "Planned dates",
+                  description:
+                    "Keep the planned dates, even if you finish late.",
                 },
                 {
                   value: "completion",
                   label: "Completion date",
-                  description: "Start the next interval when this is finished.",
+                  description:
+                    "Count the interval from when you finish the task.",
                 },
               ]}
               value={anchor ?? "scheduled"}
@@ -316,7 +318,7 @@ export function RecurrenceField({
               type="button"
               onClick={() => setAdvanced(true)}
             >
-              Edit RRULE
+              Advanced rule
             </button>
           </div>
         )
