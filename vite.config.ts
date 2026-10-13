@@ -11,7 +11,11 @@ const { version } = JSON.parse(
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: process.env.VITE_BASE_PATH ?? "/",
-  plugins: [androidNotificationSmokeEntry(), react(), offlineShellPlugin({ workerFile: "service-worker.js", register: false })],
+  plugins: [
+    androidNotificationSmokeEntry(),
+    react(),
+    offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
+  ],
   worker: { format: "es" },
   optimizeDeps: {
     include: [

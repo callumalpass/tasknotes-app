@@ -32,7 +32,9 @@ async function fixture() {
     let settled: Promise<unknown> | undefined;
     handlers.get(type)!({
       ...data,
-      waitUntil: (promise: Promise<unknown>) => { settled = promise; },
+      waitUntil: (promise: Promise<unknown>) => {
+        settled = promise;
+      },
     });
     await settled;
   }
@@ -49,9 +51,23 @@ const notification = {
 it("retains push delivery and wake messages without a competing shell-cache implementation", async () => {
   const f = await fixture();
   expect([...f.handlers.keys()]).toEqual(["push", "notificationclick"]);
-  await f.dispatch("push", { data: { json: () => ({ ...notification, presentation: { title: "Test reminder" } }) } });
-  expect(f.registration.showNotification).toHaveBeenCalledWith("Test reminder", { data: notification });
-  expect(f.client.postMessage).toHaveBeenCalledWith({ type: "tasknotes:mdbase-notification", notification, opened: false });
+  await f.dispatch("push", {
+    data: {
+      json: () => ({
+        ...notification,
+        presentation: { title: "Test reminder" },
+      }),
+    },
+  });
+  expect(f.registration.showNotification).toHaveBeenCalledWith(
+    "Test reminder",
+    { data: notification },
+  );
+  expect(f.client.postMessage).toHaveBeenCalledWith({
+    type: "tasknotes:mdbase-notification",
+    notification,
+    opened: false,
+  });
   await f.dispatch("push", { data: { json: () => ({ type: "invalid" }) } });
   expect(f.registration.showNotification).toHaveBeenCalledTimes(1);
 });
@@ -59,9 +75,15 @@ it("retains push delivery and wake messages without a competing shell-cache impl
 it("focuses the existing app on notification click without navigating or reloading another tab", async () => {
   const f = await fixture();
   const close = vi.fn();
-  await f.dispatch("notificationclick", { notification: { close, data: notification } });
+  await f.dispatch("notificationclick", {
+    notification: { close, data: notification },
+  });
   expect(close).toHaveBeenCalledOnce();
   expect(f.client.focus).toHaveBeenCalledOnce();
   expect(f.clients.openWindow).not.toHaveBeenCalled();
-  expect(f.client.postMessage).toHaveBeenCalledWith({ type: "tasknotes:mdbase-notification", notification, opened: true });
+  expect(f.client.postMessage).toHaveBeenCalledWith({
+    type: "tasknotes:mdbase-notification",
+    notification,
+    opened: true,
+  });
 });
