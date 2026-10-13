@@ -1,3 +1,7 @@
+import {
+  CollectionSaveWarning,
+  useCollectionSaveWarning,
+} from "@mdbase-dev/ui/collections";
 import { CloudUpload, TriangleAlert } from "lucide-react";
 import {
   useCallback,
@@ -144,6 +148,7 @@ export function WriteStatusOverlay({
   problemCount?: number;
   onReview?(target: RecordWriteTarget): void;
 }) {
+  const saveWarning = useCollectionSaveWarning();
   const disconnected = reportedDisconnected || notice !== null;
   const syncing = useProlonged(repository, pending > 0, 2_000);
   // Only time spent connected counts as slow: changes kept while offline
@@ -170,8 +175,8 @@ export function WriteStatusOverlay({
   );
   return createPortal(
     <div
-      className={`collection-write-status${message ? " is-visible" : ""}${needsAttention ? " needs-attention" : ""}`}
-      aria-hidden={!message}
+      className={`collection-write-status${message || saveWarning ? " is-visible" : ""}${needsAttention ? " needs-attention" : ""}`}
+      aria-hidden={!message && !saveWarning}
       role={needsAttention ? "status" : undefined}
       aria-live={needsAttention ? "polite" : "off"}
       aria-atomic="true"
@@ -183,6 +188,7 @@ export function WriteStatusOverlay({
         <CloudUpload aria-hidden="true" size={16} />
       )}
       <span>{message}</span>
+      <CollectionSaveWarning />
       {problemCount > 1 ? (
         <span>{problemCount} changes need review</span>
       ) : null}
