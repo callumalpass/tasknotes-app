@@ -9,6 +9,7 @@ import {
   type TaskNotesAppEnvironment,
 } from "./app-environment";
 import { TASKNOTES_APPLICATION_REGISTRATION } from "./next-application-registration";
+import { requirePersonEditorOrigin } from "./person-settings-url";
 
 /** Declaration data only. The SDK owns registration, assets, Worker and SQL.
  * The generated manifest is not normalized, patched or substituted here. */
@@ -42,6 +43,8 @@ export function taskNotesMdbase(): Mdbase {
     import.meta.env.VITE_TASKNOTES_LAB_ORIGIN,
     window.location.origin,
   );
+  // Both LAB and production choose their own Editor destination explicitly.
+  requirePersonEditorOrigin(import.meta.env.VITE_TASKNOTES_EDITOR_ORIGIN);
   // Returning from the Connect window or another app re-checks at once.
   entry = createMdbase(taskNotesApplicationDeclaration(environment), {
     followVisibility: true,

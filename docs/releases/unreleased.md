@@ -1,5 +1,7 @@
 # Unreleased
 
+- Open person-record setup in the Editor configured for this TaskNotes environment, instead of following an outdated Editor address.
+
 - Finish adding a Private collection when its approval window returns to TaskNotes. The window hands the result to the waiting tab and closes, instead of starting a second copy of TaskNotes and leaving the request waiting.
 
 - Show a Private label, with a lock, on Private collections in the collection switcher and chooser.

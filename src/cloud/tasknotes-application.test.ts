@@ -1,6 +1,26 @@
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import manifest from "../generated/mdbase-app.json";
-import { taskNotesApplicationDeclaration } from "./tasknotes-application";
+import {
+  taskNotesApplicationDeclaration,
+  taskNotesMdbase,
+} from "./tasknotes-application";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+it.each([undefined, "", "https://editor.example.test/"])(
+  "refuses next host startup with missing/invalid Editor configuration %s",
+  (editorOrigin) => {
+    const appOrigin = "http://127.0.0.1:48218";
+    vi.stubEnv("VITE_TASKNOTES_ENVIRONMENT", "lab");
+    vi.stubEnv("VITE_TASKNOTES_LAB_ORIGIN", appOrigin);
+    vi.stubEnv("VITE_TASKNOTES_EDITOR_ORIGIN", editorOrigin);
+    vi.stubGlobal("window", { location: { origin: appOrigin } });
+    expect(() => taskNotesMdbase()).toThrow("VITE_TASKNOTES_EDITOR_ORIGIN");
+  },
+);
 
 it("passes exact generated manifest and original compatibility storage data to the SDK", () => {
   const declaration = taskNotesApplicationDeclaration({

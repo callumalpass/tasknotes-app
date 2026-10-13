@@ -7,6 +7,20 @@ That existing script builds for staging Connect and connector port 28486,
 validates the artifact, deploys the Cloudflare `staging` branch, and smokes staging.
 LAB remains separate and is not changed by this workflow.
 
+## Next app Editor destination
+
+Next builds must set `VITE_TASKNOTES_EDITOR_ORIGIN` explicitly alongside their
+app environment and origin. Use the exact Editor origin for that environment:
+`https://lab.mdbase-editor-lab.pages.dev` for the current isolated LAB, or the
+approved production Editor origin when preparing a production build. An isolated
+local Editor may use an exact `http://127.0.0.1:<port>` origin. Paths, credentials,
+queries, and fragments are not valid configuration. Startup rejects a missing or
+invalid value rather than silently using another environment's Editor.
+
+The person-record action retains the authority's collection, server, settings
+surface, and person anchor; only its browser destination origin changes. This
+configuration does not select runtime assets or alter authentication authority.
+
 ## Promote to production
 
 1. Validate the staging commit with a disposable collection.

@@ -1,4 +1,5 @@
 import { ArrowUpRight, UserRound } from "lucide-react";
+import { personSettingsUrl } from "../cloud/person-settings-url";
 
 export function PersonSetupLink({
   href,
@@ -10,7 +11,10 @@ export function PersonSetupLink({
   return (
     <a
       className="people-action people-profile-link"
-      href={href}
+      href={personSettingsUrl(
+        href,
+        import.meta.env.VITE_TASKNOTES_EDITOR_ORIGIN,
+      )}
       target="_blank"
       rel="noopener noreferrer"
       onClick={onOpen}
