@@ -631,6 +631,13 @@ export class NextTaskRepository implements TaskRepository {
       this.changesWatch = watch;
       watch.subscribe((state, error) => {
         if (!current()) return;
+        if (state === "active" && this.status.state === "unavailable") {
+          this.status = { state: "connected", lastReachedAt: new Date().toISOString() };
+          // A resumed, authenticated watch is evidence of a reachable source.
+          // Refresh READ models, not writes, once it becomes active again.
+          this.invalidateRemoteData();
+          this.emit("status");
+        }
         if (state === "stale" || state === "failed") {
           this.status = {
             state: "unavailable",

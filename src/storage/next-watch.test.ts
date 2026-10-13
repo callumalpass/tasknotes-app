@@ -131,6 +131,29 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     ).toBe("After");
   });
 
+  it("recovers source status and invalidates read models when the authenticated watch resumes, without refresh or write replay", async () => {
+    const f = await fixture();
+    const control = heldWatch();
+    vi.spyOn(f.client, "watchChanges").mockReturnValue(control.watch);
+    const initialized = f.repository.initialize();
+    control.active();
+    await initialized;
+    const changes = vi.fn();
+    f.repository.subscribe(changes);
+    control.stale(unavailable());
+    expect((await f.repository.connectionStatus()).state).toBe("unavailable");
+    changes.mockClear();
+    control.active();
+    expect((await f.repository.connectionStatus()).state).toBe("connected");
+    expect(changes).toHaveBeenCalledWith({ kind: "data" });
+    expect(changes).toHaveBeenCalledWith({ kind: "status" });
+    // A late callback from this retired scope must never resurrect it.
+    f.repository.dispose();
+    changes.mockClear();
+    control.active();
+    expect(changes).not.toHaveBeenCalled();
+  });
+
   it("surfaces startup failure and does not silently restart until explicit refresh", async () => {
     const f = await fixture();
     const first = heldWatch();
