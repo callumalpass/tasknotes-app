@@ -116,8 +116,13 @@ on returning to the app, preserve the last known connection state and remain
 silent for five seconds. Longer waits show a quiet, non-layout-shifting status
 indicator. Known unavailability stays visible as a compact save warning across
 the workspace and detail, even when a cached read succeeds or a retry is in
-progress; retry and connection settings remain available. Lifecycle cancellation
-is not evidence that the collection is unavailable.
+progress. When mdbase reports that the serving computer is offline, show
+“Waiting for your computer” instead of task/view loading failures and a stale
+retry control. Keep previously loaded work visible; resume read models when the
+authenticated change watch becomes active, without a page reload. Do not retry
+writes automatically or hide access refusals. Connection settings remain
+available. Lifecycle cancellation is not evidence that the collection is
+unavailable.
 
 ## Typography
 

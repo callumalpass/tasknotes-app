@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { ConnectionNoticeContext } from "../app/connection-notice";
 import { cleanOperationError } from "../app/operation-error";
 import {
   toOperationalError,
@@ -17,6 +19,8 @@ export function OperationErrorNotice({
 }) {
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
+  const waiting = useContext(ConnectionNoticeContext) === "waiting_for_computer";
+  if (waiting && failure.code === "unavailable") return <p role="status">Waiting for your computer. Try this action again when it reconnects.</p>;
   const technical = cleanOperationError(failure.detail).trim();
   return (
     <div className={`operation-error ${className}`.trim()}>

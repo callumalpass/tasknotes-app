@@ -7,7 +7,8 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useId, useRef, useState } from "react";
+import { ConnectionNoticeContext } from "./connection-notice";
 import { createPortal } from "react-dom";
 import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
@@ -566,6 +567,8 @@ export function ViewDiscoveryNotice({
   /** Present only where the person can explicitly add the starter views. */
   onStarterViewsAdded?(): Promise<void>;
 }) {
+  const waitingForComputer = useContext(ConnectionNoticeContext) === "waiting_for_computer";
+  if (waitingForComputer && outcome === "error") return null;
   if (outcome === "empty" && onStarterViewsAdded)
     return (
       <EmptyViewsNotice

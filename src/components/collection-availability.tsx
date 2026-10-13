@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { ConnectionNoticeContext } from "../app/connection-notice";
 import { useRepository } from "../app/repository-context";
 import { HeldEditsNotice } from "./held-edits";
 
@@ -8,6 +9,7 @@ export function CollectionAvailability({
   onSettings?: () => void;
 }) {
   const { connection, refresh, refreshing } = useRepository();
+  const waitingForComputer = useContext(ConnectionNoticeContext) === "waiting_for_computer";
   const [failed, setFailed] = useState(false);
   const waiting =
     connection.state === "connecting" ||
@@ -29,7 +31,7 @@ export function CollectionAvailability({
       onReview={onSettings}
     />
   );
-  if (connection.state !== "unavailable") {
+  if (connection.state !== "unavailable" && !waitingForComputer) {
     return (
       <>
         {protectedEdits}
@@ -50,15 +52,16 @@ export function CollectionAvailability({
       >
         <div role="status">
           <span>
-            Collection unavailable. Showing previously loaded tasks; changes
-            can’t be saved.
+            {waitingForComputer
+              ? "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects."
+              : "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."}
           </span>
-          {failed ? (
+          {failed && !waitingForComputer ? (
             <p>Could not reconnect. Try again or check connection settings.</p>
           ) : null}
         </div>
         <div className="availability-actions">
-          <button
+          {!waitingForComputer ? <button
             className="text-action"
             type="button"
             disabled={refreshing}
@@ -68,7 +71,7 @@ export function CollectionAvailability({
             }}
           >
             {refreshing ? "Reconnecting…" : "Retry connection"}
-          </button>
+          </button> : null}
           {onSettings ? (
             <button className="text-action" type="button" onClick={onSettings}>
               Connection settings
