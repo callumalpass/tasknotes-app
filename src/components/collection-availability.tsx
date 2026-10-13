@@ -9,7 +9,8 @@ export function CollectionAvailability({
   onSettings?: () => void;
 }) {
   const { connection, refresh, refreshing } = useRepository();
-  const waitingForComputer = useContext(ConnectionNoticeContext) === "waiting_for_computer";
+  const waitingForComputer =
+    useContext(ConnectionNoticeContext) === "waiting_for_computer";
   const [failed, setFailed] = useState(false);
   const waiting =
     connection.state === "connecting" ||
@@ -61,17 +62,19 @@ export function CollectionAvailability({
           ) : null}
         </div>
         <div className="availability-actions">
-          {!waitingForComputer ? <button
-            className="text-action"
-            type="button"
-            disabled={refreshing}
-            onClick={() => {
-              setFailed(false);
-              void refresh().catch(() => setFailed(true));
-            }}
-          >
-            {refreshing ? "Reconnecting…" : "Retry connection"}
-          </button> : null}
+          {!waitingForComputer ? (
+            <button
+              className="text-action"
+              type="button"
+              disabled={refreshing}
+              onClick={() => {
+                setFailed(false);
+                void refresh().catch(() => setFailed(true));
+              }}
+            >
+              {refreshing ? "Reconnecting…" : "Retry connection"}
+            </button>
+          ) : null}
           {onSettings ? (
             <button className="text-action" type="button" onClick={onSettings}>
               Connection settings

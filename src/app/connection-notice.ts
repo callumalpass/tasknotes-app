@@ -9,7 +9,8 @@ import type { MdbaseSnapshot } from "@mdbase-dev/sdk";
  * - reconnecting: the sync service cannot be reached, or other devices'
  *   changes have stopped arriving live.
  */
-export type ConnectionNotice = "offline" | "reconnecting" | "saved_on_device" | "waiting_for_computer";
+export type ConnectionNotice =
+  "offline" | "reconnecting" | "saved_on_device" | "waiting_for_computer";
 
 export const connectionNoticeLabels: Record<ConnectionNotice, string> = {
   waiting_for_computer: "Waiting for your computer",
@@ -19,7 +20,16 @@ export const connectionNoticeLabels: Record<ConnectionNotice, string> = {
 };
 
 type Observed = Partial<
-  Pick<MdbaseSnapshot, "phase" | "sync" | "writes" | "transport" | "live" | "collections" | "selectedCollectionId">
+  Pick<
+    MdbaseSnapshot,
+    | "phase"
+    | "sync"
+    | "writes"
+    | "transport"
+    | "live"
+    | "collections"
+    | "selectedCollectionId"
+  >
 >;
 
 export function connectionNotice(
@@ -32,8 +42,13 @@ export function connectionNotice(
     return "saved_on_device";
   // Availability is an SDK fact, not an app storage choice or an inference
   // from a failed task/view operation. Access removal stays a different state.
-  const availability = snapshot.collections?.find(c => c.collectionId === snapshot.selectedCollectionId)?.availability;
-  if (availability?.state === "unavailable" && availability.reason === "device_offline")
+  const availability = snapshot.collections?.find(
+    (c) => c.collectionId === snapshot.selectedCollectionId,
+  )?.availability;
+  if (
+    availability?.state === "unavailable" &&
+    availability.reason === "device_offline"
+  )
     return "waiting_for_computer";
   const health = snapshot.sync?.health ?? snapshot.transport?.kind ?? null;
   if (!online || health === "offline") return "offline";
