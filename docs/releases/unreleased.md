@@ -1,5 +1,7 @@
 # Unreleased
 
+- Preserve hyphenated recurrence words in quick-add titles, such as weekly-review and due-only-weekly, instead of removing part of the title or leaving a stray backslash.
+
 - Anchor a new repeating task to its scheduled date or, when unscheduled, its due date. Save its first planned occurrence so Today and calendar views agree, and show the selected occurrence's dates in task details.
 
 - Keep the Task added confirmation message, Open action, and dismiss control together without an empty second row.

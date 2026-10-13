@@ -133,8 +133,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1
       tasknotes-nlp-core:
-        specifier: 0.1.5
-        version: 0.1.5
+        specifier: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
+        version: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -3356,8 +3356,9 @@ packages:
     resolution: {integrity: sha512-9FcyK4PA6+WbzlTM9WhQm6vB5W7cP7dUiPsv1g7YDwEQnQ1CGpK3MGlKk/ITVWMk05kHZuBhmVhiv8LZoy/PFQ==}
     engines: {node: '>=18'}
 
-  tasknotes-nlp-core@0.1.5:
-    resolution: {integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==}
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
+    resolution: {integrity: sha512-1HVH6TJjElHq70RuEhFcWWPPbQaV0qEzuMqB2NnB4z8MdA5M8lRmy5xgDyMW/fsj5mrhiQnLWWiPt7gaSWNd3A==, tarball: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz}
+    version: 0.2.0
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.5.tgz:
     resolution: {integrity: sha512-8/Z16QQ58gmBLI7CAwYSkuAL8UwEB7FF04VDFjz2CQhUWfyppZPKtCox4NGz2944PEI0VWo/8JEcvAcSgXuxiA==, tarball: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz}
@@ -7563,7 +7564,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tasknotes-nlp-core@0.1.5:
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
     dependencies:
       chrono-node: 2.10.1
       date-fns: 4.4.0
