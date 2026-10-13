@@ -1,0 +1,24 @@
+{
+  "repository": "mdbase-dev/mdbase-connect",
+  "sourceCommit": "7ff0ce029a0dccdfeec93ea8c730ef96578ab1af",
+  "mergedAs": null,
+  "sourcePr": "https://github.com/mdbase-dev/mdbase-connect/pull/786",
+  "package": "@mdbase-dev/ui",
+  "version": "0.1.0-beta.129-dev.7ff0ce02",
+  "artifact": "ui-dev-7ff0ce02.tgz",
+  "bytes": 88633,
+  "sha256": "2a59871014be4970fe3da345f10770100c2eb800f24694c0420cb3a0bd03110d",
+  "integrity": "sha512-xhdBlWJZej1JUrH86KJqnG/xvY0XdJ2bWW+zeAC3g2QCm4OZNRo4AMBw2DujLfH5sxgcd3InJiYAyr3OVo1BDw==",
+  "consumerEntries": [
+    "@mdbase-dev/ui/collections",
+    "@mdbase-dev/ui/collections.css",
+    "@mdbase-dev/ui/collections/testing"
+  ],
+  "peers": {
+    "@mdbase-dev/sdk": "sdk-dev-b1c47a32.tgz (optional peer, \"*\")",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0 (optional; needed for collections)"
+  },
+  "label": "dev intake, not release-qualified",
+  "noPublication": true
+}
