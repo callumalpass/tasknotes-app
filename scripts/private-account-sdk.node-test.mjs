@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-ca8f0682.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-abc08f3e.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "ca8f0682cdda81fc8530c501137784ee5d122267",
+    "abc08f3e9e78a87a7fe7c418a183fe8128988657",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "93c193c23441a5efff7347b48b7afb2ba9345ab0112311d8f56b085da0d2e44a",
+    "4e76945db7f77c0c092e666cffdc028cad2dec775e7087fef228af77e8a9affe",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-ca8f0682.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-abc08f3e.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -82,12 +82,12 @@ test("packaged native assets are original bytes, not public application readines
   assert.equal(manifest.native.available, true);
   assert.equal(
     manifest.native.sourceCommit,
-    "b52b152b320bef64e3770055f9fcec76ea88468e",
+    "8d18760c3a0904280bd00122e6ba19c2fe94eeaa",
   );
-  assert.equal(manifest.native.bytes, 3579968);
+  assert.equal(manifest.native.bytes, 3580219);
   assert.equal(
     manifest.native.sha256,
-    "442d0f7c407a3d2c1f25e7bd6ccc5280bff9de7ab36c98d2b205d4906991b2f7",
+    "437f23cbae13c133eb5c41ed6ac868e3bb89f877178057322fad076a33b5cc14",
   );
   assert.equal(native.byteLength, manifest.native.bytes);
   assert.equal(
@@ -184,7 +184,7 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
 
 test("the successor SDK has no unused protocol exception", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-ca8f0682.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-abc08f3e.json", root), "utf8"),
   );
   assert.deepEqual(manifest.vendorWarnings, []);
   assert.equal(manifest.qualification.productionQualified, false);
