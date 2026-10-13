@@ -1,7 +1,16 @@
 import { linkDisplayLabel } from "../domain/completion";
 import { isEmptyFieldValue } from "../domain/custom-field-value";
 import { recurrencePreset } from "../domain/recurrence-rule";
-import { activeTimeEntry, type Task } from "../domain/task";
+import {
+  activeTimeEntry,
+  formatRelativeTaskDate,
+  type Task,
+} from "../domain/task";
+import {
+  occurrenceTask,
+  taskOccurrenceForDate,
+} from "../domain/task-occurrence";
+import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
 export type Draft = Pick<
   Task,
@@ -27,6 +36,43 @@ export type Draft = Pick<
   | "timeEstimate"
   | "customProperties"
 >;
+
+export function scheduleSummary(
+  task: Task,
+  draft: Draft,
+  configuration: TaskCollectionConfiguration,
+  occurrenceDate?: string,
+): string {
+  const dates =
+    occurrenceDate && draft.recurrence
+      ? occurrenceTask(
+          taskOccurrenceForDate(
+            {
+              ...task,
+              scheduled: draft.scheduled,
+              due: draft.due,
+              recurrence: draft.recurrence,
+            },
+            occurrenceDate,
+          ),
+        )
+      : draft;
+  return (
+    [
+      draft.status !== "none" && draft.status !== configuration.defaults.status
+        ? (configuration.statuses.find(
+            (status) => status.value === draft.status,
+          )?.label ?? draft.status)
+        : "",
+      dates.scheduled
+        ? `Scheduled ${formatRelativeTaskDate(dates.scheduled)}`
+        : "",
+      dates.due ? `Due ${formatRelativeTaskDate(dates.due)}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ") || "No dates"
+  );
+}
 
 export function toDraft(task: Task): Draft {
   return {

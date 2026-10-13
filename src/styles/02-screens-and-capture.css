@@ -654,26 +654,21 @@
 .capture-keep-adding input {
   accent-color: var(--accent);
 }
-.task-added-notice {
+.undo-toast.task-added-notice {
   display: flex;
-  flex-wrap: wrap;
 }
 .task-added-notice > span {
   flex: 1 1 10rem;
   min-width: 0;
 }
-.task-added-notice > .save-state {
-  display: flex;
-  flex: 1 1 100%;
-  flex-wrap: wrap;
-  overflow: visible;
-  -webkit-line-clamp: unset;
-}
 .task-added-notice > button {
   flex: 0 0 auto;
 }
-.task-added-notice > button:last-child {
-  margin-left: auto;
+.undo-toast.task-added-notice > button:last-child {
+  display: grid;
+  place-items: center;
   min-width: 44px;
+  padding: 0;
+  color: var(--ink-muted);
   border-left: 0;
 }

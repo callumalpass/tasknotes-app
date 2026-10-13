@@ -69,6 +69,20 @@ describe("recurring task occurrences", () => {
     });
   });
 
+  it("projects legacy series dates from the pattern start when Scheduled is absent", () => {
+    const legacy = {
+      ...task,
+      scheduled: undefined,
+      due: "2026-10-23",
+      recurrence: "DTSTART:20261014;FREQ=WEEKLY;BYDAY=WE",
+    };
+    const [entry] = taskOccurrencesBetween(legacy, "2026-10-21", "2026-10-21");
+    expect(occurrenceTask(entry)).toMatchObject({
+      scheduled: "2026-10-21",
+      due: "2026-10-30",
+    });
+  });
+
   it("keeps exact Today counts while bounding every rendered section", () => {
     const projection = projectTodayTasks(
       [

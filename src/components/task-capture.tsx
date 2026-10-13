@@ -634,6 +634,7 @@ function CaptureDetails({
         <RecurrenceField
           anchor={input.recurrenceAnchor}
           scheduled={input.scheduled}
+          due={input.due}
           value={input.recurrence}
           onAnchorChange={(recurrenceAnchor) => onChange({ recurrenceAnchor })}
           onChange={(recurrence) => onChange({ recurrence })}

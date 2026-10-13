@@ -5,6 +5,37 @@ import { describe, expect, it, vi } from "vitest";
 import { RecurrenceField } from "./recurrence-field";
 
 describe("RecurrenceField", () => {
+  it("anchors a new preset to Due when Scheduled is empty", () => {
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        due="2030-08-09"
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    choose("Repeat", "Weekly");
+    expect(changed).toHaveBeenCalledWith(
+      "DTSTART:20300809;FREQ=WEEKLY;INTERVAL=1;BYDAY=FR",
+    );
+  });
+
+  it("prefers Scheduled over Due when anchoring a new preset", () => {
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        scheduled="2030-08-05"
+        due="2030-08-09"
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    choose("Repeat", "Weekly");
+    expect(changed).toHaveBeenCalledWith(
+      "DTSTART:20300805;FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+    );
+  });
+
   it("edits weekday rules visually without losing BYDAY", () => {
     const changed = vi.fn();
 

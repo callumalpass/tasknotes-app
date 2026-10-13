@@ -6,6 +6,7 @@ import {
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
 import { getCurrentDateString } from "@tasknotes/model/date";
+import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
   mapTaskFromFrontmatter,
   mapTaskToFrontmatter,
@@ -238,6 +239,14 @@ export class TaskNotesTaskModel {
       dateModified: now,
       archived: false,
     };
+    if (info.recurrence && !info.scheduled) {
+      // Persist the next planned occurrence so list filters and calendars use
+      // the same date. Due remains the entered deadline relative to that date.
+      const next = updateToNextScheduledOccurrence(info, false, {
+        today: context.currentDate ?? todayString(new Date(now)),
+      });
+      info.scheduled = next.scheduled ?? undefined;
+    }
     if (
       !info.recurrence &&
       isCompletedStatus(info.status, this.config.statuses)

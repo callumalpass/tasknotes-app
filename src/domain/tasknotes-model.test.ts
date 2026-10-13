@@ -29,6 +29,37 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("persists the first planned date for a due-only repeating task", () => {
+    const task = model.create(
+      {
+        title: "Friday review",
+        due: "2026-10-23",
+        recurrence: "DTSTART:20261023;FREQ=WEEKLY;BYDAY=FR",
+      },
+      { id: "friday", now: "2026-10-13T16:00:00Z", currentDate: "2026-10-14" },
+    );
+    expect(task.scheduled).toBe("2026-10-23");
+    expect(task.due).toBe("2026-10-23");
+    expect(task.frontmatter.scheduled).toBe("2026-10-23");
+  });
+
+  it("persists today for an undated recurrence with a later deadline", () => {
+    const task = model.create(
+      {
+        title: "Wednesday review",
+        due: "2026-10-23",
+        recurrence: "DTSTART:20261014;FREQ=WEEKLY;BYDAY=WE",
+      },
+      {
+        id: "wednesday",
+        now: "2026-10-13T16:00:00Z",
+        currentDate: "2026-10-14",
+      },
+    );
+    expect(task.scheduled).toBe("2026-10-14");
+    expect(task.due).toBe("2026-10-23");
+  });
+
   it.each(["explicit", "default"])(
     "derives a completion date for %s completed creation",
     (selection) => {

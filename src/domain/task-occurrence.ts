@@ -1,5 +1,9 @@
 import { generateRecurringInstances } from "@tasknotes/model/recurrence";
 import { normalizeTaskReference } from "@tasknotes/model/operations";
+import {
+  parseRecurrenceRule,
+  recurrenceStartStorageValue,
+} from "./recurrence-rule";
 
 import {
   combineTaskDateTime,
@@ -117,9 +121,10 @@ function utcCalendarDate(date: Date): string {
 
 export function occurrenceTask(value: TaskOccurrence): TaskSummary {
   const task = value.task;
-  const scheduled = task.scheduled
-    ? combineTaskDateTime(value.date, taskTimePart(task.scheduled))
-    : undefined;
+  const scheduled = combineTaskDateTime(
+    value.date,
+    taskTimePart(task.scheduled),
+  );
   const due = task.due
     ? combineTaskDateTime(
         addDays(value.date, dueOffsetDays(task)),
@@ -398,7 +403,15 @@ function shiftByIsoDuration(
 }
 
 function dueOffsetDays(task: TaskSummary): number {
-  const scheduled = dateFromStorage(taskDatePart(task.scheduled));
+  const scheduled = dateFromStorage(
+    taskDatePart(
+      task.scheduled ??
+        recurrenceStartStorageValue(
+          parseRecurrenceRule(task.recurrence).dtstart,
+        ) ??
+        task.createdAt,
+    ),
+  );
   const due = dateFromStorage(taskDatePart(task.due));
   if (!scheduled || !due) return 0;
   const start = Date.UTC(

@@ -1,5 +1,9 @@
 # Unreleased
 
+- Anchor a new repeating task to its scheduled date or, when unscheduled, its due date. Save its first planned occurrence so Today and calendar views agree, and show the selected occurrence's dates in task details.
+
+- Keep the Task added confirmation message, Open action, and dismiss control together without an empty second row.
+
 - Explain repeating-task timing with “Planned dates” and keep the raw schedule rule behind “Advanced rule”, instead of showing “Fixed schedule” and “Edit RRULE”.
 
 - Open person-record setup in the Editor configured for this TaskNotes environment, instead of following an outdated Editor address.

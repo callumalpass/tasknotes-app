@@ -60,26 +60,29 @@ const POSITIONS = [
 export function RecurrenceField({
   value,
   scheduled,
+  due,
   anchor,
   onChange,
   onAnchorChange,
 }: {
   value?: string;
   scheduled?: string;
+  due?: string;
   anchor?: "scheduled" | "completion";
   onChange(value?: string): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
+  const referenceDate = scheduled ?? due;
   const rule = useMemo(() => parseRecurrenceRule(value), [value]);
   const visualRule = useMemo(
     () => ({
       ...rule,
       dtstart:
         rule.dtstart ??
-        recurrenceDtstartValue(scheduled) ??
+        recurrenceDtstartValue(referenceDate) ??
         recurrenceDtstartValue(today()),
     }),
-    [rule, scheduled],
+    [rule, referenceDate],
   );
   const [expanded, setExpanded] = useState(() =>
     Boolean(rule.unsupported.length || rule.invalid.length),
@@ -100,7 +103,9 @@ export function RecurrenceField({
 
   function changeFrequency(frequency: RecurrenceFrequency) {
     const clean = parseRecurrenceRule(
-      recurrenceRuleForPreset(frequency.toLocaleLowerCase(), { scheduled }),
+      recurrenceRuleForPreset(frequency.toLocaleLowerCase(), {
+        scheduled: referenceDate,
+      }),
     );
     const keepsWeekdays =
       (rule.frequency === "DAILY" || rule.frequency === "WEEKLY") &&
@@ -142,7 +147,9 @@ export function RecurrenceField({
               setAdvanced(true);
               return;
             }
-            const recurrence = recurrenceRuleForPreset(next, { scheduled });
+            const recurrence = recurrenceRuleForPreset(next, {
+              scheduled: referenceDate,
+            });
             onChange(recurrence);
             setAdvanced(false);
             setExpanded(Boolean(recurrence));

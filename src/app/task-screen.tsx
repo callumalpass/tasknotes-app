@@ -42,7 +42,6 @@ import {
 import {
   activeTimeEntry,
   combineTaskDateTime,
-  formatRelativeTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -64,6 +63,7 @@ import {
   isEmptyFieldValue,
   organizeSummary,
   repeatSummary,
+  scheduleSummary,
   timeSummary,
   toDraft,
   type Draft,
@@ -948,24 +948,14 @@ function TaskEditor({
 
         <TaskFormSection
           title="Schedule and status"
-          summary={
-            [
-              draft.status !== "none" &&
-              draft.status !== configuration.defaults.status
-                ? (configuration.statuses.find(
-                    (status) => status.value === draft.status,
-                  )?.label ?? draft.status)
-                : "",
-              // Matches list rows; exact dates stay in the expanded fields.
-              draft.scheduled
-                ? `Scheduled ${formatRelativeTaskDate(draft.scheduled)}`
-                : "",
-              draft.due ? `Due ${formatRelativeTaskDate(draft.due)}` : "",
-            ]
-              .filter(Boolean)
-              .join(" · ") || "No dates"
-          }
+          summary={scheduleSummary(task, draft, configuration, occurrenceDate)}
         >
+          {occurrenceDate && draft.recurrence ? (
+            <p className="field-help">
+              These fields edit the series dates. The summary above shows this
+              occurrence.
+            </p>
+          ) : null}
           <div className="field-grid timing-fields task-core-fields">
             <div className="tasknotes-status-field">
               <TaskNotesSelectField
@@ -1204,6 +1194,7 @@ function TaskEditor({
           <RecurrenceField
             anchor={draft.recurrenceAnchor}
             scheduled={draft.scheduled}
+            due={draft.due}
             value={draft.recurrence}
             onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
             onChange={(recurrence) => change({ recurrence })}

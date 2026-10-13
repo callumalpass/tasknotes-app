@@ -11,6 +11,27 @@ vi.mock("../app/repository-context", () => ({
     updateTask,
   }),
 }));
+it("anchors a row recurrence edit to the due date when unscheduled", async () => {
+  render(
+    <TaskPropertyEditor
+      task={{ id: "due-only", due: "2030-08-09" } as Task}
+      detail={{ key: "recurrence", label: "Repeat", value: "", rawValue: "" }}
+      anchor={{ top: 0, right: 0, bottom: 0, left: 0, width: 40 }}
+      onClose={vi.fn()}
+    />,
+  );
+  fireEvent.click(screen.getByRole("combobox", { name: "Repeat" }));
+  fireEvent.click(screen.getByRole("option", { name: "Weekly" }));
+  await waitFor(() =>
+    expect(updateTask).toHaveBeenCalledWith(
+      "due-only",
+      expect.objectContaining({
+        recurrence: "DTSTART:20300809;FREQ=WEEKLY;INTERVAL=1;BYDAY=FR",
+      }),
+    ),
+  );
+});
+
 it("reschedules in one decision while preserving the existing time", async () => {
   const close = vi.fn();
   render(
