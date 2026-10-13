@@ -205,6 +205,27 @@ describe("TaskActions", () => {
     });
   });
 
+  it("retries a failed subtask creation with the same intent", async () => {
+    const create = vi
+      .spyOn(repository, "create")
+      .mockRejectedValueOnce(new Error("Lost reply"));
+    renderRow();
+
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create subtask" }));
+    fireEvent.change(screen.getByLabelText("Subtask title"), {
+      target: { value: "Retried child" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+    await screen.findByText("Lost reply");
+    fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+    expect(create.mock.calls[0]![1]).toBeDefined();
+    expect(create.mock.calls[1]![1]).toBe(create.mock.calls[0]![1]);
+  });
+
   it("edits organization fields directly from the menu", async () => {
     renderRow();
 

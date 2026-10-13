@@ -41,6 +41,7 @@ import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
 import type { TaskSummary } from "../domain/task";
+import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 interface MenuPosition {
   x: number;
@@ -100,6 +101,9 @@ export function TaskActions({
   const [position, setPosition] = useState<MenuPosition | null>(null);
   const [panels, setPanels] = useState<MenuPanel[]>(["actions"]);
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  // One subtask creation keeps its intent across retries, so a retry after a
+  // lost reply cannot create the subtask twice.
+  const subtaskIntent = useRef<TaskCreateIntent | null>(null);
   const [organizeDraft, setOrganizeDraft] = useState({
     projects: task.projects,
     contexts: task.contexts,
@@ -147,6 +151,7 @@ export function TaskActions({
     setError("");
     setPanels(["actions"]);
     setSubtaskTitle("");
+    subtaskIntent.current = null;
     setOrganizeDraft({
       projects: task.projects,
       contexts: task.contexts,
@@ -210,6 +215,7 @@ export function TaskActions({
     setError("");
     setPanels(["actions"]);
     setSubtaskTitle("");
+    subtaskIntent.current = null;
     setOrganizeDraft({
       projects: task.projects,
       contexts: task.contexts,
@@ -231,6 +237,7 @@ export function TaskActions({
     setPosition(null);
     setPanels(["actions"]);
     setSubtaskTitle("");
+    subtaskIntent.current = null;
     setError("");
     if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
   }
@@ -623,8 +630,13 @@ export function TaskActions({
                         event.preventDefault();
                         const title = subtaskTitle.trim();
                         if (!title) return;
+                        subtaskIntent.current ??= { id: crypto.randomUUID() };
+                        const intent = subtaskIntent.current;
                         void run(() =>
-                          createTask({ title, projects: [projectLink] }),
+                          createTask(
+                            { title, projects: [projectLink] },
+                            intent,
+                          ),
                         );
                       }}
                     >

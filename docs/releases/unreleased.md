@@ -1,5 +1,7 @@
 # Unreleased
 
+- Create a subtask only once when you add it again after a connection drop. Previously, retrying Add subtask after the reply was lost could create the subtask twice.
+
 - Keep checking by itself while another tab finishes setting up the collection, instead of stopping at Try again on the setup screen.
 
 - Show long collection names in full in the collection switcher list, and on up to two lines in the switcher button. A longer name is shortened there, with the full name in its tooltip.
