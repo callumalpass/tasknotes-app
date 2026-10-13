@@ -8,12 +8,12 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-a8fdbdce.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-fb9691b0.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "a8fdbdcea712546bfdebe80b88975d4f70e19b95",
+    "fb9691b04c62c8fc9d57ffc8650e2a8b97785964",
   );
   assert.deepEqual(manifest.sourceIncludesPrs, [819, 827, 832, 837]);
   assert.deepEqual(manifest.consumerEntries, [
@@ -25,7 +25,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "c07d8255ebba0ba4eb985621261549ca8368829d3e780a88ed63dfdfd1602ae1",
+    "2b5ef673e7b0e14b4bf54e5fd27539032d43b792305b4ac5b7de7ea1a3422357",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -73,7 +73,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-a8fdbdce.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-fb9691b0.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -184,7 +184,7 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
 
 test("the successor SDK has no unused protocol exception", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-a8fdbdce.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-fb9691b0.json", root), "utf8"),
   );
   assert.deepEqual(manifest.vendorWarnings, []);
   assert.equal(manifest.qualification.productionQualified, false);

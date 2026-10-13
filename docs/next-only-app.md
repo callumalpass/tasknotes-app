@@ -27,9 +27,9 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the exact configured
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`a8fdbdcea712546bfdebe80b88975d4f70e19b95`, using the original
-`sdk-dev-a8fdbdce.tgz` and provenance in
-`vendor/sdk-dev-a8fdbdce.json`. This concrete original coordinator-approved
+`fb9691b04c62c8fc9d57ffc8650e2a8b97785964`, using the original
+`sdk-dev-fb9691b0.tgz` and provenance in
+`vendor/sdk-dev-fb9691b0.json`. This concrete original coordinator-approved
 DEV/LAB intake is not release-qualified. It includes shared error descriptions,
 status summaries, opaque push helpers, mobile origin/sign-in APIs, setup planning
 and collection availability/lifecycle APIs. App adoption and delivery
