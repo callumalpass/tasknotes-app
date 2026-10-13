@@ -27,9 +27,9 @@ The authenticated LAB build supplies the registered application ID
 Worker to the protected SDK sign-in controller. The origin remains the exact configured
 LAB origin above; neither metadata value is a grant, credential, or UI choice.
 This source branch pins the SDK archive to
-`fd0c4a67c88fc7474d63e23d598150bcde3aa035`, using the original
-`sdk-dev-fd0c4a67.tgz` and provenance in
-`vendor/sdk-dev-fd0c4a67.json`. This concrete original coordinator-approved
+`013c7e56b92474062174cbf27a250a814f29d518`, using the original
+`sdk-dev-013c7e56.tgz` and provenance in
+`vendor/sdk-dev-013c7e56.json`. This concrete original coordinator-approved
 DEV/LAB intake is not release-qualified. It includes shared error descriptions,
 status summaries, opaque push helpers, mobile origin/sign-in APIs, setup planning
 and collection availability/lifecycle APIs. App adoption and delivery
@@ -65,8 +65,8 @@ manifest or work around SDK Worker/asset packaging in the app. Manifest generati
 is unchanged: LAB builds retain the LAB-mode canonical bytes; the production
 manifest has a different origin and digest. This source
 intake does not qualify native compatibility. The producer's `native.available: true` means original
-native assets are packaged: runtime 3a1266b5 (3562034 bytes, SHA256
-`b9cccea2186c55b45b5bce9961b78790d3add8b610295520010bb0ef5e642977`)
+native assets are packaged: runtime 3a1266b5 (3563120 bytes, SHA256
+`fe3374ea8102f4ed374139d0ba69f26c0ea8194b7bd93a1ace004f1a118b44bc`)
 and the original SQLite bytes. The packaged `rt_app_setup_assess` export is
 verified; export presence is not setup execution or native custody evidence. It is not a public runtime readiness signal;
 Node's `MdbaseConnect` fallback reports `application_not_yet_available`, while
