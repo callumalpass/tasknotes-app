@@ -1,5 +1,7 @@
 # Unreleased
 
+- Offer a TaskNotes update when you return to an old tab. Save task details and notes before reloading; keep the page open when a draft, pending save, or protected edit needs attention.
+
 - Fixed native iOS hosted-collection access failing after successful authorization
   because the bundled webview origin did not match the grant's publisher origin.
   Signed authority requests now use a proof-scoped, cancellable native HTTPS

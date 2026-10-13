@@ -1,11 +1,13 @@
 import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
 import "@fontsource/azeret-mono/500.css";
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
 import { TaskNotesApp } from "./app/tasknotes-app";
 import { AppErrorBoundary } from "./components/app-error-boundary";
+import { AppUpdateNotice } from "./components/app-update-notice";
+import { initializePwaUpdate } from "./pwa/update";
 import { initializePwaInstall } from "./pwa/install";
 import {
   clearTaskNotesServiceWorkerForDevelopment,
@@ -16,6 +18,7 @@ import "./people.css";
 import "./accessibility.css";
 
 initializePwaInstall();
+if (import.meta.env.PROD) initializePwaUpdate();
 
 const currentUrl = new URL(location.href);
 const embeddedDemo = /\/embed(?:\/|$)/.test(currentUrl.pathname);
@@ -23,10 +26,27 @@ const requestedDemoCount = Number(currentUrl.searchParams.get("demo") ?? 0);
 const demoCount =
   embeddedDemo && requestedDemoCount <= 0 ? 24 : requestedDemoCount;
 
+const CutoverFixture =
+  import.meta.env.MODE === "e2e" &&
+  currentUrl.searchParams.has("update-cutover")
+    ? lazy(() =>
+        import("./test/update-cutover-fixture").then((module) => ({
+          default: module.UpdateCutoverFixture,
+        })),
+      )
+    : null;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppErrorBoundary>
-      <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+      <AppUpdateNotice />
+      {CutoverFixture ? (
+        <Suspense fallback={<p>Loading cutover fixture…</p>}>
+          <CutoverFixture />
+        </Suspense>
+      ) : (
+        <TaskNotesApp demoCount={demoCount} embeddedDemo={embeddedDemo} />
+      )}
     </AppErrorBoundary>
   </StrictMode>,
 );

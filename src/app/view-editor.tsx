@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { registerReloadParticipant } from "../pwa/reload";
 import {
   lazy,
   Suspense,
@@ -51,6 +52,15 @@ export function ViewEditor({
   onChanged(): Promise<void>;
 }) {
   const { repository } = useRepository();
+  useEffect(
+    () =>
+      registerReloadParticipant({
+        check: () => {
+          throw new Error("Finish or close the view editor before reloading.");
+        },
+      }),
+    [],
+  );
   const [source, setSource] = useState<TaskViewSourceDocument | null>(null);
   const [draft, setDraft] = useState<EditableViewDraft | null>(null);
   const [initialFingerprint, setInitialFingerprint] = useState("");

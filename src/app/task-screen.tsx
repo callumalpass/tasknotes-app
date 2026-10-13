@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { registerReloadParticipant } from "../pwa/reload";
 import {
   lazy,
   Suspense,
@@ -348,6 +349,24 @@ function TaskEditor({
       window.removeEventListener("pagehide", flush);
     };
   }, [persist]);
+
+  useEffect(
+    () =>
+      registerReloadParticipant({
+        save: async () => {
+          if (dirtyRef.current)
+            await persist(draftRef.current, editVersion.current);
+          await Promise.all([...savesInFlight.current.values()]);
+        },
+        check: () => {
+          if (dirtyRef.current)
+            throw new Error(
+              "Some task changes are not saved. Keep this page open and finish saving before reloading.",
+            );
+        },
+      }),
+    [persist],
+  );
 
   function change(patch: Partial<Draft>) {
     editVersion.current += 1;

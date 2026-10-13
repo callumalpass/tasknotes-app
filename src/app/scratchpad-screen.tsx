@@ -23,6 +23,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { registerReloadParticipant } from "../pwa/reload";
 import {
   lazy,
   Suspense,
@@ -1672,6 +1673,40 @@ function ScratchpadDocumentEditor({
           : persist(nodesRef.current)
         : Promise.resolve(initialDocumentRef.current),
     [persist, persistBody],
+  );
+
+  useEffect(
+    () =>
+      registerReloadParticipant({
+        save: async () => {
+          if (reviewProcessing || convertingId || autosaveSuspended.current)
+            throw new Error(
+              "Finish the note action in progress before reloading.",
+            );
+          const version = sourceEditVersion.current;
+          await flush();
+          if (version !== sourceEditVersion.current)
+            throw new Error(
+              "Your note changed while saving. Save it again before reloading.",
+            );
+        },
+        check: () => {
+          const current = documentRef.current;
+          if (!current) return;
+          const body =
+            editorModeRef.current === "markdown"
+              ? sourceRef.current
+              : scratchBody(nodesRef.current);
+          if (
+            body !== current.body ||
+            titleRef.current.trim() !== (current.title?.trim() ?? "")
+          )
+            throw new Error(
+              "Some note changes are not saved. Keep this page open and try again.",
+            );
+        },
+      }),
+    [flush, reviewProcessing, convertingId],
   );
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { registerReloadParticipant } from "../pwa/reload";
 
 import {
   activeCaptureToken,
@@ -81,6 +82,19 @@ export function TaskCapture({
   const [localSession] = useState(() => new CaptureSession());
   const session = providedSession ?? localSession;
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
+  useEffect(
+    () =>
+      registerReloadParticipant({
+        check: () => {
+          const current = session.getSnapshot();
+          if (current.text.trim() || current.status === "submitting")
+            throw new Error(
+              "Finish or discard the task you are adding before reloading.",
+            );
+        },
+      }),
+    [session],
+  );
   const { text, parsedText, result, parsing, pendingTitle, error, accepted } =
     snapshot;
   const capturing = snapshot.status === "submitting";
