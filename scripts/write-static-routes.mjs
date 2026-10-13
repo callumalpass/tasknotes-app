@@ -14,8 +14,12 @@ await Promise.all([
     mkdir(directory, { recursive: true }),
   ),
 ]);
+// Cloudflare Pages (root base) serves public/404.html for unknown paths and
+// rewrites only the app's own routes (_redirects below). GitHub Pages staging
+// (non-root base) has no rewrites, so there 404.html stays the app shell.
+const rootBase = (process.env.VITE_BASE_PATH ?? "/") === "/";
 await Promise.all([
-  copyFile(index, resolve(dist, "404.html")),
+  ...(rootBase ? [] : [copyFile(index, resolve(dist, "404.html"))]),
   copyFile(index, resolve(dist, "auth", "mdbase", "callback.html")),
   copyFile(index, resolve(callbackDirectory, "index.html")),
   ...staticRouteDirectories.map((directory) =>
@@ -38,48 +42,27 @@ await writeFile(
   `${JSON.stringify(["./", ...offlineAssets], null, 2)}\n`,
 );
 
-await writeFile(resolve(dist, "_redirects"), await pagesRedirects(dist));
+await writeFile(resolve(dist, "_redirects"), pagesRedirects());
 
-/** Cloudflare Pages applies _redirects before static files and ignores
- * `/* /index.html 200` as a loop, so a deep route would reach 404.html with a
- * 404 status. Real files and asset directories pass through first (a missing
- * asset still gets a real 404); every other path is rewritten to the app shell. */
-async function pagesRedirects(root) {
-  const skip = new Set([
-    "_headers",
-    "_redirects",
-    "_routes.json",
-    "index.html",
-    "404.html",
-  ]);
-  const rules = [];
-  const entries = (await readdir(root, { withFileTypes: true })).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-  for (const entry of entries) {
-    if (/\s/.test(entry.name))
-      throw new Error(`Unroutable file name in dist: ${entry.name}`);
-    if (entry.isDirectory()) {
-      if (!(await appShellCopiesOnly(resolve(root, entry.name))))
-        rules.push(`/${entry.name}/* /${entry.name}/:splat 200`);
-    } else if (!skip.has(entry.name)) {
-      rules.push(`/${entry.name} /${entry.name} 200`);
-    }
-  }
-  rules.push("/* / 200");
-  return `${rules.join("\n")}\n`;
-}
-
-/** Route directories hold only copies of the app shell (static routes and the
- * sign-in callback); the app-shell rewrite already serves them. */
-async function appShellCopiesOnly(directory) {
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const ok = entry.isDirectory()
-      ? await appShellCopiesOnly(resolve(directory, entry.name))
-      : entry.name === "index.html" || entry.name === "callback.html";
-    if (!ok) return false;
-  }
-  return true;
+/** The app's client routes (see use-workspace-navigation.ts), served by the
+ * app shell. Pages applies _redirects before static files, and a rewrite to
+ * `/index.html` would loop, so each points at `/`. Files are served as they
+ * are; any other path gets 404.html with a 404 status. */
+function pagesRedirects() {
+  const routes = [
+    "/auth/mdbase/callback",
+    "/auth/mdbase/callback/",
+    "/more",
+    "/more/*",
+    "/scratchpad",
+    "/scratchpad/",
+    "/search",
+    "/search/",
+    "/task/*",
+    "/views",
+    "/views/*",
+  ];
+  return routes.map((route) => `${route} / 200\n`).join("");
 }
 
 async function listFiles(directory, relative = "") {

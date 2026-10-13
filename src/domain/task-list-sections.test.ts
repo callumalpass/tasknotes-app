@@ -4,6 +4,7 @@ import {
   scheduleRowsTodayUpdates,
   sectionTaskViewRows,
   taskListSectionMoveInput,
+  todayCaptureDefaults,
 } from "./task-list-sections";
 import { taskDatePart, taskTimePart } from "./task";
 
@@ -179,3 +180,22 @@ function row(id: string, patch: Partial<Task> = {}): TaskViewRow {
     },
   };
 }
+
+describe("todayCaptureDefaults", () => {
+  it("schedules a task added to Today for today unless a date is set", () => {
+    const tasks = sectionTaskViewRows(
+      [
+        row("added", {
+          scheduled: todayCaptureDefaults({ tags: ["x"] }, "2026-07-26")
+            .scheduled,
+        }),
+      ],
+      "day",
+      "2026-07-26",
+    );
+    expect(tasks.map((section) => section.key)).toEqual(["today"]);
+    expect(todayCaptureDefaults({ due: "2026-07-30" }, "2026-07-26")).toEqual({
+      due: "2026-07-30",
+    });
+  });
+});

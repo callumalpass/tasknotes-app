@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { TaskRepository } from "../application/ports/task-repository";
+import { ConnectionNoticeContext } from "../app/connection-notice";
 import { CollectionWriteStatus } from "./collection-write-status";
 import { RecordWriteNotice } from "./record-write-notice";
 
@@ -169,4 +170,30 @@ it("does not carry an old collection outcome into a new repository", () => {
     </CollectionWriteStatus>,
   );
   expect(screen.queryByRole("status")).toBeNull();
+});
+it("shows the SDK's offline state and does not call a reconnect slow", async () => {
+  vi.useFakeTimers();
+  const view = (notice: "offline" | null) => (
+    <ConnectionNoticeContext.Provider value={notice}>
+      <CollectionWriteStatus
+        repository={repository}
+        connection={{
+          state: "connected",
+          sync: { text: "", pending: 1, held: 0 },
+        }}
+        onReview={() => {}}
+      >
+        <div>Editor</div>
+      </CollectionWriteStatus>
+    </ConnectionNoticeContext.Provider>
+  );
+  const { rerender } = render(view("offline"));
+  expect(screen.getByRole("status")).toHaveTextContent("Offline");
+  await act(() => vi.advanceTimersByTime(60_000));
+  rerender(view(null));
+  expect(screen.queryByText("Sync is taking longer than usual")).toBeNull();
+  await act(() => vi.advanceTimersByTime(30_000));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Sync is taking longer than usual",
+  );
 });

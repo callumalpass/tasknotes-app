@@ -1,6 +1,7 @@
 import { CloudUpload, TriangleAlert } from "lucide-react";
 import {
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,
@@ -13,6 +14,11 @@ import type {
   TaskRepository,
 } from "../application/ports/task-repository";
 
+import {
+  ConnectionNoticeContext,
+  connectionNoticeLabels,
+  type ConnectionNotice,
+} from "../app/connection-notice";
 import {
   WriteStatusContext,
   type RecordWriteEntry as Entry,
@@ -82,6 +88,7 @@ export function CollectionWriteStatus({
     unique.filter((entry) => entry.state === "pending").length,
   );
   const problems = unique.filter((entry) => entry.state !== "pending");
+  const notice = useContext(ConnectionNoticeContext);
   return (
     <WriteStatusContext.Provider value={register}>
       {children}
@@ -92,6 +99,7 @@ export function CollectionWriteStatus({
           connection.state === "unavailable" ||
           connection.savedOnDevice === true
         }
+        notice={notice}
         problem={problems[0]}
         problemCount={problems.length}
         onReview={onReview}
@@ -121,7 +129,8 @@ function useProlonged(
 export function WriteStatusOverlay({
   repository,
   pending,
-  disconnected = false,
+  disconnected: reportedDisconnected = false,
+  notice = null,
   problem,
   problemCount = problem ? 1 : 0,
   onReview,
@@ -129,12 +138,17 @@ export function WriteStatusOverlay({
   repository: TaskRepository;
   pending: number;
   disconnected?: boolean;
+  /** The SDK's offline, reconnecting or saved-on-device state, shown at once. */
+  notice?: ConnectionNotice | null;
   problem?: Entry;
   problemCount?: number;
   onReview?(target: RecordWriteTarget): void;
 }) {
+  const disconnected = reportedDisconnected || notice !== null;
   const syncing = useProlonged(repository, pending > 0, 2_000);
-  const slow = useProlonged(repository, pending > 0, 30_000);
+  // Only time spent connected counts as slow: changes kept while offline
+  // start syncing on reconnect and usually finish within moments.
+  const slow = useProlonged(repository, pending > 0 && !disconnected, 30_000);
   const offline = useProlonged(repository, pending > 0 && disconnected, 5_000);
   const message = problem
     ? problem.state === "failed"
@@ -142,14 +156,18 @@ export function WriteStatusOverlay({
       : problem.state === "conflicted"
         ? "Conflicting changes"
         : "Save outcome unknown"
-    : offline
-      ? "Saved on this device; waiting for sync"
-      : slow
-        ? "Sync is taking longer than usual"
-        : syncing
-          ? "Syncing…"
-          : "";
-  const needsAttention = Boolean(problem || offline || slow);
+    : notice
+      ? connectionNoticeLabels[notice]
+      : offline
+        ? "Saved on this device; waiting for sync"
+        : slow
+          ? "Sync is taking longer than usual"
+          : syncing
+            ? "Syncing…"
+            : "";
+  const needsAttention = Boolean(
+    problem || (notice && notice !== "reconnecting") || offline || slow,
+  );
   return createPortal(
     <div
       className={`collection-write-status${message ? " is-visible" : ""}${needsAttention ? " needs-attention" : ""}`}

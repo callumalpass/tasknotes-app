@@ -26,6 +26,7 @@ import { todayString } from "../domain/task";
 import {
   scheduleRowsTodayUpdates,
   sectionTaskViewRows,
+  todayCaptureDefaults,
 } from "../domain/task-list-sections";
 import { summarizeToday } from "../domain/today-summary";
 import { TodayClear, TodayFirstRun } from "./today-clear";
@@ -571,7 +572,7 @@ export function ViewsScreen({
           manualOrder.direction,
         )
       : undefined;
-  const captureDefaults =
+  const viewCaptureDefaults =
     selected?.presentation?.type === "tasknotes.planner" ||
     selected?.presentation?.options.create === false
       ? null
@@ -593,6 +594,10 @@ export function ViewsScreen({
               ),
             )
           : null;
+  const captureDefaults =
+    viewCaptureDefaults && todayScreen
+      ? todayCaptureDefaults(viewCaptureDefaults, today)
+      : viewCaptureDefaults;
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
     selected?.presentation?.type === "tasknotes.planner"
@@ -1293,6 +1298,11 @@ export function ViewsScreen({
         ) : null}
         {selected && !editing ? (
           <ProjectPropertyOffer
+            hasProjects={Boolean(
+              presentedExecution?.rows.some(
+                ({ task }) => task.projects.length > 0,
+              ),
+            )}
             scope={sectionScope}
             view={selected}
             onChanged={onViewsChanged}

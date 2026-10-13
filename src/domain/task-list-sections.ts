@@ -1,7 +1,7 @@
 import { setTaskDate, shiftTaskDate } from "./task-date-actions";
 import { taskDatePart, todayString } from "./task";
 
-import type { TaskSummary, UpdateTaskInput } from "./task";
+import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
 
 export type TaskListSectionMode = "day";
@@ -95,4 +95,19 @@ export function scheduleRowsTodayUpdates(
       input: { scheduled: setTaskDate(task.scheduled, today) },
       undo: { scheduled: task.scheduled ?? null },
     }));
+}
+
+/**
+ * "Add to Today" files a new task under Today. The Today view also lists
+ * undated tasks, so its filter implies no date; without one the task would be
+ * undated and land under Anytime. A date the view (or capture context)
+ * already sets is kept, and a date typed in capture still wins.
+ */
+export function todayCaptureDefaults(
+  defaults: Partial<CreateTaskInput>,
+  today = todayString(),
+): Partial<CreateTaskInput> {
+  return defaults.scheduled || defaults.due
+    ? defaults
+    : { ...defaults, scheduled: today };
 }

@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
-import { useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
@@ -31,6 +31,11 @@ import {
   type ThemePreference,
 } from "../theme";
 import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
+import {
+  ConnectionNoticeContext,
+  connectionNoticeLabels,
+  type ConnectionNotice,
+} from "./connection-notice";
 import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
@@ -67,6 +72,7 @@ export function MoreScreen({
   const narrow = useNarrowLayout();
   const { info, stats, loading } = useCollectionSummary();
   const { connection, repository, privateAccount } = useRepository();
+  const notice = useContext(ConnectionNoticeContext);
   const reminders = useReminderSettings();
   const install = useInstallPrompt();
   const unsavedBehavior = useUnsavedTaskModelDraft(repository);
@@ -94,7 +100,7 @@ export function MoreScreen({
   const summaries: Record<SettingsSection, ReactNode> = {
     collection: [
       info?.name ?? "mdbase collection",
-      connectionLabel(connection),
+      connectionLabel(connection, notice),
       loading || !stats ? null : `${stats.open} open`,
     ]
       .filter(Boolean)
@@ -313,6 +319,7 @@ function SettingsPanel({
 function CollectionSettings() {
   const { info, stats, loading } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
+  const notice = useContext(ConnectionNoticeContext);
   const { collectionUi, changeCollection } = useCollectionGate();
   const [showStorage, setShowStorage] = useStoredFlag(
     "tasknotes:settings-storage-open:v1",
@@ -324,11 +331,11 @@ function CollectionSettings() {
         <div className="settings-collection-identity">
           <strong>{info?.name ?? "mdbase collection"}</strong>
           <span
-            className={`settings-connection is-${connection.savedOnDevice ? "unavailable" : connection.state}`}
+            className={`settings-connection is-${connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
             role="status"
           >
             <span aria-hidden="true" className="settings-connection-dot" />
-            <span>{connectionLabel(connection)}</span>
+            <span>{connectionLabel(connection, notice)}</span>
             {loading ? (
               <span>· Opening</span>
             ) : stats ? (
@@ -754,8 +761,10 @@ function ThemeSelect() {
 
 function connectionLabel(
   connection: ReturnType<typeof useRepository>["connection"],
+  notice: ConnectionNotice | null,
 ): string {
   if (connection.state === "connecting") return "Connecting";
+  if (notice) return connectionNoticeLabels[notice];
   if (connection.state === "unavailable") return "Collection unavailable";
   if (connection.savedOnDevice) return "Saved on this device; waiting for sync";
   return "Connected";

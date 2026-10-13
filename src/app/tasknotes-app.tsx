@@ -22,7 +22,12 @@ import { registerStartupTiming } from "../observability/startup-timing";
 import { NextTaskRepository } from "../storage/next-repository";
 import { tasknotesMarkUrl } from "./assets";
 import type { CollectionGateContextValue } from "./collection-context";
+import {
+  ConnectionNoticeContext,
+  useConnectionNotice,
+} from "./connection-notice";
 import { OpenedCollection } from "./opened-collection";
+import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
 
 const app = {
@@ -44,6 +49,7 @@ export function TaskNotesApp({
   const [mdbase] = useState(() => supplied ?? taskNotesMdbase());
   const [arming] = useState(() => new StarterViewArming(mdbase.getSnapshot()));
   useEffect(() => arming.follow(mdbase), [arming, mdbase]);
+  useEffect(() => followSignOutRoute(mdbase), [mdbase]);
   useMdbaseLifetime(mdbase);
   const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
   return (
@@ -140,8 +146,10 @@ function HeldCollection({
     };
   }, [collectionId, mdbase, ui]);
 
+  const notice = useConnectionNotice(mdbase);
+
   return (
-    <>
+    <ConnectionNoticeContext.Provider value={notice}>
       {problem !== undefined ? (
         <CollectionProblem {...ui} problem={problem} />
       ) : null}
@@ -150,7 +158,7 @@ function HeldCollection({
         repository={repository}
         discardPendingRecovery={preserveOriginalPending}
       />
-    </>
+    </ConnectionNoticeContext.Provider>
   );
 }
 
