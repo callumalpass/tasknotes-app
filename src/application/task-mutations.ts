@@ -19,6 +19,12 @@ export class TaskMutations {
   >();
   private readonly states = new Map<string, MutationState>();
   private readonly listeners = new Map<string, Set<() => void>>();
+  async flush(): Promise<void> {
+    await Promise.all([...this.running.values()].map(({ promise }) => promise));
+  }
+  hasPending(): boolean {
+    return this.running.size > 0;
+  }
   snapshot(key: string) {
     return this.states.get(key) ?? idleMutation;
   }

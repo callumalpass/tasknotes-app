@@ -1,5 +1,7 @@
 # Unreleased
 
+- Offer a TaskNotes update when you return to an old tab. Save task details and notes before reloading; keep the page open when a draft, pending save, or protected edit needs attention.
+
 - Keep the offline save status and task confirmations in separate stacked rows, so a confirmation or Undo notice cannot cover the sync guidance.
 
 - Show plain-language guidance and a retry action when Assigned to me cannot load your person record, instead of displaying an internal request error.

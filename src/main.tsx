@@ -60,12 +60,25 @@ function startApp(): void {
         )
       : null;
 
+  const CutoverFixture =
+    import.meta.env.MODE === "e2e" &&
+    new URL(location.href).searchParams.has("update-cutover")
+      ? lazy(() =>
+          import("./test/update-cutover-fixture").then((module) => ({
+            default: module.UpdateCutoverFixture,
+          })),
+        )
+      : null;
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <AppErrorBoundary>
         <ReturningUserNotice />
         <AppUpdateNotice />
-        {SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
+        {CutoverFixture ? (
+          <Suspense fallback={<p>Loading cutover fixture…</p>}>
+            <CutoverFixture />
+          </Suspense>
+        ) : SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
           <Suspense
             fallback={
               <main className="opening-screen">Loading SDK fixture…</main>

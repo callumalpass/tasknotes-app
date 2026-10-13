@@ -1,4 +1,6 @@
 import { App as CapacitorApp } from "@capacitor/app";
+import { registerReloadParticipant } from "../pwa/reload";
+import { captureSessionFor } from "../application/capture-session";
 import { timedStartup } from "../observability/startup-timing";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -187,6 +189,32 @@ export function RepositoryProvider({
   });
   const [invalidation] = useState(() => new QueryInvalidationStore());
   const [mutations] = useState(() => new TaskMutations());
+  useEffect(
+    () =>
+      registerReloadParticipant({
+        save: () => mutations.flush(),
+        check: async () => {
+          if (mutations.hasPending())
+            throw new Error(
+              "Some changes are still saving. Keep this page open and try again.",
+            );
+          const draft = captureSessionFor(repository).getSnapshot();
+          if (draft.text.trim() || draft.status === "submitting")
+            throw new Error(
+              "Finish or discard the task you are adding before reloading.",
+            );
+          const state = await repository.connectionStatus();
+          if (state.sync?.held || state.heldEdits?.length)
+            throw new Error("Review your protected edits before reloading.");
+          if (state.sync?.pending)
+            throw new Error(
+              "Some changes are still saving. Keep this page open and try again.",
+            );
+        },
+      }),
+    [mutations, repository],
+  );
+
   const [pendingDeletion, setPendingDeletion] = useState<{
     id: string;
     title: string;

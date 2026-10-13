@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { useTaskReloadGuard } from "../pwa/use-task-reload";
 import {
   lazy,
   Suspense,
@@ -456,6 +457,12 @@ function TaskEditor({
       window.removeEventListener("pagehide", flush);
     };
   }, [flush]);
+
+  useTaskReloadGuard(
+    { draftRef, dirtyRef, editVersion, savesInFlight, persist },
+    () => awaitingChoiceRef.current,
+    () => repository.writeState?.({ kind: "task", id: task.id }),
+  );
 
   function change(patch: Partial<Draft>) {
     setSaveState("saving");
