@@ -21,6 +21,10 @@ import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
 import { CollectionAvailability } from "../components/collection-availability";
 import { CollectionWriteStatus } from "../components/collection-write-status";
+import {
+  WorkspaceFeedback,
+  FeedbackNotice,
+} from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
 import {
@@ -525,38 +529,46 @@ export function AppShell() {
           if (advanced) await updateTask(task.id, advanced);
         }}
       />
-      <DeletionFeedback
-        aboveMobileControls={
-          route.page !== "task" &&
-          (showBottomNavigation || showGlobalCaptureFab)
-        }
-        error={deletionError}
-        pendingDeletion={pendingDeletion}
-        onRetry={retryTaskDeletion}
-        onUndo={undoTaskDeletion}
-      />
+      <FeedbackNotice>
+        <DeletionFeedback
+          aboveMobileControls={
+            route.page !== "task" &&
+            (showBottomNavigation || showGlobalCaptureFab)
+          }
+          error={deletionError}
+          pendingDeletion={pendingDeletion}
+          onRetry={retryTaskDeletion}
+          onUndo={undoTaskDeletion}
+        />
+      </FeedbackNotice>
     </div>
   );
   return (
-    <CollectionWriteStatus
-      repository={repository}
-      connection={connection}
-      onReview={(target) => {
-        // An editor already showing this record presents its own resolution.
-        if (requestRecordWriteReview(target)) return;
-        navigate(
-          target.kind === "task"
-            ? { page: "task", id: target.id }
-            : target.kind === "source"
-              ? { page: "views" }
-              : { page: "scratchpad" },
-        );
-      }}
+    <WorkspaceFeedback
+      aboveMobileControls={
+        route.page !== "task" && (showBottomNavigation || showGlobalCaptureFab)
+      }
     >
-      <TaskCompletionReportContext.Provider value={reportCompleted}>
-        {shell}
-      </TaskCompletionReportContext.Provider>
-    </CollectionWriteStatus>
+      <CollectionWriteStatus
+        repository={repository}
+        connection={connection}
+        onReview={(target) => {
+          // An editor already showing this record presents its own resolution.
+          if (requestRecordWriteReview(target)) return;
+          navigate(
+            target.kind === "task"
+              ? { page: "task", id: target.id }
+              : target.kind === "source"
+                ? { page: "views" }
+                : { page: "scratchpad" },
+          );
+        }}
+      >
+        <TaskCompletionReportContext.Provider value={reportCompleted}>
+          {shell}
+        </TaskCompletionReportContext.Provider>
+      </CollectionWriteStatus>
+    </WorkspaceFeedback>
   );
 }
 

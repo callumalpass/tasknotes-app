@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { FeedbackNotice } from "./workspace-feedback";
 import { useEffect, useRef, useState } from "react";
 
 import type { TaskCompletion } from "./task-completion-motion";
@@ -39,7 +40,7 @@ export function TaskCompletedNotice({
       : `Completed “${completion.task.title}”`
     : "";
   return (
-    <>
+    <FeedbackNotice>
       <span role="status" className="visually-hidden">
         {message}
       </span>
@@ -85,6 +86,6 @@ export function TaskCompletedNotice({
           </button>
         </div>
       ) : null}
-    </>
+    </FeedbackNotice>
   );
 }

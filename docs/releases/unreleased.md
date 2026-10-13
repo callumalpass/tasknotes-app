@@ -1,5 +1,9 @@
 # Unreleased
 
+- Keep the offline save status and task confirmations in separate stacked rows, so a confirmation or Undo notice cannot cover the sync guidance.
+
+- Show plain-language guidance and a retry action when Assigned to me cannot load your person record, instead of displaying an internal request error.
+
 - Preserve hyphenated recurrence words in quick-add titles, such as weekly-review and due-only-weekly, instead of removing part of the title or leaving a stray backslash.
 
 - Anchor a new repeating task to its scheduled date or, when unscheduled, its due date. Save its first planned occurrence so Today and calendar views agree, and show the selected occurrence's dates in task details.

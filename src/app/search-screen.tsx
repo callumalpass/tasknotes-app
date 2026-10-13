@@ -188,7 +188,7 @@ export function SearchScreen({
         >
           <p>
             {people.error
-              ? `Your person identity could not be loaded. ${people.error.message}`
+              ? "Your person record could not be loaded. Check your connection, then reload people to try again."
               : !people.directory
                 ? "Loading your person identity…"
                 : people.directory.current.status === "ambiguous"

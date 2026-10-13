@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { FeedbackNotice } from "./workspace-feedback";
 import type { TaskSummary } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { RecordWriteNotice } from "./record-write-notice";
@@ -25,7 +26,7 @@ export function TaskAddedNotice({
     ? `${state === "failed" ? "Change rejected" : "Task added"}: ${task.title}`
     : "";
   return (
-    <>
+    <FeedbackNotice>
       <span role="status" className="visually-hidden">
         {message}
       </span>
@@ -65,6 +66,6 @@ export function TaskAddedNotice({
           </button>
         </div>
       ) : null}
-    </>
+    </FeedbackNotice>
   );
 }

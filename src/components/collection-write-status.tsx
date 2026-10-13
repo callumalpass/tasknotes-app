@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import { FeedbackNotice } from "./workspace-feedback";
 import type {
   RecordWriteTarget,
   RepositoryConnectionStatus,
@@ -173,31 +173,32 @@ export function WriteStatusOverlay({
   const needsAttention = Boolean(
     problem || (notice && notice !== "reconnecting") || offline || slow,
   );
-  return createPortal(
-    <div
-      className={`collection-write-status${message || saveWarning ? " is-visible" : ""}${needsAttention ? " needs-attention" : ""}`}
-      aria-hidden={!message && !saveWarning}
-      role={needsAttention ? "status" : undefined}
-      aria-live={needsAttention ? "polite" : "off"}
-      aria-atomic="true"
-      data-testid="collection-write-status"
-    >
-      {needsAttention ? (
-        <TriangleAlert aria-hidden="true" size={16} />
-      ) : (
-        <CloudUpload aria-hidden="true" size={16} />
-      )}
-      <span>{message}</span>
-      <CollectionSaveWarning />
-      {problemCount > 1 ? (
-        <span>{problemCount} changes need review</span>
-      ) : null}
-      {problem && onReview ? (
-        <button type="button" onClick={() => onReview(problem.target)}>
-          Review record
-        </button>
-      ) : null}
-    </div>,
-    document.body,
+  return (
+    <FeedbackNotice>
+      <div
+        className={`collection-write-status${message || saveWarning ? " is-visible" : ""}${needsAttention ? " needs-attention" : ""}`}
+        aria-hidden={!message && !saveWarning}
+        role={needsAttention ? "status" : undefined}
+        aria-live={needsAttention ? "polite" : "off"}
+        aria-atomic="true"
+        data-testid="collection-write-status"
+      >
+        {needsAttention ? (
+          <TriangleAlert aria-hidden="true" size={16} />
+        ) : (
+          <CloudUpload aria-hidden="true" size={16} />
+        )}
+        <span>{message}</span>
+        <CollectionSaveWarning />
+        {problemCount > 1 ? (
+          <span>{problemCount} changes need review</span>
+        ) : null}
+        {problem && onReview ? (
+          <button type="button" onClick={() => onReview(problem.target)}>
+            Review record
+          </button>
+        ) : null}
+      </div>
+    </FeedbackNotice>
   );
 }
