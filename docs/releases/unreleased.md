@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show a Private label, with a lock, on Private collections in the collection switcher and chooser.
+
 - Create a subtask only once when you add it again after a connection drop. Previously, retrying Add subtask after the reply was lost could create the subtask twice.
 
 - Keep checking by itself while another tab finishes setting up the collection, instead of stopping at Try again on the setup screen.
