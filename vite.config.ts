@@ -1,3 +1,4 @@
+import { offlineShellPlugin } from "@mdbase-dev/sdk/offline-shell/build";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -10,7 +11,7 @@ const { version } = JSON.parse(
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: process.env.VITE_BASE_PATH ?? "/",
-  plugins: [androidNotificationSmokeEntry(), react()],
+  plugins: [androidNotificationSmokeEntry(), react(), offlineShellPlugin({ workerFile: "service-worker.js", register: false })],
   worker: { format: "es" },
   optimizeDeps: {
     include: [
