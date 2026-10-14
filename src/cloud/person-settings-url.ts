@@ -1,6 +1,13 @@
+import { LOCAL_TASKNOTES_BUILD } from "./local-build";
+import { isExactLocalOrigin } from "./app-environment";
+
 /** Presentation destination only; never changes the selected collection,
  * identity, People resolution, or the authenticated mdbase authority. */
 export function requirePersonEditorOrigin(value: unknown): string {
+  if (LOCAL_TASKNOTES_BUILD && !isExactLocalOrigin(value))
+    throw new Error(
+      "Local TaskNotes requires an exact HTTP 127.0.0.1 Editor origin.",
+    );
   if (typeof value === "string") {
     try {
       const url = new URL(value);

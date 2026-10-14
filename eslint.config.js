@@ -6,7 +6,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["android", "dist", "coverage", "ios/App/App/public"],
+    // Receipt-qualified SDK extraction is a generated third-party dependency,
+    // tested/linted in its own SDK project, not TaskNotes source.
+    ignores: [
+      "android",
+      "dist",
+      "coverage",
+      "ios/App/App/public",
+      ".local-rehearsal-sdk/**",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

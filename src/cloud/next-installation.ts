@@ -29,7 +29,7 @@ import {
 import type { NextApplicationRegistration } from "./next-application-registration";
 
 export interface NextInstallationOptions extends NextApplicationRegistration {
-  readonly environment: "lab" | "production";
+  readonly environment: "lab" | "production" | "local";
   readonly appOrigin: string;
   /** Independently authenticated BUILD module, never a UI/redirect parameter. */
   readonly release: AppBundledReleaseTrust;

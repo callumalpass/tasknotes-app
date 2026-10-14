@@ -42,6 +42,7 @@ export function taskNotesMdbase(): Mdbase {
     import.meta.env.VITE_TASKNOTES_ENVIRONMENT,
     import.meta.env.VITE_TASKNOTES_LAB_ORIGIN,
     window.location.origin,
+    import.meta.env.VITE_TASKNOTES_LOCAL_ORIGIN,
   );
   // Both LAB and production choose their own Editor destination explicitly.
   requirePersonEditorOrigin(import.meta.env.VITE_TASKNOTES_EDITOR_ORIGIN);
