@@ -1,5 +1,7 @@
 # Unreleased
 
+- Describe monthly recurrence without an explicit day as the anchor's day of the month, instead of incorrectly showing the first Monday. Keep the original rule unchanged until an edit is applied.
+
 - Keep an accepted TaskNotes update available offline. Save and reload waits for the new offline shell, while other open tabs keep the assets they need.
 
 - Start an undated monthly or yearly repeating task on the local calendar date, rather than the UTC day of its creation timestamp.

@@ -73,7 +73,10 @@ export function RecurrenceField({
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
   const referenceDate = scheduled ?? due;
-  const rule = useMemo(() => parseRecurrenceRule(value), [value]);
+  const rule = useMemo(
+    () => parseRecurrenceRule(value, referenceDate ?? today()),
+    [value, referenceDate],
+  );
   const visualRule = useMemo(
     () => ({
       ...rule,
