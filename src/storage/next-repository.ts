@@ -541,13 +541,27 @@ export class NextTaskRepository implements TaskRepository {
         },
       });
     }
+    let syncConnection = client.status?.connection;
     this.stopStatus = client.onStatus((status: SyncStatus) => {
       if (this.disposed) return;
+      const restored =
+        syncConnection !== undefined &&
+        syncConnection !== "online" &&
+        status.connection === "online";
+      syncConnection = status.connection;
       this.sync = {
         text: syncStatusText(status),
         pending: status.pending,
         held: status.holds,
       };
+      // A local replica's change watch stays active while its upstream is
+      // offline. Native sync recovery must reopen failed READ models too.
+      if (
+        restored &&
+        !this.scope.signal.aborted &&
+        this.changesWatch?.state === "active"
+      )
+        this.invalidateRemoteData();
       this.emit("status");
     });
     this.stopHolds = client.onHolds((holds: Hold[]) => {

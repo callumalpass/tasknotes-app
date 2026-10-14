@@ -1,5 +1,7 @@
 # Unreleased
 
+- Reload saved views automatically when mdbase reconnects after an offline reload, without requiring Retry.
+
 - Offer a TaskNotes update when you return to an old tab. Save task details and notes before reloading; keep the page open when a draft, pending save, or protected edit needs attention.
 
 - Keep the offline save status and task confirmations in separate stacked rows, so a confirmation or Undo notice cannot cover the sync guidance.

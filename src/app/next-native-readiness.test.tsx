@@ -172,6 +172,45 @@ it("shows a visible discovery refusal with Retry instead of an empty catalog or 
   expect(create).not.toHaveBeenCalled();
 });
 
+it("recovers failed views when the native replica reconnects while its local watch stays active", async () => {
+  const f = await fixture();
+  f.replica.setOnline(false);
+  await waitFor(() => expect(f.client.status?.connection).toBe("offline"));
+  const discovery = vi
+    .spyOn(f.client, "listAppBasesViews")
+    .mockImplementation(async () =>
+      f.client.status?.connection === "offline"
+        ? {
+            kind: "refusal",
+            problem: {
+              code: "unavailable",
+              recovery: "retry",
+              message: "Offline discovery",
+            },
+          }
+        : {
+            kind: "success",
+            views: [],
+            continuation: null,
+            clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
+            collectionRevision: "sha256:" + "ab".repeat(32),
+          },
+    );
+  const submit = vi.spyOn(f.client, "submit");
+  renderShell(f.repository);
+  expect(
+    await screen.findByText("Couldn\u0027t load your views."),
+  ).toBeVisible();
+  const before = discovery.mock.calls.length;
+  act(() => f.replica.setOnline(true));
+  expect(await screen.findByText("No views yet.")).toBeVisible();
+  expect(discovery.mock.calls.length).toBeGreaterThan(before);
+  expect(
+    screen.queryByText("Couldn\u0027t load your views."),
+  ).not.toBeInTheDocument();
+  expect(submit).not.toHaveBeenCalled();
+});
+
 it("preserves cached navigation and original preferences when a discovery READ fails", async () => {
   const f = await fixture();
   const source = {
