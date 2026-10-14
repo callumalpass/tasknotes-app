@@ -23,12 +23,11 @@ import "./people.css";
 import "./accessibility.css";
 
 // The Private collection grant window returns here: hand its result to the
-// waiting TaskNotes tab and close, without starting a second mdbase owner.
+// waiting original SDK owner, without starting a second mdbase owner. That owner
+// closes this SAME popup only after verified completion and original custody ACK.
 const grantReturn = isAppGrantReturn(new URL(window.location.href));
 if (grantReturn) {
-  void deliverAppGrantReturn(new URL(window.location.href))
-    .catch(() => undefined)
-    .finally(() => window.close());
+  void deliverAppGrantReturn(new URL(window.location.href)).catch(() => undefined);
   createRoot(document.getElementById("root")!).render(
     <main className="opening-screen">You can close this window.</main>,
   );
