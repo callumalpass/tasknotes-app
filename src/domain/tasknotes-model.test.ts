@@ -43,6 +43,40 @@ describe("TaskNotes task model app boundary", () => {
     expect(task.frontmatter.scheduled).toBe("2026-10-23");
   });
 
+  it.each([
+    {
+      now: "2026-10-13T21:06:00Z",
+      currentDate: "2026-10-14",
+      frequency: "MONTHLY",
+    },
+    {
+      now: "2026-10-14T01:06:00Z",
+      currentDate: "2026-10-13",
+      frequency: "MONTHLY",
+    },
+    {
+      now: "2026-10-13T21:06:00Z",
+      currentDate: "2026-10-14",
+      frequency: "YEARLY",
+    },
+    {
+      now: "2026-10-14T01:06:00Z",
+      currentDate: "2026-10-13",
+      frequency: "YEARLY",
+    },
+  ])(
+    "anchors an undated $frequency rule to local $currentDate rather than its UTC creation day",
+    (context) => {
+      const task = model.create(
+        { title: "Read book", recurrence: `FREQ=${context.frequency}` },
+        { id: "local-month", ...context },
+      );
+      expect(task.scheduled).toBe(context.currentDate);
+      expect(task.createdAt).toBe(context.now);
+      expect(task.recurrence).toBe(`FREQ=${context.frequency}`);
+    },
+  );
+
   it("persists today for an undated recurrence with a later deadline", () => {
     const task = model.create(
       {

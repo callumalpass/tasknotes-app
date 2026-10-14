@@ -1,5 +1,7 @@
 # Unreleased
 
+- Start an undated monthly or yearly repeating task on the local calendar date, rather than the UTC day of its creation timestamp.
+
 - Reload saved views automatically when mdbase reconnects after an offline reload, without requiring Retry.
 
 - Offer a TaskNotes update when you return to an old tab. Save task details and notes before reloading; keep the page open when a draft, pending save, or protected edit needs attention.

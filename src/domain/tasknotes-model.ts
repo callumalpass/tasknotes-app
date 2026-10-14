@@ -242,9 +242,14 @@ export class TaskNotesTaskModel {
     if (info.recurrence && !info.scheduled) {
       // Persist the next planned occurrence so list filters and calendars use
       // the same date. Due remains the entered deadline relative to that date.
-      const next = updateToNextScheduledOccurrence(info, false, {
-        today: context.currentDate ?? todayString(new Date(now)),
-      });
+      const today = context.currentDate ?? todayString(new Date(now));
+      const next = updateToNextScheduledOccurrence(
+        // Recurrence uses calendar dates, not the UTC day of dateCreated.
+        // Seed an undated rule with the local day; explicit DTSTART still wins.
+        { ...info, scheduled: today },
+        false,
+        { today },
+      );
       info.scheduled = next.scheduled ?? undefined;
     }
     if (
