@@ -23,11 +23,28 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_FIREBASE_PROJECT_ID: "",
       VITE_MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487",
+      VITE_TASKNOTES_ENVIRONMENT: "lab",
+      VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
     });
   });
 
+  it("refuses a mismatched LAB app origin and a missing Editor origin", () => {
+    expect(() =>
+      developmentDeploymentFor({
+        VITE_TASKNOTES_LAB_ORIGIN: "https://staging.tasknotes-app.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
+    expect(() =>
+      developmentDeploymentEnvironment({ MDBASE_ENV: "staging" }),
+    ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN is required/);
+  });
+
   it("selects staging only when explicitly requested", () => {
-    const environment = { MDBASE_ENV: "staging" };
+    const environment = {
+      MDBASE_ENV: "staging",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://staging.example.test",
+    };
 
     expect(developmentDeploymentFor(environment)).toBe(
       developmentDeployments.staging,
@@ -43,6 +60,7 @@ describe("TaskNotes development deployment", () => {
     const environment = {
       MDBASE_CANDIDATE_B_CONNECT_URL:
         "https://mdbase-connect-candidate-b.onrender.com",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://candidate-b.example.test",
     };
     expect(developmentDeploymentFor(environment)).toBe(
       candidateBDevelopmentDeployment,
