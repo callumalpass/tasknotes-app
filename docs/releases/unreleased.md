@@ -1,5 +1,9 @@
 # Unreleased
 
+- Keep a reviewed collection setup working when another tab opens the same setup review. If the changes differ, show the new review for confirmation instead of reporting that the collection was deleted.
+
+- Explain when mdbase on this computer needs an update to set up a collection, with an Update mdbase action instead of a generic error.
+
 - Describe monthly recurrence without an explicit day as the anchor's day of the month, instead of incorrectly showing the first Monday. Keep the original rule unchanged until an edit is applied.
 
 - Keep an accepted TaskNotes update available offline. Save and reload waits for the new offline shell, while other open tabs keep the assets they need.

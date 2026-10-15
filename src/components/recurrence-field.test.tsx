@@ -146,9 +146,9 @@ describe("RecurrenceField", () => {
       expect(
         screen.getByRole("combobox", { name: "Each month" }),
       ).toHaveTextContent("A calendar date");
-      expect(
-        screen.getByRole("combobox", { name: "Date" }),
-      ).toHaveTextContent(day);
+      expect(screen.getByRole("combobox", { name: "Date" })).toHaveTextContent(
+        day,
+      );
       fireEvent.click(screen.getByRole("button", { name: "Advanced rule" }));
       expect(screen.getByLabelText("Recurrence rule")).toHaveValue(value);
       expect(changed).not.toHaveBeenCalled();

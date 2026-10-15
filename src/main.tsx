@@ -27,7 +27,9 @@ import "./accessibility.css";
 // closes this SAME popup only after verified completion and original custody ACK.
 const grantReturn = isAppGrantReturn(new URL(window.location.href));
 if (grantReturn) {
-  void deliverAppGrantReturn(new URL(window.location.href)).catch(() => undefined);
+  void deliverAppGrantReturn(new URL(window.location.href)).catch(
+    () => undefined,
+  );
   createRoot(document.getElementById("root")!).render(
     <main className="opening-screen">You can close this window.</main>,
   );

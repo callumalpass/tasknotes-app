@@ -8,6 +8,7 @@ import {
 import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
 import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";
+import type { MdbaseSetupPlan } from "@mdbase-dev/sdk";
 import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
 
 const starterViews = vi.hoisted(() => vi.fn(async () => []));
@@ -151,6 +152,52 @@ it("adds starter views when the shared switcher's Add a collection approves one"
   expect(
     mdbase.fixture.controls.observedActions().map((call) => call.action),
   ).toContain("approve");
+});
+
+it("shows changed setup for renewed consent, never deletion copy or an automatic second apply", async () => {
+  const mdbase = await createTestMdbase({ phase: "needs_setup" });
+  const reviewed = (digest: string, message: string): MdbaseSetupPlan => ({
+    status: "setup",
+    canApply: true,
+    digest,
+    summary: "This app will make 1 change to this collection.",
+    changes: [{ kind: "create", target: "_types/task.md", message }],
+    conflicts: [],
+    adoptable: {},
+    packs: [],
+    staged: [],
+    records: [],
+  });
+  mdbase.fixture.controls.setSetupPlan(
+    reviewed(`sha256:${"ab".repeat(32)}`, "Add the original note type."),
+  );
+  render(<TaskNotesApp mdbase={mdbase} Workspace={Workspace as never} />);
+  expect(await screen.findByText("Add the original note type.")).toBeVisible();
+  mdbase.fixture.controls.setSetupPlan(
+    reviewed(`sha256:${"cd".repeat(32)}`, "Add the newly reviewed note type."),
+  );
+  mdbase.fixture.fail({ action: "applySetup", reason: "setup_changed" });
+  fireEvent.click(screen.getByRole("button", { name: /^Set up$/ }));
+  expect(
+    await screen.findByText("Add the newly reviewed note type."),
+  ).toBeVisible();
+  expect(screen.getByText("This collection changed")).toBeVisible();
+  expect(screen.queryByText(/not found|deleted on another device/i)).toBeNull();
+  expect(
+    mdbase.fixture.controls
+      .observedActions()
+      .filter((call) => call.action === "applySetup"),
+  ).toHaveLength(1);
+  expect(screen.queryByText(/^Workspace /)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /^Set up$/ }));
+  expect(
+    await screen.findByText(`Workspace ${collectionId(mdbase, 0)}`),
+  ).toBeVisible();
+  expect(
+    mdbase.fixture.controls
+      .observedActions()
+      .filter((call) => call.action === "applySetup"),
+  ).toHaveLength(2);
 });
 
 it("signs out through the SDK and never just closes the entry", async () => {

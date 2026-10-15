@@ -1,12 +1,7 @@
 {
   "repository": "mdbase-dev/mdbase-next",
   "sourceCommit": "72f8ea6caeafa4b089d3ee14c3b38ce492511a2c",
-  "sourceIncludesPrs": [
-    819,
-    827,
-    832,
-    837
-  ],
+  "sourceIncludesPrs": [819, 827, 832, 837],
   "consumerEntries": [
     "@mdbase-dev/sdk",
     "@mdbase-dev/sdk/account",
