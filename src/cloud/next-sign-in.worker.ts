@@ -37,6 +37,7 @@ async function dispatch({
       build.environment,
       build.environment === "lab" ? build.appOrigin : undefined,
       location.origin,
+      build.environment === "local" ? build.appOrigin : undefined,
     );
     if (
       !(build.runtime instanceof Uint8Array) ||

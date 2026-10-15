@@ -6,6 +6,28 @@ import {
 } from "./app-environment";
 
 describe("explicit next-only replace-at-cutover build environment", () => {
+  it("managed artifacts refuse local selection and local origin configuration", () => {
+    const origin = "http://127.0.0.1:48271";
+    expect(() =>
+      requireTaskNotesAppEnvironment("local", undefined, origin, origin),
+    ).toThrow();
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "lab",
+        TASKNOTES_LAB_ORIGIN,
+        TASKNOTES_LAB_ORIGIN,
+        origin,
+      ),
+    ).toThrow();
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "production",
+        undefined,
+        TASKNOTES_PRODUCTION_ORIGIN,
+        origin,
+      ),
+    ).toThrow();
+  });
   it("targets the existing same-origin production address without a second-origin input", () => {
     expect(
       requireTaskNotesAppEnvironment(

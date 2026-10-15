@@ -1,4 +1,8 @@
 node_modules/
+/.artifacts/
+/.local-rehearsal-sdk/
+/vendor/local-sdk-input.json
+/vendor/sdk-local-*.tgz
 /.impeccable/
 /.ops/
 dist/

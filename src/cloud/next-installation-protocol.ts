@@ -16,7 +16,7 @@ import type { NextApplicationRegistration } from "./next-application-registratio
 
 /** Public BUILD context and immutable artifact, not an auth/credential message. */
 export interface NextInstallationBuildInput extends NextApplicationRegistration {
-  environment: "lab" | "production";
+  environment: "lab" | "production" | "local";
   appOrigin: string;
   release: AppBundledReleaseTrust;
   runtime: Uint8Array;

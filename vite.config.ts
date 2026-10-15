@@ -3,12 +3,16 @@ import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import { prepareLocalSdk } from "./scripts/local-sdk.mjs";
 
 const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  resolve: {
+    alias: mode === "local-rehearsal" ? localSdkAliases() : [],
+  },
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [
@@ -81,7 +85,22 @@ export default defineConfig({
     testTimeout: 10_000,
     restoreMocks: true,
   },
-});
+}));
+
+function localSdkAliases() {
+  const sdk = prepareLocalSdk();
+  return [
+    { find: /^@mdbase-dev\/sdk$/, replacement: resolve(sdk, "dist/index.js") },
+    {
+      find: /^@mdbase-dev\/sdk\/app-host$/,
+      replacement: resolve(sdk, "dist/app-host/index.js"),
+    },
+    {
+      find: /^@mdbase-dev\/sdk\/application$/,
+      replacement: resolve(sdk, "dist/application/index.js"),
+    },
+  ];
+}
 
 function androidNotificationSmokeEntry() {
   return {

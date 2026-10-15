@@ -1,5 +1,7 @@
 # Unreleased
 
+- Support isolated local rehearsal builds with their own signed mdbase SDK and exact loopback application and Editor origins; managed builds cannot select local configuration. Validate the SDK's shared compiled-local transport marker without changing managed inputs.
+
 - Describe monthly recurrence without an explicit day as the anchor's day of the month, instead of incorrectly showing the first Monday. Keep the original rule unchanged until an edit is applied.
 
 - Keep an accepted TaskNotes update available offline. Save and reload waits for the new offline shell, while other open tabs keep the assets they need.
