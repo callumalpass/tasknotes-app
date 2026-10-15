@@ -68,7 +68,7 @@ export function prepareLocalSdk(root = resolve(import.meta.dirname, "..")) {
     "dir",
   );
   const flag = readFileSync(
-    resolve(sdk, "dist/application/local-build.js"),
+    resolve(sdk, "dist/local-build.js"),
     "utf8",
   );
   const provenance = JSON.parse(
