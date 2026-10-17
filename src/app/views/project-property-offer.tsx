@@ -12,15 +12,18 @@ import type { TaskView } from "../../domain/view";
 /**
  * Collections created before the starter Today view showed projects keep
  * their saved view untouched. This one-time, dismissible offer adds the
- * project property only when the person chooses it.
+ * project property only when the person chooses it. It is offered only when
+ * a task in the view has a project, so there is something to show.
  */
 export function ProjectPropertyOffer({
   view,
   scope,
+  hasProjects,
   onChanged,
 }: {
   view: TaskView;
   scope?: string;
+  hasProjects: boolean;
   onChanged(): Promise<unknown>;
 }) {
   const { repository, configuration } = useRepository();
@@ -31,6 +34,7 @@ export function ProjectPropertyOffer({
   const [error, setError] = useState("");
 
   const offered =
+    hasProjects &&
     !dismissed &&
     view.source.writable &&
     view.name === "Today" &&
@@ -58,7 +62,7 @@ export function ProjectPropertyOffer({
     setError("");
     try {
       const source = await repository.readViewSource(view.source.path);
-      const draft = readViewDraft(source, view.id);
+      const draft = readViewDraft(source, view.id, view.declaration);
       const property =
         draft.dialect === "obsidian-bases" ? basesProperty(projects) : projects;
       await repository.updateViewSource({

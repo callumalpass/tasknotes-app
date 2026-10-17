@@ -78,8 +78,8 @@ test("recovers one exact task after authority responses are lost", async ({
     `${collectionDir}/TaskNotes/Views/today.base`,
     "utf8",
   );
-  expect(todayView).toContain('date(note["scheduled"]) <= today()');
-  expect(todayView).toContain('date(note["due"]) <= today()');
+  expect(todayView).toContain('date(note["scheduled"]).date() <= today()');
+  expect(todayView).toContain('date(note["due"]).date() <= today()');
   expect(todayView).not.toContain("formula.");
   const filesBefore = await markdownFiles();
   const title = `TaskNotes durable recovery ${Date.now()}`;

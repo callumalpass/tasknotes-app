@@ -6,6 +6,7 @@ import {
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
 import { getCurrentDateString } from "@tasknotes/model/date";
+import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
   mapTaskFromFrontmatter,
   mapTaskToFrontmatter,
@@ -238,6 +239,19 @@ export class TaskNotesTaskModel {
       dateModified: now,
       archived: false,
     };
+    if (info.recurrence && !info.scheduled) {
+      // Persist the next planned occurrence so list filters and calendars use
+      // the same date. Due remains the entered deadline relative to that date.
+      const today = context.currentDate ?? todayString(new Date(now));
+      const next = updateToNextScheduledOccurrence(
+        // Recurrence uses calendar dates, not the UTC day of dateCreated.
+        // Seed an undated rule with the local day; explicit DTSTART still wins.
+        { ...info, scheduled: today },
+        false,
+        { today },
+      );
+      info.scheduled = next.scheduled ?? undefined;
+    }
     if (
       !info.recurrence &&
       isCompletedStatus(info.status, this.config.statuses)
@@ -841,6 +855,15 @@ export class TaskNotesTaskModel {
       // removing the property becomes null, which the array schema rejects.
       ...(info.reminders?.length === 0
         ? { [this.config.fieldMapping.reminders]: [] }
+        : {}),
+      // The portable mapper omits an empty skipped history. A patch over an
+      // existing history must explicitly clear it instead of retaining base.
+      ...(info.skipped_instances?.length === 0 &&
+      Object.prototype.hasOwnProperty.call(
+        base,
+        this.config.fieldMapping.skippedInstances,
+      )
+        ? { [this.config.fieldMapping.skippedInstances]: [] }
         : {}),
       id,
       mobileRevision: revision,

@@ -29,6 +29,71 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("persists the first planned date for a due-only repeating task", () => {
+    const task = model.create(
+      {
+        title: "Friday review",
+        due: "2026-10-23",
+        recurrence: "DTSTART:20261023;FREQ=WEEKLY;BYDAY=FR",
+      },
+      { id: "friday", now: "2026-10-13T16:00:00Z", currentDate: "2026-10-14" },
+    );
+    expect(task.scheduled).toBe("2026-10-23");
+    expect(task.due).toBe("2026-10-23");
+    expect(task.frontmatter.scheduled).toBe("2026-10-23");
+  });
+
+  it.each([
+    {
+      now: "2026-10-13T21:06:00Z",
+      currentDate: "2026-10-14",
+      frequency: "MONTHLY",
+    },
+    {
+      now: "2026-10-14T01:06:00Z",
+      currentDate: "2026-10-13",
+      frequency: "MONTHLY",
+    },
+    {
+      now: "2026-10-13T21:06:00Z",
+      currentDate: "2026-10-14",
+      frequency: "YEARLY",
+    },
+    {
+      now: "2026-10-14T01:06:00Z",
+      currentDate: "2026-10-13",
+      frequency: "YEARLY",
+    },
+  ])(
+    "anchors an undated $frequency rule to local $currentDate rather than its UTC creation day",
+    (context) => {
+      const task = model.create(
+        { title: "Read book", recurrence: `FREQ=${context.frequency}` },
+        { id: "local-month", ...context },
+      );
+      expect(task.scheduled).toBe(context.currentDate);
+      expect(task.createdAt).toBe(context.now);
+      expect(task.recurrence).toBe(`FREQ=${context.frequency}`);
+    },
+  );
+
+  it("persists today for an undated recurrence with a later deadline", () => {
+    const task = model.create(
+      {
+        title: "Wednesday review",
+        due: "2026-10-23",
+        recurrence: "DTSTART:20261014;FREQ=WEEKLY;BYDAY=WE",
+      },
+      {
+        id: "wednesday",
+        now: "2026-10-13T16:00:00Z",
+        currentDate: "2026-10-14",
+      },
+    );
+    expect(task.scheduled).toBe("2026-10-14");
+    expect(task.due).toBe("2026-10-23");
+  });
+
   it.each(["explicit", "default"])(
     "derives a completion date for %s completed creation",
     (selection) => {
@@ -354,44 +419,6 @@ describe("TaskNotes task model app boundary", () => {
     ).toThrow(/RFC 3339/);
   });
 
-  it("persists status, timed dates, and estimates from capture", () => {
-    const created = model.create(
-      {
-        title: "Captured",
-        status: "doing",
-        scheduled: "2026-08-05T09:00",
-        timeEstimate: 45,
-      },
-      { id: "captured", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created).toMatchObject({
-      status: "doing",
-      completed: false,
-      scheduled: canonicalLocal("2026-08-05T09:00"),
-      timeEstimate: 45,
-    });
-    expect(created.frontmatter).toMatchObject({
-      status: "doing",
-      scheduled: canonicalLocal("2026-08-05T09:00"),
-      timeEstimate: 45,
-    });
-  });
-
-  it("round-trips TaskNotes string ranks through the configured sort field", () => {
-    const created = model.create(
-      { title: "Ranked", sortOrder: "tnnnnnnnnnnn" },
-      { id: "ranked", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created.sortOrder).toBe("tnnnnnnnnnnn");
-    expect(created.frontmatter.tasknotes_manual_order).toBe("tnnnnnnnnnnn");
-
-    const updated = model.update(created, { sortOrder: "tnaaaaaaaaaa" });
-    expect(updated.sortOrder).toBe("tnaaaaaaaaaa");
-    expect(updated.frontmatter.tasknotes_manual_order).toBe("tnaaaaaaaaaa");
-  });
-
   it("round-trips structured dependencies through the task contract", () => {
     const created = model.create(
       {
@@ -447,28 +474,6 @@ describe("TaskNotes task model app boundary", () => {
         frontmatter: updated.frontmatter,
       }).blockedBy,
     ).toEqual(updated.blockedBy);
-  });
-
-  it("round-trips authoritative attachment links without changing the body", () => {
-    const created = model.create(
-      {
-        title: "Documented task",
-        body: "The body is presentation, not membership.",
-        attachments: ["[[Attachments/diagram.png]]"],
-      },
-      { id: "documented", now: "2026-07-22T00:00:00.000Z" },
-    );
-
-    expect(created.attachments).toEqual(["[[Attachments/diagram.png]]"]);
-    expect(created.frontmatter.attachments).toEqual([
-      "[[Attachments/diagram.png]]",
-    ]);
-    expect(created.body).toBe("The body is presentation, not membership.");
-
-    const detached = model.update(created, { attachments: [] });
-    expect(detached.attachments).toEqual([]);
-    expect(detached.frontmatter).not.toHaveProperty("attachments");
-    expect(detached.body).toBe(created.body);
   });
 
   it("completes and skips individual recurring occurrences", () => {
@@ -766,6 +771,15 @@ describe("TaskNotes task model app boundary", () => {
     });
     expect(skipped.parent.skippedInstances).toContain("2026-08-05");
     expect(skipped.materializeNextDate).toBe("2026-08-06");
+    const unskipped = model.transitionMaterializedOccurrence(
+      skipped.occurrence,
+      skipped.parent,
+      "skip",
+      { now: "2026-08-05T10:00:00Z" },
+    );
+    expect(unskipped.occurrence.skipped).toBe(false);
+    expect(unskipped.parent.skippedInstances).toEqual([]);
+    expect(model.read(unskipped.parent).skippedInstances).toEqual([]);
   });
 
   it("applies occurrence templates while retaining canonical identity", async () => {

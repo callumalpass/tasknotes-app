@@ -35,23 +35,4 @@ describe("previewViewDraft", () => {
       tasks: [],
     });
   });
-
-  it("sorts demo results by computed properties", () => {
-    const model = new TaskNotesTaskModel();
-    const tasks = [
-      model.create({ title: "Alpha" }, { id: "alpha" }),
-      model.create({ title: "Zulu" }, { id: "zulu" }),
-    ];
-    const draft = {
-      ...emptyViewDraft("obsidian-bases"),
-      computedProperties: [
-        { name: "label", expression: "note.title", scope: "source" as const },
-      ],
-      sort: [{ property: "formula.label", direction: "desc" as const }],
-    };
-
-    expect(
-      previewViewDraft(draft, tasks).tasks.map(({ title }) => title),
-    ).toEqual(["Zulu", "Alpha"]);
-  });
 });

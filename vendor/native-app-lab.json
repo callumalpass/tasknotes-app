@@ -1,0 +1,13 @@
+{
+  "environment": "lab",
+  "appOrigin": "http://127.0.0.1:48218",
+  "trustModule": "mdbase-app-lab-trust.mjs",
+  "trustModuleSha256": "a7db2cc3ba9fd1e78d86093599b608a2e3268408402630d81242450603c98a10",
+  "runtime": "mdbase-app-lab-58e9ed23.wasm",
+  "runtimeSha256": "58e9ed23146a956af24b936359fc79c931873eda1c8d9e297f5196f02ddaa265",
+  "runtimeSource": {
+    "repository": "mdbase-dev/mdbase-next",
+    "commit": "d70c9487db12fc864fd68ea8b8d26586d12276fa",
+    "package": "mdbn-wasm"
+  }
+}

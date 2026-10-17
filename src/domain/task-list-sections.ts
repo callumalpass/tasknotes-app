@@ -1,7 +1,7 @@
 import { setTaskDate, shiftTaskDate } from "./task-date-actions";
 import { taskDatePart, todayString } from "./task";
 
-import type { TaskSummary, UpdateTaskInput } from "./task";
+import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
 
 export type TaskListSectionMode = "day";
@@ -75,4 +75,39 @@ export function taskListSectionMoveInput(
 
 function isSectionKey(value: string): value is TaskListSectionKey {
   return ["overdue", "today", "anytime", "later"].includes(value);
+}
+
+/**
+ * Updates that bring rows onto today with the same meaning as the `t`
+ * shortcut and the Schedule today action: Scheduled moves to today, keeping
+ * any time, and Due stays the deadline the person recorded. A row overdue
+ * only by Due therefore gains today's Scheduled date and keeps its overdue
+ * Due label. Each update carries the input that restores it.
+ */
+export function scheduleRowsTodayUpdates(
+  rows: readonly TaskViewRow[],
+  today = todayString(),
+): { id: string; input: UpdateTaskInput; undo: UpdateTaskInput }[] {
+  return rows
+    .filter(({ task }) => !task.completed)
+    .map(({ task }) => ({
+      id: task.id,
+      input: { scheduled: setTaskDate(task.scheduled, today) },
+      undo: { scheduled: task.scheduled ?? null },
+    }));
+}
+
+/**
+ * "Add to Today" files a new task under Today. The Today view also lists
+ * undated tasks, so its filter implies no date; without one the task would be
+ * undated and land under Anytime. A date the view (or capture context)
+ * already sets is kept, and a date typed in capture still wins.
+ */
+export function todayCaptureDefaults(
+  defaults: Partial<CreateTaskInput>,
+  today = todayString(),
+): Partial<CreateTaskInput> {
+  return defaults.scheduled || defaults.due
+    ? defaults
+    : { ...defaults, scheduled: today };
 }

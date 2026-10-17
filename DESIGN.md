@@ -86,10 +86,11 @@ remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA
 contrast.
 
-Stored status and priority colors decorate a swatch, not the label's ink or a
-control's outline: a non-default status fills the dot inside an ink-colored
-completion ring. Keep selected and unselected text legible without rewriting
-users' colors.
+Stored priority colors decorate a swatch, not the label's ink. A coloured,
+non-default status draws the completion ring itself, with no inner fill, its
+lightness clamped to keep 3:1 against the paper; the default status and
+uncoloured statuses keep the neutral ring. Keep selected and unselected text
+legible without rewriting users' colors.
 
 `#808080` is a data-layer compatibility value used when parsing legacy task
 color metadata and in its fixtures. It is not an interface color.
@@ -115,8 +116,13 @@ on returning to the app, preserve the last known connection state and remain
 silent for five seconds. Longer waits show a quiet, non-layout-shifting status
 indicator. Known unavailability stays visible as a compact save warning across
 the workspace and detail, even when a cached read succeeds or a retry is in
-progress; retry and connection settings remain available. Lifecycle cancellation
-is not evidence that the collection is unavailable.
+progress. When mdbase reports that the serving computer is offline, show
+“Waiting for your computer” instead of task/view loading failures and a stale
+retry control. Keep previously loaded work visible; resume read models when the
+authenticated change watch becomes active, without a page reload. Do not retry
+writes automatically or hide access refusals. Connection settings remain
+available. Lifecycle cancellation is not evidence that the collection is
+unavailable.
 
 ## Typography
 
@@ -166,21 +172,39 @@ Today             Search       More
   list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
   "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
-  time so overdue rows stay compact. An overdue date takes the
-  danger color beside its visible label. A non-default status adds a filled dot
-  inside the completion circle, so status never relies on color alone. The
+  time so overdue rows stay compact. Only a past due date is overdue and takes
+  the danger color beside its visible label; a missed scheduled date is a plan,
+  not lateness, and stays muted. Inside the Overdue section the heading label
+  alone carries the danger color, and row dates read as ordinary metadata. A
+  coloured non-default status draws the completion ring in that color and names
+  the status in the control's label and tooltip. On list rows, wrapped
+  metadata keeps an even 24px rhythm, and a project, status, or priority value
+  truncates where it starts rather than dropping onto a line of its own. The
   starter Today view shows each task's project as quiet, unlabelled metadata.
   An existing Today view without it gets a one-time, dismissible "Show each
   task's project on Today?" offer; the saved view changes only if accepted.
+- Completing a task from a row draws the check and sweeps a strike through
+  the title once the collection accepts the write; a row that then leaves the
+  list lingers 500ms, folds its height away, and is out of the section count
+  meanwhile. Keyboard focus moves straight to the neighbouring row. A
+  “Completed” notice offers Undo for six seconds (held while hovered or
+  focused); Undo also puts back dates a repeating task advanced. Native builds
+  give the success haptic. Reduced motion completes immediately.
 - On touch, swiping a row right completes (or reopens) the task and swiping
   left opens its actions, which include Schedule today and Schedule tomorrow.
   The revealed side names the action and fills with accent once the swipe
   will act. Buttons keep every action available; board cards never claim
   horizontal swipes. Search explains observed non-title matches with
-  concise labels such as “Matched in notes.”
+  concise labels such as “Matched in notes.” Before typing, Search lists up
+  to five recent searches and recently opened tasks above the field
+  suggestions, each clearable; they are per-device, collection-scoped
+  conveniences, and nothing appears without history.
 - Secondary buttons are text or lightly outlined controls. The persistent
   mobile capture button uses the blue accent fill with contrasting canvas text:
   one unmistakable primary action, not a page full of competing buttons.
+  While the page scrolls down it narrows to its plus, regaining its label when
+  scrolling settles or reverses, and lists reserve enough bottom space for
+  their last row and its menu to scroll clear of it.
 - Inputs use the current surface with a bottom rule or a complete one-pixel border when their boundary needs to be explicit.
   Text fields, selects, and date/time triggers share a type and height rhythm.
   Keep labels close to their fields (4px), separate related fields by 16px,
@@ -222,9 +246,22 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
-- Settings leads with the collection name, its counts, and Refresh now. How
-  tasks are stored, the collection location, and refresh diagnostics sit in a
-  collapsed disclosure. Settings has no capture control of its own.
+- Settings groups choices by who they affect: Collection, Account (when a
+  private account exists), Reminders, On this device, Collection behavior
+  (shared through the collection), and About & help. Device and shared
+  sections name their scope. Phones show the sections as a list, each opening
+  as its own page at `/more/<section>`; wider screens show every section with
+  a section index, sticky beside the panels from 1100px. Collection leads with
+  one card holding the collection name, connection state, counts, Refresh now,
+  and Change collection. How tasks are stored, the location, the mdbase format,
+  and refresh diagnostics sit in a disclosure that remembers its state.
+  Immediately applied on/off settings use switches. Collection behavior is an
+  explicitly saved form grouped as New tasks, Repeating tasks, Archive, and
+  Links and time tracking; a field appears only when the choice that enables it
+  is on. Its unsaved draft survives leaving Settings, is marked in the section
+  index or list, and a sticky bar offers Discard and Save changes. Install
+  appears once as a dismissible banner and remains under About. Settings has
+  no capture control of its own.
 - Projects shows a project count beside a compact native "Jump to project"
   picker rather than a full-width field.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
@@ -291,6 +328,16 @@ Today             Search       More
   row controls have 44px targets. Linked rows expose the same task-actions menu
   used by task lists, and nested branches can collapse. Loaded history appears
   without fading its readable text.
+- Keyboard speed is additive and never required. A focused task row shows a
+  soft accent fill with a 2px leading bar rather than a box around its title.
+  `j`/`k` (and the arrow keys on a row) move between rows; `o`/Enter, `x`, `t`,
+  `m`, and `w` open, complete, and schedule the focused task for today,
+  tomorrow, or the start of next calendar week through the same mutation paths
+  as the menu, with a polite announcement. Delete has no key. Plain keys yield
+  to typing, IME composition, modifiers, and any open overlay. Cmd/Ctrl+K opens
+  a command palette (navigation, actions, the focused or open task, task
+  search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
+  shows a quiet Commands ⌘K entry in the sidebar utilities.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
@@ -318,7 +365,13 @@ Today             Search       More
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
   manually sorted lists keep measured windowing rather than rendering every row. There is no special
-  overdue-review workflow or automatic hiding of overdue work. Projects likewise
+  overdue-review workflow or automatic hiding of overdue work; the Overdue
+  heading carries one quiet Move all to today action that schedules each row
+  for today exactly as `t` does (Scheduled moves, keeping its time; Due stays)
+  in one batch, with Undo in the notice. When Today and Overdue are empty,
+  Today says “Today is clear,” names the next task coming, and links to
+  Upcoming; a collection with no tasks says so instead. The Today date shows
+  “n of m done” once a task planned for today has been completed. Projects likewise
   have collection/view-scoped collapse choices, visible counts, and a compact
   jump selector that expands and focuses the chosen project.
 - Scheduled and Due retain visible labels, including when both dates occur on
@@ -331,7 +384,12 @@ Today             Search       More
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
   Schedule and status have a compact, wrapping disclosure summary; advanced
-  properties and the backing Markdown record remain inspectable. Returning to
+  properties remain inspectable. The editor ends with the task's Markdown
+  file: its collection-relative path in muted mono, with quiet Copy path and
+  Copy wikilink actions (Copy Markdown link when the collection writes
+  Markdown links). Copying confirms inline in a polite status that clears
+  itself; a failure says “Couldn’t copy” rather than raising a notice. The
+  row menu’s Copy submenu offers the same title, link, and path. Returning to
   the list restores the invoking control and scroll position.
 - Desktop saved-view capture retains focus after successful creation. Phone
   saved views with creation defaults have one persistent contextual Add task
@@ -346,9 +404,22 @@ Today             Search       More
   are removable; on touch each chip action has a 44px hit area without larger
   visuals. A suggestion list closes once its only match is fully typed,
   and link values show their display label.
+  Phrases the parser consumed (dates, times, repeats, estimates, and trigger
+  values) take a faint accent tint inside the field itself, drawn on an
+  aria-hidden backdrop so the caret and selection stay native. Tints and chips
+  follow the last settled reading: typing ahead keeps them steady, a tint grows
+  or shrinks in place rather than blinking, removing a chip clears its tint,
+  and newly recognized chips ease in. Reduced motion drops the easing.
   Explicit property edits survive subsequent title typing. The complete draft
-  remains visible while saving and survives a rejected write; it clears only
-  after authority acceptance. Date shortcuts preserve an existing time. Closing
+  remains visible during native capture and survives a refused capture; it
+  clears only after a genuine native local result, not authority confirmation.
+  Routine sync never inserts a row or changes editor geometry: a single quiet
+  overlay appears after two seconds, without a live announcement. Sustained
+  disconnection (five seconds), prolonged waits (30 seconds), rejection,
+  conflict, and unknown outcomes use polite feedback and explicit read-only
+  check/review actions. Known problems survive filtering or navigation until
+  current write metadata clears them; collection changes reset the feedback. Date shortcuts
+  preserve an existing time. Closing
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
@@ -403,3 +474,15 @@ This is functional evidence of portability, not permanent technical chrome.
 Use 150 to 220 millisecond ease-out transitions only when state changes need
 orientation. Completing a task may fade and reposition the row. Respect reduced
 motion and avoid entrance choreography.
+
+When a list's order or membership changes (a completion, reschedule, section
+move, or board column move), rows and cards glide 220ms from where they were
+to where they now sit, so the eye can follow the task. Re-renders that keep the
+order, such as a width change, never move rows. Lists long enough to virtualize
+and moves of more than 60 items settle instantly.
+
+While a task is dragged in a manually ordered list or board column, the rows
+part with the same glide to open its slot, and the dragged row waits there as
+a faded, dashed placeholder; the drop lands exactly where the slot showed.
+Board drags carry a lifted copy of the card under the pointer. Virtualized
+lists and reduced motion keep rows still and mark the slot with a line.

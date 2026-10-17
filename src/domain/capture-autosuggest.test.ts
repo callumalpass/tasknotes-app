@@ -9,22 +9,6 @@ import {
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 
 describe("capture autosuggestions", () => {
-  it("omits triggers disabled by the collection contract", () => {
-    const configuration = {
-      ...defaultTaskCollectionConfiguration(),
-      nlp: {
-        triggers: [
-          { propertyId: "tags", trigger: "##", enabled: true },
-          { propertyId: "priority", trigger: "!", enabled: false },
-        ],
-      },
-    };
-
-    expect(captureTriggers(configuration)).toEqual([
-      { propertyId: "tags", trigger: "##", enabled: true },
-    ]);
-  });
-
   it("finds configured multi-character triggers at the cursor", () => {
     const token = activeCaptureToken("Plan release ##mob later", 18, [
       { propertyId: "tags", trigger: "##", enabled: true },

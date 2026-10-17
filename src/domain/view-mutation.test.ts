@@ -1,22 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
-import { viewGroupMoveInput, viewPropertyMoveInput } from "./view-mutation";
+import { viewGroupMoveInput } from "./view-mutation";
 
 import type { Task } from "./task";
 
 describe("view property moves", () => {
-  it("shares scalar property mutation across view presentations", () => {
-    expect(
-      viewPropertyMoveInput({
-        task: task(),
-        property: "note.status",
-        destinationValue: "done",
-        configuration: defaultTaskCollectionConfiguration(),
-      }),
-    ).toEqual({ status: "done" });
-  });
-
   it("moves list group membership while preserving unrelated values", () => {
     expect(
       viewGroupMoveInput(

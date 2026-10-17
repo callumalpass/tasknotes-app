@@ -56,6 +56,24 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect
         .poll(async () => (await row.boundingBox())!.height)
         .toBeGreaterThan(normalHeight);
+      const titleText = row.locator(".task-row-title-text");
+      // Growing the row alone does not prove the entire title is readable:
+      // a two-line clamp still hid words while metadata grew at 200% text.
+      await expect
+        .poll(() =>
+          titleText.evaluate((element) =>
+            Math.ceil(
+              element.getBoundingClientRect().height /
+                Number.parseFloat(getComputedStyle(element).lineHeight),
+            ),
+          ),
+        )
+        .toBeGreaterThan(2);
+      expect(
+        await titleText.evaluate(
+          (element) => element.scrollHeight - element.clientHeight,
+        ),
+      ).toBeLessThanOrEqual(1);
       const title = (await row.locator(".task-row-title").boundingBox())!;
       for (const control of await row.locator(".task-row-property").all()) {
         const box = (await control.boundingBox())!;
@@ -66,6 +84,21 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(320);
+      // URLs and other unbroken titles must also stay readable inside the row.
+      await titleText.evaluate((element) => {
+        element.textContent =
+          "Review https://example.test/quarterly-planning-session-follow-up";
+      });
+      expect(
+        await titleText.evaluate(
+          (element) => element.scrollWidth - element.clientWidth,
+        ),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        await titleText.evaluate(
+          (element) => element.scrollHeight - element.clientHeight,
+        ),
+      ).toBeLessThanOrEqual(1);
     });
 
     test("calendar stays compact on phones and desktop without double agenda padding", async ({

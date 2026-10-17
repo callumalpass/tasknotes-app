@@ -1,7 +1,9 @@
 name: iOS
 
 on:
+  # PRs to the next branch rely on local `pnpm verify`; full checks run for main.
   pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:

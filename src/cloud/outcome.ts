@@ -54,7 +54,7 @@ export function pendingRecoveryError(
       recovery: "resolve_outcome",
       operation_outcome: "unknown",
       message:
-        "The earlier change may have been applied, but its result could not be confirmed. Keep the collection connected and retry exact recovery.",
+        "The change may have been applied; its result is not confirmed yet. TaskNotes keeps checking its exact result automatically.",
       details: { request_id: requestId },
     },
     { cause },

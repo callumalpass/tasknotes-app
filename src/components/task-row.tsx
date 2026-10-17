@@ -1,16 +1,34 @@
 import { Square } from "lucide-react";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
-import { useId, useRef, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { activeTimeEntry, taskMeta } from "../domain/task";
 import { relativeDateDetail } from "../domain/view-values";
 import { occurrenceTask } from "../domain/task-occurrence";
-import { actionFeedback } from "../native/feedback";
+import { actionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
+import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
 import { useSwipeActions } from "./use-swipe-actions";
+import { useTaskShortcuts } from "./use-task-shortcuts";
+import { preserveRowFocus } from "../app/keyboard-shortcuts";
+import {
+  COMPLETION_FOLD_MS,
+  COMPLETION_LINGER_MS,
+  TaskCompletionReportContext,
+  TaskDeparturesContext,
+  prefersReducedMotion,
+  type TaskCompletion,
+} from "./task-completion-motion";
 
 import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrence } from "../domain/task-occurrence";
@@ -31,7 +49,7 @@ export function TaskRow({
   supportingText?: string;
 }) {
   const supportingId = useId();
-  const { configuration, mutations } = useRepository();
+  const { configuration, mutations, repository, updateTask } = useRepository();
   const command = useMutationState(
     mutations,
     completionKey(task.id, occurrence?.date),
@@ -41,16 +59,26 @@ export function TaskRow({
   const [localError, setLocalError] = useState("");
   const pending = command.pending || localPending;
   const error = mutations ? command.error?.message : localError;
-  async function complete() {
-    if (pendingRef.current || command.pending) return;
+  const reportCompletion = useContext(TaskCompletionReportContext);
+  // Only a completion made here animates; rows that load completed are still.
+  const [justCompleted, setJustCompleted] = useState(false);
+  async function complete(): Promise<boolean> {
+    if (pendingRef.current || command.pending) return false;
     pendingRef.current = true;
     setLocalPending(true);
     setLocalError("");
+    const completing = !displayedTask.completed;
     try {
-      await onToggle(task, occurrence?.date);
-      actionFeedback();
+      const saved = await onToggle(task, occurrence?.date);
+      if (completing) {
+        successFeedback();
+        setJustCompleted(true);
+        reportCompletion(completionRecord(task, occurrence?.date, saved));
+      } else actionFeedback();
+      return true;
     } catch (reason) {
       setLocalError(reason instanceof Error ? reason.message : String(reason));
+      return false;
     } finally {
       pendingRef.current = false;
       setLocalPending(false);
@@ -61,12 +89,17 @@ export function TaskRow({
   const status = configuration.statuses.find(
     (candidate) => candidate.value === displayedTask.status,
   );
-  const statusColor = status?.color;
   const distinctStatus =
     !displayedTask.completed &&
     Boolean(status) &&
     displayedTask.status !== configuration.defaults.status &&
     displayedTask.status !== "none";
+  const statusColor = distinctStatus ? status?.color : undefined;
+  const [seenCompleted, setSeenCompleted] = useState(displayedTask.completed);
+  if (seenCompleted !== displayedTask.completed) {
+    setSeenCompleted(displayedTask.completed);
+    if (!displayedTask.completed) setJustCompleted(false);
+  }
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
   const [editing, setEditing] = useState<{
     detail: TaskRowDetail;
@@ -90,6 +123,30 @@ export function TaskRow({
     })
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   const rowRef = useRef<HTMLDivElement>(null);
+  useCompletionDeparture(
+    rowRef,
+    useContext(TaskDeparturesContext).get(task.id),
+  );
+  useTaskShortcuts(rowRef, {
+    task,
+    completed: displayedTask.completed,
+    reschedulable: !(occurrence && task.recurrence && !task.occurrenceDate),
+    open: () => onOpen(task, occurrence?.date),
+    toggle: async () => {
+      if (!(await complete())) throw new Error("Completion failed");
+    },
+    schedule: async (scheduled) => {
+      try {
+        await updateTask(task.id, { scheduled });
+        actionFeedback();
+      } catch (reason) {
+        setLocalError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+        throw reason;
+      }
+    },
+  });
   const swipe = useSwipeActions({
     disabled: pending,
     onSwipe: (direction) => {
@@ -103,7 +160,11 @@ export function TaskRow({
   return (
     <div
       {...swipe.handlers}
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      data-task-id={task.id}
+      data-task-title={task.title}
+      data-task-completed={displayedTask.completed ? "true" : undefined}
+      data-occurrence={occurrence?.date}
       data-swipe-hint={
         swipe.offset > 0
           ? displayedTask.completed
@@ -153,7 +214,7 @@ export function TaskRow({
       }}
     >
       <button
-        className={`completion-control${distinctStatus ? " has-status" : ""}`}
+        className={`completion-control${statusColor ? " has-status" : ""}`}
         type="button"
         aria-label={`${displayedTask.completed ? "Reopen" : "Complete"} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
         aria-pressed={displayedTask.completed}
@@ -161,8 +222,8 @@ export function TaskRow({
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
         style={
-          // The stored colour fills only the status dot; the ring stays ink.
-          distinctStatus && statusColor
+          // The stored colour draws the ring; the label names the status.
+          statusColor
             ? ({ "--status-color": statusColor } as React.CSSProperties)
             : undefined
         }
@@ -191,7 +252,9 @@ export function TaskRow({
           type="button"
           onClick={() => onOpen(task, occurrence?.date)}
         >
-          <span className="task-row-title-text">{task.title}</span>
+          <span className="task-row-title-text">
+            <span>{task.title}</span>
+          </span>
         </button>
         {supportingText ? (
           <small id={supportingId} className="task-row-context">
@@ -273,6 +336,10 @@ export function TaskRow({
             ))}
           </span>
         ) : null}
+        <RecordWriteNotice
+          repository={repository}
+          target={{ kind: "task", id: task.id }}
+        />
       </div>
       <TaskActions
         task={task}
@@ -294,6 +361,98 @@ export function TaskRow({
       ) : null}
     </div>
   );
+}
+
+/**
+ * A row the list retains after its task left the results lingers, then folds
+ * its height away so the rows beneath close up rather than jump. Keyboard
+ * focus moves on at once, so completing several tasks in a row stays quick.
+ */
+function useCompletionDeparture(
+  rowRef: React.RefObject<HTMLDivElement | null>,
+  acceptedAt: number | null | undefined,
+) {
+  const departing = acceptedAt !== undefined;
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    if (!departing || !row) return;
+    if (row.contains(document.activeElement)) {
+      const restore = preserveRowFocus(row);
+      (document.activeElement as HTMLElement | null)?.blur();
+      row.inert = true;
+      restore();
+    } else row.inert = true;
+    return () => {
+      row.inert = false;
+    };
+  }, [departing, rowRef]);
+  useEffect(() => {
+    const row = rowRef.current;
+    if (typeof acceptedAt !== "number" || !row || prefersReducedMotion())
+      return;
+    // Board cards and orderable rows fold their whole wrapper.
+    const target =
+      row.closest<HTMLElement>(".kanban-card, .manual-order-row") ?? row;
+    if (typeof target.animate !== "function") return;
+    const style = getComputedStyle(target);
+    const fold = target.animate(
+      [
+        {
+          height: `${target.getBoundingClientRect().height}px`,
+          paddingTop: style.paddingTop,
+          paddingBottom: style.paddingBottom,
+          minHeight: style.minHeight,
+          overflow: "hidden",
+          opacity: 1,
+        },
+        {
+          height: "0px",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          minHeight: "0px",
+          overflow: "hidden",
+          opacity: 0,
+        },
+      ],
+      {
+        delay: Math.max(0, acceptedAt + COMPLETION_LINGER_MS - Date.now()),
+        duration: COMPLETION_FOLD_MS,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        fill: "both",
+      },
+    );
+    return () => fold.cancel();
+  }, [acceptedAt, rowRef]);
+}
+
+/**
+ * What Undo needs to put back. A repeating task completed from its series row
+ * records one instance (not necessarily today's) and may advance its dates.
+ */
+function completionRecord(
+  task: TaskSummary,
+  occurrenceDate: string | undefined,
+  saved: unknown,
+): TaskCompletion {
+  if (occurrenceDate || !task.recurrence || !saved || typeof saved !== "object")
+    return { task, occurrenceDate };
+  const next = saved as Partial<TaskSummary>;
+  const instance = next.completeInstances?.find(
+    (date) => !task.completeInstances.includes(date),
+  );
+  const moved = next.scheduled !== task.scheduled || next.due !== task.due;
+  return {
+    task,
+    occurrenceDate: instance,
+    ...(moved
+      ? {
+          advanced: {
+            scheduled: task.scheduled ?? null,
+            due: task.due ?? null,
+          },
+        }
+      : {}),
+  };
 }
 
 export interface TaskPropertyEditorAnchor {

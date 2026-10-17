@@ -8,7 +8,19 @@ export interface TaskViewPresentation {
   options: Record<string, unknown>;
 }
 
+/** A producer-supplied declaration location in one exact source revision.
+ * It is not a write grant or an instruction to resolve by display name.
+ */
+export interface TaskViewDeclarationSelector {
+  recordId: string;
+  path: string;
+  revision: string;
+  ordinal: number;
+  name: string | null;
+}
+
 export interface TaskView {
+  declaration?: TaskViewDeclarationSelector;
   key: string;
   documentId: string;
   documentName: string;
@@ -71,6 +83,8 @@ export interface TaskViewExecution {
 }
 
 export interface TaskViewSourceDocument {
+  /** Exact identity returned by the producer, never inferred from the path. */
+  recordId?: string;
   path: string;
   format: string;
   revision: string;

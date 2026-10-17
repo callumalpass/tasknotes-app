@@ -49,6 +49,7 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../../domain/view";
 import type { CollectionFileStore } from "./collection-file-store";
+import type { TaskNotesModelSetup } from "./model-setup";
 
 /** Retain this object for one submission, including uncertain-outcome retries. */
 export interface TaskCreateIntent {
@@ -57,13 +58,32 @@ export interface TaskCreateIntent {
   authorityRequestId?: string;
 }
 
+export type RecordWriteTarget =
+  | { kind: "task" | "scratchpad" | "image"; id: string }
+  | { kind: "source"; path: string };
+export type RecordWriteStatus = "pending" | "failed" | "unknown" | "conflicted";
+/** Why the latest change to a record was refused. `changedElsewhere` means the
+ * record had a newer revision, so the same edit can be re-applied on top of it. */
+export interface RecordWriteRejection {
+  readonly changedElsewhere: boolean;
+  readonly message: string;
+}
+
 /**
  * Application-facing collection boundary. Storage and provider adapters
  * implement this port; React and domain services never depend on an adapter.
  */
 export interface TaskRepository {
+  /** Explicit setup only when the original collection owns a durable recovery journal. */
+  readonly modelSetup?: TaskNotesModelSetup;
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
+  /** Local capture and authority confirmation are separate; no document replica. */
+  writeState?(target: RecordWriteTarget): RecordWriteStatus | undefined;
+  /** The refusal behind a "failed" write state, when the receipt names one. */
+  writeRejection?(target: RecordWriteTarget): RecordWriteRejection | undefined;
+  /** Forget a refused change after the person chose to discard it. */
+  dismissWriteRejection?(target: RecordWriteTarget): void;
   /** Account/person discovery is unavailable in non-account demo repositories. */
   people?(
     signal?: AbortSignal,
@@ -122,6 +142,11 @@ export interface TaskRepository {
   setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
   stats(): Promise<TaskStats>;
+  /** Intent policy only, never evidence of READ readiness or write authority.
+   * Explicit-only repositories must not seed view sources during navigation.
+   * Absence preserves the existing automatic-default behavior.
+   */
+  readonly defaultViewSourceCreation?: "explicit-only";
   cachedViews(): Promise<TaskViewDocument[]>;
   listViews(): Promise<TaskViewDocument[]>;
   cachedViewExecution(view: TaskView): Promise<TaskViewExecution | null>;
@@ -190,7 +215,10 @@ export interface TaskRepository {
 
 export interface CollectionInfo {
   kind: "connect";
+  /** Stable application preference scope, which may include an account. */
   id?: string;
+  /** Actual selectable collection ID for portable links, not a preference scope. */
+  collectionId?: string;
   name: string;
   location: string;
   runtime: "browser" | "native";
@@ -208,6 +236,9 @@ export interface RepositoryConnectionStatus {
   lastReachedAt?: string;
   message?: string;
   sync?: { text: string; pending: number; held: number };
+  /** The SDK is keeping unsynced changes on this device because it cannot
+   * reach mdbase right now (offline, unreachable or busy). */
+  savedOnDevice?: boolean;
   heldEdits?: HeldEdit[];
 }
 

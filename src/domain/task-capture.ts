@@ -223,7 +223,7 @@ function disambiguateCaptureText(text: string, language: string): string {
   // Preserve adjective uses such as "weekly review". Explicit phrases such as
   // "every week" remain recurrence commands, as do trailing "weekly" tokens.
   return text.replace(
-    /\b(daily|weekly|monthly|yearly|annually)\b(?=\s+[\p{L}\p{N}])/giu,
+    /(?<![\p{L}\p{N}\p{M}_-])(daily|weekly|monthly|yearly|annually)(?![\p{L}\p{N}\p{M}_-])(?=\s+[\p{L}\p{N}])/giu,
     "\\$1",
   );
 }
