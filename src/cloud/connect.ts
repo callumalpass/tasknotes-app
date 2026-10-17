@@ -6,6 +6,7 @@ import {
   type JsonObject,
   type MdbaseAppManifest,
 } from "@mdbase-dev/connect";
+import { installNativeAuthorityTransport } from "../native/authority-transport";
 import bundledManifest from "../generated/mdbase-app.json";
 import { TASKNOTES_REQUEST_BUDGETS } from "./request-budgets";
 
@@ -21,6 +22,8 @@ const manifest =
 const redirectUri = Capacitor.isNativePlatform()
   ? "dev.tasknotes.app://auth/mdbase/callback"
   : `${location.origin}${joinBase("auth/mdbase/callback")}`;
+
+installNativeAuthorityTransport();
 
 export const cloudConnect = new MdbaseConnect<JsonObject>({
   serverUrl,

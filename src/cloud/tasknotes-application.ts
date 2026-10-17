@@ -3,6 +3,8 @@ import {
   type Mdbase,
   type MdbaseApplicationDeclaration,
 } from "@mdbase-dev/sdk";
+import { Capacitor } from "@capacitor/core";
+import { nativeSignIn } from "../native/sign-in";
 import manifest from "../generated/mdbase-app.json";
 import {
   requireTaskNotesAppEnvironment,
@@ -41,13 +43,17 @@ export function taskNotesMdbase(): Mdbase {
   const environment = requireTaskNotesAppEnvironment(
     import.meta.env.VITE_TASKNOTES_ENVIRONMENT,
     import.meta.env.VITE_TASKNOTES_LAB_ORIGIN,
-    window.location.origin,
+    window.location.origin === "null"
+      ? `${window.location.protocol}//${window.location.host}`
+      : window.location.origin,
+    Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios",
   );
   // Both LAB and production choose their own Editor destination explicitly.
   requirePersonEditorOrigin(import.meta.env.VITE_TASKNOTES_EDITOR_ORIGIN);
   // Returning from the Connect window or another app re-checks at once.
   entry = createMdbase(taskNotesApplicationDeclaration(environment), {
     followVisibility: true,
+    ...(Capacitor.isNativePlatform() ? { signIn: nativeSignIn } : {}),
   });
   return entry;
 }

@@ -1,0 +1,7 @@
+{
+  "status": "BLOCKED — production trust asset required from Callum",
+  "environment": "production",
+  "cpOrigin": "https://connect.mdbase.dev",
+  "required": "Authenticated SDK release with generated production trust and packaged native assets for web and capacitor://app.tasknotes.dev. Replace the SDK vendor pin through the normal release pipeline; do not copy LAB trust or invent keys.",
+  "productionTrustAsset": null
+}

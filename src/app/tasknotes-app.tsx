@@ -6,6 +6,10 @@ import {
   useSyncExternalStore,
   type ComponentType,
 } from "react";
+import { Capacitor } from "@capacitor/core";
+import { followNativeSignInReturn } from "../native/sign-in";
+import { AccountUpgradeWait } from "./account-upgrade-wait";
+import { isAccountUpgradeWait } from "./account-upgrade-state";
 import { ChevronDown } from "lucide-react";
 import type { Mdbase, MdbaseApplicationConnection } from "@mdbase-dev/sdk";
 import {
@@ -51,16 +55,30 @@ export function TaskNotesApp({
   useEffect(() => arming.follow(mdbase), [arming, mdbase]);
   useEffect(() => followSignOutRoute(mdbase), [mdbase]);
   useMdbaseLifetime(mdbase);
+  useEffect(
+    () =>
+      Capacitor.isNativePlatform()
+        ? followNativeSignInReturn(mdbase)
+        : undefined,
+    [mdbase],
+  );
+  const snapshot = useSyncExternalStore(mdbase.subscribe, mdbase.getSnapshot);
   const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
+  const upgrading = isAccountUpgradeWait(snapshot);
+  if (upgrading && snapshot.phase.kind !== "ready")
+    return <AccountUpgradeWait mdbase={mdbase} />;
   return (
     <CollectionGate {...ui} extraActions={signedOutExplainer}>
       {(connection) => (
-        <ReadyCollection
-          arming={arming}
-          connection={connection}
-          ui={ui}
-          Workspace={Workspace}
-        />
+        <>
+          {upgrading ? <AccountUpgradeWait mdbase={mdbase} /> : null}
+          <ReadyCollection
+            arming={arming}
+            connection={connection}
+            ui={ui}
+            Workspace={Workspace}
+          />
+        </>
       )}
     </CollectionGate>
   );

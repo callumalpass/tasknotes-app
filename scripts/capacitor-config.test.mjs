@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
@@ -9,6 +10,45 @@ import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
 const source = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 describe("native Capacitor configuration", () => {
+  it("packages a cookie-free, cancellable, redirect-denying signed authority transport", async () => {
+    const [source, storyboard, project] = await Promise.all([
+      readFile(
+        resolve(
+          process.cwd(),
+          "ios/App/App/TaskNotesBridgeViewController.swift",
+        ),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), "ios/App/App/Base.lproj/Main.storyboard"),
+        "utf8",
+      ),
+      readFile(
+        resolve(process.cwd(), "ios/App/App.xcodeproj/project.pbxproj"),
+        "utf8",
+      ),
+    ]);
+    expect(storyboard).toContain('customClass="TaskNotesBridgeViewController"');
+    expect(project).toContain("TaskNotesBridgeViewController.swift in Sources");
+    expect(source).toContain(
+      "registerPluginInstance(TaskNotesAuthorityHttpPlugin())",
+    );
+    expect(source).toContain("URLSessionConfiguration.ephemeral");
+    expect(source).toContain("configuration.httpCookieStorage = nil");
+    expect(source).toContain("configuration.urlCredentialStorage = nil");
+    expect(source).toContain("request.httpShouldHandleCookies = false");
+    expect(source).toContain('forHTTPHeaderField: "Origin"');
+    expect(source).toContain('url.scheme == "https"');
+    expect(source).toContain("Self.proofHeaders.allSatisfy");
+    expect(source).toContain("task?.cancel()");
+    expect(source).toContain("session.invalidateAndCancel()");
+    expect(capacitorConfig.ios.loggingBehavior).toBe("none");
+    expect(source).toContain("completionHandler(nil)");
+    expect(source).not.toMatch(
+      /didReceive challenge|serverTrust|print\(|NSLog/,
+    );
+  });
+
   it("retains the exact production manifest origin in Android webviews", async () => {
     const manifest = await buildTaskNotesManifest({
       appUrl: TASKNOTES_NATIVE_APPLICATION_ORIGIN,

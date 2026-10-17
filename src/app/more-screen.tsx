@@ -11,8 +11,16 @@ import {
   MonitorSmartphone,
   type LucideIcon,
 } from "lucide-react";
+import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
@@ -317,7 +325,13 @@ function SettingsPanel({
 }
 
 function CollectionSettings() {
-  const { info, stats, loading } = useCollectionSummary();
+  const {
+    info,
+    stats,
+    loading,
+    error: summaryError,
+    retry: retrySummary,
+  } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
   const notice = useContext(ConnectionNoticeContext);
   const { collectionUi, changeCollection } = useCollectionGate();
@@ -380,6 +394,14 @@ function CollectionSettings() {
           )}
         </div>
       </div>
+      {summaryError ? (
+        <div role="alert">
+          <p>Collection details could not be loaded. {summaryError.message}</p>
+          <button className="text-action" type="button" onClick={retrySummary}>
+            Retry collection details
+          </button>
+        </div>
+      ) : null}
       {connection.heldEdits?.length ? (
         <div className="settings-group">
           <h3>Protected edits</h3>
@@ -432,28 +454,58 @@ function useReminderSettings() {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const operation = useRef(0);
+  const changing = useRef(false);
+  const [revision, setRevision] = useState(0);
+  const retry = useCallback(() => {
+    if (changing.current) return;
+    setStatus((current) => ({ ...current, state: "checking" }));
+    setError(null);
+    setRevision((value) => value + 1);
+  }, []);
+  useEffect(() => {
+    const visible = () => {
+      if (document.visibilityState === "visible") retry();
+    };
+    document.addEventListener("visibilitychange", visible);
+    const listener = Capacitor.isNativePlatform()
+      ? App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) retry();
+        }).catch(() => null)
+      : null;
+    return () => {
+      document.removeEventListener("visibilitychange", visible);
+      void listener?.then((handle) => handle?.remove()).catch(() => undefined);
+    };
+  }, [retry]);
 
   useEffect(() => {
-    if (!delivers) return;
+    if (!delivers || changing.current) return;
+    const current = ++operation.current;
     let active = true;
     void import("../native/mdbase-notifications")
       .then(({ mdbaseNotifications }) => mdbaseNotifications.status())
       .then((next) => {
-        if (active) setStatus(next);
+        if (active && current === operation.current) {
+          setStatus(next);
+          setError(null);
+        }
       })
       .catch((reason: unknown) => {
-        if (active) {
-          setStatus({ state: "error", optedIn: false });
+        if (active && current === operation.current) {
+          setStatus((status) => ({ ...status, state: "error" }));
           setError(reason instanceof Error ? reason.message : String(reason));
         }
       });
     return () => {
       active = false;
     };
-  }, [delivers]);
+  }, [delivers, revision]);
 
   async function setEnabled(enabled: boolean) {
-    if (!delivers) return;
+    if (!delivers || changing.current) return;
+    operation.current++;
+    changing.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -467,6 +519,7 @@ function useReminderSettings() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
+      changing.current = false;
       setBusy(false);
     }
   }
@@ -485,6 +538,7 @@ function useReminderSettings() {
     label: delivers ? changeNotificationLabel(status) : "Not available",
     setEnabled,
     reviewAccess,
+    retry,
   };
 }
 
@@ -538,6 +592,16 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             Review notification access
           </button>
         </div>
+      ) : null}
+      {status.state === "error" ? (
+        <button
+          className="text-action"
+          type="button"
+          disabled={busy}
+          onClick={reminders.retry}
+        >
+          Retry notification check
+        </button>
       ) : null}
       {error ? (
         <OperationErrorNotice
