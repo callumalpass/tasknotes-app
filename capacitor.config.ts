@@ -39,6 +39,7 @@ const config: CapacitorConfig = {
     ],
   },
   ios: {
+    loggingBehavior: "none",
     includePlugins: [
       ...sharedNativePlugins,
       ...(iosFirebaseConfigured ? ["@capacitor-firebase/messaging"] : []),

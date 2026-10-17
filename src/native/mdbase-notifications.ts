@@ -22,6 +22,7 @@ import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
 
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
+const PERMISSION_CHECK_TIMEOUT_MS = 10_000;
 // Scheduling is required; delivery registration remains an explicit opt-in
 // through the notification APIs, not an application-readiness prerequisite.
 const TIMER_CAPABILITY = "background.schedule" as const;
@@ -86,10 +87,7 @@ export class MdbaseNotificationManager {
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn };
-    const permission =
-      runtime === "native"
-        ? await this.options.messaging.checkPermissions()
-        : await this.options.webPush.checkPermissions();
+    const permission = await this.checkPermissions(runtime);
     if (permission.receive === "denied") return { state: "denied", optedIn };
     return {
       state: optedIn && permission.receive === "granted" ? "enabled" : "off",
@@ -108,7 +106,7 @@ export class MdbaseNotificationManager {
       return { state: "not_configured", optedIn: false };
     const provider =
       runtime === "native" ? this.options.messaging : this.options.webPush;
-    const current = await provider.checkPermissions();
+    const current = await this.checkPermissions(runtime);
     const permission =
       current.receive === "prompt" ||
       current.receive === "prompt-with-rationale"
@@ -161,23 +159,25 @@ export class MdbaseNotificationManager {
     if (!runtime || !this.enabled() || !this.options.connect.connection())
       return;
     if (runtime === "native" && !this.options.isConfigured()) return;
-    const permission =
-      runtime === "native"
-        ? await this.options.messaging.checkPermissions()
-        : await this.options.webPush.checkPermissions();
+    const permission = await this.checkPermissions(runtime);
     if (permission.receive !== "granted") return;
     await this.registerCurrentInstallation(runtime);
   }
 
   listen(onWake: (event: MdbaseNotificationWake) => void): () => void {
     const runtime = this.runtime();
-    if (!runtime) return () => undefined;
+    if (!runtime || (runtime === "native" && !this.options.isConfigured()))
+      return () => undefined;
     let disposed = false;
     const handles: PluginListenerHandle[] = [];
     const keep = async (promise: Promise<PluginListenerHandle>) => {
-      const handle = await promise;
-      if (disposed) await handle.remove();
-      else handles.push(handle);
+      try {
+        const handle = await promise;
+        if (disposed) await handle.remove();
+        else handles.push(handle);
+      } catch {
+        // Listening is best-effort; status/enable expose initialization failures.
+      }
     };
     if (runtime === "native") {
       void keep(
@@ -217,7 +217,7 @@ export class MdbaseNotificationManager {
     void this.refreshRegistration().catch(() => undefined);
     return () => {
       disposed = true;
-      for (const handle of handles) void handle.remove();
+      for (const handle of handles) void handle.remove().catch(() => undefined);
       handles.length = 0;
     };
   }
@@ -229,6 +229,30 @@ export class MdbaseNotificationManager {
   private runtime(): "native" | "web" | null {
     if (this.options.isNative()) return "native";
     return this.options.webPush.isSupported() ? "web" : null;
+  }
+
+  private async checkPermissions(runtime: "native" | "web") {
+    const provider =
+      runtime === "native" ? this.options.messaging : this.options.webPush;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        provider.checkPermissions(),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Checking notification permission timed out. Try again.",
+                ),
+              ),
+            PERMISSION_CHECK_TIMEOUT_MS,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async registerCurrentInstallation(
@@ -280,19 +304,19 @@ export function mdbaseWebPushWake(
 
 class LazyFirebaseMessaging implements NativeMessaging {
   async checkPermissions() {
-    return (await firebaseMessaging()).checkPermissions();
+    return (await firebaseMessaging()).FirebaseMessaging.checkPermissions();
   }
 
   async requestPermissions() {
-    return (await firebaseMessaging()).requestPermissions();
+    return (await firebaseMessaging()).FirebaseMessaging.requestPermissions();
   }
 
   async getToken() {
-    return (await firebaseMessaging()).getToken();
+    return (await firebaseMessaging()).FirebaseMessaging.getToken();
   }
 
   async deleteToken() {
-    return (await firebaseMessaging()).deleteToken();
+    return (await firebaseMessaging()).FirebaseMessaging.deleteToken();
   }
 
   async createChannel(options: {
@@ -301,7 +325,7 @@ class LazyFirebaseMessaging implements NativeMessaging {
     description: string;
     importance: number;
   }) {
-    return (await firebaseMessaging()).createChannel(options);
+    return (await firebaseMessaging()).FirebaseMessaging.createChannel(options);
   }
 
   addListener(
@@ -323,7 +347,7 @@ class LazyFirebaseMessaging implements NativeMessaging {
       | ((event: { token: string }) => void)
       | ((event: { notification: NativeNotification }) => void),
   ): Promise<PluginListenerHandle> {
-    const messaging = await firebaseMessaging();
+    const { FirebaseMessaging: messaging } = await firebaseMessaging();
     if (eventName === "tokenReceived")
       return messaging.addListener(
         eventName,
@@ -345,8 +369,10 @@ class LazyFirebaseMessaging implements NativeMessaging {
   }
 }
 
-async function firebaseMessaging() {
-  return (await import("@capacitor-firebase/messaging")).FirebaseMessaging;
+function firebaseMessaging() {
+  // Return the namespace, never the Capacitor proxy: resolving a promise with
+  // the proxy invokes its synthetic `then` method and leaves the loader pending.
+  return import("@capacitor-firebase/messaging");
 }
 
 export const mdbaseNotifications = new MdbaseNotificationManager({
