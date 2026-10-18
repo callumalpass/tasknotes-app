@@ -28,10 +28,17 @@ import { createConnectTaskRepository } from "../storage/connect-repository";
 import { recoverMdbaseMutationHandle } from "../storage/mdbase-mutation-coordinator";
 import { tasknotesMarkUrl } from "./assets";
 import { collectionErrorMessage as message } from "./collection-error";
+import {
+  cutoverHeading,
+  cutoverProblemFrom,
+  type CutoverProblem,
+} from "../application/cutover-problem";
+import { CutoverNotice } from "../components/cutover-notice";
 import { OpenedCollection } from "./opened-collection";
 
 export default function CloudCollection({
   authorizationError,
+  authorizationFailure,
   authorizeAnotherCollection,
   callbackRetryAvailable,
   openCollectionPicker,
@@ -41,6 +48,8 @@ export default function CloudCollection({
   onTryDemo,
 }: {
   authorizationError: string | null;
+  /** The original failure behind `authorizationError`, when there is one. */
+  authorizationFailure?: unknown;
   authorizeAnotherCollection(): void;
   callbackRetryAvailable: boolean;
   openCollectionPicker(): void;
@@ -134,6 +143,7 @@ export default function CloudCollection({
     return (
       <ConnectionLifecycleProblem
         actionLabel="Retry opening TaskNotes"
+        cutover={cutoverProblemFrom(authorizationFailure)}
         message={authorizationError}
         onRetry={retryStartup}
       />
@@ -144,6 +154,7 @@ export default function CloudCollection({
     return (
       <ConnectionLifecycleProblem
         actionLabel="Retry opening TaskNotes"
+        cutover={cutoverProblemFrom(session.problem)}
         message={message({ problem: session.problem })}
         onRetry={retryStartup}
       />
@@ -225,6 +236,27 @@ export default function CloudCollection({
         }}
       />
     );
+
+  if (!opened) {
+    // A setup check or authorization refused by the sync-service cutover can
+    // never succeed through "Reconnect"; explain it instead of the picker.
+    const blockedCutover =
+      session.status === "blocked" ? cutoverProblemFrom(session.problem) : null;
+    const cutover = blockedCutover ?? cutoverProblemFrom(authorizationFailure);
+    if (cutover)
+      return (
+        <ConnectionLifecycleProblem
+          actionLabel="Retry opening TaskNotes"
+          cutover={cutover}
+          message={cutover.message}
+          onRetry={
+            blockedCutover && "collectionId" in session
+              ? () => recheckCollection(session.collectionId)
+              : retryStartup
+          }
+        />
+      );
+  }
 
   if (!opened)
     return (
@@ -816,15 +848,39 @@ function OpeningConnection() {
   );
 }
 
+/** Selecting the current collection again is deduplicated by the SDK, so
+ * clear and restore the selection to run its setup check again. */
+function recheckCollection(collectionId: string) {
+  cloudSession.clearSelection({ history: "replace" });
+  cloudSession.select(collectionId, { history: "replace" });
+}
+
 function ConnectionLifecycleProblem({
   actionLabel,
+  cutover,
   message,
   onRetry,
 }: {
   actionLabel?: string;
+  cutover?: CutoverProblem | null;
   message: string;
   onRetry?(): void;
 }) {
+  if (cutover)
+    return (
+      <main className="collection-welcome cloud-welcome cutover-screen">
+        <div className="welcome-copy">
+          <img alt="" src={tasknotesMarkUrl} />
+          <h1>{cutoverHeading(cutover)}</h1>
+          <CutoverNotice
+            autoRetry
+            problem={cutover}
+            retry={onRetry}
+            retryLabel={actionLabel}
+          />
+        </div>
+      </main>
+    );
   return (
     <main className="collection-welcome cloud-welcome">
       <div className="welcome-copy">

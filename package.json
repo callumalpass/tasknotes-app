@@ -1,6 +1,6 @@
 {
   "name": "tasknotes-app",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.7.0",

@@ -23,9 +23,14 @@ const CloudCollection = lazy(() => import("./cloud-collection"));
 
 export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [authorizationError, setAuthorizationError] = useState<string | null>(
-    null,
-  );
+  // Keep the original failure so a sync-service cutover can be explained with
+  // the server's own message rather than a generic retry.
+  const [authorizationFailure, setAuthorizationFailure] = useState<{
+    reason: unknown;
+  } | null>(null);
+  const authorizationError = authorizationFailure
+    ? message(authorizationFailure.reason)
+    : null;
   const [callbackRetryAvailable, setCallbackRetryAvailable] = useState(false);
   const handledCallbackUrls = useRef(new Set<string>());
   const pendingCallbackUrls = useRef(new Set<string>());
@@ -66,11 +71,11 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
           pendingCallbackUrls.current.delete(url);
           handledCallbackUrls.current.add(url);
           setCallbackRetryAvailable(pendingCallbackUrls.current.size > 0);
-          setAuthorizationError(null);
+          setAuthorizationFailure(null);
           setPickerOpen(false);
         } catch (reason) {
           setCallbackRetryAvailable(true);
-          setAuthorizationError(message(reason));
+          setAuthorizationFailure({ reason });
         } finally {
           await appPlatform.closeAuthorizationBrowser();
         }
@@ -86,13 +91,13 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
   );
 
   const retryStartup = useCallback(() => {
-    setAuthorizationError(null);
+    setAuthorizationFailure(null);
     const pending = [...pendingCallbackUrls.current];
     void (
       pending.length > 0
         ? Promise.all(pending.map((url) => complete(url)))
         : startSession()
-    ).catch((reason) => setAuthorizationError(message(reason)));
+    ).catch((reason) => setAuthorizationFailure({ reason }));
   }, [complete, startSession]);
 
   useEffect(() => {
@@ -102,9 +107,7 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
       else await startSession();
     };
     queueMicrotask(() => {
-      void initialize().catch((reason) =>
-        setAuthorizationError(message(reason)),
-      );
+      void initialize().catch((reason) => setAuthorizationFailure({ reason }));
     });
     const listener = appPlatform.addUrlOpenListener(
       (url) => void complete(url),
@@ -122,7 +125,7 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
 
   const authorizeAnotherCollection = useCallback(() => {
     setPickerOpen(false);
-    setAuthorizationError(null);
+    setAuthorizationFailure(null);
     void cloudSession
       .authorize("choose", {
         ...requestOptions(),
@@ -130,12 +133,12 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
         timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationPopupMs,
       })
       .then(requireConnectOutcome)
-      .catch((reason) => setAuthorizationError(message(reason)));
+      .catch((reason) => setAuthorizationFailure({ reason }));
   }, [requestOptions]);
 
   const reauthorizeCurrentCollection = useCallback(() => {
     setPickerOpen(false);
-    setAuthorizationError(null);
+    setAuthorizationFailure(null);
     void cloudSession
       .authorize("selected", {
         ...requestOptions(),
@@ -143,7 +146,7 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
         timeoutMs: TASKNOTES_REQUEST_BUDGETS.authorizationPopupMs,
       })
       .then(requireConnectOutcome)
-      .catch((reason) => setAuthorizationError(message(reason)));
+      .catch((reason) => setAuthorizationFailure({ reason }));
   }, [requestOptions]);
 
   const selectCollection = useCallback(
@@ -153,10 +156,10 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
           requireConnectOutcome(
             cloudSession.select(collectionId, { history: "replace" }),
           );
-          setAuthorizationError(null);
+          setAuthorizationFailure(null);
           setPickerOpen(false);
         })
-        .catch((reason) => setAuthorizationError(message(reason)));
+        .catch((reason) => setAuthorizationFailure({ reason }));
     },
     [startSession],
   );
@@ -169,6 +172,7 @@ export function CollectionGate({ onTryDemo }: { onTryDemo?(): void }) {
       <Suspense fallback={<OpeningCollection />}>
         <CloudCollection
           authorizationError={authorizationError}
+          authorizationFailure={authorizationFailure?.reason}
           authorizeAnotherCollection={authorizeAnotherCollection}
           callbackRetryAvailable={callbackRetryAvailable}
           ensureStarted={startSession}

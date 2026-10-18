@@ -1,6 +1,8 @@
 import { cleanOperationError } from "../app/operation-error";
 import { toOperationalError } from "../application/operational-error";
 import { connectProblemFromError } from "../cloud/outcome";
+import { cutoverProblemFrom } from "../application/cutover-problem";
+import { CutoverNotice } from "./cutover-notice";
 
 export function ViewExecutionErrorNotice({
   reason,
@@ -13,6 +15,13 @@ export function ViewExecutionErrorNotice({
   onEdit(): void;
   onRetry(): void;
 }) {
+  const cutover = cutoverProblemFrom(reason);
+  if (cutover)
+    return (
+      <div className="view-execution-error">
+        <CutoverNotice problem={cutover} retry={onRetry} />
+      </div>
+    );
   const failure = toOperationalError(reason, "This view");
   const incompatible = isComputedQueryFailure(reason);
   const technical = cleanOperationError(failure.detail).trim();

@@ -28,6 +28,11 @@ import {
 } from "./use-workspace-navigation";
 import { tasknotesMarkUrl } from "./assets";
 import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
+import {
+  cutoverHeading,
+  cutoverProblemFrom,
+} from "../application/cutover-problem";
+import { CutoverNotice } from "../components/cutover-notice";
 import { useCollectionGate } from "./collection-context";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
@@ -572,6 +577,15 @@ export function StorageErrorScreen({
   reauthorizeCurrentCollection(): void;
   retry(): void;
 }) {
+  const cutover = cutoverProblemFrom(error);
+  if (cutover)
+    return (
+      <main className="opening-screen storage-error cutover-screen">
+        <img alt="" src={tasknotesMarkUrl} />
+        <h1>{cutoverHeading(cutover)}</h1>
+        <CutoverNotice autoRetry problem={cutover} retry={retry} />
+      </main>
+    );
   const authorizationExpired = isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">

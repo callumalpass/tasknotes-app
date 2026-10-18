@@ -23,6 +23,11 @@ import {
 
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import bundledManifest from "../src/generated/mdbase-app.json" with { type: "json" };
+import {
+  CUTOVER_MESSAGES,
+  cutoverBody,
+  type CutoverFixtureKind,
+} from "../src/test/cutover-fixtures";
 
 const TASKNOTES_COLLECTION_ID = "01922222-2222-7222-8222-222222222222";
 const TASKNOTES_APPLICATION_ID = "01922222-2222-7222-8222-222222222221";
@@ -1162,4 +1167,152 @@ test("keeps collection availability visible across cached search and retries", a
   offline = false;
   await notice.getByRole("button", { name: "Retry connection" }).click();
   await expect(notice).toHaveCount(0);
+});
+
+async function routeCutover(
+  page: Page,
+  state: { refusal: CutoverFixtureKind | null; record: JsonObject },
+) {
+  // The operation route must precede fixture installation (LIFO matching).
+  // eslint-disable-next-line prefer-const
+  let authorization!: MdbaseBrowserFixtureController;
+  await page.route(
+    "https://connect.mdbase.dev/v1/authorities/**/operations/**",
+    async (route) => {
+      if (state.refusal) {
+        await route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          headers:
+            state.refusal === "migrating" ? { "retry-after": "300" } : {},
+          body: JSON.stringify(cutoverBody(state.refusal)),
+        });
+        return;
+      }
+      const request = await operationRequest(route, authorization);
+      const operation = new URL(route.request().url()).pathname
+        .split("/")
+        .at(-1);
+      const result =
+        operation === "describe"
+          ? collectionDescription()
+          : operation === "query"
+            ? valid({
+                results: [state.record],
+                meta: { total_count: 1, has_more: false },
+              })
+            : operation === "list_views"
+              ? valid(defaultViewDocuments())
+              : operation === "execute_view"
+                ? valid(
+                    defaultViewExecution([
+                      state.record as Parameters<
+                        typeof defaultViewExecution
+                      >[0][number],
+                    ]),
+                  )
+                : operation === "read" && isViewSourceRead(request.input)
+                  ? valid(viewSourceRecord(request.input))
+                  : valid({});
+      await fulfillOperation(route, request.request_id, result);
+    },
+  );
+  authorization = await installRelayAuthorization(page);
+}
+
+function cutoverTask(title: string): JsonObject {
+  const task = new TaskNotesTaskModel().create(
+    { title },
+    { id: "cutover-task", now: "2026-10-18T00:00:00.000Z" },
+  );
+  return {
+    path: task.path,
+    frontmatter: task.frontmatter,
+    body: task.body,
+    types: ["task"],
+  } as JsonObject;
+}
+
+for (const refusal of ["moved", "onboarding_moved"] as const) {
+  test(`explains a ${refusal} collection with the server message and an update`, async ({
+    page,
+  }) => {
+    await routeCutover(page, {
+      refusal,
+      record: cutoverTask("Never shown"),
+    });
+    await page.reload();
+
+    await expect(page.getByText(CUTOVER_MESSAGES[refusal])).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Update TaskNotes" }),
+    ).toBeVisible();
+    await expect(page.getByText("Technical details")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Retry opening TaskNotes|Try again/ }),
+    ).toHaveCount(0);
+  });
+}
+
+test("waits calmly while a collection is upgraded, then opens it", async ({
+  page,
+}) => {
+  const state = {
+    refusal: "migrating" as CutoverFixtureKind | null,
+    record: cutoverTask("Task after the upgrade"),
+  };
+  await routeCutover(page, state);
+  await page.reload();
+
+  await expect(
+    page.getByRole("status").filter({ hasText: CUTOVER_MESSAGES.migrating }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Update TaskNotes" }),
+  ).toHaveCount(0);
+  state.refusal = null;
+  await page.getByRole("button", { name: "Check now" }).click();
+  await expect(
+    page.getByText("Task after the upgrade", { exact: true }),
+  ).toBeVisible();
+});
+
+test("shows a suspended account's message without a retry loop", async ({
+  page,
+}) => {
+  await routeCutover(page, {
+    refusal: "suspended",
+    record: cutoverTask("Never shown"),
+  });
+  await page.reload();
+
+  await expect(page.getByText(CUTOVER_MESSAGES.suspended)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Update TaskNotes" }),
+  ).toHaveCount(0);
+});
+
+test("keeps open work on screen when an upgrade starts mid-session", async ({
+  page,
+}) => {
+  const state = {
+    refusal: null as CutoverFixtureKind | null,
+    record: cutoverTask("Task kept open"),
+  };
+  await routeCutover(page, state);
+  await page.reload();
+  await expect(page.getByText("Task kept open", { exact: true })).toBeVisible();
+
+  state.refusal = "migrating";
+  await openNavigationItem(page, "Settings");
+  await page.getByRole("button", { name: "Refresh now", exact: true }).click();
+  const banner = page.getByRole("region", { name: "Collection upgrade" });
+  await expect(banner).toContainText(CUTOVER_MESSAGES.migrating);
+  await openNavigationItem(page, "Search");
+  await page.getByRole("searchbox").fill("Task kept");
+  await expect(page.getByText("Task kept open", { exact: true })).toBeVisible();
+
+  state.refusal = null;
+  await banner.getByRole("button", { name: "Check now" }).click();
+  await expect(banner).toHaveCount(0);
 });

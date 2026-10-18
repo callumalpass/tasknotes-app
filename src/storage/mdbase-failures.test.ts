@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { ConnectProblemCode } from "@mdbase-dev/connect";
 import { connectError, connectFailure } from "@mdbase-dev/connect-testing";
 import { connectProblemFromError } from "../cloud/outcome";
@@ -9,6 +9,7 @@ import {
   taskRecord,
   unknownOutcome,
 } from "../test/mdbase-fixture";
+import { CUTOVER_MESSAGES, cutoverRefusal } from "../test/cutover-fixtures";
 
 it.each([
   ["connector_offline", "unavailable", true, "unavailable"],
@@ -121,3 +122,31 @@ it.each([
   });
   repository.dispose();
 });
+
+it.each(["moved", "migrating"] as const)(
+  "reports a %s cutover refusal during refresh without an outage, until a refresh succeeds",
+  async (kind) => {
+    const f = mdbaseFixture([taskRecord("one", "One", "r1")]);
+    const repository = new MdbaseTaskRepository(f.connect);
+    await repository.initialize();
+    const describe = f.connect.describe.bind(f.connect);
+    const refusal = cutoverRefusal(kind);
+    Object.assign(f.connect, {
+      describe: async () => connectFailure(refusal.problem),
+    });
+    const changes = vi.fn();
+    repository.subscribe(changes);
+    await repository.refresh();
+    expect(await repository.connectionStatus()).toMatchObject({
+      state: "connected",
+      cutover: { message: CUTOVER_MESSAGES[kind] },
+    });
+    expect(changes).toHaveBeenCalledWith({ kind: "status" });
+    // Cached tasks stay readable.
+    expect((await repository.listSummaries({ status: "open" })).length).toBe(1);
+    Object.assign(f.connect, { describe });
+    await repository.refresh();
+    expect((await repository.connectionStatus()).cutover).toBeUndefined();
+    repository.dispose();
+  },
+);
