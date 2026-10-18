@@ -1,6 +1,6 @@
 import { offlineShellPlugin } from "@mdbase-dev/sdk/offline-shell/build";
 import react from "@vitejs/plugin-react";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
@@ -8,7 +8,23 @@ const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
 
-export default defineConfig({
+/** Browser-test fixture pages, built only in e2e mode so the e2e suite can
+ * run against a built preview (pull-request and Pages checks), not just the
+ * dev server. Production builds never include them. */
+function e2eFixtureInputs(mode: string): Record<string, string> {
+  if (mode !== "e2e") return {};
+  const directory = resolve(import.meta.dirname, "e2e");
+  return Object.fromEntries(
+    readdirSync(directory)
+      .filter((name) => name.endsWith(".fixture.html"))
+      .map((name) => [
+        `e2e/${name.replace(/\.html$/, "")}`,
+        resolve(directory, name),
+      ]),
+  );
+}
+
+export default defineConfig(({ mode }) => ({
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [
@@ -34,6 +50,7 @@ export default defineConfig({
       input: {
         app: resolve(import.meta.dirname, "index.html"),
         "service-worker": resolve(import.meta.dirname, "src/service-worker.ts"),
+        ...e2eFixtureInputs(mode),
       },
       output: {
         entryFileNames: (chunk) =>
@@ -81,7 +98,7 @@ export default defineConfig({
     testTimeout: 10_000,
     restoreMocks: true,
   },
-});
+}));
 
 function androidNotificationSmokeEntry() {
   return {

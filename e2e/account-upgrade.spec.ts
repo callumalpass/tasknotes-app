@@ -3,7 +3,7 @@ import { expect, test } from "./local-test";
 test("migration waits with friendly copy and retry, then resumes the shared gate", async ({
   page,
 }) => {
-  await page.goto("/e2e/account-upgrade.fixture.html");
+  await page.goto("e2e/account-upgrade.fixture.html");
   await expect(
     page.getByRole("heading", { name: "Your collection is being upgraded" }),
   ).toBeVisible();
