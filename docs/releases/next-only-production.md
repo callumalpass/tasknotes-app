@@ -112,6 +112,17 @@ from an empty collection list, generic fencing, error text or URL parameters.
   fixtures.
 - `pnpm build` refuses with
   `vendor/production-trust.pin.json trustAssetSha256 is not set`, as intended.
+- GitHub Actions on the draft pull request: iOS (verify, `cap sync ios`,
+  unsigned simulator `xcodebuild`) and Android (verify, debug APK) pass.
+- Browser checks against the built preview: fixture pages are now built in
+  e2e mode, which fixed 15 of 21 failures inherited from the base branch.
+  Six remain: two accessibility specs and one cloud-connection spec still
+  expect the old "Open TaskNotes" screen for a build with no selected
+  environment (the next-only app now refuses to start without one); two
+  controls-spacing specs cannot find the Recurrence button in the view
+  editor; and one keyboard focus-restoration spec (already known). None
+  affects the production build, but `deploy-pages` runs the same suite, so
+  they must be fixed or updated before the web deploy.
 - No live LAB, staging or production calls; no signing, upload or submission.
 
 ## Validation (2026-10-17)
