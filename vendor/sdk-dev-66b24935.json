@@ -1,0 +1,56 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "66b24935306689f77eec2314cec01b4a1716dcff",
+  "sourceIncludesPrs": [880, 887, 894, 896],
+  "previousPin": "sdk-dev-4fb345e4.json",
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-66b24935.tgz",
+  "bytes": 2379407,
+  "sha256": "0e2f115b242ef2040f3ab9321a06a5f38f22dd38e332eb34a9fb1fa832b82951",
+  "integrity": "sha512-mggDaOkbQ82RK/zUYM9RzC+NKbAWYefYXqtsz8hgnJkEnCMUKGoN89mPhoeUgWZSQfD9ToPK3VkRmW3ozI6B+Q==",
+  "shasum": "d4d48bd50e97173bf39aed46a378199efe7cfb9f",
+  "packaging": {
+    "kind": "source-only",
+    "releaseTrust": "none: dist/application/packaged-trust.js is the SDK's refusal module",
+    "nativeAssets": "not packaged: no dist/native/runtime.wasm, sqlite3.wasm or provenance.json",
+    "meaning": "Normal `npm ci && npm run build && npm pack` from the exact source commit with no MDBASE_SDK_APPLICATION_INPUTS. The production build refuses this artifact. Only the SDK release pipeline can produce the production-packaged artifact; see vendor/production-trust.pin.json."
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "c29f321cee204477f5e09ed31b23918e4e7f0c720e2de676540d1c8d4fc7de00"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "baa72bceb51de0c11757d5c362cb6a6191883722e1635fb5f9c1a5adff338599"
+    }
+  },
+  "workerClosure": {
+    "worker.js": {
+      "bytes": 1397167,
+      "sha256": "edc9a564a03e6bc3c2f1cf9b45ff93a2f80d410e813e6ab03add899181293542"
+    }
+  },
+  "nativeRuntimePin": {
+    "meaning": "Committed SDK asset pin that the release pipeline packages; not included in this archive",
+    "sha256": "7d45ae07741b165b51b39d684c28014fcdf178ceeef05b233c78f7b9fa35137a",
+    "bytes": 3655960,
+    "sourceCommit": "4fb345e4ebb99538a8e20a8218b410a14928021a"
+  },
+  "qualification": {
+    "label": "dev intake, not release-qualified",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "vitest": "2058 passed; test/wasm-runtime.test.ts not run locally (needs target/wasm/runtime.wasm)",
+    "nodePackagingTests": "verifier-backed packaging tests not run locally (need the mdbn-trust binary); covered by the source PRs",
+    "browserAcceptance": false,
+    "physicalNativeDrain": false,
+    "productionQualified": false
+  },
+  "purpose": "Production candidate source: release-owned production packaging (#894), shared release trust intake (#896) and the typed collection_not_yet_migrated outcome. Replaced by the production-packaged artifact from the SDK release pipeline before any store build."
+}

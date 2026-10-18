@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import { expect, it, vi } from "vitest";
-import type { MdbaseSnapshot } from "@mdbase-dev/sdk";
+import { describeError, type MdbaseSnapshot } from "@mdbase-dev/sdk";
 import { AccountUpgradeWait } from "./account-upgrade-wait";
 import { isAccountUpgradeWait } from "./account-upgrade-state";
 
@@ -20,6 +20,25 @@ it("uses only the SDK migration outcome, never generic fencing or refusal", () =
       phase: { kind: "starting" },
     } as MdbaseSnapshot),
   ).toBe(true);
+});
+it("leaves a not-yet-migrated collection to the shared gate's desktop-upgrade copy", () => {
+  // This state needs the user to open the desktop app; it never resolves by
+  // waiting, so it must not show the self-resolving upgrade screen.
+  for (const snapshot of [
+    { problem: "collection_not_yet_migrated", phase: { kind: "starting" } },
+    {
+      problem: null,
+      phase: {
+        kind: "problem",
+        problem: { code: "collection_not_yet_migrated" },
+      },
+    },
+  ])
+    expect(isAccountUpgradeWait(snapshot as MdbaseSnapshot)).toBe(false);
+  const described = describeError("collection_not_yet_migrated");
+  expect(described?.title).toBe("Your collection needs an upgrade");
+  expect(described?.message).toMatch(/latest mdbase desktop app/);
+  expect(described?.message).not.toMatch(/connection/i);
 });
 it("offers the SDK's shared copy and a read-only recheck without error codes", async () => {
   const start = vi

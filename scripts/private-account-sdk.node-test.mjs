@@ -8,17 +8,14 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-4fb345e4.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-66b24935.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "4fb345e4ebb99538a8e20a8218b410a14928021a",
+    "66b24935306689f77eec2314cec01b4a1716dcff",
   );
-  assert.deepEqual(
-    manifest.sourceIncludesPrs,
-    [819, 827, 832, 837, 867, 878, 879],
-  );
+  assert.deepEqual(manifest.sourceIncludesPrs, [880, 887, 894, 896]);
   assert.deepEqual(manifest.consumerEntries, [
     "@mdbase-dev/sdk",
     "@mdbase-dev/sdk/account",
@@ -28,48 +25,17 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "30658b0877383a53577172782a164e5bab3f07552c3c3cc97ec7df8ffa420a76",
+    "0e2f115b242ef2040f3ab9321a06a5f38f22dd38e332eb34a9fb1fa832b82951",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
     `file:vendor/${manifest.artifact}`,
   );
   assert.equal(
-    manifest.includedCommits.nativeCompatibilityCopy,
-    "3be0abaa4126736a794bc0c03bca2bc2263aa945",
-  );
-  assert.equal(
-    manifest.includedCommits.keyWaitReasonLog,
-    manifest.sourceCommit,
-  );
-  assert.equal(
-    manifest.includedCommits.basesReadFifo,
-    "63ffdb8bab24045861dbb726d3ce9a31d2179045",
-  );
-  assert.equal(
-    manifest.includedCommits.enrollmentReconciliation,
-    "563dc868fd5847abe272bd8cead1b044cd46fbe0",
-  );
-  assert.equal(
     manifest.qualification.label,
     "dev intake, not release-qualified",
   );
-  assert.equal(
-    pkg.dependencies["@mdbase-dev/connect-protocol"],
-    `file:vendor/${manifest.protocol.artifact}`,
-  );
-  assert.equal(pkg.pnpm.overrides["@mdbase-dev/connect-protocol"], undefined);
-  const protocolBytes = await readFile(
-    new URL(`vendor/${manifest.protocol.artifact}`, root),
-  );
-  assert.equal(
-    createHash("sha256").update(protocolBytes).digest("hex"),
-    manifest.protocol.sha256,
-  );
-  assert.equal(
-    manifest.protocol.sha256,
-    "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
-  );
+  assert.equal(manifest.qualification.productionQualified, false);
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, manifest.bytes);
   assert.equal(
@@ -80,47 +46,55 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
   );
-});
-
-test("packaged native assets are original bytes, not public application readiness", async () => {
-  const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-4fb345e4.json", root), "utf8"),
-  );
+  // The SDK bundles its own pinned protocol; the app's direct protocol pin
+  // must stay the same original archive.
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
-  const member = (name) =>
-    execFileSync("tar", ["-xOf", archive, name], { maxBuffer: 5_000_000 });
-  const native = member(manifest.native.member);
-  assert.equal(manifest.native.available, true);
-  assert.equal(
-    manifest.native.sourceCommit,
-    "4fb345e4ebb99538a8e20a8218b410a14928021a",
-  );
-  assert.equal(manifest.native.bytes, 3655960);
-  assert.equal(
-    manifest.native.sha256,
-    "7d45ae07741b165b51b39d684c28014fcdf178ceeef05b233c78f7b9fa35137a",
-  );
-  assert.equal(native.byteLength, manifest.native.bytes);
-  assert.equal(
-    WebAssembly.Module.exports(new WebAssembly.Module(native)).some(
-      ({ name, kind }) => name === "rt_app_setup_assess" && kind === "function",
-    ),
-    true,
+  const sdkPackage = JSON.parse(
+    execFileSync("tar", ["-xOf", archive, "package/package.json"]),
   );
   assert.equal(
-    createHash("sha256").update(native).digest("hex"),
-    manifest.native.sha256,
+    pkg.dependencies["@mdbase-dev/connect-protocol"],
+    sdkPackage.dependencies["@mdbase-dev/connect-protocol"],
   );
-  const provenance = JSON.parse(
-    member("package/dist/native/provenance.lab.json"),
-  );
-  assert.equal(provenance.runtime.sha256, manifest.native.sha256);
-  assert.equal(provenance.runtime.source.commit, manifest.native.sourceCommit);
+  assert.equal(pkg.pnpm.overrides["@mdbase-dev/connect-protocol"], undefined);
+  const protocolArtifact = sdkPackage.dependencies[
+    "@mdbase-dev/connect-protocol"
+  ].replace("file:vendor/", "");
   assert.equal(
     createHash("sha256")
-      .update(member("package/dist/native/sqlite3.wasm"))
+      .update(await readFile(new URL(`vendor/${protocolArtifact}`, root)))
       .digest("hex"),
-    manifest.native.sqliteSha256,
+    "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
+  );
+});
+
+test("source-only SDK pin carries no release trust or native assets", async () => {
+  const manifest = JSON.parse(
+    await readFile(new URL("vendor/sdk-dev-66b24935.json", root), "utf8"),
+  );
+  assert.equal(manifest.packaging.kind, "source-only");
+  const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
+  const members = execFileSync("tar", ["-tf", archive], {
+    encoding: "utf8",
+    maxBuffer: 5_000_000,
+  }).split("\n");
+  for (const name of ["runtime.wasm", "sqlite3.wasm", "provenance.json"])
+    assert.equal(members.includes(`package/dist/native/${name}`), false);
+  const trust = execFileSync("tar", [
+    "-xOf",
+    archive,
+    "package/dist/application/packaged-trust.js",
+  ]).toString("utf8");
+  assert.match(trust, /application_release_trust_unavailable/);
+  const worker = execFileSync(
+    "tar",
+    ["-xOf", archive, "package/dist/application/worker.js"],
+    { maxBuffer: 5_000_000 },
+  );
+  assert.equal(worker.byteLength, manifest.workerClosure["worker.js"].bytes);
+  assert.equal(
+    createHash("sha256").update(worker).digest("hex"),
+    manifest.workerClosure["worker.js"].sha256,
   );
   // Node has no browser Worker host: its honest shell performs no IO.
   // This is not a claim that the browser entry is still unavailable.
@@ -195,9 +169,9 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
 
 test("the successor SDK has no unused protocol exception", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-4fb345e4.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-66b24935.json", root), "utf8"),
   );
-  assert.deepEqual(manifest.vendorWarnings, []);
+  assert.equal(manifest.vendorWarnings, undefined);
   assert.equal(manifest.qualification.productionQualified, false);
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const members = execFileSync("tar", ["-tf", archive], {
@@ -210,7 +184,9 @@ test("the successor SDK has no unused protocol exception", async () => {
     false,
   );
   assert.equal(
-    members.includes(`package/vendor/${manifest.protocol.artifact}`),
+    members.includes(
+      "package/vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
+    ),
     true,
   );
 });
