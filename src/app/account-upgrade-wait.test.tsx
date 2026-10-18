@@ -21,7 +21,7 @@ it("uses only the SDK migration outcome, never generic fencing or refusal", () =
     } as MdbaseSnapshot),
   ).toBe(true);
 });
-it("offers friendly copy and read-only retry without displaying error codes", async () => {
+it("offers the SDK's shared copy and a read-only recheck without error codes", async () => {
   const start = vi
     .fn()
     .mockRejectedValueOnce(new Error("secret technical detail"));
@@ -29,16 +29,50 @@ it("offers friendly copy and read-only retry without displaying error codes", as
   const mdbase = { ...(await createTestMdbase()), start, assess };
   render(<AccountUpgradeWait mdbase={mdbase} />);
   expect(
-    screen.getByText(
-      /this usually completes within a day. Your tasks are safe/,
-    ),
+    screen.getByRole("heading", { name: "Your collection is being upgraded" }),
   ).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  expect(
+    screen.getByText(/Your data is safe. This usually takes a few minutes/),
+  ).toBeVisible();
+  expect(screen.queryByText(/within a day/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Check now" }));
   await act(async () => {});
   expect(start).toHaveBeenCalledOnce();
   expect(assess).not.toHaveBeenCalled();
   expect(
-    screen.getByText("Still waiting. Please try again later."),
+    screen.getByText("Still upgrading. TaskNotes will keep checking."),
   ).toBeVisible();
   expect(screen.queryByText(/secret technical detail/)).toBeNull();
+});
+
+it("says it is still upgrading when a recheck succeeds but the collection is still fenced", async () => {
+  const base = await createTestMdbase();
+  const mdbase = {
+    ...base,
+    start: vi.fn().mockResolvedValue(undefined),
+    refreshCollectionList: vi.fn().mockResolvedValue(undefined),
+    assess: vi.fn().mockResolvedValue(undefined),
+    getSnapshot: () =>
+      ({
+        problem: "collection_migrating",
+        phase: { kind: "starting" },
+      }) as MdbaseSnapshot,
+  };
+  render(<AccountUpgradeWait mdbase={mdbase} />);
+  fireEvent.click(screen.getByRole("button", { name: "Check now" }));
+  await act(async () => {});
+  expect(mdbase.assess).toHaveBeenCalledOnce();
+  expect(
+    screen.getByText("Still upgrading. TaskNotes will keep checking."),
+  ).toBeVisible();
+});
+
+it("renders as a compact banner, not a full screen, above an open workspace", async () => {
+  const mdbase = await createTestMdbase();
+  render(<AccountUpgradeWait mdbase={mdbase} variant="banner" />);
+  expect(screen.queryByRole("main")).toBeNull();
+  expect(
+    screen.getByRole("region", { name: "Your collection is being upgraded" }),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Check now" })).toBeEnabled();
 });

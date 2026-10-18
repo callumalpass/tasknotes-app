@@ -338,3 +338,8 @@
     display: none;
   }
 }
+
+/* Collection upgrade notice above an open workspace: drafts stay in view. */
+.upgrade-banner {
+  margin: var(--space-md) var(--space-md) 0;
+}
