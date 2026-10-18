@@ -71,7 +71,9 @@ export function TaskNotesApp({
     <CollectionGate {...ui} extraActions={signedOutExplainer}>
       {(connection) => (
         <>
-          {upgrading ? <AccountUpgradeWait mdbase={mdbase} /> : null}
+          {upgrading ? (
+            <AccountUpgradeWait mdbase={mdbase} variant="banner" />
+          ) : null}
           <ReadyCollection
             arming={arming}
             connection={connection}
