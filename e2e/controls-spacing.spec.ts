@@ -9,7 +9,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       page,
     }) => {
       const fieldSize = page.viewportSize()!.width >= 840 ? "16px" : "17px";
-      await page.goto("more?demo=50");
+      await page.goto("more/device?demo=50");
       const theme = page
         .locator(".theme-picker .tasknotes-control-trigger")
         .first();
@@ -24,10 +24,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(theme).toBeFocused();
       await expect(theme).toHaveCSS("outline-width", "2px");
       await expect(theme).toHaveCSS("outline-style", "solid");
-      await expect(page.locator(".settings-section").first()).toHaveCSS(
-        "margin-top",
-        "24px",
-      );
+      await expect(
+        page.locator(".settings-section-device .settings-group").first(),
+      ).toHaveCSS("padding-top", "24px");
 
       await page.goto("?demo=50");
       await page

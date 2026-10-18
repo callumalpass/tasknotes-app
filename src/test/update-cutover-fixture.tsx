@@ -34,7 +34,7 @@ export function UpdateCutoverFixture() {
   return (
     <CollectionGateContext.Provider
       value={{
-        authorizeAnotherCollection() {},
+        collectionUi: null,
         changeCollection() {},
         reauthorizeCurrentCollection() {},
       }}

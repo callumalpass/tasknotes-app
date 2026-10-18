@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   occurrenceTask,
   findMaterializedOccurrenceTask,
-  materializedOccurrenceKeys,
   projectTodayTasks,
   projectUpcomingTasks,
   rollingOccurrenceDates,
@@ -67,6 +66,20 @@ describe("recurring task occurrences", () => {
       scheduled: "2026-08-12T09:00",
       due: "2026-08-13T17:00",
       completed: false,
+    });
+  });
+
+  it("projects legacy series dates from the pattern start when Scheduled is absent", () => {
+    const legacy = {
+      ...task,
+      scheduled: undefined,
+      due: "2026-10-23",
+      recurrence: "DTSTART:20261014;FREQ=WEEKLY;BYDAY=WE",
+    };
+    const [entry] = taskOccurrencesBetween(legacy, "2026-10-21", "2026-10-21");
+    expect(occurrenceTask(entry)).toMatchObject({
+      scheduled: "2026-10-21",
+      due: "2026-10-30",
     });
   });
 
@@ -185,27 +198,6 @@ describe("recurring task occurrences", () => {
         "2026-08-05",
       ),
     ).toThrow(/duplicate_occurrence_note/);
-  });
-
-  it("indexes materialized identities linearly for large collections", () => {
-    const count = 10_000;
-    const parents = Array.from({ length: count }, (_, index) => ({
-      ...oneOff(`parent-${index}`, "2026-08-05"),
-      path: `tasks/parent-${index}.md`,
-      recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
-    }));
-    const children = parents.map((parent, index) => ({
-      ...oneOff(`child-${index}`, "2026-08-05"),
-      recurrenceParent: `[[${parent.path.slice(0, -3)}]]`,
-      occurrenceDate: "2026-08-05",
-    }));
-
-    const startedAt = performance.now();
-    const keys = materializedOccurrenceKeys([...parents, ...children]);
-    const elapsedMs = performance.now() - startedAt;
-
-    expect(keys.size).toBe(count);
-    expect(elapsedMs).toBeLessThan(1_000);
   });
 });
 

@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  deferPwaUpdate,
-  markPwaUpdateReloaded,
-  usePwaUpdate,
-} from "../pwa/update";
+import { deferPwaUpdate, activatePwaUpdate, usePwaUpdate } from "../pwa/update";
 import { saveBeforeReload } from "../pwa/reload";
 
 export function AppUpdateNotice({
@@ -32,10 +28,8 @@ export function AppUpdateNotice({
             setReloading(true);
             setError(null);
             void save()
-              .then(() => {
-                markPwaUpdateReloaded();
-                reload();
-              })
+              .then(activatePwaUpdate)
+              .then(reload)
               .catch((reason: unknown) => {
                 setError(
                   reason instanceof Error

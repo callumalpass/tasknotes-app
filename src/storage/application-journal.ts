@@ -19,7 +19,9 @@ class TaskCommandDatabase extends Dexie {
 export class IndexedDbMutationJournal implements MutationJournal {
   private readonly database: TaskCommandDatabase;
 
-  constructor(name = "tasknotes-commands-v2") {
+  // Same-origin cutover must never consume/replay the frozen classic journal.
+  // tasknotes-commands-v2 is retained for held-item review/export, not migration.
+  constructor(name = "tasknotes-next-commands-v1") {
     this.database = new TaskCommandDatabase(name);
   }
 
@@ -44,35 +46,5 @@ export class IndexedDbMutationJournal implements MutationJournal {
 
   close(): void {
     this.database.close();
-  }
-}
-
-export async function pendingRecoveryRequestIds(
-  collectionId: string,
-): Promise<Set<string>> {
-  const journal = new IndexedDbMutationJournal();
-  try {
-    const commands = await journal.list(`connect:${collectionId}`);
-    return new Set(
-      commands.flatMap((command) =>
-        command.authorityRequestId ? [command.authorityRequestId] : [],
-      ),
-    );
-  } finally {
-    journal.close();
-  }
-}
-
-export async function removePendingRecoveryCommands(
-  collectionId: string,
-): Promise<void> {
-  const journal = new IndexedDbMutationJournal();
-  try {
-    const commands = await journal.list(`connect:${collectionId}`);
-    for (const command of commands) {
-      if (command.authorityRequestId) await journal.remove(command.operationId);
-    }
-  } finally {
-    journal.close();
   }
 }

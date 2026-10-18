@@ -1,23 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import {
-  field,
-  fieldOptions,
-  humanize,
-  viewFields,
-} from "./view-editor-fields";
+import { field, fieldOptions, viewFields } from "./view-editor-fields";
 
 describe("view editor field catalog", () => {
-  it.each([
-    ["tasknotes_manual_order", "Manual order"],
-    ["note.tasknotes_manual_order", "Tasknotes manual order"],
-    ['note["my_customField"]', "My custom Field"],
-    ["formula['work-total']", "Work total"],
-    ["file.path", "Path"],
-  ])("preserves the editor label for %s", (key, label) => {
-    expect(humanize(key)).toBe(label);
-  });
-
   it("keeps first-wins ordering and canonical options beside mapped fields", () => {
     const configuration = new TaskNotesTaskModel().configuration();
     configuration.fieldMapping.status = "state";

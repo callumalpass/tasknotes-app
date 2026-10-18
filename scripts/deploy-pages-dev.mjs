@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 export const developmentDeployments = Object.freeze({
   lab: Object.freeze({
     appOrigin: "https://lab.tasknotes-app.pages.dev",
+    editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28487",
     project: "tasknotes-app",
@@ -101,6 +102,19 @@ export function developmentDeploymentFor(environment) {
     target,
     "TASKNOTES_APP_URL",
   );
+  requireMatchingOverride(
+    environment.VITE_TASKNOTES_LAB_ORIGIN,
+    deployment.appOrigin,
+    target,
+    "VITE_TASKNOTES_LAB_ORIGIN",
+  );
+  if (deployment.editorOrigin)
+    requireMatchingOverride(
+      environment.VITE_TASKNOTES_EDITOR_ORIGIN,
+      deployment.editorOrigin,
+      target,
+      "VITE_TASKNOTES_EDITOR_ORIGIN",
+    );
   return deployment;
 }
 
@@ -108,9 +122,18 @@ export function developmentDeploymentEnvironment(
   environment,
   deployment = developmentDeploymentFor(environment),
 ) {
+  const editorOrigin =
+    deployment.editorOrigin ?? environment.VITE_TASKNOTES_EDITOR_ORIGIN;
+  if (!editorOrigin)
+    throw new Error(
+      "VITE_TASKNOTES_EDITOR_ORIGIN is required for this TaskNotes deployment target.",
+    );
   return {
     ...environment,
     VITE_BASE_PATH: "/",
+    VITE_TASKNOTES_ENVIRONMENT: "lab",
+    VITE_TASKNOTES_LAB_ORIGIN: deployment.appOrigin,
+    VITE_TASKNOTES_EDITOR_ORIGIN: editorOrigin,
     TASKNOTES_APP_URL: deployment.appOrigin,
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",

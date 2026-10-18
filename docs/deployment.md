@@ -7,6 +7,20 @@ That existing script builds for staging Connect and connector port 28486,
 validates the artifact, deploys the Cloudflare `staging` branch, and smokes staging.
 LAB remains separate and is not changed by this workflow.
 
+## Next app Editor destination
+
+Next builds must set `VITE_TASKNOTES_EDITOR_ORIGIN` explicitly alongside their
+app environment and origin. Use the exact Editor origin for that environment:
+`https://lab.mdbase-editor-lab.pages.dev` for the current isolated LAB, or the
+approved production Editor origin when preparing a production build. An isolated
+local Editor may use an exact `http://127.0.0.1:<port>` origin. Paths, credentials,
+queries, and fragments are not valid configuration. Startup rejects a missing or
+invalid value rather than silently using another environment's Editor.
+
+The person-record action retains the authority's collection, server, settings
+surface, and person anchor; only its browser destination origin changes. This
+configuration does not select runtime assets or alter authentication authority.
+
 ## Promote to production
 
 1. Validate the staging commit with a disposable collection.
@@ -22,12 +36,12 @@ Deployments are serialized per target and are not cancelled mid-deploy.
 
 Every successful production upload is followed by `pnpm test:production-smoke`
 in the same job. Cloudflare smoke always targets **app.tasknotes.dev**, including
-its production-only embed/header checks; a missing URL variable cannot skip it.
+its production-only frame-denial check; a missing URL variable cannot skip it.
 A smoke failure fails the deployment run with an error annotation. The deployment
 has already happened: investigate and, if necessary, perform an explicit operator
 rollback; there is no automatic rollback.
 
-`.github/workflows/production-smoke.yml` retains pull-request artifact checks,
+`.github/workflows/production-smoke.yml` retains artifact checks for pull requests to `main`,
 manual dispatch, and the **six-hour schedule**. Scheduled/manual smoke checks the
 canonical **app.tasknotes.dev** origin. The smoke checks shell/PWA/auth/notification
 and Connect boundaries, not authenticated CRUD in a real collection.
@@ -63,3 +77,6 @@ and Connect boundaries, not authenticated CRUD in a real collection.
 These workflows do not configure environments, secrets, reviewers, or Cloudflare
 settings. Staging validation is an operator/reviewer responsibility, not an
 automated assertion that the same SHA previously passed staging.
+
+Pull requests to other branches do not run the Android, iOS or smoke workflows.
+Run `pnpm verify` locally before merging them.

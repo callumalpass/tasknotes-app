@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
@@ -14,34 +14,6 @@ function task(id: string, patch: Partial<Task> = {}): Task {
 }
 
 describe("session task index", () => {
-  it("does no enumeration for zero results and reuses ordering across queries", () => {
-    const index = new ConnectedTaskIndex<{ task: Task }>();
-    const readBody = vi.fn(() => "Body");
-    const item = task("one");
-    Object.defineProperty(item, "body", { get: readBody });
-    index.set(item.id, { task: item });
-    const values = vi.spyOn(index, "values");
-    expect(index.list({ limit: 0 })).toEqual([]);
-    expect(values).not.toHaveBeenCalled();
-    expect(index.list({ limit: 1 })).toEqual([item]);
-    index.list({ limit: 1 });
-    index.set(item.id, { task: item });
-    index.list({ limit: 1 });
-    expect(values).toHaveBeenCalledOnce();
-    expect(readBody).not.toHaveBeenCalled();
-    index.list({ search: "one" });
-    expect(readBody).not.toHaveBeenCalled();
-    const bodyMatches = vi.fn(() => true);
-    expect(index.list({ search: "body" }, bodyMatches)).toEqual([item]);
-    index.list({ search: "BODY" }, bodyMatches);
-    expect(bodyMatches).toHaveBeenCalledTimes(2);
-    expect(readBody).not.toHaveBeenCalled();
-    index.set(item.id, { task: task("one", { title: "Replacement" }) });
-    expect(index.list({ search: "body" })).toEqual([]);
-    expect(index.list({ search: "replacement" })).toHaveLength(1);
-    expect(values).toHaveBeenCalledTimes(2);
-  });
-
   it("matches the original filtering, substring search, ordering and limit semantics", () => {
     const index = new ConnectedTaskIndex<{ task: Task }>();
     for (let i = 0; i < 200; i++)

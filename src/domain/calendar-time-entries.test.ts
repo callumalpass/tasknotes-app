@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  moveCalendarTimeEntry,
-  resizeCalendarTimeEntry,
-} from "./calendar-time-entries";
+import { moveCalendarTimeEntry } from "./calendar-time-entries";
 
 describe("calendar time-entry changes", () => {
   const entries = [
@@ -30,15 +27,5 @@ describe("calendar time-entry changes", () => {
       },
     ]);
     expect(entries[0].startTime).toBe("2026-08-16T01:00:00.000Z");
-  });
-
-  it("resizes the selected entry", () => {
-    expect(
-      resizeCalendarTimeEntry(
-        entries,
-        0,
-        new Date("2026-08-16T02:30:00.000Z"),
-      )[0].endTime,
-    ).toBe("2026-08-16T02:30:00.000Z");
   });
 });

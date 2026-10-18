@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 def tasknotesVersionCode = System.getenv('TASKNOTES_ANDROID_VERSION_CODE')
 def tasknotesVersionName = System.getenv('TASKNOTES_ANDROID_VERSION_NAME')
+def tasknotesPackageVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
 def tasknotesApplicationId = System.getenv('TASKNOTES_ANDROID_APPLICATION_ID')
 def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
 def releaseKeystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
@@ -22,7 +23,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode tasknotesVersionCode ? tasknotesVersionCode.toInteger() : 1
-        versionName tasknotesVersionName ?: "0.1.0"
+        versionName tasknotesVersionName ?: tasknotesPackageVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -1,131 +1,58 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { connectError } from "@mdbase-dev/connect-testing";
 
-import { DeletionFeedback, Navigation, StorageErrorScreen } from "./app-shell";
 import {
-  SCRATCHPAD_NAVIGATION_KEY,
-  SEARCH_NAVIGATION_KEY,
-} from "./navigation-views";
+  DeletionFeedback,
+  Navigation,
+  StorageErrorScreen,
+  ViewDiscoveryNotice,
+} from "./app-shell";
+import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 import { OperationalError } from "../application/operational-error";
 
 import type { TaskView } from "../domain/view";
 
-it("lets a user escape an unavailable remembered collection", () => {
-  const authorizeAnotherCollection = vi.fn();
-  const changeCollection = vi.fn();
-
+it("keeps the view failure visible while retry is pending and prevents duplicate clicks", () => {
+  const retry = vi.fn();
   render(
-    <StorageErrorScreen
-      authorizeAnotherCollection={authorizeAnotherCollection}
-      changeCollection={changeCollection}
-      error={new Error("The connector is offline.")}
-      reauthorizeCurrentCollection={vi.fn()}
-      retry={vi.fn()}
+    <ViewDiscoveryNotice
+      outcome="error"
+      refreshing={true}
+      onRetry={retry}
+      onCreate={vi.fn()}
     />,
   );
-
-  expect(
-    screen.getByRole("heading", { name: "TaskNotes could not open." }),
-  ).toBeVisible();
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "Choose another mdbase collection",
-    }),
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Couldn't load your views.",
   );
-
-  expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
-  expect(changeCollection).not.toHaveBeenCalled();
+  const button = screen.getByRole("button", { name: "Retrying…" });
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(retry).not.toHaveBeenCalled();
 });
 
-it("separates reauthorizing the current collection from choosing another", () => {
-  const authorizeAnotherCollection = vi.fn();
+it("separates reviewing the current collection's access from choosing another", () => {
+  const changeCollection = vi.fn();
   const reauthorizeCurrentCollection = vi.fn();
 
   render(
     <StorageErrorScreen
-      authorizeAnotherCollection={authorizeAnotherCollection}
-      changeCollection={vi.fn()}
+      changeCollection={changeCollection}
       error={connectError("authorization_expired", "The grant expired.")}
       reauthorizeCurrentCollection={reauthorizeCurrentCollection}
       retry={vi.fn()}
     />,
   );
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Reconnect this collection" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Review access" }));
   expect(reauthorizeCurrentCollection).toHaveBeenCalledOnce();
-  expect(authorizeAnotherCollection).not.toHaveBeenCalled();
+  expect(changeCollection).not.toHaveBeenCalled();
 
   fireEvent.click(
-    screen.getByRole("button", {
-      name: "Choose another mdbase collection",
-    }),
+    screen.getByRole("button", { name: "Choose a different collection" }),
   );
-  expect(authorizeAnotherCollection).toHaveBeenCalledOnce();
-});
-
-it("expands configured views directly in the desktop sidebar", () => {
-  const onNavigate = vi.fn();
-  const today = navigationView("today", "Today");
-  const upcoming = navigationView("upcoming", "Upcoming");
-  const longView = navigationView(
-    "long",
-    "Projects waiting for a response from someone else",
-  );
-
-  render(
-    <Navigation
-      active={`view:${upcoming.key}`}
-      homeKey={today.key}
-      mode="desktop"
-      navigationKeys={[
-        today.key,
-        SCRATCHPAD_NAVIGATION_KEY,
-        SEARCH_NAVIGATION_KEY,
-        upcoming.key,
-        longView.key,
-      ]}
-      views={[today, upcoming, longView]}
-      onNavigate={onNavigate}
-    />,
-  );
-
-  expect(
-    screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual([
-    "Today",
-    "Scratchpad",
-    "Search",
-    "Upcoming",
-    "Projects waiting for a response from someone else",
-    "Manage views",
-    "Settings",
-  ]);
-  expect(
-    screen.queryByRole("button", { name: "Views" }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByRole("group", { name: "Views" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Upcoming" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  expect(
-    screen.getByRole("button", {
-      name: "Projects waiting for a response from someone else",
-    }),
-  ).toHaveAttribute(
-    "title",
-    "Projects waiting for a response from someone else",
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Upcoming" }));
-  expect(onNavigate).toHaveBeenLastCalledWith({
-    page: "views",
-    key: upcoming.key,
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Manage views" }));
-  expect(onNavigate).toHaveBeenLastCalledWith({ page: "views" });
+  expect(changeCollection).toHaveBeenCalledOnce();
+  expect(screen.queryByText("The grant expired.")).toBeNull();
 });
 
 it("routes a TaskNotes tool through Home when it is first", () => {
@@ -150,40 +77,6 @@ it("routes a TaskNotes tool through Home when it is first", () => {
     page: "views",
     key: today.key,
   });
-});
-
-it("keeps three destinations visible and settings inside Browse", () => {
-  const onNavigate = vi.fn();
-  const today = navigationView("today", "Today");
-  const upcoming = navigationView("upcoming", "Upcoming");
-
-  render(
-    <Navigation
-      active="search"
-      homeKey={today.key}
-      mode="mobile"
-      navigationKeys={[
-        today.key,
-        SCRATCHPAD_NAVIGATION_KEY,
-        SEARCH_NAVIGATION_KEY,
-        upcoming.key,
-      ]}
-      views={[today, upcoming]}
-      onNavigate={onNavigate}
-    />,
-  );
-
-  expect(
-    screen.getAllByRole("button").map((button) => button.textContent),
-  ).toEqual(["Today", "Scratchpad", "Search", "Browse"]);
-  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Browse" }));
-  expect(screen.getByRole("menuitem", { name: "Upcoming" })).toBeVisible();
-  fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
-  expect(onNavigate).toHaveBeenCalledWith({ page: "more" });
 });
 
 it("announces a pending deletion without putting Undo inside the live region", () => {

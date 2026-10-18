@@ -39,6 +39,17 @@ export function taskPath(
   return normalizeCanonicalPath(expanded);
 }
 
+/** TaskNotes filename collision convention. Occupancy and atomic creation stay
+ * with the owning repository/replica; this helper has no filesystem semantics.
+ */
+export function* taskPathCandidates(path: string): Generator<string> {
+  yield path;
+  const extension = /\.md$/i.test(path) ? ".md" : "";
+  const stem = extension ? path.slice(0, -extension.length) : path;
+  for (let index = 2; index < 10_000; index++)
+    yield `${stem}-${index}${extension}`;
+}
+
 export function normalizeCollectionFolder(value: string): string {
   const normalized = value
     .trim()

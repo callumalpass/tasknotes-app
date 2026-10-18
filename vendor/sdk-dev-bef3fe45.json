@@ -1,0 +1,91 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "bef3fe454ca3214b940b3549efcbe37c2765bc70",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "publicEntry": "b921022e9",
+    "collectionSelection": "11cf1a2fa",
+    "opaquePush": "e3ed79efb92d49879be1aefc0ca9f98095966bbc",
+    "mobileOriginSignIn": "9a2b6cc3fe83e2f907d6f6a6a045099d3c2de209",
+    "sharedSetup": "3184073c4a013e7a13b64fcdc4f1325ba6ef578c",
+    "privateSetup": "b4da8c16824f15f05070cfcc880eec721bcdbbc9",
+    "manifestSupersession": "eddaa8a8a77e3242aebae1cf6b2ff5f25d0ed982",
+    "installationBinding": "fa49f3d0474a3c5961f3b9986052ead07abcc943",
+    "applicationBinding": "9f013753be54f7144b32bdc9724f26a6caabcf25",
+    "listedAvailability": "9c90075ac5e9f1024cbe61da86c3dc29260ae18d",
+    "thinClientAndValidators": "9c666d541bc04177c91898dd82e12bd67344eed6",
+    "typeIssues": "8a817c48764ae2f96641178af9be450ad9aa94b4",
+    "userDescriptions": "41c26ca73f6c97551ba4732c35627d626b927f03",
+    "logCors": "d31125b08e523549ee361b9b12527d38c69e1e2f",
+    "nativeReturnOpener": "9f9dd6e33effbd259ea1e77010bc22c059be349c",
+    "singleManifestCompile": "39076c22e5c0fcebe848c1031444363700c217f0",
+    "daemonH1H2": "4061b3155dd1125602702b4f9e85dc3a5e356620",
+    "refusedSignInRenew": "12adc0089a274882c0077106696828f7546877f4",
+    "workerDefer": "fc18ab1691b2c67c75384e41ad80029f2e676e52",
+    "workerClosure": "a3f592e2610484f72272418ee3752c8d97f8864b",
+    "workerPackaging": "3225ad38657706c225888d815b40f743f788e5c3",
+    "lazyPairingAndUnreadCancellation": "4c484d3cc3d06b7ecbac8061b171a25d72be2ae4",
+    "pairingIntegrity": "a899fd78f083ecdfa9c8fc15675cc39db8d032b0"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-bef3fe45.tgz",
+  "bytes": 4344315,
+  "sha256": "9b995c83b8143bec71a3cbd0d1cb2669393e2278236a272722890a9504d19b7b",
+  "integrity": "sha512-nuVkGiydDqZDxnRBjHsiUCmfLHJtmMws/2iBhJBE4mU3WorbDpTZOydcIony8VTbEJxc1nXRBvuZ1i4++0K2MQ==",
+  "shasum": "8daa5d91f8b955410e0b231884d5435f2ed18a37",
+  "protocol": {
+    "sourceCommit": "c280cd194ffd74e2c72b9d08a74d71bd43fa7321",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
+    "bytes": 107322,
+    "sha256": "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
+    "integrity": "sha512-c0iOOWEcNJRstdyUJ6aqJ3puVR5C9jXW4MBHmQnHI2c4vgOeKi5VWfiuueWx3ArvtwB3nPuAaXHhll/OKH/+Yw==",
+    "originalEmbeddedBytesVerified": true,
+    "allBundledMembersVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Packaging metadata, not runtime readiness or physical drain",
+    "sourceCommit": "965963fc2944fd624f561bd583062ae8c8336a05",
+    "member": "package/dist/native/runtime-lab.wasm",
+    "bytes": 3580229,
+    "sha256": "51f4a0c4e20fedd8d8e2f2bb66f540aff7e4050c2901b53fe556c0a0098d5a6d",
+    "setupAssessExportVerified": true,
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "27b07a74462bf91aa66260857b2c7c6dbc01615148d737e1bd9a4f06a530e806"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "f08a167cad4aaeb288e4acc8159e28360bd3a3f809198fea65fee6a57363121b"
+    }
+  },
+  "workerClosure": {
+    "worker.js": {
+      "bytes": 1369993,
+      "sha256": "8aa9e155fe65be65da4265178a1125505c68a0c618df15cf7ad0b27a5d43fe7e"
+    }
+  },
+  "qualification": {
+    "authority": "co0800",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 866,
+    "normalPackOnceNoRepack": true,
+    "producerColdNpmEmptyRootCache": "passed",
+    "producerFullSdkSuite": "skipped for automated light dev intake; consumer qualification is separate",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false,
+    "productionQualified": false
+  },
+  "vendorWarnings": [],
+  "purpose": "Exact successor DEV/LAB SDK cut with shared registration diagnostics, availability, setup and collection lifecycle APIs. Production/signing/admission and app activation remain separate."
+}

@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { ConnectionNoticeContext } from "../app/connection-notice";
 import { cleanOperationError } from "../app/operation-error";
 import {
   toOperationalError,
@@ -17,13 +19,21 @@ export function OperationErrorNotice({
 }) {
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
+  const waiting =
+    useContext(ConnectionNoticeContext) === "waiting_for_computer";
+  if (waiting && failure.code === "unavailable")
+    return (
+      <p role="status">
+        Waiting for your computer. Try this action again when it reconnects.
+      </p>
+    );
   const technical = cleanOperationError(failure.detail).trim();
   return (
     <div className={`operation-error ${className}`.trim()}>
       <p className="inline-error" role="alert">
         {operationErrorSummary(action, failure.code)}{" "}
         {failure.code === "outcome-unknown"
-          ? "Keep the collection connected and review the earlier change’s exact result before making another change."
+          ? "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
           : recovery}
       </p>
       {technical ? (
@@ -44,7 +54,7 @@ function operationErrorSummary(
     case "unavailable":
       return `${action} could not finish while the collection was unavailable.`;
     case "outcome-unknown":
-      return `${action} may have been saved, but its result could not be confirmed.`;
+      return `${action} may have been saved; TaskNotes is still confirming it.`;
     case "cancelled":
       return `${action} was cancelled.`;
     case "permission-denied":

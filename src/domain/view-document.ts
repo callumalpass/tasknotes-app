@@ -6,7 +6,10 @@ import { isMap, isSeq, parseDocument, stringify } from "yaml";
 
 import type { YAMLMap } from "yaml";
 
-import type { TaskViewSourceDocument } from "./view";
+import type {
+  TaskViewDeclarationSelector,
+  TaskViewSourceDocument,
+} from "./view";
 import {
   editableRenderer,
   isCalendarRenderer,
@@ -18,6 +21,7 @@ export type ViewDialect = "obsidian-bases" | "mdbase-cel";
 export type { ViewRenderer } from "./view-renderer";
 
 export interface EditableViewDraft {
+  declaration?: TaskViewDeclarationSelector;
   id: string;
   name: string;
   renderer: ViewRenderer;
@@ -48,16 +52,23 @@ export interface EditableViewSort {
 export function readViewDraft(
   source: TaskViewSourceDocument,
   viewId: string,
+  declaration?: TaskViewDeclarationSelector,
 ): EditableViewDraft {
-  return source.format === "obsidian.base"
-    ? readObsidianDraft(source.document, viewId)
-    : readCanonicalDraft(source.document, viewId);
+  checkDeclarationSource(source, declaration);
+  const draft =
+    source.format === "obsidian.base"
+      ? readObsidianDraft(source.document, viewId, declaration)
+      : readCanonicalDraft(source.document, viewId);
+  return declaration
+    ? { ...draft, declaration: structuredClone(declaration) }
+    : draft;
 }
 
 export function updateViewDocument(
   source: TaskViewSourceDocument,
   draft: EditableViewDraft,
 ): string {
+  checkDeclarationSource(source, draft.declaration);
   return source.format === "obsidian.base"
     ? updateObsidianDocument(source.document, draft)
     : updateCanonicalDocument(source.document, draft);
@@ -100,9 +111,13 @@ export function createViewDocument(
 export function removeViewFromDocument(
   source: TaskViewSourceDocument,
   viewId: string,
+  declaration?: TaskViewDeclarationSelector,
 ): { document?: string; deleteSource: boolean } {
+  checkDeclarationSource(source, declaration);
   if (source.format === "obsidian.base") {
-    const document = parseDocument(source.document);
+    const yaml = obsidianSourceYaml(source.document, declaration);
+    const document = parseDocument(yaml.text);
+    if (document.errors.length) throw new Error(document.errors[0].message);
     const views = document.get("views", true);
     if (!isSeq(views)) throw new Error("This view source has no views list.");
     const index = findObsidianIndex(
@@ -110,12 +125,17 @@ export function removeViewFromDocument(
         isMap(item) ? String(item.get("name") ?? "") : "",
       ),
       viewId,
+      declaration,
     );
     if (index < 0)
       throw new Error("This view is no longer in its source file.");
+    const selected = views.items[index];
+    if (!isMap(selected))
+      throw new Error("This view declaration is not an object.");
+    checkDeclarationName(selected.get("name"), declaration);
     if (views.items.length === 1) return { deleteSource: true };
     views.items.splice(index, 1);
-    return { document: String(document), deleteSource: false };
+    return { document: yaml.wrap(String(document)), deleteSource: false };
   }
   const parsed = parseFrontmatter(source.document);
   const frontmatter = record(parsed.frontmatter);
@@ -146,17 +166,31 @@ export function emptyViewDraft(dialect: ViewDialect): EditableViewDraft {
   };
 }
 
-function readObsidianDraft(source: string, viewId: string): EditableViewDraft {
-  const document = parseDocument(source);
+function readObsidianDraft(
+  source: string,
+  viewId: string,
+  declaration?: TaskViewDeclarationSelector,
+): EditableViewDraft {
+  const document = parseDocument(obsidianSourceYaml(source, declaration).text);
   if (document.errors.length) throw new Error(document.errors[0].message);
   const value = record(document.toJS());
-  const views = objectList(value.views);
+  // Positional selectors retain every original declaration, including entries
+  // that this editor cannot interpret. Never renumber a supported subset.
+  const views = declaration
+    ? Array.isArray(value.views)
+      ? value.views
+      : []
+    : objectList(value.views);
   const index = findObsidianIndex(
-    views.map((view) => string(view.name)),
+    views.map((view) => string(record(view).name)),
     viewId,
+    declaration,
   );
-  const view = views[index];
-  if (!view) throw new Error("This view is no longer in its source file.");
+  const selected = views[index];
+  if (!selected || typeof selected !== "object" || Array.isArray(selected))
+    throw new Error("This view is no longer in its source file.");
+  const view = record(selected);
+  checkDeclarationName(view.name, declaration);
   const computedProperties = Object.entries(record(value.formulas)).map(
     ([name, expression]) => ({
       name,
@@ -198,7 +232,8 @@ function updateObsidianDocument(
   source: string,
   draft: EditableViewDraft,
 ): string {
-  const document = parseDocument(source);
+  const yaml = obsidianSourceYaml(source, draft.declaration);
+  const document = parseDocument(yaml.text);
   if (document.errors.length) throw new Error(document.errors[0].message);
   const views = document.get("views", true);
   if (!isSeq(views)) throw new Error("This view source has no views list.");
@@ -210,10 +245,12 @@ function updateObsidianDocument(
       isMap(item) ? String(item.get("name") ?? "") : "",
     ),
     draft.id,
+    draft.declaration,
   );
   const view = views.items[index];
   if (!isMap(view))
     throw new Error("This view is no longer in its source file.");
+  checkDeclarationName(view.get("name"), draft.declaration);
   setOrDelete(view, "name", draft.name);
   setOrDelete(view, "type", obsidianRenderer(draft.renderer));
   setOrDelete(view, "filters", draft.filter);
@@ -247,7 +284,7 @@ function updateObsidianDocument(
     "options",
     Object.keys(draft.options).length ? draft.options : undefined,
   );
-  return String(document);
+  return yaml.wrap(String(document));
 }
 
 function readCanonicalDraft(source: string, viewId: string): EditableViewDraft {
@@ -409,7 +446,68 @@ function canonicalView(draft: EditableViewDraft): Record<string, unknown> {
   });
 }
 
-function findObsidianIndex(names: string[], target: string): number {
+function checkDeclarationSource(
+  source: TaskViewSourceDocument,
+  declaration?: TaskViewDeclarationSelector,
+) {
+  if (!declaration) return;
+  if (
+    source.format !== "obsidian.base" ||
+    source.recordId !== declaration.recordId ||
+    source.path !== declaration.path ||
+    source.revision !== declaration.revision
+  )
+    throw new Error(
+      "The view declaration source changed. Refresh the view catalog.",
+    );
+  if (
+    !Number.isSafeInteger(declaration.ordinal) ||
+    declaration.ordinal < 0 ||
+    declaration.ordinal > 0xffffffff
+  )
+    throw new Error("The view declaration ordinal is invalid.");
+}
+
+function checkDeclarationName(
+  name: unknown,
+  declaration?: TaskViewDeclarationSelector,
+) {
+  if (
+    declaration &&
+    (typeof name === "string" ? name : null) !== declaration.name
+  )
+    throw new Error("The view declaration differs from its original ordinal.");
+}
+
+function obsidianSourceYaml(
+  source: string,
+  declaration?: TaskViewDeclarationSelector,
+) {
+  if (!declaration || !source.startsWith("---"))
+    return { text: source, wrap: (text: string) => text };
+  const parts = /^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))([\s\S]*)$/.exec(
+    source,
+  );
+  if (!parts)
+    throw new Error("The view source has invalid frontmatter boundaries.");
+  return {
+    text: parts[2],
+    // Keep the Markdown body byte-for-byte; only the selected YAML changes.
+    wrap: (text: string) =>
+      `${parts[1]}${text.replace(/\r?\n$/, "")}${parts[3]}${parts[4]}`,
+  };
+}
+
+function findObsidianIndex(
+  names: string[],
+  target: string,
+  declaration?: TaskViewDeclarationSelector,
+): number {
+  if (declaration) {
+    if (declaration.ordinal >= names.length)
+      throw new Error("This view is no longer at its original ordinal.");
+    return declaration.ordinal;
+  }
   return stableIds(names).indexOf(target);
 }
 

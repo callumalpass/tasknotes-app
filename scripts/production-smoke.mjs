@@ -91,20 +91,9 @@ const checks = [
   async () => {
     if (new URL(appOrigin).hostname !== "app.tasknotes.dev") return;
     const appHeaders = await responseHeaders(`${appOrigin}/`);
-    const embedHeaders = await responseHeaders(`${appOrigin}/embed/?demo=12`);
     if (appHeaders.get("x-frame-options")?.toUpperCase() !== "DENY")
       throw new Error(
         "The ordinary TaskNotes app can be embedded unexpectedly.",
-      );
-    if (embedHeaders.has("x-frame-options"))
-      throw new Error("The dedicated TaskNotes demo route cannot be embedded.");
-    const frameAncestors = embedHeaders.get("content-security-policy") ?? "";
-    if (
-      !frameAncestors.includes("frame-ancestors") ||
-      !frameAncestors.includes("https://tasknotes.dev")
-    )
-      throw new Error(
-        "The embedded TaskNotes demo does not restrict its parent origin.",
       );
   },
 ];

@@ -77,9 +77,14 @@ test("opens and navigates the disposable demo repository", async ({ page }) => {
   await search.blur();
 
   await openNavigationItem(page, "Settings");
-  await expect(page.getByText("TaskNotes demo")).toBeVisible();
-  await expect(page.getByText("47 total")).toBeVisible();
+  await expect(page.getByText("TaskNotes demo").first()).toBeVisible();
   await expect(page).toHaveURL(/\/more\?demo=50/);
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByText("Collection", { exact: true })
+    .click();
+  await expect(page.getByText("47 total")).toBeVisible();
+  await expect(page).toHaveURL(/\/more\/collection\?demo=50/);
 });
 
 test("opens a trailing-slash Scratchpad route and focuses current capture", async ({
@@ -435,7 +440,7 @@ test("wraps outline text without splitting nodes or scrolling horizontally", asy
 test("configures the default mode for new Scratchpad notes", async ({
   page,
 }) => {
-  await page.goto("more/?demo=12");
+  await page.goto("more/device?demo=12");
   await page.getByRole("combobox", { name: "Default Scratchpad mode" }).click();
   await page.getByRole("option", { name: "Write", exact: true }).click();
   await page.goto("scratchpad/?demo=12");
@@ -476,8 +481,8 @@ test("offers a quiet writing surface with selection-preserving tools", async ({
   await expect(current.getByText("4 words", { exact: true })).toHaveCount(0);
   await expect(current.getByText(/Markdown supported/)).toHaveCount(0);
   await expect(current.locator(".cm-placeholder")).toHaveCount(0);
-  await expect(current.getByRole("status")).toHaveText("Saved");
-  await expect(current.getByRole("status")).toBeVisible();
+  await expect(current.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(current.getByRole("status")).toHaveCount(0);
   await source.press("ControlOrMeta+z");
   await expect(source).toHaveText("A thought worth keeping");
   const result = await new AxeBuilder({ page })
@@ -694,22 +699,6 @@ test("uses dark theme tokens throughout the Scratchpad editor", async ({
   });
 });
 
-test("keeps an embedded demo inside its frameable route", async ({ page }) => {
-  await page.goto("embed/?demo=12");
-
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Today", exact: true }),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
-  await expect(page).toHaveURL(/\/embed\/scratchpad\?demo=12/);
-  await expect(
-    page.getByRole("heading", { name: "Scratchpad", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "New note" })).toBeVisible();
-  await expect(page.getByText("Image file is unavailable")).toBeVisible();
-});
-
 test("keeps view management clear and scalable", async ({ page }) => {
   await page.goto("views/?demo=24");
 
@@ -881,10 +870,16 @@ test("supports demo attachments and collection settings", async ({ page }) => {
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await openNavigationItem(page, "Settings");
-  await page.getByText("Task model", { exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByText("Collection behavior", { exact: true })
+    .click();
   await page.getByRole("combobox", { name: "Default priority" }).click();
   await page.getByRole("option", { name: "High", exact: true }).click();
-  await page.getByRole("button", { name: "Save task settings" }).click();
+  await expect(
+    page.getByText("Unsaved changes for everyone using this collection"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Saved with the collection.")).toBeVisible();
 });
 

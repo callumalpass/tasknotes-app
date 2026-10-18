@@ -5,7 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mdbase-dev/connect-protocol': 0.1.0-beta.125
   '@mdbase-dev/connect': 0.1.0-beta.125
   '@mdbase-dev/connect-sync': 0.1.0-beta.125
 
@@ -80,14 +79,20 @@ importers:
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125
       '@mdbase-dev/connect-protocol':
-        specifier: 0.1.0-beta.125
-        version: 0.1.0-beta.125
+        specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz
+        version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz
+      '@mdbase-dev/obsidian-runtime':
+        specifier: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
+        version: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
       '@mdbase-dev/sdk':
-        specifier: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz
-        version: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz
+        specifier: file:vendor/sdk-dev-66b24935.tgz
+        version: file:vendor/sdk-dev-66b24935.tgz
       '@mdbase-dev/ui':
-        specifier: 0.1.0-beta.125
-        version: 0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)
+        specifier: file:vendor/ui-dev-9553ad66.tgz
+        version: file:vendor/ui-dev-9553ad66.tgz(@codemirror/view@6.43.9)(@mdbase-dev/sdk@file:vendor/sdk-dev-66b24935.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.53.4-build2
+        version: 3.53.4-build2
       '@tanstack/react-virtual':
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -106,6 +111,9 @@ importers:
       lucide-react:
         specifier: 1.25.0
         version: 1.25.0(react@19.2.8)
+      mdbase:
+        specifier: file:vendor/mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz
+        version: file:vendor/mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz
       obsidian-bases-expression:
         specifier: 0.3.0-rc.1
         version: 0.3.0-rc.1
@@ -125,8 +133,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1
       tasknotes-nlp-core:
-        specifier: 0.1.5
-        version: 0.1.5
+        specifier: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
+        version: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -727,6 +735,9 @@ packages:
   '@firebase/webchannel-wrapper@1.0.6':
     resolution: {integrity: sha512-Vr/Mqu79dMwGRAyGbJ4uN4+BtXB3/mRTdzetD1daWNeG8QaWuzhhbG77GltO5c0yYmYls8i250iX73624GJd7Q==}
 
+  '@fontsource-variable/atkinson-hyperlegible-next@5.3.0':
+    resolution: {integrity: sha512-UnLzNUy1RWoLDfydAatP4NaRm99X/WbQEph7q/PymJnCFIOOwKOx3pBmp5ys8trO0dM+CKGuJgeZP9fAR4mQpA==}
+
   '@fontsource/atkinson-hyperlegible@5.3.0':
     resolution: {integrity: sha512-Sp8Ve8+rQmENY2Lv02VH7sLpntzTTvnncnJMTbRE7DX6TLxGraN4ykZfzaUWIoCFmaomwkvNiqmlPkrKBuDoSA==}
 
@@ -903,24 +914,42 @@ packages:
   '@mdbase-dev/connect-protocol@0.1.0-beta.125':
     resolution: {integrity: sha512-q6aEZ1+dVAXvoN84FgDLMhqCnCdlsXhp0K5M+Wcp2x2ICUIoE/lA+eDg4AJqDqdWZ3Nq2mkiczvat6HG2y8EeQ==}
 
+  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz':
+    resolution: {integrity: sha512-c0iOOWEcNJRstdyUJ6aqJ3puVR5C9jXW4MBHmQnHI2c4vgOeKi5VWfiuueWx3ArvtwB3nPuAaXHhll/OKH/+Yw==, tarball: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz}
+    version: 0.1.0-beta.129
+
   '@mdbase-dev/connect-testing@0.1.0-beta.125':
     resolution: {integrity: sha512-o9tJZNPRsClsbP6n7OqzDZ0Ijm3xrlXmVmZ1LniK4e6Yed2asYU+7QYJuIbCp7iXFyfuwdiFj9Z+qMG00Rxvlg==}
 
   '@mdbase-dev/connect@0.1.0-beta.125':
     resolution: {integrity: sha512-vEH4NQfu3dBQgMw0YQxG7LDtOOLxDyxET4DQhrWuHqtgr9qoch/H0QLzel9tFSqkyH+QWxuvW3Bet6ae1+qVyQ==}
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
-    resolution: {integrity: sha512-8Nb47aw4bhViBuK/Q47hB8TxafM9/0ezgMWCcC9DqqLMtR6Lp/bn09BtFdiHgWDAxCg9+oW+Q/XDr1DrvuiyNQ==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz}
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz':
+    resolution: {integrity: sha512-Y0lpLczgVH78g/Z7PmvL63EaX3jgKiqAlnYE9nh0sgQ2tuIntoDNbrLK+TMBgToiPee9ijFXUIcg547+ktOrBQ==, tarball: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 
-  '@mdbase-dev/ui@0.1.0-beta.125':
-    resolution: {integrity: sha512-K2UAAzwW4yuPJxx65LofVDQXKLgs4lOgrAB61YMuiNwV/jOc1yuNhGugy7Fx++VwxBx5bZyG+Pk7tMQlOat+tg==}
+  '@mdbase-dev/sdk@file:vendor/sdk-dev-66b24935.tgz':
+    resolution: {integrity: sha512-mggDaOkbQ82RK/zUYM9RzC+NKbAWYefYXqtsz8hgnJkEnCMUKGoN89mPhoeUgWZSQfD9ToPK3VkRmW3ozI6B+Q==, tarball: file:vendor/sdk-dev-66b24935.tgz}
+    version: 0.0.0
+    engines: {node: '>=20'}
+    bundledDependencies:
+      - '@mdbase-dev/connect-protocol'
+
+  '@mdbase-dev/ui@file:vendor/ui-dev-9553ad66.tgz':
+    resolution: {integrity: sha512-PqMWvJ2ZbNaLxWTum2m7vmcCbOGdM5qldnphPwqyGBo/mcpvjfk5tHkil/vXLc+LuG7HEyZOLh+tZyUXtMv7QQ==, tarball: file:vendor/ui-dev-9553ad66.tgz}
+    version: 0.1.0-beta.129
     peerDependencies:
       '@codemirror/view': ^6.0.0
+      '@mdbase-dev/sdk': '*'
       react: ^19.2.0
+      react-dom: ^19.2.0
     peerDependenciesMeta:
       '@codemirror/view':
+        optional: true
+      '@mdbase-dev/sdk':
+        optional: true
+      react-dom:
         optional: true
 
   '@napi-rs/wasm-runtime@1.1.6':
@@ -1070,6 +1099,10 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2':
+    resolution: {integrity: sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==}
+    engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -2597,6 +2630,11 @@ packages:
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
 
+  mdbase@file:vendor/mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz:
+    resolution: {integrity: sha512-C2XYt0PPyHz+PpUiATmjD5Kow6KTj27rV5hEA4VXc0S+mN8uwocNLYiImCDW8uNUzUYEvvS9+S68TuIr6Za9Lg==, tarball: file:vendor/mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz}
+    version: 0.5.0-rc.1
+    engines: {node: '>=20'}
+
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
@@ -3318,8 +3356,9 @@ packages:
     resolution: {integrity: sha512-9FcyK4PA6+WbzlTM9WhQm6vB5W7cP7dUiPsv1g7YDwEQnQ1CGpK3MGlKk/ITVWMk05kHZuBhmVhiv8LZoy/PFQ==}
     engines: {node: '>=18'}
 
-  tasknotes-nlp-core@0.1.5:
-    resolution: {integrity: sha512-4SfXpKkFaq64CtDdb228FkOcgc5rAYRoYYrFk8qYNw9/XfVZELu4Wt7lfuxPdG+rov4LEtSWW1vZE5EK1gejmA==}
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
+    resolution: {integrity: sha512-1HVH6TJjElHq70RuEhFcWWPPbQaV0qEzuMqB2NnB4z8MdA5M8lRmy5xgDyMW/fsj5mrhiQnLWWiPt7gaSWNd3A==, tarball: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz}
+    version: 0.2.0
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.5.tgz:
     resolution: {integrity: sha512-8/Z16QQ58gmBLI7CAwYSkuAL8UwEB7FF04VDFjz2CQhUWfyppZPKtCox4NGz2944PEI0VWo/8JEcvAcSgXuxiA==, tarball: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz}
@@ -4552,6 +4591,8 @@ snapshots:
 
   '@firebase/webchannel-wrapper@1.0.6': {}
 
+  '@fontsource-variable/atkinson-hyperlegible-next@5.3.0': {}
+
   '@fontsource/atkinson-hyperlegible@5.3.0': {}
 
   '@fontsource/azeret-mono@5.3.0': {}
@@ -4812,6 +4853,11 @@ snapshots:
       ajv-formats: 3.0.1(ajv@8.20.0)
       yaml: 2.9.1
 
+  '@mdbase-dev/connect-protocol@file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz':
+    dependencies:
+      '@noble/hashes': 2.4.0
+      yaml: 2.9.1
+
   '@mdbase-dev/connect-testing@0.1.0-beta.125':
     dependencies:
       '@mdbase-dev/connect': 0.1.0-beta.125
@@ -4821,19 +4867,25 @@ snapshots:
     dependencies:
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
 
-  '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
+  '@mdbase-dev/obsidian-runtime@file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz':
+    dependencies:
+      '@sqlite.org/sqlite-wasm': 3.53.4-build2
+
+  '@mdbase-dev/sdk@file:vendor/sdk-dev-66b24935.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
       '@noble/hashes': 2.4.0
 
-  '@mdbase-dev/ui@0.1.0-beta.125(@codemirror/view@6.43.9)(react@19.2.8)':
+  '@mdbase-dev/ui@file:vendor/ui-dev-9553ad66.tgz(@codemirror/view@6.43.9)(@mdbase-dev/sdk@file:vendor/sdk-dev-66b24935.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@fontsource/atkinson-hyperlegible': 5.3.0
+      '@fontsource-variable/atkinson-hyperlegible-next': 5.3.0
       '@fontsource/azeret-mono': 5.3.0
       react: 19.2.8
     optionalDependencies:
       '@codemirror/view': 6.43.9
+      '@mdbase-dev/sdk': file:vendor/sdk-dev-66b24935.tgz
+      react-dom: 19.2.8(react@19.2.8)
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
@@ -4931,6 +4983,8 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@sqlite.org/sqlite-wasm@3.53.4-build2': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -6582,6 +6636,8 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
 
+  mdbase@file:vendor/mdbase-browser-0.5.0-rc.1-84dbb8b7f.tgz: {}
+
   mdn-data@2.27.1: {}
 
   meow@8.1.2:
@@ -7508,7 +7564,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tasknotes-nlp-core@0.1.5:
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
     dependencies:
       chrono-node: 2.10.1
       date-fns: 4.4.0

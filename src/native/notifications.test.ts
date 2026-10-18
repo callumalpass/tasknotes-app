@@ -62,16 +62,6 @@ describe("mdbase task reminders", () => {
     );
   });
 
-  it("forwards all enabled reminder work to its repository owner", async () => {
-    const repository = {
-      reconcileReminders: vi.fn(async () => {}),
-    } as unknown as TaskRepository;
-    await reconcileTaskNotifications(repository, "connect");
-    await syncTaskNotifications(repository, {} as Task, "connect");
-    await removeTaskNotifications(repository, "one", "connect");
-    expect(repository.reconcileReminders).toHaveBeenCalledTimes(3);
-  });
-
   it("does no reminder work when delivery is disabled", async () => {
     const repository = {
       reconcileReminders: vi.fn(async () => {}),

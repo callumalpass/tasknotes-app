@@ -1,5 +1,7 @@
 export const TASKNOTES_REQUEST_BUDGETS = {
   foregroundMs: 20_000,
+  atomicSetupMs: 120_000,
+  setupReconciliationMs: 120_000,
   authorizationMs: 60_000,
   authorizationPopupMs: 10 * 60_000,
   backgroundMs: 45_000,

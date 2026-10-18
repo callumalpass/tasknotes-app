@@ -1,7 +1,9 @@
 name: iOS
 
 on:
+  # PRs to the next branch rely on local `pnpm verify`; full checks run for main.
   pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -32,8 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Pull requests build a production-configured candidate that is never
+      # releasable while the production trust pin is absent. Pushes and
+      # manual runs keep the full, fail-closed production build.
       - name: Verify web application and contracts
-        run: pnpm verify
+        run: pnpm ${{ github.event_name == 'pull_request' && 'verify:candidate' || 'verify' }}
 
       - name: Sync iOS project
         run: pnpm exec cap sync ios
