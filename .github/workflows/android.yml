@@ -65,8 +65,11 @@ jobs:
         if: env.GOOGLE_SERVICES_JSON_BASE64 != ''
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
+      # Pull requests build a production-configured candidate that is never
+      # releasable while the production trust pin is absent. Pushes and
+      # manual runs keep the full, fail-closed production build.
       - name: Verify web application and contracts
-        run: pnpm verify
+        run: pnpm ${{ github.event_name == 'pull_request' && 'verify:candidate' || 'verify' }}
 
       - name: Sync native project
         run: pnpm exec cap sync android

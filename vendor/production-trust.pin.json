@@ -1,0 +1,14 @@
+{
+  "schema": "tasknotes/production-trust-pin/1",
+  "status": "ABSENT: production builds refuse until every null field below is filled from the approved release",
+  "environment": "production",
+  "cpOrigin": "https://connect.mdbase.dev",
+  "logOrigin": null,
+  "trustAssetSha256": null,
+  "sdkPin": null,
+  "fields": {
+    "logOrigin": "Approved exact HTTPS origin of the production log, as recorded in the published trust asset.",
+    "trustAssetSha256": "Lowercase hex SHA-256 of the published canonical next-trust/production.json bytes. The SDK release embeds that asset; this app only checks that the installed SDK embedded exactly this digest.",
+    "sdkPin": "File name in vendor/ of the JSON pin for the production-packaged SDK archive produced by the SDK release pipeline. package.json must depend on the archive that pin names."
+  }
+}
