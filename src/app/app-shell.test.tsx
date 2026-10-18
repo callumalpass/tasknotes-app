@@ -9,6 +9,7 @@ import {
 import { OperationalError } from "../application/operational-error";
 
 import type { TaskView } from "../domain/view";
+import { CUTOVER_MESSAGES, cutoverRefusal } from "../test/cutover-fixtures";
 
 it("lets a user escape an unavailable remembered collection", () => {
   const authorizeAnotherCollection = vi.fn();
@@ -331,3 +332,46 @@ function navigationView(id: string, name: string): TaskView {
     },
   };
 }
+
+it("explains a moved collection with the server message and an update instead of a retry", () => {
+  const retry = vi.fn();
+  render(
+    <StorageErrorScreen
+      authorizeAnotherCollection={vi.fn()}
+      changeCollection={vi.fn()}
+      error={cutoverRefusal("moved")}
+      reauthorizeCurrentCollection={vi.fn()}
+      retry={retry}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Update TaskNotes" }),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(CUTOVER_MESSAGES.moved);
+  expect(
+    screen.getByRole("button", { name: "Update TaskNotes" }),
+  ).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  expect(screen.queryByText("Technical details")).toBeNull();
+});
+
+it("waits calmly while a collection is upgraded", () => {
+  const retry = vi.fn();
+  render(
+    <StorageErrorScreen
+      authorizeAnotherCollection={vi.fn()}
+      changeCollection={vi.fn()}
+      error={cutoverRefusal("migrating")}
+      reauthorizeCurrentCollection={vi.fn()}
+      retry={retry}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Your collection is being upgraded" }),
+  ).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    CUTOVER_MESSAGES.migrating,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Check now" }));
+  expect(retry).toHaveBeenCalledOnce();
+});

@@ -1,3 +1,4 @@
+import type { CutoverProblem } from "../cutover-problem";
 import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
@@ -207,6 +208,8 @@ export interface RepositoryConnectionStatus {
   state: "connecting" | "connected" | "unavailable";
   lastReachedAt?: string;
   message?: string;
+  /** The latest refusal from the sync-service cutover, until a request succeeds. */
+  cutover?: CutoverProblem;
   sync?: { text: string; pending: number; held: number };
   heldEdits?: HeldEdit[];
 }

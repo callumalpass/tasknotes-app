@@ -117,6 +117,7 @@ vi.mock("./opened-collection", () => ({
 }));
 
 import CloudCollection, { CloudConnection } from "./cloud-collection";
+import { CUTOVER_MESSAGES, cutoverRefusal } from "../test/cutover-fixtures";
 
 beforeEach(() => {
   history.replaceState(null, "", "/?collection=collection-stale");
@@ -233,6 +234,93 @@ it("shows a retry when startup cancellation returns to not started", () => {
     screen.getByRole("button", { name: "Retry opening TaskNotes" }),
   );
   expect(retryStartup).toHaveBeenCalledOnce();
+});
+
+it.each(["moved", "onboarding_moved"] as const)(
+  "shows the %s message verbatim with an update instead of a retry",
+  (kind) => {
+    connect.setSnapshot({
+      status: "start_failed",
+      connections: [],
+      problem: cutoverRefusal(kind).problem,
+    });
+    const retryStartup = vi.fn();
+    render(
+      <CloudCollection
+        authorizationError={null}
+        authorizeAnotherCollection={vi.fn()}
+        callbackRetryAvailable={false}
+        ensureStarted={() => Promise.resolve()}
+        openCollectionPicker={vi.fn()}
+        reauthorizeCurrentCollection={vi.fn()}
+        retryStartup={retryStartup}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(CUTOVER_MESSAGES[kind]);
+    expect(screen.queryByText("Technical details")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Update TaskNotes" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Retry opening TaskNotes" }),
+    ).toBeNull();
+  },
+);
+
+it("explains a cutover refusal from authorization with the server message", () => {
+  connect.setSnapshot({ status: "not_started", connections: [] });
+  const reason = cutoverRefusal("suspended");
+  render(
+    <CloudCollection
+      authorizationError={reason.message}
+      authorizationFailure={reason}
+      authorizeAnotherCollection={vi.fn()}
+      callbackRetryAvailable={false}
+      ensureStarted={() => Promise.resolve()}
+      openCollectionPicker={vi.fn()}
+      reauthorizeCurrentCollection={vi.fn()}
+      retryStartup={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Your mdbase account is unavailable" }),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    CUTOVER_MESSAGES.suspended,
+  );
+});
+
+it("waits with automatic checks while the collection is upgraded at startup", async () => {
+  vi.useFakeTimers();
+  try {
+    connect.setSnapshot({
+      status: "start_failed",
+      connections: [],
+      problem: cutoverRefusal("migrating").problem,
+    });
+    const retryStartup = vi.fn();
+    render(
+      <CloudCollection
+        authorizationError={null}
+        authorizeAnotherCollection={vi.fn()}
+        callbackRetryAvailable={false}
+        ensureStarted={() => Promise.resolve()}
+        openCollectionPicker={vi.fn()}
+        reauthorizeCurrentCollection={vi.fn()}
+        retryStartup={retryStartup}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      CUTOVER_MESSAGES.migrating,
+    );
+    expect(retryStartup).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTime(40_000));
+    expect(retryStartup).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Check now" }));
+    expect(retryStartup).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it("refreshes the repository when the SDK connection changes without new snapshot JSON", () => {

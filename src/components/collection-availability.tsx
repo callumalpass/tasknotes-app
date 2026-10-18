@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useRepository } from "../app/repository-context";
 import { HeldEditsNotice } from "./held-edits";
+import { cutoverProblemFrom } from "../application/cutover-problem";
+import { CutoverNotice } from "./cutover-notice";
 
 export function CollectionAvailability({
   onSettings,
 }: {
   onSettings?: () => void;
 }) {
-  const { connection, refresh, refreshing } = useRepository();
+  const { connection, error, refresh, refreshing } = useRepository();
   const [failed, setFailed] = useState(false);
   const waiting =
     connection.state === "connecting" ||
@@ -29,6 +31,26 @@ export function CollectionAvailability({
       onReview={onSettings}
     />
   );
+  // A refresh refused by the sync-service cutover keeps the workspace and its
+  // drafts mounted. Explain it here; while the collection is being upgraded,
+  // keep refreshing in the background with backoff.
+  const cutover = cutoverProblemFrom(error) ?? connection.cutover ?? null;
+  if (cutover)
+    return (
+      <>
+        {protectedEdits}
+        <section
+          className="collection-availability cutover-banner"
+          aria-label="Collection upgrade"
+        >
+          <CutoverNotice
+            autoRetry
+            problem={cutover}
+            retry={() => void refresh().catch(() => undefined)}
+          />
+        </section>
+      </>
+    );
   if (connection.state !== "unavailable") {
     return (
       <>

@@ -860,3 +860,58 @@
   flex-wrap: wrap;
   gap: 8px 16px;
 }
+
+/* Sync-service cutover: the server's message is the primary text. */
+.cutover-notice {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.cutover-notice .cutover-message {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--type-field);
+  line-height: 1.5;
+}
+
+.cutover-notice .cutover-hint,
+.cutover-notice .cutover-save-error p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.cutover-notice .cutover-save-error p:first-child {
+  color: var(--danger);
+}
+
+.cutover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.cutover-actions:empty {
+  display: none;
+}
+
+.cutover-screen .cutover-notice {
+  margin-top: 24px;
+}
+
+.cutover-screen .cutover-actions {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 12px;
+}
+
+.cutover-banner {
+  padding-block: 10px;
+}
+
+.cutover-banner .cutover-notice {
+  flex: 1 1 100%;
+}
+
+.cutover-banner .cutover-message {
+  font-size: var(--type-supporting);
+}

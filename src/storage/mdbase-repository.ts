@@ -38,6 +38,7 @@ import {
 } from "./connected-task-cache";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { TaskDocumentCache } from "./task-document-cache";
+import { cutoverProblemFrom } from "../application/cutover-problem";
 import { changedRecordPaths } from "./mdbase-change-plan";
 import {
   mdbaseMutationKey,
@@ -2573,10 +2574,24 @@ export class MdbaseTaskRepository implements TaskRepository {
       ...this.status,
       state: "unavailable",
       message: connectionErrorMessage(reason),
+      cutover: undefined,
     };
   }
 
   private noteOperationFailure(reason: unknown): void {
+    // A sync-service cutover refusal is reported without changing the
+    // collection's availability, so cached tasks and drafts stay usable.
+    const cutover = cutoverProblemFrom(reason);
+    if (cutover) {
+      if (
+        this.status.cutover?.code === cutover.code &&
+        this.status.cutover.message === cutover.message
+      )
+        return;
+      this.status = { ...this.status, cutover };
+      this.emit({ kind: "status" });
+      return;
+    }
     if (isConnectionFailure(reason)) {
       const message = connectionErrorMessage(reason);
       if (

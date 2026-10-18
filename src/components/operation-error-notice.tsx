@@ -1,4 +1,6 @@
 import { cleanOperationError } from "../app/operation-error";
+import { cutoverProblemFrom } from "../application/cutover-problem";
+import { CutoverNotice } from "./cutover-notice";
 import {
   toOperationalError,
   type OperationalError,
@@ -17,6 +19,15 @@ export function OperationErrorNotice({
 }) {
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
+  // A sync-service cutover is not this action's fault: show the server's
+  // explanation and keep the rest of the page, including drafts, in place.
+  const cutover = cutoverProblemFrom(failure.problem);
+  if (cutover)
+    return (
+      <div className={`operation-error ${className}`.trim()}>
+        <CutoverNotice problem={cutover} />
+      </div>
+    );
   const technical = cleanOperationError(failure.detail).trim();
   return (
     <div className={`operation-error ${className}`.trim()}>

@@ -6,18 +6,22 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { CollectionAvailability } from "./collection-availability";
+import { CUTOVER_MESSAGES, cutoverRefusal } from "../test/cutover-fixtures";
+import { resetMigratingBackoffForTests } from "./migrating-backoff";
 import type {
   HeldEdit,
   RepositoryConnectionStatus,
 } from "../application/ports/task-repository";
 const state = vi.hoisted(() => ({
   connection: { state: "unavailable" } as RepositoryConnectionStatus,
+  error: null as Error | null,
   refreshing: false,
   refresh: vi.fn(),
 }));
 vi.mock("../app/repository-context", () => ({ useRepository: () => state }));
 afterEach(() => {
   state.connection = { state: "unavailable" };
+  state.error = null;
   state.refreshing = false;
   vi.useRealTimers();
   vi.clearAllMocks();
@@ -122,4 +126,35 @@ it("does not label a healthy collection as stale", () => {
   state.connection.state = "connected";
   render(<CollectionAvailability />);
   expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("explains a refused refresh during an upgrade and keeps refreshing with backoff", async () => {
+  vi.useFakeTimers();
+  resetMigratingBackoffForTests();
+  vi.spyOn(Math, "random").mockReturnValue(0.5);
+  state.connection = { state: "connected" };
+  state.error = cutoverRefusal("migrating");
+  state.refresh.mockResolvedValue(undefined);
+  render(<CollectionAvailability />);
+  expect(
+    screen.getByRole("region", { name: "Collection upgrade" }),
+  ).toHaveTextContent(CUTOVER_MESSAGES.migrating);
+  expect(screen.queryByText(/Collection unavailable/)).toBeNull();
+  await act(() => vi.advanceTimersByTime(30_000));
+  expect(state.refresh).toHaveBeenCalledOnce();
+  await act(() => vi.advanceTimersByTime(60_000));
+  expect(state.refresh).toHaveBeenCalledTimes(2);
+  vi.mocked(Math.random).mockRestore();
+  resetMigratingBackoffForTests();
+});
+
+it("offers an update when a refresh finds the collection has moved", () => {
+  state.connection = { state: "unavailable" };
+  state.error = cutoverRefusal("moved");
+  render(<CollectionAvailability />);
+  expect(screen.getByRole("alert")).toHaveTextContent(CUTOVER_MESSAGES.moved);
+  expect(
+    screen.getByRole("button", { name: "Update TaskNotes" }),
+  ).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Retry connection" })).toBeNull();
 });
