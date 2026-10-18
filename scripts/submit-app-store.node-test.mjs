@@ -159,7 +159,8 @@ test("the 1.0.9 draft metadata cannot be submitted until approved", async () => 
     ),
   );
   assert.throws(() => validateMetadata(draft, "1.0.9"), /draft/);
-  const { draft: _approval, ...approved } = draft;
+  const approved = { ...draft };
+  delete approved.draft;
   assert.equal(validateMetadata(approved, "1.0.9"), approved);
   // Next-only clients go live at the end of the migration window, not on approval.
   assert.equal(approved.releaseType, "MANUAL");
