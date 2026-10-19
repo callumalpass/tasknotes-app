@@ -154,6 +154,57 @@ it("adds starter views when the shared switcher's Add a collection approves one"
   ).toContain("approve");
 });
 
+it.each(["choosing", "ready"] as const)(
+  "offers one unified Add from the %s surface without a Private shortcut",
+  async (phase) => {
+    const mdbase = await createTestMdbase({
+      phase,
+      collections: [{ name: "Alpha" }, { name: "Beta" }],
+    });
+    const addCollection = vi.fn(
+      (options: Parameters<TestMdbase["addCollection"]>[0]) =>
+        mdbase.addCollection(options),
+    );
+    const addPrivateCollection = vi.fn(mdbase.addPrivateCollection);
+    render(
+      <TaskNotesApp
+        mdbase={{ ...mdbase, addCollection, addPrivateCollection }}
+        Workspace={SwitcherWorkspace as never}
+      />,
+    );
+    if (phase === "ready") {
+      fireEvent.click(
+        await screen.findByRole("button", { name: /switch collection/i }),
+      );
+    }
+    // jsdom's native-popover stub leaves the dialog role-hidden; query its
+    // actual mounted content, as the existing switcher approval test does.
+    const add = await screen.findAllByText("Add a collection…");
+    expect(add).toHaveLength(1);
+    expect(add[0]!.tagName).toBe("BUTTON");
+    expect(screen.queryByText("Add a Private collection")).toBeNull();
+    fireEvent.click(add[0]!);
+    // The original SDK facade is invoked inside the click, with cancellation.
+    expect(addCollection).toHaveBeenCalledExactlyOnceWith({
+      signal: expect.any(AbortSignal),
+    });
+    await waitFor(() =>
+      expect(
+        mdbase.fixture.controls
+          .observedActions()
+          .filter((call) => call.action === "approve"),
+      ).toHaveLength(1),
+    );
+    // The public fixture normalizes approve(null) to an omitted target.
+    expect(
+      mdbase.fixture.controls
+        .observedActions()
+        .find((call) => call.action === "approve")?.collectionId,
+    ).toBeUndefined();
+    expect(addPrivateCollection).not.toHaveBeenCalled();
+  },
+);
+
 it("shows changed setup for renewed consent, never deletion copy or an automatic second apply", async () => {
   const mdbase = await createTestMdbase({ phase: "needs_setup" });
   const reviewed = (digest: string, message: string): MdbaseSetupPlan => ({

@@ -7,12 +7,19 @@ import {
   type WriteLedgerStore,
 } from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { attachTaskNotes } from "../test/next-task-fixture";
-import { RepositoryProvider } from "./repository-context";
+import { RepositoryProvider, useRepository } from "./repository-context";
 import { TaskScreen } from "./task-screen";
+import { taskEditScope, writeTaskEdit } from "./task-edit-recovery";
 
 import type { NextTaskRepository } from "../storage/next-repository";
 
@@ -127,6 +134,155 @@ describe("TaskScreen across an immediate reload", () => {
     );
     expect(await titleField()).toHaveValue("[test] typed, not committed");
   });
+
+  it("keeps the recovered backup across another reload without choosing", async () => {
+    const mdbase = await createTestMdbase();
+    const replica = mdbase.fixture.replica();
+    const setup = await openPage(
+      replica,
+      mdbase.fixture.client(),
+      async (r) => (await r.create({ title: "[test] original title" })).id,
+    );
+    await titleField();
+    const scope = taskEditScope(await setup.repository.collectionInfo());
+    setup.unload();
+    // Seed a valid prior-session copy, isolating mount effects from whether
+    // a previous asynchronous save happened to complete before page close.
+    expect(
+      writeTaskEdit(scope, setup.id, { title: "[test] waiting for my choice" }),
+    ).toBe(true);
+
+    const first = await openPage(
+      replica,
+      await reconnect(replica),
+      async () => setup.id,
+    );
+    expect(
+      await screen.findByRole("button", { name: "Restore unsaved edits" }),
+    ).toBeVisible();
+    expect(await titleField()).toHaveValue("[test] original title");
+    expect((await first.repository.get(setup.id))?.title).toBe(
+      "[test] original title",
+    );
+    // No Restore or Discard: simply close and open the page again.
+    first.unload();
+
+    const second = await openPage(
+      replica,
+      await reconnect(replica),
+      async () => setup.id,
+    );
+    const restore = await screen.findByRole("button", {
+      name: "Restore unsaved edits",
+    });
+    expect(restore).toBeVisible();
+    expect(await titleField()).toHaveValue("[test] original title");
+    expect((await second.repository.get(setup.id))?.title).toBe(
+      "[test] original title",
+    );
+    fireEvent.click(restore);
+    expect(await titleField()).toHaveValue("[test] waiting for my choice");
+    await waitFor(
+      async () =>
+        expect((await second.repository.get(setup.id))?.title).toBe(
+          "[test] waiting for my choice",
+        ),
+      { timeout: 3_000 },
+    );
+    second.unload();
+  });
+
+  it.each(["available", "unavailable"] as const)(
+    "waits for the recovery scope before exposing title editing (%s)",
+    async (outcome) => {
+      const mdbase = await createTestMdbase();
+      const client = mdbase.fixture.client();
+      const page = await attachTaskNotes(mdbase.fixture.replica(), client, {
+        accountId,
+      });
+      await page.repository.initialize();
+      const task = await page.repository.create({
+        title: "[test] original title",
+      });
+      const journal = new MemoryMutationJournal();
+      function Ready() {
+        const { status } = useRepository();
+        return <p>{status === "ready" ? "Repository ready" : "Opening"}</p>;
+      }
+      const view = render(
+        <RepositoryProvider
+          mutationJournal={journal}
+          repository={page.repository}
+        >
+          <Ready />
+        </RepositoryProvider>,
+      );
+      let releaseInfo: () => void = () => undefined;
+      let rejectInfo: (error: Error) => void = () => undefined;
+      try {
+        // Arm the delay AFTER provider startup: otherwise its own metadata
+        // request blocks the entire screen and produces a false-positive guard.
+        await screen.findByText("Repository ready");
+        const info = await page.repository.collectionInfo();
+        const pending = new Promise<typeof info>((resolve, reject) => {
+          releaseInfo = () => resolve(info);
+          rejectInfo = reject;
+        });
+        const scope = vi
+          .spyOn(page.repository, "collectionInfo")
+          .mockReturnValue(pending);
+        const get = vi.spyOn(page.repository, "get").mockResolvedValue(task);
+        await act(async () => {
+          view.rerender(
+            <RepositoryProvider
+              mutationJournal={journal}
+              repository={page.repository}
+            >
+              <TaskScreen
+                id={task.id}
+                onBack={vi.fn()}
+                onMaterialized={vi.fn()}
+              />
+            </RepositoryProvider>,
+          );
+        });
+        expect(get).toHaveBeenCalledWith(task.id);
+        expect(scope).toHaveBeenCalled();
+        expect(
+          screen.queryByLabelText("Task title", { exact: true }),
+        ).not.toBeInTheDocument();
+        if (outcome === "unavailable") {
+          await act(async () =>
+            rejectInfo(new Error("Recovery identity unavailable")),
+          );
+          const notice = screen.getByRole("alert");
+          expect(notice).toBeVisible();
+          expect(notice).toHaveTextContent("Unsaved edit recovery");
+          expect(notice).toHaveTextContent(
+            "Go back and refresh the collection before editing.",
+          );
+          // Raw details are deliberately collapsed by OperationErrorNotice.
+          expect(
+            screen.getByText("Recovery identity unavailable"),
+          ).not.toBeVisible();
+          expect(
+            screen.queryByLabelText("Task title", { exact: true }),
+          ).not.toBeInTheDocument();
+          expect(screen.getByRole("button", { name: "Back" })).toBeEnabled();
+          return;
+        }
+        await act(async () => releaseInfo());
+        expect(await titleField()).toHaveValue("[test] original title");
+      } finally {
+        await act(async () => {
+          releaseInfo();
+          view.unmount();
+        });
+        page.repository.dispose();
+        client.close();
+      }
+    },
+  );
 
   it("keeps an offline notes edit refused by a newer change elsewhere, and that change", async () => {
     // The device keeps its replica and its write ledger across the reload.

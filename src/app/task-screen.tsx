@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
+import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
 import {
   lazy,
   Suspense,
@@ -73,7 +74,6 @@ import {
   changedFields,
   followIncomingDraft,
   readTaskEdit,
-  taskEditScope,
   writeTaskEdit,
   type StoredTaskEdit,
 } from "./task-edit-recovery";
@@ -87,6 +87,12 @@ const MarkdownPreview = lazy(async () => ({
 }));
 
 type SaveState = "saved" | "saving" | "error";
+type TaskEditorProps = {
+  task: Task;
+  occurrenceDate?: string;
+  onBack(): void;
+  onMaterialized(task: Task): void;
+};
 export function TaskScreen({
   id,
   occurrenceDate,
@@ -131,13 +137,21 @@ export function TaskScreen({
       </section>
     );
   return (
-    <TaskEditor
+    <TaskEditRecoveryBoundary
       key={`${task.id}:${occurrenceDate ?? "record"}`}
-      task={task}
-      occurrenceDate={occurrenceDate}
       onBack={onBack}
-      onMaterialized={onMaterialized}
-    />
+    >
+      {(recoveryScope) => (
+        <TaskEditor
+          key={recoveryScope}
+          task={task}
+          occurrenceDate={occurrenceDate}
+          onBack={onBack}
+          onMaterialized={onMaterialized}
+          recoveryScope={recoveryScope}
+        />
+      )}
+    </TaskEditRecoveryBoundary>
   );
 }
 
@@ -146,12 +160,8 @@ function TaskEditor({
   occurrenceDate,
   onBack,
   onMaterialized,
-}: {
-  task: Task;
-  occurrenceDate?: string;
-  onBack(): void;
-  onMaterialized(task: Task): void;
-}) {
+  recoveryScope,
+}: TaskEditorProps & { recoveryScope: string }) {
   const {
     updateTask,
     mutations,
@@ -304,9 +314,11 @@ function TaskEditor({
   // The version this editor last saw from mdbase, field by field. A field
   // whose draft still matches it has no local edit and follows newer versions.
   const knownDraft = useRef(draft);
-  const editScope = useRef<string | null>(null);
-  const [recovered, setRecovered] = useState<StoredTaskEdit | null>(null);
-  const recoveredRef = useRef<StoredTaskEdit | null>(null);
+  const editScope = useRef(recoveryScope);
+  const [recovered, setRecovered] = useState<StoredTaskEdit | null>(() =>
+    readTaskEdit(recoveryScope, task.id, draft),
+  );
+  const recoveredRef = useRef(recovered);
   const [backupUnavailable, setBackupUnavailable] = useState(false);
   /** Keep this device's copy of every edit mdbase has not yet captured, plus
    * a recovered edit still waiting for the person's choice. */
@@ -524,24 +536,8 @@ function TaskEditor({
   useEffect(() => followIncomingTask(task), [task]);
 
   useEffect(() => {
-    let live = true;
-    void repository
-      .collectionInfo()
-      .then((info) => {
-        if (!live) return;
-        const scope = taskEditScope(info);
-        editScope.current = scope;
-        const stored = readTaskEdit(scope, task.id, openedDraft.current);
-        recoveredRef.current = stored;
-        setRecovered(stored);
-        if (dirtyRef.current || stored) storeEdit(dirtyRef.current);
-        restoreRefusedEdit();
-      })
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [repository, storeEdit, task.id]);
+    restoreRefusedEdit();
+  }, [repository, task.id]);
 
   function changeCustomProperty(key: string, value: unknown) {
     const customProperties = { ...draft.customProperties };
