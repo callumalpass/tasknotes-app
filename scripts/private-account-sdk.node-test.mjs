@@ -8,18 +8,18 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-0fabaf20.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-bd131b16.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "0fabaf20553b7f296f771dd52ea0b65d2d04fcbf",
+    "bd131b16ccc2d69ffa33ddd37b28fff6366fa429",
   );
   assert.deepEqual(
     manifest.sourceIncludesPrs,
     [
       819, 827, 832, 837, 867, 878, 879, 894, 896, 914, 915, 916, 917, 918, 919,
-      920, 921, 923, 924, 925,
+      920, 921, 923, 924, 925, 926,
     ],
   );
   assert.deepEqual(manifest.consumerEntries, [
@@ -31,7 +31,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "0e3959e947a5b03bc11ac4f3594c9c20d82f3f3c4b39b45d2a8e8a7c328f5b88",
+    "2331068b896103c9d3413b039e964459834a7d930085c943ea272978ef1ce354",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -59,8 +59,9 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   );
   assert.equal(
     manifest.includedCommits.nativePinRefresh,
-    manifest.sourceCommit,
+    "0fabaf20553b7f296f771dd52ea0b65d2d04fcbf",
   );
+  assert.equal(manifest.includedCommits.openingProgress, manifest.sourceCommit);
   assert.equal(
     manifest.includedCommits.reviewedProgressBoundedColdSync,
     "c5f3929bfd21fda89df610fb74eb52c7ada2b54b",
@@ -111,7 +112,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-0fabaf20.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-bd131b16.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -231,7 +232,7 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
 
 test("the successor SDK has no unused protocol exception", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-0fabaf20.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-bd131b16.json", root), "utf8"),
   );
   assert.deepEqual(manifest.vendorWarnings, []);
   assert.equal(manifest.qualification.productionQualified, false);
@@ -279,4 +280,45 @@ test("private-account facade stays on its optional SDK entry", async () => {
   assert.equal(typeof account.PrivateAccount, "function");
   assert.equal(typeof account.passwordStrength, "function");
   assert.equal(thin.PrivateAccount, undefined);
+});
+
+test("shared UI successor preserves opening and save-warning consumer exports", async () => {
+  const manifest = JSON.parse(
+    await readFile(new URL("vendor/ui-dev-b2d7c464.json", root), "utf8"),
+  );
+  const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
+  assert.equal(
+    manifest.sourceCommit,
+    "b2d7c464bed5741ab452d2e1ab81684dc424ea0f",
+  );
+  assert.deepEqual(manifest.sourceIncludesPrs, [888, 889, 892, 893, 895]);
+  assert.equal(
+    pkg.dependencies["@mdbase-dev/ui"],
+    `file:vendor/${manifest.artifact}`,
+  );
+  const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
+  assert.equal(bytes.byteLength, 91010);
+  assert.equal(manifest.bytes, bytes.byteLength);
+  assert.equal(
+    manifest.sha256,
+    "8f785294454321c40596bdaad976dc4c5374c3f23dfa828f47e3e7b3139b77e5",
+  );
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    manifest.sha256,
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    manifest.integrity,
+  );
+  const ui = await import("@mdbase-dev/ui/collections");
+  for (const name of [
+    "CollectionGate",
+    "CollectionProblem",
+    "CollectionSwitcher",
+    "CollectionSaveWarning",
+    "useCollectionSaveWarning",
+  ]) {
+    assert.equal(typeof ui[name], "function", name);
+  }
 });
