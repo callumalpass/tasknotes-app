@@ -91,6 +91,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     test("view fields stay subordinate to the name and property Save uses the shared action", async ({
       page,
     }) => {
+      // The demo series repeats Mon/Wed/Fri. Keep it in Today regardless of
+      // the real weekday so the saved Recurrence field has a nonempty value.
+      await page.clock.setFixedTime(new Date("2026-10-19T12:00:00Z"));
       await page.goto("views?demo=50");
       await page
         .getByRole("button", { name: "More actions for Today", exact: true })
@@ -115,7 +118,13 @@ for (const colorScheme of ["light", "dark"] as const) {
         .getByRole("button", { name: "Save view", exact: true })
         .click();
       await page.getByRole("button", { name: "Today", exact: true }).click();
-      await page.getByRole("button", { name: /^Recurrence:/ }).click();
+      const repeatingRow = page.locator(".task-row").filter({
+        has: page.getByRole("button", {
+          name: "Test reminder delivery on Android",
+          exact: true,
+        }),
+      });
+      await repeatingRow.getByRole("button", { name: /^Recurrence:/ }).click();
       const dialog = page.getByRole("dialog", { name: "Edit Recurrence" });
       const save = dialog.getByRole("button", { name: "Save", exact: true });
       await expect(save).toHaveCSS("min-height", "44px");

@@ -38,7 +38,7 @@ function trackRequestFailures(page: Page) {
   };
 }
 
-test("blocked opening screen has no serious accessibility violations", async ({
+test("unconfigured next-only build has no serious accessibility violations", async ({
   page,
 }) => {
   const requests = trackRequestFailures(page);
@@ -48,10 +48,17 @@ test("blocked opening screen has no serious accessibility violations", async ({
   await page.reload();
 
   await expect(
-    page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
   ).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText(
-    "This build has no configured native release bundle",
+  await expect(
+    page.getByRole("button", { name: "Restart TaskNotes" }),
+  ).toBeVisible();
+  await page.getByText("Technical details", { exact: true }).click();
+  await expect(page.locator(".technical-details")).toContainText(
+    "VITE_TASKNOTES_ENVIRONMENT must explicitly select LAB or production.",
   );
 
   const results = await new AxeBuilder({ page })
@@ -62,7 +69,7 @@ test("blocked opening screen has no serious accessibility violations", async ({
       ({ impact }) => impact === "serious" || impact === "critical",
     ),
   ).toEqual([]);
-  // Unconfigured native builds cannot contact authority. Keep all genuine
+  // Unconfigured next-only builds cannot contact authority. Keep all genuine
   // failures, including anything arising during the accessibility scan.
   expect(requests.failures).toEqual([]);
 });
@@ -75,7 +82,10 @@ test("navigation exception retains new-document aborts and network failures", as
   requests.beforeNavigation();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
   ).toBeVisible();
   const before = requests.failures.length;
   await page.route("**/__e2e_abort_probe__", (route) => route.abort("aborted"));

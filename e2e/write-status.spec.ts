@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 async function open(page: Page, phase: string) {
   await page.clock.install({ time: new Date("2026-10-11T08:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-11T09:00:00Z"));
-  await page.goto(`/e2e/write-status.fixture.html?phase=${phase}`);
+  await page.goto(`e2e/write-status.fixture.html?phase=${phase}`);
   await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
     "Sync layout review",
   );

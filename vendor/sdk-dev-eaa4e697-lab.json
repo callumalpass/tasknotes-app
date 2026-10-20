@@ -1,0 +1,137 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "eaa4e697fc1198f32fc3714f377342a24c56d985",
+  "sourceIncludesPrs": [
+    819, 827, 832, 837, 867, 878, 879, 894, 896, 914, 915, 916, 917, 918, 919,
+    920, 921, 923, 924, 925, 926, 929, 941, 942, 943, 944
+  ],
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0",
+    "publicEntry": "b921022e9",
+    "collectionSelection": "11cf1a2fa",
+    "opaquePush": "e3ed79efb92d49879be1aefc0ca9f98095966bbc",
+    "mobileOriginSignIn": "9a2b6cc3fe83e2f907d6f6a6a045099d3c2de209",
+    "sharedSetup": "3184073c4a013e7a13b64fcdc4f1325ba6ef578c",
+    "privateSetup": "b4da8c16824f15f05070cfcc880eec721bcdbbc9",
+    "manifestSupersession": "eddaa8a8a77e3242aebae1cf6b2ff5f25d0ed982",
+    "installationBinding": "fa49f3d0474a3c5961f3b9986052ead07abcc943",
+    "applicationBinding": "9f013753be54f7144b32bdc9724f26a6caabcf25",
+    "listedAvailability": "9c90075ac5e9f1024cbe61da86c3dc29260ae18d",
+    "thinClientAndValidators": "9c666d541bc04177c91898dd82e12bd67344eed6",
+    "typeIssues": "8a817c48764ae2f96641178af9be450ad9aa94b4",
+    "userDescriptions": "41c26ca73f6c97551ba4732c35627d626b927f03",
+    "logCors": "d31125b08e523549ee361b9b12527d38c69e1e2f",
+    "nativeReturnOpener": "9f9dd6e33effbd259ea1e77010bc22c059be349c",
+    "singleManifestCompile": "39076c22e5c0fcebe848c1031444363700c217f0",
+    "daemonH1H2": "4061b3155dd1125602702b4f9e85dc3a5e356620",
+    "refusedSignInRenew": "12adc0089a274882c0077106696828f7546877f4",
+    "workerDefer": "fc18ab1691b2c67c75384e41ad80029f2e676e52",
+    "workerClosure": "a3f592e2610484f72272418ee3752c8d97f8864b",
+    "workerPackaging": "3225ad38657706c225888d815b40f743f788e5c3",
+    "lazyPairingAndUnreadCancellation": "4c484d3cc3d06b7ecbac8061b171a25d72be2ae4",
+    "pairingIntegrity": "a899fd78f083ecdfa9c8fc15675cc39db8d032b0",
+    "declaredSetup": "243855acc25985281d367334128c0feb488afcec",
+    "atomicMultiPackLock": "9a033b252860ec8624da0abb5ffdecbac56332d2",
+    "readinessReviewRelease": "e93ed4bc855cd867850c998993f6e9a596e9868d",
+    "nativeCompatibilityCopy": "3be0abaa4126736a794bc0c03bca2bc2263aa945",
+    "retiredNativeSetupReviews": "4ec16a92cbd0f51d26c8715ce3fe22620804aa5c",
+    "generationZeroWakeSlot": "9f745d46e",
+    "joinAheadPastBase": "de724a977",
+    "keyWaitReasonLog": "4fb345e4ebb99538a8e20a8218b410a14928021a",
+    "pacedInitialOpen": "0e44e1e100c2bba9608c5ac3145d6cdee30fa4e2",
+    "popupFocus": "ab9c7d4d8f28af9c7c7d935af8a1068254d10170",
+    "progressBoundedColdSync": "ddff6d815a913c646bc2889e7fb484e94d7aaf0a",
+    "reviewedProgressBoundedColdSync": "c5f3929bfd21fda89df610fb74eb52c7ada2b54b",
+    "boundedRecordReads": "a350db1ca88fa3572de3a8c97c43020d7039d035",
+    "memberAttachmentRegression": "52912e66cbb76d65b6a0a41bfa04db33c3161473",
+    "nativePinRefresh": "0fabaf20553b7f296f771dd52ea0b65d2d04fcbf",
+    "openingProgress": "bd131b16ccc2d69ffa33ddd37b28fff6366fa429",
+    "unifiedAddAlias": "cc492f3f3832c4939eff7fe39b0fabf5ad234b24",
+    "productANativePin": "a3023aee3731dcbf9de19a41918a84cfb3ae7193",
+    "downloadStreamPreopenCancellation": "eaa4e697fc1198f32fc3714f377342a24c56d985"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-eaa4e697-lab.tgz",
+  "bytes": 4461725,
+  "sha256": "ec8249e19d9d27893ac7ae83b99473a7aad550e4ab54a42dd20786dfd42b8a70",
+  "integrity": "sha512-9z3vnOUNkKJHB0PGFNjoT7DJJmwcJs0k/GADCKESN/1YTcgEZJH5w0G746HTVBsC/RhX5h15ABkV9ifNDU9Hyw==",
+  "shasum": "b86b1b46d3b9a82404a3bc79de5fee6ce4dbf57b",
+  "protocol": {
+    "sourceCommit": "c280cd194ffd74e2c72b9d08a74d71bd43fa7321",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
+    "bytes": 107322,
+    "sha256": "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
+    "integrity": "sha512-c0iOOWEcNJRstdyUJ6aqJ3puVR5C9jXW4MBHmQnHI2c4vgOeKi5VWfiuueWx3ArvtwB3nPuAaXHhll/OKH/+Yw==",
+    "originalEmbeddedBytesVerified": true,
+    "allBundledMembersVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Packaging metadata, not runtime readiness or physical drain",
+    "sourceCommit": "725d72b2e43b2b744062e055e43feaeb41838399",
+    "member": "package/dist/native/runtime.wasm",
+    "bytes": 3676583,
+    "sha256": "6984f87d98e29d9f99c6b07f7728f716d1f7b2e3585a74bcc2046ba259a8afab",
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752",
+    "producer": "Original optimized APP producer725d72b2; accepted942 custody; integrity-pinned, not separately signed"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "bytes": 2118699,
+      "sha256": "a6d113668386b546b590109161d4d8a9b7225912e11db6c1d5d393b12da491e3"
+    },
+    "mdbase-sdk.min.js": {
+      "bytes": 1090524,
+      "sha256": "924b0061a720bc608ccf6908f7f136c87788089cb5de4e7ad9d7c7063e705302"
+    }
+  },
+  "workerClosure": {
+    "worker.js": {
+      "bytes": 1406207,
+      "sha256": "eb6483b5cbc78470239d122fee83a3c13d18381dfda6b87a2ae5520cc78d92b4"
+    }
+  },
+  "qualification": {
+    "authority": "Co06:38:30 SDK944 replacement originals; Co11:04:29 launch-based iOS candidate preparation",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 896,
+    "normalPackOnceNoRepack": true,
+    "producerFullSdkSuite": "SDK944 sole automatic CI39383342511 attempt1 SUCCESS, exact qualified/merged tree equal; not repeated by this app intake.",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false,
+    "productionQualified": false,
+    "archiveQualification": "Authorized replacement LAB original build+pack EXIT0/CLOSED; no new native/helper build or authentication; app intake is separate.",
+    "consumerAcceptance": false,
+    "automaticPrCi": 39383342511,
+    "producerFacts": "sdk-eaa4e697-lab/artifact/artifact-facts.json"
+  },
+  "vendorWarnings": [],
+  "purpose": "LAB-only original SDK944 bytes for the b7-based iOS1.0.9 candidate. Production trust pin remains null; production needs its own authorized SDK archive and pin. No app/native/production admission implied.",
+  "packagedFromCommit": "eaa4e697fc1198f32fc3714f377342a24c56d985",
+  "trust": {
+    "environment": "lab",
+    "cpOrigin": "https://connect-lab.mdbase.dev",
+    "logOrigin": "https://mdbase-next-log-lab-20261005.callumalpass.workers.dev",
+    "sha256": "88fe5249be83d7db9999d88d4f62acaca79e8bdcabe2c9f236e2942014de3334",
+    "sourceCommit": "8a014fe2abd2d9c6a8b1ed3e77c35cfda3392d3e",
+    "sourceVersion": "0.1.0-beta.129",
+    "contextSha256": "bb64091576b43ea8da2d439a88797214c5eb5456dcec890a6b37dbfaf9fd61bd",
+    "receiptSha256": "e94178f0af46b7cb0dbb9616c7cfbe39dc89bc0f5da9853790c3e2092dd0d490",
+    "provenanceSha256": "c4ec9a853bfdc21bcb3305b0ae1a78c2ba13490f4f92865625b04fd12edb8f95",
+    "packagedTrustSha256": "a7db2cc3ba9fd1e78d86093599b608a2e3268408402630d81242450603c98a10",
+    "verifier": {
+      "source": "0e44e1e100c2bba9608c5ac3145d6cdee30fa4e2",
+      "sha256": "4c72bcc8c2ee9c95663ad4e2edfcf7a52aa2743ed7308b5031570a35982af6e4",
+      "clockOverride": false
+    },
+    "receiptPurpose": "Unchanged LAB context+verifier ONLY; not SDK/native signing or app admission."
+  }
+}

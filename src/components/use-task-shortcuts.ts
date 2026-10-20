@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import {
   TASK_SHORTCUT_EVENT,
   announceShortcut,
@@ -30,6 +30,17 @@ export function useTaskShortcuts(
   handlers: TaskShortcutHandlers,
 ) {
   const latest = useRef(handlers);
+  const restoreAfterRemoval = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    return () => {
+      // A refreshed view can remove the row after the action promise and its
+      // first animation frame have settled. Capture focus before React detaches
+      // the node, then restore against the committed list, not the old DOM.
+      if (row?.contains(document.activeElement) && restoreAfterRemoval.current)
+        window.requestAnimationFrame(restoreAfterRemoval.current);
+    };
+  }, [rowRef]);
   useEffect(() => {
     latest.current = handlers;
   });
@@ -44,6 +55,7 @@ export function useTaskShortcuts(
         return;
       }
       const restoreFocus = preserveRowFocus(row);
+      restoreAfterRemoval.current = restoreFocus;
       try {
         if (action === "toggle") {
           await toggle();
@@ -51,6 +63,7 @@ export function useTaskShortcuts(
             `${completed ? "Reopened" : "Completed"} ${task.title}.`,
           );
         } else if (!reschedulable) {
+          restoreAfterRemoval.current = null;
           announceShortcut(
             `${task.title} is one occurrence of a repeating task; open it to change its dates.`,
           );
@@ -62,6 +75,7 @@ export function useTaskShortcuts(
           );
         }
       } catch {
+        restoreAfterRemoval.current = null;
         // The row shows the mutation error and its retry action.
         return;
       }

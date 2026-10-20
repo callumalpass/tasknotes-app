@@ -14,7 +14,17 @@ it("accepts the original declared TaskNotes native return URL", () => {
           name: "TaskNotes",
           origin: "https://app.tasknotes.dev",
           environment: "production",
-          manifest,
+          // dev:e2e rewrites the generated URLs. Use explicit production
+          // fixture origins without changing the generated release input.
+          manifest: {
+            ...manifest,
+            homepage: "https://app.tasknotes.dev/",
+            icon: "https://app.tasknotes.dev/icon.png",
+            redirect_uris: [
+              "https://app.tasknotes.dev/auth/mdbase/callback",
+              returnUrl,
+            ],
+          },
         },
         { signIn: { open: () => {}, returnUrl } },
       ),

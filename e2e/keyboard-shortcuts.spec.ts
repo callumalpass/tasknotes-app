@@ -43,6 +43,11 @@ test("j and k move between rows and row keys act on the focused task", async ({
   const target = (await focusedRowTitle(page).textContent())!;
   await page.keyboard.press("x");
   await expect(page.getByText(`Completed ${target}.`)).toBeAttached();
+  await expect(
+    page.getByRole("button", { name: target, exact: true }),
+  ).toBeHidden();
+  await expect(focusedRowTitle(page)).toHaveCount(1);
+  await expect(focusedRowTitle(page)).not.toHaveText(target);
 });
 
 test("row keys never fire while typing or with modifiers", async ({ page }) => {

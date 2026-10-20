@@ -13,7 +13,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         page,
       }, info) => {
         await page.setViewportSize({ width, height: 900 });
-        await page.goto("/e2e/scratchpad-actions.fixture.html");
+        await page.goto("e2e/scratchpad-actions.fixture.html");
         if (largeText)
           await page.evaluate(() => {
             document.documentElement.style.fontSize = "200%";

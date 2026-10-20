@@ -48,6 +48,34 @@ describe("explicit next-only replace-at-cutover build environment", () => {
       requireTaskNotesAppEnvironment("production", undefined, origin),
     ).toThrow();
   });
+  it("accepts only the exact native iOS origin and retains its identity", () => {
+    expect(
+      requireTaskNotesAppEnvironment(
+        "production",
+        undefined,
+        "capacitor://app.tasknotes.dev",
+        true,
+      ),
+    ).toEqual({
+      environment: "production",
+      appOrigin: "capacitor://app.tasknotes.dev",
+    });
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "production",
+        undefined,
+        "capacitor://app.tasknotes.dev",
+      ),
+    ).toThrow();
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "production",
+        undefined,
+        "capacitor://evil.test",
+        true,
+      ),
+    ).toThrow();
+  });
   it("never carries LAB input into production", () => {
     expect(() =>
       requireTaskNotesAppEnvironment(

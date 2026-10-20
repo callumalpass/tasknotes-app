@@ -8,18 +8,18 @@ const root = new URL("../", import.meta.url);
 
 test("private-account SDK UI dependency has immutable source and archive pins", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-cc492f3f.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-eaa4e697-lab.json", root), "utf8"),
   );
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   assert.equal(
     manifest.sourceCommit,
-    "cc492f3f3832c4939eff7fe39b0fabf5ad234b24",
+    "eaa4e697fc1198f32fc3714f377342a24c56d985",
   );
   assert.deepEqual(
     manifest.sourceIncludesPrs,
     [
       819, 827, 832, 837, 867, 878, 879, 894, 896, 914, 915, 916, 917, 918, 919,
-      920, 921, 923, 924, 925, 926, 929,
+      920, 921, 923, 924, 925, 926, 929, 941, 942, 943, 944,
     ],
   );
   assert.deepEqual(manifest.consumerEntries, [
@@ -31,7 +31,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(manifest.version, "0.0.0");
   assert.equal(
     manifest.sha256,
-    "d0657d1e7283ba8c74ff7b11afcb510637c8ed30b2b3ac4f815bf6f0f3569cfd",
+    "ec8249e19d9d27893ac7ae83b99473a7aad550e4ab54a42dd20786dfd42b8a70",
   );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
@@ -55,7 +55,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   );
   assert.equal(
     manifest.includedCommits.boundedRecordReads,
-    manifest.native.sourceCommit,
+    "a350db1ca88fa3572de3a8c97c43020d7039d035",
   );
   assert.equal(
     manifest.includedCommits.nativePinRefresh,
@@ -65,7 +65,18 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
     manifest.includedCommits.openingProgress,
     "bd131b16ccc2d69ffa33ddd37b28fff6366fa429",
   );
-  assert.equal(manifest.includedCommits.unifiedAddAlias, manifest.sourceCommit);
+  assert.equal(
+    manifest.includedCommits.unifiedAddAlias,
+    "cc492f3f3832c4939eff7fe39b0fabf5ad234b24",
+  );
+  assert.equal(
+    manifest.includedCommits.productANativePin,
+    "a3023aee3731dcbf9de19a41918a84cfb3ae7193",
+  );
+  assert.equal(
+    manifest.includedCommits.downloadStreamPreopenCancellation,
+    manifest.sourceCommit,
+  );
   assert.equal(
     manifest.includedCommits.reviewedProgressBoundedColdSync,
     "c5f3929bfd21fda89df610fb74eb52c7ada2b54b",
@@ -116,7 +127,7 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
 
 test("packaged native assets are original bytes, not public application readiness", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-cc492f3f.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-eaa4e697-lab.json", root), "utf8"),
   );
   const archive = fileURLToPath(new URL(`vendor/${manifest.artifact}`, root));
   const member = (name) =>
@@ -125,12 +136,12 @@ test("packaged native assets are original bytes, not public application readines
   assert.equal(manifest.native.available, true);
   assert.equal(
     manifest.native.sourceCommit,
-    "a350db1ca88fa3572de3a8c97c43020d7039d035",
+    "725d72b2e43b2b744062e055e43feaeb41838399",
   );
-  assert.equal(manifest.native.bytes, 3668115);
+  assert.equal(manifest.native.bytes, 3676583);
   assert.equal(
     manifest.native.sha256,
-    "28c261f86e6126091b9da07a8f744b54a0ee71ebfede9a7ea2c273be3e5d3b26",
+    "6984f87d98e29d9f99c6b07f7728f716d1f7b2e3585a74bcc2046ba259a8afab",
   );
   assert.equal(native.byteLength, manifest.native.bytes);
   assert.equal(
@@ -236,7 +247,7 @@ test("the unused protocol warning applies only to the exact first DEV cut", asyn
 
 test("the successor SDK has no unused protocol exception", async () => {
   const manifest = JSON.parse(
-    await readFile(new URL("vendor/sdk-dev-cc492f3f.json", root), "utf8"),
+    await readFile(new URL("vendor/sdk-dev-eaa4e697-lab.json", root), "utf8"),
   );
   assert.deepEqual(manifest.vendorWarnings, []);
   assert.equal(manifest.qualification.productionQualified, false);

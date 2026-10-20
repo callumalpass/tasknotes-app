@@ -38,17 +38,21 @@ same native FCM path exercised by Pickle. iOS uses
 official Capacitor iOS plugin returns an APNs token. Keep those platform
 adapters behind the shared notification manager.
 
-The settings screen starts in an explicit **Checking** state. An unsupported or
-insecure browser reports **Not available in this browser**. Do not use that
-label as an initial placeholder: an unresolved permission or network promise
-must remain visibly distinct from a capability check.
+The settings screen starts in an explicit **Checking** state. Permission checks
+have a ten-second deadline; a failed or stalled check shows **Setup needs
+attention** with **Retry notification check**, rather than remaining on Checking.
+Settings rechecks after authorization changes and when the app returns to the
+foreground, without requesting permission. An unsupported or insecure browser
+reports **Not available in this browser**, never as an initial placeholder.
 
 Native availability is determined from the packaged Capacitor plugin, not by a
 runtime application-discovery request. The native plugin and the managed-FCM
 manifest declaration are generated from the same Firebase build configuration.
 Connect validates the declaration again when the device token is registered.
 This keeps the permission control responsive and makes registration failures
-visible to the user.
+visible to the user. The lazy iOS loader resolves the Firebase module namespace,
+not its Capacitor plugin proxy: promises assimilate the proxy's synthetic `then`
+method instead of returning it.
 
 If an existing connection predates the notification criteria, TaskNotes shows
 **Approval required** after the first enable attempt. Select **Review
@@ -90,8 +94,10 @@ delivery and the settings screen reports that Firebase setup is required.
 ## Regression coverage
 
 Unit tests cover browser/native distinction, Web Push registration and opt-out,
-missing native configuration, permission flow, FCM token registration errors,
-and a registration timeout.
+missing native configuration, permission flow, and permission-check timeout and
+retry. The iOS regression tests use the real Capacitor plugin proxy across lazy
+loading, permission checks, explicit opt-in, token registration, and listener
+cleanup; only the native bridge and Connect service boundary are simulated.
 The Android smoke test must cross the official plugin boundary, obtain a real
 FCM token, send a content-free signal through FCM HTTP v1, and observe it in
 the foreground. `TASKNOTES_ANDROID_SKIP_FCM_DELIVERY=1` may be used to

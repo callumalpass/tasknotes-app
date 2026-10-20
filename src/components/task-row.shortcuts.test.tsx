@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -38,6 +39,7 @@ beforeEach(() => {
 afterEach(() => {
   unsubscribe();
   cleanup();
+  vi.restoreAllMocks();
 });
 
 const task = {
@@ -126,6 +128,43 @@ it("shows the error and stays quiet when scheduling fails", async () => {
   );
   expect(announcements).toEqual([]);
 });
+
+it.each(["m", "x"])(
+  "restores focus when %s removes the row after the action frame",
+  async (key) => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const other = { ...task, id: "two", title: "Book room" } as Task;
+    const view = (showFirst: boolean) => (
+      <main id="main-content">
+        {showFirst ? (
+          <TaskRow
+            key="one"
+            task={task}
+            onOpen={vi.fn()}
+            onToggle={vi.fn().mockResolvedValue(undefined)}
+          />
+        ) : null}
+        <TaskRow key="two" task={other} onOpen={vi.fn()} onToggle={vi.fn()} />
+      </main>
+    );
+    const { rerender } = render(view(true));
+    const title = screen.getByRole("button", { name: task.title });
+    title.focus();
+    fireEvent.keyDown(title, { key });
+    await waitFor(() => expect(announcements).toHaveLength(1));
+    act(() => frames.splice(0).forEach((frame) => frame(0)));
+    expect(title).toHaveFocus();
+
+    // Query refresh lands later than the mutation promise/first focus attempt.
+    rerender(view(false));
+    act(() => frames.splice(0).forEach((frame) => frame(0)));
+    expect(screen.getByRole("button", { name: "Book room" })).toHaveFocus();
+  },
+);
 
 it("runs actions the command palette requests", async () => {
   const { onToggle, title } = renderRow();
