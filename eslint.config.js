@@ -15,6 +15,12 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    // Preserve the qualified shared helper byte-for-byte; the escape is valid
+    // and hash-tested. All other lint rules still apply to this exact file.
+    files: ["scripts/lib/native-publish-bytes.mjs"],
+    rules: { "no-useless-escape": "off" },
+  },
+  {
     // Immutable browser test oracle uses the platform's UTF-8 encoder.
     // Keep all lint rules and publisher bytes; declare only its real global.
     files: ["vendor/tasknotes-query-6bec1906.browser.mjs"],

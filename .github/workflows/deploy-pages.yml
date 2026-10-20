@@ -257,68 +257,127 @@ jobs:
             exit 1
           fi
 
-  native-publish:
+  # This job has NO GitHub environment and NO Cloudflare credentials.
+  native-build:
     if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native'
     needs: native-request
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
-    # Coordinator must configure exact native ref policies on both environments.
-    # Production requires Callum review, no bypass, and a separate cutover GO.
-    # No credentials are supplied to checkout, install, guard or build steps.
+    outputs:
+      artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+      artifact-digest: ${{ steps.artifact.outputs.artifact-digest }}
+    env:
+      NATIVE_TARGET: ${{ inputs.target }}
+      NATIVE_SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          clean: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Verify originals, reviewed target intake and frozen lock BEFORE SDK code
+        run: node scripts/native-publisher.mjs guard
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - name: Frozen unprivileged install without hooks
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Bind EVERY installed original BEFORE any candidate SDK execution
+        run: node scripts/native-publisher.mjs guard-installed
+      - name: Check source contracts
+        run: pnpm test:release
+      - name: Check EVERY installed original, then build ONCE and inventory final offline shell
+        run: node scripts/native-publisher.mjs prepare
+        env:
+          NATIVE_ARTIFACT_PATH: ${{ runner.temp }}/tasknotes-native-build
+      - name: Retain immutable final upload bytes including ALL hidden/control files
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tasknotes-native-build-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-native-build/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  native-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native'
+    needs: [native-request, native-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    # EXTERNAL policy: legacy main + exact authorized native target ref.
+    # Production requires Callum reviewer/no admin bypass (NOT prevent-self-review).
+    # Separate Callum GO before production dispatch/tag/upload; UI approval ONLY.
     environment:
       name: ${{ inputs.target }}
       url: ${{ inputs.target == 'staging' && 'https://staging.tasknotes-app.pages.dev/' || 'https://app.tasknotes.dev/' }}
     env:
       NATIVE_TARGET: ${{ inputs.target }}
       NATIVE_SOURCE_SHA: ${{ inputs.source_sha }}
-      # Public original archive hashes, independently approved by the SDK
-      # custodian and installed as protected target-environment variables.
-      # Missing values refuse. They must NOT be inferred from app companions.
+      NATIVE_ARTIFACT_ID: ${{ needs.native-build.outputs.artifact-id }}
+      NATIVE_ARTIFACT_DIGEST: ${{ needs.native-build.outputs.artifact-digest }}
+      # ONCE OFF-CI private Ops auth by NX-TRUST/TNAPP; CI binds ORIGINAL bytes.
       NATIVE_SDK_SHA256: ${{ vars.NATIVE_SDK_SHA256 }}
       NATIVE_UI_SHA256: ${{ vars.NATIVE_UI_SHA256 }}
       NATIVE_PROTOCOL_SHA256: ${{ vars.NATIVE_PROTOCOL_SHA256 }}
+      NATIVE_TRUST_ASSET_SHA256: ${{ vars.NATIVE_TRUST_ASSET_SHA256 }}
     steps:
-      - name: Check out only the requested immutable source
+      - name: Check out reviewed uploader source, NEVER artifact project scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
           clean: true
-
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
-
-      - name: Place receipt outside the clean source checkout
-        run: echo "NATIVE_RECEIPT_PATH=$RUNNER_TEMP/tasknotes-native/receipt.json" >> "$GITHUB_ENV"
-
-      - name: Verify exact authorized native head, clean tree and authenticated target SDK before install
-        run: node scripts/native-publisher.mjs guard
-
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-      - name: Frozen install
-        run: pnpm install --frozen-lockfile
-      - name: Test publisher refusal and served-byte contracts
-        run: node --test scripts/native-publisher.node-test.mjs
-      - name: Build once, strictly validate and inventory exact native bytes
-        run: node scripts/native-publisher.mjs prepare
-
-      - name: Publish existing bytes and verify actual target alias or custom domain
-        run: node scripts/native-publisher.mjs publish
+        with:
+          version: 10.7.0
+          run_install: false
+      - name: Install ONLY independently locked official Wrangler, no workspace/config/hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool="$RUNNER_TEMP/tasknotes-publish-tooling"
+          mkdir -p "$tool" "$RUNNER_TEMP/tasknotes-tool-home"
+          cp scripts/native-publish-tooling/package.json scripts/native-publish-tooling/pnpm-lock.yaml "$tool/"
+          touch "$tool/empty-user.npmrc" "$tool/empty-global.npmrc"
+          cd "$tool"
+          env -i PATH="$PATH" HOME="$RUNNER_TEMP/tasknotes-tool-home" CI=true \
+            npm_config_userconfig="$tool/empty-user.npmrc" \
+            npm_config_globalconfig="$tool/empty-global.npmrc" \
+            pnpm install --frozen-lockfile --ignore-scripts --ignore-workspace \
+            --config.registry=https://registry.npmjs.org
+      - name: Validate immutable artifact, assert bytes/current native HEAD, ONE upload and capture UUID
+        id: native_upload
+        run: node scripts/native-publisher-upload.mjs upload
         env:
+          NATIVE_EVIDENCE_PATH: ${{ runner.temp }}/tasknotes-native-evidence
+          NATIVE_WRANGLER_PATH: ${{ runner.temp }}/tasknotes-publish-tooling/node_modules/wrangler/bin/wrangler.js
+          GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          WRANGLER_SEND_METRICS: "false"
-
-      # Preserve failed receipts too. Never automatically rebuild/redeploy/rollback.
-      - name: Retain native receipt and structured deployment evidence
+      - name: Verify actual served bytes and trusted hosting ONLY after captured deployment UUID
+        if: steps.native_upload.outcome == 'success' && steps.native_upload.outputs.deployment_id != ''
+        run: node scripts/native-publisher-upload.mjs verify
+        env:
+          NATIVE_EVIDENCE_PATH: ${{ runner.temp }}/tasknotes-native-evidence
+          NATIVE_DEPLOYMENT_ID: ${{ steps.native_upload.outputs.deployment_id }}
+      - name: Retain failed receipt, immutable artifact and source/run/deployment evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: tasknotes-native-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/tasknotes-native/
+          name: tasknotes-native-evidence-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-native-evidence/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 90

@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:release": "node --test scripts/*.node-test.mjs",
+    "test:native-publisher": "node --test scripts/native-publish*.node-test.mjs",
     "test:coverage": "vitest run --coverage",
     "test:coverage:application": "vitest run src/application src/domain/default-view-source.test.ts --coverage --coverage.include='src/application/**/*.ts' --coverage.reporter=text-summary --coverage.thresholds.statements=78 --coverage.thresholds.branches=67 --coverage.thresholds.functions=77 --coverage.thresholds.lines=82",
     "test:coverage:domain": "vitest run src/domain --coverage --coverage.include='src/domain/**/*.ts' --coverage.reporter=text-summary --coverage.thresholds.statements=80 --coverage.thresholds.branches=70 --coverage.thresholds.functions=82 --coverage.thresholds.lines=84",

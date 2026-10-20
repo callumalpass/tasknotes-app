@@ -1,9 +1,9 @@
 import { execFile, spawn } from "node:child_process";
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { inventoryDirectory } from "./lib/native-publish-bytes.mjs";
+import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import {
@@ -11,10 +11,7 @@ import {
   developmentDeployments,
 } from "./deploy-pages-dev.mjs";
 
-import {
-  selectServedChecks,
-  verifyServedAssets,
-} from "./verify-native-served.mjs";
+import { selectServedChecks } from "./verify-native-served.mjs";
 export {
   selectServedChecks,
   verifyServedAssets,
@@ -61,7 +58,6 @@ export const NATIVE_PUBLISH_TARGETS = Object.freeze({
 });
 
 const FULL_SHA = /^[a-f0-9]{40}$/;
-const SHA256 = /^[a-f0-9]{64}$/;
 export const NATIVE_BASE = "153494deb68c71d37a3e99f3ef140d874145e2f1";
 
 export function parsePublishRequest({ target, sourceSha, dispatchRef }) {
@@ -127,225 +123,8 @@ export async function assertShaOnReleaseRef({
   }
 }
 
-// --- authenticated target SDK archive guard ---------------------------------
-//
-// The SDK input must be the target environment's authenticated archive. The
-// repository convention is a `file:vendor/*.tgz` pin in package.json with a
-// companion `vendor/*.json` beside it carrying the archive sha256 and the
-// release trust (environment + CP origin). Until a staging/production
-// archive exists this refuses before upload; the LAB archive is never
-// retargeted.
-
-function vendorArchive(packageJson, name) {
-  const spec = packageJson.dependencies?.[name];
-  if (
-    typeof spec !== "string" ||
-    !/^file:vendor\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.tgz$/.test(spec)
-  ) {
-    throw new Error(
-      `Native publisher requires ${name} pinned as file:vendor/*.tgz, received ${JSON.stringify(spec)}.`,
-    );
-  }
-  const path = spec.slice("file:".length);
-  return { path, companionPath: path.replace(/\.tgz$/, ".json") };
-}
-
-async function verifiedArchive({
-  name,
-  archive,
-  readCompanion,
-  hashFile,
-  expectedHash,
-}) {
-  let companion;
-  try {
-    companion = await readCompanion(archive.companionPath);
-  } catch (error) {
-    throw new Error(
-      `Native publisher cannot read companion metadata for ${name} at ${archive.companionPath}: ${error.message}`,
-      { cause: error },
-    );
-  }
-  if (companion.artifact && companion.artifact !== basename(archive.path)) {
-    throw new Error(
-      `${name} companion describes ${companion.artifact} but package.json pins ${basename(archive.path)}.`,
-    );
-  }
-  if (companion.noPublication === true) {
-    throw new Error(
-      `${name} archive ${archive.path} is marked noPublication and is not a publication input.`,
-    );
-  }
-  if (!SHA256.test(companion.sha256) || !SHA256.test(expectedHash ?? "")) {
-    throw new Error(
-      `${name} requires a sha256 and independently approved protected-environment archive hash.`,
-    );
-  }
-  if (companion.sha256 !== expectedHash) {
-    throw new Error(
-      `${name} archive hash does not match the protected-environment approved original.`,
-    );
-  }
-  const actual = await hashFile(archive.path);
-  if (actual.sha256 !== companion.sha256) {
-    throw new Error(
-      `${name} archive sha256 hash mismatch: companion ${companion.sha256}, actual ${actual.sha256}.`,
-    );
-  }
-  if (companion.bytes !== undefined && actual.bytes !== companion.bytes) {
-    throw new Error(
-      `${name} archive byte count mismatch: companion ${companion.bytes}, actual ${actual.bytes}.`,
-    );
-  }
-  return companion;
-}
-
-export async function verifySdkTrust({
-  target,
-  packageJson,
-  readCompanion,
-  hashFile,
-  readMember = readArchiveMember,
-  approvedHashes = {},
-}) {
-  const sdkArchive = vendorArchive(packageJson, "@mdbase-dev/sdk");
-  const uiArchive = vendorArchive(packageJson, "@mdbase-dev/ui");
-  const protocolArchive = vendorArchive(
-    packageJson,
-    "@mdbase-dev/connect-protocol",
-  );
-
-  const sdk = await verifiedArchive({
-    name: "@mdbase-dev/sdk",
-    archive: sdkArchive,
-    readCompanion,
-    hashFile,
-    expectedHash: approvedHashes.sdk,
-  });
-  const ui = await verifiedArchive({
-    name: "@mdbase-dev/ui",
-    archive: uiArchive,
-    readCompanion,
-    hashFile,
-    expectedHash: approvedHashes.ui,
-  });
-
-  const trust = sdk.trust;
-  if (!trust || typeof trust !== "object") {
-    throw new Error(
-      `SDK archive ${sdkArchive.path} carries no release trust; refusing ${target.target} publish.`,
-    );
-  }
-  if (trust.environment !== target.environment) {
-    throw new Error(
-      `SDK trust environment is ${JSON.stringify(trust.environment)} but target ${target.target} requires trust for ${target.environment}; never retarget another environment's archive.`,
-    );
-  }
-  if (trust.cpOrigin !== target.connectOrigin) {
-    throw new Error(
-      `SDK trust cpOrigin (Connect origin) is ${JSON.stringify(trust.cpOrigin)} but target ${target.target} requires ${target.connectOrigin}.`,
-    );
-  }
-  if (
-    !SHA256.test(sdk.native?.sha256 ?? "") ||
-    !SHA256.test(sdk.native?.sqliteSha256 ?? "")
-  ) {
-    throw new Error(
-      `SDK archive ${sdkArchive.path} carries no native runtime sha256; refusing.`,
-    );
-  }
-
-  const protocol = sdk.protocol;
-  if (
-    !protocol?.artifact ||
-    !SHA256.test(protocol?.sha256 ?? "") ||
-    protocol.sha256 !== approvedHashes.protocol
-  ) {
-    throw new Error(
-      `SDK companion carries no protocol artifact hash; refusing ${target.target} publish.`,
-    );
-  }
-  if (protocol.artifact !== basename(protocolArchive.path)) {
-    throw new Error(
-      `SDK protocol artifact is ${protocol.artifact} but package.json pins ${basename(protocolArchive.path)}.`,
-    );
-  }
-  const protocolActual = await hashFile(protocolArchive.path);
-  if (protocolActual.sha256 !== protocol.sha256) {
-    throw new Error(
-      `Connect protocol archive sha256 hash mismatch: SDK companion ${protocol.sha256}, actual ${protocolActual.sha256}.`,
-    );
-  }
-
-  const sdkSource = sdk.sourceCommit ?? sdk.packagedFromCommit;
-  if (!FULL_SHA.test(sdkSource ?? "") || ui.pairedSdkSource !== sdkSource) {
-    throw new Error(
-      `UI archive is paired with SDK source ${ui.pairedSdkSource} but the pinned SDK source is ${sdkSource}.`,
-    );
-  }
-
-  // A companion label alone is not environment authority. The independent
-  // approved original archive hash comes from the protected target environment.
-  // Recheck its actual packaged provenance, trust module and WASM members.
-  const provenance = await verifyPackagedTrust({
-    sdk,
-    target,
-    archive: sdkArchive.path,
-    readMember,
-  });
-  return Object.freeze({
-    provenance,
-    sdk: Object.freeze({
-      package: sdk.package ?? "@mdbase-dev/sdk",
-      artifact: sdkArchive.path,
-      sha256: sdk.sha256,
-      bytes: sdk.bytes ?? null,
-      sourceCommit: sdkSource ?? null,
-      trust: Object.freeze({
-        environment: trust.environment,
-        cpOrigin: trust.cpOrigin,
-        logOrigin: trust.logOrigin ?? null,
-        sha256: trust.sha256,
-        packagedTrustSha256: trust.packagedTrustSha256,
-        sourceCommit: trust.sourceCommit,
-        contextSha256: trust.contextSha256,
-        receiptSha256: trust.receiptSha256,
-        provenanceSha256: trust.provenanceSha256,
-      }),
-      native: Object.freeze({
-        sha256: sdk.native.sha256,
-        sqliteSha256: sdk.native.sqliteSha256 ?? null,
-      }),
-    }),
-    ui: Object.freeze({
-      package: ui.package ?? "@mdbase-dev/ui",
-      artifact: uiArchive.path,
-      sha256: ui.sha256,
-      bytes: ui.bytes ?? null,
-      sourceCommit: ui.sourceCommit ?? null,
-    }),
-    protocol: Object.freeze({
-      artifact: protocolArchive.path,
-      sha256: protocol.sha256,
-      bytes: protocol.bytes ?? protocolActual.bytes,
-      sourceCommit: protocol.sourceCommit ?? null,
-    }),
-  });
-}
-
-export async function hashVendorFile(path) {
-  const hash = createHash("sha256");
-  let bytes = 0;
-  for await (const chunk of createReadStream(resolve(projectRoot, path))) {
-    bytes += chunk.length;
-    hash.update(chunk);
-  }
-  return { sha256: hash.digest("hex"), bytes };
-}
-
-export async function readVendorCompanion(path) {
-  return JSON.parse(await readFile(resolve(projectRoot, path), "utf8"));
-}
+// Canonical ORIGINAL packet checks; never execute candidate SDK code to inspect it.
+export const verifySdkTrust = verifyTargetIntake;
 
 // --- exact build environment -------------------------------------------------
 
@@ -486,37 +265,7 @@ export function assertBuiltManifest({ manifest, target }) {
 
 // --- asset inventory and receipt ----------------------------------------------
 
-export async function buildAssetInventory(directory) {
-  const assets = [];
-  async function walk(current, prefix) {
-    const entries = await readdir(current, { withFileTypes: true });
-    for (const entry of entries) {
-      const path = prefix ? `${prefix}/${entry.name}` : entry.name;
-      const absolute = join(current, entry.name);
-      if (entry.isSymbolicLink()) {
-        throw new Error(
-          `Built asset ${path} is a symlink; refusing to inventory it.`,
-        );
-      }
-      if (entry.isDirectory()) {
-        await walk(absolute, path);
-      } else if (entry.isFile()) {
-        const hash = createHash("sha256");
-        let bytes = 0;
-        for await (const chunk of createReadStream(absolute)) {
-          bytes += chunk.length;
-          hash.update(chunk);
-        }
-        assets.push(Object.freeze({ path, bytes, sha256: hash.digest("hex") }));
-      }
-    }
-  }
-  await walk(directory, "");
-  assets.sort((left, right) =>
-    left.path < right.path ? -1 : left.path > right.path ? 1 : 0,
-  );
-  return assets;
-}
+export const buildAssetInventory = inventoryDirectory;
 
 export function createReceipt({
   target,
@@ -567,7 +316,9 @@ export function parseWranglerDeployment(output) {
   );
   if (
     row?.pages_project !== "tasknotes-app" ||
-    !/^[a-f0-9-]{36}$/.test(row?.deployment_id ?? "") ||
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
+      row?.deployment_id ?? "",
+    ) ||
     !/^https:\/\/[a-z0-9]+\.tasknotes-app\.pages\.dev\/?$/.test(row?.url ?? "")
   ) {
     throw new Error(
@@ -575,122 +326,6 @@ export function parseWranglerDeployment(output) {
     );
   }
   return Object.freeze({ id: row.deployment_id, url: row.url });
-}
-
-export async function readArchiveMember(archive, member) {
-  // Read fixed members without extracting or executing the SDK. No eval/import
-  // of generated trust code and no archive path supplied by metadata.
-  const { stdout } = await execFileAsync(
-    "tar",
-    ["xOf", resolve(projectRoot, archive), member],
-    {
-      encoding: "buffer",
-      maxBuffer: 32 * 1024 * 1024,
-    },
-  );
-  return stdout;
-}
-
-const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
-export async function verifyPackagedTrust({
-  sdk,
-  target,
-  archive,
-  readMember,
-}) {
-  const trust = sdk.trust;
-  for (const field of [
-    "sha256",
-    "packagedTrustSha256",
-    "contextSha256",
-    "receiptSha256",
-    "provenanceSha256",
-  ]) {
-    if (!SHA256.test(trust[field] ?? ""))
-      throw new Error(`SDK trust missing authenticated ${field}.`);
-  }
-  if (
-    !FULL_SHA.test(trust.sourceCommit ?? "") ||
-    new URL(trust.logOrigin).protocol !== "https:"
-  ) {
-    throw new Error(
-      "SDK trust requires authenticated source and HTTPS log origin.",
-    );
-  }
-  const raw = await readMember(archive, "package/dist/native/provenance.json");
-  const provenance = JSON.parse(raw.toString());
-  if (
-    digest(raw) !== trust.provenanceSha256 ||
-    provenance.schema !== "mdbn-sdk/application-assets/1" ||
-    provenance.environment !== target.environment
-  ) {
-    throw new Error("Packaged provenance hash/environment mismatch.");
-  }
-  for (const field of [
-    "environment",
-    "cpOrigin",
-    "logOrigin",
-    "sha256",
-    "sourceCommit",
-  ]) {
-    if (provenance.trust?.[field] !== trust[field])
-      throw new Error(`Packaged trust ${field} mismatch.`);
-  }
-  const handoff = provenance.handoff;
-  if (
-    handoff?.contextSha256 !== trust.contextSha256 ||
-    handoff?.receiptSha256 !== trust.receiptSha256 ||
-    provenance.verifier?.clockOverride !== false ||
-    !SHA256.test(provenance.verifier?.sha256 ?? "")
-  ) {
-    throw new Error(
-      "Missing authenticated trust handoff/verifier or forbidden clock override.",
-    );
-  }
-  const proofs = [
-    "image-release-bundle.json",
-    "image-release-bundle.sigstore.json",
-    "release-trust-bundle.json",
-    "release-trust-bundle.sigstore.json",
-  ];
-  if (proofs.some((name) => !SHA256.test(handoff.proof_sha256?.[name] ?? ""))) {
-    throw new Error("Missing authenticated trust publication proof hashes.");
-  }
-  const module = await readMember(
-    archive,
-    "package/dist/application/packaged-trust.js",
-  );
-  // Producer-generated literal, parsed as data, never executed by publisher.
-  const literal = module.toString().match(/const metadata = (\{[^\n]+\});/);
-  const metadata = literal ? JSON.parse(literal[1]) : null;
-  if (
-    digest(module) !== trust.packagedTrustSha256 ||
-    metadata?.schema !== "mdbn-app-trust/release/1" ||
-    metadata?.environment !== target.environment ||
-    metadata?.cpOrigin !== target.connectOrigin ||
-    metadata?.logOrigin !== trust.logOrigin ||
-    metadata?.assetSha256 !== trust.sha256 ||
-    metadata?.source?.commit !== trust.sourceCommit
-  ) {
-    throw new Error(
-      "Actual packaged trust module hash/environment/CP mismatch.",
-    );
-  }
-  for (const [name, expected] of [
-    ["runtime", sdk.native.sha256],
-    ["sqlite3", sdk.native.sqliteSha256],
-  ]) {
-    const bytes = await readMember(archive, `package/dist/native/${name}.wasm`);
-    const record = name === "runtime" ? provenance.runtime : provenance.sqlite;
-    if (
-      digest(bytes) !== expected ||
-      record?.sha256 !== expected ||
-      record?.bytes !== bytes.length
-    ) {
-      throw new Error(`Packaged ${name} WASM hash/length mismatch.`);
-    }
-  }
-  return provenance;
 }
 
 export async function assertCheckout({
@@ -733,6 +368,16 @@ export async function assertBuiltTrust({ directory, assets, sdkTrust }) {
       );
     }
   }
+  if (
+    !assets.some(
+      (asset) =>
+        /\.js$/.test(asset.path) &&
+        asset.sha256 === sdkTrust.sdk.native.sqliteInitializerSha256,
+    )
+  )
+    throw new Error(
+      "Built SQLite initializer does not match original SDK bytes.",
+    );
   const trustAssets = [];
   for (const asset of assets.filter((entry) => /\.(m?js)$/.test(entry.path))) {
     const code = await readFile(join(directory, asset.path), "utf8");
@@ -759,7 +404,7 @@ async function run(command, args, environment) {
   });
 }
 
-async function guard(environment) {
+export async function guard(environment, installed = false) {
   if (environment.GITHUB_EVENT_NAME !== "workflow_dispatch")
     throw new Error("Native publisher requires manual workflow_dispatch.");
   const request = parsePublishRequest({
@@ -769,137 +414,87 @@ async function guard(environment) {
   });
   await assertCheckout({ ...request, workflowSha: environment.GITHUB_SHA });
   const buildEnvironment = nativeBuildEnvironment(request.target, environment);
-  const sdkTrust = await verifySdkTrust({
+  const sdkTrust = await verifyTargetIntake({
+    root: projectRoot,
     target: request.target,
-    packageJson: JSON.parse(
-      await readFile(join(projectRoot, "package.json"), "utf8"),
-    ),
-    readCompanion: readVendorCompanion,
-    hashFile: hashVendorFile,
-    approvedHashes: {
-      sdk: environment.NATIVE_SDK_SHA256,
-      ui: environment.NATIVE_UI_SHA256,
-      protocol: environment.NATIVE_PROTOCOL_SHA256,
-    },
+    installed,
   });
   return { ...request, buildEnvironment, sdkTrust };
 }
 
 export async function nativePublisherCli(command, environment = process.env) {
-  if (!["guard", "prepare", "publish"].includes(command))
-    throw new Error("Usage: native-publisher.mjs guard|prepare|publish");
-  const receiptPath = resolve(
-    environment.NATIVE_RECEIPT_PATH ?? "native-publisher-receipt.json",
-  );
-  if (receiptPath.startsWith(`${projectRoot}/`))
-    throw new Error("Receipt must be outside the clean source checkout.");
-  const save = async (receipt) => {
-    await mkdir(resolve(receiptPath, ".."), { recursive: true });
-    await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
-  };
-  if (command === "guard" || command === "prepare") {
-    const { target, sourceSha, buildEnvironment, sdkTrust } =
-      await guard(environment);
-    if (command === "guard") return;
-    const sourceTree = (await runGit(["rev-parse", "HEAD^{tree}"])).trim();
-    await run("pnpm", ["build"], buildEnvironment); // exactly one build
-    // Strict canonical validator from the pinned protocol, never allow-local.
-    await run(
-      "node",
-      ["scripts/validate-manifest.mjs", "dist/.well-known/mdbase-app.json"],
-      buildEnvironment,
-    );
-    const directory = join(projectRoot, "dist");
-    assertBuiltManifest({
-      manifest: JSON.parse(
-        await readFile(join(directory, ".well-known/mdbase-app.json"), "utf8"),
-      ),
-      target,
-    });
-    const assets = await buildAssetInventory(directory);
-    const trustAssets = await assertBuiltTrust({ directory, assets, sdkTrust });
-    await save({
-      ...createReceipt({ target, sourceSha, sourceTree, sdkTrust, assets }),
-      trustAssets,
-      status: "prepared",
-    });
-    return;
-  }
-  const { target, sourceSha } = parsePublishRequest({
-    target: environment.NATIVE_TARGET,
-    sourceSha: environment.NATIVE_SOURCE_SHA,
-    dispatchRef: environment.GITHUB_REF,
-  });
-  if (environment.GITHUB_EVENT_NAME !== "workflow_dispatch")
-    throw new Error("Manual dispatch required.");
-  await assertCheckout({
-    target,
-    sourceSha,
-    workflowSha: environment.GITHUB_SHA,
-    clean: false,
-  });
-  const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
-  if (
-    receipt.status !== "prepared" ||
-    receipt.source.sha !== sourceSha ||
-    JSON.stringify(receipt.target) !==
-      JSON.stringify(createReceipt({ target }).target) ||
-    receipt.source.tree !== (await runGit(["rev-parse", "HEAD^{tree}"])).trim()
-  ) {
+  if (!["guard", "guard-installed", "prepare"].includes(command))
     throw new Error(
-      "Prepared receipt source/target mismatch or already attempted publication.",
+      "Usage: native-publisher.mjs guard|guard-installed|prepare (upload is separate).",
     );
-  }
-  const assets = await buildAssetInventory(join(projectRoot, "dist"));
-  if (JSON.stringify(assets) !== JSON.stringify(receipt.assets))
-    throw new Error("Build changed after inventory; refusing upload.");
-  if (!environment.CLOUDFLARE_API_TOKEN || !environment.CLOUDFLARE_ACCOUNT_ID)
-    throw new Error("Missing Cloudflare credentials.");
-  const outputPath = `${receiptPath}.wrangler.jsonl`;
-  // Must not accidentally consume output from a previous upload.
-  await writeFile(outputPath, "", { flag: "wx" });
-  receipt.status = "uploading";
-  await save(receipt);
-  try {
-    try {
-      await run(
-        "pnpm",
-        [
-          "dlx",
-          `wrangler@${target.wranglerVersion}`,
-          "pages",
-          "deploy",
-          "dist",
-          `--project-name=${target.pagesProject}`,
-          `--branch=${target.pagesBranch}`,
-          `--commit-hash=${sourceSha}`,
-          "--commit-dirty=true",
-        ],
-        { ...environment, WRANGLER_OUTPUT_FILE_PATH: outputPath },
-      );
-    } finally {
-      const output = await readFile(outputPath, "utf8");
-      if (output.trim()) receipt.deployment = parseWranglerDeployment(output);
-      await save(receipt);
-    }
-    if (!receipt.deployment?.id)
-      throw new Error(
-        "Upload has no deployment ID; cannot issue a successful receipt.",
-      );
-    receipt.status = "uploaded";
-    await save(receipt);
-    receipt.served = await verifyServedAssets({
-      origin: target.appOrigin,
-      assets,
-    });
-    receipt.status = "verified";
-    await save(receipt);
-  } catch (error) {
-    receipt.status = "failed";
-    receipt.failure = error.message;
-    await save(receipt);
-    throw error; // failed receipt, never an automatic rollback/redeploy
-  }
+  const { target, sourceSha, buildEnvironment, sdkTrust } = await guard(
+    environment,
+    command !== "guard",
+  );
+  if (command !== "prepare") return;
+  // Only after original archives + frozen lock + EVERY installed member passed.
+  const { appReleaseTrust } = await import(
+    pathToFileURL(
+      join(
+        projectRoot,
+        "node_modules/@mdbase-dev/sdk/dist/application/packaged-trust.js",
+      ),
+    ).href
+  );
+  const compiled = appReleaseTrust();
+  if (
+    compiled.assetSha256 !== sdkTrust.sdk.trust.sha256 ||
+    compiled.environment !== target.environment ||
+    compiled.cpOrigin !== target.connectOrigin ||
+    compiled.logOrigin !== sdkTrust.sdk.trust.logOrigin
+  )
+    throw new Error("Compiled appReleaseTrust target/ASSET mismatch.");
+  const sourceTree = (await runGit(["rev-parse", "HEAD^{tree}"])).trim();
+  await run("pnpm", ["build"], buildEnvironment); // exactly one build, NO environment/secrets
+  await run(
+    "node",
+    ["scripts/validate-manifest.mjs", "dist/.well-known/mdbase-app.json"],
+    buildEnvironment,
+  );
+  const directory = join(projectRoot, "dist");
+  assertBuiltManifest({
+    manifest: JSON.parse(
+      await readFile(join(directory, ".well-known/mdbase-app.json"), "utf8"),
+    ),
+    target,
+  });
+  // Offline-shell plugin + static routes have FINISHED. Inventory EVERY final
+  // file, including dotfiles, underscore controls, worker/SDK bits, no filters.
+  const assets = await inventoryDirectory(directory);
+  const trustAssets = await assertBuiltTrust({ directory, assets, sdkTrust });
+  const output = resolve(environment.NATIVE_ARTIFACT_PATH);
+  if (output.startsWith(projectRoot + "/"))
+    throw new Error("Artifact must be outside source.");
+  await mkdir(output, { recursive: true });
+  const { cp } = await import("node:fs/promises");
+  await cp(directory, join(output, "dist"), {
+    recursive: true,
+    errorOnExist: true,
+    force: false,
+  });
+  await writeFile(
+    join(output, "receipt.json"),
+    JSON.stringify(
+      {
+        ...createReceipt({ target, sourceSha, sourceTree, sdkTrust, assets }),
+        trustAssets,
+        run: {
+          repository: environment.GITHUB_REPOSITORY,
+          id: environment.GITHUB_RUN_ID,
+          attempt: environment.GITHUB_RUN_ATTEMPT,
+        },
+        status: "prepared",
+        hostingControls: "unverified",
+      },
+      null,
+      2,
+    ) + "\n",
+  );
 }
 
 if (

@@ -30,6 +30,7 @@ import {
 
 const SHA = "153494deb68c71d37a3e99f3ef140d874145e2f1";
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const checksCount = (assets) => selectServedChecks(assets).length;
 
 // --- publish request / release-ref guard -----------------------------------
 
@@ -196,252 +197,15 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 
 // --- SDK trust guard --------------------------------------------------------
 
-function trustFixture(overrides = {}) {
-  const sdkBytes = Buffer.from("sdk-archive");
-  const uiBytes = Buffer.from("ui-archive");
-  const protocolBytes = Buffer.from("protocol-archive");
-  const runtime = Buffer.from([0, 97, 115, 109]);
-  const sqlite = Buffer.from([0, 97, 115, 109, 1]);
-  const trust = {
-    environment: "staging",
-    cpOrigin: "https://connect-staging.mdbase.dev",
-    logOrigin: "https://log-staging.example.test",
-    sha256: sha256("trust-original"),
-    sourceCommit: "c".repeat(40),
-    contextSha256: sha256("context"),
-    receiptSha256: sha256("receipt"),
-  };
-  const module = Buffer.from(
-    `const metadata = ${JSON.stringify({ schema: "mdbn-app-trust/release/1", environment: trust.environment, cpOrigin: trust.cpOrigin, logOrigin: trust.logOrigin, assetSha256: trust.sha256, source: { commit: trust.sourceCommit } })};\n`,
-  );
-  const provenance = {
-    schema: "mdbn-sdk/application-assets/1",
-    environment: "staging",
-    trust,
-    handoff: {
-      contextSha256: trust.contextSha256,
-      receiptSha256: trust.receiptSha256,
-      proof_sha256: Object.fromEntries(
-        [
-          "image-release-bundle.json",
-          "image-release-bundle.sigstore.json",
-          "release-trust-bundle.json",
-          "release-trust-bundle.sigstore.json",
-        ].map((name) => [name, sha256(name)]),
-      ),
-    },
-    verifier: { clockOverride: false, sha256: sha256("verifier") },
-    runtime: { sha256: sha256(runtime), bytes: runtime.length },
-    sqlite: { sha256: sha256(sqlite), bytes: sqlite.length },
-  };
-  const provenanceBytes = Buffer.from(JSON.stringify(provenance));
-  const members = new Map([
-    ["package/dist/native/provenance.json", provenanceBytes],
-    ["package/dist/application/packaged-trust.js", module],
-    ["package/dist/native/runtime.wasm", runtime],
-    ["package/dist/native/sqlite3.wasm", sqlite],
-  ]);
-  const files = new Map([
-    ["vendor/sdk-staging-abc.tgz", sdkBytes],
-    ["vendor/ui-staging-def.tgz", uiBytes],
-    ["vendor/mdbase-dev-connect-protocol-staging.tgz", protocolBytes],
-  ]);
-  const companions = new Map([
-    [
-      "vendor/sdk-staging-abc.json",
-      {
-        package: "@mdbase-dev/sdk",
-        artifact: "sdk-staging-abc.tgz",
-        bytes: sdkBytes.length,
-        sha256: sha256(sdkBytes),
-        sourceCommit: "a".repeat(40),
-        protocol: {
-          artifact: "mdbase-dev-connect-protocol-staging.tgz",
-          bytes: protocolBytes.length,
-          sha256: sha256(protocolBytes),
-        },
-        native: { sha256: sha256(runtime), sqliteSha256: sha256(sqlite) },
-        trust: {
-          ...trust,
-          provenanceSha256: sha256(provenanceBytes),
-          packagedTrustSha256: sha256(module),
-        },
-        ...overrides.sdk,
-      },
-    ],
-    [
-      "vendor/ui-staging-def.json",
-      {
-        package: "@mdbase-dev/ui",
-        artifact: "ui-staging-def.tgz",
-        bytes: uiBytes.length,
-        sha256: sha256(uiBytes),
-        pairedSdkSource: "a".repeat(40),
-        ...overrides.ui,
-      },
-    ],
-  ]);
-  return {
-    packageJson: {
-      dependencies: {
-        "@mdbase-dev/sdk": "file:vendor/sdk-staging-abc.tgz",
-        "@mdbase-dev/ui": "file:vendor/ui-staging-def.tgz",
-        "@mdbase-dev/connect-protocol":
-          "file:vendor/mdbase-dev-connect-protocol-staging.tgz",
-      },
-    },
-    readCompanion: async (path) => {
-      if (!companions.has(path)) throw new Error(`ENOENT ${path}`);
-      return companions.get(path);
-    },
-    hashFile: async (path) => {
-      if (!files.has(path)) throw new Error(`ENOENT ${path}`);
-      const bytes = files.get(path);
-      return { sha256: sha256(bytes), bytes: bytes.length };
-    },
-    readMember: async (_archive, member) => {
-      if (!members.has(member)) throw new Error(`Missing member ${member}`);
-      return members.get(member);
-    },
-    approvedHashes: {
-      sdk: sha256(sdkBytes),
-      ui: sha256(uiBytes),
-      protocol: sha256(protocolBytes),
-    },
-    companions,
-    files,
-    members,
-  };
-}
-
-test("SDK trust guard accepts an authenticated staging archive set and inventories it", async () => {
-  const fixture = trustFixture();
-  const inventory = await verifySdkTrust({
-    target: NATIVE_PUBLISH_TARGETS.staging,
-    ...fixture,
-  });
-  assert.equal(inventory.sdk.artifact, "vendor/sdk-staging-abc.tgz");
-  assert.equal(inventory.sdk.trust.environment, "staging");
-  assert.equal(
-    inventory.sdk.trust.cpOrigin,
-    "https://connect-staging.mdbase.dev",
-  );
-  assert.equal(
-    inventory.sdk.native.sha256,
-    sha256(Buffer.from([0, 97, 115, 109])),
-  );
-  assert.equal(inventory.ui.artifact, "vendor/ui-staging-def.tgz");
-  assert.equal(
-    inventory.protocol.artifact,
-    "vendor/mdbase-dev-connect-protocol-staging.tgz",
-  );
-});
-
-test("SDK trust guard refuses the LAB archive for staging and production", async () => {
-  const lab = trustFixture({
-    sdk: {
-      trust: {
-        environment: "lab",
-        cpOrigin: "https://connect-lab.mdbase.dev",
-        sha256: "t".padEnd(64, "0"),
-      },
-    },
-  });
-  await assert.rejects(
-    verifySdkTrust({ target: NATIVE_PUBLISH_TARGETS.staging, ...lab }),
-    /trust.*staging|environment/,
-  );
-  await assert.rejects(
-    verifySdkTrust({
-      target: NATIVE_PUBLISH_TARGETS.production,
-      ...trustFixture(),
-    }),
-    /trust.*production|environment/,
-  );
-});
-
-test("SDK trust guard refuses hash, CP, pairing and publication mismatches before upload", async () => {
-  const target = NATIVE_PUBLISH_TARGETS.staging;
-
-  const badHash = trustFixture();
-  badHash.companions.get("vendor/sdk-staging-abc.json").sha256 = "0".repeat(64);
-  await assert.rejects(verifySdkTrust({ target, ...badHash }), /sha256|hash/);
-
-  const badCp = trustFixture();
-  badCp.companions.get("vendor/sdk-staging-abc.json").trust.cpOrigin =
-    "https://connect-lab.mdbase.dev";
-  await assert.rejects(
-    verifySdkTrust({ target, ...badCp }),
-    /cpOrigin|Connect/,
-  );
-
-  const badUiPair = trustFixture();
-  badUiPair.companions.get("vendor/ui-staging-def.json").pairedSdkSource =
-    "b".repeat(40);
-  await assert.rejects(verifySdkTrust({ target, ...badUiPair }), /paired/);
-
-  const noPublication = trustFixture({ ui: { noPublication: true } });
-  await assert.rejects(
-    verifySdkTrust({ target, ...noPublication }),
-    /noPublication|not.*publication/,
-  );
-
-  const missingTrust = trustFixture();
-  delete missingTrust.companions.get("vendor/sdk-staging-abc.json").trust;
-  await assert.rejects(verifySdkTrust({ target, ...missingTrust }), /trust/);
-
-  const missingCompanion = trustFixture();
-  missingCompanion.companions.delete("vendor/sdk-staging-abc.json");
-  await assert.rejects(
-    verifySdkTrust({ target, ...missingCompanion }),
-    /companion|ENOENT/,
-  );
-
-  const registryPin = trustFixture();
-  registryPin.packageJson.dependencies["@mdbase-dev/sdk"] = "0.1.0";
-  await assert.rejects(
-    verifySdkTrust({ target, ...registryPin }),
-    /file:vendor/,
-  );
-});
-
-test("companion relabel cannot retarget actual packaged LAB trust, and protected hash approvals are mandatory", async () => {
-  const target = NATIVE_PUBLISH_TARGETS.staging;
-  const missingApproval = trustFixture();
-  delete missingApproval.approvedHashes.sdk;
-  await assert.rejects(
-    verifySdkTrust({ target, ...missingApproval }),
-    /protected-environment/,
-  );
-  const forged = trustFixture();
-  forged.approvedHashes.sdk = "b".repeat(64);
-  await assert.rejects(
-    verifySdkTrust({ target, ...forged }),
-    /approved original/,
-  );
-  for (const member of [
-    "package/dist/application/packaged-trust.js",
-    "package/dist/native/provenance.json",
-    "package/dist/native/runtime.wasm",
-    "package/dist/native/sqlite3.wasm",
-  ]) {
-    const fixture = trustFixture();
-    fixture.members.set(
-      member,
-      Buffer.from(member.endsWith(".json") ? "{}" : "LAB archive bytes"),
+test("actual missing target intake refuses (no LAB/UI relabel fallback)", async () => {
+  for (const target of Object.values(NATIVE_PUBLISH_TARGETS))
+    await assert.rejects(
+      verifySdkTrust({
+        root: new URL("../", import.meta.url).pathname,
+        target,
+      }),
+      /Missing actual reviewed target intake/,
     );
-    await assert.rejects(verifySdkTrust({ target, ...fixture }), /mismatch/);
-  }
-  const pathTraversal = trustFixture();
-  pathTraversal.packageJson.dependencies["@mdbase-dev/sdk"] =
-    "file:vendor/../sdk.tgz";
-  await assert.rejects(
-    verifySdkTrust({ target, ...pathTraversal }),
-    /file:vendor/,
-  );
-  const noTrustHash = trustFixture();
-  delete noTrustHash.companions.get("vendor/sdk-staging-abc.json").trust.sha256;
-  await assert.rejects(verifySdkTrust({ target, ...noTrustHash }), /sha256/);
 });
 
 // --- build environment ------------------------------------------------------
@@ -592,6 +356,9 @@ async function distFixture() {
     ".well-known/mdbase-app.json": "{}",
     "manifest.webmanifest": "{}",
     "service-worker.js": "// worker",
+    "offline-assets.json": "{}",
+    "auth/mdbase/callback.html": "<html>TaskNotes</html>",
+    "assets/sqlite3-init.js": "// sqlite initializer",
     "assets/app-abc.js": `console.log('${sha256("trust-original")}')`,
     "assets/runtime-def.wasm": Buffer.from([0, 97, 115, 109]),
     "assets/sqlite3-ghi.wasm": Buffer.from([0, 97, 115, 109, 1]),
@@ -730,7 +497,7 @@ test("served-byte verification retries a propagating deployment then fails bound
       }),
       /403/,
     );
-    assert.equal(calls, 2); // bounded failure, no credential/auth bypass
+    assert.equal(calls, checksCount(assets)); // 403 is non-retryable; every file explicitly fails
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -748,6 +515,13 @@ test("served verifier covers JS/trust bytes, redirects, missing SQLite and inval
       /SQLite/,
     );
     const checks = selectServedChecks(assets);
+    assert.throws(
+      () =>
+        selectServedChecks(
+          assets.filter((a) => a.path !== "offline-assets.json"),
+        ),
+      /required served asset offline-assets/,
+    );
     for (const status of [200, 302]) {
       await assert.rejects(
         verifyServedAssets({
@@ -778,7 +552,7 @@ test("served verifier covers JS/trust bytes, redirects, missing SQLite and inval
         assets,
         attempts: 0,
       }),
-      /bounded/,
+      /invalid-limit/,
     );
     await symlink("index.html", join(directory, "linked.html"));
     await assert.rejects(buildAssetInventory(directory), /symlink/);
@@ -790,10 +564,16 @@ test("served verifier covers JS/trust bytes, redirects, missing SQLite and inval
 test("build must include original native/SQLite and embedded trust, not just filenames", async () => {
   const { directory } = await distFixture();
   try {
-    const sdkTrust = await verifySdkTrust({
-      target: NATIVE_PUBLISH_TARGETS.staging,
-      ...trustFixture(),
-    });
+    const sdkTrust = {
+      sdk: {
+        trust: { sha256: sha256("trust-original") },
+        native: {
+          sha256: sha256(Buffer.from([0, 97, 115, 109])),
+          sqliteSha256: sha256(Buffer.from([0, 97, 115, 109, 1])),
+          sqliteInitializerSha256: sha256("// sqlite initializer"),
+        },
+      },
+    };
     const assets = await buildAssetInventory(directory);
     assert.deepEqual(await assertBuiltTrust({ directory, assets, sdkTrust }), [
       "assets/app-abc.js",
@@ -821,6 +601,23 @@ test("build must include original native/SQLite and embedded trust, not just fil
   }
 });
 
+test("Pages worker bytes remain inventoried but GET is never execution evidence", () => {
+  const assets = [
+    "index.html",
+    ".well-known/mdbase-app.json",
+    "manifest.webmanifest",
+    "service-worker.js",
+    "offline-assets.json",
+    "app.js",
+    "runtime.wasm",
+    "sqlite3.wasm",
+    "_worker.js",
+  ].map((path) => ({ path, bytes: 1, sha256: sha256("x") }));
+  assert.ok(
+    !selectServedChecks(assets).some((item) => item.path === "_worker.js"),
+  );
+});
+
 test("deployment receipt uses actual Pages ID from structured Wrangler output, never URL prefix", () => {
   const id = "12345678-1234-1234-1234-123456789abc";
   const output = JSON.stringify({
@@ -830,6 +627,10 @@ test("deployment receipt uses actual Pages ID from structured Wrangler output, n
     url: "https://abcd1234.tasknotes-app.pages.dev",
   });
   assert.equal(parseWranglerDeployment(output).id, id);
+  assert.throws(
+    () => parseWranglerDeployment(output.replace(id, "-".repeat(36))),
+    /ID/,
+  );
   assert.throws(() =>
     parseWranglerDeployment(
       "Deployment complete https://abcd1234.tasknotes-app.pages.dev",
@@ -849,6 +650,37 @@ test("workflow isolates native manual route and retains legacy GitHub Pages guar
   );
   assert.match(workflow, /publisher:/);
   assert.match(workflow, /source_sha:/);
+  assert.match(workflow, /native-build:/);
+  const build =
+    workflow.split("  native-build:")[1]?.split("  native-publish:")[0] ?? "";
+  assert.ok(build.length > 0);
+  assert.doesNotMatch(
+    build,
+    /environment:|secrets\.|CLOUDFLARE_|actions: read/,
+  );
+  const upload = workflow.split("  native-publish:")[1] ?? "";
+  assert.doesNotMatch(
+    upload,
+    /pnpm build|native-publisher.mjs prepare|cache: pnpm/,
+  );
+  assert.match(upload, /permissions:\s+contents: read\s+actions: read/);
+  assert.match(upload, /id: native_upload/);
+  assert.match(
+    upload,
+    /if: steps.native_upload.outcome == 'success' && steps.native_upload.outputs.deployment_id != ''/,
+  );
+  assert.match(
+    upload,
+    /NATIVE_DEPLOYMENT_ID: \$\{\{ steps.native_upload.outputs.deployment_id \}\}/,
+  );
+  assert.match(upload, /native-publisher-upload.mjs verify/);
+  const verifyStep = upload
+    .split("- name: Verify actual served bytes")[1]
+    ?.split("- name: Retain failed receipt")[0];
+  assert.ok(verifyStep);
+  assert.doesNotMatch(verifyStep, /CLOUDFLARE_|GITHUB_TOKEN|secrets\./);
+  assert.match(upload, /NATIVE_TRUST_ASSET_SHA256/);
+  assert.match(workflow, /include-hidden-files: true/);
   assert.match(workflow, /native-publish:/);
   assert.match(workflow, /name: \$\{\{ inputs.target \}\}/);
   assert.match(workflow, /persist-credentials: false/);
@@ -856,7 +688,19 @@ test("workflow isolates native manual route and retains legacy GitHub Pages guar
   assert.match(workflow, /NATIVE_SDK_SHA256/);
   assert.match(workflow, /native-publisher.mjs guard/);
   assert.match(workflow, /native-publisher.mjs prepare/);
-  assert.match(workflow, /native-publisher.mjs publish/);
+  assert.match(workflow, /native-publisher-upload.mjs/);
+  assert.match(upload, /--ignore-scripts --ignore-workspace/);
+  assert.match(upload, /scripts\/native-publish-tooling\/pnpm-lock.yaml/);
+  assert.match(upload, /env -i PATH=/);
+  assert.match(upload, /run_install: false/);
+  assert.match(
+    upload,
+    /cd "\$tool"[\s\S]*env -i[\s\S]*pnpm install --frozen-lockfile --ignore-scripts --ignore-workspace/,
+  );
+  assert.equal((upload.match(/pnpm install/g) ?? []).length, 1); // dedicated TOOL closure only, per Co05:15:43
+  assert.ok(
+    build.indexOf("guard-installed") < build.indexOf("pnpm test:release"),
+  );
   assert.match(workflow, /if: always\(\)/);
   assert.match(workflow, /if: inputs.publisher != 'native'/);
   assert.match(workflow, /Pages deployments only run from main/);
