@@ -24,7 +24,9 @@ export async function loadLabNativeBuild(
     signal,
   );
   return {
-    ...selected,
+    // The guard above admits LAB only; state it exactly for the build input.
+    environment: "lab",
+    appOrigin: selected.appOrigin,
     ...TASKNOTES_APPLICATION_REGISTRATION,
     release: appReleaseTrust(),
     runtime,

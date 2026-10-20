@@ -3,6 +3,7 @@ import {
   requireTaskNotesAppEnvironment,
   TASKNOTES_LAB_ORIGIN,
   TASKNOTES_PRODUCTION_ORIGIN,
+  TASKNOTES_STAGING_ORIGIN,
 } from "./app-environment";
 
 describe("explicit next-only replace-at-cutover build environment", () => {
@@ -27,7 +28,54 @@ describe("explicit next-only replace-at-cutover build environment", () => {
       ),
     ).toBe(true);
   });
-  it.each([undefined, "", "staging", "LAB", "unknown"])(
+  it("targets the exact staging address without a second-origin input", () => {
+    expect(TASKNOTES_STAGING_ORIGIN).toBe(
+      "https://staging.tasknotes-app.pages.dev",
+    );
+    const environment = requireTaskNotesAppEnvironment(
+      "staging",
+      undefined,
+      TASKNOTES_STAGING_ORIGIN,
+    );
+    expect(environment).toEqual({
+      environment: "staging",
+      appOrigin: TASKNOTES_STAGING_ORIGIN,
+    });
+    expect(Object.isFrozen(environment)).toBe(true);
+    expect(
+      requireTaskNotesAppEnvironment("staging", "", TASKNOTES_STAGING_ORIGIN),
+    ).toEqual({
+      environment: "staging",
+      appOrigin: TASKNOTES_STAGING_ORIGIN,
+    });
+  });
+  it.each([
+    TASKNOTES_LAB_ORIGIN,
+    TASKNOTES_PRODUCTION_ORIGIN,
+    "https://lab.tasknotes-app.pages.dev",
+    "https://other.example.test",
+  ])("refuses wrong staging page %s", (origin) => {
+    expect(() =>
+      requireTaskNotesAppEnvironment("staging", undefined, origin),
+    ).toThrow();
+  });
+  it("never carries LAB input into staging", () => {
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "staging",
+        TASKNOTES_LAB_ORIGIN,
+        TASKNOTES_STAGING_ORIGIN,
+      ),
+    ).toThrow();
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "staging",
+        TASKNOTES_STAGING_ORIGIN,
+        TASKNOTES_STAGING_ORIGIN,
+      ),
+    ).toThrow();
+  });
+  it.each([undefined, "", "LAB", "STAGING", "unknown"])(
     "refuses missing/ambiguous environment %s",
     (environment) => {
       expect(() =>
@@ -41,6 +89,7 @@ describe("explicit next-only replace-at-cutover build environment", () => {
   );
   it.each([
     TASKNOTES_LAB_ORIGIN,
+    TASKNOTES_STAGING_ORIGIN,
     "https://next.tasknotes.dev",
     "https://other.example.test",
   ])("refuses wrong production page %s", (origin) => {
@@ -91,6 +140,7 @@ describe("explicit next-only replace-at-cutover build environment", () => {
     "https://user@lab.tasknotes-app.pages.dev",
     "https://203.0.113.7",
     TASKNOTES_PRODUCTION_ORIGIN,
+    TASKNOTES_STAGING_ORIGIN,
   ])("refuses a noncanonical or production HTTPS LAB origin: %s", (origin) => {
     expect(() =>
       requireTaskNotesAppEnvironment("lab", origin, origin),

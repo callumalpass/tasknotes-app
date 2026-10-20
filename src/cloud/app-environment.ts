@@ -1,11 +1,14 @@
-/** Production stays at the cutover target; LAB binds the exact origin its build
- * was configured for: a loopback port or a public HTTPS preview (e.g. Pages). */
+/** Production stays at the cutover target and staging at its exact Pages
+ * alias; LAB binds the exact origin its build was configured for: a loopback
+ * port or a public HTTPS preview (e.g. Pages). App loopback is LAB-only. */
 export const TASKNOTES_PRODUCTION_ORIGIN = "https://app.tasknotes.dev";
+export const TASKNOTES_STAGING_ORIGIN =
+  "https://staging.tasknotes-app.pages.dev";
 export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
 export const APP_ENVIRONMENT_CONFIG_KEY = "VITE_TASKNOTES_ENVIRONMENT";
 export const LAB_ORIGIN_CONFIG_KEY = "VITE_TASKNOTES_LAB_ORIGIN";
 export interface TaskNotesAppEnvironment {
-  readonly environment: "lab" | "production";
+  readonly environment: "lab" | "staging" | "production";
   readonly appOrigin: string;
 }
 /** No authority or runtime trust is inferred here. The authenticated release
@@ -15,9 +18,13 @@ export function requireTaskNotesAppEnvironment(
   configuredLabOrigin: unknown,
   currentOrigin: string,
 ): TaskNotesAppEnvironment {
-  if (configuredEnvironment !== "lab" && configuredEnvironment !== "production")
+  if (
+    configuredEnvironment !== "lab" &&
+    configuredEnvironment !== "staging" &&
+    configuredEnvironment !== "production"
+  )
     throw new Error(
-      `${APP_ENVIRONMENT_CONFIG_KEY} must explicitly select LAB or production.`,
+      `${APP_ENVIRONMENT_CONFIG_KEY} must explicitly select LAB, staging or production.`,
     );
   if (configuredEnvironment === "production") {
     if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")
@@ -29,6 +36,18 @@ export function requireTaskNotesAppEnvironment(
     return Object.freeze({
       environment: "production",
       appOrigin: TASKNOTES_PRODUCTION_ORIGIN,
+    });
+  }
+  if (configuredEnvironment === "staging") {
+    if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")
+      throw new Error("Staging cannot include a LAB app origin.");
+    if (currentOrigin !== TASKNOTES_STAGING_ORIGIN)
+      throw new Error(
+        "TaskNotes staging must open at staging.tasknotes-app.pages.dev.",
+      );
+    return Object.freeze({
+      environment: "staging",
+      appOrigin: TASKNOTES_STAGING_ORIGIN,
     });
   }
   if (!isConfiguredLabOrigin(configuredLabOrigin))
@@ -46,7 +65,11 @@ function isConfiguredLabOrigin(value: unknown): value is string {
   if (typeof value !== "string") return false;
   try {
     const url = new URL(value);
-    if (url.origin !== value || value === TASKNOTES_PRODUCTION_ORIGIN)
+    if (
+      url.origin !== value ||
+      value === TASKNOTES_PRODUCTION_ORIGIN ||
+      value === TASKNOTES_STAGING_ORIGIN
+    )
       return false;
     if (url.protocol === "https:")
       return url.port === "" && !/^[\d.]+$|^\[/.test(url.hostname);

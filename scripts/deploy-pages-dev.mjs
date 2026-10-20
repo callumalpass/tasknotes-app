@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 export const developmentDeployments = Object.freeze({
   lab: Object.freeze({
+    environment: "lab",
     appOrigin: "https://lab.tasknotes-app.pages.dev",
     editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
@@ -14,14 +15,20 @@ export const developmentDeployments = Object.freeze({
     wranglerVersion: "4.114.0",
   }),
   staging: Object.freeze({
+    environment: "staging",
     appOrigin: "https://staging.tasknotes-app.pages.dev",
+    editorOrigin: "https://editor-staging.mdbase.dev",
     connectOrigin: "https://connect-staging.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28486",
     project: "tasknotes-app",
     branch: "staging",
     wranglerVersion: "4.114.0",
   }),
+  // Candidate B is a LAB-environment build served from its own preview
+  // origin against its isolated Connect. It has no documented Editor
+  // origin, so that one input stays caller-supplied and explicit.
   "candidate-b": Object.freeze({
+    environment: "lab",
     appOrigin: "https://candidate-b.tasknotes-app.pages.dev",
     connectOrigin: "https://mdbase-connect-candidate-b.onrender.com",
     loopbackOrigin: "http://127.0.0.1:28486",
@@ -102,11 +109,28 @@ export function developmentDeploymentFor(environment) {
     target,
     "TASKNOTES_APP_URL",
   );
+  // Only a LAB-environment build carries a LAB app origin. Any other
+  // target refuses one outright instead of retargeting it.
+  if (deployment.environment === "lab") {
+    requireMatchingOverride(
+      environment.VITE_TASKNOTES_LAB_ORIGIN,
+      deployment.appOrigin,
+      target,
+      "VITE_TASKNOTES_LAB_ORIGIN",
+    );
+  } else if (
+    environment.VITE_TASKNOTES_LAB_ORIGIN !== undefined &&
+    environment.VITE_TASKNOTES_LAB_ORIGIN !== ""
+  ) {
+    throw new Error(
+      `${target} TaskNotes cannot include VITE_TASKNOTES_LAB_ORIGIN, received ${environment.VITE_TASKNOTES_LAB_ORIGIN}.`,
+    );
+  }
   requireMatchingOverride(
-    environment.VITE_TASKNOTES_LAB_ORIGIN,
-    deployment.appOrigin,
+    environment.VITE_TASKNOTES_ENVIRONMENT,
+    deployment.environment,
     target,
-    "VITE_TASKNOTES_LAB_ORIGIN",
+    "VITE_TASKNOTES_ENVIRONMENT",
   );
   if (deployment.editorOrigin)
     requireMatchingOverride(
@@ -131,8 +155,10 @@ export function developmentDeploymentEnvironment(
   return {
     ...environment,
     VITE_BASE_PATH: "/",
-    VITE_TASKNOTES_ENVIRONMENT: "lab",
-    VITE_TASKNOTES_LAB_ORIGIN: deployment.appOrigin,
+    VITE_TASKNOTES_ENVIRONMENT: deployment.environment,
+    // Deliberately cleared outside LAB, like the Firebase project below.
+    VITE_TASKNOTES_LAB_ORIGIN:
+      deployment.environment === "lab" ? deployment.appOrigin : "",
     VITE_TASKNOTES_EDITOR_ORIGIN: editorOrigin,
     TASKNOTES_APP_URL: deployment.appOrigin,
     TASKNOTES_WEB_ONLY: "1",

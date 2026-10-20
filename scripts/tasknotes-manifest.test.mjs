@@ -28,6 +28,15 @@ describe("TaskNotes mdbase manifest", () => {
     });
     expect(manifest.manifest_version).toBe(1);
     expect(manifest.id).toBe("dev.tasknotes.app");
+    // Exact per-environment installation origins; app/grant identity and
+    // capability scopes stay the single set asserted below.
+    expect(manifest.installation_origins).toEqual({
+      lab: { "app-runtime": ["https://lab.tasknotes-app.pages.dev"] },
+      staging: {
+        "app-runtime": ["https://staging.tasknotes-app.pages.dev"],
+      },
+      production: { "app-runtime": ["https://app.tasknotes.dev"] },
+    });
     expect(manifest.notifications.criteria).toEqual([
       {
         id: "task.reminder",

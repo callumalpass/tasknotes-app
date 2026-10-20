@@ -46,3 +46,23 @@ it("passes exact generated manifest and original compatibility storage data to t
     "storage",
   ]);
 });
+
+it("declares the exact staging environment and origin to the SDK", () => {
+  const declaration = taskNotesApplicationDeclaration({
+    environment: "staging",
+    appOrigin: "https://staging.tasknotes-app.pages.dev",
+  });
+  expect(declaration.environment).toBe("staging");
+  expect(declaration.origin).toBe("https://staging.tasknotes-app.pages.dev");
+  expect(declaration.id).toBe(manifest.id);
+  expect(declaration.manifest).toBe(manifest);
+});
+
+it("declares the exact production environment and origin to the SDK", () => {
+  const declaration = taskNotesApplicationDeclaration({
+    environment: "production",
+    appOrigin: "https://app.tasknotes.dev",
+  });
+  expect(declaration.environment).toBe("production");
+  expect(declaration.origin).toBe("https://app.tasknotes.dev");
+});

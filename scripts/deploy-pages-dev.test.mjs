@@ -35,16 +35,17 @@ describe("TaskNotes development deployment", () => {
         VITE_TASKNOTES_LAB_ORIGIN: "https://staging.tasknotes-app.pages.dev",
       }),
     ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
+    // Candidate B has no documented Editor origin, so it stays explicit.
     expect(() =>
-      developmentDeploymentEnvironment({ MDBASE_ENV: "staging" }),
+      developmentDeploymentEnvironment({
+        MDBASE_CANDIDATE_B_CONNECT_URL:
+          "https://mdbase-connect-candidate-b.onrender.com",
+      }),
     ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN is required/);
   });
 
   it("selects staging only when explicitly requested", () => {
-    const environment = {
-      MDBASE_ENV: "staging",
-      VITE_TASKNOTES_EDITOR_ORIGIN: "https://staging.example.test",
-    };
+    const environment = { MDBASE_ENV: "staging" };
 
     expect(developmentDeploymentFor(environment)).toBe(
       developmentDeployments.staging,
@@ -53,7 +54,31 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
+      VITE_TASKNOTES_ENVIRONMENT: "staging",
+      VITE_TASKNOTES_LAB_ORIGIN: "",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://editor-staging.mdbase.dev",
     });
+  });
+
+  it("refuses LAB or cross-environment input on the staging target", () => {
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN/);
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
+      }),
+    ).toThrow("staging TaskNotes requires MDBASE_CONNECT_URL");
   });
 
   it("selects Candidate B only with its isolated authority", () => {
@@ -69,6 +94,9 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_APP_URL: "https://candidate-b.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL:
         "https://mdbase-connect-candidate-b.onrender.com",
+      // Candidate B is a LAB-environment build against its own Connect.
+      VITE_TASKNOTES_ENVIRONMENT: "lab",
+      VITE_TASKNOTES_LAB_ORIGIN: "https://candidate-b.tasknotes-app.pages.dev",
     });
   });
 

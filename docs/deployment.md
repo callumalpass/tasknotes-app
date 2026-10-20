@@ -11,8 +11,10 @@ LAB remains separate and is not changed by this workflow.
 
 Next builds must set `VITE_TASKNOTES_EDITOR_ORIGIN` explicitly alongside their
 app environment and origin. Use the exact Editor origin for that environment:
-`https://lab.mdbase-editor-lab.pages.dev` for the current isolated LAB, or the
-approved production Editor origin when preparing a production build. An isolated
+`https://lab.mdbase-editor-lab.pages.dev` for the current isolated LAB,
+`https://editor-staging.mdbase.dev` for staging (the staging deploy target
+sets it), or the approved production Editor origin when preparing a
+production build. An isolated
 local Editor may use an exact `http://127.0.0.1:<port>` origin. Paths, credentials,
 queries, and fragments are not valid configuration. Startup rejects a missing or
 invalid value rather than silently using another environment's Editor.
