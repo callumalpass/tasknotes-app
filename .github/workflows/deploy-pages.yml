@@ -282,20 +282,26 @@ jobs:
         with:
           node-version: 22
       - name: Verify originals, reviewed target intake and frozen lock BEFORE SDK code
+        id: originals
         run: node scripts/native-publisher.mjs guard
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
       - name: Frozen unprivileged install without hooks
+        id: install
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Bind EVERY installed original BEFORE any candidate SDK execution
+        id: installed
         run: node scripts/native-publisher.mjs guard-installed
       - name: Check source contracts
+        id: contracts
         run: pnpm test:release
       - name: Check EVERY installed original, then build ONCE and inventory final offline shell
+        id: prepare
         run: node scripts/native-publisher.mjs prepare
         env:
           NATIVE_ARTIFACT_PATH: ${{ runner.temp }}/tasknotes-native-build
       - name: Retain immutable final upload bytes including ALL hidden/control files
         id: artifact
+        if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tasknotes-native-build-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -304,8 +310,28 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      # Separate public FAILURE data; never the qualified artifact output above.
+      - name: Record public unprivileged build failure
+        if: failure()
+        run: node scripts/native-build-failure.mjs
+        env:
+          NATIVE_FAILURE_PATH: ${{ runner.temp }}/tasknotes-native-build-failure
+          NATIVE_ORIGINALS_OUTCOME: ${{ steps.originals.outcome }}
+          NATIVE_INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          NATIVE_INSTALLED_OUTCOME: ${{ steps.installed.outcome }}
+          NATIVE_CONTRACTS_OUTCOME: ${{ steps.contracts.outcome }}
+          NATIVE_PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+      - name: Retain public build-failure-only receipt independently of skipped publisher
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tasknotes-native-build-failure-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-native-build-failure/receipt.json
+          if-no-files-found: warn
+          retention-days: 90
+
   native-publish:
-    if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native'
+    if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native' && needs.native-build.result == 'success'
     needs: [native-request, native-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 20

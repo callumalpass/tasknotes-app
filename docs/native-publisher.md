@@ -135,6 +135,28 @@ Full final path-set/size/hash assertion catches missing/extra/tampered files;
 no writers/build/install/hooks intervene between assertion, current native HEAD
 recheck and ONE upload. Source-only tests do not prove live artifact APIs/tooling.
 
+## Failure evidence is independent of upload eligibility
+
+The unprivileged native-build job records a separate minimal PUBLIC failure-only
+receipt for original/hash/lock, installed-member, source-contract and build/
+inventory refusal. Explicit step outcomes select a fixed phase; only requested
+source, target and public repository/run/attempt are allowlisted. No environment
+dump, raw exception, SDK/authentication claim, qualified artifact ID/digest,
+deployment or prepared receipt. A separate failure-only artifact has no output ID
+wiring. The qualified artifact step is success-only; native-publish additionally
+requires native-build success. A failed build never enables the protected job.
+
+Protected artifact acquisition writes each bounded raw public GH response to
+`before.json`, `run.json`, `after.json`, `runAfter.json` IMMEDIATELY upon receipt,
+before JSON parsing, validation or the next fallible lookup. Both run reads use
+the CURRENT run endpoint, not a frozen attempt endpoint. A wrong initial attempt
+retains before/run and refuses BEFORE ZIP fetch. ZIP bytes are retained before
+digest validation; after/current-run identity is revalidated BEFORE extraction.
+If a later lookup fails, preceding response evidence survives with a fixed safe
+failure stage/code. Request headers, tokens, signed blob URLs and opaque transport
+exception messages are never persisted. No retries, new authentication gate or
+upload authorization change.
+
 ## Served bytes, hosting policy and retained failure evidence
 
 Shared helper is copied **UNCHANGED** from Journal2007dc4:

@@ -158,83 +158,133 @@ async function boundedBytes(response, maximum) {
   return Buffer.concat(chunks);
 }
 async function downloadArtifact(environment, request, directory) {
-  const repo = environment.GITHUB_REPOSITORY;
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo ?? ""))
-    throw new Error("Invalid repository.");
-  if (!/^[1-9][0-9]*$/.test(environment.NATIVE_ARTIFACT_ID ?? ""))
-    throw new Error("Missing immutable artifact ID.");
-  const api = `https://api.github.com/repos/${repo}/actions`;
-  const headers = {
-    Authorization: `Bearer ${environment.GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-  const get = async (suffix) =>
-    JSON.parse(
-      (
-        await boundedBytes(
-          await fetch(api + suffix, {
-            headers,
-            redirect: "error",
-            signal: AbortSignal.timeout(30000),
-          }),
-          2 * 1024 * 1024,
-        )
-      ).toString(),
+  // Public GH response bodies only, NEVER headers/tokens/signed redirect URLs.
+  // Every response is durable BEFORE parsing/validation or the next lookup.
+  let stage = "request-identity";
+  const trace = { kind: "immutable-artifact-fetch-evidence", stage };
+  const save = () =>
+    writeFile(
+      join(directory, "artifact-fetch-evidence.json"),
+      JSON.stringify(trace, null, 2) + "\n",
     );
-  const metadata = await get(`/artifacts/${environment.NATIVE_ARTIFACT_ID}`);
-  const run = await get(
-    `/runs/${environment.GITHUB_RUN_ID}/attempts/${environment.GITHUB_RUN_ATTEMPT}`,
-  );
-  validateArtifactMetadata({
-    metadata,
-    run,
-    id: environment.NATIVE_ARTIFACT_ID,
-    digest: environment.NATIVE_ARTIFACT_DIGEST,
-    repository: repo,
-    runId: environment.GITHUB_RUN_ID,
-    attempt: environment.GITHUB_RUN_ATTEMPT,
-    sourceSha: request.sourceSha,
-    target: request.target.target,
-  });
-  // Official artifact zip endpoint, NEVER an artifact-supplied download script.
-  const redirect = await fetch(
-    `${api}/artifacts/${environment.NATIVE_ARTIFACT_ID}/zip`,
-    { headers, redirect: "manual", signal: AbortSignal.timeout(30000) },
-  );
-  const address = new URL(redirect.headers.get("location"));
-  if (
-    redirect.status !== 302 ||
-    address.protocol !== "https:" ||
-    address.username ||
-    address.password ||
-    !address.hostname.endsWith(".blob.core.windows.net")
-  )
-    throw new Error("Artifact download redirect refused.");
-  const bytes = await boundedBytes(
-    await fetch(address, {
-      redirect: "error",
-      credentials: "omit",
-      signal: AbortSignal.timeout(120000),
-    }),
-    512 * 1024 * 1024,
-  );
-  same(
-    hash(bytes),
-    environment.NATIVE_ARTIFACT_DIGEST,
-    "Downloaded immutable ZIP digest",
-  );
-  const archive = join(directory, "artifact.zip");
-  await writeFile(archive, bytes, { flag: "wx" });
-  const artifact = join(directory, "artifact");
-  await exec("python3", [
-    "-I",
-    "-B",
-    join(root, "scripts/native-artifact-extract.py"),
-    archive,
-    artifact,
-  ]);
-  return { artifact, metadata, run };
+  const at = async (next) => {
+    stage = next;
+    trace.stage = stage;
+    await save();
+  };
+  try {
+    const repo = environment.GITHUB_REPOSITORY;
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo ?? ""))
+      throw new Error("Invalid repository.");
+    for (const name of [
+      "NATIVE_ARTIFACT_ID",
+      "GITHUB_RUN_ID",
+      "GITHUB_RUN_ATTEMPT",
+    ])
+      if (!/^[1-9][0-9]*$/.test(environment[name] ?? ""))
+        throw new Error("Missing immutable identity.");
+    const api = `https://api.github.com/repos/${repo}/actions`;
+    const headers = {
+      Authorization: `Bearer ${environment.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+    const get = async (suffix, label) => {
+      await at(`fetch-${label}`);
+      const bytes = await boundedBytes(
+        await fetch(api + suffix, {
+          headers,
+          redirect: "error",
+          signal: AbortSignal.timeout(30000),
+        }),
+        2 * 1024 * 1024,
+      );
+      await writeFile(join(directory, `${label}.json`), bytes, { flag: "wx" });
+      await at(`parse-${label}`);
+      return JSON.parse(bytes.toString());
+    };
+    const validate = (metadata, run) =>
+      validateArtifactMetadata({
+        metadata,
+        run,
+        id: environment.NATIVE_ARTIFACT_ID,
+        digest: environment.NATIVE_ARTIFACT_DIGEST,
+        repository: repo,
+        runId: environment.GITHUB_RUN_ID,
+        attempt: environment.GITHUB_RUN_ATTEMPT,
+        sourceSha: request.sourceSha,
+        target: request.target.target,
+      });
+    const metadata = await get(
+      `/artifacts/${environment.NATIVE_ARTIFACT_ID}`,
+      "before",
+    );
+    // Current run, NOT immutable /attempts/N, detects an unexpected rerun.
+    const run = await get(`/runs/${environment.GITHUB_RUN_ID}`, "run");
+    await at("validate-before");
+    validate(metadata, run); // wrong INITIAL attempt: no ZIP fetch
+    await at("fetch-zip-redirect");
+    const redirect = await fetch(
+      `${api}/artifacts/${environment.NATIVE_ARTIFACT_ID}/zip`,
+      {
+        headers,
+        redirect: "manual",
+        signal: AbortSignal.timeout(30000),
+      },
+    );
+    const address = new URL(redirect.headers.get("location"));
+    if (
+      redirect.status !== 302 ||
+      address.protocol !== "https:" ||
+      address.username ||
+      address.password ||
+      !address.hostname.endsWith(".blob.core.windows.net")
+    )
+      throw new Error("Artifact download redirect refused.");
+    await at("fetch-zip");
+    const bytes = await boundedBytes(
+      await fetch(address, {
+        redirect: "error",
+        credentials: "omit",
+        signal: AbortSignal.timeout(120000),
+      }),
+      512 * 1024 * 1024,
+    );
+    const archive = join(directory, "artifact.zip");
+    await writeFile(archive, bytes, { flag: "wx" });
+    await at("validate-zip");
+    same(
+      hash(bytes),
+      environment.NATIVE_ARTIFACT_DIGEST,
+      "Downloaded immutable ZIP digest",
+    );
+    const after = await get(
+      `/artifacts/${environment.NATIVE_ARTIFACT_ID}`,
+      "after",
+    );
+    const runAfter = await get(
+      `/runs/${environment.GITHUB_RUN_ID}`,
+      "runAfter",
+    );
+    await at("validate-after");
+    validate(after, runAfter);
+    await at("extract");
+    const artifact = join(directory, "artifact");
+    await exec("python3", [
+      "-I",
+      "-B",
+      join(root, "scripts/native-artifact-extract.py"),
+      archive,
+      artifact,
+    ]);
+    await at("metadata-and-extraction-validated");
+    return { artifact, metadata, run };
+  } catch {
+    trace.failureStage = stage;
+    trace.errorCode = "immutable-artifact-refused"; // no opaque transport error/URL/env
+    await save();
+    throw new Error(`Immutable artifact refused at ${stage}.`);
+  }
 }
 
 export async function upload(
