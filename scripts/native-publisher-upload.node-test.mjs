@@ -279,7 +279,7 @@ for (const value of [undefined, "f".repeat(64)])
       GITHUB_RUN_ATTEMPT: "2",
       NATIVE_TRUST_ASSET_SHA256: value,
       NATIVE_SDK_SHA256:
-        "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
+        "15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c",
       NATIVE_UI_SHA256:
         "e3da3c19b49ee90d3d19df2ea4a1a387b158decfccc8000371f93170eb30b723",
       NATIVE_PROTOCOL_SHA256:

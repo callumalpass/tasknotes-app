@@ -222,7 +222,12 @@ export async function verifyOriginalIntake({
     );
   }
   equal(config.environment, target.environment, "Intake environment");
-  const packet = join(root, "vendor/native-publish", target.environment);
+  const packetDirectory = safePath(
+    config.packetDirectory ?? target.environment,
+  );
+  if (packetDirectory.includes("/"))
+    throw new Error("Packet must retain one reviewed target directory.");
+  const packet = join(root, "vendor/native-publish", packetDirectory);
   // Exact reviewed packet path-set/digests, NOT candidate self-asserted facts.
   await assertInventory(packet, config.packetFiles);
   equal(

@@ -442,6 +442,34 @@ test("Co064253 does not waive wrong UI pin despite historical labels", async (t)
   await assert.rejects(verifyTargetIntake({ ...f, target }), /original pin/);
 });
 
+for (const packetDirectory of [
+  "../staging",
+  "staging/nested",
+  "/tmp",
+  "staging\\\\other",
+])
+  test(`reviewed packet directory refuses unsafe/nested path: ${packetDirectory}`, async (t) => {
+    const f = await fixture(t);
+    f.config.packetDirectory = packetDirectory;
+    await f.save();
+    await assert.rejects(
+      verifyTargetIntake({ ...f, target }),
+      /Unsafe intake path|Packet must retain/,
+    );
+  });
+test("independent SDK facts digest refuses changed malformed facts BEFORE parsing", async (t) => {
+  const f = await fixture(t);
+  await f.pput(
+    f.config.archives.sdk.facts,
+    Buffer.from("{not canonical facts"),
+  );
+  await f.save(); // even a matching candidate packet inventory cannot replace the pinned facts digest
+  await assert.rejects(
+    verifyTargetIntake({ ...f, target }),
+    /Independently pinned SDK public facts/,
+  );
+});
+
 test("candidate can NOT replace packet facts/member inventory and expected digests together", async (t) => {
   const f = await fixture(t);
   await f.pput("sdk/artifact-facts.json", j({ source: "replacement" }));

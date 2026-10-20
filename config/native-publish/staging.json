@@ -1,18 +1,19 @@
 {
   "environment": "staging",
+  "packetDirectory": "staging-eaa4e697",
   "logOrigin": "https://log-staging.mdbase.dev",
   "assetSha256": "67e117646c9c26927f0d5a44cbd26f057c318975032e9cd24f24b020150cdbc7",
-  "lockSha256": "65c9a0e6f2c26a31e1df2ab11bade453a01856b9ba079e25632da71c3768046b",
+  "lockSha256": "4be79eff0da1bd5dc8b20b42268170267826d707b058e1ac9c66d931a824a182",
   "archives": {
     "sdk": {
-      "archive": "sdk-dev-a3023aee-staging.tgz",
-      "bytes": 4460029,
-      "sha256": "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
-      "sri": "sha512-qfffKwUwtscEXqEznldlQPZ53pljDtnd4aIrB0sqs+AEV8L9Uyhc7RFfpevu8WS5EnT69TZw24R/KH9Jmi6S8g==",
-      "source": "a3023aee3731dcbf9de19a41918a84cfb3ae7193",
-      "sourceTree": "c50479b5641c11a2750ec8b9cefdb433e5285d10",
+      "archive": "sdk-dev-eaa4e697-staging.tgz",
+      "bytes": 4461608,
+      "sha256": "15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c",
+      "sri": "sha512-OZcexDhkjwROq0pSf/rSV1aU9H2AArhB5S2/UQU4ZTYMqJz7mpOhSFznZKSjDh6nb4EVROvBS926O3+HUePbjA==",
+      "source": "eaa4e697fc1198f32fc3714f377342a24c56d985",
+      "sourceTree": "71ddecbca5dd54b5153d6bcd500cc89ce189474e",
       "facts": "artifact/artifact-facts.public.json",
-      "factsSha256": "d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c",
+      "factsSha256": "d54aef71521ab3561bd9a81cd1303410a3fde29f8fbd35a1e0041e58d0569de3",
       "members": "artifact/members.json"
     },
     "ui": {
@@ -826,13 +827,13 @@
     },
     {
       "path": "artifact/artifact-facts.public.json",
-      "bytes": 4525,
-      "sha256": "d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c"
+      "bytes": 4746,
+      "sha256": "d54aef71521ab3561bd9a81cd1303410a3fde29f8fbd35a1e0041e58d0569de3"
     },
     {
       "path": "artifact/members.json",
       "bytes": 145757,
-      "sha256": "2966a7fd6dd3ba558d85add4442b70295c4a34874a08ad65a63efa5a7c7b494f"
+      "sha256": "0a09469c5c72c7374c386c334f291c8b65e0a92958881473c739dd2e888dc6a4"
     },
     {
       "path": "artifact/provenance.json",

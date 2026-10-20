@@ -12,7 +12,7 @@ test("Co064253: actual historical UI labels do not veto STAGING protected-hash +
     root: new URL("../", import.meta.url).pathname,
     target: NATIVE_PUBLISH_TARGETS.staging,
     approvedHashes: {
-      sdk: "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
+      sdk: "15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c",
       ui: "e3da3c19b49ee90d3d19df2ea4a1a387b158decfccc8000371f93170eb30b723",
       protocol:
         "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",

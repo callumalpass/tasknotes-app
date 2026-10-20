@@ -114,41 +114,44 @@ test("current SDK pin is the accepted unchanged STAGING original, not legacy LAB
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   const factBytes = await readFile(
     new URL(
-      "vendor/native-publish/staging/artifact/artifact-facts.public.json",
+      "vendor/native-publish/staging-eaa4e697/artifact/artifact-facts.public.json",
       root,
     ),
   );
   assert.equal(
     createHash("sha256").update(factBytes).digest("hex"),
-    "d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c",
+    "d54aef71521ab3561bd9a81cd1303410a3fde29f8fbd35a1e0041e58d0569de3",
   );
   const facts = JSON.parse(factBytes);
-  assert.equal(facts.source, "a3023aee3731dcbf9de19a41918a84cfb3ae7193");
-  assert.equal(facts.sourceTree, "c50479b5641c11a2750ec8b9cefdb433e5285d10");
-  assert.equal(facts.archive, "sdk-dev-a3023aee-staging.tgz");
+  assert.equal(facts.source, "eaa4e697fc1198f32fc3714f377342a24c56d985");
+  assert.equal(facts.sourceTree, "71ddecbca5dd54b5153d6bcd500cc89ce189474e");
+  assert.equal(facts.archive, "sdk-dev-eaa4e697-staging.tgz");
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
-    "file:vendor/sdk-dev-a3023aee-staging.tgz",
+    "file:vendor/sdk-dev-eaa4e697-staging.tgz",
   );
   assert.equal(
     facts.dependencies[0].file,
     "vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
   );
   const bytes = await readFile(
-    new URL("vendor/sdk-dev-a3023aee-staging.tgz", root),
+    new URL("vendor/sdk-dev-eaa4e697-staging.tgz", root),
   );
-  assert.equal(bytes.length, 4460029);
+  assert.equal(bytes.length, 4461608);
   assert.equal(
     createHash("sha256").update(bytes).digest("hex"),
-    "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
+    "15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c",
   );
   assert.equal(
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
-    "sha512-qfffKwUwtscEXqEznldlQPZ53pljDtnd4aIrB0sqs+AEV8L9Uyhc7RFfpevu8WS5EnT69TZw24R/KH9Jmi6S8g==",
+    "sha512-OZcexDhkjwROq0pSf/rSV1aU9H2AArhB5S2/UQU4ZTYMqJz7mpOhSFznZKSjDh6nb4EVROvBS926O3+HUePbjA==",
   );
   const provenance = JSON.parse(
     await readFile(
-      new URL("vendor/native-publish/staging/artifact/provenance.json", root),
+      new URL(
+        "vendor/native-publish/staging-eaa4e697/artifact/provenance.json",
+        root,
+      ),
       "utf8",
     ),
   );

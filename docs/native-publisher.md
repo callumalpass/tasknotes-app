@@ -32,7 +32,7 @@ The last digest is **not** trust module/context/receipt/native/archive SHA.
 Module integrity is a separate original-member hash, not another environment
 variable. Hash equality is byte binding, not a new authentication authority.
 
-## Historical c0bc STAGING originals; replacement pending; production absent
+## Selected eaa4 STAGING replacement; historical c0bc preserved; production absent
 
 Canonical TNAPP public packet (nx-uiopen inbox line878 and controlling addenda)
 retains ORIGINAL SDK/UI/protocol archive filenames, facts with SHA256/bytes/SRI,
@@ -41,16 +41,32 @@ source/tree, full `members.json` regular-member inventories, byte-identical
 image/trust inventories and signatures, and normal qualification/auth references.
 No producer-private paths, verifier executable or alternative SDK schema aliases.
 
-Historical STAGING custody retains the accepted ONCE-produced original
-`sdk-dev-a3023aee-staging.tgz`, 4460029B, SHA256
-`c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296`;
-SDK source a302/treec504, native725/6984/3676583, verifier0e44/4c72.
-Independent public facts SHA256
-`d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c`
-is pinned BEFORE candidate execution. The exact owner packet is copied unchanged,
-preserving producer-relative `artifact/`, `sdk-build-receipt.json` and
-`verified-staging/next-trust/` layout, to `vendor/native-publish/staging/`.
-No production config/material, original SDK rewrite, native/helper build or repack.
+Co072350 supersedes the earlier hold after TN072304 actual READY. The selected
+ONE-produced original is `sdk-dev-eaa4e697-staging.tgz`,4461608B, SHA256
+`15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c`;
+SDK PR944 ACTUAL merge `eaa4e697fc1198f32fc3714f377342a24c56d985`,
+tree `71ddecbca5dd54b5153d6bcd500cc89ce189474e` (qualified e42d whole-tree match).
+Sole owner CI39383342511/attempt1 SUCCESS; no rerun by this app owner.
+FRESH independently pinned public facts4746B SHA256
+`d54aef71521ab3561bd9a81cd1303410a3fde29f8fbd35a1e0041e58d0569de3`
+MUST pass before parsing/SDK execution; never mix old d313 facts with new15eb.
+All896 original member paths/sizes/hashes, SHA512/SRI and original bundled protocol
+are verified. The byte-verbatim packet retains producer-relative layout under
+`vendor/native-publish/staging-eaa4e697/`; reviewed APP `packetDirectory` selects
+one safe directory, not an SDK schema alias, environment fallback or auth gate.
+
+Old c0bc archive, packet `vendor/native-publish/staging/`, old config copy
+`config/native-publish/historical/staging-a3023aee.json`, b98 failure/exit1,
+all69 b98 output bytes/inventories and cf22 historical post-check remain intact.
+The old post-check intentionally refuses changed app/SDK inputs; it must NOT
+retarget or relabel old output as eaa4. New input legitimately requires ONE causal
+new app build, never an assurance retry. No SDK/native/helper producer rerun,
+pack/repack, original rewrite, fresh authentication or production authority.
+
+Native725/6984, SQLite, verifier0e44/4c72, raw signed trust ASSET67e1/f45-beta134,
+context15e0, packaged module544350 and unsigned d7ab receipt are unchanged.
+The receipt intentionally binds same-target context+verifier, NOT SDK/native
+source. Preserve it verbatim; no new receipt/authentication boolean.
 
 Reviewed APP input `config/native-publish/staging.json` pins exact lock, complete
 packet file inventory, original SDK facts/member paths + facts digest, canonical
@@ -73,13 +89,11 @@ SDK/UI pair consumer compatibility and native admission remain DISTINCT.
 Production authority is NOT added; missing production inputs, human GitHub UI
 reviewer/GO and protections remain fail-closed.
 
-**Pool065615 / Co063830 hold:** c0bc is valid historical byte custody, NOT the
-latest/future candidate or admission. Its producer is closed and bytes immutable.
-NX-TNAPP alone owns SDK repair/CI and replacement original production. No new
-replacement original/SHA/facts is available here. HOLD unstarted c0bc app builds
-and all live publication; final actual-target intake and the ONE causal new
-consumer build wait for qualified owner originals + independent facts. Do not
-poll, patch, repack, reauthenticate, guess a replacement or add a transport gate.
+ONE new15eb STAGING consumer build is now explicitly authorized after installed
+SDK896/UI81/protocol67 originals and frozen lock pass. Owner source/public-wire
+fix qualification is distinct from this app's pair tests, actual native admission,
+managed cleanup/signout/device proof and live publisher/served bytes. No such
+qualification transfers automatically. No pushes/PR/CI/API/CF/LAB operations.
 
 Every original installed member is compared. pnpm10.7 generates ONE additional
 `node_modules/.bin/yaml` in SDK and protocol packages. These are NOT original
@@ -250,8 +264,9 @@ sign-in/grant/readiness/application admission.
   dispatch/tag/upload; human environment approval ONLY in GitHub UI. Agents never
   invoke pending-deployments approval APIs or plaintext approval hashes.
 - Actual STAGING originals/reviewed frozen intake are present. Parent reports
-  the four STAGING per-environment values configured/audited; this source task
-  did not query/configure them. Production config/hashes/GO remain absent.
+  the three unchanged STAGING values configured/audited; parent separately updates
+  ONLY the SDK hash to15eb. This task does not claim a fresh environment readback
+  and did not query/configure values. Production config/hashes/GO remain absent.
   Parent retains actual **per-environment** values/protection audit:
   GitHub `vars` repository/organization fallback can otherwise hide an absent
   environment value. String format/equality cannot certify variable scope or
@@ -265,9 +280,9 @@ sign-in/grant/readiness/application admission.
   evidence, real paired Editor+TaskNotes staging admission and later production
   GO remain parent-owned. Never merge TaskNotes native to main for registration.
 
-Historical unprivileged staging consumer scripts (new builds HOLD pending replacement): `rpnpm run test:staging-intake`,
+Authorized replacement consumer scripts (not a GitHub dispatch): `rpnpm run test:staging-intake`,
 `rpnpm run test:staging-consumer` (full Vitest), and ONE causal app build
-`rpnpm --pull dist --pull test-results/native-staging-qualification.json run build:staging:qualification`.
+`rpnpm --pull dist --pull test-results/native-staging-qualification.json run build:staging:qualification <actual-local-source-sha> <actual-local-source-tree>`.
 Each verifies all installed originals and the independent approved tuple BEFORE
 candidate SDK/Vitest/Vite execution. Exact app/Editor/CP staging origins, no loopback.
 These are not GitHub dispatches/authentication, publisher CI or admission.
