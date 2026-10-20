@@ -138,7 +138,7 @@ test("artifact receipt binds exact source/tree/target/run/full original inventor
     "runtime.wasm",
     "sqlite3.wasm",
     "sqlite-init.js",
-    "offline-assets.json",
+    "mdbase-shell-runtime.js",
   ];
   const assets = paths.map((path, i) => ({
     path,
@@ -410,7 +410,7 @@ test("full bytes and independent trusted static header/route checks; worker/cont
     ".well-known/mdbase-app.json": "{}",
     "manifest.webmanifest": "{}",
     "service-worker.js": "sw",
-    "offline-assets.json": "{}",
+    "mdbase-shell-runtime.js": "// runtime",
     "runtime.wasm": "wasm",
     "sqlite3.wasm": "sqlite",
     _headers: "source policy",

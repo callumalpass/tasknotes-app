@@ -21,7 +21,7 @@ export function selectServedChecks(assets) {
     ".well-known/mdbase-app.json",
     "manifest.webmanifest",
     "service-worker.js",
-    "offline-assets.json",
+    "mdbase-shell-runtime.js", // actual SDK inline manifest runtime, NOT an invented JSON alias
   ]) {
     if (!assets.some((a) => a.path === required))
       throw new Error(`Missing required served asset ${required}.`);

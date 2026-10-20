@@ -10,6 +10,7 @@ import { assertInventory } from "./lib/native-publish-bytes.mjs";
 import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
 import {
   assertCheckout,
+  assertBuiltTrust,
   createReceipt,
   parsePublishRequest,
   parseWranglerDeployment,
@@ -191,17 +192,43 @@ async function downloadArtifact(environment, request, directory) {
     };
     const get = async (suffix, label) => {
       await at(`fetch-${label}`);
-      const bytes = await boundedBytes(
-        await fetch(api + suffix, {
-          headers,
-          redirect: "error",
-          signal: AbortSignal.timeout(30000),
-        }),
-        2 * 1024 * 1024,
+      const response = await fetch(api + suffix, {
+        headers,
+        redirect: "error",
+        signal: AbortSignal.timeout(30000),
+      });
+      const status = response.status;
+      if (!Number.isInteger(status) || status < 100 || status > 599)
+        throw new Error("Unrecognized HTTP status.");
+      // Only observed numeric status and bounded public API body. No headers,
+      // bearer token, redirect/SAS URL or opaque exception. No invented response
+      // when fetch itself fails. Retain even non-JSON HTTP errors before refusal.
+      await writeFile(
+        join(directory, `${label}.http.json`),
+        JSON.stringify({ status }) + "\n",
+        { flag: "wx" },
       );
-      await writeFile(join(directory, `${label}.json`), bytes, { flag: "wx" });
+      const chunks = [];
+      let size = 0;
+      try {
+        for await (const chunk of response.body ?? []) {
+          const remaining = 2 * 1024 * 1024 - size;
+          chunks.push(Buffer.from(chunk).subarray(0, remaining));
+          size += Math.min(chunk.length, remaining);
+          if (chunk.length > remaining) throw new Error("Metadata body limit.");
+        }
+      } finally {
+        await writeFile(
+          join(directory, `${label}.json`),
+          Buffer.concat(chunks),
+          { flag: "wx" },
+        );
+      }
+      await at(`http-${label}`);
+      if (status < 200 || status >= 300)
+        throw new Error("Metadata HTTP refused.");
       await at(`parse-${label}`);
-      return JSON.parse(bytes.toString());
+      return JSON.parse(Buffer.concat(chunks).toString());
     };
     const validate = (metadata, run) =>
       validateArtifactMetadata({
@@ -400,6 +427,12 @@ export async function upload(
     // No further writers or project hooks exist in this job. Extraction set
     // read-only files/directories. Only reviewed source uploader + trusted CLI.
     await assertInventory(join(artifact, "dist"), receipt.assets);
+    // Protected verifier reads embedded JSON AS DATA; never executes SDK/worker.
+    await assertBuiltTrust({
+      directory: join(artifact, "dist"),
+      assets: receipt.assets,
+      sdkTrust,
+    });
     await assertCurrentReleaseHead({ target, sourceSha }); // IMMEDIATELY before ONE upload
     try {
       await exec(

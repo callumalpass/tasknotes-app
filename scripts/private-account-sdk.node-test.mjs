@@ -167,7 +167,7 @@ test("current SDK pin is the accepted unchanged STAGING original, not legacy LAB
   );
   assert.equal(ui.noPublication, true);
   assert.equal(ui.pairedSdkSource, "cc492f3f3832c4939eff7fe39b0fabf5ad234b24");
-  assert.notEqual(ui.pairedSdkSource, facts.source); // preserved live publication refusal
+  assert.notEqual(ui.pairedSdkSource, facts.source); // historical peer qualification, NOT a Co064253 STAGING veto
 });
 
 test("packaged native assets are original bytes, not public application readiness", async () => {

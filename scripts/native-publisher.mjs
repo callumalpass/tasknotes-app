@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { inventoryDirectory } from "./lib/native-publish-bytes.mjs";
 import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
+import { assertOfflineShell } from "./lib/native-offline-shell.mjs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
@@ -354,6 +355,7 @@ export async function assertCheckout({
 
 export async function assertBuiltTrust({ directory, assets, sdkTrust }) {
   selectServedChecks(assets);
+  await assertOfflineShell({ directory, assets, sdkTrust });
   for (const expected of [
     sdkTrust.sdk.native.sha256,
     sdkTrust.sdk.native.sqliteSha256,

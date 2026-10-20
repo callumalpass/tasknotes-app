@@ -22,6 +22,7 @@
     "test:release": "node --test scripts/*.node-test.mjs",
     "test:native-publisher": "node --test scripts/native-publish*.node-test.mjs",
     "test:staging-intake": "node scripts/qualify-native-staging.mjs check",
+    "test:staging-retained-output": "node scripts/verify-retained-staging-output.mjs",
     "test:staging-consumer": "node scripts/qualify-native-staging.mjs test",
     "build:staging:qualification": "node scripts/qualify-native-staging.mjs build",
     "test:coverage": "vitest run --coverage",

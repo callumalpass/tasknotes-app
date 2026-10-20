@@ -7,6 +7,7 @@ import { join, resolve, sep } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { isDeepStrictEqual } from "node:util";
 import { assertGeneratedYamlShim } from "./native-pnpm-generated.mjs";
+import { originalOfflineRuntime } from "./native-offline-shell.mjs";
 import {
   assertInventory,
   inventoryDirectory,
@@ -396,13 +397,23 @@ export async function verifyOriginalIntake({
     packages[key] = { expected, facts, companion, members, inventory };
   }
   const { sdk, ui, protocol } = packages;
+  const historicalUiQualification = {
+    noPublication: ui.companion.noPublication,
+    pairedSdkSource: ui.companion.pairedSdkSource,
+  };
   const publicationConstraints = [];
-  if (ui.companion.noPublication === true)
-    publicationConstraints.push("UI companion noPublication=true");
-  if (ui.companion.pairedSdkSource !== sdk.facts.source)
-    publicationConstraints.push(
-      `UI companion pairedSdkSource=${ui.companion.pairedSdkSource} is not paired with SDK ${sdk.facts.source}`,
-    );
+  // Co064253: original UI labels describe HISTORICAL custody/peer qualification,
+  // not STAGING publication authority. Keep bytes, hash/SRI/member/approved-lock
+  // checks and protected NATIVE_UI_SHA256 binding above. No producer relabel,
+  // approval boolean or transfer of old pairing qualification. PROD unchanged.
+  if (target.environment !== "staging") {
+    if (ui.companion.noPublication === true)
+      publicationConstraints.push("UI companion noPublication=true");
+    if (ui.companion.pairedSdkSource !== sdk.facts.source)
+      publicationConstraints.push(
+        `UI companion pairedSdkSource=${ui.companion.pairedSdkSource} is not paired with SDK ${sdk.facts.source}`,
+      );
+  }
   const dependency = sdk.facts.dependencies?.find(
     (d) => d.name === "@mdbase-dev/connect-protocol",
   );
@@ -668,6 +679,9 @@ export async function verifyOriginalIntake({
   return {
     sdk: {
       ...sdk.expected,
+      offlineShell: originalOfflineRuntime(
+        sdk.members.get("dist/offline-shell-worker.js"),
+      ),
       trust: { ...trust, packagedTrustSha256: digest(module) },
       native: {
         sha256: provenance.runtime.sha256,
@@ -679,6 +693,7 @@ export async function verifyOriginalIntake({
     protocol: protocol.expected,
     provenance,
     publicationConstraints,
+    historicalUiQualification,
     originalMemberCounts: Object.fromEntries(
       Object.entries(packages).map(([key, value]) => [key, value.members.size]),
     ),

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { originalOfflineRuntime } from "./lib/native-offline-shell.mjs";
+import { offlineShellFor } from "./fixtures/offline-shell-data.mjs";
 import { createHash } from "node:crypto";
 import {
   mkdtemp,
@@ -205,13 +207,12 @@ test("actual missing target intake refuses (no LAB/UI relabel fallback)", async 
     }),
     /Missing actual reviewed target intake/,
   );
-  await assert.rejects(
-    verifySdkTrust({
-      root: new URL("../", import.meta.url).pathname,
-      target: NATIVE_PUBLISH_TARGETS.staging,
-    }),
-    /noPublication|not paired/,
-  );
+  const historical = await verifySdkTrust({
+    root: new URL("../", import.meta.url).pathname,
+    target: NATIVE_PUBLISH_TARGETS.staging,
+  });
+  assert.deepEqual(historical.publicationConstraints, []);
+  assert.equal(historical.historicalUiQualification.noPublication, true);
 });
 
 // --- build environment ------------------------------------------------------
@@ -362,7 +363,7 @@ async function distFixture() {
     ".well-known/mdbase-app.json": "{}",
     "manifest.webmanifest": "{}",
     "service-worker.js": "// worker",
-    "offline-assets.json": "{}",
+    "mdbase-shell-runtime.js": "// original shell runtime",
     "auth/mdbase/callback.html": "<html>TaskNotes</html>",
     "assets/sqlite3-init.js": "// sqlite initializer",
     "assets/app-abc.js": `console.log('${sha256("trust-original")}')`,
@@ -370,6 +371,7 @@ async function distFixture() {
     "assets/sqlite3-ghi.wasm": Buffer.from([0, 97, 115, 109, 1]),
     "icon.png": Buffer.from([137, 80, 78, 71]),
   };
+  files["service-worker.js"] = offlineShellFor(files);
   for (const [name, bytes] of Object.entries(files)) {
     const path = join(directory, name);
     await mkdir(join(path, ".."), { recursive: true });
@@ -524,9 +526,9 @@ test("served verifier covers JS/trust bytes, redirects, missing SQLite and inval
     assert.throws(
       () =>
         selectServedChecks(
-          assets.filter((a) => a.path !== "offline-assets.json"),
+          assets.filter((a) => a.path !== "mdbase-shell-runtime.js"),
         ),
-      /required served asset offline-assets/,
+      /required served asset mdbase-shell-runtime/,
     );
     for (const status of [200, 302]) {
       await assert.rejects(
@@ -573,6 +575,9 @@ test("build must include original native/SQLite and embedded trust, not just fil
     const sdkTrust = {
       sdk: {
         trust: { sha256: sha256("trust-original") },
+        offlineShell: originalOfflineRuntime(
+          Buffer.from("// original shell runtime"),
+        ),
         native: {
           sha256: sha256(Buffer.from([0, 97, 115, 109])),
           sqliteSha256: sha256(Buffer.from([0, 97, 115, 109, 1])),
@@ -590,16 +595,10 @@ test("build must include original native/SQLite and embedded trust, not just fil
       assertBuiltTrust({ directory, assets, sdkTrust: wrongSdk }),
       /WASM/,
     );
-    await writeFile(
-      join(directory, "assets/app-abc.js"),
-      "console.log('no trust')",
-    );
+    const wrongTrust = structuredClone(sdkTrust);
+    wrongTrust.sdk.trust.sha256 = "e".repeat(64);
     await assert.rejects(
-      assertBuiltTrust({
-        directory,
-        assets: await buildAssetInventory(directory),
-        sdkTrust,
-      }),
+      assertBuiltTrust({ directory, assets, sdkTrust: wrongTrust }),
       /trust/,
     );
   } finally {
@@ -613,7 +612,7 @@ test("Pages worker bytes remain inventoried but GET is never execution evidence"
     ".well-known/mdbase-app.json",
     "manifest.webmanifest",
     "service-worker.js",
-    "offline-assets.json",
+    "mdbase-shell-runtime.js",
     "app.js",
     "runtime.wasm",
     "sqlite3.wasm",

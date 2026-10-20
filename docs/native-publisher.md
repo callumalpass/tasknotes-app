@@ -32,7 +32,7 @@ The last digest is **not** trust module/context/receipt/native/archive SHA.
 Module integrity is a separate original-member hash, not another environment
 variable. Hash equality is byte binding, not a new authentication authority.
 
-## Actual STAGING original intake; production absent
+## Historical c0bc STAGING originals; replacement pending; production absent
 
 Canonical TNAPP public packet (nx-uiopen inbox line878 and controlling addenda)
 retains ORIGINAL SDK/UI/protocol archive filenames, facts with SHA256/bytes/SRI,
@@ -41,7 +41,7 @@ source/tree, full `members.json` regular-member inventories, byte-identical
 image/trust inventories and signatures, and normal qualification/auth references.
 No producer-private paths, verifier executable or alternative SDK schema aliases.
 
-STAGING intake is now the accepted ONCE-produced original
+Historical STAGING custody retains the accepted ONCE-produced original
 `sdk-dev-a3023aee-staging.tgz`, 4460029B, SHA256
 `c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296`;
 SDK source a302/treec504, native725/6984/3676583, verifier0e44/4c72.
@@ -61,17 +61,25 @@ schema or signing authority. SDK canonical `dependencies[].file` is SDK-relative
 is `mdbase-dev/mdbase-next`, DISTINCT from trust release
 `mdbase-dev/mdbase-connect`. Public facts/proofs/context/receipt remain verbatim.
 
-UIfe and protocol129-c280 archives/pins/bytes are unchanged. UI uses its EXISTING
-companion convention, not fabricated SDK public-facts aliases. The original UI
-companion still says **noPublication:true**, paired SDK **cc492f3f**, NOT a302.
-Those live publisher guards remain active and currently refuse publication.
-Original byte custody and NEW consumer qualification are separate: the local-only
-`qualify-native-staging.mjs` calls the data-only original validator before SDK
-execution, then checks compiled staging trust and runs consumer tests/build.
-It reports the UI publication constraints; it cannot waive them or supply fallback
-hashes to the live workflow. No fake GitHub event/ref, dirty-guard bypass, credential
-or app-publication claim. Normal owner review must resolve the UI publication
-metadata/peer qualification before actual publisher CI.
+UIfe and protocol129-c280 archives/pins/bytes and UI companion are UNCHANGED.
+**Controlling Co064253:** UI `noPublication:true` and `pairedSdkSource:cc492f3f`
+describe HISTORICAL custody/old peer qualification; they are NOT STAGING
+publication vetoes. Live STAGING authority remains the protected
+`NATIVE_UI_SHA256` environment binding plus approved frozen lock and every
+archive/SRI/source/member/type/trust check. No candidate/repository fallback,
+approval boolean, fabricated SDK schema, producer relabel or transfer of old
+peer qualification. `historicalUiQualification` reports the unchanged fields.
+SDK/UI pair consumer compatibility and native admission remain DISTINCT.
+Production authority is NOT added; missing production inputs, human GitHub UI
+reviewer/GO and protections remain fail-closed.
+
+**Pool065615 / Co063830 hold:** c0bc is valid historical byte custody, NOT the
+latest/future candidate or admission. Its producer is closed and bytes immutable.
+NX-TNAPP alone owns SDK repair/CI and replacement original production. No new
+replacement original/SHA/facts is available here. HOLD unstarted c0bc app builds
+and all live publication; final actual-target intake and the ONE causal new
+consumer build wait for qualified owner originals + independent facts. Do not
+poll, patch, repack, reauthenticate, guess a replacement or add a transport gate.
 
 Every original installed member is compared. pnpm10.7 generates ONE additional
 `node_modules/.bin/yaml` in SDK and protocol packages. These are NOT original
@@ -85,7 +93,7 @@ No blanket `.bin` exclusion, shim execution, SDK rewrite or install-policy weake
 The guard checks exact originals, SHA512/SRI and frozen lock before install;
 safely reads every original tar member (rejecting links, traversal, duplicates,
 ambiguous/unsupported entries and resource excess); binds all member inventories,
-UI/SDK pairing and bundled protocol originals. Install uses frozen lock and
+historical UI/SDK metadata and bundled protocol originals. Install uses frozen lock and
 `--ignore-scripts`. **Every installed SDK/UI/protocol member** is checked before
 any candidate SDK code/tests/build executes. Packaged provenance, signed raw asset,
 context, build receipt, proof hashes, image/inventory source/run/attempt and
@@ -135,6 +143,37 @@ Full final path-set/size/hash assertion catches missing/extra/tampered files;
 no writers/build/install/hooks intervene between assertion, current native HEAD
 recheck and ONE upload. Source-only tests do not prove live artifact APIs/tooling.
 
+## Actual embedded offline shell, not an offline-assets.json alias
+
+Canonical ORIGINAL SDK `offline-shell-build.js` writes a JSON manifest into
+`service-worker.js`; it does NOT create `offline-assets.json`. The data-only
+parser requires the exact marker/import/call suffix, bounded UTF8/JSON canonical
+encoding/key order, unique sorted safe same-origin paths, bounded count/size,
+SHA256 values and exact version recomputation over base/cache list/worker prefix.
+No eval, candidate import, worker execution or parser output used as JavaScript.
+Every cache-listed hash must match actual full dist inventory. Emitted
+`mdbase-shell-runtime.js` must equal ORIGINAL SDK runtime bytes with ONLY the
+SDK's canonical source-map-directive removal, source and emitted hashes bound
+independently. Protected upload rechecks this as DATA before current-HEAD/upload.
+
+The 58-entry inline cache list is NEVER the publication inventory. All69 actual
+files remain in the path/size/hash inventory, including hidden/underscore,
+.well-known, native/SQLite/extra-core WASM, SQLite initializer, SW and trust JS.
+All67 servable files have served checks; the two hosting controls retain
+independent policy requirements. Existing headers/custom404/UUID gates are not
+weakened. The unused existing offline-assets header rule remains byte-identical;
+no alias file, header rewrite or SDK runtime rename is introduced.
+
+Supported historical post-check (NO build):
+`rpnpm run test:staging-retained-output red` intentionally fails the frozen
+6909753 OLD selector on the EXACT b98 output; `... green` applies corrected
+post-verification. Both prove all69 files unchanged before/after, pinned original
+inventory a0314155..., original SW44699417..., and836 unchanged app/build input
+files plus normalized package (only additive post-check script excluded).
+Original b98 source/tree is kept DISTINCT from new post-check source; no new
+build/GHA artifact/dispatch/admission is fabricated. Original failed logs stay
+unchanged. Post-check report can be explicitly pulled from test-results.
+
 ## Failure evidence is independent of upload eligibility
 
 The unprivileged native-build job records a separate minimal PUBLIC failure-only
@@ -152,8 +191,12 @@ before JSON parsing, validation or the next fallible lookup. Both run reads use
 the CURRENT run endpoint, not a frozen attempt endpoint. A wrong initial attempt
 retains before/run and refuses BEFORE ZIP fetch. ZIP bytes are retained before
 digest validation; after/current-run identity is revalidated BEFORE extraction.
-If a later lookup fails, preceding response evidence survives with a fixed safe
-failure stage/code. Request headers, tokens, signed blob URLs and opaque transport
+Each observed HTTP status is allowlisted as numeric100–599 and retained in
+`<phase>.http.json`; bounded public bodies are retained EVEN for403/404/429,
+before HTTP refusal/JSON parsing/next lookup. Oversize bodies retain only the
+bounded observed prefix and refuse. No response/body/status is invented on a
+fetch transport failure. If a later lookup fails, preceding response evidence
+survives with a fixed safe failure stage/code. Request headers, tokens, signed blob URLs and opaque transport
 exception messages are never persisted. No retries, new authentication gate or
 upload authorization change.
 
@@ -222,7 +265,7 @@ sign-in/grant/readiness/application admission.
   evidence, real paired Editor+TaskNotes staging admission and later production
   GO remain parent-owned. Never merge TaskNotes native to main for registration.
 
-Actual unprivileged staging qualification: `rpnpm run test:staging-intake`,
+Historical unprivileged staging consumer scripts (new builds HOLD pending replacement): `rpnpm run test:staging-intake`,
 `rpnpm run test:staging-consumer` (full Vitest), and ONE causal app build
 `rpnpm --pull dist --pull test-results/native-staging-qualification.json run build:staging:qualification`.
 Each verifies all installed originals and the independent approved tuple BEFORE

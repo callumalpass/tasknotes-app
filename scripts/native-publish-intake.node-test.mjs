@@ -205,6 +205,10 @@ async function fixture(t) {
       ["dist/native/runtime.wasm", runtime],
       ["dist/native/sqlite3.wasm", sqlite],
       ["dist/native/sqlite3.js", init],
+      [
+        "dist/offline-shell-worker.js",
+        Buffer.from("// original shell runtime"),
+      ],
       ["vendor/protocol-original.tgz", protocolBytes],
       ...protocolMembers.map(([path, bytes]) => [
         "node_modules/@mdbase-dev/connect-protocol/" + path,
@@ -401,7 +405,7 @@ for (const change of ["extra", "missing", "symlink"])
       /inventory-mismatch|symlink/,
     );
   });
-test("UI noPublication and wrong SDK pairing refuse even with reviewed matching archive bytes", async (t) => {
+test("Co064253 historical UI metadata stays intact but does not veto STAGING pinned originals", async (t) => {
   for (const change of [
     { noPublication: true },
     { pairedSdkSource: "f".repeat(40) },
@@ -415,11 +419,27 @@ test("UI noPublication and wrong SDK pairing refuse even with reviewed matching 
     await f.pput(path, revised);
     f.config.archives.ui.companionSha256 = digest(revised);
     await f.save();
-    await assert.rejects(
-      verifyTargetIntake({ ...f, target }),
-      /noPublication|paired/,
+    const result = await verifyTargetIntake({ ...f, target });
+    assert.deepEqual(result.publicationConstraints, []);
+    assert.equal(
+      result.historicalUiQualification.noPublication,
+      facts.noPublication === undefined && change.noPublication === undefined
+        ? undefined
+        : (change.noPublication ?? facts.noPublication),
+    );
+    assert.equal(
+      result.historicalUiQualification.pairedSdkSource,
+      change.pairedSdkSource ?? facts.pairedSdkSource,
     );
   }
+});
+
+test("Co064253 does not waive wrong UI pin despite historical labels", async (t) => {
+  const f = await fixture(t);
+  const pkg = JSON.parse(await readFile(join(f.root, "package.json")));
+  pkg.dependencies["@mdbase-dev/ui"] = "file:vendor/unapproved-ui.tgz";
+  await f.put("package.json", j(pkg));
+  await assert.rejects(verifyTargetIntake({ ...f, target }), /original pin/);
 });
 
 test("candidate can NOT replace packet facts/member inventory and expected digests together", async (t) => {
