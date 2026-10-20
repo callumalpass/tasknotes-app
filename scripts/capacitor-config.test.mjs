@@ -94,6 +94,13 @@ describe("native Capacitor configuration", () => {
     expect(releaseWorkflow).toContain('if [ "$GITHUB_RUN_NUMBER" -le 25 ]');
   });
 
+  it("declares the bundled in-app encryption for App Store export questions", async () => {
+    const plist = await source("../ios/App/App/Info.plist");
+    expect(plist).toMatch(
+      /<key>ITSAppUsesNonExemptEncryption<\/key>\s*<true\s*\/>/,
+    );
+  });
+
   it("uses package version metadata for Android defaults while retaining explicit release overrides", async () => {
     const gradle = await source("../android/app/build.gradle");
     expect(gradle).toContain(
