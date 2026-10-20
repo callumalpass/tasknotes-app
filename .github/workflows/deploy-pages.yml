@@ -5,6 +5,18 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      publisher:
+        description: Legacy main route or protected native release route
+        required: true
+        default: legacy
+        type: choice
+        options:
+          - legacy
+          - native
+      source_sha:
+        description: Native only - exact full SHA at the authorized native release head
+        required: false
+        type: string
       target:
         description: Deployment target (validate staging before production)
         required: true
@@ -24,6 +36,8 @@ concurrency:
 
 jobs:
   verify:
+    # Legacy main/GitHub Pages route remains unchanged; native never enters it.
+    if: inputs.publisher != 'native'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -70,7 +84,7 @@ jobs:
           VITE_BASE_PATH: /tasknotes-app/
 
   deploy-staging:
-    if: github.event_name == 'push' || inputs.target == 'staging'
+    if: inputs.publisher != 'native' && (github.event_name == 'push' || inputs.target == 'staging')
     needs: verify
     environment:
       name: tasknotes-staging
@@ -103,7 +117,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    if: inputs.publisher != 'native' && github.event_name == 'workflow_dispatch' && inputs.target == 'production'
     needs: verify
     permissions:
       contents: read
@@ -161,7 +175,7 @@ jobs:
           TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
 
   deploy-cloudflare:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    if: inputs.publisher != 'native' && github.event_name == 'workflow_dispatch' && inputs.target == 'production'
     needs: deploy
     environment:
       name: cloudflare-pages
@@ -219,3 +233,92 @@ jobs:
           }
         env:
           TASKNOTES_PRODUCTION_URL: https://app.tasknotes.dev
+
+  # Native source NEVER merges to main. The production Pages --branch=main
+  # below selects a Pages slot only, not a Git source branch.
+  native-request:
+    if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Refuse arbitrary refs, stale SHAs and non-native dispatches before checkout
+        env:
+          NATIVE_TARGET: ${{ inputs.target }}
+          NATIVE_SOURCE_SHA: ${{ inputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$NATIVE_TARGET:$GITHUB_REF" in
+            staging:refs/heads/release/native-staging|production:refs/heads/release/native-production) ;;
+            *) echo '::error::Native dispatch requires the literal target release branch.'; exit 1 ;;
+          esac
+          if [[ ! "$NATIVE_SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]] || [[ "$NATIVE_SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            echo '::error::Native source must be the exact full dispatch workflow SHA.'
+            exit 1
+          fi
+
+  native-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publisher == 'native'
+    needs: native-request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # Coordinator must configure exact native ref policies on both environments.
+    # Production requires Callum review, no bypass, and a separate cutover GO.
+    # No credentials are supplied to checkout, install, guard or build steps.
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ inputs.target == 'staging' && 'https://staging.tasknotes-app.pages.dev/' || 'https://app.tasknotes.dev/' }}
+    env:
+      NATIVE_TARGET: ${{ inputs.target }}
+      NATIVE_SOURCE_SHA: ${{ inputs.source_sha }}
+      # Public original archive hashes, independently approved by the SDK
+      # custodian and installed as protected target-environment variables.
+      # Missing values refuse. They must NOT be inferred from app companions.
+      NATIVE_SDK_SHA256: ${{ vars.NATIVE_SDK_SHA256 }}
+      NATIVE_UI_SHA256: ${{ vars.NATIVE_UI_SHA256 }}
+      NATIVE_PROTOCOL_SHA256: ${{ vars.NATIVE_PROTOCOL_SHA256 }}
+    steps:
+      - name: Check out only the requested immutable source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          clean: true
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Place receipt outside the clean source checkout
+        run: echo "NATIVE_RECEIPT_PATH=$RUNNER_TEMP/tasknotes-native/receipt.json" >> "$GITHUB_ENV"
+
+      - name: Verify exact authorized native head, clean tree and authenticated target SDK before install
+        run: node scripts/native-publisher.mjs guard
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Test publisher refusal and served-byte contracts
+        run: node --test scripts/native-publisher.node-test.mjs
+      - name: Build once, strictly validate and inventory exact native bytes
+        run: node scripts/native-publisher.mjs prepare
+
+      - name: Publish existing bytes and verify actual target alias or custom domain
+        run: node scripts/native-publisher.mjs publish
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+
+      # Preserve failed receipts too. Never automatically rebuild/redeploy/rollback.
+      - name: Retain native receipt and structured deployment evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tasknotes-native-${{ inputs.target }}-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-native/
+          if-no-files-found: warn
+          retention-days: 90
