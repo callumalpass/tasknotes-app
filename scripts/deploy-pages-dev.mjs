@@ -19,7 +19,7 @@ export const developmentDeployments = Object.freeze({
     appOrigin: "https://staging.tasknotes-app.pages.dev",
     editorOrigin: "https://editor-staging.mdbase.dev",
     connectOrigin: "https://connect-staging.mdbase.dev",
-    loopbackOrigin: "http://127.0.0.1:28486",
+    // Native staging has no local Connect loopback authority.
     project: "tasknotes-app",
     branch: "staging",
     wranglerVersion: "4.114.0",
@@ -97,12 +97,21 @@ export function developmentDeploymentFor(environment) {
     target,
     "VITE_MDBASE_CONNECT_URL",
   );
-  requireMatchingOverride(
-    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
-    deployment.loopbackOrigin,
-    target,
-    "VITE_MDBASE_CONNECT_LOOPBACK_URL",
-  );
+  if (deployment.environment === "lab") {
+    requireMatchingOverride(
+      environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
+      deployment.loopbackOrigin,
+      target,
+      "VITE_MDBASE_CONNECT_LOOPBACK_URL",
+    );
+  } else if (
+    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL !== undefined &&
+    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL !== ""
+  ) {
+    throw new Error(
+      `${target} native TaskNotes cannot include VITE_MDBASE_CONNECT_LOOPBACK_URL.`,
+    );
+  }
   requireMatchingOverride(
     environment.TASKNOTES_APP_URL,
     deployment.appOrigin,
@@ -152,8 +161,12 @@ export function developmentDeploymentEnvironment(
     throw new Error(
       "VITE_TASKNOTES_EDITOR_ORIGIN is required for this TaskNotes deployment target.",
     );
+  const buildEnvironment = { ...environment };
+  // Do not let an inherited legacy/LAB value enter a native staging build,
+  // even when a caller passes an already-selected deployment explicitly.
+  delete buildEnvironment.VITE_MDBASE_CONNECT_LOOPBACK_URL;
   return {
-    ...environment,
+    ...buildEnvironment,
     VITE_BASE_PATH: "/",
     VITE_TASKNOTES_ENVIRONMENT: deployment.environment,
     // Deliberately cleared outside LAB, like the Firebase project below.
@@ -164,7 +177,9 @@ export function developmentDeploymentEnvironment(
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",
     VITE_MDBASE_CONNECT_URL: deployment.connectOrigin,
-    VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin,
+    ...(deployment.environment === "lab"
+      ? { VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin }
+      : {}),
   };
 }
 

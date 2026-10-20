@@ -3,8 +3,11 @@
 `.github/workflows/deploy-pages.yml` verifies the application and browser artifact
 before deploying. Pushes to **main** deploy only
 <https://staging.tasknotes-app.pages.dev/> through `MDBASE_ENV=staging pnpm deploy:dev`.
-That existing script builds for staging Connect and connector port 28486,
-validates the artifact, deploys the Cloudflare `staging` branch, and smokes staging.
+That existing script selects the native staging environment and exact staging
+Connect/Editor origins, with no Connect loopback URL (LAB/local only). It validates
+the artifact, deploys the Cloudflare `staging` branch, and smokes staging.
+Native staging still requires its own authenticated SDK packet; selecting the
+build environment does not retarget the LAB packet or authorize a deployment.
 LAB remains separate and is not changed by this workflow.
 
 ## Next app Editor destination

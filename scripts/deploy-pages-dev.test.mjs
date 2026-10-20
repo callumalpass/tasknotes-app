@@ -53,11 +53,31 @@ describe("TaskNotes development deployment", () => {
     expect(developmentDeploymentEnvironment(environment)).toMatchObject({
       TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
-      VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
       VITE_TASKNOTES_ENVIRONMENT: "staging",
       VITE_TASKNOTES_LAB_ORIGIN: "",
       VITE_TASKNOTES_EDITOR_ORIGIN: "https://editor-staging.mdbase.dev",
     });
+  });
+
+  it("never includes a Connect loopback URL in native staging targets", () => {
+    expect(developmentDeployments.staging).not.toHaveProperty("loopbackOrigin");
+    expect(
+      developmentDeploymentEnvironment({ MDBASE_ENV: "staging" }),
+    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
+      }),
+    ).toThrow(/VITE_MDBASE_CONNECT_LOOPBACK_URL/);
+    // A caller passing an already-selected target cannot leak an inherited
+    // loopback setting into the native build environment either.
+    expect(
+      developmentDeploymentEnvironment(
+        { VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487" },
+        developmentDeployments.staging,
+      ),
+    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
   });
 
   it("refuses LAB or cross-environment input on the staging target", () => {
