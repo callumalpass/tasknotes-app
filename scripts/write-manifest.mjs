@@ -27,6 +27,7 @@ const manifest = await buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,
+  stagingIos: process.env.TASKNOTES_STAGING_IOS === "1",
 });
 
 const serialized = await format(JSON.stringify(manifest), { parser: "json" });

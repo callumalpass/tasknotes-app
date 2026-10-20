@@ -19,8 +19,28 @@ import {
 } from "./scratch-image-type.mjs";
 import { SCRATCHPAD_TYPE_DOCUMENT } from "../src/domain/scratchpad.ts";
 import { parse } from "yaml";
+import { parseVersionedAppManifest } from "@mdbase-dev/connect-protocol/manifest";
 
 describe("TaskNotes mdbase manifest", () => {
+  it("declares only the staging mobile origin in an explicit iOS staging build", async () => {
+    const manifest = await buildTaskNotesManifest({
+      appUrl: "https://staging.tasknotes-app.pages.dev",
+      webOnly: false,
+      stagingIos: true,
+    });
+    expect(() => parseVersionedAppManifest(manifest)).not.toThrow();
+    expect(manifest.installation_origins).toEqual({
+      staging: { mobile: ["capacitor://app.tasknotes.dev"] },
+    });
+    expect(manifest.redirect_uris).toContain(
+      "dev.tasknotes.app://auth/mdbase/callback",
+    );
+    const production = await buildTaskNotesManifest({
+      appUrl: "https://app.tasknotes.dev",
+      webOnly: false,
+    });
+    expect(production.installation_origins).toBeUndefined();
+  });
   it("declares content-free runtime criteria without requiring Firebase", async () => {
     const manifest = await buildTaskNotesManifest({
       appUrl: "https://tasks.example",

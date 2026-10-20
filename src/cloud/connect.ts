@@ -8,6 +8,7 @@ import {
 } from "@mdbase-dev/connect";
 import { installNativeAuthorityTransport } from "../native/authority-transport";
 import bundledManifest from "../generated/mdbase-app.json";
+import { parseVersionedAppManifest } from "@mdbase-dev/connect-protocol/manifest";
 import { TASKNOTES_REQUEST_BUDGETS } from "./request-budgets";
 
 const serverUrl =
@@ -18,7 +19,8 @@ const manifest =
   import.meta.env.VITE_MDBASE_MANIFEST_URL ??
   (import.meta.env.MODE === "e2e"
     ? `${location.origin}${joinBase(".well-known/mdbase-app.json")}`
-    : (bundledManifest as MdbaseAppManifest));
+    : (parseVersionedAppManifest(bundledManifest)
+        .manifest as MdbaseAppManifest));
 const redirectUri = Capacitor.isNativePlatform()
   ? "dev.tasknotes.app://auth/mdbase/callback"
   : `${location.origin}${joinBase("auth/mdbase/callback")}`;

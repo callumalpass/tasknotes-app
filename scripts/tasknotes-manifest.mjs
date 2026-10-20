@@ -11,6 +11,7 @@ export async function buildTaskNotesManifest({
   appUrl,
   webOnly,
   firebaseProjectId,
+  stagingIos = false,
 }) {
   // Keep the application identity and callback on the same origin. Local
   // manifests are accepted only by development validation; external local
@@ -44,6 +45,13 @@ export async function buildTaskNotesManifest({
       `${identityUrl}/auth/mdbase/callback`,
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
+    ...(stagingIos
+      ? {
+          installation_origins: {
+            staging: { mobile: ["capacitor://app.tasknotes.dev"] },
+          },
+        }
+      : {}),
     requirements: {
       people: { version: 1, optional: ["identity", "members"] },
       contracts: [

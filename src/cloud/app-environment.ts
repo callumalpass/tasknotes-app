@@ -6,7 +6,7 @@ export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
 export const APP_ENVIRONMENT_CONFIG_KEY = "VITE_TASKNOTES_ENVIRONMENT";
 export const LAB_ORIGIN_CONFIG_KEY = "VITE_TASKNOTES_LAB_ORIGIN";
 export interface TaskNotesAppEnvironment {
-  readonly environment: "lab" | "production";
+  readonly environment: "lab" | "staging" | "production";
   readonly appOrigin: string;
 }
 /** No authority or runtime trust is inferred here. The authenticated release
@@ -17,9 +17,16 @@ export function requireTaskNotesAppEnvironment(
   currentOrigin: string,
   nativeIos = false,
 ): TaskNotesAppEnvironment {
+  if (configuredEnvironment === "staging") {
+    if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")
+      throw new Error("Staging cannot include a LAB app origin.");
+    if (!nativeIos || currentOrigin !== TASKNOTES_IOS_ORIGIN)
+      throw new Error("Staging smoke requires the exact native iOS origin.");
+    return Object.freeze({ environment: "staging", appOrigin: currentOrigin });
+  }
   if (configuredEnvironment !== "lab" && configuredEnvironment !== "production")
     throw new Error(
-      `${APP_ENVIRONMENT_CONFIG_KEY} must explicitly select LAB or production.`,
+      `${APP_ENVIRONMENT_CONFIG_KEY} must explicitly select LAB, staging or production.`,
     );
   if (configuredEnvironment === "production") {
     if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")

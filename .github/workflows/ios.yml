@@ -1,54 +1,70 @@
-name: iOS
+name: iOS staging migration smoke
 
+# Separate smoke branch only. This replaces the existing dispatchable workflow
+# on that branch; it does not add another automatic PR/branch CI run.
 on:
-  # PRs to the next branch rely on local `pnpm verify`; full checks run for main.
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      wave_receipt:
+        description: stgaccept first-wave migrated report reference
+        required: true
+        type: string
+      editor_origin:
+        description: Owner-supplied exact staging Editor presentation origin
+        required: true
+        type: string
+      task_title:
+        description: Agreed unique smoke marker; Uiopen appends ' edited web'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: ios-${{ github.ref }}
-  cancel-in-progress: true
+  group: tasknotes-ios-staging-smoke
+  cancel-in-progress: false
 
 jobs:
-  build:
+  smoke:
     runs-on: macos-15
+    timeout-minutes: 65
+    env:
+      SMOKE_TASK_TITLE: ${{ inputs.task_title }}
+      VITE_TASKNOTES_EDITOR_ORIGIN: ${{ inputs.editor_origin }}
+      # Only pre-approved STAGING accounts. Owners must confirm private CI
+      # credential delivery before dispatch; never export the desktop helper.
+      SMOKE_STANDALONE_EMAIL: ${{ secrets.TASKNOTES_STAGE_STANDALONE_EMAIL }}
+      SMOKE_STANDALONE_PASSWORD: ${{ secrets.TASKNOTES_STAGE_STANDALONE_PASSWORD }}
+      SMOKE_STANDALONE_COLLECTION_NAME: ${{ secrets.TASKNOTES_STAGE_STANDALONE_COLLECTION }}
+      SMOKE_SEEDED_EMAIL: ${{ secrets.TASKNOTES_STAGE_SEEDED_EMAIL }}
+      SMOKE_SEEDED_PASSWORD: ${{ secrets.TASKNOTES_STAGE_SEEDED_PASSWORD }}
+      SMOKE_COLLECTION_NAME: ${{ secrets.TASKNOTES_STAGE_SEEDED_COLLECTION }}
+      SMOKE_EXISTING_TASK: ${{ secrets.TASKNOTES_STAGE_EXISTING_TASK }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
-
-      - name: Install dependencies
+      - name: Install frozen staging dependencies
         run: pnpm install --frozen-lockfile
-
-      # Pull requests build a production-configured candidate that is never
-      # releasable while the production trust pin is absent. Pushes and
-      # manual runs keep the full, fail-closed production build.
-      - name: Verify web application and contracts
-        run: pnpm ${{ github.event_name == 'pull_request' && 'verify:candidate' || 'verify' }}
-
-      - name: Sync iOS project
+      - name: Build genuine staging iOS assets
+        run: pnpm build:staging-ios
+      - name: Sync unsigned native project
         run: pnpm exec cap sync ios
-
-      - name: Build iOS simulator application
-        run: >-
-          xcodebuild
-          -project ios/App/App.xcodeproj
-          -scheme App
-          -configuration Debug
-          -destination 'generic/platform=iOS Simulator'
-          CODE_SIGNING_ALLOWED=NO
-          build
+      - name: Real native UI smoke and released-source comparison (no retries)
+        run: bash scripts/ios-staging-smoke/run.sh
+      - name: Publish sanitized scenario outcomes only
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tasknotes-ios-staging-smoke-outcomes
+          path: smoke-results/*.json
+          if-no-files-found: ignore
+          retention-days: 3
+      # No signing setup, archive, device build, .xcresult/raw UI-log upload,
+      # Pages publication, TestFlight, App Store upload or submission.

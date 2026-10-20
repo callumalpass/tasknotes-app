@@ -76,6 +76,43 @@ describe("explicit next-only replace-at-cutover build environment", () => {
       ),
     ).toThrow();
   });
+  it("binds staging only to native iOS without LAB inputs", () => {
+    expect(
+      requireTaskNotesAppEnvironment(
+        "staging",
+        undefined,
+        "capacitor://app.tasknotes.dev",
+        true,
+      ),
+    ).toEqual({
+      environment: "staging",
+      appOrigin: "capacitor://app.tasknotes.dev",
+    });
+    for (const origin of [
+      TASKNOTES_PRODUCTION_ORIGIN,
+      TASKNOTES_LAB_ORIGIN,
+      "capacitor://evil.test",
+    ]) {
+      expect(() =>
+        requireTaskNotesAppEnvironment("staging", undefined, origin, true),
+      ).toThrow();
+    }
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "staging",
+        undefined,
+        "capacitor://app.tasknotes.dev",
+      ),
+    ).toThrow();
+    expect(() =>
+      requireTaskNotesAppEnvironment(
+        "staging",
+        TASKNOTES_LAB_ORIGIN,
+        "capacitor://app.tasknotes.dev",
+        true,
+      ),
+    ).toThrow();
+  });
   it("never carries LAB input into production", () => {
     expect(() =>
       requireTaskNotesAppEnvironment(

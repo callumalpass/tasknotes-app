@@ -25,6 +25,7 @@ export async function loadLabNativeBuild(
   );
   return {
     ...selected,
+    environment: "lab",
     ...TASKNOTES_APPLICATION_REGISTRATION,
     release: appReleaseTrust(),
     runtime,
