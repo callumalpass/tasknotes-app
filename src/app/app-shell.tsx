@@ -1,17 +1,36 @@
 import {
   Columns3,
+  Command,
   FilePenLine,
   Plus,
   Search,
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { ConnectionNoticeContext } from "./connection-notice";
 import { createPortal } from "react-dom";
 import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
 import { CollectionAvailability } from "../components/collection-availability";
+import { CollectionWriteStatus } from "../components/collection-write-status";
+import {
+  WorkspaceFeedback,
+  FeedbackNotice,
+} from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
+import { TaskCompletedNotice } from "../components/task-completed-notice";
+import {
+  TaskCompletionReportContext,
+  type TaskCompletion,
+} from "../components/task-completion-motion";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
@@ -20,15 +39,21 @@ import { useOverlay } from "../components/overlays/use-overlay";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
-import { mdbaseNotifications } from "../native/mdbase-notifications";
 import {
   useWorkspaceNavigation,
   type Route,
   type WorkspaceRoute,
 } from "./use-workspace-navigation";
 import { tasknotesMarkUrl } from "./assets";
-import { isAuthorizationError, technicalErrorMessage } from "./auth-error";
+import { isAuthorizationError } from "./auth-error";
+import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
+import { KeyboardLayer } from "./keyboard-layer";
+import {
+  isApplePlatform,
+  isEditableTarget,
+  shortcutLabel,
+} from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
 import { MoreScreen } from "./more-screen";
 import { SearchScreen } from "./search-screen";
@@ -39,7 +64,12 @@ import {
 } from "./navigation-views";
 import { TaskScreen } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
+import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
+import { CaptureFab } from "../components/capture-fab";
+import { ModelSetupScreen } from "./model-setup-screen";
+import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
+import { requestRecordWriteReview } from "../components/record-write-status-context";
 import {
   loadCalendarPreferences,
   saveCalendarPreferences,
@@ -53,6 +83,8 @@ export function AppShell() {
   const keyboardOccluded = useKeyboardOcclusion();
   const {
     repository,
+    connection,
+    reminderAuthority,
     status,
     error,
     refresh,
@@ -60,16 +92,16 @@ export function AppShell() {
     deletionError,
     undoTaskDeletion,
     retryTaskDeletion,
+    setTaskCompletion,
+    updateTask,
   } = useRepository();
-  const {
-    authorizeAnotherCollection,
-    changeCollection,
-    reauthorizeCurrentCollection,
-  } = useCollectionGate();
+  const { collectionUi, changeCollection, reauthorizeCurrentCollection } =
+    useCollectionGate();
   const {
     documents,
     views,
-    error: viewsError,
+    discovery,
+    refreshing: discoveringViews,
     navigationViews,
     navigationKeys,
     homeKey,
@@ -81,13 +113,18 @@ export function AppShell() {
   const { route, workspaceRoute, navigate, detailRef } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [paletteRequest, setPaletteRequest] = useState(0);
+  const openCapture = useCallback(() => setCaptureOpen(true), []);
+  const [viewCreationRequest, setViewCreationRequest] = useState(0);
   const [addedNotice, setAddedNotice] = useState<{
     task: TaskSummary;
     repository: typeof repository;
     route: Route;
   }>();
-  const reportAdded = (task: TaskSummary) =>
+  const reportAdded = (task: TaskSummary) => {
+    setCompletedNotice(undefined);
     setAddedNotice({ task, repository, route });
+  };
   const addedTask = addedNotice?.task;
   if (
     addedNotice &&
@@ -98,6 +135,34 @@ export function AppShell() {
       deletionError)
   ) {
     setAddedNotice(undefined);
+  }
+  // The latest confirmation wins; completing replaces Task added and vice versa.
+  const [completedNotice, setCompletedNotice] = useState<{
+    completion: TaskCompletion;
+    repository: typeof repository;
+    route: Route;
+  }>();
+  const routeRef = useRef(route);
+  useEffect(() => {
+    routeRef.current = route;
+  });
+  const reportCompleted = useCallback(
+    (completion: TaskCompletion) => {
+      setAddedNotice(undefined);
+      setCompletedNotice({ completion, repository, route: routeRef.current });
+    },
+    [repository],
+  );
+  const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
+  if (
+    completedNotice &&
+    (completedNotice.repository !== repository ||
+      completedNotice.route !== route ||
+      captureOpen ||
+      pendingDeletion ||
+      deletionError)
+  ) {
+    setCompletedNotice(undefined);
   }
   const [calendarPreferences, setCalendarPreferences] =
     useState<CalendarPreferences>(loadCalendarPreferences);
@@ -128,11 +193,25 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    return mdbaseNotifications.listen(({ opened }) => {
-      void refresh().catch(() => undefined);
-      if (opened) navigate({ page: "home" }, true);
-    });
-  }, [navigate, refresh]);
+    // The next entry has no reminder authority. Do not load a legacy owner or
+    // register/listen to notifications just because its workspace rendered.
+    if (reminderAuthority !== "connect") return;
+    let active = true;
+    let stop: (() => void) | undefined;
+    void import("../native/mdbase-notifications")
+      .then(({ mdbaseNotifications }) => {
+        if (!active) return;
+        stop = mdbaseNotifications.listen(({ opened }) => {
+          void refresh().catch(() => undefined);
+          if (opened) navigate({ page: "home" }, true);
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      stop?.();
+    };
+  }, [navigate, refresh, reminderAuthority]);
 
   if (status === "opening") {
     return (
@@ -145,19 +224,27 @@ export function AppShell() {
           type="button"
           onClick={changeCollection}
         >
-          Choose another mdbase collection
+          Choose a different collection
         </button>
       </main>
     );
   }
   if (status === "error") {
+    if (error instanceof TaskNotesModelRequiredError && repository.modelSetup)
+      return (
+        <ModelSetupScreen
+          setup={repository.modelSetup}
+          onReady={refresh}
+          changeCollection={changeCollection}
+          reauthorizeCollection={reauthorizeCurrentCollection}
+        />
+      );
     return (
       <StorageErrorScreen
-        authorizeAnotherCollection={authorizeAnotherCollection}
         changeCollection={changeCollection}
         error={error}
         reauthorizeCurrentCollection={reauthorizeCurrentCollection}
-        retry={() => void refresh()}
+        retry={() => void refresh().catch(() => undefined)}
       />
     );
   }
@@ -172,6 +259,8 @@ export function AppShell() {
           ? "search"
           : "view"
       : workspace.page;
+  if (workspacePage !== "views" && viewCreationRequest)
+    setViewCreationRequest(0);
   const workspaceViewKey =
     workspacePage === "view"
       ? homeKey
@@ -199,7 +288,19 @@ export function AppShell() {
       : workspacePage === "views"
         ? "views"
         : workspacePage;
-  return (
+  const discoveryNotice = (
+    <ViewDiscoveryNotice
+      outcome={discovery}
+      refreshing={discoveringViews}
+      onRetry={() => void refreshViews()}
+      onStarterViewsAdded={refreshViews}
+      onCreate={() => {
+        setViewCreationRequest((request) => request + 1);
+        navigate({ page: "views" });
+      }}
+    />
+  );
+  const shell = (
     <div
       className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
@@ -215,16 +316,25 @@ export function AppShell() {
           <img alt="" src={tasknotesMarkUrl} />
           <span>TaskNotes</span>
         </button>
+        {collectionUi ? (
+          <CollectionSwitcher
+            {...collectionUi}
+            className="rail-collection-switcher"
+            icon="mark"
+            variant="compact"
+          />
+        ) : null}
         <button
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
           className="global-capture-navigation"
+          title={`New task (${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>New task</span>
-          <kbd>⌘N</kbd>
+          {isApplePlatform() ? <kbd>{shortcutLabel("N")}</kbd> : null}
         </button>
         <Navigation
           active={activePage}
@@ -234,19 +344,32 @@ export function AppShell() {
           navigationKeys={navigationKeys}
           views={views ?? []}
           onNavigate={navigate}
+          onCommands={() => setPaletteRequest((request) => request + 1)}
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
+        {collectionUi && route.page !== "task" ? (
+          <div className="mobile-collection-bar">
+            <CollectionSwitcher
+              {...collectionUi}
+              icon="mark"
+              variant="compact"
+            />
+          </div>
+        ) : null}
         {route.page !== "task" ? (
           <CollectionAvailability
             onSettings={
-              workspacePage === "more"
+              workspace.page === "more" && workspace.section === "collection"
                 ? undefined
-                : () => navigate({ page: "more" })
+                : () => navigate({ page: "more", section: "collection" })
             }
           />
         ) : null}
-        {workspacePage === "search" ? (
+        {route.page !== "task" ? discoveryNotice : null}
+        {workspace.page === "home" &&
+        discovery === "error" &&
+        documents === null ? null : workspacePage === "search" ? (
           <SearchScreen
             onBack={
               workspace.page === "home"
@@ -262,7 +385,14 @@ export function AppShell() {
         ) : workspacePage === "more" ? (
           <MoreScreen
             calendarPreferences={calendarPreferences}
+            section={workspace.page === "more" ? workspace.section : undefined}
             onCalendarPreferencesChange={updateCalendarPreferences}
+            onSection={(section, replace) =>
+              navigate(
+                section ? { page: "more", section } : { page: "more" },
+                replace,
+              )
+            }
           />
         ) : workspace.page === "home" && viewsLoading ? (
           <HomeViewLoading />
@@ -271,7 +401,7 @@ export function AppShell() {
             onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}
-            error={viewsError}
+            creationRequest={viewCreationRequest}
             navigationViewKeys={navigationKeys}
             operational={workspaceIsNavigationView}
             views={views}
@@ -320,8 +450,9 @@ export function AppShell() {
           ref={detailRef}
         >
           <CollectionAvailability
-            onSettings={() => navigate({ page: "more" })}
+            onSettings={() => navigate({ page: "more", section: "collection" })}
           />
+          {discoveryNotice}
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
@@ -351,17 +482,21 @@ export function AppShell() {
         </nav>
       ) : null}
       {route.page !== "task" && showGlobalCaptureFab ? (
-        <button
+        <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
           aria-label="New task"
-          className="global-capture-fab"
-          type="button"
           onClick={() => setCaptureOpen(true)}
-        >
-          <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
-          <span>Add task</span>
-        </button>
+        />
       ) : null}
+      <KeyboardLayer
+        homeKey={homeKey}
+        navigate={navigate}
+        navigationKeys={navigationKeys}
+        newTask={openCapture}
+        paletteRequest={paletteRequest}
+        route={route}
+        views={views ?? []}
+      />
       <GlobalTaskCapture
         onAdded={reportAdded}
         open={captureOpen}
@@ -369,6 +504,7 @@ export function AppShell() {
         onOpenTask={(task) => navigate({ page: "task", id: task.id })}
       />
       <TaskAddedNotice
+        repository={repository}
         task={!pendingDeletion && !deletionError ? addedTask : undefined}
         onDismiss={() => setAddedNotice(undefined)}
         onOpen={(task) => navigate({ page: "task", id: task.id })}
@@ -377,17 +513,151 @@ export function AppShell() {
           (showBottomNavigation || showGlobalCaptureFab)
         }
       />
-      <DeletionFeedback
+      <TaskCompletedNotice
+        completion={completedNotice?.completion}
         aboveMobileControls={
           route.page !== "task" &&
           (showBottomNavigation || showGlobalCaptureFab)
         }
-        error={deletionError}
-        pendingDeletion={pendingDeletion}
-        onRetry={retryTaskDeletion}
-        onUndo={undoTaskDeletion}
+        onDismiss={dismissCompleted}
+        onUndo={async ({ task, occurrenceDate, advanced }) => {
+          await setTaskCompletion({
+            id: task.id,
+            occurrenceDate,
+            completed: false,
+          });
+          if (advanced) await updateTask(task.id, advanced);
+        }}
       />
+      <FeedbackNotice>
+        <DeletionFeedback
+          aboveMobileControls={
+            route.page !== "task" &&
+            (showBottomNavigation || showGlobalCaptureFab)
+          }
+          error={deletionError}
+          pendingDeletion={pendingDeletion}
+          onRetry={retryTaskDeletion}
+          onUndo={undoTaskDeletion}
+        />
+      </FeedbackNotice>
     </div>
+  );
+  return (
+    <WorkspaceFeedback
+      aboveMobileControls={
+        route.page !== "task" && (showBottomNavigation || showGlobalCaptureFab)
+      }
+    >
+      <CollectionWriteStatus
+        repository={repository}
+        connection={connection}
+        onReview={(target) => {
+          // An editor already showing this record presents its own resolution.
+          if (requestRecordWriteReview(target)) return;
+          navigate(
+            target.kind === "task"
+              ? { page: "task", id: target.id }
+              : target.kind === "source"
+                ? { page: "views" }
+                : { page: "scratchpad" },
+          );
+        }}
+      >
+        <TaskCompletionReportContext.Provider value={reportCompleted}>
+          {shell}
+        </TaskCompletionReportContext.Provider>
+      </CollectionWriteStatus>
+    </WorkspaceFeedback>
+  );
+}
+
+export function ViewDiscoveryNotice({
+  outcome,
+  refreshing,
+  onRetry,
+  onCreate,
+  onStarterViewsAdded,
+}: {
+  outcome: "loading" | "ok" | "empty" | "error";
+  refreshing: boolean;
+  onRetry(): void;
+  onCreate(): void;
+  /** Present only where the person can explicitly add the starter views. */
+  onStarterViewsAdded?(): Promise<void>;
+}) {
+  const waitingForComputer =
+    useContext(ConnectionNoticeContext) === "waiting_for_computer";
+  if (waitingForComputer && outcome === "error") return null;
+  if (outcome === "empty" && onStarterViewsAdded)
+    return (
+      <EmptyViewsNotice
+        refreshing={refreshing}
+        onCreate={onCreate}
+        onStarterViewsAdded={onStarterViewsAdded}
+      />
+    );
+  if (outcome !== "error" && outcome !== "empty") return null;
+  return (
+    <section
+      className="view-discovery-notice"
+      aria-label="Views availability"
+      aria-busy={refreshing}
+    >
+      <p role={outcome === "error" ? "alert" : "status"}>
+        {outcome === "error" ? "Couldn't load your views." : "No views yet."}
+      </p>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing}
+        onClick={outcome === "error" ? onRetry : onCreate}
+      >
+        {outcome === "error"
+          ? refreshing
+            ? "Retrying…"
+            : "Retry"
+          : "Create a view"}
+      </button>
+    </section>
+  );
+}
+
+function EmptyViewsNotice({
+  refreshing,
+  onCreate,
+  onStarterViewsAdded,
+}: {
+  refreshing: boolean;
+  onCreate(): void;
+  onStarterViewsAdded(): Promise<void>;
+}) {
+  const { add, adding, error } = useAddStarterViews(onStarterViewsAdded);
+  return (
+    <section
+      className="view-discovery-notice"
+      aria-label="Views availability"
+      aria-busy={refreshing || adding}
+    >
+      <p role="status">No views yet.</p>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing || adding}
+        onClick={() => void add()}
+      >
+        {adding ? "Adding starter views…" : "Add starter views"}
+      </button>
+      <button
+        className="text-action"
+        type="button"
+        disabled={refreshing || adding}
+        onClick={onCreate}
+      >
+        Create a view
+      </button>
+      {error ? <p role="alert">{error}</p> : null}
+    </section>
   );
 }
 
@@ -551,22 +821,12 @@ function DeletionRecoveryNotice({
   );
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable ||
-      target.matches("input, textarea, select, [role='textbox']"))
-  );
-}
-
 export function StorageErrorScreen({
-  authorizeAnotherCollection,
   changeCollection,
   error,
   reauthorizeCurrentCollection,
   retry,
 }: {
-  authorizeAnotherCollection(): void;
   changeCollection(): void;
   error: Error | null;
   reauthorizeCurrentCollection(): void;
@@ -578,58 +838,36 @@ export function StorageErrorScreen({
       <img alt="" src={tasknotesMarkUrl} />
       <h1>
         {authorizationExpired
-          ? "Reconnect to mdbase."
+          ? "Review TaskNotes’ access"
           : "TaskNotes could not open."}
       </h1>
       <p>
         {authorizationExpired
-          ? "Your connection has expired. Reconnect to continue."
+          ? "TaskNotes needs your approval in mdbase again before it can open this collection."
           : "The collection is unavailable right now."}
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
-          <>
-            <button
-              className="outline-action"
-              type="button"
-              onClick={reauthorizeCurrentCollection}
-            >
-              Reconnect this collection
-            </button>
-            <button
-              className="text-action"
-              type="button"
-              onClick={authorizeAnotherCollection}
-            >
-              Choose another mdbase collection
-            </button>
-          </>
+          <button
+            className="outline-action"
+            type="button"
+            onClick={reauthorizeCurrentCollection}
+          >
+            Review access
+          </button>
         ) : (
-          <>
-            <button className="outline-action" type="button" onClick={retry}>
-              Try again
-            </button>
-            <button
-              className="text-action"
-              type="button"
-              onClick={authorizeAnotherCollection}
-            >
-              Choose another mdbase collection
-            </button>
-          </>
+          <button className="outline-action" type="button" onClick={retry}>
+            Try again
+          </button>
         )}
         <button
           className="text-action"
           type="button"
           onClick={changeCollection}
         >
-          Open a saved collection
+          Choose a different collection
         </button>
       </div>
-      <details className="technical-details">
-        <summary>Technical details</summary>
-        <p>{technicalErrorMessage(error)}</p>
-      </details>
     </main>
   );
 }
@@ -660,6 +898,7 @@ export function Navigation({
   views,
   onNavigate,
   onMove,
+  onCommands,
 }: {
   active: string;
   homeKey?: string;
@@ -668,6 +907,7 @@ export function Navigation({
   views: TaskView[];
   onNavigate(route: Route): void;
   onMove?(key: string, direction: -1 | 1): void;
+  onCommands?(): void;
 }) {
   const navigationEntries: {
     key: string;
@@ -906,6 +1146,19 @@ export function Navigation({
       ) : null}
       {mode === "desktop" ? (
         <div aria-label="Manage" className="navigation-utility" role="group">
+          {onCommands ? (
+            <button
+              aria-keyshortcuts="Control+K Meta+K"
+              className="navigation-commands"
+              title={`Commands (${shortcutLabel("K")})`}
+              type="button"
+              onClick={onCommands}
+            >
+              <Command aria-hidden="true" size={20} strokeWidth={1.7} />
+              <span>Commands</span>
+              {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
+            </button>
+          ) : null}
           <button
             aria-current={active === "views" ? "page" : undefined}
             className={active === "views" ? "is-active" : undefined}

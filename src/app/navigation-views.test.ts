@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  moveNavigationViewKey,
   navigationViewScope,
   readNavigationViewKeys,
   writeNavigationViewKeys,
@@ -46,19 +45,6 @@ describe("navigation view preferences", () => {
     expect(readNavigationViewKeys(storage, "connect:a")).toBeUndefined();
     writeNavigationViewKeys(storage, "connect:a", ["view-a"]);
     expect(readNavigationViewKeys(storage, "connect:a")).toEqual(["view-a"]);
-  });
-
-  it("reorders views without losing any keys", () => {
-    expect(moveNavigationViewKey(["a", "b", "c"], "b", -1)).toEqual([
-      "b",
-      "a",
-      "c",
-    ]);
-    expect(moveNavigationViewKey(["a", "b", "c"], "c", 1)).toEqual([
-      "a",
-      "b",
-      "c",
-    ]);
   });
 });
 

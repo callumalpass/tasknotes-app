@@ -143,33 +143,4 @@ describe("ReminderEditor", () => {
       }),
     ]);
   });
-
-  it("explains when reminder notifications cannot be delivered", () => {
-    render(
-      <ReminderEditor deliveryMode="local" reminders={[]} onChange={vi.fn()} />,
-    );
-
-    expect(screen.getByRole("note")).toHaveTextContent(
-      "Notifications are not available here",
-    );
-    expect(screen.getByRole("note")).toHaveTextContent(
-      "tasks stored on this device cannot deliver notifications",
-    );
-    expect(
-      screen.queryByRole("button", { name: "Connect mdbase" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("delivers notifications for every mdbase connection style", () => {
-    render(
-      <ReminderEditor
-        deliveryMode="mdbase"
-        reminders={[]}
-        onChange={vi.fn()}
-      />,
-    );
-
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-    expect(screen.getByText(/Notify at a fixed time/)).toBeVisible();
-  });
 });

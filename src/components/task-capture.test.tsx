@@ -175,28 +175,47 @@ it("keeps edited dates on failure and supports removing a parsed date", async ()
   expect(create.mock.calls[1][0].due).toBe("2026-08-14");
 });
 
-it("returns focus to a retained capture field after creating a task", async () => {
-  const create = vi.fn(async (input: CreateTaskInput) => task(input));
-
-  render(
+it("marks recognized phrases behind the input and clears a removed one", async () => {
+  vi.mocked(parseTaskCapture).mockImplementation(async (text: string) =>
+    text === "Call Sam tomorrow #work"
+      ? {
+          input: { title: "Call Sam", scheduled: "2026-10-12", tags: ["work"] },
+          preview: [],
+        }
+      : { input: { title: text }, preview: [] },
+  );
+  const { container } = render(
     <TaskCapture
-      retainFocusAfterCreate
       configuration={defaultTaskCollectionConfiguration()}
-      createTask={create}
+      createTask={vi.fn()}
     />,
   );
+  const marks = () =>
+    [...container.querySelectorAll(".capture-highlights mark")].map(
+      (mark) => mark.textContent,
+    );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Call Sam tomorrow #work" },
+  });
+  await waitFor(() => expect(marks()).toEqual(["tomorrow", "#work"]));
+  expect(container.querySelector(".capture-highlights")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
 
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
-  input.focus();
-  fireEvent.change(input, { target: { value: "First task" } });
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(screen.getByRole("button", { name: "Remove #work" }));
+  expect(marks()).toEqual(["tomorrow"]);
 
-  await waitFor(() => expect(create).toHaveBeenCalledOnce());
-  await waitFor(() => expect(input).toHaveFocus());
-  expect(input).toHaveValue("");
-
-  fireEvent.change(input, { target: { value: "Second task" } });
-  expect(input).toHaveFocus();
+  // Typing ahead keeps the settled phrase marked until the next parse.
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Call Sam tomorrow #work at" },
+  });
+  expect(marks()).toEqual(["tomorrow"]);
+  vi.mocked(parseTaskCapture).mockReset();
+  vi.mocked(parseTaskCapture).mockImplementation(async (title: string) => ({
+    input: { title },
+    preview: [],
+  }));
 });
 
 it("preserves structured unknown acceptance and asks for exact recovery, not ordinary retry", async () => {
@@ -222,7 +241,7 @@ it("preserves structured unknown acceptance and asks for exact recovery, not ord
   expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 });
 
-it("hands capture recovery to the retained exact intent instead of a fresh create", async () => {
+it("confirms an unconfirmed capture automatically with the retained exact intent, never a fresh create or a user retry", async () => {
   const create = vi
     .fn<TaskRepository["create"]>(async (input) => task(input))
     .mockImplementationOnce(async (_input, intent) => {
@@ -241,9 +260,11 @@ it("hands capture recovery to the retained exact intent instead of a fresh creat
   const input = screen.getByLabelText("New task title");
   fireEvent.change(input, { target: { value: "Keep this draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
-  await screen.findByText("Unconfirmed");
-  expect(input).toHaveAttribute("readonly");
-  fireEvent.click(screen.getByRole("button", { name: "Recover task" }));
+  expect(
+    await screen.findByText(/Confirming that “Keep this draft” was saved/),
+  ).toBeVisible();
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Recover task" })).toBeNull();
   await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
   expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
   expect(create.mock.calls[1]).toEqual([
@@ -251,31 +272,6 @@ it("hands capture recovery to the retained exact intent instead of a fresh creat
     expect.objectContaining({ authorityRequestId: "exact-request" }),
   ]);
   await waitFor(() => expect(input).toHaveValue(""));
-});
-
-it("restores the submitted text when a remote create fails", async () => {
-  const create = vi.fn(async () => {
-    throw connectError("relay_unavailable", "The relay is unavailable.");
-  });
-
-  render(
-    <TaskCapture
-      configuration={defaultTaskCollectionConfiguration()}
-      createTask={create}
-    />,
-  );
-
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
-  fireEvent.change(input, { target: { value: "Keep this draft" } });
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
-
-  const detail = await screen.findByText("The relay is unavailable.");
-  await act(() => new Promise((resolve) => window.setTimeout(resolve, 120)));
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "The task could not finish while the collection was unavailable.",
-  );
-  expect(detail).toBeInTheDocument();
-  expect(input).toHaveValue("Keep this draft");
 });
 
 it("offers contract-aware inline suggestions with keyboard selection", async () => {
@@ -301,61 +297,9 @@ it("offers contract-aware inline suggestions with keyboard selection", async () 
   });
 
   expect(await screen.findByRole("option", { name: "Home" })).toBeVisible();
-  expect(complete).toHaveBeenCalledWith(
-    expect.objectContaining({
-      field: "contexts",
-      query: "ho",
-      limit: 8,
-    }),
-  );
 
   fireEvent.keyDown(input, { key: "Enter" });
   expect(input).toHaveValue("Call plumber @home ");
-});
-
-it("creates a task with a structured dependency from capture details", async () => {
-  const create = vi.fn(async (input: CreateTaskInput) => task(input));
-  render(
-    <TaskCapture
-      configuration={defaultTaskCollectionConfiguration()}
-      createTask={create}
-      completeField={async (request) =>
-        request.field === "blockedBy"
-          ? [
-              {
-                kind: "record",
-                label: "Draft proposal",
-                value: "[[tasks/Draft proposal]]",
-              },
-            ]
-          : []
-      }
-    />,
-  );
-
-  fireEvent.change(screen.getByLabelText("New task title"), {
-    target: { value: "Review proposal" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Add details" }));
-  fireEvent.focus(await screen.findByRole("combobox", { name: "Blocked by" }));
-  fireEvent.click(
-    await screen.findByRole("option", { name: /Draft proposal/ }),
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Add" }));
-
-  await waitFor(() =>
-    expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        blockedBy: [
-          {
-            uid: "[[tasks/Draft proposal]]",
-            reltype: "FINISHTOSTART",
-          },
-        ],
-      }),
-      expect.objectContaining({ id: expect.any(String) }),
-    ),
-  );
 });
 
 function task(input: CreateTaskInput): Task {

@@ -5,6 +5,37 @@ import { describe, expect, it, vi } from "vitest";
 import { RecurrenceField } from "./recurrence-field";
 
 describe("RecurrenceField", () => {
+  it("anchors a new preset to Due when Scheduled is empty", () => {
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        due="2030-08-09"
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    choose("Repeat", "Weekly");
+    expect(changed).toHaveBeenCalledWith(
+      "DTSTART:20300809;FREQ=WEEKLY;INTERVAL=1;BYDAY=FR",
+    );
+  });
+
+  it("prefers Scheduled over Due when anchoring a new preset", () => {
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        scheduled="2030-08-05"
+        due="2030-08-09"
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    choose("Repeat", "Weekly");
+    expect(changed).toHaveBeenCalledWith(
+      "DTSTART:20300805;FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+    );
+  });
+
   it("edits weekday rules visually without losing BYDAY", () => {
     const changed = vi.fn();
 
@@ -74,6 +105,66 @@ describe("RecurrenceField", () => {
     );
   });
 
+  it.each([
+    {
+      value: "FREQ=MONTHLY",
+      scheduled: "2030-08-13",
+      due: "2030-08-09",
+      start: "20300813",
+      day: "13th",
+    },
+    {
+      value: "FREQ=MONTHLY",
+      scheduled: undefined,
+      due: "2030-08-09",
+      start: "20300809",
+      day: "9th",
+    },
+    {
+      value: "DTSTART:20300815;FREQ=MONTHLY",
+      scheduled: "2030-08-13",
+      due: undefined,
+      start: "20300815",
+      day: "15th",
+    },
+  ])(
+    "uses the anchor day for an implicit monthly pattern ($start)",
+    ({ value, scheduled, due, start, day }) => {
+      const changed = vi.fn();
+      render(
+        <RecurrenceField
+          value={value}
+          scheduled={scheduled}
+          due={due}
+          onAnchorChange={vi.fn()}
+          onChange={changed}
+        />,
+      );
+      expect(screen.getByText(`Every month on the ${day}`)).toBeVisible();
+      expect(screen.queryByText(/first Monday/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Edit pattern" }));
+      expect(
+        screen.getByRole("combobox", { name: "Each month" }),
+      ).toHaveTextContent("A calendar date");
+      expect(screen.getByRole("combobox", { name: "Date" })).toHaveTextContent(
+        day,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Advanced rule" }));
+      expect(screen.getByLabelText("Recurrence rule")).toHaveValue(value);
+      expect(changed).not.toHaveBeenCalled();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Use visual editor" }),
+      );
+      fireEvent.change(
+        screen.getByRole("spinbutton", { name: "Repeat interval" }),
+        { target: { value: "2" } },
+      );
+      expect(changed).toHaveBeenLastCalledWith(
+        `DTSTART:${start};FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=${Number.parseInt(day, 10)}`,
+      );
+    },
+  );
+
   it("builds ordinal monthly and yearly patterns", () => {
     function Harness() {
       const [value, setValue] = useState<string | undefined>(
@@ -128,6 +219,38 @@ describe("RecurrenceField", () => {
     expect(changed).toHaveBeenCalledWith(
       "DTSTART:20300801;FREQ=MONTHLY;BYDAY=-1FR",
     );
+  });
+
+  it("explains repeat timing in plain language and keeps raw rules advanced", () => {
+    const anchorChanged = vi.fn();
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        scheduled="2030-08-05"
+        value="DTSTART:20300805;FREQ=WEEKLY;BYDAY=MO"
+        onAnchorChange={anchorChanged}
+        onChange={changed}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit pattern" }));
+    expect(screen.queryByText("Edit RRULE")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fixed schedule")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Recurrence rule")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "Repeat from" }));
+    const list = screen.getByRole("listbox", { name: "Repeat from" });
+    expect(
+      within(list).getByRole("option", { name: /^Planned dates/ }),
+    ).toHaveTextContent("Keep the planned dates, even if you finish late.");
+    fireEvent.click(
+      within(list).getByRole("option", { name: /^Completion date/ }),
+    );
+    expect(anchorChanged).toHaveBeenCalledWith("completion");
+    fireEvent.click(screen.getByRole("button", { name: "Advanced rule" }));
+    expect(screen.getByLabelText("Recurrence rule")).toHaveValue(
+      "DTSTART:20300805;FREQ=WEEKLY;BYDAY=MO",
+    );
+    expect(changed).not.toHaveBeenCalled();
   });
 
   it("creates a complete preset from the scheduled value", () => {

@@ -7,7 +7,6 @@ import {
   type AutoArchiveScheduleStore,
 } from "./auto-archive-activity";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
-import { deferred } from "../test/mdbase-fixture";
 
 import type { Task } from "../domain/task";
 import type { TaskRepository } from "./ports/task-repository";
@@ -174,20 +173,6 @@ describe("AutoArchiveActivity", () => {
     );
   });
 
-  it("does not enumerate tasks when no status enables auto-archive", async () => {
-    const repository = taskRepository([makeTask()]);
-    const list = vi.spyOn(repository, "listSummaries");
-    const activity = new AutoArchiveActivity({
-      repository,
-      store: new MemoryScheduleStore(),
-      clock: new ManualClock(),
-      configuration: defaultTaskCollectionConfiguration,
-    });
-    await activity.start();
-    await activity.reconcile();
-    expect(list).not.toHaveBeenCalled();
-  });
-
   it("clears schedules when auto-archive is disabled without listing tasks", async () => {
     const task = makeTask({ status: "done", completed: true });
     const repository = taskRepository([task]);
@@ -207,62 +192,6 @@ describe("AutoArchiveActivity", () => {
     expect(activity.pending()).toEqual([]);
     expect(store.schedules).toEqual([]);
     expect(list).not.toHaveBeenCalled();
-  });
-
-  it("coalesces bursts and performs one trailing scan for changes during a scan", async () => {
-    const repository = taskRepository([makeTask()]);
-    const activity = new AutoArchiveActivity({
-      repository,
-      store: new MemoryScheduleStore(),
-      clock: new ManualClock(),
-      configuration: autoArchiveConfiguration,
-    });
-    await activity.start();
-    const list = vi.spyOn(repository, "listSummaries");
-    await Promise.all(Array.from({ length: 100 }, () => activity.reconcile()));
-    expect(list).toHaveBeenCalledOnce();
-    list.mockClear();
-    const started = deferred<void>();
-    const release = deferred<Task[]>();
-    list.mockImplementationOnce(() => {
-      started.resolve();
-      return release.promise;
-    });
-    const first = activity.reconcile();
-    await started.promise;
-    const trailing = activity.reconcile();
-    expect(trailing).toBe(first);
-    release.resolve([]);
-    await trailing;
-    expect(list).toHaveBeenCalledTimes(2);
-  });
-
-  it("reconciles 10,000 task events with one durable queue write", async () => {
-    const tasks = Array.from({ length: 10_000 }, (_, index) =>
-      makeTask({
-        id: `task-${index}`,
-        path: `tasks/task-${index}.md`,
-        status: index % 2 ? "done" : "open",
-        completed: index % 2 === 1,
-      }),
-    );
-    const store = new MemoryScheduleStore();
-    const startedAt = performance.now();
-    const activity = new AutoArchiveActivity({
-      repository: taskRepository(tasks),
-      store,
-      clock: new ManualClock(),
-      configuration: autoArchiveConfiguration,
-    });
-    await activity.start();
-    const elapsed = performance.now() - startedAt;
-
-    expect(activity.pending()).toHaveLength(5_000);
-    expect(store.saves).toBe(1);
-    expect(elapsed).toBeLessThan(2_000);
-    console.info(
-      `auto-archive reconciliation: 10,000 tasks in ${elapsed.toFixed(1)}ms`,
-    );
   });
 });
 

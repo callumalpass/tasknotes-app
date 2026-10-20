@@ -22,11 +22,21 @@ function requireValue(value, label) {
   return value.trim();
 }
 
+/** AFTER_APPROVAL releases as soon as Apple approves. MANUAL holds the
+ * approved version until a person releases it in App Store Connect. */
+export function releaseTypeOf(metadata) {
+  return metadata.releaseType ?? "AFTER_APPROVAL";
+}
+
 export function validateMetadata(metadata, version) {
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw new Error("Public releases require a three-part numeric version");
   if (metadata.version !== version)
     throw new Error("Release metadata version does not match the build");
+  if (metadata.draft !== undefined)
+    throw new Error("Release metadata is still marked as a draft");
+  if (!["AFTER_APPROVAL", "MANUAL"].includes(releaseTypeOf(metadata)))
+    throw new Error("releaseType must be AFTER_APPROVAL or MANUAL");
   requireValue(metadata.copyright, "copyright");
   const reviewNotes = requireValue(metadata.reviewNotes, "reviewNotes");
   if (reviewNotes.length > 4000)
@@ -230,7 +240,7 @@ export async function submitAppStore({
       if (
         !linked ||
         (!releasedStates.has(state(target)) &&
-          target.attributes.releaseType !== "AFTER_APPROVAL")
+          target.attributes.releaseType !== releaseTypeOf(metadata))
       ) {
         throw new Error(
           "Existing submitted version does not match the expected release policy",
@@ -325,7 +335,7 @@ export async function submitAppStore({
           platform: "IOS",
           versionString: version,
           copyright: metadata.copyright,
-          releaseType: "AFTER_APPROVAL",
+          releaseType: releaseTypeOf(metadata),
         },
         relationships: { app: relation("apps", APP_ID) },
       })
@@ -337,7 +347,7 @@ export async function submitAppStore({
       id: target.id,
       attributes: {
         copyright: metadata.copyright,
-        releaseType: "AFTER_APPROVAL",
+        releaseType: releaseTypeOf(metadata),
         earliestReleaseDate: null,
       },
       relationships: { build: relation("builds", build.id) },
@@ -386,7 +396,7 @@ export async function submitAppStore({
   assertLocales(savedLocales, metadata);
   if (
     attached?.id !== build.id ||
-    prepared.attributes.releaseType !== "AFTER_APPROVAL" ||
+    prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
     savedLocales.some(
       (item) =>

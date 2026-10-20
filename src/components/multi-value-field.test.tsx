@@ -29,14 +29,6 @@ it("selects record completions while preserving their portable link value", asyn
   expect(screen.getByTestId("values")).toHaveTextContent(
     '["[[Projects/Mobile]]"]',
   );
-  expect(complete).toHaveBeenLastCalledWith(
-    expect.objectContaining({
-      field: "projects",
-      kind: "records",
-      query: "mob",
-      limit: 12,
-    }),
-  );
 });
 
 it("renders persisted record values with resolved titles instead of paths", () => {

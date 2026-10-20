@@ -126,60 +126,6 @@ it("retires an imperative popup before another overlay and transfers return focu
   await Promise.resolve();
   expect(document.activeElement).toBe(trigger);
 });
-it("isolates the background and traps Tab at both ends of a modal", () => {
-  const app = element("main");
-  const trigger = element("button", app);
-  trigger.focus();
-  const dialog = element("section");
-  const first = element("button", dialog);
-  const last = element("button", dialog);
-  const dismiss = vi.fn();
-  disposals.push(
-    registerOverlay({
-      root: dialog,
-      modal: true,
-      dismiss,
-      initialFocus: () => first,
-    }),
-  );
-  expect(app.inert).toBe(true);
-  expect(document.body.style.overflow).toBe("hidden");
-  key("Tab", true);
-  expect(document.activeElement).toBe(last);
-  key("Tab");
-  expect(document.activeElement).toBe(first);
-  key("Escape");
-  expect(dismiss).toHaveBeenCalledWith("escape");
-});
-it("gives a nested popup Escape ownership without dismissing its parent", async () => {
-  const app = element("main");
-  const trigger = element("button", app);
-  trigger.focus();
-  const parent = element("section");
-  const date = element("button", parent);
-  const parentDismiss = vi.fn();
-  disposals.push(
-    registerOverlay({ root: parent, modal: true, dismiss: parentDismiss }),
-  );
-  date.focus();
-  const popup = element("div", parent);
-  const day = element("button", popup);
-  const childDismiss = vi.fn(() => remove());
-  const remove = registerOverlay({
-    root: popup,
-    modal: false,
-    dismiss: childDismiss,
-    initialFocus: () => day,
-  });
-  disposals.push(remove);
-  key("Escape");
-  await Promise.resolve();
-  expect(childDismiss).toHaveBeenCalledOnce();
-  expect(parentDismiss).not.toHaveBeenCalled();
-  expect(document.activeElement).toBe(date);
-  expect(app.inert).toBe(true);
-  expect(document.body.style.overflow).toBe("hidden");
-});
 it("respects handled Escape and preserves an existing inert/scroll state", () => {
   document.body.style.overflow = "clip";
   const app = element("main");

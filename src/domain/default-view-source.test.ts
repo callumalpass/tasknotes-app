@@ -1,19 +1,19 @@
-import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { parse } from "yaml";
 import { describe, expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import {
   defaultNavigationViewKeys,
-  taskNotesDefaultBaseDocument,
   taskNotesDefaultBaseSources,
-  taskNotesDefaultCanonicalDocument,
   newViewSourcePath,
   taskNotesViewSourcePath,
   viewSourceFormat,
   viewSourceRecord,
 } from "./default-view-source";
-import { ensureTaskNotesDefaultViewSource } from "../application/ensure-default-view-source";
+import {
+  addTaskNotesStarterViews,
+  ensureTaskNotesDefaultViewSource,
+} from "../application/ensure-default-view-source";
 
 import type { TaskViewDocument } from "./view";
 import type { TaskRepository } from "../application/ports/task-repository";
@@ -28,62 +28,51 @@ describe("TaskNotes starter views", () => {
     );
   });
 
-  it("writes every starter screen as an ordinary editable view", () => {
-    const parsed = parse(
-      taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
-    ) as {
-      formulas?: Record<string, string>;
-      views: Array<{
-        name: string;
-        type: string;
-        filters?: { and?: Array<string | Record<string, unknown>> };
-        options?: Record<string, unknown>;
-        sort?: Array<{ property: string; direction: string }>;
-      }>;
+  it("uses the supplied collection's mapped fields and completed statuses without replacing settings", () => {
+    const defaults = defaultTaskCollectionConfiguration();
+    const configuration = {
+      ...defaults,
+      fieldMapping: {
+        ...defaults.fieldMapping,
+        title: "Task title",
+        status: "State",
+        scheduled: "Start day",
+        due: "Due day",
+        priority: "Importance",
+        projects: "Project links",
+        sortOrder: "Rank key",
+        archiveTag: "retired",
+      },
+      statuses: defaults.statuses.map((status) =>
+        status.isCompleted ? { ...status, value: "finished" } : status,
+      ),
     };
-
-    expect(parsed.views.map(({ name, type }) => [name, type])).toEqual([
-      ["Today", "tasknotesTaskList"],
-      ["Upcoming", "tasknotesCalendar"],
-      ["Calendar", "tasknotesCalendar"],
-      ["Projects", "tasknotesTaskList"],
-      ["Archive", "tasknotesTaskList"],
+    const before = structuredClone(configuration);
+    const sources = taskNotesDefaultBaseSources(configuration);
+    const today = parse(sources[0].document);
+    expect(today.views[0].filters.and).toContain('note["State"] != "finished"');
+    expect(today.views[0].filters.and).toContain(
+      'file.hasTag("retired") != true',
+    );
+    expect(today.views[0].order).toEqual([
+      'note["Task title"]',
+      'note["Start day"]',
+      'note["Due day"]',
+      'note["Project links"]',
     ]);
-    expect(parsed.views[1].options).toMatchObject({
-      calendarView: "listWeek",
-      showRecurring: true,
+    expect(today.views[0].sort[0]).toEqual({
+      property: 'note["Rank key"]',
+      direction: "DESC",
     });
-    expect(parsed.views[2].options).toMatchObject({
-      calendarView: "dayGridMonth",
-      showRecurring: true,
+    expect(today.properties['note["Rank key"]']).toEqual({
+      displayName: "Manual order",
+      hidden: true,
     });
-    expect(parsed.formulas).toBeUndefined();
-    expect(parsed.views[0].filters?.and?.at(-1)).toEqual({
-      or: [
-        {
-          and: [
-            'note["scheduled"].isEmpty() == false',
-            'date(note["scheduled"]) <= today()',
-          ],
-        },
-        {
-          and: [
-            'note["scheduled"].isEmpty()',
-            {
-              or: ['note["due"].isEmpty()', 'date(note["due"]) <= today()'],
-            },
-          ],
-        },
-      ],
-    });
-    expect(JSON.stringify(parsed)).not.toContain("formula.");
-    expect(parsed.views[3].options).toEqual({ create: false });
-    expect(parsed.views[4].options).toEqual({ create: false });
-    for (const view of parsed.views)
-      expect(view.sort?.[0]).toEqual({
-        property: "note.tasknotes_manual_order",
-        direction: "DESC",
-      });
+    expect(parse(sources[4].document).views[0].filters.and).toEqual([
+      'file.hasTag("retired") == true',
+    ]);
+    expect(JSON.stringify(sources)).not.toContain('note[\\"status\\"]');
+    expect(configuration).toEqual(before);
   });
 
   it("creates each namespaced Base once and returns provider-owned definitions", async () => {
@@ -164,55 +153,6 @@ describe("TaskNotes starter views", () => {
     expect(deleteViewSource).not.toHaveBeenCalled();
   });
 
-  it("keeps canonical filters and sorts projection-free", () => {
-    const { frontmatter } = parseFrontmatter(
-      taskNotesDefaultCanonicalDocument(defaultTaskCollectionConfiguration()),
-    );
-    const views = frontmatter.views as Array<{
-      id: string;
-      where: string;
-      order_by?: Array<{ field: string; direction: string }>;
-      presentation: { options?: Record<string, unknown> };
-    }>;
-    const archive = views.find(({ id }) => id === "archive");
-    const projects = views.find(({ id }) => id === "projects") as
-      | {
-          where: string;
-          select: string[];
-          group_by: Array<{ field: string; direction: string }>;
-          presentation: {
-            type: string;
-            options?: Record<string, unknown>;
-          };
-        }
-      | undefined;
-    expect(archive?.where).toContain('file.hasTag("archived") == true');
-    expect(archive?.presentation.options).toEqual({ create: false });
-    expect(frontmatter.query).toEqual({});
-    expect(projects?.where).toContain('note["projects"].isEmpty() == false');
-    expect(projects?.select).not.toContain("projects");
-    expect(projects?.group_by).toEqual([
-      { field: "projects", direction: "asc" },
-    ]);
-    expect(projects?.presentation).toEqual({
-      type: "tasknotes.task-list",
-      fallback: "mdbase.table",
-      options: { create: false },
-    });
-    expect(
-      views.find(({ id }) => id === "today")?.presentation.options,
-    ).toEqual({ sections: "day" });
-    const today = views.find(({ id }) => id === "today");
-    expect(today?.where).toContain('date(note["scheduled"]) <= today()');
-    expect(today?.where).toContain('date(note["due"]) <= today()');
-    expect(JSON.stringify(frontmatter)).not.toContain("projection.");
-    for (const view of views)
-      expect(view.order_by?.[0]).toEqual({
-        field: "tasknotes_manual_order",
-        direction: "desc",
-      });
-  });
-
   it("leaves an existing default source untouched", async () => {
     const existing = starterDocuments();
     const repository = {
@@ -253,49 +193,6 @@ describe("TaskNotes starter views", () => {
       "views/tasknotes-app.base#projects",
       "views/tasknotes-app.base#archive",
     ]);
-  });
-
-  it("expresses Projects as a filtered and grouped task view", () => {
-    const parsed = parse(
-      taskNotesDefaultBaseDocument(defaultTaskCollectionConfiguration()),
-    ) as {
-      filters?: unknown;
-      views: Array<{
-        name: string;
-        filters?: { and?: Array<string | Record<string, unknown>> };
-        groupBy?: { property: string; direction: string };
-        order?: string[];
-        options?: Record<string, unknown>;
-      }>;
-    };
-
-    expect(parsed.filters).toBeUndefined();
-    expect(
-      parsed.views.find(({ name }) => name === "Today")?.filters?.and,
-    ).toContain('note["status"].isEmpty() == false');
-    expect(parsed.views.find(({ name }) => name === "Today")?.options).toEqual({
-      sections: "day",
-    });
-    const projectFilter = parsed.views
-      .find(({ name }) => name === "Projects")
-      ?.filters?.and?.join("\n");
-    expect(projectFilter).toContain('note["status"].isEmpty() == false');
-    expect(projectFilter).toContain('note["projects"].isEmpty() == false');
-    expect(projectFilter).not.toContain("file.backlinks");
-    expect(
-      parsed.views.find(({ name }) => name === "Projects")?.groupBy,
-    ).toEqual({
-      property: 'note["projects"]',
-      direction: "ASC",
-    });
-    expect(
-      parsed.views.find(({ name }) => name === "Projects")?.order,
-    ).not.toContain('note["projects"]');
-    expect(
-      parsed.views
-        .find(({ name }) => name === "Archive")
-        ?.filters?.and?.join("\n"),
-    ).toContain('file.hasTag("archived") == true');
   });
 
   it("surfaces a collection that cannot create its required starter views", async () => {
@@ -340,6 +237,77 @@ describe("TaskNotes starter views", () => {
       ),
     ).rejects.toThrow("create_view_source is unavailable");
     expect(repository.connectionStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("explicit starter views after setup", () => {
+  // One shared collection seen by two explicit-only tabs. A create at an
+  // occupied path is refused, as the native repository's find-then-create is.
+  function collection() {
+    const stored: TaskViewDocument[] = [];
+    const creates: string[] = [];
+    const tab = () =>
+      ({
+        defaultViewSourceCreation: "explicit-only",
+        listViews: vi.fn(async () => [...stored]),
+        createViewSource: vi.fn(async (input: { path: string }) => {
+          await Promise.resolve();
+          if (stored.some((document) => document.source.path === input.path))
+            throw new Error("A record already occupies this view source path.");
+          creates.push(input.path);
+          stored.push(
+            starterDocument(
+              input.path.slice("TaskNotes/Views/".length, -".base".length),
+            ),
+          );
+          return { path: input.path, format: "obsidian.base", revision: "1" };
+        }),
+      }) as unknown as TaskRepository;
+    return { stored, creates, tab };
+  }
+
+  it("creates the five starters once; repeating is a no-op", async () => {
+    const shared = collection();
+    const tab = shared.tab();
+    const configuration = defaultTaskCollectionConfiguration();
+    await expect(
+      addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true }),
+    ).resolves.toHaveLength(5);
+    await addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true });
+    await addTaskNotesStarterViews(tab, configuration);
+    expect(shared.creates).toEqual(
+      taskNotesDefaultBaseSources(configuration).map(({ path }) => path),
+    );
+    // Navigation keeps #218's guarantee: it never writes.
+    await ensureTaskNotesDefaultViewSource(tab, [], configuration);
+    expect(shared.creates).toHaveLength(5);
+  });
+
+  it("is safe when two tabs finish setup at the same time", async () => {
+    const shared = collection();
+    const configuration = defaultTaskCollectionConfiguration();
+    const results = await Promise.all([
+      addTaskNotesStarterViews(shared.tab(), configuration, {
+        onlyIfNoViews: true,
+      }),
+      addTaskNotesStarterViews(shared.tab(), configuration, {
+        onlyIfNoViews: true,
+      }),
+    ]);
+    expect(results.map((documents) => documents.length)).toEqual([5, 5]);
+    expect(new Set(shared.creates).size).toBe(5);
+    expect(shared.creates).toHaveLength(5);
+  });
+
+  it("leaves a collection that already has views untouched after setup", async () => {
+    const shared = collection();
+    shared.stored.push(starterDocument("upcoming"));
+    await addTaskNotesStarterViews(
+      shared.tab(),
+      defaultTaskCollectionConfiguration(),
+      { onlyIfNoViews: true },
+    );
+    expect(shared.creates).toEqual([]);
   });
 });
 

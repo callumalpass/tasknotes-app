@@ -1,6 +1,5 @@
 import { expect, it, vi } from "vitest";
 import { TaskMutations } from "./task-mutations";
-import { DemoTaskRepository } from "../demo/demo-task-repository";
 
 it("joins repeated completion intent, exposes rejection, and supports retry", async () => {
   const commands = new TaskMutations();
@@ -87,21 +86,63 @@ it("does not join an earlier intent across a queued opposite intent", async () =
   expect(states.at(-1)).toBe(false);
 });
 
-it("desired completion is idempotent for ordinary and recurring tasks", async () => {
-  const repository = new DemoTaskRepository();
-  await repository.initialize();
-  const ordinary = await repository.create({ title: "Repeated completion" });
-  await repository.toggle(ordinary.id, undefined, true);
-  expect(
-    (await repository.toggle(ordinary.id, undefined, true)).completed,
-  ).toBe(true);
-  const recurring = await repository.create({
-    title: "Recurring completion",
-    recurrence: "FREQ=DAILY",
+it("flush waits for all current commands and detects commands started while flushing", async () => {
+  const commands = new TaskMutations();
+  let finishFirst!: () => void;
+  let finishSecond!: () => void;
+  let finishNew!: () => void;
+  const firstWrite = new Promise<void>((resolve) => {
+    finishFirst = resolve;
   });
-  await repository.toggle(recurring.id, "2026-09-09", true);
-  expect(
-    (await repository.toggle(recurring.id, "2026-09-09", true))
-      .completeInstances,
-  ).toContain("2026-09-09");
+  const secondWrite = new Promise<void>((resolve) => {
+    finishSecond = resolve;
+  });
+  const newWrite = new Promise<void>((resolve) => {
+    finishNew = resolve;
+  });
+  expect(commands.hasPending()).toBe(false);
+  const first = commands.run("first", () => firstWrite);
+  const second = commands.run("second", () => secondWrite);
+  const flushed = vi.fn();
+  const flushing = commands.flush().then(flushed);
+  expect(commands.hasPending()).toBe(true);
+
+  finishFirst();
+  await first;
+  expect(flushed).not.toHaveBeenCalled();
+  expect(commands.hasPending()).toBe(true);
+
+  const newer = commands.run("newer", () => newWrite);
+  finishSecond();
+  await second;
+  await flushing;
+  expect(flushed).toHaveBeenCalledOnce();
+  // A reload must recheck after the captured batch, not ignore a newer edit.
+  expect(commands.hasPending()).toBe(true);
+  expect(commands.snapshot("newer").pending).toBe(true);
+  finishNew();
+  await newer;
+  expect(commands.hasPending()).toBe(false);
+});
+
+it("flush rejects failed saves without losing the visible failure and allows retry", async () => {
+  const commands = new TaskMutations();
+  let fail!: (error: Error) => void;
+  const write = new Promise<void>((_, reject) => {
+    fail = reject;
+  });
+  const saving = commands.run("task", () => write, "save");
+  const flushing = commands.flush();
+  const saveFailure = expect(saving).rejects.toThrow("Save rejected");
+  const flushFailure = expect(flushing).rejects.toThrow("Save rejected");
+  fail(new Error("Save rejected"));
+  await Promise.all([saveFailure, flushFailure]);
+  expect(commands.hasPending()).toBe(false);
+  expect(commands.snapshot("task").pending).toBe(false);
+  expect(commands.snapshot("task").error?.message).toBe("Save rejected");
+
+  await commands.run("task", async () => undefined, "save");
+  await commands.flush();
+  expect(commands.hasPending()).toBe(false);
+  expect(commands.snapshot("task").error).toBeNull();
 });

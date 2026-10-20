@@ -203,6 +203,7 @@ export function TaskPropertyEditor({
             configuration={configuration}
             property={property}
             scheduled={task.scheduled}
+            due={task.due}
             value={value}
             anchor={anchor}
             disabled={saving}
@@ -265,6 +266,7 @@ function PropertyControl({
   configuration,
   property,
   scheduled,
+  due,
   value,
   anchor,
   disabled,
@@ -276,6 +278,7 @@ function PropertyControl({
   configuration: TaskCollectionConfiguration;
   property: EditableProperty;
   scheduled?: string;
+  due?: string;
   value: unknown;
   anchor?: "scheduled" | "completion";
   disabled: boolean;
@@ -327,6 +330,7 @@ function PropertyControl({
       <RecurrenceField
         anchor={anchor}
         scheduled={scheduled}
+        due={due}
         value={typeof value === "string" ? value : undefined}
         onAnchorChange={onAnchorChange}
         onChange={(next) => {

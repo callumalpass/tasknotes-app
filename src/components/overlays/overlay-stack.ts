@@ -165,6 +165,11 @@ function pointerdown(event: PointerEvent) {
   top.dismiss("outside");
 }
 
+/** Whether any menu, popover, sheet, or dialog currently owns the keyboard. */
+export function hasOpenOverlay(): boolean {
+  return layers.length > 0;
+}
+
 /** One owner for modal isolation, focus, scroll lock, and top-layer dismissal. */
 export function registerOverlay(
   options: OverlayOptions,

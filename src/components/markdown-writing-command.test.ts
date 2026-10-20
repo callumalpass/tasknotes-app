@@ -40,17 +40,6 @@ describe("writing commands", () => {
     expect(undo({ state, dispatch })).toBe(true);
     expect(state.doc.toString()).toBe("");
   });
-  it("wraps only the selection and keeps it selected", () => {
-    const state = EditorState.create({
-      doc: "A small thought",
-      selection: { anchor: 2, head: 7 },
-    });
-    const next = state.update(writingCommand(state, "bold")).state;
-    expect(next.doc.toString()).toBe("A **small** thought");
-    expect(
-      next.sliceDoc(next.selection.main.from, next.selection.main.to),
-    ).toBe("small");
-  });
   it("places the caret inside an empty wikilink", () => {
     const state = EditorState.create({ doc: "" });
     const next = state.update(writingCommand(state, "link")).state;

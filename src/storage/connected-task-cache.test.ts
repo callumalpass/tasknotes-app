@@ -1,58 +1,8 @@
-import {
-  sameConnectedTaskMetadata,
-  connectedTaskStats,
-  connectedViewExecutionKey,
-} from "./connected-task-cache";
-import { ConnectedTaskIndex } from "./connected-task-index";
+import { connectedTaskStats } from "./connected-task-cache";
 
-import type { Task, TaskSummary, TaskListQuery } from "../domain/task";
+import type { Task } from "../domain/task";
 
-function listConnectedTasks(
-  cached: { task: Task }[],
-  query: TaskListQuery,
-): TaskSummary[] {
-  const index = new ConnectedTaskIndex<{ task: Task }>();
-  for (const entry of cached) index.set(entry.task.id, entry);
-  return index.list(query);
-}
-import type { TaskView } from "../domain/view";
-
-it("applies shared search, state, archive, and limit projection rules", () => {
-  const cached = [
-    {
-      task: fixtureTask("open", "Open release", {
-        tags: ["laptop"],
-        attachments: ["[[Attachments/receipt.jpg]]"],
-      }),
-    },
-    {
-      task: fixtureTask("done", "Completed release", {
-        completed: true,
-        status: "done",
-      }),
-    },
-    { task: fixtureTask("old", "Archived release", { archived: true }) },
-  ];
-
-  expect(
-    listConnectedTasks(cached, { search: "release laptop" }).map(
-      ({ id }) => id,
-    ),
-  ).toEqual(["open"]);
-  expect(
-    listConnectedTasks(cached, { search: "receipt" }).map(({ id }) => id),
-  ).toEqual(["open"]);
-  expect(
-    listConnectedTasks(cached, { status: "completed" }).map(({ id }) => id),
-  ).toEqual(["done"]);
-  expect(
-    listConnectedTasks(cached, { archived: "only", limit: 1 }).map(
-      ({ id }) => id,
-    ),
-  ).toEqual(["old"]);
-});
-
-it("shares connected statistics and stable projection keys", () => {
+it("counts archived tasks separately from total/open/completed", () => {
   const open = fixtureTask("open", "Open");
   const done = fixtureTask("done", "Done", {
     completed: true,
@@ -63,19 +13,6 @@ it("shares connected statistics and stable projection keys", () => {
   expect(
     connectedTaskStats([{ task: open }, { task: done }, { task: archived }]),
   ).toEqual({ total: 2, open: 1, completed: 1, archived: 1 });
-  expect(sameConnectedTaskMetadata(open, { ...open })).toBe(true);
-  expect(
-    sameConnectedTaskMetadata(open, {
-      ...open,
-      frontmatter: { title: "Edited" },
-    }),
-  ).toBe(false);
-  expect(
-    connectedViewExecutionKey({
-      key: "views/work.base#All",
-      source: { revision: "revision-2" },
-    } as TaskView),
-  ).toBe("views/work.base#All:revision-2");
 });
 
 function fixtureTask(

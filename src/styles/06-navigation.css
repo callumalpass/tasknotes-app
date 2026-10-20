@@ -1,5 +1,25 @@
 /* Bottom navigation, the desktop sidebar, capture button, and notices. */
 
+.view-discovery-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-lg);
+  margin: var(--space-lg) var(--space-xl);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.view-discovery-notice p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.view-discovery-notice button {
+  min-height: 44px;
+  white-space: normal;
+}
+
 .bottom-navigation {
   position: fixed;
   z-index: 10;
@@ -189,6 +209,7 @@
 
 .global-capture-navigation kbd {
   margin-left: auto;
+  white-space: nowrap;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
@@ -216,12 +237,32 @@
   cursor: pointer;
   transition:
     opacity 150ms ease,
-    transform 150ms ease;
+    transform 150ms ease,
+    padding 200ms var(--ease-out),
+    gap 200ms var(--ease-out);
   border-color: transparent;
 }
 
 .global-capture-fab span {
+  max-width: 8em;
+  overflow: hidden;
   line-height: 1;
+  white-space: nowrap;
+  transition:
+    max-width 200ms var(--ease-out),
+    opacity 150ms var(--ease-out);
+}
+
+/* Scrolling down narrows the button to its icon; the label returns on
+   settle or reversal. The accessible name never changes. */
+.global-capture-fab.is-collapsed {
+  gap: 0;
+  padding: 0 13px;
+}
+
+.global-capture-fab.is-collapsed span {
+  max-width: 0;
+  opacity: 0;
 }
 
 .app-update-notice {
@@ -301,8 +342,308 @@
 .app-shell:has(.fc-more-popover) .global-capture-fab {
   visibility: hidden;
 }
+
+.workspace-feedback {
+  position: fixed;
+  z-index: 25;
+  right: max(var(--page-inset), env(safe-area-inset-right));
+  bottom: max(var(--page-inset), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - (var(--page-inset) * 2));
+  pointer-events: none;
+}
+.workspace-feedback > .undo-toast,
+.workspace-feedback > .deletion-recovery-notice,
+.workspace-feedback > .collection-write-status {
+  position: static;
+  max-width: 100%;
+  pointer-events: auto;
+}
+.workspace-feedback > .collection-write-status:not(.is-visible) {
+  display: none;
+}
+@media (max-width: 839px) {
+  .workspace-feedback.is-above-mobile-controls {
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 82px);
+  }
+}
+
+/* Collection save feedback is one overlay, never part of a task row or header.
+   Routine sync is quiet; only sustained waits or actual outcomes get actions. */
+.collection-write-status {
+  position: fixed;
+  z-index: 5;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  max-width: min(31rem, calc(100% - 40px));
+  padding: 4px 8px;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border-radius: var(--radius-control);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms var(--ease-out),
+    visibility 0s 160ms;
+}
+.collection-write-status.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.collection-write-status > svg {
+  flex: 0 0 auto;
+}
+.collection-write-status > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-write-status.needs-attention {
+  padding: 4px 12px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+  pointer-events: auto;
+}
+.collection-write-status.needs-attention > svg {
+  color: var(--danger);
+}
+.collection-write-status button {
+  min-height: 44px;
+  padding: 4px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.collection-write-status button:disabled {
+  color: var(--ink-muted);
+  cursor: wait;
+}
+@media (max-width: 839px) {
+  .collection-write-status {
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 80px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-write-status {
+    transition: none;
+  }
+}
 @media (max-width: 839px) {
   :root {
     --nav-height: max(72px, calc(3rem + 24px));
+  }
+}
+
+/* Command palette and keyboard shortcut sheet: a top-anchored panel that
+   shares the capture dialog's surface, scrim, and radius. */
+.command-palette-scrim {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: max(12vh, env(safe-area-inset-top)) 16px 24px;
+  background: var(--color-scrim);
+}
+
+.command-palette,
+.keyboard-shortcuts-sheet {
+  width: min(100%, 600px);
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sheet);
+  box-shadow: 0 24px 70px var(--color-shadow);
+}
+
+.command-palette-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0 var(--space-lg);
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.command-palette-field:focus-within {
+  color: var(--accent);
+}
+
+.command-palette-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  color: var(--ink);
+  font-size: var(--type-control);
+  background: transparent;
+  border: 0;
+}
+
+.command-palette-field input:focus-visible {
+  outline: 0;
+}
+
+.command-palette-results {
+  overflow-y: auto;
+  padding: var(--space-xs) var(--space-sm) var(--space-sm);
+  overscroll-behavior: contain;
+}
+
+.command-palette-heading {
+  margin: 0;
+  padding: var(--space-md) var(--space-sm) var(--space-xs);
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 700;
+}
+
+.command-palette-option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: 11px var(--space-sm);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.command-palette-option[aria-selected="true"] {
+  background: var(--accent-soft);
+}
+
+.command-palette-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette-detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette-key,
+.keyboard-shortcuts-sheet kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: var(--type-mono-micro);
+  text-align: center;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.command-palette-key {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.command-palette-empty {
+  margin: 0;
+  padding: var(--space-lg) var(--space-sm);
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.keyboard-shortcuts-sheet {
+  overflow-y: auto;
+  padding: var(--space-lg) var(--space-xl) var(--space-xl);
+}
+
+.keyboard-shortcuts-sheet > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.keyboard-shortcuts-sheet h2 {
+  margin: 0;
+  font-size: var(--type-section);
+}
+
+.keyboard-shortcuts-sheet h3 {
+  margin: var(--space-lg) 0 var(--space-xs);
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 700;
+}
+
+.keyboard-shortcuts-sheet dl {
+  margin: 0;
+}
+
+.keyboard-shortcuts-sheet dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  min-height: 36px;
+  border-bottom: 1px solid var(--line);
+}
+
+.keyboard-shortcuts-sheet dt {
+  font-size: var(--type-supporting);
+}
+
+.keyboard-shortcuts-sheet dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.keyboard-shortcuts-sheet .shortcut-or {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+}
+
+.keyboard-shortcuts-note {
+  margin: var(--space-lg) 0 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+/* The sidebar's palette entry reads as a utility, its key hint muted. */
+.navigation-commands kbd {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+}
+
+@media (max-width: 839px) {
+  .command-palette-scrim {
+    padding: max(8px, env(safe-area-inset-top)) 8px 8px;
+  }
+
+  .command-palette,
+  .keyboard-shortcuts-sheet {
+    max-height: calc(100dvh - 16px);
   }
 }

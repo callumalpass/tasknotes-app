@@ -8,21 +8,12 @@ import {
   removeScratchNode,
   scratchpadPage,
   scratchpadPreview,
-  scratchpadDocumentPath,
   serializeScratchNodes,
   visibleScratchNodes,
   type ScratchNode,
 } from "./scratchpad";
 
 describe("scratchpad Markdown outline", () => {
-  it("gives every document a stable timestamped path", () => {
-    expect(
-      scratchpadDocumentPath(
-        new Date("2026-08-06T06:30:12.345Z"),
-        "12345678-abcd-efgh",
-      ),
-    ).toBe("TaskNotes/Scratchpad/2026-08-06T06-30-12.345Z – 12345678.md");
-  });
   it("pages history by latest use with creation-date fallback and stable ids", () => {
     const documents = [
       scratchpad("a", "2026-08-01T10:00:00Z", "2026-09-01T10:00:00Z"),

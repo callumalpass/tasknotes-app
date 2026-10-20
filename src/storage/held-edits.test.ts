@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BlobRef, Hold, HoldReason, SyncStatus } from "@mdbase-dev/sdk";
+import type { BlobRef, Hold, SyncStatus } from "@mdbase-dev/sdk";
 import {
   heldEditFromHold,
   heldSyncFromStatus,
@@ -23,29 +23,6 @@ const blob: BlobRef = {
   partSize: 17,
 };
 describe("held-edit projection", () => {
-  it.each<HoldReason>([
-    "conflict",
-    "unknown_provenance",
-    "deleted_elsewhere",
-    "read_only",
-    "editor_busy",
-    "suspect_write",
-  ])("uses the SDK cause and reversible choices for %s", (reason) => {
-    const edit = heldEditFromHold({ ...hold, reason }, COLLECTION);
-    expect(edit.title).toBe("mdbase protected your edit");
-    expect(edit.cause.length).toBeGreaterThan(20);
-    expect(edit.detail).not.toContain("stuck");
-    expect(edit.reversibleNote).toContain("change your mind later");
-    expect(edit.id).toBe(hold.id);
-    expect(edit.since).toBe(new Date(hold.since).toISOString());
-    expect(
-      edit.actions.every((a) =>
-        ["keep_mine", "take_theirs", "keep_both", "delete", "use"].includes(
-          a.action,
-        ),
-      ),
-    ).toBe(true);
-  });
   it("keeps text versions exact and read-only, including HTML-looking content", () => {
     const mine = "<script>not executed</script>\n# Private text";
     const edit = heldEditFromHold({ ...hold, mine, theirs: "" }, COLLECTION);

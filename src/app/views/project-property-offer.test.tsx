@@ -54,7 +54,9 @@ it("adds the project property to an existing Today view only when chosen", async
   });
   fixture.updateViewSource.mockResolvedValue(undefined);
   const onChanged = vi.fn().mockResolvedValue(undefined);
-  render(<ProjectPropertyOffer view={today} onChanged={onChanged} />);
+  render(
+    <ProjectPropertyOffer hasProjects view={today} onChanged={onChanged} />,
+  );
 
   fireEvent.click(screen.getByRole("button", { name: "Show projects" }));
 
@@ -67,17 +69,18 @@ it("adds the project property to an existing Today view only when chosen", async
 
 it("stays dismissed and never offers when projects are already shown", () => {
   const { unmount } = render(
-    <ProjectPropertyOffer view={today} onChanged={vi.fn()} />,
+    <ProjectPropertyOffer hasProjects view={today} onChanged={vi.fn()} />,
   );
   fireEvent.click(screen.getByRole("button", { name: "Not now" }));
   unmount();
-  render(<ProjectPropertyOffer view={today} onChanged={vi.fn()} />);
+  render(<ProjectPropertyOffer hasProjects view={today} onChanged={vi.fn()} />);
   expect(screen.queryByRole("button", { name: "Show projects" })).toBeNull();
   cleanup();
   localStorage.clear();
 
   render(
     <ProjectPropertyOffer
+      hasProjects
       view={{
         ...today,
         properties: [...today.properties, { key: "note.projects" }],
@@ -87,4 +90,15 @@ it("stays dismissed and never offers when projects are already shown", () => {
   );
   expect(screen.queryByRole("button", { name: "Show projects" })).toBeNull();
   expect(fixture.updateViewSource).not.toHaveBeenCalled();
+});
+
+it("is not offered when no task in the view has a project", () => {
+  render(
+    <ProjectPropertyOffer
+      hasProjects={false}
+      view={today}
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(screen.queryByText("Show each task’s project on Today?")).toBeNull();
 });

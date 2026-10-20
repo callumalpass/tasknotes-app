@@ -430,14 +430,23 @@
     background-color 160ms var(--ease-out);
 }
 
-/* A non-default status keeps a shape cue, not only its stored color. The
-   stored color is a swatch inside the ring, never the control's ink. */
-.completion-control.has-status span::before {
-  position: absolute;
-  inset: 5px;
-  content: "";
-  background: var(--status-color, currentColor);
-  border-radius: 50%;
+/* A coloured, non-default status draws the ring itself, slightly heavier, and
+   names the status in the control's label and tooltip. Its lightness is
+   clamped so a pale or dark stored colour keeps 3:1 against the paper. */
+.completion-control.has-status span {
+  border-width: 2px;
+  border-color: var(--status-color);
+  border-color: oklch(from var(--status-color) min(l, 0.58) c h);
+}
+
+:root[data-theme="dark"] .completion-control.has-status span {
+  border-color: oklch(from var(--status-color) max(l, 0.7) c h);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .completion-control.has-status span {
+    border-color: oklch(from var(--status-color) max(l, 0.7) c h);
+  }
 }
 
 .completion-control[aria-busy="true"] {
@@ -470,6 +479,23 @@
   transform: rotate(45deg);
 }
 
+/* Completing here draws the check: the short stroke, then the long one. */
+.task-row.is-just-completed .completion-control span::after {
+  animation: completion-check-draw 220ms var(--ease-out) both;
+}
+
+@keyframes completion-check-draw {
+  from {
+    clip-path: inset(calc(100% - 2px) 100% 0 0);
+  }
+  35% {
+    clip-path: inset(calc(100% - 2px) 0 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
 .task-row-content {
   display: flex;
   flex-direction: column;
@@ -498,16 +524,42 @@
 }
 
 .task-row-title-text {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+/* Keyboard focus on a row's title marks the whole row: a soft fill with an
+   accent rule at its leading edge, rather than a box around the title text.
+   j/k and the arrow keys move this focus through the list. The extra class
+   outranks the global keyboard outline. */
+.task-row .task-row-title:focus-visible {
+  outline: 0;
+}
+
+.task-row:has(> .task-row-content > .task-row-title:focus-visible) {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 var(--accent);
 }
 
 .task-row.is-complete .task-row-title {
   color: var(--ink-soft);
-  text-decoration: line-through;
-  text-decoration-color: var(--line-strong);
+}
+
+/* The strike is a drawn rule so a fresh completion can sweep it across each
+   wrapped line in reading order. */
+.task-row.is-complete .task-row-title-text > span {
+  background: linear-gradient(var(--line-strong), var(--line-strong)) 0 58% /
+    100% 1px no-repeat;
+}
+
+.task-row.is-just-completed .task-row-title-text > span {
+  animation: completion-strike 200ms var(--ease-out) 60ms both;
+}
+
+@keyframes completion-strike {
+  from {
+    background-size: 0 1px;
+  }
 }
 
 .task-row-meta {
@@ -539,6 +591,23 @@
 .task-row-property.is-overdue > span,
 .task-row-property.is-overdue > strong {
   color: var(--danger);
+}
+
+/* Inside Overdue the heading already says so; the dates read as ordinary
+   metadata rather than a column of red. */
+.day-task-sections .task-section.is-overdue .task-row-meta .is-overdue,
+.day-task-sections
+  .task-section.is-overdue
+  .task-row-property.is-overdue
+  > span {
+  color: var(--ink-muted);
+}
+
+.day-task-sections
+  .task-section.is-overdue
+  .task-row-property.is-overdue
+  > strong {
+  color: inherit;
 }
 
 .task-row-tracking {
@@ -811,4 +880,48 @@
 }
 .task-section > .section-heading {
   margin: 0;
+}
+
+/* Overdue names itself once, in its label; the count stays ordinary. */
+.day-task-sections .task-section.is-overdue .task-section-toggle > svg,
+.day-task-sections .task-section.is-overdue .task-section-count {
+  color: var(--ink-muted);
+}
+
+/* List rows keep wrapped metadata on an even 24px rhythm. A project, status,
+   or priority value shrinks to an ellipsis on the line it starts rather than
+   dropping alone onto another; its full value stays in the accessible name. */
+.task-row:not(.kanban-card *) .task-row-properties {
+  row-gap: 0;
+  column-gap: 12px;
+}
+.task-row:not(.kanban-card *) .task-row-property.is-compact {
+  flex: 1 1 0;
+  flex-wrap: nowrap;
+  min-width: min(4.5rem, 100%);
+  max-width: max-content;
+}
+.task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undo-toast.task-completed-notice {
+  display: flex;
+}
+.task-completed-notice > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.task-completed-notice > button {
+  flex: 0 0 auto;
+}
+.undo-toast.task-completed-notice > button:last-child {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  padding: 0;
+  color: var(--ink-muted);
+  border-left: 0;
 }

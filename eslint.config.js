@@ -15,6 +15,12 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    // Immutable browser test oracle uses the platform's UTF-8 encoder.
+    // Keep all lint rules and publisher bytes; declare only its real global.
+    files: ["vendor/tasknotes-query-6bec1906.browser.mjs"],
+    languageOptions: { globals: { TextEncoder: "readonly" } },
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2022,

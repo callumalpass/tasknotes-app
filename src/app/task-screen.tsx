@@ -1,10 +1,12 @@
 import { ArrowLeft } from "lucide-react";
-import { registerReloadParticipant } from "../pwa/reload";
+import { useTaskReloadGuard } from "../pwa/use-task-reload";
+import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
 import {
   lazy,
   Suspense,
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -19,6 +21,15 @@ import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "../components/use-mutation-state";
 import { taskCompletion } from "../domain/task-completion";
 import { TaskActions } from "../components/task-actions";
+import { RecordWriteNotice } from "../components/record-write-notice";
+import { TaskRecordFile } from "../components/task-record-file";
+import {
+  useRecordWriteRejection,
+  useRecordWriteState,
+} from "../components/use-record-write-state";
+import { useRecordWriteReview } from "../components/record-write-status-context";
+import { WriteRejectionNotice } from "../components/write-rejection-notice";
+import { RecoveredEditNotice } from "../components/recovered-edit-notice";
 import { AttachmentService } from "../application/attachments/attachment-service";
 import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -33,7 +44,6 @@ import {
 import {
   activeTimeEntry,
   combineTaskDateTime,
-  formatRelativeTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
@@ -44,6 +54,7 @@ import {
   useTaskRelationships,
 } from "./repository-context";
 import { TimeTrackingField } from "./task-time-tracking";
+import { rememberOpenedTask } from "./search-history";
 import {
   Choice,
   Fieldset,
@@ -54,10 +65,18 @@ import {
   isEmptyFieldValue,
   organizeSummary,
   repeatSummary,
+  scheduleSummary,
   timeSummary,
   toDraft,
   type Draft,
 } from "./task-editor-draft";
+import {
+  changedFields,
+  followIncomingDraft,
+  readTaskEdit,
+  writeTaskEdit,
+  type StoredTaskEdit,
+} from "./task-edit-recovery";
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
@@ -68,6 +87,12 @@ const MarkdownPreview = lazy(async () => ({
 }));
 
 type SaveState = "saved" | "saving" | "error";
+type TaskEditorProps = {
+  task: Task;
+  occurrenceDate?: string;
+  onBack(): void;
+  onMaterialized(task: Task): void;
+};
 export function TaskScreen({
   id,
   occurrenceDate,
@@ -80,6 +105,12 @@ export function TaskScreen({
   onMaterialized(task: Task): void;
 }) {
   const { task, loading, error } = useTask(id);
+  const { repository } = useRepository();
+  const openedId = task?.id;
+  // Search offers recently opened tasks; only tasks that actually loaded count.
+  useEffect(() => {
+    if (openedId) rememberOpenedTask(repository, openedId);
+  }, [openedId, repository]);
   if (loading)
     return (
       <section className="screen task-screen">
@@ -106,13 +137,21 @@ export function TaskScreen({
       </section>
     );
   return (
-    <TaskEditor
+    <TaskEditRecoveryBoundary
       key={`${task.id}:${occurrenceDate ?? "record"}`}
-      task={task}
-      occurrenceDate={occurrenceDate}
       onBack={onBack}
-      onMaterialized={onMaterialized}
-    />
+    >
+      {(recoveryScope) => (
+        <TaskEditor
+          key={recoveryScope}
+          task={task}
+          occurrenceDate={occurrenceDate}
+          onBack={onBack}
+          onMaterialized={onMaterialized}
+          recoveryScope={recoveryScope}
+        />
+      )}
+    </TaskEditRecoveryBoundary>
   );
 }
 
@@ -121,12 +160,8 @@ function TaskEditor({
   occurrenceDate,
   onBack,
   onMaterialized,
-}: {
-  task: Task;
-  occurrenceDate?: string;
-  onBack(): void;
-  onMaterialized(task: Task): void;
-}) {
+  recoveryScope,
+}: TaskEditorProps & { recoveryScope: string }) {
   const {
     updateTask,
     mutations,
@@ -218,6 +253,48 @@ function TaskEditor({
   );
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  const writeState = useRecordWriteState(repository, {
+    kind: "task",
+    id: task.id,
+  });
+  const reportedRejection = useRecordWriteRejection(repository, {
+    kind: "task",
+    id: task.id,
+  });
+  // A refused save keeps the draft on screen until the person chooses.
+  const rejection =
+    writeState === "failed"
+      ? (reportedRejection ?? {
+          changedElsewhere: false,
+          message: "mdbase refused the change.",
+        })
+      : undefined;
+  // Saving again would overwrite the other change without an explicit choice.
+  const awaitingChoice = rejection?.changedElsewhere === true;
+  const awaitingChoiceRef = useRef(awaitingChoice);
+  useLayoutEffect(() => {
+    awaitingChoiceRef.current = awaitingChoice;
+  }, [awaitingChoice]);
+  const rejectionRef = useRef<HTMLDivElement>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const reviewRejection = useCallback(() => {
+    const notice = rejectionRef.current;
+    notice?.scrollIntoView?.({ block: "nearest" });
+    notice?.focus();
+  }, []);
+  useRecordWriteReview(
+    { kind: "task", id: task.id },
+    Boolean(rejection),
+    reviewRejection,
+  );
+  const rejected = writeState === "failed";
+  useEffect(() => {
+    if (!rejected) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [rejected]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -232,6 +309,33 @@ function TaskEditor({
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
   const savesInFlight = useRef(new Map<number, Promise<void>>());
+  // The task as opened; local copies hold only the fields edited since.
+  const openedDraft = useRef(draft);
+  // The version this editor last saw from mdbase, field by field. A field
+  // whose draft still matches it has no local edit and follows newer versions.
+  const knownDraft = useRef(draft);
+  const editScope = useRef(recoveryScope);
+  const [recovered, setRecovered] = useState<StoredTaskEdit | null>(() =>
+    readTaskEdit(recoveryScope, task.id, draft),
+  );
+  const recoveredRef = useRef(recovered);
+  const [backupUnavailable, setBackupUnavailable] = useState(false);
+  /** Keep this device's copy of every edit mdbase has not yet captured, plus
+   * a recovered edit still waiting for the person's choice. */
+  const storeEdit = useCallback(
+    (unsaved: boolean) => {
+      const scope = editScope.current;
+      if (!scope) return;
+      const kept = writeTaskEdit(scope, task.id, {
+        ...recoveredRef.current?.fields,
+        ...(unsaved
+          ? changedFields(openedDraft.current, draftRef.current)
+          : {}),
+      });
+      if (mounted.current) setBackupUnavailable(!kept);
+    },
+    [task.id],
+  );
   const resizeTitle = useCallback(() => {
     const field = titleRef.current;
     if (!field) return;
@@ -298,6 +402,11 @@ function TaskEditor({
           };
           await updateTask(task.id, input);
           if (editVersion.current === version) {
+            // The device copy stays until mdbase confirms the save: a write
+            // kept offline can still be refused, and the ledger does not
+            // keep its content.
+            if (!repository.writeState?.({ kind: "task", id: task.id }))
+              storeEdit(false);
             dirtyRef.current = false;
             if (mounted.current) {
               setDirty(false);
@@ -319,26 +428,37 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [task.assignees, task.id, updateTask],
+    [repository, storeEdit, task.assignees, task.id, updateTask],
   );
 
+  // Once mdbase confirms every save, the device copy is no longer needed.
   useEffect(() => {
-    if (!dirty) return;
+    if (writeState || dirty || savesInFlight.current.size) return;
+    storeEdit(false);
+  }, [dirty, storeEdit, writeState]);
+
+  useEffect(() => {
+    if (!dirty || awaitingChoice) return;
     const version = editVersion.current;
     const timeout = window.setTimeout(
       () => void persist(draft, version).catch(() => undefined),
       520,
     );
     return () => window.clearTimeout(timeout);
-  }, [dirty, draft, persist]);
+  }, [awaitingChoice, dirty, draft, persist]);
+
+  /** Save a committed edit now rather than after the debounce. */
+  const flush = useCallback(() => {
+    if (
+      !dirtyRef.current ||
+      awaitingChoiceRef.current ||
+      !draftRef.current.title.trim()
+    )
+      return;
+    void persist(draftRef.current, editVersion.current).catch(() => undefined);
+  }, [persist]);
 
   useEffect(() => {
-    const flush = () => {
-      if (!dirtyRef.current || !draftRef.current.title.trim()) return;
-      void persist(draftRef.current, editVersion.current).catch(
-        () => undefined,
-      );
-    };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
     };
@@ -348,36 +468,76 @@ function TaskEditor({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flush);
     };
-  }, [persist]);
+  }, [flush]);
 
-  useEffect(
-    () =>
-      registerReloadParticipant({
-        save: async () => {
-          if (dirtyRef.current)
-            await persist(draftRef.current, editVersion.current);
-          await Promise.all([...savesInFlight.current.values()]);
-        },
-        check: () => {
-          if (dirtyRef.current)
-            throw new Error(
-              "Some task changes are not saved. Keep this page open and finish saving before reloading.",
-            );
-        },
-      }),
-    [persist],
+  useTaskReloadGuard(
+    { draftRef, dirtyRef, editVersion, savesInFlight, persist },
+    () => awaitingChoiceRef.current,
+    () => repository.writeState?.({ kind: "task", id: task.id }),
   );
 
   function change(patch: Partial<Draft>) {
+    setSaveState("saving");
     editVersion.current += 1;
-    setDraft((value) => {
-      const next = { ...value, ...patch };
-      draftRef.current = next;
-      return next;
-    });
+    const next = { ...draftRef.current, ...patch };
+    draftRef.current = next;
+    setDraft(next);
     dirtyRef.current = true;
     setDirty(true);
+    // Synchronously, so a reload straight after the edit cannot lose it.
+    storeEdit(true);
   }
+
+  function restoreRecoveredEdit() {
+    const edit = recoveredRef.current;
+    recoveredRef.current = null;
+    setRecovered(null);
+    if (edit) change(edit.fields);
+  }
+
+  function discardRecoveredEdit() {
+    recoveredRef.current = null;
+    setRecovered(null);
+    storeEdit(dirtyRef.current);
+  }
+
+  // An edit refused after a reload comes back from the device copy, so the
+  // person keeps or discards their own edit rather than the latest version.
+  const restoreRefusedEdit = useEffectEvent(() => {
+    const target = { kind: "task", id: task.id } as const;
+    if (
+      recoveredRef.current &&
+      repository.writeState?.(target) === "failed" &&
+      repository.writeRejection?.(target)?.changedElsewhere
+    )
+      restoreRecoveredEdit();
+  });
+  useEffect(
+    () => repository.subscribe(() => restoreRefusedEdit()),
+    [repository],
+  );
+
+  // A change saved elsewhere (another tab, device or app) is shown in every
+  // field this editor has not changed. A field with an edit in progress keeps
+  // it, and saving applies it on top of the latest version, as Keep my edit
+  // does. A refused save keeps its own review flow.
+  const followIncomingTask = useEffectEvent((incoming: Task) => {
+    if (rejected) return;
+    const next = followIncomingDraft(
+      { known: knownDraft, opened: openedDraft },
+      draftRef.current,
+      toDraft(incoming),
+      dirtyRef.current || savesInFlight.current.size > 0,
+    );
+    if (!next) return;
+    draftRef.current = next;
+    setDraft(next);
+  });
+  useEffect(() => followIncomingTask(task), [task]);
+
+  useEffect(() => {
+    restoreRefusedEdit();
+  }, [repository, task.id]);
 
   function changeCustomProperty(key: string, value: unknown) {
     const customProperties = { ...draft.customProperties };
@@ -386,11 +546,84 @@ function TaskEditor({
     change({ customProperties });
   }
 
+  function requireChoice(): void {
+    if (!awaitingChoiceRef.current) return;
+    reviewRejection();
+    throw new Error(
+      "Keep or discard your unsaved edit before making another change.",
+    );
+  }
+
+  async function keepRejectedEdit() {
+    if (resolving) return;
+    setResolving(true);
+    setResolveError(null);
+    try {
+      // Only the fields this person changed go on top of the latest version,
+      // so a change made elsewhere to other fields is kept too.
+      const mine = changedFields(openedDraft.current, draftRef.current);
+      if (!Object.keys(mine).length)
+        throw new Error(
+          "Your edit is no longer available on this device. Discard it to load the latest version.",
+        );
+      const latest = await repository.get(task.id);
+      if (!latest) throw new Error("This task is no longer available.");
+      if (!mounted.current) return;
+      const base = toDraft(latest);
+      const next = { ...base, ...mine };
+      openedDraft.current = base;
+      knownDraft.current = base;
+      draftRef.current = next;
+      setDraft(next);
+      editVersion.current += 1;
+      storeEdit(true);
+      await persist(next, editVersion.current);
+    } catch (reason) {
+      if (mounted.current)
+        setResolveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setResolving(false);
+    }
+  }
+
+  async function discardRejectedEdit() {
+    if (resolving) return;
+    setResolving(true);
+    setResolveError(null);
+    try {
+      const latest = await repository.get(task.id);
+      if (!latest) throw new Error("This task is no longer available.");
+      if (!mounted.current) return;
+      editVersion.current += 1;
+      const next = toDraft(latest);
+      knownDraft.current = next;
+      draftRef.current = next;
+      dirtyRef.current = false;
+      setDraft(next);
+      setDirty(false);
+      setSaveState("saved");
+      setSaveError(null);
+      storeEdit(false);
+      repository.dismissWriteRejection?.({ kind: "task", id: task.id });
+    } catch (reason) {
+      if (mounted.current)
+        setResolveError(
+          reason instanceof Error ? reason.message : String(reason),
+        );
+    } finally {
+      if (mounted.current) setResolving(false);
+    }
+  }
+
   async function flushBeforeAttachmentMutation(): Promise<void> {
+    requireChoice();
     if (dirtyRef.current) await persist(draftRef.current, editVersion.current);
   }
 
   async function insertAttachmentInline(reference: string): Promise<void> {
+    requireChoice();
     const embed = `!${reference}`;
     if (draftRef.current.body.includes(embed)) return;
     editVersion.current += 1;
@@ -406,6 +639,11 @@ function TaskEditor({
 
   async function leave() {
     if (leaving) return;
+    if (rejection) {
+      // Leaving would drop the refused draft; the choice stays in view.
+      reviewRejection();
+      return;
+    }
     if (!draft.title.trim()) {
       setSaveState("error");
       return;
@@ -482,6 +720,7 @@ function TaskEditor({
     setTimeAction(true);
     setTimeError(null);
     try {
+      requireChoice();
       if (dirty) await persist(draft, editVersion.current);
       await action();
     } catch (reason) {
@@ -505,26 +744,44 @@ function TaskEditor({
           <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
         </button>
         <button
-          className={`save-state is-${saveState}`}
-          disabled={saveState !== "error" || !draft.title.trim()}
+          className={`save-state is-${rejection ? "error" : saveState}`}
+          disabled={
+            !rejection && (saveState !== "error" || !draft.title.trim())
+          }
           type="button"
           onClick={() =>
-            void persist(draft, editVersion.current).catch(() => undefined)
+            rejection
+              ? reviewRejection()
+              : void persist(draft, editVersion.current).catch(() => undefined)
           }
           aria-label={
-            saveState === "error"
-              ? `Save failed. ${saveError ?? "Tap to retry."}`
-              : undefined
+            rejection
+              ? "Not saved. Review your edit."
+              : saveState === "error"
+                ? `Save failed. ${saveError ?? "Tap to retry."}`
+                : writeState === "pending"
+                  ? "Saved on this device; waiting for sync"
+                  : undefined
           }
         >
-          {!draft.title.trim()
-            ? "Title required"
-            : saveState === "saving"
-              ? "Saving"
-              : saveState === "error"
-                ? "Save failed · Retry"
-                : "Saved"}
+          {rejection
+            ? "Not saved · Review"
+            : !draft.title.trim()
+              ? "Title required"
+              : saveState === "saving"
+                ? "Saving"
+                : saveState === "error"
+                  ? "Save failed · Retry"
+                  : writeState === "pending"
+                    ? ""
+                    : writeState
+                      ? "Review save"
+                      : "Saved"}
         </button>
+        <RecordWriteNotice
+          repository={repository}
+          target={{ kind: "task", id: task.id }}
+        />
         <TaskActions
           beforeAction={flushBeforeAttachmentMutation}
           context="detail"
@@ -542,6 +799,31 @@ function TaskEditor({
           }}
         />
       </header>
+
+      {rejection ? (
+        <WriteRejectionNotice
+          ref={rejectionRef}
+          rejection={rejection}
+          busy={resolving}
+          error={resolveError}
+          onKeep={() => void keepRejectedEdit()}
+          onDiscard={() => void discardRejectedEdit()}
+        />
+      ) : null}
+
+      {recovered ? (
+        <RecoveredEditNotice
+          fields={recovered.fields}
+          onRestore={restoreRecoveredEdit}
+          onDiscard={discardRecoveredEdit}
+        />
+      ) : null}
+      {backupUnavailable ? (
+        <p className="inline-error" role="alert">
+          Unsaved edits cannot be backed up in this browser. Keep this tab open
+          until saving finishes.
+        </p>
+      ) : null}
 
       {(occurrenceDate && task.recurrence) || task.occurrenceDate ? (
         <div className="occurrence-banner">
@@ -647,6 +929,18 @@ function TaskEditor({
             rows={1}
             value={draft.title}
             onChange={(event) => change({ title: event.target.value })}
+            onBlur={flush}
+            onKeyDown={(event) => {
+              if (
+                event.key !== "Enter" ||
+                event.shiftKey ||
+                event.nativeEvent.isComposing
+              )
+                return;
+              // A title is one line: Enter commits it.
+              event.preventDefault();
+              flush();
+            }}
           />
         </div>
         {completionError ? (
@@ -657,24 +951,14 @@ function TaskEditor({
 
         <TaskFormSection
           title="Schedule and status"
-          summary={
-            [
-              draft.status !== "none" &&
-              draft.status !== configuration.defaults.status
-                ? (configuration.statuses.find(
-                    (status) => status.value === draft.status,
-                  )?.label ?? draft.status)
-                : "",
-              // Matches list rows; exact dates stay in the expanded fields.
-              draft.scheduled
-                ? `Scheduled ${formatRelativeTaskDate(draft.scheduled)}`
-                : "",
-              draft.due ? `Due ${formatRelativeTaskDate(draft.due)}` : "",
-            ]
-              .filter(Boolean)
-              .join(" · ") || "No dates"
-          }
+          summary={scheduleSummary(task, draft, configuration, occurrenceDate)}
         >
+          {occurrenceDate && draft.recurrence ? (
+            <p className="field-help">
+              These fields edit the series dates. The summary above shows this
+              occurrence.
+            </p>
+          ) : null}
           <div className="field-grid timing-fields task-core-fields">
             <div className="tasknotes-status-field">
               <TaskNotesSelectField
@@ -913,6 +1197,7 @@ function TaskEditor({
           <RecurrenceField
             anchor={draft.recurrenceAnchor}
             scheduled={draft.scheduled}
+            due={draft.due}
             value={draft.recurrence}
             onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
             onChange={(recurrence) => change({ recurrence })}
@@ -936,10 +1221,10 @@ function TaskEditor({
           />
         </TaskFormSection>
 
-        <details className="record-path">
-          <summary>Markdown record</summary>
-          <code>{task.path}</code>
-        </details>
+        <TaskRecordFile
+          linkFormat={configuration.linkWriteFormat}
+          task={task}
+        />
       </div>
     </section>
   );

@@ -4,9 +4,11 @@ import { registerTaskNotesServiceWorker } from "../service-worker-registration";
 let initialized = false;
 let available = false;
 const listeners = new Set<() => void>();
+let registration: ServiceWorkerRegistration | undefined;
+let acceptedWaiting: ServiceWorker | null = null;
 
 /** Offer only installed updates or replacement controllers, never incomplete downloads.
- * Waiting workers retain old-tab assets. Never activate or reload automatically. */
+ * Waiting workers retain old-tab assets. Activation follows explicit saved consent. */
 export function initializePwaUpdate(): void {
   if (initialized || typeof navigator === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
@@ -14,20 +16,12 @@ export function initializePwaUpdate(): void {
   const workers = navigator.serviceWorker;
   let current = workers.controller;
   let offeredWaiting: ServiceWorker | null = null;
-  let handledWaiting: ServiceWorker | null = null;
-  let reloaded = false;
-  try {
-    reloaded = sessionStorage.getItem("tasknotes-update-reload") === "1";
-    sessionStorage.removeItem("tasknotes-update-reload");
-  } catch {
-    /* Update detection also works without browser storage. */
-  }
   workers.addEventListener("controllerchange", () => {
     const next = workers.controller;
     if (!next || next === current) return;
     const replacesPrevious = current !== null;
     current = next;
-    if (replacesPrevious && next !== handledWaiting) setAvailable(true);
+    if (replacesPrevious && next !== acceptedWaiting) setAvailable(true);
   });
   const observed = new WeakSet<ServiceWorkerRegistration>();
   const offer = (worker: ServiceWorker) => {
@@ -40,20 +34,18 @@ export function initializePwaUpdate(): void {
     offeredWaiting = worker;
     setAvailable(true);
   };
-  const observe = (registration: ServiceWorkerRegistration) => {
-    if (observed.has(registration)) return;
-    observed.add(registration);
-    if (reloaded && registration.waiting) {
-      offeredWaiting = handledWaiting = registration.waiting;
-    } else if (registration.waiting) offer(registration.waiting);
-    reloaded = false;
+  const observe = (next: ServiceWorkerRegistration) => {
+    registration = next;
+    if (observed.has(next)) return;
+    observed.add(next);
+    if (next.waiting) offer(next.waiting);
     const watch = () => {
-      const worker = registration.installing;
+      const worker = next.installing;
       if (!worker) return;
       offer(worker);
       worker.addEventListener("statechange", () => offer(worker));
     };
-    registration.addEventListener("updatefound", watch);
+    next.addEventListener("updatefound", watch);
     watch();
   };
   void Promise.resolve()
@@ -87,13 +79,40 @@ export function deferPwaUpdate(): void {
   setAvailable(false);
 }
 
-/** This tab explicitly loaded the new app while the SDK keeps its worker waiting. */
-export function markPwaUpdateReloaded(): void {
-  try {
-    sessionStorage.setItem("tasknotes-update-reload", "1");
-  } catch {
-    /* Optional acknowledgement. */
-  }
+/** Called only after this tab has saved and checked every reload participant. */
+export function activatePwaUpdate(): Promise<void> {
+  const waiting = registration?.waiting;
+  if (!waiting) return Promise.resolve();
+  acceptedWaiting = waiting;
+  const workers = navigator.serviceWorker;
+  return new Promise((resolve, reject) => {
+    const stop = () => {
+      workers.removeEventListener("controllerchange", changed);
+      waiting.removeEventListener("statechange", stateChanged);
+    };
+    const changed = () => {
+      if (workers.controller !== waiting) return;
+      stop();
+      resolve();
+    };
+    const stateChanged = () => {
+      if (waiting.state !== "redundant") return;
+      stop();
+      reject(
+        new Error(
+          "The update could not activate. Keep this page open and try again.",
+        ),
+      );
+    };
+    workers.addEventListener("controllerchange", changed);
+    waiting.addEventListener("statechange", stateChanged);
+    try {
+      waiting.postMessage({ type: "mdbase-shell:activate" });
+    } catch (error) {
+      stop();
+      reject(error);
+    }
+  });
 }
 
 function subscribe(listener: () => void): () => void {

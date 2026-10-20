@@ -23,9 +23,103 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
 
-import type { Task } from "../domain/task";
+import type { Task, TaskSummary } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
-import type { TaskRepository } from "../application/ports/task-repository";
+import type {
+  RepositoryChange,
+  TaskRepository,
+} from "../application/ports/task-repository";
+
+it.each(["status", "note.status"])(
+  "moves an authoritative-null %s card despite matching raw destination, then retains its optimistic overlay",
+  async (property) => {
+    const execution = boardExecution();
+    execution.view.presentation!.mappings.column = property;
+    execution.rows[0]!.values = { [property]: null };
+    execution.groups = [
+      { values: { [property]: null }, count: 1, summaries: {} },
+    ];
+    const pending = deferred<Task>();
+    const update = vi
+      .fn()
+      .mockImplementationOnce(() => pending.promise)
+      .mockResolvedValue(execution.rows[0]!.task);
+    const repository = taskRepositoryStub(
+      {
+        listSummaries: async () => execution.rows.map(({ task }) => task),
+        cachedViewExecution: async () => null,
+        executeView: async () => execution,
+        readViewSource: async () => ({
+          ...execution.view.source,
+          document: `views:\n  - type: tasknotesKanban\n    name: Board\n    groupBy: { property: ${property}, direction: ASC }\n`,
+        }),
+        update,
+      },
+      1,
+    );
+    renderListView(repository, execution.view);
+    const card = await screen.findByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    });
+    expect(card.closest("[data-kanban-column-key]")).toHaveAttribute(
+      "data-kanban-column-key",
+      "null",
+    );
+    const open = screen.getByRole("region", { name: "Open column" });
+    mockPointerCapture(card);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => open),
+    });
+    fireEvent.pointerDown(card, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerMove(card, {
+      clientX: 500,
+      clientY: 500,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerUp(card, {
+      clientX: 500,
+      clientY: 500,
+      isPrimary: true,
+      pointerId: 17,
+      pointerType: "mouse",
+    });
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith("task-1", { status: "open" }),
+    );
+    expect(within(open).getByText("Move on the board")).toBeVisible();
+    await act(async () => pending.resolve(execution.rows[0]!.task as Task));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Work board")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      ),
+    );
+    // Refreshed projected null must not be confirmed from raw status=open.
+    const moved = within(open).getByRole("group", {
+      name: /Move on the board\. Drag to move between columns\./,
+    });
+    expect(moved).toBeVisible();
+    fireEvent.keyDown(moved, { key: "ArrowRight" });
+    await waitFor(() =>
+      expect(update).toHaveBeenNthCalledWith(2, "task-1", {
+        status: "in-progress",
+      }),
+    );
+    expect(
+      within(
+        screen.getByRole("region", { name: "In progress column" }),
+      ).getByText("Move on the board"),
+    ).toBeVisible();
+  },
+);
 
 it("moves a board card immediately and rolls it back when persistence fails", async () => {
   const pending = deferred<Task>();
@@ -101,31 +195,6 @@ it("moves a board card immediately and rolls it back when persistence fails", as
   expect(openTask).toHaveBeenCalledWith(execution.rows[0].task, undefined);
   openTask.mockClear();
 
-  const completion = within(card).getByRole("button", {
-    name: "Complete Move on the board",
-  });
-  fireEvent.pointerDown(completion, {
-    button: 0,
-    isPrimary: true,
-    pointerId: 6,
-    pointerType: "mouse",
-  });
-  fireEvent.pointerMove(completion, {
-    clientX: 500,
-    clientY: 500,
-    isPrimary: true,
-    pointerId: 6,
-    pointerType: "mouse",
-  });
-  fireEvent.pointerUp(completion, {
-    clientX: 500,
-    clientY: 500,
-    isPrimary: true,
-    pointerId: 6,
-    pointerType: "mouse",
-  });
-  expect(update).not.toHaveBeenCalled();
-
   const board = screen.getByLabelText("Work board");
   mockPointerCapture(card);
   Object.defineProperty(window, "scrollBy", {
@@ -137,13 +206,15 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     value: vi.fn(() => inProgress),
   });
 
-  fireEvent.pointerDown(card, {
+  // The title button is part of the drag surface; moving past the threshold
+  // turns the press into a drag instead of an open.
+  fireEvent.pointerDown(title, {
     button: 0,
     isPrimary: true,
     pointerId: 7,
     pointerType: "mouse",
   });
-  fireEvent.pointerMove(card, {
+  fireEvent.pointerMove(title, {
     clientX: 500,
     clientY: 500,
     isPrimary: true,
@@ -616,79 +687,44 @@ it("shows a cached view while its authoritative result refreshes", async () => {
   );
 });
 
-it("reorders a manual task list with keyboard-accessible handles", async () => {
-  const view: TaskView = {
-    key: "views/manual.base#manual",
-    documentId: "manual",
-    documentName: "manual",
-    id: "manual",
-    name: "Manual",
-    properties: [],
-    source: {
-      path: "views/manual.base",
-      format: "obsidian.base",
-      revision: "one",
-      writable: true,
-    },
-    presentation: {
-      type: "tasknotes.task-list",
-      mappings: {},
-      options: { create: false },
-    },
-  };
-  const tasks: Task[] = [
-    listTask("alpha", "Alpha"),
-    listTask("bravo", "Bravo"),
-    listTask("charlie", "Charlie"),
-  ];
-  const execution = (): TaskViewExecution => ({
-    view,
-    rows: tasks.map((task) => ({ task, values: {} })),
-    totalCount: tasks.length,
+it("keeps an edit on screen through its refreshes, without a loading or older cached frame", async () => {
+  const view = manualListView("steady");
+  const kept = listTask("kept", "Unchanged task");
+  const result = (title: string): TaskViewExecution => ({
+    view: structuredClone(view),
+    rows: [
+      { task: structuredClone(kept), values: {} },
+      { task: listTask("edited", title), values: {} },
+    ],
+    totalCount: 2,
     hasMore: false,
     groups: [],
+    hasSkippedRecords: false,
   });
-  const staleExecution = structuredClone(execution());
-  const update = vi.fn(async (id: string, input: { sortOrder?: string }) => {
-    const task = tasks.find((candidate) => candidate.id === id)!;
-    task.sortOrder = input.sortOrder;
-    task.frontmatter.tasknotes_manual_order = input.sortOrder;
-    tasks.sort((left, right) =>
-      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
-    );
-    return task;
+  let title = "Before edit";
+  // A native view READ takes a network round trip.
+  let latency = 0;
+  const wait = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  const executeView = vi.fn(async () => {
+    const shown = title;
+    await wait(latency);
+    return result(shown);
   });
-  const repository = taskRepositoryStub(
-    {
-      listSummaries: async () => tasks,
-      cachedViewExecution: async () => null,
-      executeView: async () => staleExecution,
-      readViewSource: async () => ({
-        path: view.source.path,
-        format: "obsidian.base",
-        revision: "one",
-        document: `views:
-  - type: tasknotesTaskList
-    name: Manual
-    sort:
-      - column: note.tasknotes_manual_order
-        direction: DESC
-    options: { create: false }
-`,
-      }),
-      update,
-      updateMany: async (updates) =>
-        Promise.all(
-          updates.map(({ id, input }) =>
-            update(id, input as { sortOrder?: string }),
-          ),
-        ),
-      collectionInfo: testCollectionInfo,
+  const listeners = new Set<(change?: RepositoryChange) => void>();
+  const notify = () =>
+    act(() => listeners.forEach((listener) => listener({ kind: "data" })));
+  const repository = {
+    ...manualListRepository(view, [kept], vi.fn(), () => result(title)),
+    // The repository cache still holds the pre-edit result.
+    cachedViewExecution: async () => result("Before edit"),
+    executeView,
+    subscribe: (listener: (change?: RepositoryChange) => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
-    tasks.length,
-  );
-
-  render(
+  } satisfies TaskRepository;
+  const screenFor = (shown: TaskView) => (
     <RepositoryProvider
       mutationJournal={new MemoryMutationJournal()}
       repository={repository}
@@ -696,16 +732,16 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
       <ViewsScreen
         documents={[
           {
-            id: view.documentId,
-            name: view.documentName,
-            source: view.source,
-            views: [view],
+            id: shown.documentId,
+            name: shown.documentName,
+            source: shown.source,
+            views: [shown],
           },
         ]}
-        navigationViewKeys={[view.key]}
+        navigationViewKeys={[shown.key]}
         operational
-        viewKey={view.key}
-        views={[view]}
+        viewKey={shown.key}
+        views={[shown]}
         onBack={() => undefined}
         onOpenTask={() => undefined}
         onOpenView={() => undefined}
@@ -714,30 +750,55 @@ it("reorders a manual task list with keyboard-accessible handles", async () => {
         onToggleNavigationView={() => undefined}
         onViewsChanged={async () => undefined}
       />
-    </RepositoryProvider>,
+    </RepositoryProvider>
   );
+  const idle = () =>
+    waitFor(() =>
+      expect(screen.queryByText("Updating view")).not.toBeInTheDocument(),
+    );
+  const { rerender } = render(screenFor(view));
+  expect(await screen.findByText("Before edit")).toBeVisible();
+  await idle();
+  title = "After edit";
+  notify();
+  expect(await screen.findByText("After edit")).toBeVisible();
+  await idle();
 
-  const handle = await screen.findByRole("button", {
-    name: "Reorder Charlie. Drag, or use up and down arrow keys.",
+  const keptRow = screen
+    .getByText("Unchanged task")
+    .closest("[data-manual-order-task]");
+  const frames = new Set<string>();
+  const observer = new MutationObserver(() => {
+    if (screen.queryByRole("status", { name: "Loading tasks" }))
+      frames.add("loading");
+    if (screen.queryByText("Before edit")) frames.add("older result");
+    if (screen.queryByText("Last available result")) frames.add("stale");
   });
-  fireEvent.keyDown(handle, { key: "ArrowUp" });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+  const queries = executeView.mock.calls.length;
+  latency = 40;
+  // The write's echo, a confirmation and a catalog refresh that rebuilds an
+  // identical view object arrive a few tens of milliseconds apart.
+  notify();
+  await act(() => wait(30));
+  rerender(screenFor(structuredClone(view)));
+  notify();
+  await act(() => wait(30));
+  notify();
+  await act(() => wait(400));
+  await idle();
+  observer.disconnect();
 
-  await waitFor(() => expect(update).toHaveBeenCalledTimes(3));
+  expect([...frames]).toEqual([]);
+  expect(executeView).toHaveBeenCalledTimes(queries + 1);
+  expect(screen.getByText("After edit")).toBeVisible();
   expect(
-    update.mock.calls.every(([, input]) =>
-      /^tn[a-z]{10}$/.test(input.sortOrder ?? ""),
-    ),
-  ).toBe(true);
-  await waitFor(() => {
-    const labels = screen
-      .getAllByRole("button", { name: /Reorder .+ Drag/ })
-      .map((button) => button.getAttribute("aria-label"));
-    expect(labels).toEqual([
-      "Reorder Alpha. Drag, or use up and down arrow keys.",
-      "Reorder Charlie. Drag, or use up and down arrow keys.",
-      "Reorder Bravo. Drag, or use up and down arrow keys.",
-    ]);
-  });
+    screen.getByText("Unchanged task").closest("[data-manual-order-task]"),
+  ).toBe(keptRow);
 });
 
 it("toggles manual order at the top while preserving fallback sorts", async () => {
@@ -965,14 +1026,23 @@ it("moves a task between reusable day sections with the shared list move path", 
   const target = screen
     .getByText("Today task")
     .closest<HTMLElement>("[data-manual-order-task]")!;
-  mockPointerCapture(handle);
+  mockPointerCapture(handle.closest<HTMLElement>("[data-manual-order-task]")!);
   Object.defineProperty(document, "elementFromPoint", {
     configurable: true,
     value: vi.fn(() => target),
   });
-  fireEvent.pointerDown(handle, { pointerId: 9 });
-  fireEvent.pointerMove(handle, { clientX: 20, clientY: 20, pointerId: 9 });
-  fireEvent.pointerUp(handle, { pointerId: 9 });
+  const press = { button: 0, isPrimary: true, pointerId: 9 };
+  expect(screen.queryByText("Drop here")).toBeNull();
+  expect(screen.getAllByText("No tasks")).toHaveLength(2);
+  fireEvent.pointerDown(handle, press);
+  expect(screen.getAllByText("Drop here")).toHaveLength(2);
+  fireEvent.pointerCancel(handle, press);
+  expect(screen.queryByText("Drop here")).toBeNull();
+  expect(update).not.toHaveBeenCalled();
+  fireEvent.pointerDown(handle, press);
+  fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
+  fireEvent.pointerUp(handle, press);
+  expect(screen.queryByText("Drop here")).toBeNull();
 
   await waitFor(() =>
     expect(
@@ -990,6 +1060,89 @@ it("moves a task between reusable day sections with the shared list move path", 
   );
   expect(screen.getByText("Anytime")).toBeVisible();
   expect(screen.getByText("Later")).toBeVisible();
+  expect(
+    within(screen.getByText("Later").closest("section")!).getByText("No tasks"),
+  ).toBeVisible();
+});
+
+it("drags a list row from anywhere on the row with a mouse", async () => {
+  const today = todayString();
+  const view = manualListView("day", { sections: "day" });
+  const tasks: Task[] = [
+    { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
+    { ...listTask("today", "Today task"), due: today },
+  ];
+  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+    const task = tasks.find((candidate) => candidate.id === id)!;
+    if (input.due !== undefined) task.due = input.due ?? undefined;
+    return task;
+  });
+  const repository = manualListRepository(view, tasks, update, () => ({
+    view,
+    rows: tasks.map((task) => ({ task, values: {} })),
+    totalCount: tasks.length,
+    hasMore: false,
+    groups: [],
+  }));
+  const openTask = vi.fn();
+
+  renderListView(repository, view, openTask);
+  const title = await screen.findByRole("button", { name: "Overdue task" });
+  const row = title.closest<HTMLElement>("[data-manual-order-task]")!;
+  const target = screen
+    .getByText("Today task")
+    .closest<HTMLElement>("[data-manual-order-task]")!;
+  mockPointerCapture(row);
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => target),
+  });
+  const mouse = {
+    button: 0,
+    isPrimary: true,
+    pointerId: 4,
+    pointerType: "mouse",
+  };
+
+  // A press that stays put is still a click on the title.
+  fireEvent.pointerDown(title, { ...mouse, clientX: 10, clientY: 10 });
+  fireEvent.pointerMove(title, { ...mouse, clientX: 12, clientY: 11 });
+  expect(screen.queryByText("Drop here")).toBeNull();
+  fireEvent.pointerUp(title, { ...mouse, clientX: 12, clientY: 11 });
+  fireEvent.click(title);
+  expect(openTask).toHaveBeenCalledTimes(1);
+  openTask.mockClear();
+
+  // Touch keeps scrolling and swipes; it drags by the handle instead.
+  fireEvent.pointerDown(title, {
+    ...mouse,
+    pointerType: "touch",
+    clientX: 10,
+    clientY: 10,
+  });
+  fireEvent.pointerMove(title, {
+    ...mouse,
+    pointerType: "touch",
+    clientX: 10,
+    clientY: 80,
+  });
+  expect(screen.queryByText("Drop here")).toBeNull();
+  fireEvent.pointerUp(title, { ...mouse, pointerType: "touch" });
+
+  fireEvent.pointerDown(title, { ...mouse, clientX: 10, clientY: 10 });
+  fireEvent.pointerMove(title, { ...mouse, clientX: 10, clientY: 40 });
+  expect(screen.getAllByText("Drop here").length).toBeGreaterThan(0);
+  fireEvent.pointerUp(title, { ...mouse, clientX: 10, clientY: 40 });
+  fireEvent.click(row);
+  expect(openTask).not.toHaveBeenCalled();
+
+  await waitFor(() =>
+    expect(
+      update.mock.calls.some(
+        ([id, input]) => id === "overdue" && input.due === today,
+      ),
+    ).toBe(true),
+  );
 });
 
 it("moves a grouped list task by mutating the destination property", async () => {
@@ -1104,6 +1257,91 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
 
+it("keeps an accepted manual reorder when only its post-write refresh fails", async () => {
+  const view = manualListView("accepted-reorder");
+  const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
+  let accepted = false;
+  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+    accepted = true;
+    const value = tasks.find((candidate) => candidate.id === id)!;
+    value.sortOrder = input.sortOrder ?? undefined;
+    return value;
+  });
+  const repository = manualListRepository(view, tasks, update, () => {
+    if (accepted) throw Error("Read response temporarily unavailable");
+    return {
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: [],
+    };
+  });
+  renderListView(repository, view);
+  fireEvent.keyDown(
+    await screen.findByRole("button", { name: /Reorder Alpha/ }),
+    { key: "ArrowDown" },
+  );
+  await waitFor(() => expect(update).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(
+      screen.queryAllByText(
+        /Could not reorder|The view change could not finish/,
+      ),
+    ).toHaveLength(0),
+  );
+  expect(screen.getByText("Alpha")).toBeVisible();
+  expect(update.mock.calls.filter(([id]) => id === "alpha")).toHaveLength(1);
+  expect(new Set(update.mock.calls.map(([id]) => id)).size).toBe(
+    update.mock.calls.length,
+  );
+});
+
+it("keeps an accepted board move without an action failure banner when its post-write refresh fails", async () => {
+  const execution = boardExecution();
+  let accepted = false;
+  const update = vi.fn<TaskRepository["update"]>(async () => {
+    accepted = true;
+    return { ...execution.rows[0].task, body: "" };
+  });
+  const repository = taskRepositoryStub(
+    {
+      listSummaries: async () => execution.rows.map(({ task }) => task),
+      cachedViewExecution: async () => null,
+      executeView: async () => {
+        if (accepted) throw Error("Read response temporarily unavailable");
+        return execution;
+      },
+      readViewSource: async () => ({
+        ...execution.view.source,
+        document:
+          "views:\n  - type: tasknotesKanban\n    name: Work\n    groupBy: { property: status, direction: ASC }\n",
+      }),
+      update,
+      collectionInfo: testCollectionInfo,
+    },
+    1,
+  );
+  renderListView(repository, execution.view);
+  fireEvent.keyDown(
+    await screen.findByRole("group", { name: /Move on the board\. Drag/ }),
+    { key: "ArrowRight" },
+  );
+  await waitFor(() => expect(update).toHaveBeenCalledOnce());
+  await waitFor(() =>
+    expect(
+      screen.queryAllByText(
+        /The move was saved, but|The view change could not finish/,
+      ),
+    ).toHaveLength(0),
+  );
+  expect(
+    within(
+      screen.getByRole("region", { name: "In progress column" }),
+    ).getByText("Move on the board"),
+  ).toBeVisible();
+});
+
 async function startReordering() {
   fireEvent.click(await screen.findByLabelText("View options"));
   fireEvent.click(await screen.findByRole("button", { name: "Manual order" }));
@@ -1168,7 +1406,11 @@ ${options.groupBy ? `    groupBy: { property: ${options.groupBy}, direction: ASC
   );
 }
 
-function renderListView(repository: TaskRepository, view: TaskView) {
+function renderListView(
+  repository: TaskRepository,
+  view: TaskView,
+  onOpenTask: (task: TaskSummary) => void = () => undefined,
+) {
   return render(
     <RepositoryProvider
       mutationJournal={new MemoryMutationJournal()}
@@ -1188,7 +1430,7 @@ function renderListView(repository: TaskRepository, view: TaskView) {
         viewKey={view.key}
         views={[view]}
         onBack={() => undefined}
-        onOpenTask={() => undefined}
+        onOpenTask={onOpenTask}
         onOpenView={() => undefined}
         onSearch={() => undefined}
         onMoveNavigationView={() => undefined}

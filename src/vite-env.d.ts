@@ -4,6 +4,7 @@ declare const __APP_VERSION__: string;
 
 interface ImportMetaEnv {
   readonly VITE_BENCHMARK_TOOLS?: string;
+  readonly VITE_TASKNOTES_EDITOR_ORIGIN?: string;
   readonly VITE_MDBASE_CONNECT_URL?: string;
   readonly VITE_MDBASE_MANIFEST_URL?: string;
 }

@@ -12,7 +12,8 @@ export interface CollectionFile {
   size: number;
   mediaType?: string;
   mediaClass: CollectionFileMediaClass;
-  modifiedAt: string;
+  /** Persisted content modification time, absent when the authority has none. */
+  modifiedAt?: string;
 }
 
 export interface CollectionFileProgress {
