@@ -10,7 +10,7 @@ Co20:49 authorized preparation and ONE macos-15 workflow run after stgaccept rep
 
 Inputs: `wave_receipt` (stgaccept report reference), `editor_origin` (owner-supplied exact Stage Editor presentation destination), and agreed unique `task_title`. The offline preparation build uses reserved `https://editor.example.test` solely to compile; it is NOT a runnable/accepted Stage artifact. CI rebuilds with the actual owner input.
 
-Private CI delivery still needs an approved owner path. The proposed repository-secret keys below were absent in the read-only metadata check; do not export the desktop credential helper or copy keyring values as a workaround. Do not put credentials in issues, workflow_dispatch inputs, inboxes or logs.
+Co22:06 created the GitHub environment `tasknotes-ios-staging-smoke` on `callumalpass/tasknotes-app`, restricted to deployment branch `smoke/ios-1.0.9-staging`, with no reviewers. The job binds that exact environment. Co owns the environment-scoped keyring-to-Actions transfer using exactly the keys below, after the real wave designates the accounts. **Do not dispatch until Co explicitly confirms the values are set.** No tnapp credential lookup/transfer, desktop-helper export, repository-secret fallback or new environment. Never put values in issues, workflow_dispatch inputs, inboxes, logs or artifacts.
 
 - `TASKNOTES_STAGE_STANDALONE_EMAIL`, `TASKNOTES_STAGE_STANDALONE_PASSWORD`, `TASKNOTES_STAGE_STANDALONE_COLLECTION`
 - `TASKNOTES_STAGE_SEEDED_EMAIL`, `TASKNOTES_STAGE_SEEDED_PASSWORD`, `TASKNOTES_STAGE_SEEDED_COLLECTION`, `TASKNOTES_STAGE_EXISTING_TASK`

@@ -27,6 +27,7 @@ concurrency:
 
 jobs:
   smoke:
+    environment: tasknotes-ios-staging-smoke
     runs-on: macos-15
     timeout-minutes: 65
     env:
