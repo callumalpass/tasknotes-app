@@ -180,8 +180,12 @@ final class StageSmoke: XCTestCase {
         app.terminate()
         app.launch()
         search(edited)
-        XCTAssertTrue(button(edited).waitForExistence(timeout: 60), "Saved smoke task missing after relaunch")
-        button(edited).tap()
+        // Web may already have read the committed completion and performed its
+        // one permitted title edit. Either exact title identifies our task;
+        // its completed state must survive regardless of that valid timing.
+        let persisted = app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", edited, edited + " web")).firstMatch
+        XCTAssertTrue(persisted.waitForExistence(timeout: 60), "Saved smoke task missing after relaunch")
+        persisted.tap()
         let reopen = button("Reopen task")
         XCTAssertTrue(reopen.waitForExistence(timeout: 20), "Completion did not persist")
         phase("reopened")
