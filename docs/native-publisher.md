@@ -32,7 +32,7 @@ The last digest is **not** trust module/context/receipt/native/archive SHA.
 Module integrity is a separate original-member hash, not another environment
 variable. Hash equality is byte binding, not a new authentication authority.
 
-## Real target intake — currently absent, intentionally refuses
+## Actual STAGING original intake; production absent
 
 Canonical TNAPP public packet (nx-uiopen inbox line878 and controlling addenda)
 retains ORIGINAL SDK/UI/protocol archive filenames, facts with SHA256/bytes/SRI,
@@ -41,23 +41,46 @@ source/tree, full `members.json` regular-member inventories, byte-identical
 image/trust inventories and signatures, and normal qualification/auth references.
 No producer-private paths, verifier executable or alternative SDK schema aliases.
 
-After real owner custody arrives, review a target-specific APP input descriptor
-`config/native-publish/<target>.json` alongside original archives in `vendor/`
-and packet under `vendor/native-publish/<target>/`. This descriptor is reviewed
-app policy, **not** a public SDK contract or candidate authority. It pins:
+STAGING intake is now the accepted ONCE-produced original
+`sdk-dev-a3023aee-staging.tgz`, 4460029B, SHA256
+`c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296`;
+SDK source a302/treec504, native725/6984/3676583, verifier0e44/4c72.
+Independent public facts SHA256
+`d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c`
+is pinned BEFORE candidate execution. The exact owner packet is copied unchanged,
+preserving producer-relative `artifact/`, `sdk-build-receipt.json` and
+`verified-staging/next-trust/` layout, to `vendor/native-publish/staging/`.
+No production config/material, original SDK rewrite, native/helper build or repack.
 
-- `environment`, `logOrigin`, raw `assetSha256`, exact `lockSha256`;
-- `packetFiles`: full packet path/bytes/SHA256 inventory, binding facts and proofs;
-- `archives.sdk/ui/protocol`: original `archive` basename, `bytes`, `sha256`,
-  `sri`, SDK/package `source`, `sourceTree`, packet-relative `facts`/`members` paths;
-- canonical `verifier`, `runtime`, `sqlite`, `image_publication`,
-  `trust_publication`, `publisher_qualification` expectations from the handoff.
+Reviewed APP input `config/native-publish/staging.json` pins exact lock, complete
+packet file inventory, original SDK facts/member paths + facts digest, canonical
+handoff/provenance paths, qualified native/verifier/source/run/attempt bindings,
+and exact SDK/UI/protocol archive bytes/SRI/member inventories. It is NOT an SDK
+schema or signing authority. SDK canonical `dependencies[].file` is SDK-relative
+`vendor/<protocol-original>`, not a basename. Native `runtime.source.repository`
+is `mdbase-dev/mdbase-next`, DISTINCT from trust release
+`mdbase-dev/mdbase-connect`. Public facts/proofs/context/receipt remain verbatim.
 
-Do not create such a descriptor from self-described candidate metadata or fill
-missing target values from LAB. Review pins/authentication evidence through the
-normal owner channel. No descriptor or actual staging/production originals are
-invented here. Current LAB SDK and no-publication UI do not authorize either target.
-No SDK/native build, repack, retarget, repin or lock substitution is performed.
+UIfe and protocol129-c280 archives/pins/bytes are unchanged. UI uses its EXISTING
+companion convention, not fabricated SDK public-facts aliases. The original UI
+companion still says **noPublication:true**, paired SDK **cc492f3f**, NOT a302.
+Those live publisher guards remain active and currently refuse publication.
+Original byte custody and NEW consumer qualification are separate: the local-only
+`qualify-native-staging.mjs` calls the data-only original validator before SDK
+execution, then checks compiled staging trust and runs consumer tests/build.
+It reports the UI publication constraints; it cannot waive them or supply fallback
+hashes to the live workflow. No fake GitHub event/ref, dirty-guard bypass, credential
+or app-publication claim. Normal owner review must resolve the UI publication
+metadata/peer qualification before actual publisher CI.
+
+Every original installed member is compared. pnpm10.7 generates ONE additional
+`node_modules/.bin/yaml` in SDK and protocol packages. These are NOT original
+members: a separate narrowly scoped installer-output policy compares every byte
+against reviewed pnpm10.7 `generateShShim()`, binds the original YAML bin/manifest,
+checks its exact target and ALL external registry YAML members against the SDK's
+bundled original YAML, and records the generated shim separately in logs. Other
+extras, injected wrapper commands, shadow node binaries, links and mutations refuse.
+No blanket `.bin` exclusion, shim execution, SDK rewrite or install-policy weakening.
 
 The guard checks exact originals, SHA512/SRI and frozen lock before install;
 safely reads every original tar member (rejecting links, traversal, duplicates,
@@ -122,7 +145,10 @@ Its qualified 72 tests are included with import-path-only adaptation.
 The actual deployment UUID from Wrangler4.114 structured JSONL is recorded
 **before** served checks, then exposed through the upload/capture step output.
 Failed/missing capture fails the upload step and leaves served verification skipped;
-evidence retention remains `always()`. Upload failures also retain JSONL, inventory, immutable
+evidence retention remains `always()`. A minimal non-authenticating attempt receipt
+is initialized BEFORE source/intake checks; missing/mismatched protected hashes
+therefore retain a FAILED receipt with source/run/target and null deployment,
+BEFORE artifact APIs/tool/upload. Upload failures also retain JSONL, inventory, immutable
 artifact identity, source/tree/run evidence and failed receipt. No automatic
 rebuild, re-upload, rollback, redeploy or retarget on a readback failure.
 
@@ -137,7 +163,12 @@ Custom 404 requires real404 and exact bytes, not an HTTP200 fallback/marker.
 Controls remain in the FULL upload inventory. `_headers` and `_redirects` are
 **unverified** until independent source-reviewed security/cache header checks
 (on every successfully byte-verified asset) and exact known route/custom404
-checks pass. Unknown/nested controls, `_routes.json`, `.nojekyll` and Pages
+checks pass. Official Wrangler4.114 Pages static `validate()` IGNORE_LIST is
+`_worker.js, _redirects, _headers, _routes.json, functions, **/.DS_Store,
+**/node_modules, **/.git, .wrangler`: it does NOT ignore the existing root
+`public/.nojekyll`. Vite copies that marker unchanged; it is an ordinary served
+asset, requiring actual byte + header evidence at `/.nojekyll`, not a control
+waiver. Unknown/nested controls (including nested .nojekyll), `_routes.json` and Pages
 `_worker.js` remain unverified and block a complete receipt pending independently
 reviewed policy coverage. A GET of `_worker.js` is NEVER executed-worker evidence.
 Known static policy success is `bytes-and-static-hosting-verified`, not native
@@ -153,8 +184,10 @@ sign-in/grant/readiness/application admission.
   prevent-self-review requirement. Separate Callum GO BEFORE any production
   dispatch/tag/upload; human environment approval ONLY in GitHub UI. Agents never
   invoke pending-deployments approval APIs or plaintext approval hashes.
-- Real target originals/reviewed frozen intake and the four protected vars are
-  still missing. Parent must audit actual **per-environment** values/protections:
+- Actual STAGING originals/reviewed frozen intake are present. Parent reports
+  the four STAGING per-environment values configured/audited; this source task
+  did not query/configure them. Production config/hashes/GO remain absent.
+  Parent retains actual **per-environment** values/protection audit:
   GitHub `vars` repository/organization fallback can otherwise hide an absent
   environment value. String format/equality cannot certify variable scope or
   protection. Verify credentials/account/project privately, without printing values. This work performs no credential/policy/resource/ref/network publication.
@@ -166,6 +199,13 @@ sign-in/grant/readiness/application admission.
 - Default workflow registration, live immutable-artifact/tool/bootstrap/hosting
   evidence, real paired Editor+TaskNotes staging admission and later production
   GO remain parent-owned. Never merge TaskNotes native to main for registration.
+
+Actual unprivileged staging qualification: `rpnpm run test:staging-intake`,
+`rpnpm run test:staging-consumer` (full Vitest), and ONE causal app build
+`rpnpm --pull dist --pull test-results/native-staging-qualification.json run build:staging:qualification`.
+Each verifies all installed originals and the independent approved tuple BEFORE
+candidate SDK/Vitest/Vite execution. Exact app/Editor/CP staging origins, no loopback.
+These are not GitHub dispatches/authentication, publisher CI or admission.
 
 Source checks: `rpnpm run test:native-publisher`, `rpnpm run test:release`,
 `rpnpm run typecheck`, `rpnpm run lint`, `rpnpm run format:check`, actionlint.

@@ -9,7 +9,9 @@ const controls = new Set([
   ".nojekyll",
 ]);
 const nonservable = (path) =>
-  controls.has(basename(path)) ||
+  // Wrangler4.114 Pages validate() treats the ROOT .nojekyll as an ordinary
+  // static file (not in its IGNORE_LIST). Verify its actual served bytes.
+  (controls.has(basename(path)) && path !== ".nojekyll") ||
   path === "_worker.js" ||
   path.startsWith("_worker.js/");
 

@@ -5,12 +5,14 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
 import { test } from "node:test";
 import {
   validateArtifactMetadata,
   validatePreparedReceipt,
   assertCurrentReleaseHead,
   assertCapturedDeployment,
+  upload,
 } from "./native-publisher-upload.mjs";
 import { NATIVE_PUBLISH_TARGETS, createReceipt } from "./native-publisher.mjs";
 import { verifyServedAssets } from "./verify-native-served.mjs";
@@ -260,6 +262,66 @@ test("served checks refuse upload-success without successfully captured actual d
   }
 });
 
+for (const value of [undefined, "f".repeat(64)])
+  test(`protected hash refusal retains failed evidence BEFORE APIs/tool/upload: ${value ? "mismatch" : "missing"}`, async (t) => {
+    const directory = await mkdtemp(join(tmpdir(), "tn-refusal-"));
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const environment = {
+      RUNNER_TEMP: directory,
+      NATIVE_EVIDENCE_PATH: join(directory, "evidence"),
+      GITHUB_EVENT_NAME: "workflow_dispatch",
+      NATIVE_TARGET: "staging",
+      NATIVE_SOURCE_SHA: sha,
+      GITHUB_SHA: sha,
+      GITHUB_REF: "refs/heads/release/native-staging",
+      GITHUB_REPOSITORY: "unit-test/tasknotes",
+      GITHUB_RUN_ID: "11",
+      GITHUB_RUN_ATTEMPT: "2",
+      NATIVE_TRUST_ASSET_SHA256: value,
+      NATIVE_SDK_SHA256:
+        "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
+      NATIVE_UI_SHA256:
+        "e3da3c19b49ee90d3d19df2ea4a1a387b158decfccc8000371f93170eb30b723",
+      NATIVE_PROTOCOL_SHA256:
+        "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
+    };
+    let checks = 0,
+      networkCalls = 0;
+    t.mock.method(globalThis, "fetch", async () => {
+      networkCalls++;
+      throw new Error("Network forbidden in input-refusal regression");
+    });
+    await assert.rejects(
+      upload(environment, {
+        checkout: async () => {},
+        intake: async (options) => {
+          checks++;
+          assert.equal(options.approvedHashes.asset, value);
+          return verifyTargetIntake(options); // actual unchanged STAGING packet + real 4-hash guard
+        },
+      }),
+      /protected raw trust ASSET/,
+    );
+    assert.equal(checks, 1);
+    assert.equal(networkCalls, 0); // no Source API, Cloudflare, tooling or upload path
+    const receipt = JSON.parse(
+      await readFile(
+        join(environment.NATIVE_EVIDENCE_PATH, "receipt.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(receipt.status, "failed");
+    assert.match(receipt.failure, /protected raw trust ASSET/);
+    assert.equal(receipt.deployment, null);
+    assert.equal(receipt.source.sha, sha);
+    assert.equal(receipt.run.attempt, "2");
+    assert.equal(receipt.run.repository, "unit-test/tasknotes");
+    await assert.rejects(
+      readFile(join(environment.NATIVE_EVIDENCE_PATH, "artifact.zip")),
+      /ENOENT/,
+    );
+  });
+
 test("shared helper remains EXACT qualified bytes", async () => {
   const bytes = await readFile(
     new URL("./lib/native-publish-bytes.mjs", import.meta.url),
@@ -354,6 +416,7 @@ test("full bytes and independent trusted static header/route checks; worker/cont
     _headers: "source policy",
     _redirects: "source routes",
     "_worker.js": "executed?",
+    ".nojekyll": "\n",
   };
   const assets = Object.entries(files).map(([path, bytes]) => ({
     path,
@@ -410,6 +473,28 @@ test("full bytes and independent trusted static header/route checks; worker/cont
     /policy readback failed/,
   );
   assert.ok(served.unverified.some((a) => a.path === "_worker.js"));
+  assert.ok(
+    served.verified.some(
+      (a) =>
+        a.path === ".nojekyll" && a.url === target.appOrigin + "/.nojekyll",
+    ),
+  );
+  for (const status of [200, 404])
+    await assert.rejects(
+      verifyServedAssets({
+        origin: target.appOrigin,
+        assets,
+        attempts: 1,
+        fetchImpl: async (url, options) =>
+          url.endsWith("/.nojekyll")
+            ? new Response("not the marker bytes", {
+                status,
+                headers: security,
+              })
+            : fetchImpl(url, options),
+      }),
+      /mismatch/,
+    );
   const policy = await verifyTrustedHostingPolicy({
     origin: target.appOrigin,
     assets,
@@ -423,6 +508,19 @@ test("full bytes and independent trusted static header/route checks; worker/cont
   assert.deepEqual(
     policy.unverified.map((a) => a.path),
     ["_worker.js"],
+  );
+  const unknown = ["_routes.json", "nested/.nojekyll", "nested/_headers"].map(
+    (path) => ({ path, bytes: 1, sha256: digest }),
+  );
+  const notCleared = await verifyTrustedHostingPolicy({
+    origin: target.appOrigin,
+    assets: [...assets, ...unknown],
+    served,
+    fetchImpl,
+  });
+  assert.deepEqual(
+    notCleared.unverified.map((a) => a.path),
+    ["_worker.js", ...unknown.map((a) => a.path)],
   );
   await assert.rejects(
     verifyTrustedHostingPolicy({

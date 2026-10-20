@@ -237,47 +237,68 @@ async function downloadArtifact(environment, request, directory) {
   return { artifact, metadata, run };
 }
 
-export async function upload(environment = process.env) {
-  if (environment.GITHUB_EVENT_NAME !== "workflow_dispatch")
-    throw new Error("Manual native dispatch required.");
-  const request = parsePublishRequest({
-    target: environment.NATIVE_TARGET,
-    sourceSha: environment.NATIVE_SOURCE_SHA,
-    dispatchRef: environment.GITHUB_REF,
-  });
-  await assertCheckout({ ...request, workflowSha: environment.GITHUB_SHA });
-  const { target, sourceSha } = request;
-  // Original-byte validation against FOUR protected env inputs. No auth boolean,
-  // no candidate-derived fallback; actual missing target intake refuses.
-  const sdkTrust = await verifyTargetIntake({
-    root,
-    target,
-    approvedHashes: {
-      sdk: environment.NATIVE_SDK_SHA256,
-      ui: environment.NATIVE_UI_SHA256,
-      protocol: environment.NATIVE_PROTOCOL_SHA256,
-      asset: environment.NATIVE_TRUST_ASSET_SHA256,
-    },
-  });
+export async function upload(
+  environment = process.env,
+  { checkout = assertCheckout, intake = verifyTargetIntake } = {},
+) {
   const directory = resolve(environment.NATIVE_EVIDENCE_PATH);
   if (!directory.startsWith(resolve(environment.RUNNER_TEMP) + "/"))
     throw new Error("Evidence must be outside checkout in runner temp.");
   await mkdir(directory, { recursive: true });
   const evidence = join(directory, "receipt.json");
   let receipt = {
-    status: "intake-validated",
-    source: { sha: sourceSha },
+    status: "attempting-input-validation",
+    source: { sha: environment.NATIVE_SOURCE_SHA, tree: null },
+    requestedTarget: environment.NATIVE_TARGET,
+    deployment: null,
     run: {
       repository: environment.GITHUB_REPOSITORY,
       id: environment.GITHUB_RUN_ID,
       attempt: environment.GITHUB_RUN_ATTEMPT,
     },
-    sdkTrust,
+    inputBindings: Object.fromEntries(
+      [
+        "NATIVE_SDK_SHA256",
+        "NATIVE_UI_SHA256",
+        "NATIVE_PROTOCOL_SHA256",
+        "NATIVE_TRUST_ASSET_SHA256",
+      ].map((name) => [
+        name,
+        /^[a-f0-9]{64}$/.test(environment[name] ?? "")
+          ? environment[name]
+          : null,
+      ]),
+    ),
   };
   const save = async () =>
     writeFile(evidence, JSON.stringify(receipt, null, 2) + "\n");
   await save();
   try {
+    if (environment.GITHUB_EVENT_NAME !== "workflow_dispatch")
+      throw new Error("Manual native dispatch required.");
+    const request = parsePublishRequest({
+      target: environment.NATIVE_TARGET,
+      sourceSha: environment.NATIVE_SOURCE_SHA,
+      dispatchRef: environment.GITHUB_REF,
+    });
+    await checkout({ ...request, workflowSha: environment.GITHUB_SHA });
+    const { target, sourceSha } = request;
+    // Original-byte validation against FOUR protected env inputs. No auth boolean,
+    // no candidate-derived fallback; actual missing target intake refuses.
+    const sdkTrust = await intake({
+      root,
+      target,
+      approvedHashes: {
+        sdk: environment.NATIVE_SDK_SHA256,
+        ui: environment.NATIVE_UI_SHA256,
+        protocol: environment.NATIVE_PROTOCOL_SHA256,
+        asset: environment.NATIVE_TRUST_ASSET_SHA256,
+      },
+    });
+
+    receipt.sdkTrust = sdkTrust;
+    receipt.status = "intake-validated";
+    await save();
     const { artifact, metadata, run } = await downloadArtifact(
       environment,
       request,

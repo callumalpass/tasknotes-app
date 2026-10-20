@@ -14,3 +14,5 @@ vendor/tasknotes-query-6bec1906.browser-metafile.json
 vendor/mdbase-app-lab-trust.mjs
 # Qualified shared publisher helper copied byte-identically (hash tested).
 scripts/lib/native-publish-bytes.mjs
+# Byte-verbatim authenticated SDK public packet and existing UI companion.
+vendor/native-publish/staging/

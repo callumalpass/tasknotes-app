@@ -9,6 +9,7 @@ afterEach(() => {
 });
 
 it("names the person-record action without obsolete product branding", () => {
+  vi.stubEnv("VITE_TASKNOTES_EDITOR_ORIGIN", undefined); // isolate this no-override case from build-target configuration
   const onOpen = vi.fn();
   const href = "https://example.test/people";
   render(<PersonSetupLink href={href} onOpen={onOpen} />);
@@ -25,6 +26,7 @@ it("names the person-record action without obsolete product branding", () => {
 it.each([
   "https://lab.mdbase-editor-lab.pages.dev",
   "https://editor.example.test",
+  "https://editor-staging.mdbase.dev",
   "http://127.0.0.1:48219",
 ])(
   "uses the app-configured Editor origin %s, preserving the settings target",

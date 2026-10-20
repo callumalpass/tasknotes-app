@@ -6,6 +6,7 @@ import { constants } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { isDeepStrictEqual } from "node:util";
+import { assertGeneratedYamlShim } from "./native-pnpm-generated.mjs";
 import {
   assertInventory,
   inventoryDirectory,
@@ -199,7 +200,7 @@ async function inventoryInstalledNpm(root) {
 
 /** Reviewed APP intake config, not a fork of any SDK/public contract. No target
  * config is shipped until actual target originals and review are available. */
-export async function verifyTargetIntake({
+export async function verifyOriginalIntake({
   root,
   target,
   approvedHashes,
@@ -242,7 +243,7 @@ export async function verifyTargetIntake({
       !expected ||
       !/^[a-f0-9]{64}$/.test(expected.sha256) ||
       !/^[a-f0-9]{40}$/.test(expected.source) ||
-      !/^[a-f0-9]{40}$/.test(expected.sourceTree)
+      (key === "sdk" && !/^[a-f0-9]{40}$/.test(expected.sourceTree))
     )
       throw new Error("Missing reviewed archive expectations.");
     safePath(expected.archive);
@@ -271,23 +272,46 @@ export async function verifyTargetIntake({
       throw new Error("Frozen lock missing original archive/SRI.");
     if (approvedHashes)
       equal(expected.sha256, approvedHashes[key], `${key} protected original`);
-    const facts = json(await read(expected.facts));
-    for (const field of [
-      "archive",
-      "bytes",
-      "sha256",
-      "sri",
-      "source",
-      "sourceTree",
-    ])
-      equal(facts[field], expected[field], `${key} facts ${field}`);
-    if (facts.noPublication === true)
-      throw new Error("noPublication original refuses.");
+    let facts, companion;
+    if (key === "sdk") {
+      const raw = await read(expected.facts);
+      equal(
+        digest(raw),
+        expected.factsSha256,
+        "Independently pinned SDK public facts",
+      );
+      facts = json(raw); // ORIGINAL canonical public SDK facts, never reauthored.
+      for (const field of [
+        "archive",
+        "bytes",
+        "sha256",
+        "sri",
+        "source",
+        "sourceTree",
+      ])
+        equal(facts[field], expected[field], `${key} facts ${field}`);
+      if (facts.noPublication === true)
+        throw new Error("noPublication SDK original refuses.");
+    } else if (key === "ui") {
+      // UI uses its EXISTING companion convention, not fabricated SDK facts.
+      const raw = await read(expected.companion);
+      equal(digest(raw), expected.companionSha256, "Original UI companion");
+      companion = json(raw);
+      for (const [field, value] of [
+        ["artifact", expected.archive],
+        ["bytes", expected.bytes],
+        ["sha256", expected.sha256],
+        ["integrity", expected.sri],
+        ["sourceCommit", expected.source],
+      ])
+        equal(companion[field], value, `UI original companion ${field}`);
+    }
     const members = readNpmArchive(bytes);
     const inventory = [...members]
       .map(([path, data]) => record(path, data))
       .sort((a, b) => a.path.localeCompare(b.path, "en"));
-    const publishedMembers = json(await read(expected.members));
+    const publishedMembers =
+      key === "sdk" ? json(await read(expected.members)) : expected.members;
     // Normalize ordering only, never names/bytes. assertInventory validates
     // paths/duplicates separately when installed; equality here covers archives.
     equal(
@@ -295,7 +319,8 @@ export async function verifyTargetIntake({
       [...publishedMembers].sort((a, b) => a.path.localeCompare(b.path, "en")),
       `${key} EVERY original member`,
     );
-    equal(members.size, facts.members, `${key} member count`);
+    if (key === "sdk")
+      equal(members.size, facts.members, `${key} member count`);
     equal(json(members.get("package.json")).name, name, `${key} package name`);
     if (installed) {
       // pnpm's package-root link is expected, links INSIDE the package are not.
@@ -303,22 +328,86 @@ export async function verifyTargetIntake({
       const store = resolve(root, "node_modules", ".pnpm") + sep;
       if (!location.startsWith(store))
         throw new Error("Installed package escaped frozen pnpm store.");
-      equal(
-        await inventoryInstalledNpm(location),
-        inventory,
-        `${key} installed inventory-mismatch`,
+      let actual = await inventoryInstalledNpm(location);
+      const shim = actual.find(
+        (item) => item.path === "node_modules/.bin/yaml",
       );
+      if (["sdk", "protocol"].includes(key) && shim) {
+        const bytes = await readFile(join(location, shim.path));
+        equal(digest(bytes), shim.sha256, "Generated install shim stable read");
+        const yamlMembers = key === "sdk" ? members : packages.sdk.members;
+        let externalYamlRoot = null;
+        if (key === "protocol") {
+          const yaml = json(yamlMembers.get("node_modules/yaml/package.json"));
+          if (!/^\d+\.\d+\.\d+$/.test(yaml.version))
+            throw new Error("Unqualified original YAML version.");
+          externalYamlRoot = resolve(
+            root,
+            `node_modules/.pnpm/yaml@${yaml.version}/node_modules/yaml`,
+          );
+          const originalYaml = [...yamlMembers]
+            .filter(([path]) => path.startsWith("node_modules/yaml/"))
+            .map(([path, data]) =>
+              record(path.slice("node_modules/yaml/".length), data),
+            )
+            .sort((a, b) => a.path.localeCompare(b.path, "en"));
+          equal(
+            await inventoryInstalledNpm(externalYamlRoot),
+            originalYaml,
+            "Registry YAML EVERY member versus SDK bundled ORIGINAL",
+          );
+        }
+        assertGeneratedYamlShim({
+          bytes,
+          packageRoot: location,
+          projectRoot: root,
+          members: yamlMembers,
+          packageManager: packageJson.packageManager,
+          externalYamlRoot,
+        });
+        console.log(
+          JSON.stringify({
+            kind: "separate-pnpm-10.7-generated-install-output-NOT-original-member",
+            ...shim,
+          }),
+        );
+        actual = actual.filter((item) => item.path !== shim.path); // ONE byte-qualified installer output only
+      }
+      if (!isDeepStrictEqual(actual, inventory)) {
+        const wanted = new Map(inventory.map((item) => [item.path, item]));
+        const found = new Map(actual.map((item) => [item.path, item]));
+        const differences = [...wanted]
+          .filter(([path, item]) => !isDeepStrictEqual(item, found.get(path)))
+          .map(([path, item]) => ({
+            path,
+            expected: item,
+            actual: found.get(path) ?? null,
+          }));
+        differences.push(
+          ...actual
+            .filter((item) => !wanted.has(item.path))
+            .map((item) => ({ path: item.path, expected: null, actual: item })),
+        );
+        throw new Error(
+          `${key} installed inventory-mismatch: ${JSON.stringify({ expectedMembers: inventory.length, installedMembers: actual.length, differences: differences.slice(0, 20) })}`,
+        );
+      }
     }
-    packages[key] = { expected, facts, members, inventory };
+    packages[key] = { expected, facts, companion, members, inventory };
   }
   const { sdk, ui, protocol } = packages;
-  if (ui.facts.pairedSdkSource !== sdk.facts.source)
-    throw new Error("UI is not paired with reviewed SDK source.");
+  const publicationConstraints = [];
+  if (ui.companion.noPublication === true)
+    publicationConstraints.push("UI companion noPublication=true");
+  if (ui.companion.pairedSdkSource !== sdk.facts.source)
+    publicationConstraints.push(
+      `UI companion pairedSdkSource=${ui.companion.pairedSdkSource} is not paired with SDK ${sdk.facts.source}`,
+    );
   const dependency = sdk.facts.dependencies?.find(
     (d) => d.name === "@mdbase-dev/connect-protocol",
   );
   for (const [field, expected] of [
-    ["file", protocol.expected.archive],
+    ["file", `vendor/${protocol.expected.archive}`],
     ["bytes", protocol.expected.bytes],
     ["sha256", protocol.expected.sha256],
     ["sri", protocol.expected.sri],
@@ -335,17 +424,28 @@ export async function verifyTargetIntake({
       throw new Error("SDK bundled protocol member mismatch.");
   }
   const provenanceRaw = sdk.members.get("dist/native/provenance.json");
-  if (!provenanceRaw || !provenanceRaw.equals(await read("provenance.json")))
+  if (
+    !provenanceRaw ||
+    !provenanceRaw.equals(
+      await read(config.provenancePath ?? "provenance.json"),
+    )
+  )
     throw new Error("Original provenance copy mismatch.");
   const provenance = json(provenanceRaw);
-  const contextRaw = await read(
+  const handoff = (path) =>
+    read(
+      config.handoffDirectory
+        ? `${safePath(config.handoffDirectory)}/${path}`
+        : path,
+    );
+  const contextRaw = await handoff(
     `next-trust/${target.environment}-context.json`,
   );
   const context = json(contextRaw);
   const receiptRaw = await read("sdk-build-receipt.json");
   const receipt = json(receiptRaw);
-  const asset = await read(`next-trust/${target.environment}.json`);
-  const releaseInventory = json(await read("release-trust-bundle.json"));
+  const asset = await handoff(`next-trust/${target.environment}.json`);
+  const releaseInventory = json(await handoff("release-trust-bundle.json"));
   const trust = provenance.trust;
   equal(
     provenance.schema,
@@ -379,7 +479,7 @@ export async function verifyTargetIntake({
     },
     "Ops context target/source/asset",
   );
-  const image = json(await read("image-release-bundle.json"));
+  const image = json(await handoff("image-release-bundle.json"));
   const source = context.context.source;
   for (const input of [
     releaseInventory,
@@ -432,7 +532,7 @@ export async function verifyTargetIntake({
     releaseInventory.imageBundle,
     {
       path: "image-release-bundle.json",
-      length: (await read("image-release-bundle.json")).length,
+      length: (await handoff("image-release-bundle.json")).length,
       sha256: h.proof_sha256["image-release-bundle.json"],
       publicationRunId: h.image_publication.run_id,
       publicationRunAttempt: h.image_publication.run_attempt,
@@ -492,7 +592,7 @@ export async function verifyTargetIntake({
     "release-trust-bundle.sigstore.json",
   ])
     equal(
-      digest(await read(name)),
+      digest(await handoff(name)),
       provenance.handoff.proof_sha256?.[name],
       `Original proof ${name}`,
     );
@@ -578,7 +678,21 @@ export async function verifyTargetIntake({
     ui: ui.expected,
     protocol: protocol.expected,
     provenance,
+    publicationConstraints,
+    originalMemberCounts: Object.fromEntries(
+      Object.entries(packages).map(([key, value]) => [key, value.members.size]),
+    ),
     intakeConfigSha256: digest(await readFile(configPath)),
     packetInventory: await inventoryDirectory(packet),
   };
+}
+
+/** LIVE publisher guard: byte custody is necessary, never publication approval.
+ * Consumer qualification may inspect original bytes separately; no option or
+ * environment switch can bypass these guards on the protected publisher. */
+export async function verifyTargetIntake(options) {
+  const result = await verifyOriginalIntake(options);
+  if (result.publicationConstraints.length)
+    throw new Error(result.publicationConstraints.join("; "));
+  return result;
 }

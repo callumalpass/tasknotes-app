@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 const root = new URL("../", import.meta.url);
 
-test("private-account SDK UI dependency has immutable source and archive pins", async () => {
+test("legacy private-account LAB SDK original custody remains intact", async () => {
   const manifest = JSON.parse(
     await readFile(new URL("vendor/sdk-dev-cc492f3f.json", root), "utf8"),
   );
@@ -32,10 +32,6 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
   assert.equal(
     manifest.sha256,
     "d0657d1e7283ba8c74ff7b11afcb510637c8ed30b2b3ac4f815bf6f0f3569cfd",
-  );
-  assert.equal(
-    pkg.dependencies["@mdbase-dev/sdk"],
-    `file:vendor/${manifest.artifact}`,
   );
   assert.equal(
     manifest.includedCommits.nativeCompatibilityCopy,
@@ -112,6 +108,66 @@ test("private-account SDK UI dependency has immutable source and archive pins", 
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
   );
+});
+
+test("current SDK pin is the accepted unchanged STAGING original, not legacy LAB qualification", async () => {
+  const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
+  const factBytes = await readFile(
+    new URL(
+      "vendor/native-publish/staging/artifact/artifact-facts.public.json",
+      root,
+    ),
+  );
+  assert.equal(
+    createHash("sha256").update(factBytes).digest("hex"),
+    "d313bb9dc2e291f957a77fa0c05fdff533a4cb79afa8973d63bca75c7897b44c",
+  );
+  const facts = JSON.parse(factBytes);
+  assert.equal(facts.source, "a3023aee3731dcbf9de19a41918a84cfb3ae7193");
+  assert.equal(facts.sourceTree, "c50479b5641c11a2750ec8b9cefdb433e5285d10");
+  assert.equal(facts.archive, "sdk-dev-a3023aee-staging.tgz");
+  assert.equal(
+    pkg.dependencies["@mdbase-dev/sdk"],
+    "file:vendor/sdk-dev-a3023aee-staging.tgz",
+  );
+  assert.equal(
+    facts.dependencies[0].file,
+    "vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
+  );
+  const bytes = await readFile(
+    new URL("vendor/sdk-dev-a3023aee-staging.tgz", root),
+  );
+  assert.equal(bytes.length, 4460029);
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    "c0bc377606df159d03c668923b7626f31459a1750ae0db033bb42789532c7296",
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    "sha512-qfffKwUwtscEXqEznldlQPZ53pljDtnd4aIrB0sqs+AEV8L9Uyhc7RFfpevu8WS5EnT69TZw24R/KH9Jmi6S8g==",
+  );
+  const provenance = JSON.parse(
+    await readFile(
+      new URL("vendor/native-publish/staging/artifact/provenance.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(provenance.runtime.source.repository, "mdbase-dev/mdbase-next");
+  assert.equal(
+    facts.trust.sourceCommit,
+    "f45df4598a5bff891de68eec3431ec7744885067",
+  );
+  assert.equal(facts.environment, "staging");
+  assert.equal(
+    facts.trust.sha256,
+    "67e117646c9c26927f0d5a44cbd26f057c318975032e9cd24f24b020150cdbc7",
+  );
+  const ui = JSON.parse(
+    await readFile(new URL("vendor/ui-dev-fe158b59.json", root), "utf8"),
+  );
+  assert.equal(ui.noPublication, true);
+  assert.equal(ui.pairedSdkSource, "cc492f3f3832c4939eff7fe39b0fabf5ad234b24");
+  assert.notEqual(ui.pairedSdkSource, facts.source); // preserved live publication refusal
 });
 
 test("packaged native assets are original bytes, not public application readiness", async () => {

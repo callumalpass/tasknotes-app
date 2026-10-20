@@ -198,14 +198,20 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 // --- SDK trust guard --------------------------------------------------------
 
 test("actual missing target intake refuses (no LAB/UI relabel fallback)", async () => {
-  for (const target of Object.values(NATIVE_PUBLISH_TARGETS))
-    await assert.rejects(
-      verifySdkTrust({
-        root: new URL("../", import.meta.url).pathname,
-        target,
-      }),
-      /Missing actual reviewed target intake/,
-    );
+  await assert.rejects(
+    verifySdkTrust({
+      root: new URL("../", import.meta.url).pathname,
+      target: NATIVE_PUBLISH_TARGETS.production,
+    }),
+    /Missing actual reviewed target intake/,
+  );
+  await assert.rejects(
+    verifySdkTrust({
+      root: new URL("../", import.meta.url).pathname,
+      target: NATIVE_PUBLISH_TARGETS.staging,
+    }),
+    /noPublication|not paired/,
+  );
 });
 
 // --- build environment ------------------------------------------------------

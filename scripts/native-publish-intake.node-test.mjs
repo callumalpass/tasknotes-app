@@ -244,14 +244,21 @@ async function fixture(t) {
       sri: sri(bytes),
       source: "a".repeat(40),
       sourceTree: "b".repeat(40),
-      facts: `${key}/artifact-facts.json`,
-      members: `${key}/members.json`,
+      ...(key === "sdk"
+        ? { facts: "sdk/artifact-facts.json", members: "sdk/members.json" }
+        : {
+            members: originalMembers[key].map(([path, data]) => ({
+              path,
+              bytes: data.length,
+              sha256: digest(data),
+            })),
+          }),
+      ...(key === "ui" ? { companion: "ui/companion.json" } : {}),
     };
     config.archives[key] = expected;
     dependencies[name] = `file:vendor/${archive}`;
     approvedHashes[key] = expected.sha256;
     const facts = { ...expected, members: originalMembers[key].length };
-    if (key === "ui") facts.pairedSdkSource = "a".repeat(40);
     if (key === "sdk")
       Object.assign(facts, {
         nativeSource: provenance.runtime.source.commit,
@@ -260,24 +267,39 @@ async function fixture(t) {
         dependencies: [
           {
             name: "@mdbase-dev/connect-protocol",
-            file: "protocol-original.tgz",
+            file: "vendor/protocol-original.tgz",
             bytes: protocolBytes.length,
             sha256: digest(protocolBytes),
             sri: sri(protocolBytes),
           },
         ],
       });
-    await pput(expected.facts, j(facts));
-    await pput(
-      expected.members,
-      j(
-        originalMembers[key].map(([path, data]) => ({
-          path,
-          bytes: data.length,
-          sha256: digest(data),
-        })),
-      ),
-    );
+    if (key === "sdk") {
+      await pput(expected.facts, j(facts));
+      expected.factsSha256 = digest(j(facts));
+      await pput(
+        expected.members,
+        j(
+          originalMembers[key].map(([path, data]) => ({
+            path,
+            bytes: data.length,
+            sha256: digest(data),
+          })),
+        ),
+      );
+    }
+    if (key === "ui") {
+      const companion = j({
+        artifact: archive,
+        bytes: bytes.length,
+        sha256: digest(bytes),
+        integrity: sri(bytes),
+        sourceCommit: expected.source,
+        pairedSdkSource: "a".repeat(40),
+      });
+      await pput(expected.companion, companion);
+      expected.companionSha256 = digest(companion);
+    }
     const store = join(root, "node_modules/.pnpm", key, "node_modules", name);
     for (const [path, data] of originalMembers[key]) {
       await mkdir(join(store, path, ".."), { recursive: true });
@@ -385,11 +407,13 @@ test("UI noPublication and wrong SDK pairing refuse even with reviewed matching 
     { pairedSdkSource: "f".repeat(40) },
   ]) {
     const f = await fixture(t);
-    const path = f.config.archives.ui.facts;
+    const path = f.config.archives.ui.companion;
     const facts = JSON.parse(
       await readFile(join(f.root, "vendor/native-publish/staging", path)),
     );
-    await f.pput(path, j({ ...facts, ...change }));
+    const revised = j({ ...facts, ...change });
+    await f.pput(path, revised);
+    f.config.archives.ui.companionSha256 = digest(revised);
     await f.save();
     await assert.rejects(
       verifyTargetIntake({ ...f, target }),

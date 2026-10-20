@@ -103,10 +103,26 @@ export async function verifyTrustedHostingPolicy({
     error.report = result;
     throw error;
   }
+  // Source-qualified static behavior: official Wrangler4.114 Pages validate()
+  // IGNORE_LIST excludes controls/worker/functions/.git, NOT root .nojekyll.
+  // This one existing marker is a normal served asset, never a policy waiver.
+  const marker = assets.find((a) => a.path === ".nojekyll");
+  if (
+    marker &&
+    !served.verified.some(
+      (a) =>
+        a.path === marker.path &&
+        a.bytes === marker.bytes &&
+        a.sha256 === marker.sha256 &&
+        a.url === origin + "/.nojekyll",
+    )
+  )
+    throw new Error("Existing .nojekyll requires actual served-byte evidence.");
   const unverified = assets
     .filter(
       (a) =>
-        ["_routes.json", ".nojekyll"].includes(basename(a.path)) ||
+        basename(a.path) === "_routes.json" ||
+        (basename(a.path) === ".nojekyll" && a.path !== ".nojekyll") ||
         a.path === "_worker.js" ||
         a.path.startsWith("_worker.js/") ||
         (["_headers", "_redirects"].includes(basename(a.path)) &&
