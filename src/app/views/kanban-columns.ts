@@ -6,33 +6,31 @@ export function kanbanRowValue(row: TaskViewRow, property: string): unknown {
   return viewPropertyValue(row, property) ?? null;
 }
 
-/** Group metadata order is authoritative when it describes this column
- * property. Reorder only supplied group columns: leave other configured/
- * discovered columns in their slots so empty-column keyboard moves do not
- * change unexpectedly. Never sort/recompute rows or switch on provider. */
+/** Configured columns (statuses, priorities, open/complete) keep the order
+ * the user configured, empty or not, so moving a card never moves a column.
+ * Values outside that configuration follow, in the provider's group order,
+ * then in discovery order. Never sort/recompute rows or switch on provider. */
 export function orderedKanbanColumns<T extends { value: unknown }>(
   columns: readonly T[],
   groups: readonly { values: Record<string, unknown> }[],
   property: string,
+  configuredCount = 0,
 ): T[] {
+  const configured = columns.slice(0, configuredCount);
+  const discovered = columns.slice(configuredCount);
   const byKey = new Map(
-    columns.map((column) => [valueKey(column.value), column]),
+    discovered.map((column) => [valueKey(column.value), column]),
   );
-  const seen = new Set<string>();
   const ordered: T[] = [];
   for (const group of groups) {
     if (!Object.hasOwn(group.values, property)) continue;
     const key = valueKey(group.values[property]);
     const column = byKey.get(key);
-    if (column && !seen.has(key)) {
-      ordered.push(column);
-      seen.add(key);
-    }
+    if (!column) continue;
+    ordered.push(column);
+    byKey.delete(key);
   }
-  let index = 0;
-  return columns.map((column) =>
-    seen.has(valueKey(column.value)) ? ordered[index++]! : column,
-  );
+  return [...configured, ...ordered, ...byKey.values()];
 }
 
 export function valueKey(value: unknown): string {

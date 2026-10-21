@@ -545,8 +545,10 @@ export class DemoTaskRepository implements TaskRepository {
         : view.presentation?.type === "tasknotes.projects"
           ? this.model.configuration().fieldMapping.projects
           : null;
+    // Like the mdbase provider, groups come back sorted by value rather than
+    // in the order their first row happens to appear.
     const groupValues = groupProperty
-      ? uniqueValues(
+      ? sortedGroupValues(
           rows.flatMap((row) => {
             const value = row.values[groupProperty as keyof typeof row.values];
             return Array.isArray(value) ? value : [value];
@@ -1207,6 +1209,16 @@ function uniqueValues(values: unknown[]): unknown[] {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
+  });
+}
+
+function sortedGroupValues(values: unknown[]): unknown[] {
+  return uniqueValues(values).sort((left, right) => {
+    if (left == null || right == null)
+      return Number(left != null) - Number(right != null);
+    const a = String(left);
+    const b = String(right);
+    return a < b ? -1 : a > b ? 1 : 0;
   });
 }
 

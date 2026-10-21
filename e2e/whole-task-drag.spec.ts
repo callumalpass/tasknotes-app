@@ -82,6 +82,11 @@ test("kanban cards drag by their title", async ({ page }) => {
     .filter({ hasNot: page.locator(`[data-kanban-card-id="${id}"]`) })
     .first();
   const destinationName = await destination.getAttribute("aria-label");
+  const columnOrder = () =>
+    page
+      .locator("section.kanban-column")
+      .evaluateAll((nodes) => nodes.map((node) => node.ariaLabel));
+  const before = await columnOrder();
   expect(destinationName).not.toEqual(sourceName);
 
   await dragBetween(page, card.locator(".task-row-title"), destination);
@@ -90,6 +95,8 @@ test("kanban cards drag by their title", async ({ page }) => {
       .locator("section.kanban-column")
       .filter({ has: page.locator(`[data-kanban-card-id="${id}"]`) }),
   ).toHaveAttribute("aria-label", destinationName!);
+  // Moving a card never moves a column.
+  expect(await columnOrder()).toEqual(before);
   await expect(
     page.getByRole("complementary", { name: "Task details" }),
   ).toHaveCount(0);

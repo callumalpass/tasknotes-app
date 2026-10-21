@@ -126,6 +126,7 @@ export function KanbanView({
         rows: [],
       });
   }
+  const configuredColumnCount = columns.size;
   for (const group of execution.groups) {
     const value = group.values[property] ?? null;
     const existing = columns.get(valueKey(value));
@@ -145,6 +146,7 @@ export function KanbanView({
     [...columns.values()],
     execution.groups,
     property,
+    configuredColumnCount,
   );
   const writable = propertyName !== null;
   const movable = writable || Boolean(manualOrder);

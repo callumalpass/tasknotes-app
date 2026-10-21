@@ -14,7 +14,7 @@ const row = {
   },
   values: {} as Record<string, unknown>,
 };
-describe("Kanban authoritative values and group order", () => {
+describe("Kanban authoritative values and column order", () => {
   it.each([null, false, "", 0])(
     "preserves present authoritative value %j without frontmatter fallback",
     (value) => {
@@ -44,30 +44,62 @@ describe("Kanban authoritative values and group order", () => {
       kanbanRowValue({ ...row, values: { status: value } }, "status"),
     ).toBe(value);
   });
-  it("uses supplied group order ahead of configured columns without reordering row arrays", () => {
+  it("keeps configured columns in configured order whatever the group order", () => {
     const columns = [
-      { value: "open", label: "Open", rows: ["open-first", "open-second"] },
-      { value: "closed", label: "Closed", rows: ["closed-first"] },
-      { value: "unused", label: "Configured empty", rows: [] },
+      { value: "none" },
+      { value: "open" },
+      { value: "in-progress" },
+      { value: "closed" },
+    ];
+    for (const groups of [
+      [{ values: { status: "closed" } }, { values: { status: "open" } }],
+      [{ values: { status: "open" } }],
+      [],
+    ])
+      expect(orderedKanbanColumns(columns, groups, "status", 4)).toEqual(
+        columns,
+      );
+  });
+  it("places unconfigured values after configured ones in supplied group order", () => {
+    const columns = [
+      { value: "open", rows: ["open-first", "open-second"] },
+      { value: "closed", rows: [] },
+      { value: "legacy", rows: ["legacy-first"] },
+      { value: "blocked", rows: ["blocked-first"] },
+      { value: "row-only", rows: ["row-only-first"] },
     ];
     const groups = [
+      { values: { status: "blocked" } },
       { values: { status: "closed" } },
-      { values: { status: "open" } },
+      { values: { status: "legacy" } },
     ];
-    const ordered = orderedKanbanColumns(columns, groups, "status");
+    const ordered = orderedKanbanColumns(columns, groups, "status", 2);
     expect(ordered.map(({ value }) => value)).toEqual([
-      "closed",
       "open",
-      "unused",
+      "closed",
+      "blocked",
+      "legacy",
+      "row-only",
     ]);
-    expect(ordered[0]).toBe(columns[1]);
-    expect(ordered[1]).toBe(columns[0]);
-    expect(ordered[1]!.rows).toBe(columns[0]!.rows);
+    expect(ordered[0]).toBe(columns[0]);
+    expect(ordered[0]!.rows).toBe(columns[0]!.rows);
     expect(columns.map(({ value }) => value)).toEqual([
       "open",
       "closed",
-      "unused",
+      "legacy",
+      "blocked",
+      "row-only",
     ]);
+  });
+  it("uses supplied group order when nothing is configured", () => {
+    const columns = [{ value: "a" }, { value: "b" }, { value: "c" }];
+    expect(
+      orderedKanbanColumns(
+        columns,
+        [{ values: { area: "c" } }, { values: { area: "a" } }],
+        "area",
+      ),
+    ).toEqual([columns[2], columns[0], columns[1]]);
   });
   it("keeps original order when metadata groups refer to a different column property", () => {
     const columns = [{ value: "open" }, { value: "closed" }];
@@ -83,28 +115,10 @@ describe("Kanban authoritative values and group order", () => {
   it("keeps null as a group key and does not duplicate columns for repeated group metadata", () => {
     const columns = [{ value: "open" }, { value: null }];
     const groups = [{ values: { status: null } }, { values: { status: null } }];
-    expect(orderedKanbanColumns(columns, groups, "status")).toEqual(columns);
-  });
-  it("preserves configured empty-column slots while supplying actual group order", () => {
-    const columns = [
-      { value: "none" },
-      { value: "open" },
-      { value: "in-progress" },
-      { value: "closed" },
-    ];
-    expect(
-      orderedKanbanColumns(columns, [{ values: { status: "open" } }], "status"),
-    ).toEqual(columns);
-    const ordered = orderedKanbanColumns(
-      columns,
-      [{ values: { status: "closed" } }, { values: { status: "open" } }],
-      "status",
-    );
-    expect(ordered).toEqual([columns[0], columns[3], columns[2], columns[1]]);
-    expect(
-      ordered
-        .filter(({ value }) => value === "open" || value === "closed")
-        .map(({ value }) => value),
-    ).toEqual(["closed", "open"]);
+    expect(orderedKanbanColumns(columns, groups, "status")).toEqual([
+      columns[1],
+      columns[0],
+    ]);
+    expect(orderedKanbanColumns(columns, groups, "status", 2)).toEqual(columns);
   });
 });
