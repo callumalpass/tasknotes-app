@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, verify } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import {
   APP_ID,
   BUNDLE_ID,
@@ -143,10 +144,47 @@ test("requires version-specific complete release metadata", () => {
     { ...metadata, reviewNotes: "" },
     { ...metadata, whatsNew: {} },
     { ...metadata, whatsNew: { "en-AU": "x".repeat(4001) } },
+    { ...metadata, draft: "not approved" },
   ]) {
     assert.throws(() => validateMetadata(m, "1.0.4"));
   }
   assert.throws(() => validateMetadata(metadata, "../secret"));
+});
+
+test("the 1.0.9 draft metadata cannot be submitted until approved", async () => {
+  const draft = JSON.parse(
+    await readFile(
+      new URL("../docs/releases/ios/1.0.9.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.throws(() => validateMetadata(draft, "1.0.9"), /draft/);
+  const approved = { ...draft };
+  delete approved.draft;
+  assert.equal(validateMetadata(approved, "1.0.9"), approved);
+  assert.equal(approved.releaseType, "MANUAL");
+});
+
+test("a MANUAL release is held after approval and checked on reruns", async () => {
+  const held = { ...metadata, releaseType: "MANUAL" };
+  const f = fixture();
+  assert.equal(
+    (await f.run({ commit: true, metadata: held })).state,
+    "WAITING_FOR_REVIEW",
+  );
+  assert.equal(f.versions[1].attributes.releaseType, "MANUAL");
+  assert.equal(
+    (await f.run({ commit: true, metadata: held })).alreadySubmitted,
+    true,
+  );
+  await assert.rejects(
+    f.run({ commit: true }),
+    /does not match the expected release policy/,
+  );
+  assert.throws(
+    () => validateMetadata({ ...metadata, releaseType: "SCHEDULED" }, "1.0.4"),
+    /releaseType/,
+  );
 });
 
 test("dry run never writes", async () => {
