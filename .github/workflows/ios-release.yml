@@ -99,6 +99,10 @@ jobs:
             test -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64"
           fi
 
+          if [ "$GITHUB_RUN_NUMBER" -le 25 ]; then
+            echo "TaskNotes 1.0.9 requires an iOS build number greater than 25." >&2
+            exit 1
+          fi
           echo "TASKNOTES_IOS_VERSION=$version" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_BUILD=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_UPLOAD=$upload" >> "$GITHUB_ENV"

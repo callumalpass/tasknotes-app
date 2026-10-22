@@ -9,6 +9,11 @@ import { buildTaskNotesManifest } from "./tasknotes-manifest.mjs";
 const source = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 describe("native Capacitor configuration", () => {
+  it("declares the owner-approved non-exempt encryption use", async () => {
+    expect(await source("../ios/App/App/Info.plist")).toMatch(
+      /<key>ITSAppUsesNonExemptEncryption<\/key>\s*<true\/>/,
+    );
+  });
   it("retains the exact production manifest origin in Android webviews", async () => {
     const [manifest, manifestWriter] = await Promise.all([
       buildTaskNotesManifest({

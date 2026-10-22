@@ -2,6 +2,7 @@
  * alias; LAB binds the exact origin its build was configured for: a loopback
  * port or a public HTTPS preview (e.g. Pages). App loopback is LAB-only. */
 export const TASKNOTES_PRODUCTION_ORIGIN = "https://app.tasknotes.dev";
+export const TASKNOTES_IOS_ORIGIN = "capacitor://app.tasknotes.dev";
 export const TASKNOTES_STAGING_ORIGIN =
   "https://staging.tasknotes-app.pages.dev";
 export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
@@ -17,6 +18,7 @@ export function requireTaskNotesAppEnvironment(
   configuredEnvironment: unknown,
   configuredLabOrigin: unknown,
   currentOrigin: string,
+  nativeIos = false,
 ): TaskNotesAppEnvironment {
   if (
     configuredEnvironment !== "lab" &&
@@ -29,13 +31,16 @@ export function requireTaskNotesAppEnvironment(
   if (configuredEnvironment === "production") {
     if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")
       throw new Error("Production cannot include a LAB app origin.");
-    if (currentOrigin !== TASKNOTES_PRODUCTION_ORIGIN)
+    if (
+      currentOrigin !== TASKNOTES_PRODUCTION_ORIGIN &&
+      !(nativeIos && currentOrigin === TASKNOTES_IOS_ORIGIN)
+    )
       throw new Error(
         "TaskNotes production replaces the old app at app.tasknotes.dev.",
       );
     return Object.freeze({
       environment: "production",
-      appOrigin: TASKNOTES_PRODUCTION_ORIGIN,
+      appOrigin: currentOrigin,
     });
   }
   if (configuredEnvironment === "staging") {

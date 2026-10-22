@@ -19,6 +19,7 @@ export const TASKNOTES_INSTALLATION_ORIGINS = Object.freeze({
   }),
   production: Object.freeze({
     "app-runtime": Object.freeze(["https://app.tasknotes.dev"]),
+    mobile: Object.freeze(["capacitor://app.tasknotes.dev"]),
   }),
 });
 

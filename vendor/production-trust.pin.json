@@ -1,0 +1,8 @@
+{
+  "schema": "tasknotes/production-trust-pin/1",
+  "environment": "production",
+  "cpOrigin": "https://connect.mdbase.dev",
+  "logOrigin": "https://log.mdbase.dev",
+  "trustAssetSha256": "7912e40838213e60b65848350d319a48019021317b112e3326429b250f0133d7",
+  "sdkPin": "sdk-production-beta141.json"
+}

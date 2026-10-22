@@ -110,7 +110,7 @@ test("legacy private-account LAB SDK original custody remains intact", async () 
   );
 });
 
-test("current SDK pin is the accepted unchanged STAGING original, not legacy LAB qualification", async () => {
+test("production dependency replaces STAGING while its original custody remains intact", async () => {
   const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
   const factBytes = await readFile(
     new URL(
@@ -128,7 +128,7 @@ test("current SDK pin is the accepted unchanged STAGING original, not legacy LAB
   assert.equal(facts.archive, "sdk-dev-eaa4e697-staging.tgz");
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
-    "file:vendor/sdk-dev-eaa4e697-staging.tgz",
+    "file:vendor/sdk-eaa4e697-production-beta141.tgz",
   );
   assert.equal(
     facts.dependencies[0].file,
