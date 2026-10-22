@@ -1,5 +1,6 @@
 export type NativeRoute =
-  | { page: "home" | "search" | "scratchpad" | "more" }
+  | { page: "home" | "search" | "scratchpad" }
+  | { page: "more"; section?: string }
   | { page: "views"; key?: string }
   | { page: "task"; id: string };
 
@@ -16,6 +17,7 @@ export function nativeBackAction(
     !navigationViewKeys.includes(route.key)
   )
     return "back";
+  if (route.page === "more" && route.section) return "back";
   if (route.page === "home") return "exit";
   return "home";
 }

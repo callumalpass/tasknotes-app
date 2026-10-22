@@ -7,6 +7,21 @@ import { resolve } from "node:path";
 
 export { TASKNOTES_APP_TYPE_PACK_VERSION } from "./canonical-task-pack.mjs";
 
+/** Exact web installation origins per environment. One app/grant identity
+ * and one capability set serve all three; only the served origin differs.
+ * LAB loopback builds pair through the manifest homepage origin instead. */
+export const TASKNOTES_INSTALLATION_ORIGINS = Object.freeze({
+  lab: Object.freeze({
+    "app-runtime": Object.freeze(["https://lab.tasknotes-app.pages.dev"]),
+  }),
+  staging: Object.freeze({
+    "app-runtime": Object.freeze(["https://staging.tasknotes-app.pages.dev"]),
+  }),
+  production: Object.freeze({
+    "app-runtime": Object.freeze(["https://app.tasknotes.dev"]),
+  }),
+});
+
 export async function buildTaskNotesManifest({
   appUrl,
   webOnly,
@@ -44,6 +59,7 @@ export async function buildTaskNotesManifest({
       `${identityUrl}/auth/mdbase/callback`,
       ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
     ],
+    installation_origins: TASKNOTES_INSTALLATION_ORIGINS,
     requirements: {
       people: { version: 1, optional: ["identity", "members"] },
       contracts: [

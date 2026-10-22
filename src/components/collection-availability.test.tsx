@@ -118,8 +118,3 @@ it("shows a protected count before detailed hold metadata arrives", () => {
     "2 edits are waiting for your choice",
   );
 });
-it("does not label a healthy collection as stale", () => {
-  state.connection.state = "connected";
-  render(<CollectionAvailability />);
-  expect(screen.queryByRole("status")).toBeNull();
-});

@@ -1,0 +1,47 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "729b5391f9e8e8c192d93a7112324ce65078d106",
+  "sourceIncludesPrs": [819, 827],
+  "includedMerges": {
+    "factory819": "19bdeee1d17eb2195d9d6945202274f9945042fe",
+    "providerReceipt827": "729b5391f9e8e8c192d93a7112324ce65078d106"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-729b5391.tgz",
+  "bytes": 747127,
+  "sha256": "fad2206e0a744ac5e801917831ee580ccbd2cf09df8bd4b3bd58bc76632bbeca",
+  "integrity": "sha512-2KKV/f44MbSePCpR6ACXxiiKNbw3c2Cj91cdXyItBeQcBGpz+DNviUl+6zw34ztzwyb7k7d6UpcaDgr5VfwFLw==",
+  "shasum": "f2866b90f7c1cce8b9b25912e5c8a5a467f55b5f",
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "73d2b32ba4be22dd0441d08fb5b14fb6d68df76b31354edf67c94871c670771c"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "d75e23f2dc669765ac29b2256e7da849fb622770fa5446a5b6cc2e7a1c79e858"
+    }
+  },
+  "qualification": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "sdkTestsPassed": 1650,
+    "testFilesPassed": 83,
+    "browserTestsPassed": 5,
+    "existingSkipped": 3,
+    "skippedTestScope": "runtime.wasm-gated tests; not runtime qualification",
+    "sourceClean": true,
+    "allArchiveMemberBytesVerified": true,
+    "archiveFileMembers": 275,
+    "dependencyVersionsAndIntegrityLockExact": true,
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "factoryNativeAbiAndPerAppCompatibilityQualified": false,
+    "browserAcceptance": false,
+    "perAppTrustOriginCustodyAndOperationQualification": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host"
+  ],
+  "purpose": "Release co2255r/co2308r qualified and delegated original-byte source archive intake; coordinator co2341t resumed it after the independent sign-in race fix. This vendors the original release tarball and preserves authenticated environment selection. Canonical provider/login fields are display-only; UUID authority, original protected data and runtime/trust pins remain unchanged. No shared-factory activation, native ABI qualification, People enablement or serving refresh follows from this pin. Previous provenance and archives remain historical evidence."
+}

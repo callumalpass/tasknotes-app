@@ -114,6 +114,27 @@ describe("task capture", () => {
     expect(result.input).toEqual({ title: "Prepare weekly review" });
   });
 
+  it("keeps hyphenated frequency words without inserting escape characters", async () => {
+    for (const token of [
+      "due-only-weekly",
+      "weekly-review",
+      "daily-check",
+      "monthly-report",
+      "yearly-plan",
+      "annually-renew",
+    ]) {
+      for (const suffix of ["", " probe", " every week"]) {
+        const title = `[test] ${token}${suffix}`;
+        const result = await parseTaskCapture(title, configuration, "en-AU");
+        expect(result.input).toEqual(
+          suffix === " every week"
+            ? { title: `[test] ${token}`, recurrence: "FREQ=WEEKLY" }
+            : { title },
+        );
+      }
+    }
+  });
+
   it("uses configured triggers", async () => {
     const result = await parseTaskCapture(
       "Tidy desk ~home",

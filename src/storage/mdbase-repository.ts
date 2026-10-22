@@ -1798,6 +1798,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     return {
       kind: "connect",
       id: this.collectionId,
+      collectionId: this.collectionId,
       name: this.displayName,
       location: "Live connection through mdbase",
       runtime: Capacitor.isNativePlatform() ? "native" : "browser",

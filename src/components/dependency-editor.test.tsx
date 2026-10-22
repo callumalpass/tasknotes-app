@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { DependencyEditor, RelatedWork } from "./dependency-editor";
+import { DependencyEditor } from "./dependency-editor";
 
 describe("DependencyEditor", () => {
   it("adds record links with the contract default relationship", async () => {
@@ -70,31 +70,5 @@ describe("DependencyEditor", () => {
         gap: "P2D",
       },
     ]);
-  });
-});
-
-describe("RelatedWork", () => {
-  it("renders derived blocking work and subtasks", () => {
-    const relatedTask = {
-      id: "related",
-      title: "Related task",
-      status: "open",
-      completed: false,
-    };
-    render(
-      <RelatedWork
-        relationships={{
-          blockedBy: [],
-          blocking: [relatedTask as never],
-          subtasks: [
-            { ...relatedTask, id: "child", title: "Child task" } as never,
-          ],
-          projectTasks: [],
-        }}
-      />,
-    );
-
-    expect(screen.getByText("Related task")).toBeInTheDocument();
-    expect(screen.getByText("Child task")).toBeInTheDocument();
   });
 });

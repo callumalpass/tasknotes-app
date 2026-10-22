@@ -102,6 +102,8 @@ import type { ScratchImage } from "../domain/scratch-image";
 import { scratchFeedKey } from "../domain/scratch-feed";
 import { ScratchImageService } from "../application/scratch-images/scratch-image-service";
 import { TaskActions } from "../components/task-actions";
+import { RecordWriteNotice } from "../components/record-write-notice";
+import { useRecordWriteState } from "../components/use-record-write-state";
 
 const MarkdownSourceEditor = lazy(async () => ({
   default: (await import("../components/markdown-source-editor"))
@@ -1047,6 +1049,12 @@ export function ScratchpadScreen({
                       />
                     ) : null}
                   </div>
+                  {!expanded ? (
+                    <RecordWriteNotice
+                      repository={repository}
+                      target={{ kind: "scratchpad", id: document.id }}
+                    />
+                  ) : null}
                   {expanded ? editor(document) : null}
                 </article>
               );
@@ -1072,6 +1080,7 @@ export function ScratchpadScreen({
                 onClick={() => setImageCaptureOpen((open) => !open)}
               >
                 <ImagePlus aria-hidden="true" size={18} />
+                <span>Add image</span>
               </button>
               <button
                 aria-label="New note"
@@ -1358,6 +1367,10 @@ function ScratchImageCard({
       className="scratch-image-card"
       data-feed-key={scratchFeedKey(image)}
     >
+      <RecordWriteNotice
+        repository={repository}
+        target={{ kind: "image", id: image.id }}
+      />
       {!collapsed ? (
         <div
           className="scratch-image-frame"
@@ -1478,6 +1491,10 @@ function ScratchpadDocumentEditor({
   const [linkedTasks, setLinkedTasks] = useState<Map<string, TaskSummary>>(
     new Map(),
   );
+  const nativeSaveState = useRecordWriteState(repository, {
+    kind: "scratchpad",
+    id: document?.id ?? initialDocument.id,
+  });
   const [source, setSource] = useState(initialDocument.body);
   const [title, setTitle] = useState(initialDocument.title ?? "");
   const [editorMode, setEditorMode] = useState<"outline" | "markdown">(() =>
@@ -1539,6 +1556,9 @@ function ScratchpadDocumentEditor({
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const editorModeRef = useRef<"outline" | "markdown">(editorMode);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
+  const savesInFlight = useRef(0);
+  /** Advances whenever this editor adopts a saved or incoming version. */
+  const documentVersion = useRef(0);
   const autosaveSuspended = useRef(false);
   const focusAfterRender = useRef<
     | {
@@ -1555,12 +1575,9 @@ function ScratchpadDocumentEditor({
     return () => window.clearTimeout(timeout);
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const next = initialDocumentRef.current;
-      const parsed = parseScratchBody(next.body);
+  const hydrate = useCallback(
+    async (body: string) => {
+      const parsed = parseScratchBody(body);
       const tasks = parsed.some((node) => node.link)
         ? await repository.listSummaries({
             status: "all",
@@ -1568,11 +1585,21 @@ function ScratchpadDocumentEditor({
             limit: 50_000,
           })
         : [];
-      const hydrated = hydrateLinkedNodes(parsed, tasks);
-      const visible = [...hydrated];
+      const visible = hydrateLinkedNodes(parsed, tasks);
       const last = visible.at(-1);
       if (!last || last.kind === "task" || last.text.trim())
         visible.push(createScratchNode());
+      return { visible, tasks };
+    },
+    [repository],
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const next = initialDocumentRef.current;
+      const { visible, tasks } = await hydrate(next.body);
       const mode = initialScratchpadMode(
         next.body,
         isOutlineCompatible(next.body),
@@ -1594,7 +1621,7 @@ function ScratchpadDocumentEditor({
     } finally {
       setLoading(false);
     }
-  }, [repository]);
+  }, [hydrate]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void load(), 0);
@@ -1608,6 +1635,7 @@ function ScratchpadDocumentEditor({
         return Promise.reject(new Error("Scratchpad storage is unavailable."));
       const normalizedTitle = nextTitle.trim();
       setSaveState("saving");
+      savesInFlight.current += 1;
       const operation = saveTail.current
         .catch(() => undefined)
         .then(async () => {
@@ -1629,6 +1657,7 @@ function ScratchpadDocumentEditor({
             title: normalizedTitle,
           });
           documentRef.current = saved;
+          documentVersion.current += 1;
           sourceRef.current = saved.body;
           if (titleRef.current === nextTitle) {
             titleRef.current = saved.title ?? "";
@@ -1644,12 +1673,87 @@ function ScratchpadDocumentEditor({
           setSaveState("error");
           setError(message(reason));
           throw reason;
+        })
+        .finally(() => {
+          savesInFlight.current -= 1;
         });
       saveTail.current = operation;
       return operation;
     },
     [onDocumentUpdated, repository],
   );
+
+  // A change saved elsewhere (another tab or device) is shown only while this
+  // editor has no unsaved or saving edit. An edit in progress is kept and saved
+  // against the version it started from, so the collection reports the
+  // conflict instead of either side being silently overwritten.
+  const onDocumentUpdatedRef = useRef(onDocumentUpdated);
+  useEffect(() => {
+    onDocumentUpdatedRef.current = onDocumentUpdated;
+  }, [onDocumentUpdated]);
+
+  useEffect(() => {
+    const getScratchpad = repository.getScratchpad?.bind(repository);
+    if (!getScratchpad) return;
+    let live = true;
+    let latestRequest = 0;
+    const unchangedLocally = (current: ScratchpadDocument) =>
+      savesInFlight.current === 0 &&
+      !autosaveSuspended.current &&
+      titleRef.current.trim() === (current.title?.trim() ?? "") &&
+      (editorModeRef.current === "markdown"
+        ? sourceRef.current
+        : scratchBody(nodesRef.current)) === current.body;
+    const refresh = async () => {
+      const current = documentRef.current;
+      if (!current) return;
+      const request = ++latestRequest;
+      const version = documentVersion.current;
+      const sourceVersion = sourceEditVersion.current;
+      const incoming = await getScratchpad(current.id).catch(() => null);
+      const stillCurrent = () =>
+        live &&
+        request === latestRequest &&
+        version === documentVersion.current &&
+        sourceVersion === sourceEditVersion.current &&
+        documentRef.current === current;
+      if (
+        !incoming ||
+        !stillCurrent() ||
+        incoming.id !== current.id ||
+        incoming.revision === current.revision ||
+        // Starting, resuming and deleting notes are applied by the stream.
+        incoming.state !== current.state ||
+        !unchangedLocally(current)
+      )
+        return;
+      let hydrated: Awaited<ReturnType<typeof hydrate>> | undefined;
+      if (incoming.body !== current.body) {
+        hydrated = await hydrate(incoming.body).catch(() => undefined);
+        if (!hydrated || !stillCurrent() || !unchangedLocally(current)) return;
+      }
+      documentRef.current = incoming;
+      documentVersion.current += 1;
+      titleRef.current = incoming.title ?? "";
+      setTitle(incoming.title ?? "");
+      if (hydrated) {
+        nodesRef.current = hydrated.visible;
+        sourceRef.current = incoming.body;
+        setNodes(hydrated.visible);
+        setLinkedTasks(new Map(hydrated.tasks.map((task) => [task.id, task])));
+        setSource(incoming.body);
+      }
+      setDocument(incoming);
+      onDocumentUpdatedRef.current(incoming);
+    };
+    const stop = repository.subscribe((change) => {
+      if (!change || change.kind === "data") void refresh();
+    });
+    return () => {
+      live = false;
+      stop();
+    };
+  }, [hydrate, repository]);
 
   const persist = useCallback(
     (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
@@ -1699,14 +1803,15 @@ function ScratchpadDocumentEditor({
               : scratchBody(nodesRef.current);
           if (
             body !== current.body ||
-            titleRef.current.trim() !== (current.title?.trim() ?? "")
+            titleRef.current.trim() !== (current.title?.trim() ?? "") ||
+            repository.writeState?.({ kind: "scratchpad", id: current.id })
           )
             throw new Error(
               "Some note changes are not saved. Keep this page open and try again.",
             );
         },
       }),
-    [flush, reviewProcessing, convertingId],
+    [flush, repository, reviewProcessing, convertingId],
   );
 
   useEffect(() => {
@@ -2531,14 +2636,25 @@ function ScratchpadDocumentEditor({
           </button>
         </div>
         <div className="scratchpad-header-actions">
+          {nativeSaveState ? (
+            <RecordWriteNotice
+              repository={repository}
+              target={{
+                kind: "scratchpad",
+                id: document?.id ?? initialDocument.id,
+              }}
+            />
+          ) : null}
           <span
             className={`scratchpad-save-state is-${saveState}`}
-            role="status"
+            role={saveState === "error" ? "status" : undefined}
           >
-            {saveState === "saving"
-              ? "Saving"
-              : saveState === "error"
-                ? "Not saved"
+            {saveState === "error"
+              ? nativeSaveState
+                ? "Save needs review"
+                : "Not saved"
+              : saveState === "saving" || nativeSaveState
+                ? ""
                 : "Saved"}
           </span>
           {onReactivate ? (

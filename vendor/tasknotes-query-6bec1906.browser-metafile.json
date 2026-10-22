@@ -1,0 +1,362 @@
+{
+  "inputs": {
+    "node_modules/obsidian-bases-expression/dist/lexer.js": {
+      "bytes": 7036,
+      "imports": [],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/parser.js": {
+      "bytes": 8835,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/lexer.js",
+          "kind": "import-statement",
+          "original": "./lexer.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/node_modules/moment/moment.js": {
+      "bytes": 183459,
+      "imports": [
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/obsidian-bases-expression/dist/value.js": {
+      "bytes": 10860,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/node_modules/moment/moment.js",
+          "kind": "import-statement",
+          "original": "moment"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/context.js": {
+      "bytes": 7702,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/value.js",
+          "kind": "import-statement",
+          "original": "./value.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/evaluator.js": {
+      "bytes": 35297,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/node_modules/moment/moment.js",
+          "kind": "import-statement",
+          "original": "moment"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/value.js",
+          "kind": "import-statement",
+          "original": "./value.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/inspect.js": {
+      "bytes": 3275,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/metadata.js": {
+      "bytes": 10390,
+      "imports": [],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/language-service.js": {
+      "bytes": 47312,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/evaluator.js",
+          "kind": "import-statement",
+          "original": "./evaluator.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/inspect.js",
+          "kind": "import-statement",
+          "original": "./inspect.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/metadata.js",
+          "kind": "import-statement",
+          "original": "./metadata.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/lexer.js",
+          "kind": "import-statement",
+          "original": "./lexer.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/compile.js": {
+      "bytes": 7855,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/context.js",
+          "kind": "import-statement",
+          "original": "./context.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/evaluator.js",
+          "kind": "import-statement",
+          "original": "./evaluator.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/language-service.js",
+          "kind": "import-statement",
+          "original": "./language-service.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/value.js",
+          "kind": "import-statement",
+          "original": "./value.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/filter.js": {
+      "bytes": 6292,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/compile.js",
+          "kind": "import-statement",
+          "original": "./compile.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/value.js",
+          "kind": "import-statement",
+          "original": "./value.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/filter-adapter.js": {
+      "bytes": 4796,
+      "imports": [],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/inference.js": {
+      "bytes": 17609,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/filter-adapter.js",
+          "kind": "import-statement",
+          "original": "./filter-adapter.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/compatibility.js": {
+      "bytes": 2212,
+      "imports": [],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/mdbase.js": {
+      "bytes": 18448,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/builder.js": {
+      "bytes": 22467,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/metadata.js",
+          "kind": "import-statement",
+          "original": "./metadata.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/language-service.js",
+          "kind": "import-statement",
+          "original": "./language-service.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/obsidian-bases-expression/dist/index.js": {
+      "bytes": 2336,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/lexer.js",
+          "kind": "import-statement",
+          "original": "./lexer.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/parser.js",
+          "kind": "import-statement",
+          "original": "./parser.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/compile.js",
+          "kind": "import-statement",
+          "original": "./compile.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/context.js",
+          "kind": "import-statement",
+          "original": "./context.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/evaluator.js",
+          "kind": "import-statement",
+          "original": "./evaluator.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/value.js",
+          "kind": "import-statement",
+          "original": "./value.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/inspect.js",
+          "kind": "import-statement",
+          "original": "./inspect.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/filter.js",
+          "kind": "import-statement",
+          "original": "./filter.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/filter-adapter.js",
+          "kind": "import-statement",
+          "original": "./filter-adapter.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/inference.js",
+          "kind": "import-statement",
+          "original": "./inference.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/language-service.js",
+          "kind": "import-statement",
+          "original": "./language-service.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/compatibility.js",
+          "kind": "import-statement",
+          "original": "./compatibility.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/mdbase.js",
+          "kind": "import-statement",
+          "original": "./mdbase.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/metadata.js",
+          "kind": "import-statement",
+          "original": "./metadata.js"
+        },
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/builder.js",
+          "kind": "import-statement",
+          "original": "./builder.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "dist/query/tasknotes.js": {
+      "bytes": 12786,
+      "imports": [
+        {
+          "path": "node_modules/obsidian-bases-expression/dist/index.js",
+          "kind": "import-statement",
+          "original": "obsidian-bases-expression"
+        }
+      ],
+      "format": "esm"
+    },
+    "<stdin>": {
+      "bytes": 60,
+      "imports": [
+        {
+          "path": "dist/query/tasknotes.js",
+          "kind": "import-statement",
+          "original": "@mdbase-dev/obsidian-runtime/tasknotes-query"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    "stdin.js": {
+      "imports": [],
+      "exports": [
+        "TASKNOTES_QUERY_COMPILER_VERSION",
+        "TASKNOTES_QUERY_PARSER_VERSION",
+        "TaskNotesQueryError",
+        "compileTaskNotesQuery"
+      ],
+      "entryPoint": "<stdin>",
+      "inputs": {
+        "node_modules/obsidian-bases-expression/dist/lexer.js": {
+          "bytesInOutput": 5866
+        },
+        "node_modules/obsidian-bases-expression/dist/index.js": {
+          "bytesInOutput": 0
+        },
+        "node_modules/obsidian-bases-expression/dist/parser.js": {
+          "bytesInOutput": 7220
+        },
+        "node_modules/obsidian-bases-expression/dist/inspect.js": {
+          "bytesInOutput": 2840
+        },
+        "dist/query/tasknotes.js": {
+          "bytesInOutput": 10020
+        },
+        "<stdin>": {
+          "bytesInOutput": 0
+        }
+      },
+      "bytes": 26276
+    }
+  }
+}

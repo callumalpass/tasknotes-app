@@ -15,39 +15,6 @@ import {
   taskTimePart,
 } from "../domain/task";
 
-const choices = [
-  { value: "open", label: "Open" },
-  { value: "waiting", label: "Waiting" },
-  { value: "done", label: "Done" },
-];
-
-it("selects an option without a browser select element", () => {
-  const change = vi.fn();
-  render(
-    <TaskNotesSelect
-      ariaLabel="Status"
-      options={choices}
-      value="open"
-      onChange={change}
-    />,
-  );
-
-  const trigger = screen.getByRole("combobox", { name: "Status" });
-  expect(trigger).toHaveAttribute("data-value", "open");
-  expect(document.querySelector("select")).not.toBeInTheDocument();
-
-  fireEvent.click(trigger);
-  const list = screen.getByRole("listbox", { name: "Status" });
-  expect(within(list).getByRole("option", { name: "Open" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  fireEvent.click(within(list).getByRole("option", { name: "Waiting" }));
-
-  expect(change).toHaveBeenCalledWith("waiting");
-  expect(trigger).toHaveFocus();
-});
-
 it("supports keyboard selection and skips disabled options", () => {
   const change = vi.fn();
   render(

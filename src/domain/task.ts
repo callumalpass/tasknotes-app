@@ -354,7 +354,6 @@ export function taskMeta(
   if (task.scheduled) {
     values.push({
       label: formatTaskDate(task.scheduled, today),
-      overdue: !task.completed && isTaskDateOverdue(task.scheduled),
     });
   } else if (task.due) {
     values.push({

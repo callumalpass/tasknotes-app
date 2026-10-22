@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatPropertyValue,
+  groupLabel,
+  relativeDateDetail,
   propertyLabel,
   viewPropertyDetails,
 } from "./view-values";
 
+import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import type { Task } from "./task";
 import type { TaskViewRow } from "./view";
 
@@ -164,6 +167,73 @@ describe("saved-view values", () => {
     ]);
   });
 
+  it.each(["US/Eastern", "UTC", "+05:30"])(
+    "uses authoritative tagged date display without choosing browser zone: %s",
+    (authoritativeZone) => {
+      const value = {
+        kind: "date",
+        millis: 1,
+        dateOnly: false,
+        authoritativeZone,
+        display: `native:${authoritativeZone}`,
+      };
+      expect(formatPropertyValue(value, "date")).toBe(value.display);
+      expect(value.authoritativeZone).toBe(authoritativeZone);
+      expect(groupLabel([["note.due", value]])).toBe(value.display);
+    },
+  );
+  it("preserves date-only provenance and does not reinterpret tagged dates as relative strings", () => {
+    const value = {
+      kind: "date",
+      millis: 1,
+      dateOnly: true,
+      authoritativeZone: "Pacific/Auckland",
+      display: "1970-01-01",
+    };
+    const details = viewPropertyDetails(
+      { ...row, values: { "note.due": value } },
+      [{ key: "note.due", format: "date" }],
+    )!;
+    expect(details[0]!.value).toBe("1970-01-01");
+    expect(details[0]!.rawValue).toBe(value);
+    const configuration = defaultTaskCollectionConfiguration();
+    expect(relativeDateDetail(details[0]!, task, configuration)).toBe(
+      details[0],
+    );
+    expect(value).toEqual({
+      kind: "date",
+      millis: 1,
+      dateOnly: true,
+      authoritativeZone: "Pacific/Auckland",
+      display: "1970-01-01",
+    });
+  });
+  it("keeps native duration display without flattening calendar components", () => {
+    const value = {
+      kind: "duration",
+      components: [1, 2, 3, 4, 5, 6, 7, 8],
+      display: "native duration",
+    };
+    expect(formatPropertyValue(value)).toBe("native duration");
+    expect(formatPropertyValue([value, "other"])).toBe(
+      "native duration, other",
+    );
+    expect(value.components).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+  it("does not treat an unrelated display property or incomplete tag as authoritative temporal data", () => {
+    for (const value of [
+      { display: "not a temporal value" },
+      { kind: "date", display: "missing provenance" },
+      { kind: "duration", components: [1], display: "missing components" },
+      {
+        kind: "duration",
+        components: [1, 2, 3, 4, 5, 6, 7, Infinity],
+        display: "invalid component",
+      },
+      { kind: "error", message: "native error", display: "not temporal" },
+    ])
+      expect(formatPropertyValue(value)).toBe(JSON.stringify(value));
+  });
   it("formats empty and structured values without leaking markup", () => {
     expect(formatPropertyValue([])).toBeNull();
     expect(formatPropertyValue(["one", "two"])).toBe("one, two");
@@ -176,5 +246,42 @@ describe("saved-view values", () => {
         month: "short",
       }).format(new Date("2026-07-23T23:00:00Z")),
     );
+  });
+});
+
+describe("relativeDateDetail overdue", () => {
+  const configuration = defaultTaskCollectionConfiguration();
+  const detail = (key: string, rawValue: string) => ({
+    key,
+    label: key,
+    value: rawValue,
+    rawValue,
+  });
+
+  it("flags a past due date", () => {
+    expect(
+      relativeDateDetail(detail("note.due", "2000-01-03"), task, configuration)
+        .overdue,
+    ).toBe(true);
+  });
+
+  it("does not treat a missed scheduled date as late", () => {
+    expect(
+      relativeDateDetail(
+        detail("note.scheduled", "2000-01-03"),
+        task,
+        configuration,
+      ).overdue,
+    ).toBe(false);
+  });
+
+  it("never flags completed work", () => {
+    expect(
+      relativeDateDetail(
+        detail("note.due", "2000-01-03"),
+        { completed: true },
+        configuration,
+      ).overdue,
+    ).toBe(false);
   });
 });

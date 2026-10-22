@@ -23,10 +23,28 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_FIREBASE_PROJECT_ID: "",
       VITE_MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
       VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487",
+      VITE_TASKNOTES_ENVIRONMENT: "lab",
+      VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
     });
   });
 
-  it("selects, deploys and smokes staging only when explicitly requested", async () => {
+  it("refuses a mismatched LAB app origin and a missing Editor origin", () => {
+    expect(() =>
+      developmentDeploymentFor({
+        VITE_TASKNOTES_LAB_ORIGIN: "https://staging.tasknotes-app.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
+    // Candidate B has no documented Editor origin, so it stays explicit.
+    expect(() =>
+      developmentDeploymentEnvironment({
+        MDBASE_CANDIDATE_B_CONNECT_URL:
+          "https://mdbase-connect-candidate-b.onrender.com",
+      }),
+    ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN is required/);
+  });
+
+  it("selects staging only when explicitly requested", () => {
     const environment = { MDBASE_ENV: "staging" };
 
     expect(developmentDeploymentFor(environment)).toBe(
@@ -35,26 +53,59 @@ describe("TaskNotes development deployment", () => {
     expect(developmentDeploymentEnvironment(environment)).toMatchObject({
       TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
-      VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
-    });
-
-    const run = vi.fn(async () => undefined);
-    const verifyBuild = vi.fn(async () => undefined);
-    await deployDevelopmentTaskNotes(environment, { run, verifyBuild });
-    expect(verifyBuild).toHaveBeenCalledWith(developmentDeployments.staging);
-    expect(run.mock.calls[1][1]).toEqual(
-      expect.arrayContaining(["--branch=staging"]),
-    );
-    expect(run.mock.calls[2][2]).toMatchObject({
-      TASKNOTES_PRODUCTION_URL: "https://staging.tasknotes-app.pages.dev",
-      MDBASE_CONNECT_ORIGIN: "https://connect-staging.mdbase.dev",
+      VITE_TASKNOTES_ENVIRONMENT: "staging",
+      VITE_TASKNOTES_LAB_ORIGIN: "",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://editor-staging.mdbase.dev",
     });
   });
 
-  it("deploys Candidate B only to its isolated branch and authority", async () => {
+  it("never includes a Connect loopback URL in native staging targets", () => {
+    expect(developmentDeployments.staging).not.toHaveProperty("loopbackOrigin");
+    expect(
+      developmentDeploymentEnvironment({ MDBASE_ENV: "staging" }),
+    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
+      }),
+    ).toThrow(/VITE_MDBASE_CONNECT_LOOPBACK_URL/);
+    // A caller passing an already-selected target cannot leak an inherited
+    // loopback setting into the native build environment either.
+    expect(
+      developmentDeploymentEnvironment(
+        { VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487" },
+        developmentDeployments.staging,
+      ),
+    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
+  });
+
+  it("refuses LAB or cross-environment input on the staging target", () => {
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
+      }),
+    ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN/);
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "staging",
+        MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
+      }),
+    ).toThrow("staging TaskNotes requires MDBASE_CONNECT_URL");
+  });
+
+  it("selects Candidate B only with its isolated authority", () => {
     const environment = {
       MDBASE_CANDIDATE_B_CONNECT_URL:
         "https://mdbase-connect-candidate-b.onrender.com",
+      VITE_TASKNOTES_EDITOR_ORIGIN: "https://candidate-b.example.test",
     };
     expect(developmentDeploymentFor(environment)).toBe(
       candidateBDevelopmentDeployment,
@@ -63,17 +114,9 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_APP_URL: "https://candidate-b.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL:
         "https://mdbase-connect-candidate-b.onrender.com",
-    });
-
-    const run = vi.fn(async () => undefined);
-    const verifyBuild = vi.fn(async () => undefined);
-    await deployDevelopmentTaskNotes(environment, { run, verifyBuild });
-    expect(run.mock.calls[1][1]).toEqual(
-      expect.arrayContaining(["--branch=candidate-b"]),
-    );
-    expect(run.mock.calls[2][2]).toMatchObject({
-      TASKNOTES_PRODUCTION_URL: "https://candidate-b.tasknotes-app.pages.dev",
-      MDBASE_CONNECT_ORIGIN: "https://mdbase-connect-candidate-b.onrender.com",
+      // Candidate B is a LAB-environment build against its own Connect.
+      VITE_TASKNOTES_ENVIRONMENT: "lab",
+      VITE_TASKNOTES_LAB_ORIGIN: "https://candidate-b.tasknotes-app.pages.dev",
     });
   });
 

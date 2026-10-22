@@ -10,6 +10,7 @@ export function usePlannerViewLink(
   view?: TaskView,
 ): string | undefined {
   const [collection, setCollection] = useState<{
+    repository: TaskRepository;
     viewKey: string;
     id?: string;
   }>();
@@ -21,10 +22,15 @@ export function usePlannerViewLink(
     let active = true;
     void repository.collectionInfo().then(
       (info) => {
-        if (active) setCollection({ viewKey, id: info.id });
+        if (active)
+          setCollection({
+            repository,
+            viewKey,
+            id: info.collectionId ?? info.id,
+          });
       },
       () => {
-        if (active) setCollection({ viewKey });
+        if (active) setCollection({ repository, viewKey });
       },
     );
     return () => {
@@ -32,10 +38,9 @@ export function usePlannerViewLink(
     };
   }, [repository, viewKey]);
 
-  return viewKey
-    ? plannerViewUrl(
-        viewKey,
-        collection?.viewKey === viewKey ? collection.id : undefined,
-      )
+  return viewKey &&
+    collection?.viewKey === viewKey &&
+    collection.repository === repository
+    ? plannerViewUrl(viewKey, collection.id)
     : undefined;
 }

@@ -60,26 +60,32 @@ const POSITIONS = [
 export function RecurrenceField({
   value,
   scheduled,
+  due,
   anchor,
   onChange,
   onAnchorChange,
 }: {
   value?: string;
   scheduled?: string;
+  due?: string;
   anchor?: "scheduled" | "completion";
   onChange(value?: string): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
-  const rule = useMemo(() => parseRecurrenceRule(value), [value]);
+  const referenceDate = scheduled ?? due;
+  const rule = useMemo(
+    () => parseRecurrenceRule(value, referenceDate ?? today()),
+    [value, referenceDate],
+  );
   const visualRule = useMemo(
     () => ({
       ...rule,
       dtstart:
         rule.dtstart ??
-        recurrenceDtstartValue(scheduled) ??
+        recurrenceDtstartValue(referenceDate) ??
         recurrenceDtstartValue(today()),
     }),
-    [rule, scheduled],
+    [rule, referenceDate],
   );
   const [expanded, setExpanded] = useState(() =>
     Boolean(rule.unsupported.length || rule.invalid.length),
@@ -100,7 +106,9 @@ export function RecurrenceField({
 
   function changeFrequency(frequency: RecurrenceFrequency) {
     const clean = parseRecurrenceRule(
-      recurrenceRuleForPreset(frequency.toLocaleLowerCase(), { scheduled }),
+      recurrenceRuleForPreset(frequency.toLocaleLowerCase(), {
+        scheduled: referenceDate,
+      }),
     );
     const keepsWeekdays =
       (rule.frequency === "DAILY" || rule.frequency === "WEEKLY") &&
@@ -142,7 +150,9 @@ export function RecurrenceField({
               setAdvanced(true);
               return;
             }
-            const recurrence = recurrenceRuleForPreset(next, { scheduled });
+            const recurrence = recurrenceRuleForPreset(next, {
+              scheduled: referenceDate,
+            });
             onChange(recurrence);
             setAdvanced(false);
             setExpanded(Boolean(recurrence));
@@ -296,13 +306,15 @@ export function RecurrenceField({
               options={[
                 {
                   value: "scheduled",
-                  label: "Fixed schedule",
-                  description: "Keep dates anchored to the pattern.",
+                  label: "Planned dates",
+                  description:
+                    "Keep the planned dates, even if you finish late.",
                 },
                 {
                   value: "completion",
                   label: "Completion date",
-                  description: "Start the next interval when this is finished.",
+                  description:
+                    "Count the interval from when you finish the task.",
                 },
               ]}
               value={anchor ?? "scheduled"}
@@ -316,7 +328,7 @@ export function RecurrenceField({
               type="button"
               onClick={() => setAdvanced(true)}
             >
-              Edit RRULE
+              Advanced rule
             </button>
           </div>
         )

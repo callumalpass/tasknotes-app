@@ -1,0 +1,8 @@
+{
+  "name": "tasknotes-native-pages-upload-tooling",
+  "private": true,
+  "packageManager": "pnpm@10.7.0",
+  "dependencies": {
+    "wrangler": "4.114.0"
+  }
+}

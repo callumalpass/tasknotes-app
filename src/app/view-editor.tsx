@@ -105,7 +105,7 @@ export function ViewEditor({
       ([configuration, loadedSource]) => {
         if (!active) return;
         const loadedDraft = loadedSource
-          ? readViewDraft(loadedSource, view!.id)
+          ? readViewDraft(loadedSource, view!.id, view!.declaration)
           : emptyViewDraft("obsidian-bases");
         const next = duplicate
           ? { ...loadedDraft, name: `${loadedDraft.name} copy` }
@@ -234,7 +234,7 @@ export function ViewEditor({
     setStatus("saving");
     setError("");
     try {
-      const result = removeViewFromDocument(source, view.id);
+      const result = removeViewFromDocument(source, view.id, view.declaration);
       if (result.deleteSource) {
         await repository.deleteViewSource(source.path, source.revision);
       } else {

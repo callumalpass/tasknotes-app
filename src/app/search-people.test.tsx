@@ -68,13 +68,18 @@ it("does not mistake an unlinked account for an empty assignment search", () => 
     expect.objectContaining({ limit: 0 }),
   );
 });
-it("explains ambiguity and discovery failures instead of guessing", () => {
-  fixture.people = { error: new Error("Identity permission denied") };
+it("explains discovery failures without exposing transport diagnostics or guessing", () => {
+  fixture.people = { error: new Error("people metadata request failed") };
   chooseMine();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Identity permission denied",
+    "Your person record could not be loaded. Check your connection, then reload people to try again.",
   );
+  expect(screen.queryByText(/people metadata request failed/)).toBeNull();
+  expect(screen.getByRole("button", { name: "Reload people" })).toBeEnabled();
   expect(screen.queryByText("No matching tasks assigned to you.")).toBeNull();
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ limit: 0 }),
+  );
 });
 
 it("names the records to fix when the account resolves to invalid or ambiguous records", () => {

@@ -1,6 +1,7 @@
 import { App as CapacitorApp } from "@capacitor/app";
 import { registerReloadParticipant } from "../pwa/reload";
 import { captureSessionFor } from "../application/capture-session";
+import { timedStartup } from "../observability/startup-timing";
 import { Capacitor } from "@capacitor/core";
 import {
   createContext,
@@ -20,6 +21,7 @@ import {
   type CompletionCommand,
 } from "../application/task-mutations";
 import { QueryResource } from "../application/query-resource";
+import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import { TaskCommandService } from "../application/task-commands";
 import {
   AcceptedTaskEffects,
@@ -117,6 +119,41 @@ interface RepositoryContextValue {
 
 const RepositoryContext = createContext<RepositoryContextValue | null>(null);
 
+// UI mount references only, never READ readiness or authority. Effect replay
+// and synchronous remount can retain the same original held repository.
+const repositoryMounts = new WeakMap<TaskRepository, Set<object>>();
+function retainRepositoryMount(repository: TaskRepository) {
+  let mounts = repositoryMounts.get(repository);
+  if (!mounts) {
+    mounts = new Set();
+    repositoryMounts.set(repository, mounts);
+  }
+  const activeMounts = mounts;
+  const mount = {};
+  activeMounts.add(mount);
+  return () => {
+    activeMounts.delete(mount);
+    if (activeMounts.size) return;
+    if (repository.suspend && repository.resume) {
+      // Cancel immediately; close permanently only if no mount retains it
+      // before the microtask. No new client or authority is constructed.
+      repository.suspend();
+      queueMicrotask(() => {
+        if (
+          activeMounts.size ||
+          repositoryMounts.get(repository) !== activeMounts
+        )
+          return;
+        repositoryMounts.delete(repository);
+        repository.dispose?.();
+      });
+    } else {
+      repositoryMounts.delete(repository);
+      repository.dispose?.();
+    }
+  };
+}
+
 export function RepositoryProvider({
   children,
   repository: supplied,
@@ -133,6 +170,13 @@ export function RepositoryProvider({
   privateAccount?: PrivateAccountUi;
 }) {
   const [repository] = useState<TaskRepository>(() => supplied);
+  // Callback identity must never restart the repository lifecycle: a restart
+  // suspends the repository and cancels every in-flight READ and write result.
+  const discardRef = useRef(discardPendingRecovery);
+  useEffect(() => {
+    discardRef.current = discardPendingRecovery;
+  }, [discardPendingRecovery]);
+  const canDiscardPending = Boolean(discardPendingRecovery);
   const [mutationJournal] = useState<MutationJournal>(
     () => suppliedMutationJournal,
   );
@@ -252,6 +296,7 @@ export function RepositoryProvider({
 
   useEffect(() => {
     repository.resume?.();
+    const releaseMount = retainRepositoryMount(repository);
     let active = true;
     let generation = 0;
     let opening: Promise<void> | null = null;
@@ -281,9 +326,23 @@ export function RepositoryProvider({
         resolveTaskCommands(null);
       };
       disposeStartup = disposeAttempt;
-      const run = repository
-        .initialize({ deferTaskIndex: true })
+      const run = timedStartup(repository, "repository_init", () =>
+        repository.initialize({ deferTaskIndex: true }),
+      )
         .then(async () => {
+          if (!current()) return;
+          // Readable task metadata is not evidence that the original source
+          // setup finished. Inspection cannot install, resume or mint IDs.
+          const setupView = await timedStartup(
+            repository,
+            "setup_assessment",
+            async () => repository.modelSetup?.inspect(),
+          );
+          if (!current()) return;
+          if (setupView && setupView.state !== "ready")
+            throw new TaskNotesModelRequiredError(
+              "TaskNotes model and starter-view setup is unfinished.",
+            );
           const nextConfiguration = await repository.taskConfiguration();
           if (!current()) return;
           configurationRef.current = nextConfiguration;
@@ -322,9 +381,9 @@ export function RepositoryProvider({
           taskCommands = new TaskCommandService({
             repository,
             journal: mutationJournal,
-            ...(discardPendingRecovery
+            ...(canDiscardPending
               ? {
-                  discardPendingRequest: async () => discardPendingRecovery(),
+                  discardPendingRequest: async () => discardRef.current?.(),
                 }
               : {}),
             onDeleted: (id) => effects.deleted(id),
@@ -396,7 +455,7 @@ export function RepositoryProvider({
       refreshInFlight.current = null;
       startupRef.current = null;
       interruptStartupRef.current = null;
-      repository.dispose?.();
+      releaseMount();
       disposeStartup?.();
       taskCommandsRef.current = null;
       taskCommandsReadyRef.current = null;
@@ -408,7 +467,7 @@ export function RepositoryProvider({
     invalidation,
     loadConnection,
     mutationJournal,
-    discardPendingRecovery,
+    canDiscardPending,
     refresh,
     reminderAuthority,
     repository,

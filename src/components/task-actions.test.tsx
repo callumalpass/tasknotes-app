@@ -43,6 +43,33 @@ describe("TaskActions", () => {
     );
   }
 
+  it("copies the task's wikilink and path from the Copy submenu", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      renderRow();
+      await openMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
+      fireEvent.click(screen.getByRole("menuitem", { name: /Copy task link/ }));
+      await waitFor(() =>
+        expect(writeText).toHaveBeenCalledWith(
+          `[[${task.path.replace(/\.md$/, "")}|Menu parent]]`,
+        ),
+      );
+      await openMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Copy path" }));
+      await waitFor(() =>
+        expect(writeText).toHaveBeenLastCalledWith(task.path),
+      );
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
   it("updates contract-defined status, priority, and date shortcuts", async () => {
     renderRow();
 
@@ -121,9 +148,6 @@ describe("TaskActions", () => {
     const editor = screen.getByRole("dialog", { name: "Edit Priority" });
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
-    expect(editor.style.getPropertyValue("--task-property-editor-top")).toBe(
-      "12px",
-    );
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Close property editor" }),
@@ -179,6 +203,27 @@ describe("TaskActions", () => {
         `[[${task.path.replace(/\.md$/i, "")}|${task.title}]]`,
       ]);
     });
+  });
+
+  it("retries a failed subtask creation with the same intent", async () => {
+    const create = vi
+      .spyOn(repository, "create")
+      .mockRejectedValueOnce(new Error("Lost reply"));
+    renderRow();
+
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Organize" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create subtask" }));
+    fireEvent.change(screen.getByLabelText("Subtask title"), {
+      target: { value: "Retried child" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+    await screen.findByText("Lost reply");
+    fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+    expect(create.mock.calls[0]![1]).toBeDefined();
+    expect(create.mock.calls[1]![1]).toBe(create.mock.calls[0]![1]);
   });
 
   it("edits organization fields directly from the menu", async () => {

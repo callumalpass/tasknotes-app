@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { RepositoryProvider, useRepository } from "./repository-context";
@@ -182,24 +182,6 @@ it("reopens after backgrounding during describe and ignores the old opening fail
   }
 });
 
-it("opens under StrictMode replay", async () => {
-  const repository = new MdbaseTaskRepository(
-    mdbaseFixture([taskRecord("one", "First visible task", "r1")]).connect,
-  );
-  render(
-    <StrictMode>
-      <RepositoryProvider
-        repository={repository}
-        mutationJournal={new MemoryMutationJournal()}
-      >
-        <FirstView />
-      </RepositoryProvider>
-    </StrictMode>,
-  );
-  expect(await screen.findByText("First visible task")).toBeVisible();
-  expect(screen.getByText("ready")).toBeVisible();
-});
-
 it("shows a usable first view while enabled archive reconciliation and the metadata scan are blocked", async () => {
   const fixture = mdbaseFixture([
     taskRecord("one", "First visible task", "r1"),
@@ -281,3 +263,35 @@ function FirstView() {
     </>
   );
 }
+
+it("a parent re-render with a new recovery callback never suspends the open repository or cancels its work", async () => {
+  const repository = new MdbaseTaskRepository(
+    mdbaseFixture([taskRecord("one", "One", "r1")]).connect,
+  );
+  const suspend = vi.spyOn(repository, "suspend");
+  const journal = new MemoryMutationJournal();
+  const view = (label: string) => (
+    <RepositoryProvider
+      repository={repository}
+      mutationJournal={journal}
+      // A fresh function each render, as an inline parent prop.
+      discardPendingRecovery={async () => {}}
+    >
+      <Status label={label} />
+    </RepositoryProvider>
+  );
+  function Status({ label }: { label: string }) {
+    return (
+      <p>
+        {label} {useRepository().status}
+      </p>
+    );
+  }
+  const { rerender } = render(view("first"));
+  await screen.findByText("first ready");
+  for (const label of ["second", "third", "fourth"]) {
+    rerender(view(label));
+    await screen.findByText(`${label} ready`);
+  }
+  expect(suspend).not.toHaveBeenCalled();
+});

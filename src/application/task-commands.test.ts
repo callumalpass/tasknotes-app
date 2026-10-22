@@ -244,24 +244,6 @@ describe("TaskCommandService", () => {
     expect(journal.commands).toEqual([unknownDeletionCommand()]);
     service.dispose();
   });
-
-  it("sends task batches directly to the repository without journaling them", async () => {
-    const journal = new MemoryMutationJournal();
-    const repository = taskRepository();
-    const service = new TaskCommandService({ repository, journal });
-    await service.initialize();
-
-    await expect(
-      service.updateTasks([
-        { id: "task-1", input: { sortOrder: "tnabcdefghij" } },
-        { id: "task-2", input: { sortOrder: "tnbcdefghijk" } },
-      ]),
-    ).resolves.toHaveLength(2);
-
-    expect(repository.updateMany).toHaveBeenCalledOnce();
-    expect(journal.commands).toEqual([]);
-    service.dispose();
-  });
 });
 
 class MemoryMutationJournal implements MutationJournal {

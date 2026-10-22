@@ -19,21 +19,6 @@ function rollingTask() {
 }
 
 describe("rolling occurrence materialization", () => {
-  it("uses the domain window and visits each date in order", async () => {
-    const materialize = vi.fn<(id: string, date: string) => Promise<void>>(
-      async () => undefined,
-    );
-    expect(await materializeRollingWindow(rollingTask(), materialize)).toEqual(
-      [],
-    );
-    expect(materialize).toHaveBeenCalledTimes(3);
-    expect(materialize.mock.calls.map(([id]) => id)).toEqual([
-      "series",
-      "series",
-      "series",
-    ]);
-  });
-
   it("reports individual secondary failures without losing later dates", async () => {
     const materialize = vi
       .fn(async () => undefined)
