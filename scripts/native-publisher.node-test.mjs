@@ -6,6 +6,7 @@ import {
   mkdtemp,
   mkdir,
   readFile,
+  realpath,
   rm,
   symlink,
   writeFile,
@@ -355,8 +356,8 @@ test("built manifest refuses extra target installation origins", () => {
 // --- asset inventory, receipt, served-byte verification ---------------------
 
 async function distFixture() {
-  const directory = await mkdtemp(
-    join(tmpdir(), "tasknotes-native-publisher-"),
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), "tasknotes-native-publisher-")),
   );
   const files = {
     "index.html": "<html>TaskNotes</html>",

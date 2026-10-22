@@ -4,6 +4,7 @@ import {
   mkdtemp,
   mkdir,
   readFile,
+  realpath,
   writeFile,
   rm,
   symlink,
@@ -49,7 +50,9 @@ function tar(entries) {
   return gzipSync(Buffer.concat([...chunks, Buffer.alloc(1024)]));
 }
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), "tn-publish-intake-"));
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "tn-publish-intake-")),
+  );
   t.after(() => rm(root, { recursive: true, force: true }));
   const packet = join(root, "vendor/native-publish/staging");
   await mkdir(packet, { recursive: true });

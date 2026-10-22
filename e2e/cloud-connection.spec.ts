@@ -63,7 +63,7 @@ async function operations(page: Page) {
 
 // SDK protocol stand-ins port the application behaviours formerly tested via
 // classic encrypted relay routes. They are not native authorization/READ proof.
-test("opens the original held client without relay traffic and preserves navigation across owner replacement", async ({
+test("opens the original held client without relay traffic and preserves navigation across fixture owner recreation", async ({
   page,
 }) => {
   const outside: string[] = [];
@@ -145,27 +145,25 @@ test("opens the original held client without relay traffic and preserves navigat
   ).toHaveCount(0);
   await expect(page.getByText(/Hosted collections only/)).toHaveCount(0);
   await openSettings(page, "Collection");
-  await page
-    .getByRole("button", { name: "Change collection", exact: true })
-    .click();
-  // Native selection closes the original owner and returns to the installation
-  // gate, not the removed classic saved-relay list/authorization installation.
+  await expect(
+    page.getByRole("button", { name: "Change collection", exact: true }),
+  ).toBeVisible();
+  // This held-client fixture has no collection picker: Change collection is a
+  // no-op, not the old installation gate. Reload explicitly recreates its owner.
+  await page.reload();
   await expect(
     page.getByRole("heading", { name: "Open TaskNotes", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Open synced fixture collection" })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Today", exact: true }),
-  ).toBeVisible();
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Open synced fixture collection" })
-    .click();
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(
     page.getByText("Task from the held client", { exact: true }),
+  ).toBeVisible();
+  await nav(page, "Manage views");
+  await expect(
+    page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();
   expect(outside).toEqual([]);
 });

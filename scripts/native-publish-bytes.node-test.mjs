@@ -171,7 +171,15 @@ test("rejects unsafe actual paths and case-ambiguous directory names", async (t)
   await assert.rejects(inventoryDirectory(root), /invalid-path/);
   await fs.unlink(path.join(root, "a%2fb"));
   await fs.mkdir(path.join(root, "A"));
-  await fs.mkdir(path.join(root, "a"));
+  try {
+    await fs.mkdir(path.join(root, "a"));
+  } catch (error) {
+    // A case-insensitive filesystem (default macOS APFS) cannot hold both
+    // names, so this ambiguous tree cannot be constructed there. The
+    // inventory-level ambiguity check is covered synthetically above.
+    if (error && error.code === "EEXIST") return;
+    throw error;
+  }
   await assert.rejects(inventoryDirectory(root), /ambiguous-path/);
 });
 test("enforces bounded file, total, entry count, file count and depth limits", async (t) => {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, realpath, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -111,7 +111,9 @@ test("offline bounds, invalid UTF8, foreign base and original runtime binding re
   assert.equal(expected.originalSourceSha256, hash(raw));
 });
 test("every cached hash matches actual full inventory; non-cache hidden/control/unlisted bytes stay bound", async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), "tn-offline-"));
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), "tn-offline-")),
+  );
   t.after(() => rm(directory, { recursive: true, force: true }));
   const files = {
     "index.html": "index",
