@@ -75,9 +75,20 @@ describe("TaskScreen across an immediate reload", () => {
       async (r) => (await r.create({ title: "[test] original title" })).id,
     );
     const title = await titleField();
+    // This case exercises an interrupted save, not a race with a save that
+    // legitimately finishes before unload on a faster CI runner.
+    let rejectSave!: (error: Error) => void;
+    const pendingSave = new Promise<never>((_, reject) => {
+      rejectSave = reject;
+    });
+    const save = vi
+      .spyOn(first.repository, "update")
+      .mockReturnValue(pendingSave);
     fireEvent.change(title, { target: { value: "[test] replaced title" } });
     fireEvent.blur(title); // Tab
+    await waitFor(() => expect(save).toHaveBeenCalled());
     first.unload();
+    await act(async () => rejectSave(new Error("Page closed during save")));
 
     const second = await openPage(
       replica,

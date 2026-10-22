@@ -1,11 +1,23 @@
-import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  mkdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Historical staging publisher assertions must use their actual frozen input,
 // not today's production dependency/lock. No intake pin or original is rewritten.
 export async function frozenStagingRoot(t) {
-  const root = await mkdtemp(join(tmpdir(), "tn-frozen-staging-"));
+  // macOS /var is an OS symlink; hand the strict intake verifier the real root.
+  // Its prohibition on symlinked inputs remains unchanged.
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "tn-frozen-staging-")),
+  );
   t.after(() => rm(root, { recursive: true, force: true }));
   const project = new URL("../../", import.meta.url);
   for (const [file, snapshot] of [
