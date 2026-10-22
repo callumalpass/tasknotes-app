@@ -163,6 +163,19 @@ describe("row focus", () => {
     expect(document.activeElement).toHaveTextContent("Three");
   });
 
+  it("recovers focus when the row leaves in a later render", async () => {
+    const main = rows(["One", "Two", "Three"]);
+    const [, middle] = main.querySelectorAll<HTMLElement>(".task-row");
+    middle.querySelector("button")!.focus();
+    const restore = preserveRowFocus(middle);
+    restore();
+    middle.remove();
+    // MutationObserver callbacks arrive as microtasks.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(document.activeElement).toHaveTextContent("Three");
+  });
+
   it("leaves focus alone when it is already somewhere meaningful", () => {
     const main = rows(["One", "Two"]);
     const [first] = main.querySelectorAll<HTMLElement>(".task-row");

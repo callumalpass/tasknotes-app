@@ -178,9 +178,8 @@ export function preserveRowFocus(row: HTMLElement): () => void {
   const rows = taskRowsIn(region);
   const index = rows.indexOf(row);
   const neighbours = [rows[index + 1], rows[index - 1]].filter(Boolean);
-  return () => {
+  const focusFallback = () => {
     const active = document.activeElement;
-    if (row.isConnected && row.contains(active)) return;
     if (active && active !== document.body && active.isConnected) return;
     const fallback =
       neighbours.find(
@@ -189,6 +188,27 @@ export function preserveRowFocus(row: HTMLElement): () => void {
       taskRowsIn(region)[Math.max(0, index)] ??
       taskRowsIn(region).at(-1);
     if (fallback) focusRow(fallback);
+  };
+  return () => {
+    if (!row.isConnected) {
+      focusFallback();
+      return;
+    }
+    if (row.contains(document.activeElement)) {
+      // The list may not have re-rendered yet: an async refresh can remove
+      // the row after this restore runs, which would drop focus to <body>.
+      // Watch briefly and recover only if that removal loses the focus.
+      const observer = new MutationObserver(() => {
+        if (row.isConnected) return;
+        observer.disconnect();
+        window.clearTimeout(timeout);
+        focusFallback();
+      });
+      const timeout = window.setTimeout(() => observer.disconnect(), 1_000);
+      observer.observe(region, { childList: true, subtree: true });
+      return;
+    }
+    focusFallback();
   };
 }
 
