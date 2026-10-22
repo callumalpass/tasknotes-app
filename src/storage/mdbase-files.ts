@@ -138,6 +138,10 @@ function fromMdbaseFile(file: CollectionFileDescriptor): CollectionFile {
 }
 
 function toMdbaseFile(file: CollectionFile): CollectionFileDescriptor {
+  if (file.modifiedAt === undefined)
+    throw new Error(
+      "File metadata is incomplete. Refresh the collection and try again.",
+    );
   return {
     fileId: file.fileId,
     path: file.path,

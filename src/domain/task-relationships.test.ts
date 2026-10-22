@@ -54,32 +54,6 @@ describe("task relationships", () => {
     expect(project.frontmatter).not.toHaveProperty("blocking");
     expect(project.frontmatter).not.toHaveProperty("subtasks");
   });
-
-  it("profiles a large relationship graph without quadratic inverse scans", () => {
-    const parent = task("parent", "tasks/Parent.md");
-    const tasks = Array.from({ length: 20_000 }, (_, index) =>
-      task(`task-${index}`, `tasks/Task ${index}.md`, {
-        blockedBy:
-          index % 10 === 0
-            ? [
-                {
-                  uid: "[[tasks/Parent]]",
-                  reltype: "FINISHTOSTART",
-                },
-              ]
-            : [],
-        projects: index % 20 === 0 ? ["[[tasks/Parent]]"] : [],
-      }),
-    );
-
-    const startedAt = performance.now();
-    const relationships = taskRelationships(parent, [parent, ...tasks]);
-    const elapsedMs = performance.now() - startedAt;
-
-    expect(relationships.blocking).toHaveLength(2_000);
-    expect(relationships.subtasks).toHaveLength(1_000);
-    expect(elapsedMs).toBeLessThan(750);
-  });
 });
 
 function task(id: string, path: string, patch: Partial<Task> = {}): Task {

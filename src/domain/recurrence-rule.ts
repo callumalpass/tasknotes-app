@@ -50,7 +50,10 @@ const SUPPORTED_FIELDS = new Set([
   "WKST",
 ]);
 
-export function parseRecurrenceRule(value?: string): RecurrenceRuleDraft {
+export function parseRecurrenceRule(
+  value?: string,
+  referenceDate?: string,
+): RecurrenceRuleDraft {
   const normalized = normalizeRule(value);
   const segments = normalized ? normalized.split(";").filter(Boolean) : [];
   let dtstart: string | undefined;
@@ -127,7 +130,10 @@ export function parseRecurrenceRule(value?: string): RecurrenceRuleDraft {
 
   let weekdays: RecurrenceWeekday[] = [];
   let position = 1;
-  let pattern: RecurrencePattern = monthDays.values.length ? "date" : "weekday";
+  // Without BYDAY, a monthly/yearly rule repeats the anchor's calendar date,
+  // not an invented ordinal weekday. Explicit weekday rules remain unchanged.
+  let pattern: RecurrencePattern =
+    monthDays.values.length || !fields.has("BYDAY") ? "date" : "weekday";
 
   if (frequency === "DAILY" || frequency === "WEEKLY") {
     if (byDay.positioned.length) unsupported.add("BYDAY");
@@ -176,14 +182,17 @@ export function parseRecurrenceRule(value?: string): RecurrenceRuleDraft {
   if (count && until)
     invalid.push("Use either an occurrence count or an end date, not both.");
 
+  const start = startDateParts(
+    dtstart ?? recurrenceDtstartValue(referenceDate),
+  );
   return {
     frequency,
     interval,
     weekdays,
     pattern,
-    monthDay: monthDays.values[0] ?? startDateParts(dtstart).day,
+    monthDay: monthDays.values[0] ?? start.day,
     position,
-    month: months.values[0] ?? startDateParts(dtstart).month,
+    month: months.values[0] ?? start.month,
     end: count ? "count" : until ? "until" : "never",
     ...(until ? { until, untilSource: fields.get("UNTIL") } : {}),
     ...(count ? { count } : {}),

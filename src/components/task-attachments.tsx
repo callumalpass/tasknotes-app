@@ -3,6 +3,7 @@ import {
   FileImage,
   ImagePlus,
   LoaderCircle,
+  NotebookPen,
   Unlink,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -144,7 +145,7 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={attachInputId}>
-            <ImagePlus aria-hidden="true" size={17} /> Attach image
+            <ImagePlus aria-hidden="true" size={16} /> Attach image
           </label>
           <input
             accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
@@ -157,7 +158,7 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={insertInputId}>
-            Insert in Notes
+            <NotebookPen aria-hidden="true" size={16} /> Insert in Notes
           </label>
         </div>
       </header>

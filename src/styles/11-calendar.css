@@ -106,6 +106,7 @@
 }
 
 .full-calendar-workspace,
+.full-calendar-main,
 .full-calendar-surface {
   min-width: 0;
 }
@@ -214,6 +215,7 @@
 }
 
 .full-calendar-event-content {
+  --event-tone: var(--ink-muted);
   display: grid;
   flex: 1;
   align-content: center;
@@ -231,12 +233,31 @@
   gap: var(--space-xs);
 }
 
-.full-calendar-event-primary > i {
+/* Marks an elevated priority only; the legend below the grid names it. */
+.full-calendar-event-primary > i,
+.full-calendar-legend i {
   flex: 0 0 auto;
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background: var(--event-tone);
   border-radius: 50%;
+}
+
+.full-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  list-style: none;
+}
+
+.full-calendar-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .full-calendar-event-primary > time {
@@ -793,20 +814,27 @@
     width: min(100%, 1040px);
   }
 
+  /* One date row above the grid or agenda: navigation, range, layout. */
   .full-calendar-commandbar {
-    grid-template-columns: auto minmax(140px, 1fr) auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm) var(--space-lg);
     margin-bottom: 14px;
   }
 
   .full-calendar-commandbar > h2 {
-    grid-column: 2;
+    flex: 1 1 8em;
+    min-width: 0;
     text-align: center;
   }
 
   .full-calendar-modes {
-    grid-row: 1;
-    grid-column: 3;
     display: flex;
+    margin-inline-start: auto;
+  }
+
+  .full-calendar-modes button {
+    padding: 0 10px;
   }
 
   .full-calendar-modes .wide-mode {
@@ -826,6 +854,17 @@
 
   .full-calendar-inspector {
     margin-top: 0;
+  }
+
+  /* Too narrow for a readable grid beside the day list: stack them. */
+  @media (max-width: 1199px) {
+    .full-calendar-workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .full-calendar-inspector {
+      margin-top: 26px;
+    }
   }
 
   .full-calendar-view .fc-daygrid-day-frame {
@@ -995,14 +1034,6 @@
 @media (max-width: 600px) {
   .manual-order-list {
     margin-left: 16px;
-  }
-
-  .task-row-title {
-    display: -webkit-box;
-    overflow: hidden;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
   }
 
   .task-row-meta {

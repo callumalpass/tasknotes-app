@@ -1,0 +1,56 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "mdbase-dev-sdk-0.0.0-63ffdb8b.tgz",
+  "bytes": 890075,
+  "sha256": "4b866f7eb1ab6a10e2b3c66f0be40e0061ddb1437724e15953b7dafe8369c50b",
+  "integrity": "sha512-5koKPfjhW+Gf3fckcGytGvAOSLU4upBfrwW5QvdVgNV8EWDT5bbyg6itl51rlfbu9GbGGS/jB5S2NjvEnoCoOA==",
+  "shasum": "b7319e24a333bd7694a1a6f0ae630b18b20e9b80",
+  "protocol": {
+    "sourceCommit": "4b0fc4a67985ff40622fb40aa5d475b101fe7f17",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129.tgz",
+    "sha256": "dfc5db0daf6700874aa2c6235b86570f1d4e444740d0925bf1f97551cf43d3bd",
+    "originalEmbeddedBytesVerified": true
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "0ca6aa3a71997b5e13bb9c2d8800753c1fa47ea735d7e4792b406d89d75c6615"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "30824f59c94722ec7567ae43015cd968c5844fe5efcb8408eefdc790fe5b2c11"
+    }
+  },
+  "qualification": {
+    "authority": "co0307rel",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "sdkTestsPassed": 1901,
+    "testFilesPassed": 98,
+    "sdkNodeTestsPassed": 17,
+    "existingSkipped": 3,
+    "skippedTestScope": "runtime.wasm absent; no native build performed",
+    "sourceClean": true,
+    "allNonMetadataArchiveMemberBytesVerified": true,
+    "completePackageMetadataSemanticallyEqualDuplicateFree": true,
+    "normalPackMetadataFormatting": "pnpm11 moves scripts last and omits final newline",
+    "archiveFileMembers": 318,
+    "ordinaryTwoFileDependenciesVerified": true,
+    "standaloneStrictPublicTypesAndValueImports": "PASS",
+    "nativeRuntimeCompatibility": "not qualified by this source artifact",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "purpose": "Original release-qualified co0307 SDK archive for the bounded held-channel Bases READ FIFO. Retains original protocol tarball through normal file dependencies; no repack, module copy, alias or metadata rewrite. Runtime, trust, control-plane and SQLite pins are unchanged. Public application entry remains an explicit unavailable shell; this pin does not enable People, native mapped-query support or a new serving instance."
+}

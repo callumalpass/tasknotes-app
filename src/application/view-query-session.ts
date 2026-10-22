@@ -6,6 +6,10 @@ import type {
   TaskViewSourceDocument,
 } from "../domain/view";
 
+// Ordering only: results, source identities and cancellation belong to each
+// original session. Replacement sessions share the same repository read slot.
+const repositoryReads = new WeakMap<TaskRepository, Promise<void>>();
+
 export function appendViewPage(
   previous: TaskViewExecution | null,
   page: TaskViewExecution,
@@ -37,7 +41,8 @@ export class ViewQuerySession {
     private readonly observer: {
       result(execution: TaskViewExecution): void;
       error(reason: unknown): void;
-      pending(pending: boolean): void;
+      /** `start` re-queries the view; `page` loads further rows on request. */
+      pending(pending: boolean, phase: "start" | "page"): void;
     },
     private readonly minimumRows = 0,
   ) {}
@@ -45,9 +50,32 @@ export class ViewQuerySession {
     return this.controller.signal.aborted ? null : this.execution;
   }
   readSource() {
-    return (this.source ??= this.repository.readViewSource(
-      this.view.source.path,
+    return (this.source ??= this.read(() =>
+      this.repository.readViewSource(this.view.source.path),
     ));
+  }
+  /** Execution may itself read the source. Sequence the optional UI metadata
+   * read with it, rather than competing for a provider's single native slot.
+   * A replacement also waits for an old session's outstanding metadata read.
+   * Per session, source reads are memoized and execution joins running.
+   */
+  private read<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = (
+      repositoryReads.get(this.repository) ?? Promise.resolve()
+    ).then(async () => {
+      this.controller.signal.throwIfAborted();
+      const result = await operation();
+      this.controller.signal.throwIfAborted();
+      return result;
+    });
+    repositoryReads.set(
+      this.repository,
+      pending.then(
+        () => undefined,
+        () => undefined,
+      ),
+    );
+    return pending;
   }
   private get cachedRows() {
     return this.cached?.rows.length ?? 0;
@@ -60,7 +88,7 @@ export class ViewQuerySession {
     );
   }
   start() {
-    return this.run(async () => {
+    return this.run("start", async () => {
       this.controller.signal.throwIfAborted();
       const previousRows = this.execution?.rows.length ?? 0;
       await this.iterator?.return?.().catch(() => undefined);
@@ -85,7 +113,8 @@ export class ViewQuerySession {
         .catch(() => undefined);
       this.controller.signal.throwIfAborted();
       if (
-        this.view.presentation?.type === "tasknotes.task-list" &&
+        (this.view.presentation?.type === "tasknotes.task-list" ||
+          this.view.presentation?.type === "tasknotes.kanban") &&
         this.repository.iterateView
       ) {
         const pages = this.repository.iterateView(this.view, {
@@ -114,7 +143,7 @@ export class ViewQuerySession {
     if (this.running) await this.running;
     if (this.controller.signal.aborted) return false;
     if (this.canLoadMore)
-      await this.run(async () => {
+      await this.run("page", async () => {
         while (this.execution?.hasMore) {
           await this.advance();
           this.observer.result(this.execution!);
@@ -129,7 +158,7 @@ export class ViewQuerySession {
   loadMore() {
     if (this.running) return this.running;
     if (!this.canLoadMore) return Promise.resolve();
-    return this.run(async () => {
+    return this.run("page", async () => {
       await this.advance();
       this.observer.result(this.execution!);
     });
@@ -152,12 +181,14 @@ export class ViewQuerySession {
       if (!this.execution.hasMore) await this.iterator!.return?.();
     }
   }
-  private run(operation: () => Promise<void>): Promise<void> {
+  private run(
+    phase: "start" | "page",
+    operation: () => Promise<void>,
+  ): Promise<void> {
     if (this.running) return this.running;
     if (this.controller.signal.aborted) return Promise.resolve();
-    this.observer.pending(true);
-    const promise = Promise.resolve()
-      .then(operation)
+    this.observer.pending(true, phase);
+    const promise = this.read(operation)
       .catch((reason) => {
         if (this.controller.signal.aborted) return;
         if (
@@ -178,7 +209,8 @@ export class ViewQuerySession {
       .finally(() => {
         this.acceptingCached = false;
         this.running = null;
-        if (!this.controller.signal.aborted) this.observer.pending(false);
+        if (!this.controller.signal.aborted)
+          this.observer.pending(false, phase);
       });
     this.running = promise;
     return promise;

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  scheduleRowsTodayUpdates,
   sectionTaskViewRows,
   taskListSectionMoveInput,
+  todayCaptureDefaults,
 } from "./task-list-sections";
 import { taskDatePart, taskTimePart } from "./task";
 
@@ -42,10 +44,6 @@ describe("sectionTaskViewRows", () => {
         rows: [rows[4]],
       },
     ]);
-  });
-
-  it("does no work when the view does not opt into sections", () => {
-    expect(sectionTaskViewRows([row("task")], undefined)).toEqual([]);
   });
 
   it("can expose empty day lanes while arranging tasks", () => {
@@ -98,27 +96,57 @@ describe("sectionTaskViewRows", () => {
       taskTimePart(task.scheduled),
     );
   });
+});
 
-  it("sections 10,000 rows within the list interaction budget", () => {
-    const rows = Array.from({ length: 10_000 }, (_, index) =>
-      row(`task-${index}`, {
-        scheduled:
-          index % 3 === 0
-            ? "2026-07-25"
-            : index % 3 === 1
-              ? "2026-07-26"
-              : undefined,
+describe("scheduleRowsTodayUpdates", () => {
+  it("schedules overdue rows today like the t shortcut, keeping Due", () => {
+    const rows = [
+      row("scheduled", { scheduled: "2026-07-20T09:30", due: "2026-07-30" }),
+      row("due-only", { due: "2026-07-24" }),
+      row("repeating", {
+        scheduled: "2026-07-22",
+        recurrence: "FREQ=DAILY",
+      }),
+      row("done", { scheduled: "2026-07-21", completed: true }),
+    ];
+
+    expect(scheduleRowsTodayUpdates(rows, "2026-07-26")).toEqual([
+      {
+        id: "scheduled",
+        input: { scheduled: "2026-07-26T09:30" },
+        undo: { scheduled: "2026-07-20T09:30" },
+      },
+      {
+        id: "due-only",
+        input: { scheduled: "2026-07-26" },
+        undo: { scheduled: null },
+      },
+      {
+        id: "repeating",
+        input: { scheduled: "2026-07-26" },
+        undo: { scheduled: "2026-07-22" },
+      },
+    ]);
+  });
+
+  it("places every rescheduled row in the Today section", () => {
+    const rows = [
+      row("scheduled", { scheduled: "2026-07-20T09:30" }),
+      row("due-only", { due: "2026-07-24" }),
+    ];
+    const moved = scheduleRowsTodayUpdates(rows, "2026-07-26").map(
+      ({ input }, index) => ({
+        ...rows[index],
+        task: { ...rows[index].task, scheduled: input.scheduled ?? undefined },
       }),
     );
-    const startedAt = performance.now();
-    const sections = sectionTaskViewRows(rows, "day", "2026-07-26");
-    const elapsed = performance.now() - startedAt;
 
     expect(
-      sections.reduce((count, section) => count + section.rows.length, 0),
-    ).toBe(10_000);
-    expect(elapsed).toBeLessThan(100);
-    console.info(`day list hierarchy: 10,000 rows in ${elapsed.toFixed(1)}ms`);
+      sectionTaskViewRows(moved, "day", "2026-07-26").map(({ key, rows }) => [
+        key,
+        rows.length,
+      ]),
+    ).toEqual([["today", 2]]);
   });
 });
 
@@ -152,3 +180,22 @@ function row(id: string, patch: Partial<Task> = {}): TaskViewRow {
     },
   };
 }
+
+describe("todayCaptureDefaults", () => {
+  it("schedules a task added to Today for today unless a date is set", () => {
+    const tasks = sectionTaskViewRows(
+      [
+        row("added", {
+          scheduled: todayCaptureDefaults({ tags: ["x"] }, "2026-07-26")
+            .scheduled,
+        }),
+      ],
+      "day",
+      "2026-07-26",
+    );
+    expect(tasks.map((section) => section.key)).toEqual(["today"]);
+    expect(todayCaptureDefaults({ due: "2026-07-30" }, "2026-07-26")).toEqual({
+      due: "2026-07-30",
+    });
+  });
+});

@@ -204,9 +204,12 @@ it("offers an installed waiting worker without forcing activation and respects L
   expect(screen.queryByRole("status")).toBeNull();
 });
 
-it("does not repeat a waiting-worker prompt after this tab explicitly reloaded", async () => {
+it("activates the installed shell only after saving and waits for its controller before reloading", async () => {
   sessionStorage.setItem("tasknotes-update-reload", "1");
-  const waiting = Object.assign(new EventTarget(), { state: "installed" });
+  const waiting = Object.assign(new EventTarget(), {
+    state: "installed",
+    postMessage: vi.fn(),
+  });
   const registration = Object.assign(new EventTarget(), {
     waiting,
     installing: null,
@@ -217,8 +220,19 @@ it("does not repeat a waiting-worker prompt after this tab explicitly reloaded",
   }));
   const f = await fixture();
   await act(async () => {});
-  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.getByRole("status")).toBeVisible();
+  expect(waiting.postMessage).not.toHaveBeenCalled();
+  await act(async () =>
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save and reload TaskNotes" }),
+    ),
+  );
+  expect(f.save).toHaveBeenCalledOnce();
+  expect(waiting.postMessage).toHaveBeenCalledWith({
+    type: "mdbase-shell:activate",
+  });
+  expect(f.reload).not.toHaveBeenCalled();
   await f.activate(waiting);
-  expect(screen.queryByRole("status")).toBeNull();
-  expect(sessionStorage.getItem("tasknotes-update-reload")).toBeNull();
+  expect(f.reload).toHaveBeenCalledOnce();
+  expect(screen.getByRole("textbox")).toHaveValue("Keep this draft");
 });

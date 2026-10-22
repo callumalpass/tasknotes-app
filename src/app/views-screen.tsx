@@ -15,7 +15,7 @@ import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty } from "../domain/default-view-source";
 import { ProjectPropertyOffer } from "./views/project-property-offer";
-import { valueKey } from "./views/kanban-columns";
+import { kanbanRowValue, valueKey } from "./views/kanban-columns";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -23,6 +23,14 @@ import { ViewExecutionErrorNotice } from "../components/view-execution-error-not
 import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
 import { todayString } from "../domain/task";
+import {
+  scheduleRowsTodayUpdates,
+  sectionTaskViewRows,
+  todayCaptureDefaults,
+} from "../domain/task-list-sections";
+import { summarizeToday } from "../domain/today-summary";
+import { TodayClear, TodayFirstRun } from "./today-clear";
+import { CaptureFab } from "../components/capture-fab";
 import {
   appendManualOrderRank,
   disableManualOrderSort,
@@ -41,6 +49,7 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../domain/view-values";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
 import { readViewDraft, updateViewDocument } from "../domain/view-document";
@@ -61,7 +70,16 @@ import {
   type OptimisticBoardMove,
   type OptimisticListMove,
   type OptimisticManualRank,
+  executionWithDepartures,
+  type CompletionDeparture,
 } from "./optimistic-view-reconciliation";
+import {
+  COMPLETION_FOLD_MS,
+  COMPLETION_LINGER_MS,
+  TaskCompletionHoldsContext,
+  TaskDeparturesContext,
+  prefersReducedMotion,
+} from "../components/task-completion-motion";
 import { PlannerViewHandoff } from "./views/planner-view-handoff";
 import { usePlannerViewLink } from "./use-planner-view-link";
 import { CalendarViewPresentation } from "./views/calendar-view-presentation";
@@ -81,6 +99,9 @@ import type {
 } from "../domain/view";
 import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
+import { StarterViewsOffer } from "./views/starter-views-offer";
+import { useStableCallback, useStableView } from "./use-stable-identity";
+import { hasTaskNotesStarterViews } from "../application/ensure-default-view-source";
 
 type ViewEditorRequest = {
   view?: TaskView;
@@ -94,6 +115,7 @@ export function ViewsScreen({
   documents,
   views,
   error: viewsError,
+  creationRequest = 0,
   navigationViewKeys,
   operational = false,
   onBack,
@@ -111,6 +133,8 @@ export function ViewsScreen({
   documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
   error?: string;
+  /** Explicit shell action opens the existing editor; discovery never writes. */
+  creationRequest?: number;
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
@@ -132,13 +156,69 @@ export function ViewsScreen({
     configuration,
     pendingDeletion,
   } = useRepository();
-  const toggleRow = (task: TaskSummary, occurrenceDate?: string) =>
-    setTaskCompletion({
-      id: task.id,
-      occurrenceDate,
-      completed: !taskCompletion(task, occurrenceDate),
-    });
+  // A completed row that leaves the results is held where it was, so it can
+  // linger and fold away; rows that stay (or move) are left to the result.
+  const [departures, setDepartures] = useState<
+    ReadonlyMap<string, CompletionDeparture>
+  >(() => new Map());
+  const presentedRef = useRef<TaskViewExecution | null>(null);
+  const toggleRow = async (task: TaskSummary, occurrenceDate?: string) => {
+    const completed = !taskCompletion(task, occurrenceDate);
+    const shown = presentedRef.current;
+    const index =
+      completed && shown && !prefersReducedMotion()
+        ? shown.rows.findIndex((row) => row.task.id === task.id)
+        : -1;
+    const departure: CompletionDeparture | undefined =
+      shown && index >= 0
+        ? {
+            viewKey: shown.view.key,
+            row: shown.rows[index]!,
+            index,
+            groups: shown.groups,
+            acceptedAt: null,
+          }
+        : undefined;
+    const settle = (next?: CompletionDeparture) =>
+      setDepartures((current) => {
+        if (current.get(task.id)?.row !== departure?.row) return current;
+        const updated = new Map(current);
+        if (next) updated.set(task.id, next);
+        else updated.delete(task.id);
+        return updated;
+      });
+    if (departure)
+      setDepartures((current) => new Map(current).set(task.id, departure));
+    try {
+      const saved = await setTaskCompletion({
+        id: task.id,
+        occurrenceDate,
+        completed,
+      });
+      if (departure) {
+        settle({ ...departure, acceptedAt: Date.now() });
+        window.setTimeout(
+          () => settle(),
+          COMPLETION_LINGER_MS + COMPLETION_FOLD_MS + 40,
+        );
+      }
+      return saved;
+    } catch (reason) {
+      if (departure) settle();
+      throw reason;
+    }
+  };
+  const openTask = useStableCallback(onOpenTask);
+  const toggleTask = useStableCallback(
+    (task: TaskSummary, occurrenceDate?: string) =>
+      void toggleRow(task, occurrenceDate),
+  );
   const [editing, setEditing] = useState<ViewEditorRequest | null>(null);
+  const [handledCreationRequest, setHandledCreationRequest] = useState(0);
+  if (creationRequest !== handledCreationRequest) {
+    setHandledCreationRequest(creationRequest);
+    if (creationRequest > 0) setEditing({});
+  }
   const [arrangingViewKey, setArrangingViewKey] = useState<string>();
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false);
   const closeMobileCapture = useCallback(() => setMobileCaptureOpen(false), []);
@@ -151,6 +231,13 @@ export function ViewsScreen({
   const [listMoves, setListMoves] = useState<Map<string, OptimisticListMove>>(
     () => new Map(),
   );
+  const [rescheduled, setRescheduled] = useState<{
+    viewKey: string;
+    count: number;
+    undo: { id: string; input: UpdateTaskInput }[];
+  } | null>(null);
+  const [reschedulePending, setReschedulePending] = useState(false);
+  const rescheduleUndoRef = useRef<HTMLButtonElement | null>(null);
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
@@ -215,20 +302,33 @@ export function ViewsScreen({
     return () => window.clearTimeout(timeout);
   }, [hasWritableViews]);
 
-  const selected = views?.find((view) => view.key === viewKey);
+  const selected = useStableView(views?.find((view) => view.key === viewKey));
   const captureSession = captureSessionFor(
     repository,
     `view:${viewKey ?? "catalog"}`,
   );
   const plannerHref = usePlannerViewLink(repository, selected);
+  const todayScreen =
+    selected?.presentation?.options.sections === "day" &&
+    (selected.id === "today" || selected.name === "Today");
   const needsIdentityTasks =
+    todayScreen ||
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar" ||
     selected?.presentation?.type === "tasknotes.projects";
-  const { tasks: identityTasks } = useTasks({
+  const {
+    tasks: identityTasks,
+    loading: identityTasksLoading,
+    error: identityTasksError,
+  } = useTasks({
     status: "all",
     limit: needsIdentityTasks ? 50_000 : 0,
   });
+  const today = todayString();
+  const todaySummary = useMemo(
+    () => (todayScreen ? summarizeToday(identityTasks, today) : null),
+    [identityTasks, today, todayScreen],
+  );
   const selectedKey = selected?.key;
   const selectedKeyRef = useRef(selectedKey);
   useEffect(() => {
@@ -265,6 +365,7 @@ export function ViewsScreen({
     executionError,
     setExecutionError,
     refreshingExecution,
+    revalidatingExecution,
     paging,
   } = useViewExecution(
     repository,
@@ -296,7 +397,7 @@ export function ViewsScreen({
         if (!active) return;
         setSourceSort({
           key: selected.key,
-          sort: readViewDraft(source, selected.id).sort,
+          sort: readViewDraft(source, selected.id, selected.declaration).sort,
         });
         setCreationPlan({
           key: selected.key,
@@ -338,7 +439,7 @@ export function ViewsScreen({
     selectedManualOrderOperations.map(({ taskId }) => taskId),
   );
   const manualOrderPendingForSelected = manualOrderPendingTaskIds.size > 0;
-  const presentedExecution = useMemo(() => {
+  const { execution: presentedExecution, departing } = useMemo(() => {
     const ranked =
       visibleExecution && manualOrder
         ? executionWithManualRanks(
@@ -349,26 +450,92 @@ export function ViewsScreen({
             configuration.fieldMapping.sortOrder,
           )
         : visibleExecution;
-    return ranked && pendingDeletion
-      ? executionWithoutTask(ranked, pendingDeletion.id)
-      : ranked;
+    const held =
+      ranked && selected
+        ? executionWithDepartures(ranked, departures, selected.key)
+        : { execution: ranked, departing: new Map<string, number | null>() };
+    return {
+      execution:
+        held.execution && pendingDeletion
+          ? executionWithoutTask(held.execution, pendingDeletion.id)
+          : held.execution,
+      departing: held.departing,
+    };
   }, [
     configuration.fieldMapping.sortOrder,
+    departures,
     manualOrder,
     manualRanks,
     pendingDeletion,
-    selected?.key,
+    selected,
     visibleExecution,
   ]);
+  const todayProgress = useMemo(() => {
+    if (
+      !todayScreen ||
+      !todaySummary?.completedToday ||
+      identityTasksLoading ||
+      !presentedExecution ||
+      presentedExecution.hasMore
+    )
+      return null;
+    // Open rows the Today section shows, including optimistic moves into it.
+    const todayLane = sectionTaskViewRows(presentedExecution.rows, "day", today)
+      .find(({ key }) => key === "today")
+      ?.rows.map(({ task }) => task.id);
+    const open = presentedExecution.rows.filter(({ task }) => {
+      if (task.completed) return false;
+      const move = listMoves.get(task.id);
+      return move?.viewKey === selected?.key
+        ? move.laneKey === "section:today"
+        : todayLane?.includes(task.id);
+    }).length;
+    const done = todaySummary.completedToday;
+    return { done, total: done + open };
+  }, [
+    identityTasksLoading,
+    listMoves,
+    presentedExecution,
+    selected?.key,
+    today,
+    todayScreen,
+    todaySummary,
+  ]);
+  useEffect(() => {
+    if (!rescheduled) return;
+    const timeout = window.setTimeout(() => setRescheduled(null), 30_000);
+    return () => window.clearTimeout(timeout);
+  }, [rescheduled]);
+  const upcomingView = views?.find(
+    (view) => view.id === "upcoming" && view.key !== selected?.key,
+  );
+  useEffect(() => {
+    presentedRef.current = presentedExecution;
+  });
+  const holds = useMemo(
+    () =>
+      new Map(
+        [...departures]
+          .filter(([, departure]) => departure.viewKey === selected?.key)
+          .map(([taskId, departure]) => [taskId, departure.acceptedAt]),
+      ),
+    [departures, selected?.key],
+  );
   const currentExecutionRefreshing =
     refreshingExecution ===
     (selected ? `${selected.key}:${selected.source.revision}` : null);
   const error =
     executionError?.key === selected?.key ? executionError?.reason : viewsError;
+  // A background re-query keeps controls as they are on screen, but manual
+  // order still waits for it before planning a move from the shown ranks.
+  const currentExecutionRevalidating =
+    revalidatingExecution ===
+    (selected ? `${selected.key}:${selected.source.revision}` : null);
   const orderUnavailable =
     Boolean(error) ||
     currentExecutionRefreshing ||
     !canReorderExecution(presentedExecution);
+  const reorderBlocked = orderUnavailable || currentExecutionRevalidating;
   const currentViewActionError =
     viewActionError && viewActionError.viewKey === selected?.key
       ? viewActionError.message
@@ -405,7 +572,7 @@ export function ViewsScreen({
           manualOrder.direction,
         )
       : undefined;
-  const captureDefaults =
+  const viewCaptureDefaults =
     selected?.presentation?.type === "tasknotes.planner" ||
     selected?.presentation?.options.create === false
       ? null
@@ -427,6 +594,10 @@ export function ViewsScreen({
               ),
             )
           : null;
+  const captureDefaults =
+    viewCaptureDefaults && todayScreen
+      ? todayCaptureDefaults(viewCaptureDefaults, today)
+      : viewCaptureDefaults;
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
     selected?.presentation?.type === "tasknotes.planner"
@@ -448,7 +619,7 @@ export function ViewsScreen({
     setViewActionError(null);
     try {
       const source = await repository.readViewSource(view.source.path);
-      const draft = readViewDraft(source, view.id);
+      const draft = readViewDraft(source, view.id, view.declaration);
       const defaultProperty =
         draft.dialect === "obsidian-bases"
           ? basesProperty(sortOrderField)
@@ -479,7 +650,7 @@ export function ViewsScreen({
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
   ): Promise<boolean> {
-    if (!selected || !manualOrder || orderUnavailable) return false;
+    if (!selected || !manualOrder || reorderBlocked) return false;
     const plan = planManualOrder(
       rows.map(({ task }) => task),
       dragged.task,
@@ -518,6 +689,7 @@ export function ViewsScreen({
     selectionFeedback();
 
     const operation = manualOrderMutationQueue.current.then(async () => {
+      let accepted = false;
       try {
         await updateTasks([
           ...plan.writes
@@ -534,6 +706,7 @@ export function ViewsScreen({
             },
           },
         ]);
+        accepted = true;
         const refreshed = await repository.executeView(view);
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);
@@ -542,6 +715,10 @@ export function ViewsScreen({
         }
         return true;
       } catch (reason) {
+        // Local acceptance is not a failed move, even if its subsequent READ
+        // fails. Retain the accepted overlay; ordinary change notifications
+        // refresh/reconcile it, and the query session owns actual stale errors.
+        if (accepted) return true;
         if (selectedKeyRef.current === view.key) {
           setViewActionError({
             viewKey: view.key,
@@ -594,7 +771,7 @@ export function ViewsScreen({
     const current =
       optimistic?.viewKey === selected.key && optimistic.property === property
         ? optimistic.value
-        : (row.values[property] ?? row.task.frontmatter[property] ?? null);
+        : kanbanRowValue(row, property);
     const changesColumn = valueKey(current) !== valueKey(value);
     if (!changesColumn && !order) return;
     const input = changesColumn
@@ -691,13 +868,10 @@ export function ViewsScreen({
       setExecution(refreshed);
       setExecutionError(null);
       reconcileOptimisticExecution(refreshed, selected.key);
-    } catch (reason) {
-      if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
-      if (selectedKeyRef.current === selected.key)
-        setViewActionError({
-          viewKey: selected.key,
-          message: `The move was saved, but this view could not refresh. ${message(reason)}`,
-        });
+    } catch {
+      // The mutation was accepted. Keep its overlay and let the normal query
+      // refresh on the next data notification, without an action-failure claim.
+      // Query-session stale/read failures retain their own truthful notice.
     } finally {
       clearBoardMovePending(row.task.id, sequence);
     }
@@ -771,6 +945,106 @@ export function ViewsScreen({
         next.delete(row.task.id);
         return next;
       });
+  }
+
+  /**
+   * Move a set of rows to another day section as one batch: rows move
+   * optimistically, the repository writes them together, and the view is
+   * re-read so the overlay reconciles exactly as single moves do.
+   */
+  async function moveRowsToSection(
+    updates: readonly { id: string; input: UpdateTaskInput }[],
+    laneKey: string,
+  ): Promise<boolean> {
+    if (!selected || !updates.length) return false;
+    const view = selected;
+    const sequences = new Map(
+      updates.map(({ id }) => {
+        const sequence = (viewMutationSequence.current.get(id) ?? 0) + 1;
+        viewMutationSequence.current.set(id, sequence);
+        return [id, sequence] as const;
+      }),
+    );
+    setViewActionError(null);
+    setListMoves((moves) => {
+      const next = new Map(moves);
+      for (const { id, input } of updates)
+        next.set(id, {
+          viewKey: view.key,
+          laneKey,
+          input,
+          sequence: sequences.get(id)!,
+        });
+      return next;
+    });
+    selectionFeedback();
+    try {
+      await updateTasks(updates);
+    } catch (reason) {
+      setListMoves((moves) => {
+        const next = new Map(moves);
+        for (const [id, sequence] of sequences)
+          if (next.get(id)?.sequence === sequence) next.delete(id);
+        return next;
+      });
+      if (selectedKeyRef.current === view.key)
+        setViewActionError({
+          viewKey: view.key,
+          message: `Could not reschedule ${updates.length === 1 ? "the task" : `${updates.length} tasks`}. ${message(reason)}`,
+        });
+      return false;
+    }
+    try {
+      const refreshed = await repository.executeView(view);
+      if (selectedKeyRef.current === view.key) {
+        setExecution(refreshed);
+        setExecutionError(null);
+        reconcileOptimisticExecution(refreshed, view.key);
+      }
+    } catch {
+      // Accepted writes keep their overlay until the next refresh reconciles.
+    }
+    return true;
+  }
+
+  async function moveOverdueToToday(rows: readonly TaskViewRow[]) {
+    if (!selected || reschedulePending) return;
+    const view = selected;
+    const updates = scheduleRowsTodayUpdates(rows);
+    if (!updates.length) return;
+    setReschedulePending(true);
+    setRescheduled(null);
+    // The Overdue heading leaves with its rows; keep focus in the page.
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+    try {
+      const saved = await moveRowsToSection(
+        updates.map(({ id, input }) => ({ id, input })),
+        "section:today",
+      );
+      if (saved && selectedKeyRef.current === view.key) {
+        setRescheduled({
+          viewKey: view.key,
+          count: updates.length,
+          undo: updates.map(({ id, undo }) => ({ id, input: undo })),
+        });
+        window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
+      }
+    } finally {
+      setReschedulePending(false);
+    }
+  }
+
+  async function undoReschedule() {
+    if (!rescheduled || reschedulePending) return;
+    const { undo } = rescheduled;
+    setRescheduled(null);
+    setReschedulePending(true);
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+    try {
+      await moveRowsToSection(undo, "section:overdue");
+    } finally {
+      setReschedulePending(false);
+    }
   }
 
   async function createTaskForView(
@@ -875,6 +1149,9 @@ export function ViewsScreen({
               recovery="Retry by reopening Manage views or refreshing the collection."
             />
           ) : null}
+          {documents && !hasTaskNotesStarterViews(documents) ? (
+            <StarterViewsOffer onAdded={onViewsChanged} />
+          ) : null}
           {!documents || !views ? (
             <LoadingRows count={4} />
           ) : (
@@ -907,7 +1184,7 @@ export function ViewsScreen({
   }
 
   return (
-    <>
+    <CompletionMotion holds={holds} departing={departing}>
       <section
         className={`screen views-screen view-detail${
           captureDefaults &&
@@ -925,6 +1202,12 @@ export function ViewsScreen({
           ) : null}
           <div>
             <h1>{selected?.name ?? "Saved view"}</h1>
+            {selected ? (
+              <RecordWriteNotice
+                repository={repository}
+                target={{ kind: "source", path: selected.source.path }}
+              />
+            ) : null}
             {selected?.name === "Today" ? (
               <p className="view-date">
                 {new Intl.DateTimeFormat(undefined, {
@@ -932,6 +1215,12 @@ export function ViewsScreen({
                   month: "long",
                   day: "numeric",
                 }).format(new Date())}
+                {todayProgress ? (
+                  <span className="today-progress">
+                    {" "}
+                    · {todayProgress.done} of {todayProgress.total} done
+                  </span>
+                ) : null}
               </p>
             ) : null}
             {visibleExecution && currentExecutionRefreshing ? (
@@ -1009,6 +1298,11 @@ export function ViewsScreen({
         ) : null}
         {selected && !editing ? (
           <ProjectPropertyOffer
+            hasProjects={Boolean(
+              presentedExecution?.rows.some(
+                ({ task }) => task.projects.length > 0,
+              ),
+            )}
             scope={sectionScope}
             view={selected}
             onChanged={onViewsChanged}
@@ -1050,7 +1344,7 @@ export function ViewsScreen({
           <OperationErrorNotice
             action="The view change"
             message={currentViewActionError}
-            recovery="Nothing else changed. Try again."
+            recovery="Review the task before making another change."
           />
         ) : null}
         {editing ? (
@@ -1070,15 +1364,11 @@ export function ViewsScreen({
         ) : null}
         {captureDefaults ? (
           <>
-            <button
-              className="global-capture-fab view-context-capture"
-              type="button"
+            <CaptureFab
+              className="view-context-capture"
               aria-label="New task"
               onClick={() => setMobileCaptureOpen(true)}
-            >
-              <Plus aria-hidden="true" size={24} />
-              <span>Add task</span>
-            </button>
+            />
             <GlobalTaskCapture
               createTask={createTaskForView}
               session={captureSession}
@@ -1137,8 +1427,8 @@ export function ViewsScreen({
               if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
           />
         ) : presentedExecution.view.presentation?.type ===
           "tasknotes.kanban" ? (
@@ -1173,8 +1463,8 @@ export function ViewsScreen({
             }
             onCreateInColumn={createInBoardColumn}
             canCreateInColumn={canCreateInBoardColumn}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
           />
         ) : presentedExecution.view.presentation?.type ===
             "tasknotes.calendar" ||
@@ -1212,8 +1502,8 @@ export function ViewsScreen({
               if (window.matchMedia?.("(max-width: 839px)").matches)
                 setMobileCaptureOpen(true);
             }}
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
             onUpdate={calendarMutations.updateTask}
             onUpdateOccurrence={calendarMutations.updateOccurrence}
             onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
@@ -1245,10 +1535,80 @@ export function ViewsScreen({
                 placement,
               )
             }
-            onOpen={onOpenTask}
-            onToggle={toggleRow}
+            onOpen={openTask}
+            onToggle={toggleTask}
+            sectionAction={(lane) =>
+              lane.key === "section:overdue" && lane.rows.length ? (
+                <button
+                  className="section-heading-action"
+                  type="button"
+                  aria-label={`Move all to today, ${lane.rows.length} overdue ${lane.rows.length === 1 ? "task" : "tasks"}`}
+                  disabled={reschedulePending}
+                  onClick={() => void moveOverdueToToday(lane.rows)}
+                >
+                  Move all to today
+                </button>
+              ) : null
+            }
+            emptyState={
+              todayScreen &&
+              !presentedExecution.stale &&
+              !identityTasksLoading &&
+              !identityTasksError &&
+              !identityTasks.length ? (
+                <TodayFirstRun />
+              ) : todayScreen &&
+                !presentedExecution.stale &&
+                identityTasksLoading ? (
+                <div className="today-clear" aria-busy="true" />
+              ) : todayScreen && !presentedExecution.stale ? (
+                <TodayClear
+                  loading={identityTasksLoading}
+                  next={todaySummary?.next}
+                  onOpenTask={onOpenTask}
+                  onOpenUpcoming={
+                    upcomingView ? () => onOpenView(upcomingView) : undefined
+                  }
+                />
+              ) : undefined
+            }
+            daySectionsClear={
+              todayScreen ? (
+                <TodayClear
+                  loading={identityTasksLoading}
+                  next={todaySummary?.next}
+                  onOpenTask={onOpenTask}
+                  onOpenUpcoming={
+                    upcomingView ? () => onOpenView(upcomingView) : undefined
+                  }
+                />
+              ) : undefined
+            }
           />
         )}
+        {rescheduled && rescheduled.viewKey === selected?.key ? (
+          <>
+            <p aria-atomic="true" className="visually-hidden" role="status">
+              Moved {rescheduled.count}{" "}
+              {rescheduled.count === 1 ? "task" : "tasks"} to today.
+            </p>
+            {!pendingDeletion ? (
+              <div className="undo-toast is-above-mobile-controls">
+                <span>
+                  Moved {rescheduled.count}{" "}
+                  {rescheduled.count === 1 ? "task" : "tasks"} to today
+                </span>
+                <button
+                  ref={rescheduleUndoRef}
+                  type="button"
+                  onClick={() => void undoReschedule()}
+                >
+                  Undo
+                </button>
+              </div>
+            ) : null}
+          </>
+        ) : null}
         {paging.key === selected?.key && paging.used && !error ? (
           <button
             className="text-action view-pagination-action"
@@ -1267,7 +1627,26 @@ export function ViewsScreen({
           </button>
         ) : null}
       </section>
-    </>
+    </CompletionMotion>
+  );
+}
+
+/** Completion holds for the selected view, for its presentations' rows. */
+function CompletionMotion({
+  holds,
+  departing,
+  children,
+}: {
+  holds: ReadonlyMap<string, number | null>;
+  departing: ReadonlyMap<string, number | null>;
+  children: React.ReactNode;
+}) {
+  return (
+    <TaskCompletionHoldsContext.Provider value={holds}>
+      <TaskDeparturesContext.Provider value={departing}>
+        {children}
+      </TaskDeparturesContext.Provider>
+    </TaskCompletionHoldsContext.Provider>
   );
 }
 

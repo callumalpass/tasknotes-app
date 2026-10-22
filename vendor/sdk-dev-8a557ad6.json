@@ -1,0 +1,57 @@
+{
+  "repository": "mdbase-dev/mdbase-next",
+  "sourceCommit": "8a557ad68290e04146e456df94c4946d6f033ea7",
+  "sourceIncludesPrs": [819, 827, 832, 837],
+  "includedCommits": {
+    "basesReadFifo": "63ffdb8bab24045861dbb726d3ce9a31d2179045",
+    "enrollmentReconciliation": "563dc868fd5847abe272bd8cead1b044cd46fbe0"
+  },
+  "package": "@mdbase-dev/sdk",
+  "version": "0.0.0",
+  "artifact": "sdk-dev-8a557ad6.tgz",
+  "bytes": 3356711,
+  "sha256": "773126b8414b0d2b9b4afd3ec5b94b32b1b5fef51707a01e9db0ea324fbcfdae",
+  "integrity": "sha512-dsEQQtqBl2ldASBamlGpynsPEC4qHSbgo8vjRR/H2svC1yqsmR3mPbILuuN6On59A+z07c7hrQL02MQ5K5ayAA==",
+  "shasum": "934dbd23318635a7c908e099507c8eb45bf6f570",
+  "protocol": {
+    "sourceCommit": "d765e675c3da29fe1693deab53c4c2a922bb86f1",
+    "artifact": "mdbase-dev-connect-protocol-0.1.0-beta.129-d765e675c3da.tgz",
+    "bytes": 70702,
+    "sha256": "2769616d8ba1a9cbb3dd689fa1ca0b1e2b42e5442634635f2cd4a87f5ec9020f",
+    "originalEmbeddedBytesVerified": true
+  },
+  "native": {
+    "available": true,
+    "meaning": "Producer packaging flag: original native assets included, not live runtime readiness",
+    "sourceCommit": "515a7f8b17ebfb9d2d059eeda418fdc0953b5613",
+    "member": "package/dist/native/runtime-lab.wasm",
+    "bytes": 3427675,
+    "sha256": "6c4ea51534b785c5165bfb671d40116535b1a60fafad035bd384708ea288de83",
+    "sqliteSha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752"
+  },
+  "browserAssets": {
+    "mdbase-sdk.js": {
+      "sha256": "60a38f98c0f0393af6d34923e4c61d1a8c26ef69bbc6eeecf2ddd88e2d4cc89a"
+    },
+    "mdbase-sdk.min.js": {
+      "sha256": "443a44ecd855207adbc00609bd632f0b0fcb958b955a9552beeb347892b2f9b5"
+    }
+  },
+  "qualification": {
+    "authority": "co0425/co0426",
+    "label": "dev intake, not release-qualified",
+    "archiveFileMembers": 362,
+    "normalPackOnceNoRepack": true,
+    "producerFullSdkSuite": "skipped for light dev intake",
+    "nativeRuntimeCompatibility": "not qualified by packaging availability",
+    "physicalNativeDrain": false,
+    "browserAcceptance": false
+  },
+  "consumerEntries": [
+    "@mdbase-dev/sdk",
+    "@mdbase-dev/sdk/account",
+    "@mdbase-dev/sdk/app-host",
+    "@mdbase-dev/sdk/app-storage"
+  ],
+  "purpose": "Concrete original SDK dev cut with its original protocol and native assets. Retains SDK563 original enrollment recovery and Bases FIFO. Public MdbaseConnect remains an unavailable shell; packaging availability does not activate it, People or mapped-query support. Existing app D70 runtime/trust/CP/SQLite pins and serving remain unchanged. Never follow mutable sdk-dev-latest."
+}

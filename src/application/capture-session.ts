@@ -24,6 +24,14 @@ export interface CaptureSnapshot {
   accepted: { task: Task; version: number; followUp?: string } | null;
 }
 
+export interface CaptureSubmitOptions {
+  configuration: TaskCollectionConfiguration;
+  defaults: Partial<CreateTaskInput>;
+  create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
+  onAccepted?(task: Task, version: number): void;
+  refresh?(task: Task): Promise<CaptureFollowUp | void>;
+}
+
 /** A collection-scoped, in-memory UI draft, not a task replica.
  * Its lifetime is independent of inline/sheet presentations and background refreshes.
  */
@@ -48,6 +56,8 @@ export class CaptureSession {
   } | null = null;
   private readonly listeners = new Set<() => void>();
   private pending: Promise<Task | null> | null = null;
+  private recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+  private recoveryAttempts = 0;
   readonly getSnapshot = () => this.state;
   readonly subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -131,14 +141,9 @@ export class CaptureSession {
     return true;
   }
 
-  submit(options: {
-    configuration: TaskCollectionConfiguration;
-    defaults: Partial<CreateTaskInput>;
-    create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
-    onAccepted?(task: Task, version: number): void;
-    refresh?(task: Task): Promise<CaptureFollowUp | void>;
-  }): Promise<Task | null> {
+  submit(options: CaptureSubmitOptions): Promise<Task | null> {
     if (this.pending) return this.pending;
+    this.cancelRecovery();
     // An unconfirmed write can only hand off its retained exact intent. Without
     // a receipt identity, preserve #183's guard against an ordinary retry.
     if (
@@ -176,7 +181,20 @@ export class CaptureSession {
         );
       } catch (reason) {
         let error = toOperationalError(reason, "create-task");
-        if (this.submission && error.code === "outcome-unknown") {
+        const raw = error.code;
+        const unconfirmed = raw === "outcome-unknown";
+        if (
+          this.submission?.outcomeUnknown &&
+          !unconfirmed &&
+          !this.submission.intent.authorityRequestId
+        ) {
+          // The repository drops the retained request only on a definite
+          // answer (a rejection of that exact request): show the plain error
+          // and hand the draft back.
+          this.submission.outcomeUnknown = false;
+          this.submission = null;
+          this.recoveryAttempts = 0;
+        } else if (this.submission && unconfirmed) {
           this.submission.outcomeUnknown = true;
           // The repository pins its own request on this intent. An error can
           // also describe an older, unrelated pending mutation; never adopt
@@ -192,6 +210,11 @@ export class CaptureSession {
             { cause: error },
           );
         }
+        // Confirming an unconfirmed create is TaskNotes' job, not the user's:
+        // keep observing the same exact request until it has a definite answer.
+        // A raw cancellation means the collection closed; it stops here.
+        if (error.code === "outcome-unknown" && raw !== "cancelled")
+          this.scheduleRecovery(options);
         this.publish({
           status: "editing",
           pendingTitle: "",
@@ -199,6 +222,7 @@ export class CaptureSession {
         });
         return null;
       }
+      this.recoveryAttempts = 0;
       this.submission = null;
       this.fields = {};
       const version = this.state.version + 1;
@@ -237,6 +261,25 @@ export class CaptureSession {
       this.pending = null;
     });
     return this.pending;
+  }
+
+  /** True while an unconfirmed create is being confirmed automatically. */
+  get recovering() {
+    return this.recoveryTimer !== null;
+  }
+
+  private scheduleRecovery(options: CaptureSubmitOptions) {
+    if (this.recoveryTimer || !this.canRecover) return;
+    const delay = Math.min(15_000, 500 * 2 ** this.recoveryAttempts++);
+    this.recoveryTimer = setTimeout(() => {
+      this.recoveryTimer = null;
+      if (this.canRecover) void this.submit(options);
+    }, delay);
+  }
+
+  private cancelRecovery() {
+    if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+    this.recoveryTimer = null;
   }
 
   get canRecover() {

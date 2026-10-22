@@ -1645,6 +1645,14 @@
   .has-context-capture > .capture-composer {
     display: none;
   }
+  /* Let the last rows and their menus scroll clear of the Add task button. */
+  .app-shell:has(.global-capture-fab)
+    :is(
+      .view-detail:not(.is-kanban-view, .is-full-calendar-view),
+      .screen:has(> .search-header)
+    ) {
+    padding-bottom: calc(52px + 16px + 32px);
+  }
   .view-context-capture {
     display: flex;
   }
@@ -1656,6 +1664,94 @@
   margin: 4px 0 0;
   color: var(--ink-soft);
   font-size: var(--type-supporting);
+}
+.today-progress {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Today and Overdue are empty: one calm line, then what comes next. */
+.today-clear {
+  min-height: 1px;
+  padding: 30px 0 4px;
+  border-top: 1px solid var(--line-strong);
+}
+.today-clear:not(:last-child) {
+  margin-bottom: 28px;
+}
+.saved-task-list > .today-clear {
+  padding: 18px 0 14px;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+}
+.today-clear p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.today-clear .today-clear-title {
+  margin: 0 0 5px;
+  color: var(--ink);
+  font-size: var(--type-control);
+  font-weight: 700;
+}
+.today-clear-next {
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.today-clear-next:hover {
+  text-decoration-color: currentColor;
+}
+.today-clear-upcoming {
+  margin-top: 2px;
+  padding-inline: 0;
+  font-size: var(--type-supporting);
+}
+/* A quiet heading action: it reads as part of the heading, not a button. */
+.section-heading.has-action {
+  gap: 12px;
+}
+.section-heading.has-action > h2 {
+  flex: 1;
+  min-width: 0;
+}
+.section-heading-action {
+  position: relative;
+  flex: none;
+  min-height: 44px;
+  padding: 0 2px 0 13px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 400;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 150ms var(--ease-out);
+}
+.section-heading-action::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 14px;
+  border-left: 1px solid var(--line-strong);
+  transform: translateY(-50%);
+  content: "";
+}
+.section-heading-action:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.section-heading-action:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+  text-decoration: none;
 }
 .view-options {
   position: relative;
@@ -1739,4 +1835,30 @@
 }
 .section-title-with-count > h2 {
   min-width: 0;
+}
+
+.starter-views-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.starter-views-offer h3,
+.starter-views-offer p {
+  margin: 0;
+}
+
+.starter-views-offer p {
+  margin-top: var(--space-xs);
+  color: var(--ink-muted);
+}
+
+.starter-views-offer button {
+  min-height: 44px;
 }

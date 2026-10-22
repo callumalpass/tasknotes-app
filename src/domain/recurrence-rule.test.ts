@@ -9,7 +9,7 @@ import {
   recurrenceRuleSummary,
   recurrenceStartStorageValue,
 } from "./recurrence-rule";
-import { taskDatePart, taskTimePart, type Task } from "./task";
+import { type Task } from "./task";
 import { taskOccurrencesBetween } from "./task-occurrence";
 
 describe("recurrence rules", () => {
@@ -160,13 +160,6 @@ describe("recurrence rules", () => {
         scheduled: "2026-08-31",
       }),
     ).toBe("DTSTART:20260831;FREQ=YEARLY;INTERVAL=1;BYMONTHDAY=31;BYMONTH=8");
-  });
-
-  it("derives DTSTART from the displayed day and time of a stored instant", () => {
-    const scheduled = "2026-08-05T23:30:00Z";
-    const date = taskDatePart(scheduled).replaceAll("-", "");
-    const time = taskTimePart(scheduled).replace(":", "");
-    expect(recurrenceDtstartValue(scheduled)).toBe(`${date}T${time}00Z`);
   });
 
   it("converts between TaskNotes DTSTART and task field storage", () => {

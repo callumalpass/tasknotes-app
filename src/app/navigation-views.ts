@@ -13,6 +13,19 @@ export function navigationViewScope(info: CollectionInfo): string {
   return `${info.kind}:${info.id ?? info.location}`;
 }
 
+/** Legacy preferences used the portable collection ID. Keep the new account
+ * scope, but import its original key instead of guessing from a display name. */
+export function legacyNavigationViewScope(
+  info: CollectionInfo,
+): string | undefined {
+  if (!info.id) return;
+  const previousId =
+    info.collectionId && info.collectionId !== info.id
+      ? info.collectionId
+      : info.location;
+  return `${info.kind}:${previousId}`;
+}
+
 export function readNavigationViewKeys(
   storage: Pick<Storage, "getItem">,
   scope: string,
@@ -52,22 +65,21 @@ export function writeNavigationViewKeys(
   scope: string,
   keys: readonly string[],
 ): void {
-  let values: Record<string, string[]> = {};
+  let values: Record<string, unknown> = {};
   try {
     const parsed = JSON.parse(storage.getItem(STORAGE_KEY) ?? "{}") as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
-      values = Object.fromEntries(
-        Object.entries(parsed).filter(
-          (entry): entry is [string, string[]] =>
-            Array.isArray(entry[1]) &&
-            entry[1].every((candidate) => typeof candidate === "string"),
-        ),
-      );
+      values = Object.fromEntries(Object.entries(parsed));
   } catch {
     // Replace malformed browser preferences with a valid record.
   }
   values[scope] = unique(keys);
-  storage.setItem(STORAGE_KEY, JSON.stringify(values));
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(values));
+  } catch {
+    // Preference persistence is not view discovery. Keep the current in-memory
+    // choice and original stored entries; a later explicit save can retry.
+  }
 }
 
 export function moveNavigationViewKey(

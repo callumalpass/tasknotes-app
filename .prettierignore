@@ -6,3 +6,14 @@ node_modules/
 pnpm-lock.yaml
 playwright-report/
 test-results/
+# Immutable publisher-generated test oracle; exact bytes are hash-tested.
+vendor/tasknotes-query-6bec1906.browser.mjs
+vendor/tasknotes-query-6bec1906.browser.d.mts
+vendor/tasknotes-query-6bec1906.browser-metafile.json
+# Immutable authenticated public LAB release context; exact bytes are hash-tested.
+vendor/mdbase-app-lab-trust.mjs
+# Qualified shared publisher helper copied byte-identically (hash tested).
+scripts/lib/native-publish-bytes.mjs
+# Byte-verbatim authenticated SDK public packet and existing UI companion.
+vendor/native-publish/staging/
+vendor/native-publish/staging-eaa4e697/

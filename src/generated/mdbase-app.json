@@ -8,6 +8,11 @@
     "https://app.tasknotes.dev/auth/mdbase/callback",
     "dev.tasknotes.app://auth/mdbase/callback"
   ],
+  "installation_origins": {
+    "lab": { "app-runtime": ["https://lab.tasknotes-app.pages.dev"] },
+    "staging": { "app-runtime": ["https://staging.tasknotes-app.pages.dev"] },
+    "production": { "app-runtime": ["https://app.tasknotes.dev"] }
+  },
   "requirements": {
     "people": { "version": 1, "optional": ["identity", "members"] },
     "contracts": [

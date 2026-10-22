@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,6 +18,11 @@ import {
   captureTriggers,
   configuredCaptureSuggestions,
 } from "../domain/capture-autosuggest";
+import {
+  currentCaptureHighlights,
+  recognizedCaptureSpans,
+  reflectedCaptureHighlights,
+} from "../domain/capture-highlights";
 import { preloadTaskCapture, taskCapturePreview } from "../domain/task-capture";
 import {
   CaptureSession,
@@ -204,13 +210,37 @@ export function TaskCapture({
     return () => window.clearTimeout(timeout);
   }, [session, configuration, creationDefaults, text]);
 
+  // Keep the last settled reading while typing. The next parse replaces it
+  // within a few frames, so swapping in a notice on every keystroke flickers.
+  const settled = result && parsedText ? result : null;
+  const slowParse = useDelayedFlag(parsing && !settled, 400, text);
   const preview = useMemo(
-    () =>
-      result && parsedText === text.trim()
-        ? taskCapturePreview(result.input, configuration)
-        : [],
-    [configuration, parsedText, result, text],
+    () => (settled ? taskCapturePreview(settled.input, configuration) : []),
+    [configuration, settled],
   );
+  // Recognized phrases come from the same settled reading, so they move in
+  // step with the chips rather than chasing each keystroke.
+  const parsedHighlights = useMemo(
+    () =>
+      settled
+        ? reflectedCaptureHighlights(
+            recognizedCaptureSpans(parsedText, settled.input.title, triggers),
+            settled.input,
+          )
+        : [],
+    [parsedText, settled, triggers],
+  );
+  const highlights = useMemo(
+    () => currentCaptureHighlights(parsedHighlights, parsedText, text),
+    [parsedHighlights, parsedText, text],
+  );
+  const mirrorRef = useRef<HTMLSpanElement>(null);
+  const syncMirror = () => {
+    const input = inputRef.current;
+    if (input && mirrorRef.current)
+      mirrorRef.current.style.transform = `translateX(${-input.scrollLeft}px)`;
+  };
+  useLayoutEffect(syncMirror);
 
   function changeText(value: string, nextCursor = value.length) {
     session.editText(value);
@@ -291,38 +321,46 @@ export function TaskCapture({
         <label className="visually-hidden" htmlFor={inputId}>
           New task title
         </label>
-        <input
-          id={inputId}
-          ref={inputRef}
-          role="combobox"
-          aria-activedescendant={
-            suggestions.length
-              ? `${suggestionsId}-option-${selectedSuggestion}`
-              : undefined
-          }
-          aria-autocomplete="list"
-          aria-controls={suggestionsId}
-          aria-expanded={suggestions.length > 0}
-          autoComplete="off"
-          enterKeyHint="done"
-          placeholder={placeholder}
-          value={text}
-          readOnly={capturing || error?.code === "outcome-unknown"}
-          onChange={(event) =>
-            changeText(
-              event.target.value,
-              event.target.selectionStart ?? event.target.value.length,
-            )
-          }
-          onClick={(event) =>
-            setCursor(event.currentTarget.selectionStart ?? text.length)
-          }
-          onFocus={preloadTaskCapture}
-          onKeyDown={handleCaptureKeyDown}
-          onKeyUp={(event) =>
-            setCursor(event.currentTarget.selectionStart ?? text.length)
-          }
-        />
+        <span className="capture-field">
+          <span aria-hidden="true" className="capture-highlights">
+            <span ref={mirrorRef}>{highlightSegments(text, highlights)}</span>
+          </span>
+          <input
+            id={inputId}
+            ref={inputRef}
+            role="combobox"
+            aria-activedescendant={
+              suggestions.length
+                ? `${suggestionsId}-option-${selectedSuggestion}`
+                : undefined
+            }
+            aria-autocomplete="list"
+            aria-controls={suggestionsId}
+            aria-expanded={suggestions.length > 0}
+            autoComplete="off"
+            enterKeyHint="done"
+            placeholder={placeholder}
+            value={text}
+            readOnly={capturing || error?.code === "outcome-unknown"}
+            onChange={(event) =>
+              changeText(
+                event.target.value,
+                event.target.selectionStart ?? event.target.value.length,
+              )
+            }
+            onClick={(event) =>
+              setCursor(event.currentTarget.selectionStart ?? text.length)
+            }
+            onFocus={preloadTaskCapture}
+            onKeyDown={handleCaptureKeyDown}
+            onKeyUp={(event) => {
+              setCursor(event.currentTarget.selectionStart ?? text.length);
+              syncMirror();
+            }}
+            onScroll={syncMirror}
+            onSelect={syncMirror}
+          />
+        </span>
         {text.trim() ? (
           <button
             disabled={capturing || error?.code === "outcome-unknown"}
@@ -331,7 +369,7 @@ export function TaskCapture({
             {capturing ? "Adding" : "Add"}
           </button>
         ) : null}
-        {session.canRecover ? (
+        {session.canRecover && !session.recovering ? (
           <button disabled={capturing} type="submit">
             Recover task
           </button>
@@ -372,22 +410,20 @@ export function TaskCapture({
       {text.trim() ? (
         <div className="capture-interpretation" aria-live="polite">
           <div>
-            {parsing && parsedText !== text.trim() ? (
+            {slowParse ? (
               <span className="capture-parsing">Understanding…</span>
             ) : (
               <>
-                {result &&
-                parsedText === text.trim() &&
-                result.input.title !== text.trim() ? (
+                {settled && settled.input.title !== parsedText ? (
                   <span className="capture-title-preview">
                     <span className="visually-hidden">Task: </span>
-                    {result.input.title}
+                    {settled.input.title}
                   </span>
                 ) : null}
                 {preview.map((item) => {
                   const removal = capturePreviewRemoval(
                     item.key,
-                    result?.input,
+                    settled?.input,
                   );
                   const dated = item.key === "scheduled" || item.key === "due";
                   return (
@@ -451,7 +487,11 @@ export function TaskCapture({
         />
       ) : null}
 
-      {error ? (
+      {error?.code === "outcome-unknown" && session.recovering ? (
+        <p className="capture-pending" role="status">
+          Confirming that “{text.trim()}” was saved…
+        </p>
+      ) : error ? (
         <OperationErrorNotice
           action="The task"
           message={error}
@@ -608,6 +648,7 @@ function CaptureDetails({
         <RecurrenceField
           anchor={input.recurrenceAnchor}
           scheduled={input.scheduled}
+          due={input.due}
           value={input.recurrence}
           onAnchorChange={(recurrenceAnchor) => onChange({ recurrenceAnchor })}
           onChange={(recurrence) => onChange({ recurrence })}
@@ -753,6 +794,42 @@ function CaptureList({
       />
     </label>
   );
+}
+
+function highlightSegments(
+  text: string,
+  highlights: readonly { start: number; end: number }[],
+) {
+  const segments = [];
+  let position = 0;
+  for (const { start, end } of highlights) {
+    if (start > position) segments.push(text.slice(position, start));
+    // Keyed by position so a phrase that grows ("tomorrow at 3pm") keeps its
+    // tint instead of fading in again.
+    segments.push(<mark key={start}>{text.slice(start, end)}</mark>);
+    position = end;
+  }
+  segments.push(text.slice(position));
+  return segments;
+}
+
+/** True once `active` has held for `delay` ms without `restart` changing;
+ * false as soon as either changes. */
+function useDelayedFlag(
+  active: boolean,
+  delay: number,
+  restart: unknown,
+): boolean {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const timeout = window.setTimeout(() => setElapsed(true), delay);
+    return () => {
+      window.clearTimeout(timeout);
+      setElapsed(false);
+    };
+  }, [active, delay, restart]);
+  return active && elapsed;
 }
 
 function capturePreviewRemoval(

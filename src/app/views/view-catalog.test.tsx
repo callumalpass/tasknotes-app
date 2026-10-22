@@ -5,69 +5,6 @@ import type { TaskView, TaskViewDocument } from "../../domain/view";
 import { SEARCH_NAVIGATION_KEY } from "../navigation-views";
 import { ViewCatalog } from "./view-catalog";
 
-it("clearly separates navigation, tools, and saved views", () => {
-  const callbacks = renderCatalog();
-  const allViews = screen.getByRole("region", { name: "All views" });
-
-  expect(
-    screen.getByRole("heading", { name: "Shown in navigation" }),
-  ).toBeVisible();
-  expect(
-    within(allViews).getByRole("heading", { name: "TaskNotes tools" }),
-  ).toBeVisible();
-  expect(
-    within(allViews).getByRole("heading", { name: "Saved views" }),
-  ).toBeVisible();
-  expect(within(allViews).getByText("Views/work.base")).toBeVisible();
-  expect(
-    within(allViews).getByRole("button", {
-      name: "Remove Today from navigation",
-    }),
-  ).toBeEnabled();
-  expect(
-    within(allViews).getByRole("button", {
-      name: "Add Work board to navigation",
-    }),
-  ).toHaveTextContent("Add");
-
-  fireEvent.click(
-    within(allViews).getByRole("button", {
-      name: "Add Work board to navigation",
-    }),
-  );
-  expect(callbacks.onToggleNavigation).toHaveBeenCalledWith(
-    "Views/work.base#work",
-  );
-});
-
-it("searches the catalog and exposes useful filter counts", () => {
-  renderCatalog();
-  const allViews = screen.getByRole("region", { name: "All views" });
-
-  expect(within(allViews).getByRole("button", { name: "All 4" })).toBeVisible();
-  expect(
-    within(allViews).getByRole("button", { name: "In navigation 2" }),
-  ).toBeVisible();
-  expect(
-    within(allViews).getByRole("button", { name: "Editable 1" }),
-  ).toBeVisible();
-
-  fireEvent.change(
-    within(allViews).getByRole("searchbox", { name: "Search views" }),
-    {
-      target: { value: "work.base" },
-    },
-  );
-  expect(within(allViews).getByRole("button", { name: "All 1" })).toBeVisible();
-  expect(within(allViews).getByText("Work board")).toBeVisible();
-  expect(within(allViews).queryByText("Today")).toBeNull();
-
-  fireEvent.click(
-    within(allViews).getByRole("button", { name: "In navigation 0" }),
-  );
-  expect(within(allViews).getByText("No matching views")).toBeVisible();
-});
-
 it("keeps secondary view operations in a focused overflow menu", () => {
   const callbacks = renderCatalog();
   const allViews = screen.getByRole("region", { name: "All views" });

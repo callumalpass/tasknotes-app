@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 export const developmentDeployments = Object.freeze({
   lab: Object.freeze({
+    environment: "lab",
     appOrigin: "https://lab.tasknotes-app.pages.dev",
+    editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28487",
     project: "tasknotes-app",
@@ -13,14 +15,20 @@ export const developmentDeployments = Object.freeze({
     wranglerVersion: "4.114.0",
   }),
   staging: Object.freeze({
+    environment: "staging",
     appOrigin: "https://staging.tasknotes-app.pages.dev",
+    editorOrigin: "https://editor-staging.mdbase.dev",
     connectOrigin: "https://connect-staging.mdbase.dev",
-    loopbackOrigin: "http://127.0.0.1:28486",
+    // Native staging has no local Connect loopback authority.
     project: "tasknotes-app",
     branch: "staging",
     wranglerVersion: "4.114.0",
   }),
+  // Candidate B is a LAB-environment build served from its own preview
+  // origin against its isolated Connect. It has no documented Editor
+  // origin, so that one input stays caller-supplied and explicit.
   "candidate-b": Object.freeze({
+    environment: "lab",
     appOrigin: "https://candidate-b.tasknotes-app.pages.dev",
     connectOrigin: "https://mdbase-connect-candidate-b.onrender.com",
     loopbackOrigin: "http://127.0.0.1:28486",
@@ -89,18 +97,57 @@ export function developmentDeploymentFor(environment) {
     target,
     "VITE_MDBASE_CONNECT_URL",
   );
-  requireMatchingOverride(
-    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
-    deployment.loopbackOrigin,
-    target,
-    "VITE_MDBASE_CONNECT_LOOPBACK_URL",
-  );
+  if (deployment.environment === "lab") {
+    requireMatchingOverride(
+      environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
+      deployment.loopbackOrigin,
+      target,
+      "VITE_MDBASE_CONNECT_LOOPBACK_URL",
+    );
+  } else if (
+    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL !== undefined &&
+    environment.VITE_MDBASE_CONNECT_LOOPBACK_URL !== ""
+  ) {
+    throw new Error(
+      `${target} native TaskNotes cannot include VITE_MDBASE_CONNECT_LOOPBACK_URL.`,
+    );
+  }
   requireMatchingOverride(
     environment.TASKNOTES_APP_URL,
     deployment.appOrigin,
     target,
     "TASKNOTES_APP_URL",
   );
+  // Only a LAB-environment build carries a LAB app origin. Any other
+  // target refuses one outright instead of retargeting it.
+  if (deployment.environment === "lab") {
+    requireMatchingOverride(
+      environment.VITE_TASKNOTES_LAB_ORIGIN,
+      deployment.appOrigin,
+      target,
+      "VITE_TASKNOTES_LAB_ORIGIN",
+    );
+  } else if (
+    environment.VITE_TASKNOTES_LAB_ORIGIN !== undefined &&
+    environment.VITE_TASKNOTES_LAB_ORIGIN !== ""
+  ) {
+    throw new Error(
+      `${target} TaskNotes cannot include VITE_TASKNOTES_LAB_ORIGIN, received ${environment.VITE_TASKNOTES_LAB_ORIGIN}.`,
+    );
+  }
+  requireMatchingOverride(
+    environment.VITE_TASKNOTES_ENVIRONMENT,
+    deployment.environment,
+    target,
+    "VITE_TASKNOTES_ENVIRONMENT",
+  );
+  if (deployment.editorOrigin)
+    requireMatchingOverride(
+      environment.VITE_TASKNOTES_EDITOR_ORIGIN,
+      deployment.editorOrigin,
+      target,
+      "VITE_TASKNOTES_EDITOR_ORIGIN",
+    );
   return deployment;
 }
 
@@ -108,14 +155,31 @@ export function developmentDeploymentEnvironment(
   environment,
   deployment = developmentDeploymentFor(environment),
 ) {
+  const editorOrigin =
+    deployment.editorOrigin ?? environment.VITE_TASKNOTES_EDITOR_ORIGIN;
+  if (!editorOrigin)
+    throw new Error(
+      "VITE_TASKNOTES_EDITOR_ORIGIN is required for this TaskNotes deployment target.",
+    );
+  const buildEnvironment = { ...environment };
+  // Do not let an inherited legacy/LAB value enter a native staging build,
+  // even when a caller passes an already-selected deployment explicitly.
+  delete buildEnvironment.VITE_MDBASE_CONNECT_LOOPBACK_URL;
   return {
-    ...environment,
+    ...buildEnvironment,
     VITE_BASE_PATH: "/",
+    VITE_TASKNOTES_ENVIRONMENT: deployment.environment,
+    // Deliberately cleared outside LAB, like the Firebase project below.
+    VITE_TASKNOTES_LAB_ORIGIN:
+      deployment.environment === "lab" ? deployment.appOrigin : "",
+    VITE_TASKNOTES_EDITOR_ORIGIN: editorOrigin,
     TASKNOTES_APP_URL: deployment.appOrigin,
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",
     VITE_MDBASE_CONNECT_URL: deployment.connectOrigin,
-    VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin,
+    ...(deployment.environment === "lab"
+      ? { VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin }
+      : {}),
   };
 }
 

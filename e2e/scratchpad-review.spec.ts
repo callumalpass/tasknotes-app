@@ -1,9 +1,10 @@
 import { expect, test } from "./local-test";
+import { openFixture } from "./next-fixture";
 
 test("Scratchpad review owns focus and isolates the background", async ({
   page,
 }) => {
-  await page.goto("scratchpad/?demo=1");
+  await openFixture(page, { records: [] }, "scratchpad/");
   const input = page.getByRole("textbox", {
     name: "Draft task: empty",
     exact: true,

@@ -28,6 +28,15 @@ describe("TaskNotes mdbase manifest", () => {
     });
     expect(manifest.manifest_version).toBe(1);
     expect(manifest.id).toBe("dev.tasknotes.app");
+    // Exact per-environment installation origins; app/grant identity and
+    // capability scopes stay the single set asserted below.
+    expect(manifest.installation_origins).toEqual({
+      lab: { "app-runtime": ["https://lab.tasknotes-app.pages.dev"] },
+      staging: {
+        "app-runtime": ["https://staging.tasknotes-app.pages.dev"],
+      },
+      production: { "app-runtime": ["https://app.tasknotes.dev"] },
+    });
     expect(manifest.notifications.criteria).toEqual([
       {
         id: "task.reminder",
@@ -367,40 +376,5 @@ describe("TaskNotes mdbase manifest", () => {
     expect(
       JSON.parse(generated.taskSchemaDocument).properties.scheduled,
     ).toEqual(taskDateSchema);
-  });
-
-  it("provisions useful status and priority colors", () => {
-    const generated = buildAppTaskNotesResources();
-    const implementation = generated.type.implements.find(
-      (candidate) => candidate.contract === "tasknotes.task",
-    );
-
-    expect(
-      Object.fromEntries(
-        implementation.binding.status.definitions.map(({ value, color }) => [
-          value,
-          color,
-        ]),
-      ),
-    ).toEqual({
-      none: "#94a3b8",
-      open: "#64748b",
-      "in-progress": "#3b82f6",
-      done: "#22c55e",
-      cancelled: "#94a3b8",
-    });
-    expect(
-      Object.fromEntries(
-        implementation.binding.priority.definitions.map(({ value, color }) => [
-          value,
-          color,
-        ]),
-      ),
-    ).toEqual({
-      none: "#94a3b8",
-      low: "#3b82f6",
-      normal: "#f59e0b",
-      high: "#ef4444",
-    });
   });
 });

@@ -182,6 +182,28 @@ describe("PrivateAccountSettings", () => {
       ),
     ).toBeVisible();
   });
+  it.each(["strict", "password"] as const)(
+    "states the leave-strict hold even when CP mode is %s",
+    async (mode) => {
+      const f = service({ mode, version: 2, unlocked: true });
+      render(<PrivateAccountSettings account={f.account} />);
+      expect(
+        await screen.findByText(/Strict mode cannot be turned off yet/),
+      ).toBeVisible();
+      expect(
+        screen.getByText(/Setting up or unlocking password/),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole("button", {
+          name: /turn off|disable strict|leave strict/i,
+        }),
+      ).not.toBeInTheDocument();
+      expect(f.account.setup).not.toHaveBeenCalled();
+      expect(f.account.unlock).not.toHaveBeenCalled();
+      expect(f.account.enableStrict).not.toHaveBeenCalled();
+    },
+  );
+
   it("requires strict trade-off consent and displays CP pending/retention honestly", async () => {
     const f = service({ mode: "password", version: 1, unlocked: true });
     vi.mocked(f.account.enableStrict).mockImplementationOnce(async () => {

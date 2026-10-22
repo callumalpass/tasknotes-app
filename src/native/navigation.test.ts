@@ -10,6 +10,13 @@ describe("native back navigation", () => {
     ).toBe("back");
   });
 
+  it("returns from a Settings section to the Settings overview", () => {
+    expect(nativeBackAction({ page: "more", section: "behavior" })).toBe(
+      "back",
+    );
+    expect(nativeBackAction({ page: "more" })).toBe("home");
+  });
+
   it("returns top-level destinations to Today before exiting", () => {
     expect(nativeBackAction({ page: "search" })).toBe("home");
     expect(

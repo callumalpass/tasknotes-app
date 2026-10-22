@@ -1,5 +1,7 @@
-import type { ConnectProblem } from "@mdbase-dev/connect";
-import { connectProblemFromError } from "./connect-problem";
+import {
+  connectProblemFromError,
+  type ApplicationConnectProblem,
+} from "./connect-problem";
 import { TaskNotesValidationError } from "../domain/tasknotes-model";
 
 export type OperationalErrorCode =
@@ -15,7 +17,7 @@ export type OperationalErrorCode =
 /** A stable failure vocabulary shared by use cases and presentation. */
 export class OperationalError extends Error {
   readonly detail: string;
-  readonly problem: ConnectProblem | null;
+  readonly problem: ApplicationConnectProblem | null;
 
   constructor(
     readonly code: OperationalErrorCode,
@@ -58,14 +60,17 @@ export function toOperationalError(
   });
 }
 
-function classifyProblem(problem: ConnectProblem): OperationalErrorCode {
+function classifyProblem(
+  problem: ApplicationConnectProblem,
+): OperationalErrorCode {
   // Unknown acceptance outranks category (often conflict or availability).
   if (
     problem.operation_outcome === "unknown" ||
     problem.recovery === "resolve_outcome"
   )
     return "outcome-unknown";
-  if (problem.code === "file_not_found") return "not-found";
+  if (problem.code === "file_not_found" || problem.code === "not_found")
+    return "not-found";
   switch (problem.category) {
     case "availability":
       return "unavailable";

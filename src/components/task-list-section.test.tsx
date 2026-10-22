@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { TaskListSection } from "./task-list-section";
 
@@ -11,20 +11,20 @@ const props = {
   laneKey: "overdue",
 };
 describe("collapsible task sections", () => {
-  it("starts expanded and remembers an explicit choice", () => {
-    const { unmount } = render(
-      <TaskListSection {...props}>Tasks</TaskListSection>,
+  it("keeps a heading action outside the collapse toggle", () => {
+    render(
+      <TaskListSection
+        {...props}
+        action={<button type="button">Move all to today</button>}
+      >
+        Tasks
+      </TaskListSection>,
     );
     const toggle = screen.getByRole("button", { name: "Overdue 9" });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(toggle);
-    expect(screen.queryByText("Tasks")).not.toBeInTheDocument();
-    unmount();
-    render(<TaskListSection {...props}>Tasks</TaskListSection>);
-    expect(screen.getByRole("button")).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    const action = screen.getByRole("button", { name: "Move all to today" });
+    expect(screen.getByRole("heading")).toContainElement(toggle);
+    expect(toggle).not.toContainElement(action);
+    expect(screen.getByRole("heading")).not.toContainElement(action);
   });
   it("temporarily expands during arrangement without overwriting the choice", () => {
     localStorage.setItem(props.preferenceKey, "collapsed");
