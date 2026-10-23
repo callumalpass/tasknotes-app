@@ -78,12 +78,12 @@ msgstr "（未保存の変更）"
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, =1 {画像を追加しています…} other {画像を#件追加しています…}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, =1 {画像を追加しました} other {画像を#件追加しました}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -98,7 +98,7 @@ msgstr "{0, plural, other {未完了#件}}"
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
-msgstr ""
+msgstr "{0, plural, other {アカウントのロックが解除されました。#件のプライベートコレクションでキーへのアクセスがまだ完了していません。それぞれのコレクションを選択した状態で、もう一度ロックを解除してください。}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
@@ -113,12 +113,12 @@ msgstr "{0, plural, other {期限超過のタスクをすべて今日に移動�
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
-msgstr ""
+msgstr "{0, plural, other {復元が設定されました。#件のプライベートコレクションでキーへのアクセスがまだ完了していません。}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
-msgstr ""
+msgstr "{0, plural, other {#件の復元対象で厳格モードの適用が保留中です。mdbaseが完了を確認するまで、復元キーはこのデバイスに残ります。}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -360,7 +360,7 @@ msgstr "{count, plural, other {年}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
-msgstr ""
+msgstr "{count, selectordinal, other {月末から#番目の日}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -372,19 +372,19 @@ msgstr "{hours}時間{minutes}分"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, =1 {毎日} other {#日ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, =1 {毎月} other {#か月ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, =1 {毎週} other {#週間ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, =1 {毎年} other {#年ごと}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3564,7 +3564,7 @@ msgstr "予定日"
 #: src/app/view-editor-form.tsx
 msgctxt "view layout option"
 msgid "Planner"
-msgstr ""
+msgstr "計画"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
@@ -4757,7 +4757,7 @@ msgstr "このコレクションを開くには、mdbaseでTaskNotesを再度承
 
 #: src/app/model-setup-screen.tsx
 msgid "TaskNotes setup is unavailable."
-msgstr ""
+msgstr "TaskNotesのセットアップを利用できません。"
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
@@ -4882,7 +4882,7 @@ msgstr "再試行できるよう、メニューは開いたままです。"
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was not deleted. {0}"
-msgstr ""
+msgstr "ノートは削除されませんでした。{0}"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
