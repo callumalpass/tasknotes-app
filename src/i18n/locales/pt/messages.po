@@ -2060,486 +2060,486 @@ msgstr "Editar datas e lembretes"
 
 #: src/components/task-actions.tsx
 msgid "Edit details"
-msgstr ""
+msgstr "Editar detalhes"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
-msgstr ""
+msgstr "Edição não salva"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
-msgstr ""
+msgstr "Editar padrão"
 
 #: src/components/task-property-editor.tsx
 msgid "Edit property"
-msgstr ""
+msgstr "Editar propriedade"
 
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
-msgstr ""
+msgstr "Editar tarefa recorrente"
 
 #: src/app/view-editor.tsx
 msgid "Edit saved view"
-msgstr ""
+msgstr "Editar visualização salva"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Edit view"
-msgstr ""
+msgstr "Editar visualização"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr ""
+msgstr "Editável"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
-msgstr ""
+msgstr "Editor de {0}"
 
 #: src/app/task-screen.tsx
 msgid "Editor mode"
-msgstr ""
+msgstr "Modo do editor"
 
 #: src/app/scratchpad-screen.tsx
 msgid "empty"
-msgstr ""
+msgstr "vazio"
 
 #: src/i18n/ui-copy.ts
 msgid "empty item"
-msgstr ""
+msgstr "item vazio"
 
 #: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
-msgstr ""
+msgstr "tarefa vazia"
 
 #: src/components/private-account-settings.tsx
 msgid "Enable strict mode"
-msgstr ""
+msgstr "Ativar modo estrito"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
-msgstr ""
+msgstr "Termina"
 
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
-msgstr ""
+msgstr "Insira uma expressão CEL."
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
-msgstr ""
+msgstr "Estimativa (minutos)"
 
 #: src/app/task-editor-draft.ts
 msgid "Estimate and work sessions"
-msgstr ""
+msgstr "Estimativa e sessões de trabalho"
 
 #: src/components/recurrence-field.tsx
 msgid "Every"
-msgstr ""
+msgstr "A cada"
 
 #: src/components/expression-builder.tsx
 msgid "Every task will be included"
-msgstr ""
+msgstr "Todas as tarefas serão incluídas"
 
 #: src/app/view-editor-form.tsx
 msgid "Every view in this file"
-msgstr ""
+msgstr "Todas as visualizações neste arquivo"
 
 #: src/i18n/ui-copy.ts
 msgid "Expand"
-msgstr ""
+msgstr "Expandir"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Expand image"
-msgstr ""
+msgstr "Expandir imagem"
 
 #: src/app/view-editor-form.tsx
 msgid "Expression"
-msgstr ""
+msgstr "Expressão"
 
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
-msgstr ""
+msgstr "Expressão ou YAML de filtro"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
-msgstr ""
+msgstr "Aplicativo externo"
 
 #: src/components/task-capture.tsx
 msgid "Extra context for the task"
-msgstr ""
+msgstr "Contexto adicional para a tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "Fields shown"
-msgstr ""
+msgstr "Campos exibidos"
 
 #: src/components/task-attachments.tsx
 msgid "File missing"
-msgstr ""
+msgstr "Arquivo não encontrado"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File name"
-msgstr ""
+msgstr "Nome do arquivo"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File path"
-msgstr ""
+msgstr "Caminho do arquivo"
 
 #: src/app/view-editor-form.tsx
 msgid "Filter"
-msgstr ""
+msgstr "Filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
-msgstr ""
+msgstr "Condição do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter editor mode"
-msgstr ""
+msgstr "Modo do editor de filtros"
 
 #: src/components/expression-builder.tsx
 msgid "Filter expression"
-msgstr ""
+msgstr "Expressão do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter is valid"
-msgstr ""
+msgstr "O filtro é válido"
 
 #: src/components/expression-builder.tsx
 msgid "Filter property"
-msgstr ""
+msgstr "Propriedade do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter value"
-msgstr ""
+msgstr "Valor do filtro"
 
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
-msgstr ""
+msgstr "Filtrar visualizações"
 
 #: src/i18n/editor-phrases.ts
 msgid "Find"
-msgstr ""
+msgstr "Localizar"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
-msgstr ""
+msgstr "Localizar uma tarefa"
 
 #: src/app/search-screen.tsx
 msgid "Find a task."
-msgstr ""
+msgstr "Localize uma tarefa."
 
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
-msgstr ""
+msgstr "Localizar tarefas em toda a coleção"
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
-msgstr ""
+msgstr "Conclua ou feche o editor de visualização antes de recarregar."
 
 #: src/app/repository-context.tsx
 #: src/components/task-capture.tsx
 msgid "Finish or discard the task you are adding before reloading."
-msgstr ""
+msgstr "Conclua ou descarte a tarefa que está adicionando antes de recarregar."
 
 #: src/components/private-account-settings.tsx
 msgid "Finish strict mode on this device"
-msgstr ""
+msgstr "Concluir o modo estrito neste dispositivo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Finish the note action in progress before reloading."
-msgstr ""
+msgstr "Conclua a ação da nota em andamento antes de recarregar."
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
-msgstr ""
+msgstr "Concluir para concluir"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to start"
-msgstr ""
+msgstr "Concluir para iniciar"
 
 #: src/app/notification-label.ts
 msgid "Firebase setup required"
-msgstr ""
+msgstr "Configuração do Firebase necessária"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr ""
+msgstr "primeiro"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
-msgstr ""
+msgstr "Primeiro"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
-msgstr ""
+msgstr "Data e hora fixas"
 
 #: src/app/command-palette-model.ts
 msgid "Focused task"
-msgstr ""
+msgstr "Tarefa em foco"
 
 #: src/i18n/editor-phrases.ts
 msgid "Fold line"
-msgstr ""
+msgstr "Recolher linha"
 
 #: src/i18n/editor-phrases.ts
 msgid "folded code"
-msgstr ""
+msgstr "código recolhido"
 
 #: src/i18n/editor-phrases.ts
 msgid "Folded lines"
-msgstr ""
+msgstr "Linhas recolhidas"
 
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
-msgstr ""
+msgstr "Para um período futuro"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
-msgstr ""
+msgstr "Por exemplo, P1D"
 
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
-msgstr ""
+msgstr "Esqueceu a senha"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
-msgstr ""
+msgstr "Fórmulas"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas and source details for this saved view."
-msgstr ""
+msgstr "Fórmulas e detalhes da origem desta visualização salva."
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr ""
+msgstr "quarto"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
-msgstr ""
+msgstr "Quarto"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
-msgstr ""
+msgstr "de"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
-msgstr ""
+msgstr "No formulário da tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "Full schedule"
-msgstr ""
+msgstr "Programação completa"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Future horizon"
-msgstr ""
+msgstr "Horizonte futuro"
 
 #: src/components/dependency-editor.tsx
 msgid "Gap"
-msgstr ""
+msgstr "Intervalo"
 
 #: src/i18n/editor-phrases.ts
 msgid "go"
-msgstr ""
+msgstr "ir"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
-msgstr ""
+msgstr "Volte e atualize a coleção antes de editar."
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
-msgstr ""
+msgstr "Volte e atualize a coleção."
 
 #: src/app/command-palette-model.ts
 msgid "Go to"
-msgstr ""
+msgstr "Ir para"
 
 #: src/i18n/editor-phrases.ts
 msgid "Go to line"
-msgstr ""
+msgstr "Ir para a linha"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
-msgstr ""
+msgstr "Ir para, executar uma ação ou localizar uma tarefa…"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
-msgstr ""
+msgstr "Agrupar"
 
 #: src/app/view-editor-form.tsx
 msgid "Group & sort"
-msgstr ""
+msgstr "Agrupar e ordenar"
 
 #: src/app/view-editor-form.tsx
 msgid "Group by"
-msgstr ""
+msgstr "Agrupar por"
 
 #: src/app/view-editor-form.tsx
 msgid "Group direction"
-msgstr ""
+msgstr "Direção do agrupamento"
 
 #. placeholder {0}: humanize(draft.groupProperty)
 #: src/app/view-editor-form.tsx
 msgid "Grouped by {0}"
-msgstr ""
+msgstr "Agrupado por {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
-msgstr ""
+msgstr "Colunas agrupadas"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
-msgstr ""
+msgstr "Título"
 
 #: src/i18n/pilot-fixture.tsx
 msgctxt "translation pilot rich-text example"
 msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr ""
+msgstr "Olá, {name}. Leia <0>a documentação</0>."
 
 #: src/app/more-screen.tsx
 msgid "Help"
-msgstr ""
+msgstr "Ajuda"
 
 #: src/components/task-capture.tsx
 msgid "Hide details"
-msgstr ""
+msgstr "Ocultar detalhes"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
-msgstr ""
+msgstr "Ocultar etapas de instalação"
 
 #: src/app/task-time-tracking.tsx
 msgid "Hide sessions"
-msgstr ""
+msgstr "Ocultar sessões"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Home"
-msgstr ""
+msgstr "Início"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Hour"
-msgstr ""
+msgstr "Hora"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Hours"
-msgstr ""
+msgstr "Horas"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
-msgstr ""
+msgstr "Como as tarefas são armazenadas"
 
 #: src/app/more-screen.tsx
 msgid "How to install"
-msgstr ""
+msgstr "Como instalar"
 
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
-msgstr ""
+msgstr "Salvei minha chave de recuperação"
 
 #: src/components/private-account-settings.tsx
 msgid "I understand that existing devices must finish applying strict mode."
-msgstr ""
+msgstr "Entendo que os dispositivos existentes precisam terminar de aplicar o modo estrito."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
-msgstr ""
+msgstr "Ações da imagem"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image could not be loaded"
-msgstr ""
+msgstr "Não foi possível carregar a imagem"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image file is unavailable"
-msgstr ""
+msgstr "Arquivo de imagem indisponível"
 
 #: src/components/markdown-preview.tsx
 msgid "Image preview unavailable"
-msgstr ""
+msgstr "Prévia da imagem indisponível"
 
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
-msgstr ""
+msgstr "Imagem indisponível offline"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
-msgstr ""
+msgstr "Na navegação"
 
 #: src/components/task-property-editor.tsx
 msgid "In one week"
-msgstr ""
+msgstr "Em uma semana"
 
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
-msgstr ""
+msgstr "Incluir ocorrências concluídas."
 
 #: src/app/view-editor-form.tsx
 msgid "Include skipped occurrences."
-msgstr ""
+msgstr "Incluir ocorrências ignoradas."
 
 #: src/components/expression-builder.tsx
 msgid "Include tasks when"
-msgstr ""
+msgstr "Incluir tarefas quando"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Indent"
-msgstr ""
+msgstr "Recuar"
 
 #: src/components/task-attachments.tsx
 msgid "Insert"
-msgstr ""
+msgstr "Inserir"
 
 #: src/components/task-attachments.tsx
 msgid "Insert in Notes"
-msgstr ""
+msgstr "Inserir em Notas"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
-msgstr ""
+msgstr "Instalar aplicativo"
 
 #: src/app/more-screen.tsx
 msgid "Install on this device"
-msgstr ""
+msgstr "Instalar neste dispositivo"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
-msgstr ""
+msgstr "Instalar o TaskNotes"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
-msgstr ""
+msgstr "Instale o TaskNotes para abri-lo na tela inicial."
 
 #: src/app/model-setup-screen.tsx
 msgid "Installing TaskNotes setup…"
-msgstr ""
+msgstr "Instalando a configuração do TaskNotes…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
-msgstr ""
+msgstr "Regra de recorrência inválida"
 
 #: src/components/expression-builder.tsx
 msgid "is"
-msgstr ""
+msgstr "é"
 
 #: src/components/expression-builder.tsx
 msgid "is after"
-msgstr ""
+msgstr "é depois de"
 
 #: src/components/expression-builder.tsx
 msgid "is before"
-msgstr ""
+msgstr "é antes de"
 
 #: src/components/expression-builder.tsx
 msgid "is empty"
-msgstr ""
+msgstr "está vazio"
 
 #: src/components/expression-builder.tsx
 msgid "is not"
-msgstr ""
+msgstr "não é"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
