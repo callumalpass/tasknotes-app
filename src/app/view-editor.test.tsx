@@ -292,7 +292,7 @@ views:
     });
 
     await screen.findByRole("dialog", { name: "Work" });
-    fireEvent.click(screen.getByRole("heading", { name: "Advanced" }));
+    fireEvent.click(await screen.findByRole("heading", { name: "Advanced" }));
     expect(screen.getByLabelText("Computed property name 1")).toHaveValue(
       "score",
     );
@@ -356,7 +356,9 @@ views:
     ).toEqual(["priority"]);
 
     await screen.findByRole("dialog", { name: "Ranked" });
-    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
+    fireEvent.click(
+      await screen.findByRole("heading", { name: "Group & sort" }),
+    );
     const sortProperty = screen.getByRole("combobox", {
       name: "Property to sort",
     });

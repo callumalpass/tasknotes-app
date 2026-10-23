@@ -253,71 +253,71 @@ msgstr "{ariaLabel} 제안"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# contexts} one {# context} other {# contexts}}"
-msgstr "{count, plural, =0 {컨텍스트 없음} other {컨텍스트 #개}}"
+msgstr "{count, plural, =0 {컨텍스트 #개} other {컨텍스트 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# defaults} one {# default} other {# defaults}}"
-msgstr "{count, plural, =0 {기본값 없음} other {기본값 #개}}"
+msgstr "{count, plural, =0 {기본값 #개} other {기본값 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# dependencies} one {# dependency} other {# dependencies}}"
-msgstr "{count, plural, =0 {의존성 없음} other {의존성 #개}}"
+msgstr "{count, plural, =0 {의존성 #개} other {의존성 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# fields} one {# field} other {# fields}}"
-msgstr "{count, plural, =0 {필드 없음} other {필드 #개}}"
+msgstr "{count, plural, =0 {필드 #개} other {필드 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# formulas} one {# formula} other {# formulas}}"
-msgstr "{count, plural, =0 {수식 없음} other {수식 #개}}"
+msgstr "{count, plural, =0 {수식 #개} other {수식 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# nested items} one {# nested item} other {# nested items}}"
-msgstr "{count, plural, =0 {중첩 항목 없음} other {중첩 항목 #개}}"
+msgstr "{count, plural, =0 {중첩 항목 #개} other {중첩 항목 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projections} one {# projection} other {# projections}}"
-msgstr "{count, plural, =0 {투영 없음} other {투영 #개}}"
+msgstr "{count, plural, =0 {투영 #개} other {투영 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projects} one {# project} other {# projects}}"
-msgstr "{count, plural, =0 {프로젝트 없음} other {프로젝트 #개}}"
+msgstr "{count, plural, =0 {프로젝트 #개} other {프로젝트 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# properties} one {# property} other {# properties}}"
-msgstr "{count, plural, =0 {속성 없음} other {속성 #개}}"
+msgstr "{count, plural, =0 {속성 #개} other {속성 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# reminders} one {# reminder} other {# reminders}}"
-msgstr "{count, plural, =0 {리마인더 없음} other {리마인더 #개}}"
+msgstr "{count, plural, =0 {리마인더 #개} other {리마인더 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sessions} one {# session} other {# sessions}}"
-msgstr "{count, plural, =0 {세션 없음} other {세션 #개}}"
+msgstr "{count, plural, =0 {세션 #개} other {세션 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sorts} one {# sort} other {# sorts}}"
-msgstr "{count, plural, =0 {정렬 없음} other {정렬 기준 #개}}"
+msgstr "{count, plural, =0 {정렬 기준 #개} other {정렬 기준 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tags} one {# tag} other {# tags}}"
-msgstr "{count, plural, =0 {태그 없음} other {태그 #개}}"
+msgstr "{count, plural, =0 {태그 #개} other {태그 #개}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks currently in this view} one {# task currently in this view} other {# tasks currently in this view}}"
-msgstr "{count, plural, =0 {이 뷰에 작업 없음} other {이 뷰의 작업 #개}}"
+msgstr "{count, plural, =0 {이 뷰의 작업 #개} other {이 뷰의 작업 #개}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks match this draft} one {# task match this draft} other {# tasks match this draft}}"
-msgstr "{count, plural, =0 {이 초안과 일치하는 작업 없음} other {이 초안과 일치하는 작업 #개}}"
+msgstr "{count, plural, =0 {이 초안과 일치하는 작업 #개} other {이 초안과 일치하는 작업 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tasks} one {# task} other {# tasks}}"
-msgstr "{count, plural, =0 {작업 없음} other {작업 #개}}"
+msgstr "{count, plural, =0 {작업 #개} other {작업 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# views} one {# view} other {# views}}"
-msgstr "{count, plural, =0 {뷰 없음} other {뷰 #개}}"
+msgstr "{count, plural, =0 {뷰 #개} other {뷰 #개}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day ago} other {# days ago}}"
@@ -456,7 +456,7 @@ msgstr "{summary}, {until}까지"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "{taskCount, plural, =0 {# tasks are ready in this view.} one {# task is ready in this view.} other {# tasks are ready in this view.}}"
-msgstr "{taskCount, plural, =0 {이 뷰에 준비된 작업이 없습니다.} other {이 뷰에 작업 #개가 준비되었습니다.}}"
+msgstr "{taskCount, plural, =0 {이 뷰에 작업 #개가 준비되었습니다.} other {이 뷰에 작업 #개가 준비되었습니다.}}"
 
 #: src/components/held-edits.tsx
 msgid "{total} edits are waiting for your choice."

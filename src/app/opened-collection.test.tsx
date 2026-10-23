@@ -1,4 +1,3 @@
-import { StrictMode } from "react";
 import { render, screen, waitFor } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { OpenedCollection } from "./opened-collection";
@@ -46,9 +45,8 @@ it("retains the supplied repository and original client across StrictMode effect
   const journalClose = vi.spyOn(IndexedDbMutationJournal.prototype, "close");
   const suspend = vi.spyOn(f.repository, "suspend");
   const mounted = render(
-    <StrictMode>
-      <OpenedCollection {...callbacks} repository={f.repository} />
-    </StrictMode>,
+    <OpenedCollection {...callbacks} repository={f.repository} />,
+    { reactStrictMode: true },
   );
   await waitFor(() =>
     expect(screen.getByTestId("repository-status")).toHaveTextContent("ready"),
