@@ -20,10 +20,15 @@ Settings → Language changes the interface and saves a successful explicit choi
 stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
-**Catalogue scope:** 1,292 active application messages. The eight QA-fixed
-translation branches are merged; the follow-up source adds 13 IDs and retires eight
-(11 at `304e167`, then two more exposed by the repaired state-copy guard). These
-13 targets per language remain blank until the coordinator routes translator authoring. This is not native-speaker certification or permission
+**Catalogue scope:** 1,294 active application messages. All eight QA-fixed v2
+branches and their 13-ID v3 deltas are merged. Kit `5be277b8` exposed two more
+unmarked fields: `Collection access is unavailable.` (`8fU7nk`) and
+`Collection settings` (`1WKqDd`, context `settings access source label`). The latter
+is displayed as provenance after settings-access failure, not as a navigation
+title. Both resolve at render time without restarting repository effects. These
+two targets per language remain blank for coordinator-routed translator authoring;
+this owner has not filled target translations. The exact handoff is
+`73e94521bf02afb7b4cca8d780a23640a481085a`. This is not native-speaker certification or permission
 to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
 copied into application PO files. The refreshed `852df21f` library tarball has
@@ -86,7 +91,9 @@ adapter remains removed. Its successor `8785bd19` also follows local React state
 rendered as copy to its initializers/setters, fixing the account-notice blind spot
 (the old guard stopped at every call, including `setNotice`). Regression tests
 reject both direct and conditional unmarked state notices, but accept whole-plural
-messages and opaque state. `i18n:check` now includes the kit's runtime-equivalent
+messages and opaque state. Kit `5be277b8` adds field-level tracking to avoid
+opaque-state false positives while detecting the two genuine fields above.
+`i18n:check` now includes the kit's runtime-equivalent
 `--compose` check against public UI, reporting all conflicting IDs and values.
 CI rejects generated catalogue drift before its normal gates.
 
@@ -104,6 +111,9 @@ The app adopted and hash-verified kit `b4134d71` (SHA256
 then advanced to its source-guard/composition successor `8785bd19`, same version
 `0.1.0-beta.141`, as `vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz`
 (SHA256 `4eae06666795c7d7e8c24d5eb35ead06686e6f351b3d76d39f2b95f402c91af6`).
+The current field-aware successor is `5be277b8`, also `0.1.0-beta.141`, in
+`vendor/mdbase-dev-i18n-0.1.0-beta.141-5be277b8.tgz` (SHA256
+`953044eb06763e66b93032387a53ccdbe0e02cf524ccac126dd6396138493c5d`).
 Public UI is vendored from `852df21f` in
 `vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz` (SHA256
 `5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7`).

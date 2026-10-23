@@ -69,6 +69,34 @@ function setup(): TaskNotesModelSetup {
   };
 }
 
+it.each([
+  { rejection: null, visible: "Collection access is unavailable." },
+  {
+    rejection: new Error("Authority refused access"),
+    visible: "Authority refused access",
+  },
+])(
+  "shows inspection failure copy without changing authority diagnostics: $visible",
+  async ({ rejection, visible }) => {
+    const port = setup();
+    vi.mocked(port.inspect).mockRejectedValue(rejection);
+    const onReady = vi.fn(async () => undefined);
+    render(
+      <ModelSetupScreen
+        setup={port}
+        onReady={onReady}
+        changeCollection={vi.fn()}
+        reauthorizeCollection={vi.fn()}
+      />,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(visible);
+    expect(port.inspect).toHaveBeenCalledTimes(1);
+    expect(port.install).not.toHaveBeenCalled();
+    expect(port.resume).not.toHaveBeenCalled();
+    expect(onReady).not.toHaveBeenCalled();
+  },
+);
+
 it("does not mount task views or choose a fallback schema when the model is missing", async () => {
   const f = await nextTaskFixture();
   closes.push(f.close);
