@@ -17,5 +17,6 @@ scripts/lib/native-publish-bytes.mjs
 # Byte-verbatim authenticated SDK public packet and existing UI companion.
 vendor/native-publish/staging/
 vendor/native-publish/staging-eaa4e697/
+vendor/native-publish/production/
 # Canonical signed production trust bytes; formatting would change its digest.
 vendor/production-trust.json

@@ -201,14 +201,13 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 
 // --- SDK trust guard --------------------------------------------------------
 
-test("actual missing target intake refuses (no LAB/UI relabel fallback)", async (t) => {
-  await assert.rejects(
-    verifySdkTrust({
-      root: new URL("../", import.meta.url).pathname,
-      target: NATIVE_PUBLISH_TARGETS.production,
-    }),
-    /Missing actual reviewed target intake/,
-  );
+test("reviewed production intake accepts historical UI labels without relabelling originals", async (t) => {
+  const production = await verifySdkTrust({
+    root: new URL("../", import.meta.url).pathname,
+    target: NATIVE_PUBLISH_TARGETS.production,
+  });
+  assert.deepEqual(production.publicationConstraints, []);
+  assert.equal(production.historicalUiQualification.noPublication, true);
   const historical = await verifySdkTrust({
     root: await frozenStagingRoot(t),
     target: NATIVE_PUBLISH_TARGETS.staging,
