@@ -464,7 +464,7 @@ msgstr "{total} edições aguardam sua escolha."
 
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr "{value, selectordinal, one {#º} two {#º} few {#º} other {#º}}"
+msgstr "{value, selectordinal, other {#º}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"

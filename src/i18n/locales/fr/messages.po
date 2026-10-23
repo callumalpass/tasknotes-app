@@ -465,7 +465,7 @@ msgstr "{total} modifications attendent votre décision."
 # Calendar day ordinal: 1er, then 2e, 3e, etc.; kept cases preserve the source contract.
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr "{value, selectordinal, one {#er} two {#e} few {#e} other {#e}}"
+msgstr "{value, selectordinal, one {#er} other {#e}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"

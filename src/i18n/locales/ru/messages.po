@@ -305,11 +305,11 @@ msgstr "{count, plural, =0 {# тегов} one {# тег} few {# тега} many {
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks currently in this view} one {# task currently in this view} other {# tasks currently in this view}}"
-msgstr "{count, plural, =0 {В представлении сейчас нет задач} one {В представлении сейчас # задача} few {В представлении сейчас # задачи} many {В представлении сейчас # задач} other {В представлении сейчас # задачи}}"
+msgstr "{count, plural, =0 {В представлении сейчас # задач} one {В представлении сейчас # задача} few {В представлении сейчас # задачи} many {В представлении сейчас # задач} other {В представлении сейчас # задачи}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks match this draft} one {# task match this draft} other {# tasks match this draft}}"
-msgstr "{count, plural, =0 {Черновику не соответствует ни одной задачи} one {Черновику соответствует # задача} few {Черновику соответствуют # задачи} many {Черновику соответствуют # задач} other {Черновику соответствуют # задачи}}"
+msgstr "{count, plural, =0 {Черновику соответствуют # задач} one {Черновику соответствует # задача} few {Черновику соответствуют # задачи} many {Черновику соответствуют # задач} other {Черновику соответствуют # задачи}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tasks} one {# task} other {# tasks}}"
@@ -456,7 +456,7 @@ msgstr "{summary}, до {until}"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "{taskCount, plural, =0 {# tasks are ready in this view.} one {# task is ready in this view.} other {# tasks are ready in this view.}}"
-msgstr "{taskCount, plural, =0 {В этом представлении нет готовых задач.} one {В этом представлении готова # задача.} few {В этом представлении готовы # задачи.} many {В этом представлении готово # задач.} other {В этом представлении готовы # задачи.}}"
+msgstr "{taskCount, plural, =0 {В этом представлении готово # задач.} one {В этом представлении готова # задача.} few {В этом представлении готовы # задачи.} many {В этом представлении готово # задач.} other {В этом представлении готовы # задачи.}}"
 
 #: src/components/held-edits.tsx
 msgid "{total} edits are waiting for your choice."
