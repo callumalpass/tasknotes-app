@@ -1448,7 +1448,7 @@ msgstr "Fin de la tâche ou occurrence ignorée"
 
 #: src/i18n/editor-phrases.ts
 msgid "Completions"
-msgstr "Suggestions de saisie"
+msgstr "Suggestions"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
@@ -3458,7 +3458,7 @@ msgstr "Ouvrez une vue ou choisissez si elle apparaît dans la navigation."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr "Ouvrir d’abord"
+msgstr "Ouvrir en premier"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
@@ -3754,7 +3754,7 @@ msgstr ""
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr "Détails de tâche reconnus"
+msgstr "Informations de tâche reconnues"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
@@ -4432,7 +4432,7 @@ msgstr "Jour sélectionné"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "Les brouillons sélectionnés deviennent des notes de tâche liées, sur place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+msgstr "Les brouillons sélectionnés sont convertis en notes de tâche liées, sans changer de place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
 
 #: src/i18n/editor-phrases.ts
 msgid "Selection deleted"
