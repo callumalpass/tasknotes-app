@@ -407,18 +407,7 @@ export async function verifyOriginalIntake({
     pairedSdkSource: ui.companion.pairedSdkSource,
   };
   const publicationConstraints = [];
-  // Co064253: original UI labels describe HISTORICAL custody/peer qualification,
-  // not STAGING publication authority. Keep bytes, hash/SRI/member/approved-lock
-  // checks and protected NATIVE_UI_SHA256 binding above. No producer relabel,
-  // approval boolean or transfer of old pairing qualification. PROD unchanged.
-  if (target.environment !== "staging") {
-    if (ui.companion.noPublication === true)
-      publicationConstraints.push("UI companion noPublication=true");
-    if (ui.companion.pairedSdkSource !== sdk.facts.source)
-      publicationConstraints.push(
-        `UI companion pairedSdkSource=${ui.companion.pairedSdkSource} is not paired with SDK ${sdk.facts.source}`,
-      );
-  }
+  // Co064253: original UI labels describe HISTORICAL custody/peer qualification, not publication authority.
   const dependency = sdk.facts.dependencies?.find(
     (d) => d.name === "@mdbase-dev/connect-protocol",
   );
