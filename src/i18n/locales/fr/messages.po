@@ -5611,7 +5611,7 @@ msgstr "Votre document de personne doit être corrigé avant de filtrer les tâc
 
 #: src/components/held-edits.tsx
 msgid "Your protected version"
-msgstr ""
+msgstr "Votre version protégée"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
