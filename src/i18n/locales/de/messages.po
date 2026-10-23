@@ -297,102 +297,102 @@ msgstr "{count, plural, one {Jahr} other {Jahre}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
-msgstr "Estimation : {estimate} min"
+msgstr "{estimate} Min. geschätzt"
 
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
-msgstr "{hours} h {minutes} min"
+msgstr "{hours} Std. {minutes} Min."
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, one {Tous les jours} other {Tous les # jours}}"
+msgstr "{interval, plural, one {Jeden Tag} other {Alle # Tage}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, one {Tous les mois} other {Tous les # mois}}"
+msgstr "{interval, plural, one {Jeden Monat} other {Alle # Monate}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, one {Toutes les semaines} other {Toutes les # semaines}}"
+msgstr "{interval, plural, one {Jede Woche} other {Alle # Wochen}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, one {Tous les ans} other {Tous les # ans}}"
+msgstr "{interval, plural, one {Jedes Jahr} other {Alle # Jahre}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
-msgstr "Durée avancée : {label}"
+msgstr "Erweiterte Dauer für {label}"
 
 #: src/components/duration-field.tsx
 msgid "{label} amount"
-msgstr "Quantité : {label}"
+msgstr "Menge für {label}"
 
 #: src/app/views/kanban-view.tsx
 msgid "{label} column"
-msgstr "Colonne {label}"
+msgstr "{label}-Spalte"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
-msgstr "Date : {label}"
+msgstr "Datum für {label}"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved {0}{1}."
-msgstr "Déplacement de {label} {0}{1}."
+msgstr "{label} verschoben {0}{1}."
 
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved."
-msgstr "Déplacement de {label}."
+msgstr "{label} verschoben."
 
 #: src/components/multi-value-field.tsx
 msgid "{label} suggestions"
-msgstr "Suggestions : {label}"
+msgstr "Vorschläge für {label}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
-msgstr "Heure : {label}"
+msgstr "Uhrzeit für {label}"
 
 #: src/components/duration-field.tsx
 msgid "{label} unit"
-msgstr "Unité : {label}"
+msgstr "Einheit für {label}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
-msgstr "{name} (aucun document de personne correspondant)"
+msgstr "{name} (kein passender Personen-Datensatz)"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (not a person record)"
-msgstr "{name} (ce n’est pas un document de personne)"
+msgstr "{name} (kein Personen-Datensatz)"
 
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
-msgstr "{name} doit rester dans la navigation jusqu’à l’ajout d’une autre vue"
+msgstr "{name} muss in der Navigation bleiben, bis eine weitere Ansicht hinzugefügt wird"
 
 #: src/app/collection-settings.tsx
 msgid "{open} open · {total} total"
-msgstr "{open} ouvertes · {total} au total"
+msgstr "{open} offen · {total} insgesamt"
 
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
-msgstr "{selectedReviewCount} sur {0} sélectionnés"
+msgstr "{selectedReviewCount} von {0} ausgewählt"
 
 #: src/i18n/presentation.ts
 msgid "{summary} of {month}"
-msgstr "{summary} en {month}"
+msgstr "{summary} im {month}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on {names}"
-msgstr "{summary}, les jours suivants : {names}"
+msgstr "{summary} am {names}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr "{summary}, le {day}"
+msgstr "{summary} am {day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr "{summary}, le {rank} {day}"
+msgstr "{summary} am {rank} {day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
@@ -400,25 +400,25 @@ msgstr "{summary}, {ending}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, until {until}"
-msgstr "{summary}, jusqu’au {until}"
+msgstr "{summary}, bis zum {until}"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "{taskCount, plural, =0 {# tasks are ready in this view.} one {# task is ready in this view.} other {# tasks are ready in this view.}}"
-msgstr "{taskCount, plural, =0 {# tâches sont prêtes dans cette vue.} one {# tâche est prête dans cette vue.} other {# tâches sont prêtes dans cette vue.}}"
+msgstr "{taskCount, plural, =0 {# Aufgaben sind in dieser Ansicht bereit.} one {# Aufgabe ist in dieser Ansicht bereit.} other {# Aufgaben sind in dieser Ansicht bereit.}}"
 
 # Calendar day ordinal: 1er, then 2e, 3e, etc.; kept cases preserve the source contract.
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr "{value, selectordinal, one {#er} two {#e} few {#e} other {#e}}"
+msgstr "{value, selectordinal, one {#.} two {#.} few {#.} other {#.}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"
-msgstr "Vues affichées : {visibleCount}"
+msgstr "{visibleCount} Ansichten angezeigt"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
 msgid "+{0} more"
-msgstr "+{0} autres"
+msgstr "+{0} weitere"
 
 #: src/app/app-shell.tsx
 msgid "⌘N"
@@ -426,52 +426,52 @@ msgstr "⌘N"
 
 #: src/components/calendar-preferences.tsx
 msgid "1 hour"
-msgstr "1 heure"
+msgstr "1 Stunde"
 
 #: src/components/calendar-preferences.tsx
 msgid "12 hour"
-msgstr "12 heures"
+msgstr "12-Stunden-Format"
 
 #: src/components/calendar-preferences.tsx
 msgid "15 minutes"
-msgstr "15 minutes"
+msgstr "15 Minuten"
 
 #: src/components/calendar-preferences.tsx
 msgid "24 hour"
-msgstr "24 heures"
+msgstr "24-Stunden-Format"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "3 days"
-msgstr "3 jours"
+msgstr "3 Tage"
 
 #: src/components/calendar-preferences.tsx
 msgid "30 minutes"
-msgstr "30 minutes"
+msgstr "30 Minuten"
 
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
-msgstr "Une date du calendrier"
+msgstr "Ein Kalenderdatum"
 
 #: src/components/view-execution-error-notice.tsx
 msgid "A computed value is being used to sort this view. This collection cannot order results by computed values yet. Choose a stored property instead."
-msgstr "Cette vue utilise une valeur calculée pour le tri. Cette collection ne peut pas encore trier les résultats selon des valeurs calculées. Choisissez plutôt une propriété stockée."
+msgstr "Diese Ansicht wird nach einem berechneten Wert sortiert. Diese Sammlung kann Ergebnisse noch nicht nach berechneten Werten sortieren. Wählen Sie stattdessen eine gespeicherte Eigenschaft."
 
 #: src/components/recurrence-field.tsx
 msgid "A weekday position"
-msgstr "Un jour de semaine à une position donnée"
+msgstr "Position eines Wochentags"
 
 #: src/app/more-screen.tsx
 msgid "About & portability"
-msgstr "À propos et portabilité"
+msgstr "Info und Portabilität"
 
 #: src/app/search-screen.tsx
 msgid "Across this collection"
-msgstr "Dans toute cette collection"
+msgstr "In der gesamten Sammlung"
 
 #: src/components/task-row.tsx
 msgid "Actions"
-msgstr "Actions"
+msgstr "Aktionen"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #. placeholder {0}: node.text || uiCopy("item")
@@ -480,88 +480,88 @@ msgstr "Actions"
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
-msgstr "Actions pour {0}"
+msgstr "Aktionen für {0}"
 
 #: src/app/views/kanban-view.tsx
 msgid "Active"
-msgstr "Actives"
+msgstr "Aktiv"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
-msgstr "Ajouter"
+msgstr "Hinzufügen"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Add {0}"
-msgstr "Ajouter : {0}"
+msgstr "{0} hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before due"
-msgstr "Ajouter 1 jour avant l’échéance"
+msgstr "Erinnerung 1 Tag vor Fälligkeit hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before scheduled"
-msgstr "Ajouter 1 jour avant la date planifiée"
+msgstr "Erinnerung 1 Tag vor dem Planungsdatum hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before due"
-msgstr "Ajouter 1 heure avant l’échéance"
+msgstr "Erinnerung 1 Stunde vor Fälligkeit hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before scheduled"
-msgstr "Ajouter 1 heure avant la date planifiée"
+msgstr "Erinnerung 1 Stunde vor dem Planungsdatum hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before due"
-msgstr "Ajouter 15 minutes avant l’échéance"
+msgstr "Erinnerung 15 Minuten vor Fälligkeit hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before scheduled"
-msgstr "Ajouter 15 minutes avant la date planifiée"
+msgstr "Erinnerung 15 Minuten vor dem Planungsdatum hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before due"
-msgstr "Ajouter 5 minutes avant l’échéance"
+msgstr "Erinnerung 5 Minuten vor Fälligkeit hinzufügen"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before scheduled"
-msgstr "Ajouter 5 minutes avant la date planifiée"
+msgstr "Erinnerung 5 Minuten vor dem Planungsdatum hinzufügen"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a context"
-msgstr "Ajouter un contexte"
+msgstr "Kontext hinzufügen"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr "Ajouter un projet"
+msgstr "Projekt hinzufügen"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr "Ajoutez un projet à une tâche pour le voir ici."
+msgstr "Fügen Sie einer Aufgabe ein Projekt hinzu, damit es hier erscheint."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr "Ajouter une propriété"
+msgstr "Eigenschaft hinzufügen"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr "Ajoutez une date planifiée ou une échéance à une tâche active."
+msgstr "Fügen Sie einer aktiven Aufgabe ein Planungs- oder Fälligkeitsdatum hinzu."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr "Ajouter une règle de tri"
+msgstr "Sortierregel hinzufügen"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr "Ajouter une étiquette"
+msgstr "Tag hinzufügen"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "Ajouter une tâche — tomorrow 9am, #tag, +project"
+msgstr "Aufgabe hinzufügen — tomorrow 9am, #tag, +project"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
@@ -2004,7 +2004,7 @@ msgstr "Firebase-Einrichtung erforderlich"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr "erste"
+msgstr "ersten"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
@@ -2044,7 +2044,7 @@ msgstr "Formeln und Quelldetails für diese gespeicherte Ansicht."
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr "vierte"
+msgstr "vierten"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
@@ -2321,7 +2321,7 @@ msgstr "Weiterschreiben"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr "letzte"
+msgstr "letzten"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
@@ -3832,7 +3832,7 @@ msgstr "Ansichten suchen"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr "zweite"
+msgstr "zweiten"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
@@ -4152,80 +4152,80 @@ msgstr "Aufgabe nicht gefunden. Sie wurde möglicherweise gelöscht oder verscho
 
 #: src/app/more-screen.tsx
 msgid "Task reminders"
-msgstr "Rappels de tâches"
+msgstr "Aufgabenerinnerungen"
 
 #: src/components/task-model-settings.tsx
 msgid "Task settings"
-msgstr "Paramètres des tâches"
+msgstr "Aufgabeneinstellungen"
 
 #: src/components/task-model-settings.tsx
 msgid "Task template"
-msgstr "Modèle de tâche"
+msgstr "Aufgabenvorlage"
 
 #: src/app/task-screen.tsx
 msgid "Task title"
-msgstr "Titre de la tâche"
+msgstr "Aufgabentitel"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
-msgstr "Tâche : "
+msgstr "Aufgabe: "
 
 #: src/app/collection-picker.tsx
 msgid "TaskNotes collection"
-msgstr "Collection TaskNotes"
+msgstr "TaskNotes-Sammlung"
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not confirm whether “{title}” was deleted."
-msgstr "TaskNotes n’a pas pu déterminer si la tâche « {title} » a été supprimée."
+msgstr "TaskNotes konnte nicht bestätigen, ob „{title}“ gelöscht wurde."
 
 #: src/app/more-screen.tsx
 msgid "TaskNotes could not open the install prompt."
-msgstr "TaskNotes n’a pas pu ouvrir la demande d’installation."
+msgstr "TaskNotes konnte die Installationsaufforderung nicht öffnen."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not open."
-msgstr "TaskNotes n’a pas pu s’ouvrir."
+msgstr "TaskNotes konnte nicht geöffnet werden."
 
 #: src/app/cloud-collection.tsx
 msgid "TaskNotes couldn’t open right now. Please try again."
-msgstr "TaskNotes n’a pas pu s’ouvrir pour le moment. Veuillez réessayer."
+msgstr "TaskNotes konnte gerade nicht geöffnet werden. Versuchen Sie es erneut."
 
 #: src/app/cloud-collection.tsx
 msgid "TaskNotes needs the following collection settings and definitions. Your task records and unrelated collection settings will not change."
-msgstr "TaskNotes nécessite les paramètres et définitions de collection suivants. Vos documents de tâche et les autres paramètres de la collection ne changeront pas."
+msgstr "TaskNotes benötigt die folgenden Sammlungseinstellungen und Definitionen. Ihre Aufgabendatensätze und sonstigen Sammlungseinstellungen bleiben unverändert."
 
 #: src/components/app-error-boundary.tsx
 msgid "TaskNotes needs to restart."
-msgstr "TaskNotes doit redémarrer."
+msgstr "TaskNotes muss neu gestartet werden."
 
 #: src/app/cloud-collection.tsx
 msgid "TaskNotes needs you to review its updated collection access in mdbase before this collection can open."
-msgstr "Vous devez vérifier les autorisations d’accès mises à jour de TaskNotes dans mdbase avant de pouvoir ouvrir cette collection."
+msgstr "Überprüfen Sie die aktualisierten Zugriffsberechtigungen von TaskNotes in mdbase, bevor diese Sammlung geöffnet werden kann."
 
 #: src/app/collection-picker.tsx
 msgid "TaskNotes opens the collection at its authoritative location."
-msgstr "TaskNotes ouvre la collection à son emplacement de référence."
+msgstr "TaskNotes öffnet die Sammlung an ihrem maßgeblichen Speicherort."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tools"
-msgstr "Outils TaskNotes"
+msgstr "TaskNotes-Werkzeuge"
 
 #: src/app/cloud-collection.tsx
 msgid "TaskNotes works with collections managed by mdbase."
-msgstr "TaskNotes fonctionne avec les collections gérées par mdbase."
+msgstr "TaskNotes funktioniert mit von mdbase verwalteten Sammlungen."
 
 #. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
-msgstr "Tâches pour {0}"
+msgstr "Aufgaben für {0}"
 
 #: src/app/more-screen.tsx
 msgid "Tasks remain portable Markdown records."
-msgstr "Les tâches restent des documents Markdown portables."
+msgstr "Aufgaben bleiben portable Markdown-Datensätze."
 
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
-msgstr "Tâches, étiquettes, projets"
+msgstr "Aufgaben, Tags, Projekte"
 
 #: src/app/app-shell.tsx
 #: src/app/cloud-collection.tsx
@@ -4233,15 +4233,15 @@ msgstr "Tâches, étiquettes, projets"
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Technical details"
-msgstr "Détails techniques"
+msgstr "Technische Details"
 
 #: src/components/task-capture.tsx
 msgid "Template could not be read. "
-msgstr "Impossible de lire le modèle. "
+msgstr "Vorlage konnte nicht gelesen werden. "
 
 #: src/components/task-capture.tsx
 msgid "Template unavailable. "
-msgstr "Modèle indisponible. "
+msgstr "Vorlage nicht verfügbar. "
 
 #: src/app/task-screen.tsx
 msgid "Templates/Occurrence.md"
@@ -4253,102 +4253,102 @@ msgstr "Templates/Task.md"
 
 #: src/i18n/ui-copy.ts
 msgid "That section"
-msgstr "Cette section"
+msgstr "Dieser Abschnitt"
 
 #: src/app/full-calendar-view.tsx
 msgid "The calendar change could not be saved. {mutationError}"
-msgstr "Impossible d’enregistrer la modification du calendrier. {mutationError}"
+msgstr "Die Kalenderänderung konnte nicht gespeichert werden. {mutationError}"
 
 #: src/components/task-property-editor.tsx
 msgid "The change could not be saved."
-msgstr "Impossible d’enregistrer la modification."
+msgstr "Die Änderung konnte nicht gespeichert werden."
 
 #: src/app/auth-error.ts
 msgid "The collection could not be opened."
-msgstr "Impossible d’ouvrir la collection."
+msgstr "Die Sammlung konnte nicht geöffnet werden."
 
 #: src/app/app-shell.tsx
 msgid "The collection is unavailable right now."
-msgstr "La collection est indisponible pour le moment."
+msgstr "Die Sammlung ist derzeit nicht verfügbar."
 
 #: src/app/views-screen.tsx
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
-msgstr "Impossible de charger l’ordre manuel complet. Votre brouillon est conservé ; réessayez."
+msgstr "Die vollständige manuelle Reihenfolge konnte nicht geladen werden. Ihr Entwurf bleibt erhalten; versuchen Sie es erneut."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The created TaskNote could not be found."
-msgstr "La note de tâche créée est introuvable."
+msgstr "Die erstellte TaskNote konnte nicht gefunden werden."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The current scratchpad is unavailable."
-msgstr "Le bloc-notes actuel est indisponible."
+msgstr "Das aktuelle Scratchpad ist nicht verfügbar."
 
 #: src/app/app-shell.tsx
 msgid "The deletion"
-msgstr "La suppression"
+msgstr "Die Löschung"
 
 #: src/app/more-screen.tsx
 msgid "The demo keeps reminder details on tasks but doesn’t send notifications. Connect a collection to receive them."
-msgstr "La démo conserve les détails des rappels dans les tâches, mais n’envoie pas de notifications. Connectez une collection pour les recevoir."
+msgstr "In der Demo bleiben Erinnerungsdetails an Aufgaben erhalten, es werden jedoch keine Benachrichtigungen gesendet. Verbinden Sie eine Sammlung, um Benachrichtigungen zu erhalten."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"
-msgstr "la section de destination"
+msgstr "der Zielabschnitt"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
-msgstr "La première vue est l’accueil. L’ordre et la visibilité sont enregistrés pour cette collection sur cet appareil."
+msgstr "Die erste Ansicht ist die Startansicht. Reihenfolge und Sichtbarkeit werden für diese Sammlung auf diesem Gerät gespeichert."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The linked TaskNote could not be found."
-msgstr "La note de tâche liée est introuvable."
+msgstr "Die verknüpfte TaskNote konnte nicht gefunden werden."
 
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
-msgstr "Le menu reste ouvert pour vous permettre de réessayer."
+msgstr "Das Menü ist noch geöffnet. Sie können es erneut versuchen."
 
 #. placeholder {0}: message(reason)
 #: src/app/views-screen.tsx
 msgid "The move was saved, but this view could not refresh. {0}"
-msgstr "Le déplacement a été enregistré, mais cette vue n’a pas pu être actualisée. {0}"
+msgstr "Die Verschiebung wurde gespeichert, aber diese Ansicht konnte nicht aktualisiert werden. {0}"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was resumed, but history could not refresh. {0}"
-msgstr "La note a été reprise, mais l’historique n’a pas pu être actualisé. {0}"
+msgstr "Die Notiz wurde fortgesetzt, aber der Verlauf konnte nicht aktualisiert werden. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "The pattern start day is used."
-msgstr "Le jour de début du schéma de récurrence est utilisé."
+msgstr "Der Starttag des Musters wird verwendet."
 
 #: src/components/recurrence-field.tsx
 msgid "The rule is kept exactly as written. Apply only after it is valid."
-msgstr "La règle est conservée exactement telle qu’elle est écrite. Ne l’appliquez qu’une fois valide."
+msgstr "Die Regel bleibt genau wie eingegeben erhalten. Wenden Sie sie erst an, wenn sie gültig ist."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The scratchpad is not open."
-msgstr "Le bloc-notes n’est pas ouvert."
+msgstr "Scratchpad ist nicht geöffnet."
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "The task"
-msgstr "La tâche"
+msgstr "Die Aufgabe"
 
 #: src/components/task-actions.tsx
 msgid "The task action"
-msgstr "L’action sur la tâche"
+msgstr "Die Aufgabenaktion"
 
 #: src/app/full-calendar-view.tsx
 msgid "The task date is unavailable."
-msgstr "La date de la tâche est indisponible."
+msgstr "Das Aufgabendatum ist nicht verfügbar."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
-msgstr "La tâche reste dans la collection. Réessayez."
+msgstr "Die Aufgabe bleibt in der Sammlung. Versuchen Sie es erneut."
 
 #: src/app/views-screen.tsx
 msgid "The view change"
-msgstr "La modification de la vue"
+msgstr "Die Ansichtsänderung"
 
 #: src/app/views/project-property-offer.tsx
 msgid "The view could not be updated. {error}"
@@ -4372,7 +4372,7 @@ msgstr "Ces paramètres sont enregistrés dans la collection et accompagnent ses
 
 #: src/i18n/presentation.ts
 msgid "third"
-msgstr "troisième"
+msgstr "dritten"
 
 #: src/components/recurrence-field.tsx
 msgid "Third"
