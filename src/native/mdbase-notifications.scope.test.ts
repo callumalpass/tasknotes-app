@@ -74,8 +74,7 @@ describe("notification scope lifecycle", () => {
     "keeps a scheduling callback %s out of registration outcomes",
     async (failure) => {
       const f = fixture();
-      const changed = vi.fn((enabled: boolean) => {
-        if (!enabled) return;
+      const changed = vi.fn(() => {
         if (failure === "throw") throw new Error("schedule failed");
         return Promise.reject(new Error("schedule failed"));
       });
@@ -175,10 +174,24 @@ describe("notification scope lifecycle", () => {
     await f.subject.refreshRegistration();
     await expect(f.subject.enable()).rejects.toThrow("unresolved");
     expect(f.port.registerFcm).toHaveBeenCalledOnce();
-    await f.subject.disable();
+    f.port.unregisterFcm.mockRejectedValueOnce({
+      code: "outcome_unknown",
+      reason: "timer_channel_reapproval_required",
+    });
+    await expect(f.subject.disable()).rejects.toMatchObject({
+      reason: "timer_channel_reapproval_required",
+    });
+    expect(await f.subject.status()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    await expect(f.subject.disableIfEnabled()).rejects.toMatchObject({
+      code: "outcome_unknown",
+      reason: "timer_channel_reapproval_required",
+    });
     expect(f.port.unregisterFcm).toHaveBeenCalledOnce();
-    expect(f.messaging.deleteToken).toHaveBeenCalledOnce();
-    expect(f.storage.getItem(key + "scope")).toBeNull();
+    expect(f.messaging.deleteToken).not.toHaveBeenCalled();
+    expect(f.storage.getItem(key + "scope")).toBe("reauthorization_required");
   });
 
   it("never deletes the token or restores registration after failed unregister", async () => {
@@ -194,21 +207,133 @@ describe("notification scope lifecycle", () => {
     expect(f.port.registerFcm).toHaveBeenCalledOnce();
     // Explicit cleanup can retry unregister; passive wake cannot.
     await f.subject.disableIfEnabled();
-    expect(f.messaging.deleteToken).toHaveBeenCalledOnce();
+    expect(f.port.unregisterFcm).toHaveBeenCalledTimes(2);
+    expect(f.messaging.deleteToken).not.toHaveBeenCalled();
   });
 
-  it("keeps opt-out intent after local token deletion fails", async () => {
+  it.each([true, false])(
+    "keeps collection A's shared endpoint when collection B opts out (native=%s)",
+    async (native) => {
+      const f = fixture(native);
+      await f.subject.enable();
+      f.subject.bindScope({ key: "scope-B", timers: f.timers });
+      await f.subject.enable();
+      f.messaging.deleteToken.mockRejectedValue(new Error("must not delete"));
+      await f.subject.disable();
+      expect(f.messaging.deleteToken).not.toHaveBeenCalled();
+      expect(f.webPush.serviceWorker).toHaveBeenCalledTimes(native ? 0 : 2);
+      if (!native)
+        expect(f.port.unregisterWebPush).toHaveBeenCalledWith(
+          undefined,
+          expect.objectContaining({ signal: expect.any(AbortSignal) }),
+        );
+      expect(f.storage.getItem(key + "scope")).toBe("1");
+      expect(f.storage.getItem(key + "scope-B")).toBeNull();
+      f.subject.bindScope({ key: "scope", timers: f.timers });
+      expect(await f.subject.status()).toEqual({
+        state: "enabled",
+        optedIn: true,
+      });
+      await f.subject.refreshRegistration();
+      expect(
+        native ? f.port.registerFcm : f.port.registerWebPush,
+      ).toHaveBeenCalledTimes(3);
+    },
+  );
+
+  it.each(["conflict", "upgrade_required", "rate_limited", "invalid_request"])(
+    "restores off consent for confirmed SDK timer_refused (%s) without passive retry",
+    async (code) => {
+      const f = fixture();
+      f.port.registerFcm.mockRejectedValueOnce({
+        code,
+        reason: "timer_refused",
+      });
+      await expect(f.subject.enable()).rejects.toMatchObject({
+        code,
+        reason: "timer_refused",
+      });
+      expect(f.storage.getItem(key + "scope")).toBeNull();
+      await f.subject.refreshRegistration();
+      expect(f.port.registerFcm).toHaveBeenCalledOnce();
+      expect(await f.subject.status()).toEqual({
+        state: "off",
+        optedIn: false,
+      });
+    },
+  );
+
+  it("offers approval for a confirmed unauthenticated timer_refused without persisting uncertainty", async () => {
     const f = fixture();
-    await f.subject.enable();
-    f.messaging.deleteToken.mockRejectedValueOnce(new Error("bridge failed"));
-    await expect(f.subject.disable()).rejects.toThrow("bridge failed");
-    expect(f.port.unregisterFcm).toHaveBeenCalledOnce();
-    await f.subject.refreshRegistration();
-    expect(f.port.registerFcm).toHaveBeenCalledOnce();
-    expect(await f.subject.status()).toEqual({
-      state: "error",
+    f.port.registerFcm.mockRejectedValueOnce({
+      code: "unauthenticated",
+      reason: "timer_refused",
+    });
+    expect(await f.subject.enable()).toEqual({
+      state: "reauthorization_required",
       optedIn: false,
     });
+    expect(f.storage.getItem(key + "scope")).toBeNull();
+    await f.subject.refreshRegistration();
+    expect(f.port.registerFcm).toHaveBeenCalledOnce();
+  });
+
+  it("preserves existing consent after a confirmed rotation refusal", async () => {
+    const f = fixture();
+    await f.subject.enable();
+    f.port.registerFcm.mockRejectedValueOnce({
+      code: "rate_limited",
+      reason: "timer_refused",
+    });
+    await expect(f.subject.refreshRegistration()).rejects.toMatchObject({
+      reason: "timer_refused",
+    });
+    expect(f.storage.getItem(key + "scope")).toBe("1");
+  });
+
+  it("persists actual SDK reapproval-required registration without retrying or opting in", async () => {
+    const f = fixture();
+    const changed = vi.fn();
+    f.subject.bindScope({ key: "scope", timers: f.timers }, changed);
+    f.port.registerFcm.mockRejectedValueOnce({
+      code: "outcome_unknown",
+      reason: "timer_channel_reapproval_required",
+    });
+    expect(await f.subject.enable()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    expect(changed).not.toHaveBeenCalledWith(true);
+    f.subject.bindScope({ key: "scope", timers: f.timers }, changed);
+    expect(await f.subject.status()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    await f.subject.refreshRegistration();
+    expect(await f.subject.enable()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    await expect(f.subject.disableIfEnabled()).rejects.toMatchObject({
+      reason: "timer_channel_reapproval_required",
+    });
+    expect(f.port.registerFcm).toHaveBeenCalledOnce();
+    expect(f.port.unregisterFcm).not.toHaveBeenCalled();
+  });
+
+  it("keeps actual SDK unknown-write reasons pending rather than restoring consent", async () => {
+    const f = fixture();
+    f.port.registerFcm.mockRejectedValueOnce({
+      code: "outcome_unknown",
+      reason: "timer_write_unknown",
+    });
+    await expect(f.subject.enable()).rejects.toMatchObject({
+      reason: "timer_write_unknown",
+    });
+    expect(f.storage.getItem(key + "scope")).toBe("pending");
+    await f.subject.refreshRegistration();
+    await expect(f.subject.enable()).rejects.toThrow("unresolved");
+    expect(f.port.registerFcm).toHaveBeenCalledOnce();
   });
 
   it("ignores an old cleanup after binding a new scope", async () => {
@@ -323,7 +448,15 @@ function fixture(native = true) {
       installationId: "installation",
       criteria: ["task.reminder"],
     })),
-    unregisterWebPush: vi.fn(async () => undefined),
+    unregisterWebPush: vi.fn(
+      async (
+        _worker: ServiceWorkerRegistration | undefined,
+        _options: unknown,
+      ) => {
+        void _worker;
+        void _options;
+      },
+    ),
     close: vi.fn(),
   };
   const timers = new TimersApi(port as unknown as AppTimersPort);

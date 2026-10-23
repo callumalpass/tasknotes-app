@@ -116,7 +116,7 @@ describe("mdbase native notifications", () => {
     await vi.waitFor(() => expect(remove).toHaveBeenCalledOnce());
   });
 
-  it("removes the Connect channel before deleting the local token", async () => {
+  it("removes only the collection channel without deleting the shared token", async () => {
     const order: string[] = [];
     const fixture = manager({
       unregisterFcm: vi.fn(async () => {
@@ -128,7 +128,8 @@ describe("mdbase native notifications", () => {
     });
     await fixture.subject.enable();
     await fixture.subject.disable();
-    expect(order).toEqual(["connect", "firebase"]);
+    expect(order).toEqual(["connect"]);
+    expect(fixture.messaging.deleteToken).not.toHaveBeenCalled();
     expect(
       fixture.storage.getItem("tasknotes:mdbase-notifications:v2:scope"),
     ).toBe(null);
@@ -194,17 +195,16 @@ describe("mdbase native notifications", () => {
     expect(fixture.messaging.getToken).not.toHaveBeenCalled();
   });
 
-  it("unregisters the browser channel and push subscription on opt-out", async () => {
+  it("unregisters only the browser channel, preserving the shared subscription", async () => {
     const fixture = manager({
       isNative: vi.fn(() => false),
       webPushSupported: vi.fn(() => true),
     });
     await fixture.subject.enable();
     await fixture.subject.disable();
-    expect(fixture.timers.unregisterWebPush).toHaveBeenCalledWith(
-      fixture.serviceWorker,
-      { signal: expect.any(AbortSignal) },
-    );
+    expect(fixture.timers.unregisterWebPush).toHaveBeenCalledWith(undefined, {
+      signal: expect.any(AbortSignal),
+    });
     expect(
       fixture.storage.getItem("tasknotes:mdbase-notifications:v2:scope"),
     ).toBe(null);
@@ -246,7 +246,7 @@ describe("mdbase native notifications", () => {
     });
     expect(
       fixture.storage.getItem("tasknotes:mdbase-notifications:v2:scope"),
-    ).toBeNull();
+    ).toBe("reauthorization_required");
   });
 
   it("routes only valid content-free mdbase notification data", () => {

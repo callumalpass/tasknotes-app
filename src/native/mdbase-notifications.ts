@@ -1,6 +1,6 @@
 import type { Notification } from "@capacitor-firebase/messaging";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
-import type { TimersApi } from "@mdbase-dev/sdk";
+import { MdbaseError, type TimersApi } from "@mdbase-dev/sdk";
 
 import {
   androidPushMessaging,
@@ -52,7 +52,7 @@ export interface MdbaseNotificationManagerOptions {
   isConfigured(): boolean;
 }
 interface Binding extends MdbaseNotificationScope {
-  onOptInChange?: (enabled: boolean) => void;
+  onOptInChange?: (enabled: boolean) => void | Promise<void>;
   lifetime: AbortController;
   listeners: Set<() => void>;
 }
@@ -60,8 +60,8 @@ type Runtime = "native" | "web";
 
 export class MdbaseNotificationManager {
   private binding: Binding | null = null;
-  // Native token lifecycle is shared by this installation. Serialize it even
-  // across scope switches so an old delete cannot race a new registration.
+  // Serialize channel changes across scopes. The installation's push endpoint
+  // is shared: collection opt-out must never delete it.
   private tail: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly options: MdbaseNotificationManagerOptions) {}
@@ -70,7 +70,7 @@ export class MdbaseNotificationManager {
    * unregister a channel. Explicit sign-out must disable before port teardown. */
   bindScope(
     scope: MdbaseNotificationScope | null,
-    onOptInChange?: (enabled: boolean) => void,
+    onOptInChange?: (enabled: boolean) => void | Promise<void>,
   ): () => void {
     this.detach();
     if (!scope) return () => undefined;
@@ -83,7 +83,7 @@ export class MdbaseNotificationManager {
     };
     this.binding = binding;
     // Scheduling resumes only once restoration confirms permission/registration.
-    this.notifyOptIn(binding, false);
+    void this.notifyOptIn(binding, false);
     return () => {
       if (this.binding === binding) this.detach();
     };
@@ -99,22 +99,26 @@ export class MdbaseNotificationManager {
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn };
+    if (this.consent(binding) === "reauthorization_required") {
+      await this.notifyOptIn(binding, false);
+      return { state: "reauthorization_required", optedIn: false };
+    }
     if (
       this.consent(binding) === "pending" ||
       this.consent(binding) === "stopping"
     ) {
-      this.notifyOptIn(binding, false);
+      await this.notifyOptIn(binding, false);
       return { state: "error", optedIn: false };
     }
     const permission = await this.checkPermissions(runtime).catch(
       (error: unknown) => {
-        this.notifyOptIn(binding, false);
+        void this.notifyOptIn(binding, false);
         throw error;
       },
     );
     this.assertCurrent(binding);
     const enabled = this.enabled(binding) && permission.receive === "granted";
-    if (!enabled) this.notifyOptIn(binding, false);
+    if (!enabled) await this.notifyOptIn(binding, false);
     if (permission.receive === "denied")
       return { state: "denied", optedIn: this.enabled(binding) };
     return {
@@ -134,6 +138,8 @@ export class MdbaseNotificationManager {
         return { state: "reauthorization_required", optedIn: false };
       if (runtime === "native" && !this.options.isConfigured())
         return { state: "not_configured", optedIn: false };
+      if (this.consent(binding) === "reauthorization_required")
+        return { state: "reauthorization_required", optedIn: false };
       this.requireResolvedConsent(binding);
       const provider =
         runtime === "native" ? this.options.messaging : this.options.webPush;
@@ -146,14 +152,17 @@ export class MdbaseNotificationManager {
           : current;
       this.assertCurrent(binding);
       if (permission.receive !== "granted") {
-        this.notifyOptIn(binding, false);
+        await this.notifyOptIn(binding, false);
         return { state: "denied", optedIn: false };
       }
       try {
         await this.registerCurrentInstallation(binding, runtime);
       } catch (error) {
         const reason = errorReason(error);
-        if (reason === "notification_reauthorization_required")
+        if (
+          requiresReauthorization(reason) ||
+          (reason === "timer_refused" && errorCode(error) === "unauthenticated")
+        )
           return { state: "reauthorization_required", optedIn: false };
         if (reason === "managed_fcm_not_declared")
           return { state: "not_configured", optedIn: false };
@@ -172,27 +181,41 @@ export class MdbaseNotificationManager {
       if (!runtime) return { state: "unavailable", optedIn: false };
       if (!binding.timers)
         return { state: "reauthorization_required", optedIn: false };
-      // Persist intent before unregister: restart/rotation must not restore it.
+      if (this.consent(binding) === "reauthorization_required")
+        throw channelReapprovalError();
+      // Persist intent before draining: restart/rotation must not restore it.
       this.options.storage.setItem(this.key(binding), "stopping");
-      this.notifyOptIn(binding, false);
-      const signal = binding.lifetime.signal;
-      if (runtime === "native") {
-        await binding.timers.unregisterFcm({ signal });
-        this.assertCurrent(binding);
-        await this.options.messaging.deleteToken();
-      } else {
-        const worker = await this.options.webPush.serviceWorker();
-        this.assertCurrent(binding);
-        await binding.timers.unregisterWebPush(worker, { signal });
-      }
+      await this.notifyOptIn(binding, false);
       this.assertCurrent(binding);
+      const signal = binding.lifetime.signal;
+      try {
+        if (runtime === "native") {
+          await binding.timers.unregisterFcm({ signal });
+        } else {
+          // No worker: remove only this grant's channel, not the shared browser
+          // subscription used by other opted-in collections.
+          await binding.timers.unregisterWebPush(undefined, { signal });
+        }
+        this.assertCurrent(binding);
+      } catch (error) {
+        if (requiresReauthorization(errorReason(error)))
+          this.options.storage.setItem(
+            this.key(binding),
+            "reauthorization_required",
+          );
+        throw error;
+      }
       this.options.storage.removeItem(this.key(binding));
       return { state: "off", optedIn: false };
     });
   }
 
   async disableIfEnabled(): Promise<void> {
-    if (this.binding && this.consent(this.binding)) await this.disable();
+    if (this.binding && this.consent(this.binding)) {
+      const result = await this.disable();
+      // A missing timer grant is not a confirmed unregister either.
+      if (result.state !== "off") throw channelReapprovalError();
+    }
   }
 
   refreshRegistration(): Promise<void> {
@@ -206,7 +229,7 @@ export class MdbaseNotificationManager {
       const permission = await this.checkPermissions(runtime);
       this.assertCurrent(binding);
       if (permission.receive !== "granted") {
-        this.notifyOptIn(binding, false);
+        await this.notifyOptIn(binding, false);
         return;
       }
       await this.registerCurrentInstallation(binding, runtime);
@@ -305,19 +328,19 @@ export class MdbaseNotificationManager {
   private detach(): void {
     const binding = this.binding;
     if (!binding) return;
-    this.notifyOptIn(binding, false);
+    void this.notifyOptIn(binding, false);
     this.binding = null;
     binding.lifetime.abort();
     for (const dispose of binding.listeners) dispose();
   }
-  private notifyOptIn(binding: Binding, enabled: boolean): void {
+  private async notifyOptIn(binding: Binding, enabled: boolean): Promise<void> {
     if (this.binding !== binding || binding.lifetime.signal.aborted) return;
     try {
       // Scheduling errors belong to the repository; never turn a confirmed
       // channel registration into a failed/unknown registration outcome.
-      void Promise.resolve(binding.onOptInChange?.(enabled)).catch(
-        () => undefined,
-      );
+      // false must pause new schedules and naturally drain the active request:
+      // aborting its promise does not free the SDK's single-flight port slot.
+      await binding.onOptInChange?.(enabled);
     } catch {
       /* The caller reports scheduling errors separately. */
     }
@@ -343,6 +366,8 @@ export class MdbaseNotificationManager {
     return this.consent(binding) === "1";
   }
   private requireResolvedConsent(binding: Binding): void {
+    if (this.consent(binding) === "reauthorization_required")
+      throw channelReapprovalError();
     if (
       this.consent(binding) === "pending" ||
       this.consent(binding) === "stopping"
@@ -425,28 +450,42 @@ export class MdbaseNotificationManager {
     // A crash, an ambiguous response, or scope cancellation after dispatch must
     // never silently opt in or retry registration on the next wake/restart.
     this.options.storage.setItem(this.key(binding), "pending");
-    this.notifyOptIn(binding, false);
+    await this.notifyOptIn(binding, false);
+    this.assertCurrent(binding);
     try {
       await register();
       this.assertCurrent(binding);
       this.options.storage.setItem(this.key(binding), "1");
-      this.notifyOptIn(binding, true);
+      void this.notifyOptIn(binding, true);
     } catch (error) {
+      const reason = errorReason(error);
+      if (requiresReauthorization(reason)) {
+        this.options.storage.setItem(
+          this.key(binding),
+          "reauthorization_required",
+        );
+        throw error;
+      }
       if (
         binding.lifetime.signal.aborted ||
-        errorReason(error) === "outcome_unknown"
+        errorCode(error) === "outcome_unknown"
       )
         throw error;
-      // Only known refusals establish that no registration was admitted.
+      // The pinned SDK reports confirmed HTTP refusals as timer_refused with
+      // several different codes. Pre-dispatch validation/busy errors are safe
+      // too; never mistake an outcome_unknown code's more specific reason for
+      // a confirmed refusal.
       if (
+        reason === "timer_refused" ||
+        reason === "timer_port_busy" ||
+        reason === "managed_fcm_not_declared" ||
         [
-          "notification_reauthorization_required",
-          "managed_fcm_not_declared",
           "permission_denied",
+          "unauthenticated",
           "unauthorized",
           "invalid_request",
           "cancelled",
-        ].includes(errorReason(error) ?? "")
+        ].includes(errorCode(error) ?? "")
       ) {
         if (previous) this.options.storage.setItem(this.key(binding), previous);
         else this.options.storage.removeItem(this.key(binding));
@@ -454,6 +493,28 @@ export class MdbaseNotificationManager {
       throw error;
     }
   }
+}
+
+function requiresReauthorization(reason: string | undefined): boolean {
+  return (
+    reason === "timer_channel_reapproval_required" ||
+    reason === "notification_reauthorization_required"
+  );
+}
+
+function channelReapprovalError(): MdbaseError {
+  return new MdbaseError({
+    code: "outcome_unknown",
+    reason: "timer_channel_reapproval_required",
+    recovery: "resolve_outcome",
+    message:
+      "Reminder channel removal is unconfirmed. Review access to approve a fresh grant.",
+  });
+}
+
+function errorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  return (error as { code?: string }).code;
 }
 
 function errorReason(error: unknown): string | undefined {

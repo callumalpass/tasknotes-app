@@ -96,7 +96,7 @@ it("loads the real iOS proxy without assimilating it as a thenable", async () =>
     state: "off",
     optedIn: false,
   });
-  expect(nativePromise.mock.calls.map(([, method]) => method)).toContain(
+  expect(nativePromise.mock.calls.map(([, method]) => method)).not.toContain(
     "deleteToken",
   );
   expect(nativePromise.mock.calls.map(([, method]) => method)).not.toContain(
