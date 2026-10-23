@@ -78,12 +78,12 @@ msgstr "(несохранённые изменения)"
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, =1 {Добавление изображения…} one {Добавление # изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, =1 {Изображение добавлено} one {Добавлено # изображение} few {Добавлено # изображения} many {Добавлено # изображений} other {Добавлено # изображения}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -98,7 +98,7 @@ msgstr "{0, plural, one {# незавершённая} few {# незавершё
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
-msgstr ""
+msgstr "{0, plural, one {Учётная запись разблокирована. Для # закрытой коллекции доступ к ключам ещё не завершён; повторите разблокировку, когда эта коллекция будет выбрана.} few {Учётная запись разблокирована. Для # закрытых коллекций доступ к ключам ещё не завершён; повторите разблокировку, когда будет выбрана каждая из них.} many {Учётная запись разблокирована. Для # закрытых коллекций доступ к ключам ещё не завершён; повторите разблокировку, когда будет выбрана каждая из них.} other {Учётная запись разблокирована. Для # закрытых коллекций доступ к ключам ещё не завершён; повторите разблокировку, когда будет выбрана каждая из них.}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
@@ -113,12 +113,12 @@ msgstr "{0, plural, one {Перенести на сегодня все прос�
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
-msgstr ""
+msgstr "{0, plural, one {Восстановление настроено. Для # закрытой коллекции доступ к ключам ещё не завершён.} few {Восстановление настроено. Для # закрытых коллекций доступ к ключам ещё не завершён.} many {Восстановление настроено. Для # закрытых коллекций доступ к ключам ещё не завершён.} other {Восстановление настроено. Для # закрытых коллекций доступ к ключам ещё не завершён.}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
-msgstr ""
+msgstr "{0, plural, one {Для # цели восстановления применение строгого режима ещё не завершено. Ключ восстановления останется на этом устройстве, пока mdbase не подтвердит завершение.} few {Для # целей восстановления применение строгого режима ещё не завершено. Ключ восстановления останется на этом устройстве, пока mdbase не подтвердит завершение.} many {Для # целей восстановления применение строгого режима ещё не завершено. Ключ восстановления останется на этом устройстве, пока mdbase не подтвердит завершение.} other {Для # целей восстановления применение строгого режима ещё не завершено. Ключ восстановления останется на этом устройстве, пока mdbase не подтвердит завершение.}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -360,7 +360,7 @@ msgstr "{count, plural, one {год} few {года} many {лет} other {год�
 
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
-msgstr ""
+msgstr "{count, selectordinal, other {#-й день с конца месяца}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -372,19 +372,19 @@ msgstr "{hours} ч {minutes} мин"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Каждый день} one {Раз в # день} few {Раз в # дня} many {Раз в # дней} other {Раз в # дня}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Каждый месяц} one {Раз в # месяц} few {Раз в # месяца} many {Раз в # месяцев} other {Раз в # месяца}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Каждую неделю} one {Раз в # неделю} few {Раз в # недели} many {Раз в # недель} other {Раз в # недели}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Каждый год} one {Раз в # год} few {Раз в # года} many {Раз в # лет} other {Раз в # года}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3564,7 +3564,7 @@ msgstr "Запланированные даты"
 #: src/app/view-editor-form.tsx
 msgctxt "view layout option"
 msgid "Planner"
-msgstr ""
+msgstr "Планирование"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
@@ -4757,7 +4757,7 @@ msgstr "Чтобы открыть эту коллекцию, снова разр
 
 #: src/app/model-setup-screen.tsx
 msgid "TaskNotes setup is unavailable."
-msgstr ""
+msgstr "Настройка TaskNotes недоступна."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
@@ -4882,7 +4882,7 @@ msgstr "Меню осталось открытым, чтобы вы могли �
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was not deleted. {0}"
-msgstr ""
+msgstr "Заметка не удалена. {0}"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
