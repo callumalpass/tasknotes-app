@@ -1375,370 +1375,370 @@ msgstr "{0} 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy path"
-msgstr "Copier le chemin"
+msgstr "경로 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy task link"
-msgstr "Copier le lien de la tâche"
+msgstr "작업 링크 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy title"
-msgstr "Copier le titre"
+msgstr "제목 복사"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
-msgstr "Corrigez la règle avant de pouvoir planifier des occurrences."
+msgstr "예약하기 전에 규칙을 수정하세요."
 
 #. placeholder {0}: Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")
 #. placeholder {1}: dragged.task.title
 #. placeholder {2}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not {0} “{1}”. {2}"
-msgstr "Impossible de {0} « {1} ». {2}"
+msgstr "“{1}”을(를) {0}하지 못했습니다. {2}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not move “{0}”. {1}"
-msgstr "Impossible de déplacer « {0} ». {1}"
+msgstr "“{0}”을(를) 이동하지 못했습니다. {1}"
 
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
-msgstr "Impossible de rétablir la connexion. Réessayez ou vérifiez les paramètres de connexion."
+msgstr "다시 연결하지 못했습니다. 다시 시도하거나 연결 설정을 확인하세요."
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Could not save the default mode on this device."
-msgstr "Impossible d’enregistrer le mode par défaut sur cet appareil."
+msgstr "이 기기에 기본 모드를 저장하지 못했습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create {selectedReviewCount} task notes"
-msgstr "Créer {selectedReviewCount} notes de tâche"
+msgstr "작업 노트 {selectedReviewCount}개 만들기"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
-msgstr "Créer une sous-tâche de {0}"
+msgstr "{0}의 하위 작업 만들기"
 
 #: src/components/task-model-settings.tsx
 msgid "Create after completion"
-msgstr "Créer après la fin de la tâche"
+msgstr "완료 후 만들기"
 
 #: src/components/task-model-settings.tsx
 msgid "Create next occurrence"
-msgstr "Créer l’occurrence suivante"
+msgstr "다음 반복 항목 만들기"
 
 #: src/app/view-editor.tsx
 msgid "Create saved view"
-msgstr "Créer une vue enregistrée"
+msgstr "저장된 뷰 만들기"
 
 #: src/components/task-actions.tsx
 msgid "Create subtask"
-msgstr "Créer une sous-tâche"
+msgstr "하위 작업 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task"
-msgstr "Créer une tâche"
+msgstr "작업 만들기"
 
 #. placeholder {0}: node.text
 #: src/app/scratchpad-screen.tsx
 msgid "Create task for {0}"
-msgstr "Créer une tâche pour {0}"
+msgstr "{0} 작업 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task notes"
-msgstr "Créer des notes de tâche"
+msgstr "작업 노트 만들기"
 
 #: src/app/task-screen.tsx
 msgid "Create the next after completion"
-msgstr "Créer la suivante après la fin de la tâche"
+msgstr "완료 후 다음 항목 만들기"
 
 #: src/app/views-screen.tsx
 msgid "Create view"
-msgstr "Créer une vue"
+msgstr "뷰 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Created"
-msgstr "Création effectuée"
+msgstr "만들었습니다"
 
 #. placeholder {0}: converted.task.title
 #: src/app/scratchpad-screen.tsx
 msgid "Created “{0}”"
-msgstr "Création de « {0} » effectuée"
+msgstr "“{0}”을(를) 만들었습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
-msgstr "Création en cours…"
+msgstr "만드는 중…"
 
 #: src/app/collection-picker.tsx
 msgid "Current"
-msgstr "Actuelle"
+msgstr "현재"
 
 #: src/i18n/editor-phrases.ts
 msgid "current match"
-msgstr "correspondance actuelle"
+msgstr "현재 일치 항목"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
-msgstr "Note actuelle"
+msgstr "현재 노트"
 
 #: src/i18n/ui-copy.ts
 msgid "current scratchpad"
-msgstr "bloc-notes actuel"
+msgstr "현재 스크래치패드"
 
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
-msgstr "Filtre personnalisé"
+msgstr "사용자 지정 필터"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Daily"
-msgstr "Tous les jours"
+msgstr "매일"
 
 #: src/app/more-screen.tsx
 msgid "Dark"
-msgstr "Sombre"
+msgstr "어둡게"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
-msgstr "Date"
+msgstr "날짜"
 
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
-msgstr "Date et agenda"
+msgstr "날짜 및 일정"
 
 #: src/components/task-actions.tsx
 msgid "Dates"
-msgstr "Dates"
+msgstr "날짜"
 
 #: src/components/task-capture.tsx
 msgid "Dates and estimate"
-msgstr "Dates et estimation"
+msgstr "날짜 및 예상 시간"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Day"
-msgstr "Jour"
+msgstr "일"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
-msgstr "Début de la journée"
+msgstr "하루 시작"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day ends"
-msgstr "Fin de la journée"
+msgstr "하루 종료"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Days"
-msgstr "Jours"
+msgstr "일"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
-msgstr "Mode par défaut des nouvelles notes"
+msgstr "새 노트의 기본 모드"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
-msgstr "Priorité par défaut"
+msgstr "기본 우선순위"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Default Scratchpad mode"
-msgstr "Mode par défaut du Bloc-notes"
+msgstr "기본 스크래치패드 모드"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default status"
-msgstr "Statut par défaut"
+msgstr "기본 상태"
 
 #: src/app/view-editor-form.tsx
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
-msgstr "Les valeurs par défaut déduites des conditions de filtre simples sont ajoutées à la création de la tâche."
+msgstr "간단한 필터 조건에서 추론한 기본값은 작업을 만들 때 추가됩니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Delay"
-msgstr "Délai"
+msgstr "지연"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
-msgstr "Supprimer"
+msgstr "삭제"
 
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
-msgstr "Supprimer « {name} » ?"
+msgstr "“{name}”을(를) 삭제할까요?"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr "Supprimer l’élément"
+msgstr "항목 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
-msgstr "Supprimer la tâche récurrente"
+msgstr "반복 작업 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete task"
-msgstr "Supprimer la tâche"
+msgstr "작업 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete this repeating task and all of its occurrences?"
-msgstr "Supprimer cette tâche récurrente et toutes ses occurrences ?"
+msgstr "이 반복 작업과 모든 반복 항목을 삭제할까요?"
 
 #: src/components/task-actions.tsx
 msgid "Delete this task?"
-msgstr "Supprimer cette tâche ?"
+msgstr "이 작업을 삭제할까요?"
 
 #: src/app/view-editor.tsx
 msgid "Delete view"
-msgstr "Supprimer la vue"
+msgstr "뷰 삭제"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”"
-msgstr "« {0} » supprimé"
+msgstr "“{0}”을(를) 삭제했습니다."
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr "« {0} » supprimé. Vous pouvez annuler pendant 30 secondes."
+msgstr "“{0}”을(를) 삭제했습니다. 30초 동안 실행 취소할 수 있습니다."
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
-msgstr "Suppression à vérifier"
+msgstr "삭제 결과 확인 필요"
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
-msgstr "Suppression en attente"
+msgstr "삭제 대기 중"
 
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
-msgstr "Dépendances"
+msgstr "의존성"
 
 #: src/app/view-editor-form.tsx
 msgid "Descending"
-msgstr "Décroissant"
+msgstr "내림차순"
 
 #: src/components/reminder-editor.tsx
 msgid "Description"
-msgstr "Description"
+msgstr "설명"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
-msgstr "Détacher"
+msgstr "분리"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Detach {0}"
-msgstr "Détacher {0}"
+msgstr "{0} 분리"
 
 #: src/components/task-attachments.tsx
 msgid "Detach from task"
-msgstr "Détacher de la tâche"
+msgstr "작업에서 분리"
 
 #: src/components/task-attachments.tsx
 msgid "Detaching keeps the image file in your collection."
-msgstr "Détacher l’image conserve son fichier dans votre collection."
+msgstr "분리해도 이미지 파일은 컬렉션에 유지됩니다."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
-msgstr "Réglage de l’appareil"
+msgstr "기기 설정"
 
 #: src/components/reminder-editor.tsx
 msgid "Direction"
-msgstr "Sens"
+msgstr "방향"
 
 #: src/app/notification-label.ts
 msgid "Disabled in system settings"
-msgstr "Désactivées dans les paramètres système"
+msgstr "시스템 설정에서 비활성화됨"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard all saved recovery and disconnect this collection? This does not reverse changes that may already have reached mdbase."
-msgstr "Abandonner toutes les données de récupération enregistrées et déconnecter cette collection ? Cela n’annule pas les modifications qui ont peut-être déjà atteint mdbase."
+msgstr "저장된 복구 항목을 모두 폐기하고 이 컬렉션의 연결을 해제할까요? 이미 mdbase에 반영되었을 수 있는 변경 사항은 되돌리지 않습니다."
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
-msgstr "Abandonner les modifications"
+msgstr "변경 사항 폐기"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes?"
-msgstr "Abandonner les modifications ?"
+msgstr "변경 사항을 폐기할까요?"
 
 #: src/components/global-task-capture.tsx
 msgid "Discard draft"
-msgstr "Abandonner le brouillon"
+msgstr "초안 폐기"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
-msgstr "Abandonner la récupération"
+msgstr "복구 정보 폐기"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard recovery and disconnect"
-msgstr "Abandonner la récupération et déconnecter"
+msgstr "복구 정보 폐기 및 연결 해제"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr "L’abandon supprime toutes les données de récupération enregistrées et déconnecte cette collection. Cela n’annule pas une suppression qui a peut-être abouti."
+msgstr "폐기하면 저장된 복구 정보가 모두 제거되고 이 컬렉션의 연결이 해제됩니다. 이미 완료되었을 수 있는 삭제는 되돌리지 않습니다."
 
 #: src/app/cloud-collection.tsx
 msgid "Discarding…"
-msgstr "Abandon en cours…"
+msgstr "폐기 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Dismiss"
-msgstr "Masquer"
+msgstr "닫기"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
-msgstr "Masquer la confirmation d’ajout de tâche"
+msgstr "작업 추가 확인 닫기"
 
 #: src/app/view-editor-form.tsx
 msgid "Displayed properties"
-msgstr "Propriétés affichées"
+msgstr "표시 속성"
 
 #: src/components/expression-builder.tsx
 msgid "does not contain"
-msgstr "ne contient pas"
+msgstr "포함하지 않음"
 
 #: src/app/more-screen.tsx
 msgid "Does TaskNotes work offline?"
-msgstr "TaskNotes fonctionne-t-il hors ligne ?"
+msgstr "TaskNotes는 오프라인에서도 작동하나요?"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
-msgstr "Terminé"
+msgstr "완료"
 
 #: src/components/assignee-editor.tsx
 msgid "Done choosing assignees"
-msgstr "Terminer le choix des personnes assignées"
+msgstr "담당자 선택 완료"
 
 #: src/i18n/ui-copy.ts
 msgid "down"
-msgstr "vers le bas"
+msgstr "아래"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
-msgstr "Brouillon de tâche"
+msgstr "작업 초안"
 
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
-msgstr "Déposer ici"
+msgstr "여기에 놓기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images here, paste them, upload files, or take a photo."
-msgstr "Déposez des images ici, collez-les, importez des fichiers ou prenez une photo."
+msgstr "이미지를 여기에 놓거나 붙여넣고, 파일을 업로드하거나 사진을 찍으세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images to add them"
-msgstr "Déposer des images pour les ajouter"
+msgstr "이미지를 놓아 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "due"
-msgstr "échéance"
+msgstr "마감"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/task-screen.tsx
@@ -1748,58 +1748,58 @@ msgstr "échéance"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Due"
-msgstr "Échéance"
+msgstr "마감"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr "Échéance (non définie)"
+msgstr "마감일(설정 안 됨)"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-screen.tsx
 #: src/i18n/presentation.ts
 msgid "Due {0}"
-msgstr "Échéance : {0}"
+msgstr "마감 {0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr "Échéance et date planifiée"
+msgstr "마감 및 예정"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
-msgstr "Échéances"
+msgstr "마감일"
 
 #: src/components/task-actions.tsx
 msgid "Due set"
-msgstr "Échéance définie"
+msgstr "마감일 설정됨"
 
 #: src/components/task-actions.tsx
 msgid "Due today"
-msgstr "Échéance aujourd’hui"
+msgstr "오늘 마감"
 
 #: src/components/task-actions.tsx
 msgid "Due tomorrow"
-msgstr "Échéance demain"
+msgstr "내일 마감"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
-msgstr "Dupliquer"
+msgstr "복제"
 
 #: src/app/view-editor.tsx
 msgid "Duplicate saved view"
-msgstr "Dupliquer la vue enregistrée"
+msgstr "저장된 뷰 복제"
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
-msgstr "Chaque mois"
+msgstr "매월"
 
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
-msgstr "Les premières règles sont prioritaires."
+msgstr "앞에 있는 규칙이 우선 적용됩니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
-msgstr "Modifier"
+msgstr "편집"
 
 #. placeholder {0}: detail.label
 #. placeholder {0}: item.key
@@ -1808,7 +1808,7 @@ msgstr "Modifier"
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Edit {0}"
-msgstr "Modifier : {0}"
+msgstr "{0} 편집"
 
 #: src/components/task-actions.tsx
 msgid "Edit dates and reminders"
