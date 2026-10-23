@@ -111,7 +111,7 @@ import {
 } from "./scratchpads";
 import { taskCompletion } from "../domain/task-completion";
 import { taskSearchTokens } from "../domain/task-query";
-import { desiredTaskTimers } from "../domain/reminder-timers";
+import { taskTimerMembership } from "../domain/reminder-timers";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
@@ -843,7 +843,7 @@ export class NextTaskRepository implements TaskRepository {
                 throw nativeUnsupported(
                   "Reminder scheduling is waiting for task changes to be confirmed.",
                 );
-              const desired = await desiredTaskTimers([...tasks.values()]);
+              const desired = await taskTimerMembership([...tasks.values()]);
               signal.throwIfAborted();
               this.assertCurrentData(revision);
               return { revision, ledgerRevision, desired };

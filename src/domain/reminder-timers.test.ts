@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TaskNotesTaskModel } from "./tasknotes-model";
-import { desiredTaskTimers } from "./reminder-timers";
+import { taskTimerMembership } from "./reminder-timers";
 
 const model = new TaskNotesTaskModel();
 const now = Date.parse("2099-08-01T00:00:00Z");
@@ -17,8 +17,8 @@ describe("content-free reminder membership", () => {
       { title: "Private title", body: "Private body", reminders: [reminder] },
       { id: crypto.randomUUID() },
     );
-    const first = await desiredTaskTimers([task]);
-    const second = await desiredTaskTimers([
+    const first = await taskTimerMembership([task]);
+    const second = await taskTimerMembership([
       {
         ...task,
         title: "Renamed",
@@ -34,7 +34,7 @@ describe("content-free reminder membership", () => {
     ]);
     expect(second[0]!.id).toBe(first[0]!.id);
     expect(second[0]!.fireAt).toBe("2099-08-07T09:00:00.000Z");
-    const changedIdentity = await desiredTaskTimers([
+    const changedIdentity = await taskTimerMembership([
       { ...task, reminders: [{ ...reminder, id: "another" }] },
     ]);
     expect(changedIdentity[0]!.id).not.toBe(first[0]!.id);
@@ -46,7 +46,7 @@ describe("content-free reminder membership", () => {
       { id: crypto.randomUUID() },
     );
     expect(
-      await desiredTaskTimers([
+      await taskTimerMembership([
         { ...task, completed: true },
         { ...task, archived: true },
         {
@@ -81,9 +81,11 @@ describe("content-free reminder membership", () => {
       { id: crypto.randomUUID() },
     );
     expect(
-      (await desiredTaskTimers([task])).map((timer) => timer.fireAt),
+      (await taskTimerMembership([task])).map((timer) => timer.fireAt),
     ).toEqual([new Date(now - 1).toISOString(), new Date(now).toISOString()]);
-    expect(await desiredTaskTimers([{ ...task, completed: true }])).toEqual([]);
+    expect(await taskTimerMembership([{ ...task, completed: true }])).toEqual(
+      [],
+    );
   });
 
   it("retains due/scheduled offsets and device-local midnight for date-only anchors", async () => {
@@ -104,7 +106,7 @@ describe("content-free reminder membership", () => {
       },
       { id: crypto.randomUUID() },
     );
-    const timers = await desiredTaskTimers([task]);
+    const timers = await taskTimerMembership([task]);
     expect(timers.map((timer) => timer.fireAt)).toEqual([
       new Date(2099, 7, 5, 0, 0, 0).toISOString(),
       "2099-08-06T08:45:00.000Z",

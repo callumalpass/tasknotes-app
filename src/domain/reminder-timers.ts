@@ -1,9 +1,20 @@
 import { reminderFireTime } from "./reminder";
 import type { TaskSummary } from "./task";
 
+/** Legacy repository planning; retain its future-only behavior until that
+ * adapter is removed. NEXT reconciles complete membership instead. */
+export async function desiredTaskTimers(
+  tasks: TaskSummary[],
+  now = Date.now(),
+): Promise<Array<{ id: string; fireAt: string }>> {
+  return (await taskTimerMembership(tasks)).filter(
+    (timer) => Date.parse(timer.fireAt) > now,
+  );
+}
+
 /** Complete content-free membership, including overdue reminders. The authority
  * preserves known overdue/fired history without backfilling unseen past timers. */
-export async function desiredTaskTimers(
+export async function taskTimerMembership(
   tasks: TaskSummary[],
 ): Promise<Array<{ id: string; fireAt: string }>> {
   const desired = tasks.flatMap((task) => {

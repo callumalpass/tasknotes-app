@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { NextTaskRepository } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { desiredTaskTimers } from "../domain/reminder-timers";
+import { taskTimerMembership } from "../domain/reminder-timers";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => {
@@ -157,7 +157,7 @@ describe("native repository reminder reconciliation", () => {
     expect(namespace).toBe("task-reminders");
     expect(body.criterion_id).toBe("task.reminder");
     expect(body.timers).toEqual(
-      (await desiredTaskTimers([task])).map(({ id, fireAt }) => ({
+      (await taskTimerMembership([task])).map(({ id, fireAt }) => ({
         id,
         fire_at: fireAt,
       })),
@@ -198,7 +198,7 @@ describe("native repository reminder reconciliation", () => {
     expect(
       new Set(submit.mock.calls.at(-1)![1].timers.map((timer) => timer.id)),
     ).toEqual(
-      new Set((await desiredTaskTimers([one, two])).map((timer) => timer.id)),
+      new Set((await taskTimerMembership([one, two])).map((timer) => timer.id)),
     );
     submit.mockClear();
     for (const mode of ["incomplete", "changing", "failed", "empty"] as const) {
@@ -253,7 +253,7 @@ describe("native repository reminder reconciliation", () => {
     const task = await seed(f, "Overdue active task", past);
     await f.repository.initialize({ deferTaskIndex: true });
     const submit = await schedule(f);
-    const expected = (await desiredTaskTimers([task])).map(
+    const expected = (await taskTimerMembership([task])).map(
       ({ id, fireAt }) => ({
         id,
         fire_at: fireAt,
