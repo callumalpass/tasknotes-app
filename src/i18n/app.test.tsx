@@ -408,7 +408,7 @@ describe("application localization", () => {
     );
     const rule = "FREQ=MONTHLY;BYDAY=2MO";
     expect(recurrenceRuleSummary(parseRecurrenceRule(rule))).toBe(
-      "Tous les mois, le deuxième lundi",
+      "Chaque mois, le deuxième lundi",
     );
     expect(
       recurrenceRuleSummary(
