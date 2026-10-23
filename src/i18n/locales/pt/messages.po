@@ -4446,56 +4446,56 @@ msgstr "Não foi possível carregar esta visualização."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "This view uses an unavailable sort."
-msgstr "Cette vue utilise un tri indisponible."
+msgstr "Esta visualização usa uma ordenação indisponível."
 
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
-msgstr "Heure"
+msgstr "Hora"
 
 #: src/app/task-screen.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
-msgstr "Temps"
+msgstr "Horário"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time format"
-msgstr "Format de l’heure"
+msgstr "Formato de hora"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time slot size"
-msgstr "Taille des créneaux horaires"
+msgstr "Duração do intervalo"
 
 #: src/app/task-time-tracking.tsx
 msgid "Timer description"
-msgstr "Description du chronomètre"
+msgstr "Descrição do cronômetro"
 
 #: src/app/task-editor-draft.ts
 #: src/components/task-row.tsx
 msgid "Timer running"
-msgstr "Chronomètre en cours"
+msgstr "Cronômetro em execução"
 
 #: src/components/task-capture.tsx
 msgid "Timing"
-msgstr "Dates et heures"
+msgstr "Duração"
 
 #: src/i18n/default-labels.ts
 msgid "Title"
-msgstr "Titre"
+msgstr "Título"
 
 #: src/app/view-editor-form.tsx
 msgid "Title only"
-msgstr "Titre seul"
+msgstr "Somente título"
 
 #: src/app/task-screen.tsx
 msgid "Title required"
-msgstr "Titre requis"
+msgstr "Título obrigatório"
 
 #: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
-msgstr "à"
+msgstr "para"
 
 #: src/app/full-calendar-view.tsx
 #: src/components/task-property-editor.tsx
@@ -4503,246 +4503,246 @@ msgstr "à"
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
-msgstr "Aujourd’hui"
+msgstr "Hoje"
 
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
 msgid "Tomorrow"
-msgstr "Demain"
+msgstr "Amanhã"
 
 #: src/app/full-calendar-view.tsx
 msgid "Tracked time"
-msgstr "Temps enregistré"
+msgstr "Tempo registrado"
 
 #: src/app/cloud-collection.tsx
 msgid "Try a disposable demo"
-msgstr "Essayer une démo temporaire"
+msgstr "Experimente uma demonstração descartável"
 
 #: src/app/app-shell.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
-msgstr "Réessayer"
+msgstr "Tentar novamente"
 
 #: src/app/views/view-catalog.tsx
 msgid "Try another search or filter."
-msgstr "Essayez une autre recherche ou un autre filtre."
+msgstr "Tente outra pesquisa ou filtro."
 
 #: src/app/search-screen.tsx
 msgid "Try fewer words or another spelling."
-msgstr "Essayez moins de mots ou une autre orthographe."
+msgstr "Tente usar menos palavras ou outra grafia."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
-msgstr "Essayez de recharger la vue. Si le problème persiste, modifiez ses paramètres ou choisissez une autre vue."
+msgstr "Tente carregar a visualização novamente. Se o problema continuar, edite as configurações ou escolha outra visualização."
 
 #: src/app/more-screen.tsx
 msgid "Turn off reminders"
-msgstr "Désactiver les rappels"
+msgstr "Desativar lembretes"
 
 #: src/app/more-screen.tsx
 msgid "Turn on reminders"
-msgstr "Activer les rappels"
+msgstr "Ativar lembretes"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
-msgstr "Type"
+msgstr "Tipo"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
-msgstr "Sans assignation"
+msgstr "Sem responsável"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
-msgstr "Interprétation…"
+msgstr "Entendendo…"
 
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Undo"
-msgstr "Annuler"
+msgstr "Desfazer"
 
 #: src/i18n/editor-phrases.ts
 msgid "unfold"
-msgstr "déplier"
+msgstr "expandir"
 
 #: src/i18n/editor-phrases.ts
 msgid "Unfold line"
-msgstr "Déplier la ligne"
+msgstr "Expandir linha"
 
 #: src/i18n/editor-phrases.ts
 msgid "Unfolded lines"
-msgstr "Lignes dépliées"
+msgstr "Linhas expandidas"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
-msgstr "Unité"
+msgstr "Unidade"
 
 #: src/app/cloud-collection.tsx
 msgid "Unknown time"
-msgstr "Heure inconnue"
+msgstr "Horário desconhecido"
 
 #: src/app/task-screen.tsx
 msgid "Unskip"
-msgstr "Ne plus ignorer"
+msgstr "Desmarcar como ignorada"
 
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
-msgstr "Ne plus ignorer l’occurrence"
+msgstr "Desmarcar ocorrência como ignorada"
 
 #: src/i18n/ui-copy.ts
 msgid "up"
-msgstr "vers le haut"
+msgstr "para cima"
 
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
-msgstr "Occurrences récurrentes à venir"
+msgstr "Ocorrências recorrentes futuras"
 
 #: src/app/more-screen.tsx
 msgid "Updating"
-msgstr "Mise à jour en cours"
+msgstr "Atualizando"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"
-msgstr "Mise à jour de la vue"
+msgstr "Atualizando visualização"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Upload images"
-msgstr "Importer des images"
+msgstr "Enviar imagens"
 
 #: src/app/cloud-collection.tsx
 msgid "Use"
-msgstr "Utiliser"
+msgstr "Usar"
 
 #. placeholder {0}: query.trim()
 #: src/components/multi-value-field.tsx
 msgid "Use “{0}”"
-msgstr "Utiliser « {0} »"
+msgstr "Usar “{0}”"
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx
 msgid "Use template{0}"
-msgstr "Utiliser le modèle{0}"
+msgstr "Usar modelo{0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured due field."
-msgstr "Utiliser le champ d’échéance configuré."
+msgstr "Usar o campo de vencimento configurado."
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured scheduled field."
-msgstr "Utiliser le champ de date planifiée configuré."
+msgstr "Usar o campo de agendamento configurado."
 
 #: src/app/task-screen.tsx
 msgid "Use the occurrence actions above to change this state."
-msgstr "Utilisez les actions d’occurrence ci-dessus pour modifier cet état."
+msgstr "Use as ações da ocorrência acima para alterar este estado."
 
 #: src/components/task-model-settings.tsx
 msgid "Use the task template for new tasks"
-msgstr "Utiliser le modèle de tâche pour les nouvelles tâches"
+msgstr "Usar o modelo de tarefa para novas tarefas"
 
 #: src/components/recurrence-field.tsx
 msgid "Use visual editor"
-msgstr "Utiliser l’éditeur visuel"
+msgstr "Usar editor visual"
 
 #: src/components/expression-builder.tsx
 msgid "Value"
-msgstr "Valeur"
+msgstr "Valor"
 
 #: src/app/more-screen.tsx
 msgid "Version {__APP_VERSION__}"
-msgstr "Version {__APP_VERSION__}"
+msgstr "Versão {__APP_VERSION__}"
 
 #: src/app/view-editor-form.tsx
 msgid "View details"
-msgstr "Détails de la vue"
+msgstr "Ver detalhes"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"
-msgstr "Nom de la vue"
+msgstr "Nome da visualização"
 
 #: src/components/view-options.tsx
 msgid "View options"
-msgstr "Options de la vue"
+msgstr "Opções de visualização"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Views"
-msgstr "Vues"
+msgstr "Visualizações"
 
 #: src/app/views/view-catalog.tsx
 msgid "Views stored in your collection"
-msgstr "Vues stockées dans votre collection"
+msgstr "Visualizações armazenadas na sua coleção"
 
 #: src/components/task-model-settings.tsx
 msgid "Virtual occurrences"
-msgstr "Occurrences virtuelles"
+msgstr "Ocorrências virtuais"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
-msgstr "L’édition visuelle est indisponible car cette règle utilise {0}."
+msgstr "A edição visual não está disponível porque esta regra usa {0}."
 
 #: src/app/cloud-collection.tsx
 msgid "Waiting to check the exact saved request."
-msgstr "En attente de vérification de la requête enregistrée à l’identique."
+msgstr "Aguardando para verificar a solicitação salva exata."
 
 #: src/app/task-screen.tsx
 msgid "Website, Home"
-msgstr "Site web, Maison"
+msgstr "Site, Início"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Week"
-msgstr "Semaine"
+msgstr "Semana"
 
 #: src/components/calendar-preferences.tsx
 msgid "Week starts"
-msgstr "Début de la semaine"
+msgstr "A semana começa"
 
 #: src/components/recurrence-field.tsx
 msgid "Weekday"
-msgstr "Jour de semaine"
+msgstr "Dia da semana"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekdays"
-msgstr "Du lundi au vendredi"
+msgstr "Dias da semana"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekly"
-msgstr "Toutes les semaines"
+msgstr "Semanal"
 
 #: src/components/duration-field.tsx
 msgid "Weeks"
-msgstr "Semaines"
+msgstr "Semanas"
 
 #: src/app/cloud-collection.tsx
 msgid "Welcome back"
-msgstr "Heureux de vous retrouver"
+msgstr "Boas-vindas de volta"
 
 #: src/app/task-time-tracking.tsx
 msgid "What are you working on?"
-msgstr "Sur quoi travaillez-vous ?"
+msgstr "No que você está trabalhando?"
 
 #: src/app/cloud-collection.tsx
 msgid "What is mdbase?"
-msgstr "Qu’est-ce que mdbase ?"
+msgstr "O que é mdbase?"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "What needs doing?"
-msgstr "Que faut-il faire ?"
+msgstr "O que precisa ser feito?"
 
 #: src/app/task-screen.tsx
 msgid "When I choose"
-msgstr "Quand je choisis"
+msgstr "Quando eu escolher"
 
 #: src/app/more-screen.tsx
 msgid "Where are my tasks saved?"
-msgstr "Où sont enregistrées mes tâches ?"
+msgstr "Onde minhas tarefas são salvas?"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr "Position"
+msgstr "Qual"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
@@ -4755,77 +4755,77 @@ msgstr "Wikilinks"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
-msgstr "Session de travail"
+msgstr "Sessão de trabalho"
 
 #: src/app/task-screen.tsx
 msgid "work, important"
-msgstr "travail, important"
+msgstr "trabalho, importante"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
-msgstr "Écrire"
+msgstr "Escrever"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
-msgstr "Outils d’écriture"
+msgstr "Ferramentas de escrita"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"
-msgstr "Tous les ans"
+msgstr "Anual"
 
 #: src/i18n/view-presentation.ts
 msgid "Yes"
-msgstr "Oui"
+msgstr "Sim"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Collection above to open another mdbase collection. Changing collections does not move records between them."
-msgstr "Oui. Utilisez « Collection » ci-dessus pour ouvrir une autre collection mdbase. Changer de collection ne déplace pas les documents entre elles."
+msgstr "Sim. Use Coleção acima para abrir outra coleção mdbase. Alterar a coleção não move registros entre elas."
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
-msgstr "Hier"
+msgstr "Ontem"
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
-msgstr "Vous avez terminé pour aujourd’hui."
+msgstr "Por hoje, você terminou."
 
 #: src/components/task-attachments.tsx
 msgid "Your browser blocked the image window. Allow pop-ups and try again."
-msgstr "Votre navigateur a bloqué la fenêtre de l’image. Autorisez les fenêtres contextuelles et réessayez."
+msgstr "Seu navegador bloqueou a janela da imagem. Permita pop-ups e tente novamente."
 
 #: src/app/view-editor.tsx
 msgid "Your changes to this view have not been saved."
-msgstr "Vos modifications de cette vue n’ont pas été enregistrées."
+msgstr "Suas alterações nesta visualização não foram salvas."
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
-msgstr "Votre collection n’a pas été supprimée. Redémarrez l’application pour rouvrir vos tâches."
+msgstr "Sua coleção não foi removida. Reinicie o aplicativo para abrir suas tarefas novamente."
 
 #: src/app/app-shell.tsx
 msgid "Your connection has expired. Reconnect to continue."
-msgstr "Votre connexion a expiré. Reconnectez-vous pour continuer."
+msgstr "Sua conexão expirou. Reconecte-se para continuar."
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr "Votre brouillon est toujours ici. Vérifiez-le et réessayez."
+msgstr "Seu rascunho ainda está aqui. Confira e tente novamente."
 
 #. placeholder {0}: people.error.message
 #: src/app/search-screen.tsx
 msgid "Your person identity could not be loaded. {0}"
-msgstr "Impossible de charger votre identité de personne. {0}"
+msgstr "Não foi possível carregar sua identidade de pessoa. {0}"
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr "Votre document de personne doit être corrigé avant de filtrer les tâches : {0}."
+msgstr "Seu registro de pessoa precisa ser corrigido antes de filtrar tarefas: {0}."
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr "Votre barre latérale, dans l’ordre.{0}"
+msgstr "Sua barra lateral, em ordem.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
