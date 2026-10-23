@@ -5,6 +5,7 @@ import { heldEditFromHold } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
+import type { UpdateTaskInput } from "../domain/task";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 afterEach(() => {
@@ -85,6 +86,123 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(update.mock.calls[0]![1].ifRevision).toBe(record.revision);
     expect((await f.client.get(s.nativeId)).frontmatter.get("id")).toBe(
       s.portableId,
+    );
+  });
+
+  describe.each([false, true])("array clearing (mapped=%s)", (mapped) => {
+    const cases = [
+      {
+        field: "projects",
+        values: ["[[Projects/One.md]]", "[[Projects/Two.md]]"],
+        unset: true,
+      },
+      { field: "contexts", values: ["home", "work"], unset: true },
+      {
+        field: "attachments",
+        values: ["[[files/one.pdf]]", "[[files/two.pdf]]"],
+        unset: true,
+      },
+      {
+        field: "blockedBy",
+        values: [{ uid: "tasks/one.md" }, { uid: "tasks/two.md" }],
+        unset: true,
+      },
+      {
+        field: "assignees",
+        values: ["[[people/One.md]]", "[[people/Two.md]]"],
+        unset: false,
+      },
+      {
+        field: "reminders",
+        values: [
+          { id: "one", type: "absolute", absoluteTime: "2099-01-01T00:00:00Z" },
+          { id: "two", type: "absolute", absoluteTime: "2099-01-02T00:00:00Z" },
+        ],
+        unset: false,
+      },
+      {
+        field: "timeEntries",
+        values: [
+          {
+            startTime: "2026-01-01T10:00:00Z",
+            endTime: "2026-01-01T11:00:00Z",
+          },
+          {
+            startTime: "2026-01-02T10:00:00Z",
+            endTime: "2026-01-02T11:00:00Z",
+          },
+        ],
+        unset: false,
+      },
+    ] satisfies {
+      field: keyof UpdateTaskInput;
+      values: unknown[];
+      unset: boolean;
+    }[];
+
+    it.each(cases)(
+      "clears the last $field without a null SDK patch",
+      async ({ field, values, unset }) => {
+        const config = defaultTaskCollectionConfiguration();
+        const storedField = mapped ? `mapped_${field}` : field;
+        const f = await fixture({}, false, {
+          fieldMapping: { ...config.fieldMapping, [field]: storedField },
+        });
+        const create = vi.spyOn(f.client, "create");
+        const task = await f.repository.create({
+          title: "Clear an array",
+          ...(field === "timeEntries" ? {} : { [field]: values }),
+          body: "Preserve this body",
+        });
+        if (field === "timeEntries")
+          await f.repository.update(task.id, { [field]: values });
+        const nativeId = create.mock.calls[0]![0].id!;
+        const before = await f.client.get(nativeId);
+        expect(before.frontmatter.get(storedField)).toHaveLength(2);
+        const submit = vi.spyOn(f.client, "submit");
+
+        // Removing a non-final member still writes an array, not a deletion.
+        const remaining = await f.repository.update(task.id, {
+          [field]: values.slice(1),
+        });
+        expect(remaining[field]).toHaveLength(1);
+        const partial = submit.mock.calls[0]![0][0]!;
+        expect(partial.kind).toBe("update");
+        if (partial.kind !== "update")
+          throw new Error("Expected a native update");
+        expect(partial.patch?.get(storedField)).toHaveLength(1);
+        expect(partial.unset ?? []).not.toContain(storedField);
+        const last = await f.client.get(nativeId);
+
+        const cleared = await f.repository.update(task.id, { [field]: [] });
+        expect(cleared.id).toBe(task.id);
+        expect(cleared[field]).toEqual([]);
+        expect(cleared.body).toBe("Preserve this body");
+        expect(submit).toHaveBeenCalledTimes(2);
+        const op = submit.mock.calls[1]![0][0]!;
+        expect(op.kind).toBe("update");
+        if (op.kind !== "update") throw new Error("Expected a native update");
+        expect(op.id).toBe(nativeId);
+        expect(op.ifRevision).toBe(last.revision);
+        expect(op.patch?.get(storedField)).not.toBeNull();
+        if (unset) {
+          expect(op.patch?.has(storedField) ?? false).toBe(false);
+          expect(op.unset).toContain(storedField);
+        } else {
+          expect(op.patch?.get(storedField)).toEqual([]);
+          expect(op.unset ?? []).not.toContain(storedField);
+        }
+        if (mapped) {
+          expect(op.patch?.has(field) ?? false).toBe(false);
+          expect(op.unset ?? []).not.toContain(field);
+        }
+        const stored = await f.client.get(nativeId);
+        expect(stored.frontmatter.has(storedField)).toBe(!unset);
+        if (!unset) expect(stored.frontmatter.get(storedField)).toEqual([]);
+        await f.repository.refresh();
+        expect((await f.repository.get(task.id))?.[field]).toEqual([]);
+        expect(create).toHaveBeenCalledOnce();
+      },
     );
   });
 

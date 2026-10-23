@@ -119,7 +119,7 @@ export function TaskCapture({
     key: string;
     items: FieldCompletion[];
   }>({ key: "", items: [] });
-  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<number>();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const suggestionsId = useId();
@@ -151,17 +151,23 @@ export function TaskCapture({
     suggestionKey && suggestionResult.key === suggestionKey
       ? suggestionResult.items
       : [];
-  // A fully typed value needs no list; alternatives keep it open.
+  // A fully typed value submits as typed, even when other substring matches
+  // exist. Substring-only notes must never silently replace a project/context.
   const typedQuery = suggestionRequest?.query?.toLocaleLowerCase();
   const suggestions =
-    loadedSuggestions.length === 1 &&
     typedQuery &&
-    [
-      loadedSuggestions[0].value,
-      linkDisplayLabel(loadedSuggestions[0].value),
-    ].some((candidate) => candidate.toLocaleLowerCase() === typedQuery)
+    loadedSuggestions.some((item) =>
+      suggestionMatches(item, typedQuery, "exact"),
+    )
       ? []
       : loadedSuggestions;
+  const activeSuggestion =
+    selectedSuggestion ??
+    (typedQuery
+      ? suggestions.findIndex((item) =>
+          suggestionMatches(item, typedQuery, "prefix"),
+        )
+      : -1);
 
   useEffect(() => {
     if (!suggestionRequest || !suggestionKey) return;
@@ -177,12 +183,12 @@ export function TaskCapture({
           key: suggestionKey,
           items: next.length ? next : fallback,
         });
-        setSelectedSuggestion(0);
+        setSelectedSuggestion(undefined);
       },
       () => {
         if (!active) return;
         setSuggestionResult({ key: suggestionKey, items: fallback });
-        setSelectedSuggestion(0);
+        setSelectedSuggestion(undefined);
       },
     );
     return () => {
@@ -263,19 +269,23 @@ export function TaskCapture({
     if (!suggestions.length) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setSelectedSuggestion((index) => (index + 1) % suggestions.length);
+      setSelectedSuggestion((activeSuggestion + 1) % suggestions.length);
       return;
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedSuggestion(
-        (index) => (index - 1 + suggestions.length) % suggestions.length,
+        ((activeSuggestion < 0 ? 0 : activeSuggestion) -
+          1 +
+          suggestions.length) %
+          suggestions.length,
       );
       return;
     }
     if (event.key === "Enter" || event.key === "Tab") {
+      if (activeSuggestion < 0) return;
       event.preventDefault();
-      chooseSuggestion(suggestions[selectedSuggestion]);
+      chooseSuggestion(suggestions[activeSuggestion]);
       return;
     }
     if (event.key === "Escape") {
@@ -330,8 +340,8 @@ export function TaskCapture({
             ref={inputRef}
             role="combobox"
             aria-activedescendant={
-              suggestions.length
-                ? `${suggestionsId}-option-${selectedSuggestion}`
+              suggestions.length && activeSuggestion >= 0
+                ? `${suggestionsId}-option-${activeSuggestion}`
                 : undefined
             }
             aria-autocomplete="list"
@@ -392,10 +402,10 @@ export function TaskCapture({
           {suggestions.map((suggestion, index) => (
             <button
               id={`${suggestionsId}-option-${index}`}
-              className={index === selectedSuggestion ? "is-selected" : ""}
+              className={index === activeSuggestion ? "is-selected" : ""}
               key={`${suggestion.kind}:${suggestion.value}`}
               role="option"
-              aria-selected={index === selectedSuggestion}
+              aria-selected={index === activeSuggestion}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => chooseSuggestion(suggestion)}
@@ -830,6 +840,22 @@ function useDelayedFlag(
     };
   }, [active, delay, restart]);
   return active && elapsed;
+}
+
+function suggestionMatches(
+  suggestion: FieldCompletion,
+  query: string,
+  mode: "exact" | "prefix",
+): boolean {
+  return [
+    suggestion.value,
+    linkDisplayLabel(suggestion.value),
+    linkDisplayLabel(suggestion.label),
+  ].some((candidate) =>
+    mode === "exact"
+      ? candidate.toLocaleLowerCase() === query
+      : candidate.toLocaleLowerCase().startsWith(query),
+  );
 }
 
 function capturePreviewRemoval(

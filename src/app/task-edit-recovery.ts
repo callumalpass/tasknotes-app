@@ -135,14 +135,16 @@ export function clearTaskEdit(
 }
 
 /**
- * The stored edits the task does not already show, or null. A stored edit the
- * task already shows was saved, so it is cleared.
+ * The stored edits the task does not already show, or null. A matching value
+ * is evidence of a save only when the record has no unconfirmed/refused write.
+ * An optimistic device read can still be rolled back by a later rejection.
  */
 export function readTaskEdit(
   scope: string,
   taskId: string,
   current: Draft,
   storage = defaultStorage(),
+  unconfirmed = false,
 ): StoredTaskEdit | null {
   let stored: StoredTaskEdit | null = null;
   try {
@@ -159,7 +161,9 @@ export function readTaskEdit(
     stored = null;
   }
   const fields = stored
-    ? changedFields(current, { ...current, ...stored.fields })
+    ? unconfirmed
+      ? stored.fields
+      : changedFields(current, { ...current, ...stored.fields })
     : {};
   if (!stored || !Object.keys(fields).length) {
     clearTaskEdit(scope, taskId, storage);

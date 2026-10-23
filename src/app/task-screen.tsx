@@ -63,6 +63,7 @@ import {
 } from "./task-editor-layout";
 import {
   isEmptyFieldValue,
+  formatOccurrenceDate,
   organizeSummary,
   repeatSummary,
   scheduleSummary,
@@ -316,7 +317,7 @@ function TaskEditor({
   const knownDraft = useRef(draft);
   const editScope = useRef(recoveryScope);
   const [recovered, setRecovered] = useState<StoredTaskEdit | null>(() =>
-    readTaskEdit(recoveryScope, task.id, draft),
+    readTaskEdit(recoveryScope, task.id, draft, undefined, !!writeState),
   );
   const recoveredRef = useRef(recovered);
   const [backupUnavailable, setBackupUnavailable] = useState(false);
@@ -402,11 +403,8 @@ function TaskEditor({
           };
           await updateTask(task.id, input);
           if (editVersion.current === version) {
-            // The device copy stays until mdbase confirms the save: a write
-            // kept offline can still be refused, and the ledger does not
-            // keep its content.
-            if (!repository.writeState?.({ kind: "task", id: task.id }))
-              storeEdit(false);
+            // Backup cleanup belongs to the mounted editor's confirmation
+            // effect, never a late completion from an unloaded editor.
             dirtyRef.current = false;
             if (mounted.current) {
               setDirty(false);
@@ -428,14 +426,20 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [repository, storeEdit, task.assignees, task.id, updateTask],
+    [task.assignees, task.id, updateTask],
   );
 
   // Once mdbase confirms every save, the device copy is no longer needed.
   useEffect(() => {
-    if (writeState || dirty || savesInFlight.current.size) return;
+    if (
+      dirtyRef.current ||
+      savesInFlight.current.size ||
+      repository.writeState?.({ kind: "task", id: task.id })
+    )
+      return;
+    if (!recovered) recoveredRef.current = null;
     storeEdit(false);
-  }, [dirty, storeEdit, writeState]);
+  }, [dirty, recovered, repository, storeEdit, task.id, writeState]);
 
   useEffect(() => {
     if (!dirty || awaitingChoice) return;
@@ -490,7 +494,8 @@ function TaskEditor({
 
   function restoreRecoveredEdit() {
     const edit = recoveredRef.current;
-    recoveredRef.current = null;
+    // Hide the choice, but keep these explicit fields until confirmation.
+    // They may equal an optimistic baseline that head later rolls back.
     setRecovered(null);
     if (edit) change(edit.fields);
   }
@@ -506,6 +511,7 @@ function TaskEditor({
   const restoreRefusedEdit = useEffectEvent(() => {
     const target = { kind: "task", id: task.id } as const;
     if (
+      recovered &&
       recoveredRef.current &&
       repository.writeState?.(target) === "failed" &&
       repository.writeRejection?.(target)?.changedElsewhere
@@ -526,8 +532,11 @@ function TaskEditor({
     const next = followIncomingDraft(
       { known: knownDraft, opened: openedDraft },
       draftRef.current,
-      toDraft(incoming),
-      dirtyRef.current || savesInFlight.current.size > 0,
+      {
+        ...toDraft(incoming),
+        ...(writeState ? recoveredRef.current?.fields : {}),
+      },
+      dirtyRef.current || savesInFlight.current.size > 0 || !!writeState,
     );
     if (!next) return;
     draftRef.current = next;
@@ -561,7 +570,10 @@ function TaskEditor({
     try {
       // Only the fields this person changed go on top of the latest version,
       // so a change made elsewhere to other fields is kept too.
-      const mine = changedFields(openedDraft.current, draftRef.current);
+      const mine = {
+        ...recoveredRef.current?.fields,
+        ...changedFields(openedDraft.current, draftRef.current),
+      };
       if (!Object.keys(mine).length)
         throw new Error(
           "Your edit is no longer available on this device. Discard it to load the latest version.",
@@ -605,6 +617,8 @@ function TaskEditor({
       setDirty(false);
       setSaveState("saved");
       setSaveError(null);
+      recoveredRef.current = null;
+      setRecovered(null);
       storeEdit(false);
       repository.dismissWriteRejection?.({ kind: "task", id: task.id });
     } catch (reason) {
@@ -1325,16 +1339,6 @@ function OccurrencePolicyField({
       </label>
     </section>
   );
-}
-
-function formatOccurrenceDate(value: string): string {
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(date);
 }
 
 function DateTimeField({

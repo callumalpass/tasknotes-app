@@ -295,72 +295,149 @@ describe("TaskScreen across an immediate reload", () => {
     },
   );
 
-  it("keeps an offline notes edit refused by a newer change elsewhere, and that change", async () => {
-    // The device keeps its replica and its write ledger across the reload.
-    const rows = new Map<string, WriteLedgerEntry>();
-    const ledger: WriteLedgerStore = {
-      list: async () => [...rows.values()],
-      put: async (entry) => void rows.set(entry.mutationId, entry),
-      remove: async (id) => void rows.delete(id),
-    };
-    const mdbase = await createTestMdbase();
-    const replica = mdbase.fixture.replica();
-    const device = () =>
-      connect({
-        connector: replica.connector(),
-        app: { name: "tasknotes-test", version: "test" },
-        reconnect: false,
-        ledger,
-      });
-    const firstClient = await device();
-    const update = vi.spyOn(firstClient, "update");
-    const first = await openPage(replica, firstClient, async (r) => {
-      const task = await r.create({
-        title: "[test] shared task",
-        scheduled: "2026-10-15",
-      });
-      replica.confirmAll();
-      return task.id;
-    });
-    // Offline: the save is captured on this device and waits for sync.
-    replica.stallConfirmations();
-    fireEvent.change(await screen.findByLabelText("Notes"), {
-      target: { value: "My offline notes" },
-    });
-    await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
-      timeout: 3_000,
-    });
-    const path = (await first.repository.get(first.id))!.path;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    first.unload();
-
-    // Another app moves the date; the log refuses the stale offline write.
-    replica.reject(update.mock.calls[0]![2]!.mutationId!);
-    replica.editElsewhere(path, { frontmatter: { scheduled: "2026-10-16" } });
-    replica.stallConfirmations(false);
-
-    const second = await openPage(
-      replica,
-      await device(),
-      async () => first.id,
-    );
-    expect(
-      await screen.findByText(
-        "This task changed somewhere else, so your edit wasn't saved.",
-      ),
-    ).toBeVisible();
-    await waitFor(() =>
-      expect(screen.getByLabelText("Notes")).toHaveValue("My offline notes"),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Keep my edit" }));
-    await waitFor(
-      async () => {
+  it.each([false, true])(
+    "keeps an offline notes edit refused by a newer change elsewhere, and that change (optimistic reopen: %s)",
+    async (optimisticReopen) => {
+      // The device keeps its replica and its write ledger across the reload.
+      const rows = new Map<string, WriteLedgerEntry>();
+      const ledger: WriteLedgerStore = {
+        list: async () => [...rows.values()],
+        put: async (entry) => void rows.set(entry.mutationId, entry),
+        remove: async (id) => void rows.delete(id),
+      };
+      const mdbase = await createTestMdbase();
+      const replica = mdbase.fixture.replica();
+      const device = () =>
+        connect({
+          connector: replica.connector(),
+          app: { name: "tasknotes-test", version: "test" },
+          reconnect: false,
+          ledger,
+        });
+      const firstClient = await device();
+      const update = vi.spyOn(firstClient, "update");
+      const first = await openPage(replica, firstClient, async (r) => {
+        const task = await r.create({
+          title: "[test] shared task",
+          scheduled: "2026-10-15",
+        });
         replica.confirmAll();
-        const saved = await second.repository.get(first.id);
-        expect(saved?.body.trim()).toBe("My offline notes");
-        expect(saved?.scheduled).toBe("2026-10-16");
-      },
-      { timeout: 3_000 },
-    );
-  });
+        return task.id;
+      });
+      // Offline: the save is captured on this device and waits for sync.
+      const capture = vi.spyOn(first.repository, "update");
+      replica.stallConfirmations();
+      fireEvent.change(await screen.findByLabelText("Notes"), {
+        target: { value: "My offline notes" },
+      });
+      await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
+        timeout: 3_000,
+      });
+      await waitFor(() => expect(capture).toHaveBeenCalledOnce());
+      await act(async () => {
+        await capture.mock.results[0]!.value;
+      });
+      const path = (await first.repository.get(first.id))!.path;
+      const hasBodyBackup = (body = "My offline notes") =>
+        Object.values(localStorage).some((value) =>
+          value.includes(`"body":${JSON.stringify(body)}`),
+        );
+      expect(hasBodyBackup()).toBe(true);
+      expect(first.repository.writeState({ kind: "task", id: first.id })).toBe(
+        "pending",
+      );
+      first.unload();
+
+      if (optimisticReopen) {
+        // A reload may read the device's optimistic value before head refuses it.
+        // Seeing that value is NOT confirmation that the backup can be removed.
+        const optimistic = await openPage(
+          replica,
+          await device(),
+          async () => first.id,
+        );
+        try {
+          await titleField();
+          expect((await optimistic.repository.get(first.id))?.body.trim()).toBe(
+            "My offline notes",
+          );
+          expect(
+            optimistic.repository.writeState({ kind: "task", id: first.id }),
+          ).toBe("pending");
+          expect(hasBodyBackup()).toBe(true);
+        } finally {
+          optimistic.unload();
+        }
+      }
+
+      // Another app moves the date; the log refuses the stale offline write.
+      replica.reject(update.mock.calls[0]![2]!.mutationId!);
+      replica.editElsewhere(path, { frontmatter: { scheduled: "2026-10-16" } });
+      replica.stallConfirmations(false);
+
+      let second = await openPage(
+        replica,
+        await device(),
+        async () => first.id,
+      );
+      expect(
+        await screen.findByText(
+          "This task changed somewhere else, so your edit wasn't saved.",
+        ),
+      ).toBeVisible();
+      await waitFor(() =>
+        expect(screen.getByLabelText("Notes")).toHaveValue("My offline notes"),
+      );
+      if (optimisticReopen) {
+        // Restoring a refused draft must also survive closing without a choice.
+        second.unload();
+        second = await openPage(replica, await device(), async () => first.id);
+        await screen.findByText(
+          "This task changed somewhere else, so your edit wasn't saved.",
+        );
+        await waitFor(() =>
+          expect(screen.getByLabelText("Notes")).toHaveValue(
+            "My offline notes",
+          ),
+        );
+        expect(hasBodyBackup()).toBe(true);
+      }
+      const expectedBody = optimisticReopen
+        ? "My revised offline notes"
+        : "My offline notes";
+      if (optimisticReopen) {
+        fireEvent.change(screen.getByLabelText("Notes"), {
+          target: { value: expectedBody },
+        });
+        const notified = vi.fn();
+        const stop = second.repository.subscribe(notified);
+        try {
+          await act(async () => {
+            replica.editElsewhere(first.id, {
+              frontmatter: { scheduled: "2026-10-17" },
+            });
+          });
+          await waitFor(() => expect(notified).toHaveBeenCalled());
+          expect(screen.getByLabelText("Notes")).toHaveValue(expectedBody);
+          expect(hasBodyBackup(expectedBody)).toBe(true);
+        } finally {
+          stop();
+        }
+      }
+      fireEvent.click(screen.getByRole("button", { name: "Keep my edit" }));
+      await waitFor(
+        async () => {
+          replica.confirmAll();
+          const saved = await second.repository.get(first.id);
+          expect(saved?.body.trim()).toBe(expectedBody);
+          expect(saved?.scheduled).toBe(
+            optimisticReopen ? "2026-10-17" : "2026-10-16",
+          );
+        },
+        { timeout: 3_000 },
+      );
+      await waitFor(() => expect(hasBodyBackup(expectedBody)).toBe(false));
+      second.unload();
+    },
+  );
 });
