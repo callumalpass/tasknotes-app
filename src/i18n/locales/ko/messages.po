@@ -78,12 +78,12 @@ msgstr "(저장되지 않은 변경 사항)"
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, =1 {이미지 추가 중…} other {이미지 #개 추가 중…}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, =1 {이미지를 추가했습니다} other {이미지 #개를 추가했습니다}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -98,7 +98,7 @@ msgstr "{0, plural, other {미완료 #개}}"
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
-msgstr ""
+msgstr "{0, plural, other {계정 잠금이 해제되었습니다. 비공개 컬렉션 #개의 키 접근 설정이 아직 완료되지 않았습니다. 각 컬렉션을 선택한 상태에서 잠금 해제를 다시 시도하세요.}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
@@ -113,12 +113,12 @@ msgstr "{0, plural, other {모든 작업을 오늘로 이동, 기한 초과 #개
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
-msgstr ""
+msgstr "{0, plural, other {복구가 설정되었습니다. 비공개 컬렉션 #개의 키 접근 설정이 아직 완료되지 않았습니다.}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
-msgstr ""
+msgstr "{0, plural, other {복구 대상 #개에서 엄격 모드 적용이 보류 중입니다. mdbase에서 완료를 확인할 때까지 복구 키는 이 기기에 남아 있습니다.}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -360,7 +360,7 @@ msgstr "{count, plural, other {년}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
-msgstr ""
+msgstr "{count, selectordinal, other {월말부터 #번째 날}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -372,19 +372,19 @@ msgstr "{hours}시간 {minutes}분"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, =1 {매일} other {#일마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, =1 {매달} other {#개월마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, =1 {매주} other {#주마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, =1 {매년} other {#년마다}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3564,7 +3564,7 @@ msgstr "계획된 날짜"
 #: src/app/view-editor-form.tsx
 msgctxt "view layout option"
 msgid "Planner"
-msgstr ""
+msgstr "계획"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
@@ -4757,7 +4757,7 @@ msgstr "이 컬렉션을 열려면 mdbase에서 TaskNotes를 다시 승인해야
 
 #: src/app/model-setup-screen.tsx
 msgid "TaskNotes setup is unavailable."
-msgstr ""
+msgstr "TaskNotes 설정을 사용할 수 없습니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
@@ -4882,7 +4882,7 @@ msgstr "다시 시도할 수 있도록 메뉴가 계속 열려 있습니다."
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was not deleted. {0}"
-msgstr ""
+msgstr "노트가 삭제되지 않았습니다. {0}"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
