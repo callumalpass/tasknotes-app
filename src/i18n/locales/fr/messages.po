@@ -78,12 +78,12 @@ msgstr "(modifications non enregistrées)"
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, =1 {Ajout de l’image…} other {Ajout de # images…}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, =1 {Image ajoutée} other {# images ajoutées}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -98,7 +98,7 @@ msgstr "{0, plural, one {# ouverte} other {# ouvertes}}"
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
-msgstr ""
+msgstr "{0, plural, one {Compte déverrouillé. L’accès aux clés de # collection privée doit encore être finalisé ; déverrouillez à nouveau le compte lorsque cette collection est sélectionnée.} many {Compte déverrouillé. L’accès aux clés de # collections privées doit encore être finalisé ; déverrouillez à nouveau le compte lorsque chacune est sélectionnée.} other {Compte déverrouillé. L’accès aux clés de # collections privées doit encore être finalisé ; déverrouillez à nouveau le compte lorsque chacune est sélectionnée.}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
@@ -113,12 +113,12 @@ msgstr "{0, plural, one {Tout déplacer pour aujourd’hui : # tâche en retard}
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
-msgstr ""
+msgstr "{0, plural, one {La récupération est configurée. L’accès aux clés de # collection privée doit encore être finalisé.} many {La récupération est configurée. L’accès aux clés de # collections privées doit encore être finalisé.} other {La récupération est configurée. L’accès aux clés de # collections privées doit encore être finalisé.}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
-msgstr ""
+msgstr "{0, plural, one {Le mode strict est en attente sur # cible de récupération. La clé de récupération reste sur cet appareil jusqu’à ce que mdbase confirme la fin de l’opération.} many {Le mode strict est en attente sur # cibles de récupération. La clé de récupération reste sur cet appareil jusqu’à ce que mdbase confirme la fin de l’opération.} other {Le mode strict est en attente sur # cibles de récupération. La clé de récupération reste sur cet appareil jusqu’à ce que mdbase confirme la fin de l’opération.}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -360,7 +360,7 @@ msgstr "{count, plural, one {an} other {ans}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
-msgstr ""
+msgstr "{count, selectordinal, one {#er jour du mois en comptant depuis la fin} other {#e jour du mois en comptant depuis la fin}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -372,19 +372,19 @@ msgstr "{hours} h {minutes} min"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Chaque jour} other {Tous les # jours}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Chaque mois} other {Tous les # mois}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Chaque semaine} other {Toutes les # semaines}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, =1 {Chaque année} other {Tous les # ans}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3565,7 +3565,7 @@ msgstr "Dates planifiées"
 #: src/app/view-editor-form.tsx
 msgctxt "view layout option"
 msgid "Planner"
-msgstr ""
+msgstr "Planification"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
@@ -4758,7 +4758,7 @@ msgstr "TaskNotes a de nouveau besoin de votre autorisation dans mdbase pour ouv
 
 #: src/app/model-setup-screen.tsx
 msgid "TaskNotes setup is unavailable."
-msgstr ""
+msgstr "La configuration de TaskNotes est indisponible."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
@@ -4883,7 +4883,7 @@ msgstr "Le menu reste ouvert pour vous permettre de réessayer."
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was not deleted. {0}"
-msgstr ""
+msgstr "La note n’a pas été supprimée. {0}"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
