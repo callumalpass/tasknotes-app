@@ -22,11 +22,12 @@ best-effort. This does not change repository, authorization or offline behaviour
 
 **Catalogue scope:** all 1,287 active application messages have agent-authored
 targets in the eight non-English languages. This is not native-speaker certification
-or permission to release. The existing `@mdbase-dev/ui` pin does not yet export its
-coordinated library catalogues: compose its own `/i18n` source through the kit's
-`libraries` option when that package is available, rather than copying library UI
-into application PO files. Complete shared-library translation remains a product
-release gate.
+or permission to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
+option, using its exported singleton for presentation helpers. Library UI is never
+copied into application PO files. The current integration tarball still needs a
+complete, obsolete-free library catalogue refresh: conflicts fail closed and retain
+the current language rather than overriding authored app translations. Complete
+shared-library translation remains a product release gate.
 
 ## Authoring
 
@@ -71,11 +72,9 @@ The guard covers application, component and i18n UI directories; test fixtures,
 tests and locale data are excluded. Extraction also includes `src/main.tsx`.
 This is a structural guard, not proof that every dependency's copy is translated.
 The app retains contract/source regression tests against the kit's real validators.
-Kit `096d80bf` has a symlink-sensitive bin entry guard that can silently skip commands
-under pnpm. The tiny `scripts/i18n.mjs` adapter invokes its exported `main` directly;
-it contains no duplicated validation logic. Remove it when adopting a corrected kit
-tarball. CI runs the check and rejects generated catalogue drift before its normal
-gates.
+Kit `b4134d71` fixes the old symlink-sensitive bin guard; the temporary app CLI
+adapter has been removed. A regression test ensures the real kit bin executes.
+CI runs the check and rejects generated catalogue drift before its normal gates.
 
 Browser acceptance uses isolated Playwright contexts, blocked external traffic,
 and app-lane ports. `e2e/i18n.spec.ts` covers local collection controls, data and
@@ -86,9 +85,12 @@ same-deployment lazy chunks. The retired `i18n-pilot` query has no authority.
 
 ## Shared-kit handoff
 
-The app vendors kit `0.1.0-beta.141` from commit `096d80bf` as
-`vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz` (SHA256
-`ba0d9ca37ab265482c8716672995523db9a5f56d15554507bf408b7dcf50e95b`).
+The app vendors kit `0.1.0-beta.141` from commit `b4134d71` as
+`vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz` (SHA256
+`3cc9e231dd0ea2ef3cbb34112689e7ed227111f30d976ce0f94d6cd991520806`).
+Public UI is vendored from `9041442d` in
+`vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz` (SHA256
+`65b7ab3754fe840e04c0128e00f4b9f81dbbf999e0eb987acf97ee72c6b3b55b`).
 Swap this file dependency for the published package at merge time, after the
 coordinated Connect release. This branch does not publish or deploy anything.
 Agent-authored translations have not received native-speaker certification.

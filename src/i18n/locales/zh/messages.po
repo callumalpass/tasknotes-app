@@ -819,10 +819,6 @@ msgstr "达到指定次数后"
 msgid "Agenda"
 msgstr "议程"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "all"
-#~ msgstr "全部"
-
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "全部"
@@ -1023,10 +1019,6 @@ msgstr "构建器"
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
 msgstr "内置工作区"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "by word"
-#~ msgstr "按词"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1250,10 +1242,6 @@ msgstr "清除选择"
 msgid "Clear value"
 msgstr "清除值"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "close"
-#~ msgstr "关闭"
-
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
@@ -1445,10 +1433,6 @@ msgstr "完成日期"
 msgid "Completion or skip"
 msgstr "完成或跳过"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Completions"
-#~ msgstr "完成次数"
-
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
 msgstr "计算属性有效"
@@ -1544,10 +1528,6 @@ msgstr "上下文"
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
 msgstr "沿时间线继续"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Control character"
-#~ msgstr "控制字符"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
@@ -1696,10 +1676,6 @@ msgstr "已创建“{0}”"
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
 msgstr "正在创建…"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "current match"
-#~ msgstr "当前匹配项"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -2220,10 +2196,6 @@ msgstr "筛选值"
 msgid "Filter views"
 msgstr "筛选视图"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Find"
-#~ msgstr "查找"
-
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "查找任务"
@@ -2281,18 +2253,6 @@ msgstr "固定日期和时间"
 msgid "Focused task"
 msgstr "当前焦点任务"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Fold line"
-#~ msgstr "折叠行"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "folded code"
-#~ msgstr "已折叠代码"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Folded lines"
-#~ msgstr "已折叠行"
-
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
 msgstr "针对即将到来的时间范围"
@@ -2341,10 +2301,6 @@ msgstr "未来范围"
 msgid "Gap"
 msgstr "间隔"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "go"
-#~ msgstr "转到"
-
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "编辑前请返回并刷新集合。"
@@ -2356,10 +2312,6 @@ msgstr "返回并刷新集合。"
 #: src/app/command-palette-model.ts
 msgid "Go to"
 msgstr "前往"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Go to line"
-#~ msgstr "转到行"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
@@ -2845,10 +2797,6 @@ msgstr "Markdown 链接"
 msgid "Markdown links"
 msgstr "Markdown 链接"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "match case"
-#~ msgstr "区分大小写"
-
 #: src/components/expression-builder.tsx
 msgid "Match mode"
 msgstr "匹配模式"
@@ -3115,10 +3063,6 @@ msgstr "新建任务、重复任务和归档"
 #: src/app/view-editor.tsx
 msgid "New view"
 msgstr "新建视图"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "next"
-#~ msgstr "下一个"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3409,10 +3353,6 @@ msgstr "开启"
 msgid "On a date"
 msgstr "在"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "on line"
-#~ msgstr "行内"
-
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "在此设备上"
@@ -3631,10 +3571,6 @@ msgstr "预览任务"
 msgid "Preview updates after saving"
 msgstr "保存后更新预览"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "previous"
-#~ msgstr "上一个"
-
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
@@ -3841,10 +3777,6 @@ msgstr "正在刷新结果…"
 msgid "Refreshing…"
 msgstr "正在刷新…"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "regexp"
-#~ msgstr "正则表达式"
-
 #: src/components/dependency-editor.tsx
 msgid "Related work"
 msgstr "相关工作"
@@ -4027,28 +3959,6 @@ msgstr "重复任务"
 #: src/i18n/presentation.ts
 msgid "Repeats"
 msgstr "重复规则"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace"
-#~ msgstr "替换"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Replace"
-#~ msgstr "替换"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace all"
-#~ msgstr "全部替换"
-
-#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced {count} matches"
-#~ msgstr "已替换 {count} 处匹配项"
-
-#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced match on line {line}"
-#~ msgstr "已替换第 {line} 行中的匹配项"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -4432,10 +4342,6 @@ msgstr "所选日期"
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
 msgstr "所选草稿会就地转换为关联的 TaskNotes，其余内容会保留在随手记中，方便你继续工作。"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Selection deleted"
-#~ msgstr "已删除所选内容"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5268,18 +5174,6 @@ msgstr "撤销"
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
 msgstr "撤销删除任务"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "unfold"
-#~ msgstr "展开"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfold line"
-#~ msgstr "展开行"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfolded lines"
-#~ msgstr "已展开的行"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"

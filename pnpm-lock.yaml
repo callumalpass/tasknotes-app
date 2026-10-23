@@ -88,8 +88,8 @@ importers:
         specifier: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz
         version: file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz
       '@mdbase-dev/i18n':
-        specifier: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz
-        version: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5)
+        specifier: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz
+        version: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5)
       '@mdbase-dev/obsidian-runtime':
         specifier: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
         version: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
@@ -97,8 +97,8 @@ importers:
         specifier: file:vendor/sdk-eaa4e697-production-beta141.tgz
         version: file:vendor/sdk-eaa4e697-production-beta141.tgz
       '@mdbase-dev/ui':
-        specifier: file:vendor/ui-dev-fe158b59.tgz
-        version: file:vendor/ui-dev-fe158b59.tgz(@codemirror/view@6.43.9)(@mdbase-dev/sdk@file:vendor/sdk-eaa4e697-production-beta141.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz
+        version: file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz(@codemirror/view@6.43.9)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-eaa4e697-production-beta141.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@sqlite.org/sqlite-wasm':
         specifier: 3.53.4-build2
         version: 3.53.4-build2
@@ -1094,8 +1094,8 @@ packages:
     resolution: {integrity: sha512-DbmsalmFBZg1sKn3WQ92WtHsZwDUVGtQAV2MzkC3F4kJmJGY1w+TBGWMlE1YLIxiVNKHo9eL4qeGErMpJPYJbg==, tarball: file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz}
     version: 0.1.0-beta.125
 
-  '@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz':
-    resolution: {integrity: sha512-rEsnDmBNPSkzEtTXL8r5lwR1VPZryXcpqC3zm1mVwSI30BUH1mcuj62KkhKh7RHyiTWEH25NwFCnjWHf8gUX9w==, tarball: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz}
+  '@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz':
+    resolution: {integrity: sha512-GJYN/FIOqtHnsnYfACL7iBsYzlLNNMCBQlYj3+3cicIegyUWqJf1Mq6dv8J8CbAh3263DJq1ws9aOzYpkP+GNQ==, tarball: file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz}
     version: 0.1.0-beta.141
     hasBin: true
     peerDependencies:
@@ -1115,11 +1115,14 @@ packages:
     bundledDependencies:
       - '@mdbase-dev/connect-protocol'
 
-  '@mdbase-dev/ui@file:vendor/ui-dev-fe158b59.tgz':
-    resolution: {integrity: sha512-Hd8h1Ph7CWYOfdA/7pyZvTgrT+kqEN+xKYKvCUwt2S4W+EVDZ6Hs9cOR4KmktQLEsh+nvK6oYi1CaFTQ5LKMwQ==, tarball: file:vendor/ui-dev-fe158b59.tgz}
-    version: 0.1.0-beta.133
+  '@mdbase-dev/ui@file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz':
+    resolution: {integrity: sha512-oSY+H1TVJxTa4CrzyabEeIwaDUJpU+Ujqh5feUejI+mk8wi/aliD5x5APSBlHndKYAk0SWspgfuoo9hqzxK8rQ==, tarball: file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz}
+    version: 0.1.0-beta.141
     peerDependencies:
       '@codemirror/view': ^6.0.0
+      '@lingui/core': 6.9.0
+      '@lingui/react': 6.9.0
+      '@mdbase-dev/i18n': '*'
       '@mdbase-dev/sdk': '*'
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -5404,7 +5407,7 @@ snapshots:
     dependencies:
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
 
-  '@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-096d80bf.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5)':
+  '@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5)':
     dependencies:
       '@lingui/cli': 6.9.0(rolldown@1.1.5)
       '@lingui/conf': 6.9.0
@@ -5430,10 +5433,13 @@ snapshots:
       '@noble/curves': 2.4.0
       '@noble/hashes': 2.4.0
 
-  '@mdbase-dev/ui@file:vendor/ui-dev-fe158b59.tgz(@codemirror/view@6.43.9)(@mdbase-dev/sdk@file:vendor/sdk-eaa4e697-production-beta141.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@mdbase-dev/ui@file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz(@codemirror/view@6.43.9)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-eaa4e697-production-beta141.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@fontsource-variable/atkinson-hyperlegible-next': 5.3.0
       '@fontsource/azeret-mono': 5.3.0
+      '@lingui/core': 6.9.0(@babel/core@7.29.7)
+      '@lingui/react': 6.9.0(@babel/core@7.29.7)(react@19.2.8)
+      '@mdbase-dev/i18n': file:vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5)
       react: 19.2.8
     optionalDependencies:
       '@codemirror/view': 6.43.9

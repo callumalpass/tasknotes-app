@@ -1,4 +1,4 @@
-import { i18n } from "@lingui/core";
+import { i18n, uiCatalogues } from "@mdbase-dev/ui/i18n";
 import { createI18nRuntime, type Locale } from "@mdbase-dev/i18n";
 import english from "./locales/en/messages.json";
 
@@ -19,6 +19,7 @@ export const localeStorageKey = "tasknotes:locale";
 export const appRuntime = createI18nRuntime({
   i18n,
   english,
+  libraries: [uiCatalogues],
   loadLocale: async (locale) => (await loaders[locale]()).default,
   storage: {
     getLocale() {

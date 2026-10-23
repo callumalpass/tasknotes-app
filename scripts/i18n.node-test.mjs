@@ -24,10 +24,15 @@ const policy = JSON.parse(
   await readFile(new URL("../i18n-policy.json", import.meta.url), "utf8"),
 );
 
-test("the shared-kit CLI adapter executes commands instead of silently skipping them", () => {
+test("the shared-kit bin executes commands instead of silently skipping them", () => {
   const result = spawnSync(
     process.execPath,
-    [fileURLToPath(new URL("./i18n.mjs", import.meta.url)), "not-a-command"],
+    [
+      fileURLToPath(
+        new URL("./bin.mjs", import.meta.resolve("@mdbase-dev/i18n/config")),
+      ),
+      "not-a-command",
+    ],
     { encoding: "utf8" },
   );
   assert.equal(result.status, 1);

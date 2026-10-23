@@ -819,10 +819,6 @@ msgstr "指定回数後"
 msgid "Agenda"
 msgstr "アジェンダ"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "all"
-#~ msgstr "すべて"
-
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "すべて"
@@ -1023,10 +1019,6 @@ msgstr "ビルダー"
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
 msgstr "組み込みの作業スペース"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "by word"
-#~ msgstr "単語単位"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1250,10 +1242,6 @@ msgstr "選択をクリア"
 msgid "Clear value"
 msgstr "値をクリア"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "close"
-#~ msgstr "閉じる"
-
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
@@ -1445,10 +1433,6 @@ msgstr "完了日"
 msgid "Completion or skip"
 msgstr "完了またはスキップ"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Completions"
-#~ msgstr "完了回数"
-
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
 msgstr "計算プロパティは有効です"
@@ -1544,10 +1528,6 @@ msgstr "コンテキスト"
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
 msgstr "タイムラインを続ける"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Control character"
-#~ msgstr "制御文字"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
@@ -1696,10 +1676,6 @@ msgstr "「{0}」を作成しました"
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
 msgstr "作成中…"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "current match"
-#~ msgstr "現在の一致"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -2220,10 +2196,6 @@ msgstr "フィルター値"
 msgid "Filter views"
 msgstr "ビューを絞り込む"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Find"
-#~ msgstr "検索"
-
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "タスクを検索"
@@ -2281,18 +2253,6 @@ msgstr "固定日時"
 msgid "Focused task"
 msgstr "フォーカス中のタスク"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Fold line"
-#~ msgstr "行を折りたたむ"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "folded code"
-#~ msgstr "折りたたまれたコード"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Folded lines"
-#~ msgstr "折りたたまれた行"
-
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
 msgstr "近日中の期間で"
@@ -2341,10 +2301,6 @@ msgstr "将来の期間"
 msgid "Gap"
 msgstr "間隔"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "go"
-#~ msgstr "移動"
-
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "編集する前に戻ってコレクションを更新してください。"
@@ -2356,10 +2312,6 @@ msgstr "戻ってコレクションを更新してください。"
 #: src/app/command-palette-model.ts
 msgid "Go to"
 msgstr "移動"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Go to line"
-#~ msgstr "行に移動"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
@@ -2845,10 +2797,6 @@ msgstr "Markdownリンク"
 msgid "Markdown links"
 msgstr "Markdownリンク"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "match case"
-#~ msgstr "大文字と小文字を区別"
-
 #: src/components/expression-builder.tsx
 msgid "Match mode"
 msgstr "一致モード"
@@ -3115,10 +3063,6 @@ msgstr "新しいタスク、繰り返しタスク、アーカイブ"
 #: src/app/view-editor.tsx
 msgid "New view"
 msgstr "新しいビュー"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "next"
-#~ msgstr "次"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3409,10 +3353,6 @@ msgstr "オン"
 msgid "On a date"
 msgstr "日付指定"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "on line"
-#~ msgstr "行"
-
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "このデバイス上"
@@ -3511,7 +3451,7 @@ msgstr "次の形式で開く"
 
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
-msgstr "新しいタブで開く"
+msgstr "新しいタブで開きます"
 
 #: src/components/duration-field.tsx
 msgid "Optional"
@@ -3630,10 +3570,6 @@ msgstr "タスクをプレビュー"
 #: src/app/view-editor.tsx
 msgid "Preview updates after saving"
 msgstr "保存後にプレビューが更新されます"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "previous"
-#~ msgstr "前"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3841,10 +3777,6 @@ msgstr "結果を更新中…"
 msgid "Refreshing…"
 msgstr "更新中…"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "regexp"
-#~ msgstr "正規表現"
-
 #: src/components/dependency-editor.tsx
 msgid "Related work"
 msgstr "関連する作業"
@@ -4027,28 +3959,6 @@ msgstr "繰り返しタスク"
 #: src/i18n/presentation.ts
 msgid "Repeats"
 msgstr "繰り返し"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace"
-#~ msgstr "置換"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Replace"
-#~ msgstr "置換"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace all"
-#~ msgstr "すべて置換"
-
-#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced {count} matches"
-#~ msgstr "{count}件の一致を置換しました"
-
-#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced match on line {line}"
-#~ msgstr "{line}行目の一致を置換しました"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -4432,10 +4342,6 @@ msgstr "選択した日"
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
 msgstr "選択した下書きはその場でTaskNotesにリンクされます。それ以外はこのスクラッチパッドに残るため、作業を続けられます。"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Selection deleted"
-#~ msgstr "選択を削除しました"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5232,7 +5138,7 @@ msgstr "記録した時間"
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
-msgstr "もう一度お試しください"
+msgstr "再試行"
 
 #: src/app/views/view-catalog.tsx
 msgid "Try another search or filter."
@@ -5268,18 +5174,6 @@ msgstr "元に戻す"
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
 msgstr "削除したタスクを元に戻す"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "unfold"
-#~ msgstr "展開"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfold line"
-#~ msgstr "行を展開"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfolded lines"
-#~ msgstr "展開された行"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"

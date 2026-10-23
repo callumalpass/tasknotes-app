@@ -819,10 +819,6 @@ msgstr "Após um número de vezes"
 msgid "Agenda"
 msgstr "Agenda"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "all"
-#~ msgstr "todos"
-
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "Todos"
@@ -1023,10 +1019,6 @@ msgstr "Criador"
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
 msgstr "Espaços de trabalho integrados"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "by word"
-#~ msgstr "por palavra"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1250,10 +1242,6 @@ msgstr "Limpar seleção"
 msgid "Clear value"
 msgstr "Limpar valor"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "close"
-#~ msgstr "fechar"
-
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
@@ -1445,10 +1433,6 @@ msgstr "Data de conclusão"
 msgid "Completion or skip"
 msgstr "Conclusão ou pular"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Completions"
-#~ msgstr "Conclusões"
-
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
 msgstr "As propriedades calculadas são válidas"
@@ -1544,10 +1528,6 @@ msgstr "Contextos"
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
 msgstr "Continuar na linha do tempo"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Control character"
-#~ msgstr "Caractere de controle"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
@@ -1696,10 +1676,6 @@ msgstr "“{0}” criada"
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
 msgstr "Criando…"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "current match"
-#~ msgstr "correspondência atual"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -2220,10 +2196,6 @@ msgstr "Valor do filtro"
 msgid "Filter views"
 msgstr "Filtrar visualizações"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Find"
-#~ msgstr "Localizar"
-
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "Localizar uma tarefa"
@@ -2281,18 +2253,6 @@ msgstr "Data e hora fixas"
 msgid "Focused task"
 msgstr "Tarefa em foco"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "Fold line"
-#~ msgstr "Recolher linha"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "folded code"
-#~ msgstr "código recolhido"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Folded lines"
-#~ msgstr "Linhas recolhidas"
-
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
 msgstr "Para um período futuro"
@@ -2341,10 +2301,6 @@ msgstr "Horizonte futuro"
 msgid "Gap"
 msgstr "Intervalo"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "go"
-#~ msgstr "ir"
-
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "Volte e atualize a coleção antes de editar."
@@ -2356,10 +2312,6 @@ msgstr "Volte e atualize a coleção."
 #: src/app/command-palette-model.ts
 msgid "Go to"
 msgstr "Ir para"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Go to line"
-#~ msgstr "Ir para a linha"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
@@ -2845,10 +2797,6 @@ msgstr "Link Markdown"
 msgid "Markdown links"
 msgstr "Links Markdown"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "match case"
-#~ msgstr "diferenciar maiúsculas de minúsculas"
-
 #: src/components/expression-builder.tsx
 msgid "Match mode"
 msgstr "Modo de correspondência"
@@ -3115,10 +3063,6 @@ msgstr "Novas tarefas, tarefas recorrentes e arquivo"
 #: src/app/view-editor.tsx
 msgid "New view"
 msgstr "Nova visualização"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "next"
-#~ msgstr "próxima"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3409,10 +3353,6 @@ msgstr "Em"
 msgid "On a date"
 msgstr "Em uma data"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "on line"
-#~ msgstr "na linha"
-
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "Neste dispositivo"
@@ -3631,10 +3571,6 @@ msgstr "Visualizar tarefas"
 msgid "Preview updates after saving"
 msgstr "A prévia é atualizada após salvar"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "previous"
-#~ msgstr "anterior"
-
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
@@ -3841,10 +3777,6 @@ msgstr "Atualizando resultados…"
 msgid "Refreshing…"
 msgstr "Atualizando…"
 
-#: src/i18n/editor-phrases.ts
-#~ msgid "regexp"
-#~ msgstr "expressão regular"
-
 #: src/components/dependency-editor.tsx
 msgid "Related work"
 msgstr "Trabalho relacionado"
@@ -4027,28 +3959,6 @@ msgstr "Tarefas recorrentes"
 #: src/i18n/presentation.ts
 msgid "Repeats"
 msgstr "Repetições"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace"
-#~ msgstr "substituir"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Replace"
-#~ msgstr "Substituir"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "replace all"
-#~ msgstr "substituir tudo"
-
-#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced {count} matches"
-#~ msgstr "{count} ocorrências substituídas"
-
-#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
-#: src/i18n/editor-phrases.ts
-#~ msgid "replaced match on line {line}"
-#~ msgstr "ocorrência substituída na linha {line}"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -4432,10 +4342,6 @@ msgstr "Dia selecionado"
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
 msgstr "Os rascunhos selecionados se tornam tarefas vinculadas do TaskNotes no local. Todo o resto permanece neste bloco de notas para você continuar trabalhando."
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Selection deleted"
-#~ msgstr "Seleção excluída"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5268,18 +5174,6 @@ msgstr "Desfazer"
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
 msgstr "Desfazer exclusão de tarefa"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "unfold"
-#~ msgstr "expandir"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfold line"
-#~ msgstr "Expandir linha"
-
-#: src/i18n/editor-phrases.ts
-#~ msgid "Unfolded lines"
-#~ msgstr "Linhas expandidas"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
