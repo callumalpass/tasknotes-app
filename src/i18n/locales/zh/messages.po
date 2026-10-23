@@ -536,500 +536,500 @@ msgstr "添加上下文"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr "Ajouter un projet"
+msgstr "添加项目"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr "Ajoutez un projet à une tâche pour le voir ici."
+msgstr "将项目添加到任务后，它就会显示在这里。"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr "Ajouter une propriété"
+msgstr "添加属性"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr "Ajoutez une date planifiée ou une échéance à une tâche active."
+msgstr "为活跃任务添加计划日期或截止日期。"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr "Ajouter une règle de tri"
+msgstr "添加排序规则"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr "Ajouter une étiquette"
+msgstr "添加标签"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "Ajouter une tâche — tomorrow 9am, #tag, +project"
+msgstr "添加任务 — tomorrow 9am, #tag, +project"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
-msgstr "Ajoutez d’abord un titre de tâche."
+msgstr "请先添加任务标题。"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
-msgstr "Ajoutez une tâche quand vous en avez besoin."
+msgstr "随时添加任务。"
 
 #: src/app/task-screen.tsx
 msgid "Add a title before leaving this task."
-msgstr "Ajoutez un titre avant de quitter cette tâche."
+msgstr "离开此任务前请添加标题。"
 
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
-msgstr "Ajouter une personne assignée"
+msgstr "添加负责人"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add child"
-msgstr "Ajouter un sous-élément"
+msgstr "添加子项"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add context…"
-msgstr "Ajouter un contexte…"
+msgstr "添加上下文…"
 
 #: src/components/task-capture.tsx
 msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Ajoutez des dates et des étiquettes naturellement — essayez « Call Sam tomorrow 9am #work »."
+msgstr "用自然语言添加日期和标签 — 试试“Call Sam tomorrow 9am #work”。"
 
 #: src/components/task-capture.tsx
 msgid "Add details"
-msgstr "Ajouter des détails"
+msgstr "添加详情"
 
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
-msgstr "Ajouter une formule"
+msgstr "添加公式"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
-msgstr "Ajouter une image"
+msgstr "添加图片"
 
 #: src/components/task-capture.tsx
 msgid "Add notes"
-msgstr "Ajouter des notes"
+msgstr "添加备注"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr "Ajouter une projection"
+msgstr "添加投影"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
-msgstr "Ajouter un rappel"
+msgstr "添加提醒"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
-msgstr "Ajouter une sous-tâche"
+msgstr "添加子任务"
 
 #: src/app/app-shell.tsx
 #: src/app/full-calendar-view.tsx
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "Add task"
-msgstr "Ajouter une tâche"
+msgstr "添加任务"
 
 #. placeholder {0}: agendaLabel(selected)
 #: src/app/views/mini-calendar-view.tsx
 msgid "Add task on {0}"
-msgstr "Ajouter une tâche le {0}"
+msgstr "在 {0} 添加任务"
 
 #. placeholder {0}: project.label
 #: src/app/views/projects-view.tsx
 msgid "Add task to {0}"
-msgstr "Ajouter une tâche à {0}"
+msgstr "将任务添加到 {0}"
 
 #: src/app/views/kanban-view.tsx
 msgid "Add task to {label}"
-msgstr "Ajouter une tâche à {label}"
+msgstr "将任务添加到 {label}"
 
 #: src/app/task-screen.tsx
 msgid "Add thoughts, links, or supporting details…"
-msgstr "Ajoutez des réflexions, des liens ou des détails utiles…"
+msgstr "添加想法、链接或补充详情…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add title"
-msgstr "Ajouter un titre"
+msgstr "添加标题"
 
 #. placeholder {0}: currentCreationContext.label
 #. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
-msgstr "Ajouter à {0}"
+msgstr "添加到 {0}"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
-msgstr "Ajoutez les tâches qui doivent être réalisées avant celle-ci."
+msgstr "添加必须在此任务之前完成的工作。"
 
 #: src/app/views/view-catalog.tsx
 msgid "Added"
-msgstr "Ajouté"
+msgstr "已添加"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
-msgstr "Ajout en cours"
+msgstr "正在添加"
 
 #: src/components/task-capture.tsx
 msgid "Adding “{pendingTitle}”…"
-msgstr "Ajout de « {pendingTitle} »…"
+msgstr "正在添加“{pendingTitle}”…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
-msgstr "Ajout en cours…"
+msgstr "正在添加…"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
-msgstr "Ajustez les filtres de cette vue ou choisissez une autre vue."
+msgstr "调整此视图的筛选条件，或选择其他视图。"
 
 #: src/app/task-screen.tsx
 msgid "Advance after"
-msgstr "Passer à la suivante après"
+msgstr "之后推进"
 
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
-msgstr "Avancé"
+msgstr "高级"
 
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
-msgstr "Durée avancée"
+msgstr "高级时长"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced recurrence"
-msgstr "Récurrence avancée"
+msgstr "高级重复设置"
 
 #: src/i18n/presentation.ts
 msgid "Advanced recurrence rule"
-msgstr "Règle de récurrence avancée"
+msgstr "高级重复规则"
 
 #: src/app/task-editor-draft.ts
 msgid "Advanced repeat"
-msgstr "Répétition avancée"
+msgstr "高级重复"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced rule"
-msgstr "Règle avancée"
+msgstr "高级规则"
 
 #: src/i18n/ui-copy.ts
 msgid "after"
-msgstr "après"
+msgstr "之后"
 
 #: src/components/reminder-editor.tsx
 msgid "After"
-msgstr "Après"
+msgstr "之后"
 
 #: src/components/recurrence-field.tsx
 msgid "After a number of times"
-msgstr "Après un nombre d’occurrences"
+msgstr "达到指定次数后"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion"
-msgstr "Après la fin de la tâche"
+msgstr "完成后"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion or skip"
-msgstr "Après la fin de la tâche ou une occurrence ignorée"
+msgstr "完成或跳过后"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Agenda"
-msgstr "Agenda"
+msgstr "议程"
 
 #: src/i18n/editor-phrases.ts
 msgid "all"
-msgstr "tout"
+msgstr "全部"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
-msgstr "Toutes"
+msgstr "全部"
 
 #: src/components/expression-builder.tsx
 msgid "All conditions match"
-msgstr "Toutes les conditions correspondent"
+msgstr "符合所有条件"
 
 #: src/app/full-calendar-view.tsx
 msgid "All day"
-msgstr "Toute la journée"
+msgstr "全天"
 
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
-msgstr "Toutes les tâches correspondantes sont chargées"
+msgstr "已加载所有匹配的任务"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
-msgstr "Toutes les tâches"
+msgstr "所有任务"
 
 #: src/app/views/view-catalog.tsx
 msgid "All views"
-msgstr "Toutes les vues"
+msgstr "所有视图"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
-msgstr "Autoriser la création de tâches"
+msgstr "允许创建任务"
 
 #. placeholder {0}: String(configuration.value)
 #: src/app/cloud-collection.tsx
 msgid "Allow TaskNotes Base views at {0}"
-msgstr "Autoriser les vues Base de TaskNotes à {0}"
+msgstr "允许在 {0} 使用 TaskNotes Base 视图"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
-msgstr "Quantité"
+msgstr "数量"
 
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
-msgstr "Au moins une condition correspond"
+msgstr "符合任一条件"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
-msgstr "À toute heure"
+msgstr "任何时间"
 
 #: src/i18n/default-labels.ts
 msgid "Anytime"
-msgstr "Sans date"
+msgstr "随时"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
-msgstr "Apparence"
+msgstr "外观"
 
 #: src/app/cloud-collection.tsx
 msgid "Apply reviewed setup"
-msgstr "Appliquer la configuration vérifiée"
+msgstr "应用已审核的设置"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
-msgstr "Appliquer la règle"
+msgstr "应用规则"
 
 #: src/app/notification-label.ts
 msgid "Approval required"
-msgstr "Approbation requise"
+msgstr "需要批准"
 
 #: src/components/task-actions.tsx
 msgid "Archive"
-msgstr "Archiver"
+msgstr "归档"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
-msgstr "Dossier d’archives"
+msgstr "归档文件夹"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive tasks after they enter a selected status. Recurring series are always excluded."
-msgstr "Archivez les tâches lorsqu’elles prennent un statut choisi. Les séries récurrentes sont toujours exclues."
+msgstr "任务进入所选状态后自动归档。重复系列始终不会归档。"
 
 #: src/app/views/kanban-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Archived"
-msgstr "Archivées"
+msgstr "已归档"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
-msgstr "Les tâches archivées sont conservées, pas supprimées. Vous pouvez les restaurer depuis leur menu."
+msgstr "已归档的任务会保留，不会删除。你可以从任务菜单中恢复它们。"
 
 #: src/components/arrange-tasks-option.tsx
 msgid "Arrange tasks"
-msgstr "Réorganiser les tâches"
+msgstr "排列任务"
 
 #: src/app/view-editor-form.tsx
 msgid "Ascending"
-msgstr "Croissant"
+msgstr "升序"
 
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
-msgstr "Assignée à"
+msgstr "负责人"
 
 #: src/app/search-screen.tsx
 msgid "Assigned to me"
-msgstr "Assignées à moi"
+msgstr "分配给我"
 
 #: src/components/assignee-editor.tsx
 msgid "Assignments link to person notes, which list them as backlinks. They do not grant collection access."
-msgstr "Les assignations renvoient aux notes de personnes, où elles apparaissent comme liens entrants. Elles ne donnent pas accès à la collection."
+msgstr "负责人关联到人员笔记，并会在人员笔记中显示为反向链接。此关联不会授予集合访问权限。"
 
 #: src/app/search-screen.tsx
 msgid "Assignments use your linked person record."
-msgstr "Les assignations utilisent votre document de personne lié."
+msgstr "负责人使用你关联的人员记录。"
 
 #: src/components/task-attachments.tsx
 msgid "Attach image"
-msgstr "Joindre une image"
+msgstr "附加图片"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
-msgstr "Image jointe"
+msgstr "已附加图片"
 
 #: src/app/search-match-context.ts
 msgid "attachments"
-msgstr "pièces jointes"
+msgstr "附件"
 
 #: src/components/task-attachments.tsx
 msgid "Attachments"
-msgstr "Pièces jointes"
+msgstr "附件"
 
 #: src/components/task-model-settings.tsx
 msgid "Auto archive"
-msgstr "Archivage automatique"
+msgstr "自动归档"
 
 #: src/app/collection-picker.tsx
 msgid "Available collections"
-msgstr "Collections disponibles"
+msgstr "可用集合"
 
 #: src/app/view-editor-form.tsx
 msgid "Available in"
-msgstr "Disponible dans"
+msgstr "可用于"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Back"
-msgstr "Retour"
+msgstr "返回"
 
 #: src/components/task-actions.tsx
 msgid "Back to previous actions"
-msgstr "Revenir aux actions précédentes"
+msgstr "返回上一步操作"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
-msgstr "avant"
+msgstr "之前"
 
 #: src/components/reminder-editor.tsx
 msgid "Before"
-msgstr "Avant"
+msgstr "之前"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
-msgstr "Bloquée par"
+msgstr "被阻止于"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocking"
-msgstr "Bloque"
+msgstr "阻止其他任务"
 
 #: src/app/view-editor-form.tsx
 msgid "Board"
-msgstr "Tableau"
+msgstr "看板"
 
 #: src/app/view-editor-form.tsx
 msgid "Board column"
-msgstr "Colonne du tableau"
+msgstr "看板列"
 
 #: src/components/kanban-column-jump.tsx
 msgid "Board columns"
-msgstr "Colonnes du tableau"
+msgstr "看板列"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Bold"
-msgstr "Gras"
+msgstr "粗体"
 
 #: src/app/app-shell.tsx
 msgid "Browse"
-msgstr "Parcourir"
+msgstr "浏览"
 
 #: src/components/expression-builder.tsx
 msgid "Builder"
-msgstr "Éditeur visuel"
+msgstr "构建器"
 
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
-msgstr "Espaces de travail intégrés"
+msgstr "内置工作区"
 
 #: src/i18n/editor-phrases.ts
 msgid "by word"
-msgstr "par mot"
+msgstr "按词"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
-msgstr "Calendrier"
+msgstr "日历"
 
 #: src/components/calendar-preferences.tsx
 msgid "Calendar display"
-msgstr "Affichage du calendrier"
+msgstr "日历显示"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar layout"
-msgstr "Disposition du calendrier"
+msgstr "日历布局"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr "Puis-je changer de collection plus tard ?"
+msgstr "之后还能更换集合吗？"
 
 #: src/app/cloud-collection.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 msgid "Cancel"
-msgstr "Annuler"
+msgstr "取消"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr "Annuler la confirmation"
+msgstr "取消确认"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr "Déplacement de {title} annulé."
+msgstr "已取消移动 {title}。"
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr "Expression CEL"
+msgstr "CEL 表达式"
 
 #: src/app/collection-settings.tsx
 msgid "Change collection"
-msgstr "Changer de collection"
+msgstr "更换集合"
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr "Modifie chaque occurrence"
+msgstr "每次出现都更改"
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr "Vérification en cours"
+msgstr "正在检查"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings"
-msgstr "Vérification des paramètres de la collection"
+msgstr "正在检查集合设置"
 
 #: src/app/cloud-collection.tsx
 msgid "Checking this collection’s TaskNotes setup…"
-msgstr "Vérification de la configuration TaskNotes de cette collection…"
+msgstr "正在检查此集合的 TaskNotes 设置…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr "Sous-élément"
+msgstr "子项"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr "Choisir"
+msgstr "选择"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection"
-msgstr "Choisir une collection"
+msgstr "选择集合"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection to open your tasks."
-msgstr "Choisissez une collection pour ouvrir vos tâches."
+msgstr "选择一个集合以打开你的任务。"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a different collection in mdbase"
-msgstr "Choisir une collection différente dans mdbase"
+msgstr "在 mdbase 中选择其他集合"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr "Choisir une personne…"
+msgstr "选择人员…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr "Choisir une propriété"
+msgstr "选择属性"
 
 #: src/app/task-screen.tsx
 msgid "Choose a value"
-msgstr "Choisir une valeur"
+msgstr "选择值"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose another collection in mdbase"
-msgstr "Choisir une autre collection dans mdbase"
+msgstr "在 mdbase 中选择其他集合"
 
 #: src/app/app-shell.tsx
 msgid "Choose another mdbase collection"
-msgstr "Choisir une autre collection mdbase"
+msgstr "选择其他 mdbase 集合"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr "Choisir les personnes assignées"
+msgstr "选择负责人"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
