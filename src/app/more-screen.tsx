@@ -469,11 +469,18 @@ function useReminderSettings() {
   useEffect(() => {
     if (!delivers || busyRef.current) return;
     let active = true;
+    let unsubscribe: (() => void) | undefined;
     const current = ++operation.current;
     void import("../native/mdbase-notifications")
-      .then(({ mdbaseNotifications }) => mdbaseNotifications.status())
+      .then(({ mdbaseNotifications }) => {
+        if (!active) return;
+        unsubscribe = mdbaseNotifications.subscribeStatus(() => {
+          if (active && !busyRef.current) setRevision((value) => value + 1);
+        });
+        return mdbaseNotifications.status();
+      })
       .then((next) => {
-        if (active && current === operation.current) {
+        if (next && active && current === operation.current) {
           setStatus(next);
           setError(null);
         }
@@ -486,6 +493,7 @@ function useReminderSettings() {
       });
     return () => {
       active = false;
+      unsubscribe?.();
     };
   }, [delivers, revision]);
 
@@ -517,7 +525,7 @@ function useReminderSettings() {
   }, []);
 
   async function setEnabled(enabled: boolean) {
-    if (!delivers) return;
+    if (!delivers || busyRef.current) return;
     // An older passive check must not overwrite explicit enable/disable results.
     operation.current += 1;
     busyRef.current = true;
@@ -532,6 +540,15 @@ function useReminderSettings() {
           : await mdbaseNotifications.disable(),
       );
     } catch (reason) {
+      const needsApproval =
+        typeof reason === "object" &&
+        reason !== null &&
+        "reason" in reason &&
+        reason.reason === "timer_channel_reapproval_required";
+      setStatus({
+        state: needsApproval ? "reauthorization_required" : "error",
+        optedIn: false,
+      });
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       busyRef.current = false;
@@ -617,6 +634,14 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             onClick={reminders.retry}
           >
             Retry notification check
+          </button>
+          <button
+            className="secondary-action"
+            disabled={busy}
+            type="button"
+            onClick={() => void reminders.setEnabled(false)}
+          >
+            Turn reminders off
           </button>
         </div>
       ) : null}

@@ -8,7 +8,11 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
+import type { TimersApi } from "@mdbase-dev/sdk";
+import type {
+  MdbaseNotificationManagerOptions,
+  MdbaseNotificationStatus,
+} from "../native/mdbase-notifications";
 import { deferred } from "../test/mdbase-fixture";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 import type { SettingsSection } from "./settings-sections";
@@ -18,6 +22,8 @@ const fixture = vi.hoisted(() => ({
   status: vi.fn(),
   enable: vi.fn(),
   disable: vi.fn(),
+  subscribeStatus: vi.fn(),
+  statusListeners: new Set<() => void>(),
   reauthorize: vi.fn(),
   reminderAuthority: "connect",
   connection: { state: "connected" } as { state: string; message?: string },
@@ -32,6 +38,7 @@ vi.mock("../native/mdbase-notifications", () => ({
     status: fixture.status,
     enable: fixture.enable,
     disable: fixture.disable,
+    subscribeStatus: fixture.subscribeStatus,
   },
 }));
 vi.mock("../cloud/connect", () => {
@@ -99,6 +106,13 @@ beforeEach(() => {
   fixture.disable
     .mockReset()
     .mockResolvedValue({ state: "off", optedIn: false });
+  fixture.statusListeners.clear();
+  fixture.subscribeStatus
+    .mockReset()
+    .mockImplementation((listener: () => void) => {
+      fixture.statusListeners.add(listener);
+      return () => fixture.statusListeners.delete(listener);
+    });
   fixture.retrySummary.mockReset();
   fixture.summaryError = null;
   fixture.resume = null;
@@ -329,6 +343,181 @@ it("ignores an old passive check after explicit enablement", async () => {
   await vi.waitFor(() => expect(toggle).toBeChecked());
   await act(async () => pending.resolve({ state: "off", optedIn: false }));
   expect(screen.getByRole("switch", { name: "Task reminders" })).toBeChecked();
+});
+
+async function restoringReminders() {
+  const { MdbaseNotificationManager } = await vi.importActual<
+    typeof import("../native/mdbase-notifications")
+  >("../native/mdbase-notifications");
+  const acknowledgement = deferred<void>();
+  const registerWebPush = vi.fn().mockReturnValueOnce(acknowledgement.promise);
+  const unregisterWebPush = vi.fn(async () => undefined);
+  const requestPermissions = vi.fn();
+  const subject = new MdbaseNotificationManager({
+    storage: localStorage,
+    isNative: () => false,
+    isConfigured: () => true,
+    webPush: {
+      isSupported: () => true,
+      checkPermissions: async () => ({ receive: "granted" }),
+      requestPermissions,
+      serviceWorker: async () => ({}) as ServiceWorkerRegistration,
+      addListener: async () => ({ remove: async () => undefined }),
+    },
+  } as unknown as MdbaseNotificationManagerOptions);
+  const consentKey = "tasknotes:mdbase-notifications:v2:original-grant";
+  localStorage.setItem(consentKey, "1");
+  const unbind = subject.bindScope({
+    key: "original-grant",
+    timers: { registerWebPush, unregisterWebPush } as unknown as TimersApi,
+  });
+  fixture.status.mockImplementation(() => subject.status());
+  fixture.enable.mockImplementation(() => subject.enable());
+  fixture.disable.mockImplementation(() => subject.disable());
+  fixture.subscribeStatus.mockImplementation((listener: () => void) =>
+    subject.subscribeStatus(listener),
+  );
+  // Same automatic restoration as AppShell: no Settings interaction.
+  const dispose = subject.listen(vi.fn());
+  await waitFor(() => expect(registerWebPush).toHaveBeenCalledOnce());
+  return {
+    subject,
+    acknowledgement,
+    registerWebPush,
+    requestPermissions,
+    consentKey,
+    dispose: () => {
+      dispose();
+      unbind();
+    },
+  };
+}
+
+it("updates pending restoration to On on completion without Retry or new consent", async () => {
+  const f = await restoringReminders();
+  const view = render(settings());
+  expect(await screen.findByText("Setup needs attention")).toBeVisible();
+  expect(localStorage.getItem(f.consentKey)).toBe("pending");
+  await act(async () => f.acknowledgement.resolve());
+  expect(
+    await screen.findByRole("switch", { name: "Task reminders" }),
+  ).toBeChecked();
+  expect(localStorage.getItem(f.consentKey)).toBe("1");
+  expect(screen.queryByText("Setup needs attention")).not.toBeInTheDocument();
+  expect(fixture.status).toHaveBeenCalledTimes(2);
+  expect(fixture.enable).not.toHaveBeenCalled();
+  expect(fixture.disable).not.toHaveBeenCalled();
+  expect(f.registerWebPush).toHaveBeenCalledOnce();
+  expect(f.requestPermissions).not.toHaveBeenCalled();
+
+  // A later automatic refresh refusal must also reach the mounted Settings.
+  f.registerWebPush.mockRejectedValueOnce({
+    code: "permission_denied",
+    reason: "notification_reauthorization_required",
+  });
+  await act(async () => {
+    await expect(f.subject.refreshRegistration()).rejects.toMatchObject({
+      reason: "notification_reauthorization_required",
+    });
+  });
+  expect(
+    await screen.findByRole("button", { name: "Review notification access" }),
+  ).toBeVisible();
+  expect(f.registerWebPush).toHaveBeenCalledTimes(2);
+  expect(f.requestPermissions).not.toHaveBeenCalled();
+  view.unmount();
+  f.dispose();
+});
+
+it("keeps a genuinely unresolved restoration in error until explicit cleanup", async () => {
+  const f = await restoringReminders();
+  const view = render(settings());
+  expect(await screen.findByText("Setup needs attention")).toBeVisible();
+  await act(async () => {
+    f.acknowledgement.reject({ code: "outcome_unknown" });
+  });
+  await waitFor(() => expect(fixture.status).toHaveBeenCalledTimes(2));
+  expect(screen.getByText("Setup needs attention")).toBeVisible();
+  expect(localStorage.getItem(f.consentKey)).toBe("pending");
+  await act(async () => f.subject.refreshRegistration());
+  expect(f.registerWebPush).toHaveBeenCalledOnce();
+  expect(f.requestPermissions).not.toHaveBeenCalled();
+  expect(fixture.enable).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Turn reminders off" }));
+  expect(
+    await screen.findByRole("switch", { name: "Task reminders" }),
+  ).not.toBeChecked();
+  expect(localStorage.getItem(f.consentKey)).toBeNull();
+  expect(fixture.disable).toHaveBeenCalledOnce();
+  view.unmount();
+  f.dispose();
+});
+
+it("removes the status subscription on unmount, including before module loading finishes", async () => {
+  const view = render(settings());
+  await screen.findByRole("switch", { name: "Task reminders" });
+  await waitFor(() => expect(fixture.statusListeners.size).toBe(1));
+  const listener = [...fixture.statusListeners][0];
+  view.unmount();
+  expect(fixture.statusListeners.size).toBe(0);
+  await act(async () => listener());
+  expect(fixture.status).toHaveBeenCalledOnce();
+
+  fixture.subscribeStatus.mockClear();
+  const immediate = render(settings());
+  immediate.unmount();
+  await act(async () => undefined);
+  expect(fixture.subscribeStatus).not.toHaveBeenCalled();
+  expect(fixture.statusListeners.size).toBe(0);
+});
+
+it("offers explicit cleanup for unresolved registration without passively replaying it", async () => {
+  fixture.status.mockResolvedValue({ state: "error", optedIn: false });
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  );
+  await waitFor(() => expect(fixture.disable).toHaveBeenCalledOnce());
+  const toggle = await screen.findByRole("switch", { name: "Task reminders" });
+  expect(toggle).not.toBeChecked();
+  expect(fixture.enable).not.toHaveBeenCalled();
+  fireEvent.click(toggle);
+  await waitFor(() => expect(fixture.enable).toHaveBeenCalledOnce());
+});
+
+it("offers cleanup immediately when an explicit registration has an unknown outcome", async () => {
+  fixture.enable.mockRejectedValueOnce(
+    new Error("Registration outcome is unknown"),
+  );
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("switch", { name: "Task reminders" }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  ).toBeVisible();
+  expect(fixture.enable).toHaveBeenCalledOnce();
+  expect(fixture.disable).not.toHaveBeenCalled();
+});
+
+it("offers the original approval flow when the SDK cannot unregister an uncertain registration", async () => {
+  fixture.status.mockResolvedValueOnce({ state: "error", optedIn: false });
+  fixture.disable.mockRejectedValueOnce(
+    Object.assign(new Error("Allow reminders again"), {
+      code: "outcome_unknown",
+      reason: "timer_channel_reapproval_required",
+    }),
+  );
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Review notification access" }),
+  );
+  expect(fixture.reauthorize).toHaveBeenCalledOnce();
+  expect(fixture.enable).not.toHaveBeenCalled();
+  expect(fixture.disable).toHaveBeenCalledOnce();
 });
 
 it("retains an actionable approval result from explicit registration", async () => {

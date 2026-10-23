@@ -19,9 +19,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
-      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+    timeout-minutes: 60
+    # Bundled-shell checks omit Firebase plugins; real delivery needs isolated credentials.
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -50,20 +49,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate Firebase configuration
+      - name: Require credential-free native configuration
         run: |
-          if [ -n "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-            echo "TASKNOTES_FIREBASE_PROJECT_ID requires GOOGLE_SERVICES_JSON_BASE64." >&2
-            exit 1
-          fi
-          if [ -z "$TASKNOTES_FIREBASE_PROJECT_ID" ] && [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-            echo "GOOGLE_SERVICES_JSON_BASE64 requires TASKNOTES_FIREBASE_PROJECT_ID." >&2
-            exit 1
-          fi
-
-      - name: Configure Firebase for Android
-        if: env.GOOGLE_SERVICES_JSON_BASE64 != ''
-        run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          test -z "${TASKNOTES_FIREBASE_PROJECT_ID:-}"
+          test ! -e android/app/google-services.json
 
       - name: Verify web application and contracts
         run: pnpm verify
@@ -74,6 +63,31 @@ jobs:
       - name: Test, lint, and build debug APK
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and restart on Android emulator (no push credentials)
+        timeout-minutes: 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant dev.tasknotes.app android.permission.POST_NOTIFICATIONS
+            adb shell am start -W -n dev.tasknotes.app/.MainActivity
+            sleep 5
+            adb shell pidof dev.tasknotes.app
+            adb shell am force-stop dev.tasknotes.app
+            adb shell am start -W -n dev.tasknotes.app/.MainActivity
+            sleep 5
+            adb shell pidof dev.tasknotes.app
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v6

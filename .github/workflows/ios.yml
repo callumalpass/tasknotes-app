@@ -18,6 +18,8 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
+    timeout-minutes: 60
+    # Bundled-shell checks omit Firebase plugins; they do not prove push delivery.
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -34,6 +36,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Require credential-free native configuration
+        run: |
+          test -z "${TASKNOTES_FIREBASE_PROJECT_ID:-}"
+          test ! -e ios/App/App/GoogleService-Info.plist
+
       - name: Verify web application and contracts
         run: pnpm verify
 
@@ -47,5 +54,19 @@ jobs:
           -scheme App
           -configuration Debug
           -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build/ios-simulator
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Install and restart on iOS simulator (no push credentials)
+        timeout-minutes: 15
+        run: |
+          device="$(xcrun simctl list devices available -j | node -e 'let s=""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => { const d = Object.values(JSON.parse(s).devices).flat().find(d => d.name.startsWith("iPhone") && d.state === "Shutdown"); if (!d) process.exit(1); console.log(d.udid); });')"
+          trap 'xcrun simctl shutdown "$device" || true' EXIT
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          xcrun simctl install "$device" build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app
+          xcrun simctl launch "$device" dev.tasknotes.app
+          sleep 2
+          xcrun simctl terminate "$device" dev.tasknotes.app
+          xcrun simctl launch "$device" dev.tasknotes.app

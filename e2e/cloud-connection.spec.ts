@@ -134,11 +134,14 @@ test("opens the original held client without relay traffic and preserves navigat
   ).toBeVisible();
   await openSettings(page, "Reminders");
   await expect(page.getByRole("heading", { name: "Reminders" })).toBeVisible();
-  await expect(page.getByText("Not available", { exact: true })).toBeVisible();
+  // This standalone held-client fixture has no original approved timer scope.
+  // The production entry binds it before rendering; it no longer globally
+  // disables reminder authority for every NEXT collection.
   await expect(
-    page.getByText(
-      /this version of TaskNotes does not send reminder notifications/,
-    ),
+    page.getByText("Open a collection first", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Notifications never include task content/),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Turn on reminders", exact: true }),

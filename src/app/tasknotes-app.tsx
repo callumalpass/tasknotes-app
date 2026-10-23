@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,6 +21,7 @@ import "@mdbase-dev/ui/collections.css";
 import { addTaskNotesStarterViews } from "../application/ensure-default-view-source";
 import { taskNotesMdbase } from "../cloud/tasknotes-application";
 import { followNativeSignInReturn } from "../native/sign-in";
+import { mdbaseNotifications } from "../native/mdbase-notifications";
 import { registerStartupTiming } from "../observability/startup-timing";
 import { NextTaskRepository } from "../storage/next-repository";
 import { tasknotesMarkUrl } from "./assets";
@@ -29,6 +31,10 @@ import {
   useConnectionNotice,
 } from "./connection-notice";
 import { OpenedCollection } from "./opened-collection";
+import {
+  notificationScope,
+  withNotificationTeardown,
+} from "./notification-scope";
 import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
 
@@ -48,7 +54,12 @@ export function TaskNotesApp({
   mdbase?: Mdbase;
   Workspace?: Workspace;
 } = {}) {
-  const [mdbase] = useState(() => supplied ?? taskNotesMdbase());
+  const [mdbase] = useState(() =>
+    withNotificationTeardown(
+      supplied ?? taskNotesMdbase(),
+      mdbaseNotifications,
+    ),
+  );
   const [arming] = useState(() => new StarterViewArming(mdbase.getSnapshot()));
   useEffect(() => arming.follow(mdbase), [arming, mdbase]);
   useEffect(() => followSignOutRoute(mdbase), [mdbase]);
@@ -123,6 +134,17 @@ function HeldCollection({
   Workspace: Workspace;
 }) {
   const repository = useHeldRepository(connection);
+  const scope = notificationScope(connection, ui.mdbase.getSnapshot());
+  // Layout binding precedes workspace status/listener passive effects. Cleanup
+  // runs before the borrowed repository and SDK port are torn down.
+  useLayoutEffect(
+    () =>
+      mdbaseNotifications.bindScope(
+        { key: scope.key, timers: scope.timers },
+        (enabled) => repository.setRemindersEnabled(enabled),
+      ),
+    [repository, scope.key, scope.timers],
+  );
   const armed = useSyncExternalStore(arming.subscribe, arming.getArmed);
   useEffect(() => {
     if (armed !== connection.id || !arming.take(armed)) return;
@@ -181,7 +203,11 @@ function useHeldRepository(
       connection.records,
       connection.displayName,
       connection.scope.account,
-      { clientOwnership: "borrowed", peopleClient: connection.people },
+      {
+        clientOwnership: "borrowed",
+        peopleClient: connection.people,
+        timers: connection.timers,
+      },
     );
     // Only app-owned stages: no invented native/Worker durations or extra reads.
     registerStartupTiming(created);

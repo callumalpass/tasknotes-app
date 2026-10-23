@@ -15,6 +15,7 @@ import {
   type Hold,
   type SyncStatus,
   type WriteLedgerEntry,
+  type TimersApi,
 } from "@mdbase-dev/sdk";
 import { linksTo } from "@mdbase-dev/connect";
 import {
@@ -110,6 +111,7 @@ import {
 } from "./scratchpads";
 import { taskCompletion } from "../domain/task-completion";
 import { taskSearchTokens } from "../domain/task-query";
+import { taskTimerMembership } from "../domain/reminder-timers";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
@@ -210,6 +212,8 @@ interface CachedTask {
   model: TaskNotesTaskModel;
   typeName: string;
 }
+
+type ReminderTimers = Pick<TimersApi, "reconcile">;
 
 export function nativeUnsupported(message: string): MdbaseError {
   return new MdbaseError({
@@ -366,6 +370,18 @@ export class NextTaskRepository implements TaskRepository {
   private changesWatch: ChangesWatch | null = null;
   private readonly clientOwnership: "owned" | "borrowed";
   private readonly peopleClient?: Pick<MdbasePeopleClient, "directory">;
+  private readonly timers?: ReminderTimers;
+  private readonly onReminderError?: (reason: unknown) => void;
+  private remindersEnabled: boolean;
+  private reminderScope = new AbortController();
+  private reminderLedgerRevision = 0;
+  private reminderTail: Promise<void> = Promise.resolve();
+  private reminderRun?: {
+    owner: AbortController;
+    consent: AbortController;
+    requested: number;
+    promise: Promise<void>;
+  };
 
   constructor(
     private readonly client: MdbaseClient,
@@ -375,6 +391,11 @@ export class NextTaskRepository implements TaskRepository {
       /** Host-owned clients survive this adapter's disposal; default remains owned. */
       clientOwnership?: "owned" | "borrowed";
       peopleClient?: Pick<MdbasePeopleClient, "directory">;
+      /** Original connection's optional timer facade; never closed by this adapter. */
+      timers?: ReminderTimers;
+      /** Persisted explicit opt-in, after permission/channel setup. Defaults off. */
+      remindersEnabled?: boolean;
+      onReminderError?: (reason: unknown) => void;
       modelSetupJournal?: ModelSetupJournal;
       /** Actual original-controller completion flag, not resource readiness. */
       requiresTaskNotesModelSetup?: boolean;
@@ -389,6 +410,9 @@ export class NextTaskRepository implements TaskRepository {
   ) {
     this.clientOwnership = options.clientOwnership ?? "owned";
     this.peopleClient = options.peopleClient;
+    this.timers = options.timers;
+    this.remindersEnabled = options.remindersEnabled === true;
+    this.onReminderError = options.onReminderError;
     this.files = new NextCollectionFileStore(
       client.files,
       () => this.scope.signal,
@@ -440,7 +464,11 @@ export class NextTaskRepository implements TaskRepository {
     };
     this.mutations = new NextMutations(client, this.readCurrentWrites);
     this.stopLedger = client.ledger.subscribe(() => {
-      if (!this.disposed && !this.scope.signal.aborted) this.emit("status");
+      this.reminderLedgerRevision++;
+      if (!this.disposed && !this.scope.signal.aborted) {
+        this.emit("status");
+        this.requestReminders();
+      }
     });
     this.creatorSetupPending = options.requiresTaskNotesModelSetup === true;
     if (
@@ -628,6 +656,7 @@ export class NextTaskRepository implements TaskRepository {
       // Retire the cut immediately; only UI reload notifications are delayed.
       this.invalidateDataGeneration();
       this.changeWindow.changed();
+      this.requestReminders();
     } else this.emit("data");
   }
 
@@ -695,6 +724,156 @@ export class NextTaskRepository implements TaskRepository {
       await this.initializeModel(signal);
       if (!options.deferTaskIndex) await this.loadIndex(signal);
     });
+    this.requestReminders();
+  }
+
+  /** Pause new schedules and drain the original request before the manager
+   * changes channels on the same single-flight port. Actual collection teardown
+   * still aborts through the repository scope; opt-out must not release a port
+   * slot before the SDK has received its response.
+   */
+  setRemindersEnabled(enabled: boolean): Promise<void> {
+    if (this.remindersEnabled !== enabled) {
+      if (enabled) this.reminderScope = new AbortController();
+      this.remindersEnabled = enabled;
+    }
+    return enabled ? this.reconcileReminders() : this.reminderTail;
+  }
+
+  private requestReminders(): void {
+    if (!this.remindersEnabled || this.disposed || this.scope.signal.aborted)
+      return;
+    const owner = this.scope;
+    const consent = this.reminderScope;
+    void this.reconcileReminders().catch((reason: unknown) => {
+      if (
+        !this.disposed &&
+        owner === this.scope &&
+        consent === this.reminderScope &&
+        !owner.signal.aborted &&
+        this.remindersEnabled
+      )
+        this.onReminderError?.(reason);
+    });
+  }
+
+  reconcileReminders(): Promise<void> {
+    if (!this.remindersEnabled) return Promise.resolve();
+    const owner = this.scope;
+    const consent = this.reminderScope;
+    const active = this.reminderRun;
+    if (active?.owner === owner && active.consent === consent) {
+      active.requested++;
+      return active.promise;
+    }
+    const run = { owner, consent, requested: 1, promise: Promise.resolve() };
+    run.promise = this.reminderTail
+      .then(async () => {
+        const signal = AbortSignal.any([
+          owner.signal,
+          consent.signal,
+          AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.backgroundMs),
+        ]);
+        signal.throwIfAborted();
+        if (this.disposed)
+          throw new Error("The native collection instance has been disposed.");
+        const timers = this.timers;
+        if (!timers)
+          throw nativeUnsupported(
+            "This connection does not support reminder scheduling.",
+          );
+        let completed = 0;
+        const enabled = () =>
+          this.remindersEnabled && consent === this.reminderScope;
+        while (enabled() && completed < run.requested) {
+          const target = run.requested;
+          // Re-read the native pages, not the bounded/filtered UI cache. A
+          // pending edit, deletion, hold or incomplete page cannot cancel timers.
+          const snapshot = await this.readCurrentGeneration(
+            signal,
+            async () => {
+              await this.initializeModel(signal);
+              const revision = this.dataRevision;
+              const ledgerRevision = this.reminderLedgerRevision;
+              const tasks = new Map<string, TaskSummary>();
+              let asOf: number | undefined;
+              for await (const page of this.client.pages(
+                { types: [...this.models.keys()], limit: 1000 },
+                { effective: true },
+                signal,
+              )) {
+                signal.throwIfAborted();
+                if (
+                  !page.complete ||
+                  (asOf !== undefined && page.asOf !== asOf)
+                )
+                  throw nativeUnsupported(
+                    "Reminder scheduling needs one complete task snapshot.",
+                  );
+                asOf = page.asOf;
+                for (const record of page.records) {
+                  if (
+                    record.state.state !== "confirmed" ||
+                    record.state.hold ||
+                    record.state.unresolved
+                  )
+                    throw nativeUnsupported(
+                      "Reminder scheduling is waiting for task changes to be confirmed.",
+                    );
+                  const task = nextTaskSummary(record, this.models);
+                  if (!task || tasks.has(task.id))
+                    throw nativeUnsupported(
+                      "Reminder scheduling needs unambiguous task identities.",
+                    );
+                  tasks.set(task.id, task);
+                }
+              }
+              if (asOf === undefined)
+                throw nativeUnsupported(
+                  "Reminder scheduling needs one complete task snapshot.",
+                );
+              // Pending deletions are absent from pages; the restored ledger is
+              // therefore also required before treating absence as cancellation.
+              const ledger = this.client.ledger.getSnapshot();
+              if (
+                !ledger.restored ||
+                ledger.pending.length ||
+                ledger.rejected.length
+              )
+                throw nativeUnsupported(
+                  "Reminder scheduling is waiting for task changes to be confirmed.",
+                );
+              const desired = await taskTimerMembership([...tasks.values()]);
+              signal.throwIfAborted();
+              this.assertCurrentData(revision);
+              return { revision, ledgerRevision, desired };
+            },
+          );
+          signal.throwIfAborted();
+          if (!enabled()) return;
+          if (
+            snapshot.revision !== this.dataRevision ||
+            snapshot.ledgerRevision !== this.reminderLedgerRevision
+          )
+            continue;
+          await timers.reconcile(
+            {
+              namespace: "task-reminders",
+              criterionId: "task.reminder",
+              timers: snapshot.desired,
+            },
+            { signal },
+          );
+          signal.throwIfAborted();
+          completed = target;
+        }
+      })
+      .finally(() => {
+        if (this.reminderRun === run) this.reminderRun = undefined;
+      });
+    this.reminderRun = run;
+    this.reminderTail = run.promise.catch(() => {});
+    return run.promise;
   }
 
   /** Catch-up may retire several READ cuts. Wait for quiet and reread using
@@ -3462,6 +3641,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") this.invalidateDataGeneration();
+    if (kind === "data") this.requestReminders();
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }
