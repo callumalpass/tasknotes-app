@@ -303,12 +303,10 @@ test("a failed locale chunk retains English, the explicit preference and a retry
   page,
 }) => {
   await startupLocale(page, "en");
-  await page.route(
-    (url) =>
-      url.pathname.includes("/locales/fr/messages.json") ||
-      /\/assets\/messages-/.test(url.pathname),
-    (route) => route.abort(),
-  );
+  const blockCatalogues = (url: URL) =>
+    url.pathname.includes("/locales/fr/messages.json") ||
+    /\/assets\/messages-/.test(url.pathname);
+  await page.route(blockCatalogues, (route) => route.abort());
   await page.goto("more/device?demo=12");
   const picker = page.locator(".language-picker");
   await expect(picker).toHaveValue("en");
@@ -321,6 +319,9 @@ test("a failed locale chunk retains English, the explicit preference and a retry
     await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
   ).toBe("en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  // End the outage before testing a successful selection: the built application
+  // and shared UI both now correctly emit messages-* chunks for every locale.
+  await page.unroute(blockCatalogues);
   // A later successful selection must retire the old error, including on return
   // to the locale that was active when the original failure happened.
   await picker.selectOption("de");
