@@ -459,7 +459,11 @@ export class MdbaseNotificationManager {
       void this.notifyOptIn(binding, true);
     } catch (error) {
       const reason = errorReason(error);
-      if (requiresReauthorization(reason)) {
+      if (
+        requiresReauthorization(reason) ||
+        (reason === "timer_refused" && errorCode(error) === "unauthenticated")
+      ) {
+        this.assertCurrent(binding);
         this.options.storage.setItem(
           this.key(binding),
           "reauthorization_required",
@@ -487,8 +491,12 @@ export class MdbaseNotificationManager {
           "cancelled",
         ].includes(errorCode(error) ?? "")
       ) {
+        this.assertCurrent(binding);
         if (previous) this.options.storage.setItem(this.key(binding), previous);
         else this.options.storage.removeItem(this.key(binding));
+        // The rejected replacement did not change the acknowledged channel.
+        // Restore scheduling too, not only the persisted opt-in display.
+        if (previous === "1") void this.notifyOptIn(binding, true);
       }
       throw error;
     }

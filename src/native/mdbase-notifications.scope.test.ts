@@ -273,14 +273,24 @@ describe("notification scope lifecycle", () => {
       state: "reauthorization_required",
       optedIn: false,
     });
-    expect(f.storage.getItem(key + "scope")).toBeNull();
+    expect(f.storage.getItem(key + "scope")).toBe("reauthorization_required");
     await f.subject.refreshRegistration();
     expect(f.port.registerFcm).toHaveBeenCalledOnce();
   });
 
-  it("preserves existing consent after a confirmed rotation refusal", async () => {
+  it("restores scheduling through the callback after a confirmed replacement refusal", async () => {
     const f = fixture();
+    const changed = vi.fn(async (enabled: boolean) => {
+      if (enabled)
+        await f.timers.reconcile({
+          namespace: "task-reminders",
+          criterionId: "task.reminder",
+          timers: [],
+        });
+    });
+    f.subject.bindScope({ key: "scope", timers: f.timers }, changed);
     await f.subject.enable();
+    await vi.waitFor(() => expect(f.port.reconcile).toHaveBeenCalledOnce());
     f.port.registerFcm.mockRejectedValueOnce({
       code: "rate_limited",
       reason: "timer_refused",
@@ -289,6 +299,31 @@ describe("notification scope lifecycle", () => {
       reason: "timer_refused",
     });
     expect(f.storage.getItem(key + "scope")).toBe("1");
+    await vi.waitFor(() => expect(changed).toHaveBeenLastCalledWith(true));
+    await vi.waitFor(() => expect(f.port.reconcile).toHaveBeenCalledTimes(2));
+    expect(f.port.registerFcm).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps scheduling off and requests approval after an acknowledged channel loses authentication", async () => {
+    const f = fixture();
+    const changed = vi.fn();
+    f.subject.bindScope({ key: "scope", timers: f.timers }, changed);
+    await f.subject.enable();
+    f.port.registerFcm.mockRejectedValueOnce({
+      code: "unauthenticated",
+      reason: "timer_refused",
+    });
+    await expect(f.subject.refreshRegistration()).rejects.toMatchObject({
+      reason: "timer_refused",
+    });
+    expect(changed).toHaveBeenLastCalledWith(false);
+    expect(await f.subject.status()).toEqual({
+      state: "reauthorization_required",
+      optedIn: false,
+    });
+    expect(f.storage.getItem(key + "scope")).toBe("reauthorization_required");
+    await f.subject.refreshRegistration();
+    expect(f.port.registerFcm).toHaveBeenCalledTimes(2);
   });
 
   it("persists actual SDK reapproval-required registration without retrying or opting in", async () => {
@@ -433,6 +468,11 @@ function fixture(native = true) {
   const listeners = new Map<string, (event: unknown) => void>();
   const remove = vi.fn(async () => undefined);
   const port = {
+    reconcile: vi.fn(async (namespace: string) => ({
+      namespace,
+      timers: [],
+      cancelled_ids: [],
+    })),
     registerFcm: vi.fn(async (options: { signal: AbortSignal }) => {
       void options;
       return {
