@@ -34,7 +34,7 @@ msgstr ", 이제 홈"
 
 #: src/app/more-screen.tsx
 msgid ". Pending edits are not yet synced."
-msgstr ". 보류 중인 편집 내용은 아직 동기화되지 않았습니다."
+msgstr ". 대기 중인 편집 내용은 아직 동기화되지 않았습니다."
 
 #: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
@@ -83,7 +83,7 @@ msgstr "{0, plural, other {이미지 #개를 추가했습니다.}}"
 #. placeholder {0}: stats.open
 #: src/app/more-screen.tsx
 msgid "{0, plural, one {# open} other {# open}}"
-msgstr "{0, plural, other {열림 #개}}"
+msgstr "{0, plural, other {미완료 #개}}"
 
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
@@ -325,7 +325,7 @@ msgstr "{count, plural, other {#일 전}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, other {끝에서 #일 전}}"
+msgstr "{count, plural, other {월말에서 #번째 날}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
@@ -440,11 +440,11 @@ msgstr "{names}에 {summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr "{day}일에 {summary}"
+msgstr "{summary} (날짜: {day})"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr "{day}일 {rank}번째에 {summary}"
+msgstr "{summary} ({rank} {day})"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
@@ -1220,7 +1220,7 @@ msgstr "지우기"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "반복할 때마다 노트의 체크리스트 항목 지우기"
+msgstr "반복할 때마다 노트의 체크박스 초기화"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -3398,7 +3398,7 @@ msgstr "오프라인"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "켬"
+msgstr "반복 날짜"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
@@ -3436,7 +3436,7 @@ msgstr "열기"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "열기"
+msgstr "미완료"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
@@ -4018,7 +4018,7 @@ msgstr "반복 작업"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr "반복 작업 작업"
+msgstr "반복 작업 메뉴"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
@@ -4431,7 +4431,7 @@ msgstr "선택한 날짜"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "선택한 초안은 현재 위치에서 연결된 TaskNotes가 됩니다. 나머지는 계속 작업할 수 있도록 이 스크래치패드에 남습니다."
+msgstr "선택한 초안은 현재 위치에서 링크된 TaskNotes 작업으로 변환됩니다. 나머지는 계속 작업할 수 있도록 이 스크래치패드에 남습니다."
 
 #: src/i18n/editor-phrases.ts
 msgid "Selection deleted"
