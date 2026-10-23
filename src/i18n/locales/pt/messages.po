@@ -181,7 +181,7 @@ msgstr "Não foi possível concluir {action}."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} may have been saved, but its result could not be confirmed."
-msgstr "L’opération « {action} » a peut-être été enregistrée, mais son résultat n’a pas pu être confirmé."
+msgstr "{action} pode ter sido salvo, mas não foi possível confirmar o resultado."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
@@ -281,7 +281,7 @@ msgstr "{count, plural, one {dia} other {dias}}"
 
 #: src/app/cloud-collection.tsx
 msgid "{count, plural, one {Mdbase retained # change from an earlier session whose outcome could not be confirmed. TaskNotes will not replay it automatically.} other {Mdbase retained # changes from an earlier session whose outcome could not be confirmed. TaskNotes will not replay them automatically.}}"
-msgstr "{count, plural, one {Mdbase a conservé # modification d’une session précédente dont le résultat n’a pas pu être confirmé. TaskNotes ne la réexécutera pas automatiquement.} other {Mdbase a conservé # modifications d’une session précédente dont le résultat n’a pas pu être confirmé. TaskNotes ne les réexécutera pas automatiquement.}}"
+msgstr "{count, plural, one {mdbase manteve # alteração de uma sessão anterior cujo resultado não pôde ser confirmado. O TaskNotes não a reenviará automaticamente.} other {mdbase manteve # alterações de uma sessão anterior cujo resultado não pôde ser confirmado. O TaskNotes não as reenviará automaticamente.}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {month} other {months}}"
@@ -463,7 +463,7 @@ msgstr "Uma posição do dia da semana"
 
 #: src/app/more-screen.tsx
 msgid "About & portability"
-msgstr "À propos et portabilité"
+msgstr "Sobre e portabilidade"
 
 #: src/app/search-screen.tsx
 msgid "Across this collection"
@@ -536,197 +536,197 @@ msgstr "Adicionar um contexto"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr "Ajouter un projet"
+msgstr "Adicionar um projeto"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr "Ajoutez un projet à une tâche pour le voir ici."
+msgstr "Adicione um projeto a uma tarefa para que ela apareça aqui."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr "Ajouter une propriété"
+msgstr "Adicionar uma propriedade"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr "Ajoutez une date planifiée ou une échéance à une tâche active."
+msgstr "Adicione uma data agendada ou de vencimento a uma tarefa ativa."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr "Ajouter une règle de tri"
+msgstr "Adicionar uma regra de ordenação"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr "Ajouter une étiquette"
+msgstr "Adicionar uma etiqueta"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "Ajouter une tâche — tomorrow 9am, #tag, +project"
+msgstr "Adicionar uma tarefa — tomorrow 9am, #tag, +project"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
-msgstr "Ajoutez d’abord un titre de tâche."
+msgstr "Adicione primeiro um título à tarefa."
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
-msgstr "Ajoutez une tâche quand vous en avez besoin."
+msgstr "Adicione uma tarefa sempre que precisar."
 
 #: src/app/task-screen.tsx
 msgid "Add a title before leaving this task."
-msgstr "Ajoutez un titre avant de quitter cette tâche."
+msgstr "Adicione um título antes de sair desta tarefa."
 
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
-msgstr "Ajouter une personne assignée"
+msgstr "Adicionar um responsável"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add child"
-msgstr "Ajouter un sous-élément"
+msgstr "Adicionar item filho"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add context…"
-msgstr "Ajouter un contexte…"
+msgstr "Adicionar contexto…"
 
 #: src/components/task-capture.tsx
 msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Ajoutez des dates et des étiquettes naturellement — essayez « Call Sam tomorrow 9am #work »."
+msgstr "Adicione datas e etiquetas naturalmente — experimente “Call Sam tomorrow 9am #work”."
 
 #: src/components/task-capture.tsx
 msgid "Add details"
-msgstr "Ajouter des détails"
+msgstr "Adicionar detalhes"
 
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
-msgstr "Ajouter une formule"
+msgstr "Adicionar fórmula"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
-msgstr "Ajouter une image"
+msgstr "Adicionar imagem"
 
 #: src/components/task-capture.tsx
 msgid "Add notes"
-msgstr "Ajouter des notes"
+msgstr "Adicionar notas"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr "Ajouter une projection"
+msgstr "Adicionar projeção"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
-msgstr "Ajouter un rappel"
+msgstr "Adicionar lembrete"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
-msgstr "Ajouter une sous-tâche"
+msgstr "Adicionar subtarefa"
 
 #: src/app/app-shell.tsx
 #: src/app/full-calendar-view.tsx
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "Add task"
-msgstr "Ajouter une tâche"
+msgstr "Adicionar tarefa"
 
 #. placeholder {0}: agendaLabel(selected)
 #: src/app/views/mini-calendar-view.tsx
 msgid "Add task on {0}"
-msgstr "Ajouter une tâche le {0}"
+msgstr "Adicionar tarefa em {0}"
 
 #. placeholder {0}: project.label
 #: src/app/views/projects-view.tsx
 msgid "Add task to {0}"
-msgstr "Ajouter une tâche à {0}"
+msgstr "Adicionar tarefa a {0}"
 
 #: src/app/views/kanban-view.tsx
 msgid "Add task to {label}"
-msgstr "Ajouter une tâche à {label}"
+msgstr "Adicionar tarefa a {label}"
 
 #: src/app/task-screen.tsx
 msgid "Add thoughts, links, or supporting details…"
-msgstr "Ajoutez des réflexions, des liens ou des détails utiles…"
+msgstr "Adicione ideias, links ou detalhes de apoio…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add title"
-msgstr "Ajouter un titre"
+msgstr "Adicionar título"
 
 #. placeholder {0}: currentCreationContext.label
 #. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
-msgstr "Ajouter à {0}"
+msgstr "Adicionar a {0}"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
-msgstr "Ajoutez les tâches qui doivent être réalisées avant celle-ci."
+msgstr "Adicione um trabalho que precisa ser feito antes desta tarefa."
 
 #: src/app/views/view-catalog.tsx
 msgid "Added"
-msgstr "Ajouté"
+msgstr "Adicionado"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
-msgstr "Ajout en cours"
+msgstr "Adicionando"
 
 #: src/components/task-capture.tsx
 msgid "Adding “{pendingTitle}”…"
-msgstr "Ajout de « {pendingTitle} »…"
+msgstr "Adicionando “{pendingTitle}”…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
-msgstr "Ajout en cours…"
+msgstr "Adicionando…"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
-msgstr "Ajustez les filtres de cette vue ou choisissez une autre vue."
+msgstr "Ajuste os filtros desta visualização ou escolha outra."
 
 #: src/app/task-screen.tsx
 msgid "Advance after"
-msgstr "Passer à la suivante après"
+msgstr "Avançar após"
 
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
-msgstr "Avancé"
+msgstr "Avançado"
 
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
-msgstr "Durée avancée"
+msgstr "Duração avançada"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced recurrence"
-msgstr "Récurrence avancée"
+msgstr "Recorrência avançada"
 
 #: src/i18n/presentation.ts
 msgid "Advanced recurrence rule"
-msgstr "Règle de récurrence avancée"
+msgstr "Regra avançada de recorrência"
 
 #: src/app/task-editor-draft.ts
 msgid "Advanced repeat"
-msgstr "Répétition avancée"
+msgstr "Repetição avançada"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced rule"
-msgstr "Règle avancée"
+msgstr "Regra avançada"
 
 #: src/i18n/ui-copy.ts
 msgid "after"
-msgstr "après"
+msgstr "depois"
 
 #: src/components/reminder-editor.tsx
 msgid "After"
-msgstr "Après"
+msgstr "Depois"
 
 #: src/components/recurrence-field.tsx
 msgid "After a number of times"
-msgstr "Après un nombre d’occurrences"
+msgstr "Após um número de vezes"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion"
-msgstr "Après la fin de la tâche"
+msgstr "Após a conclusão"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion or skip"
-msgstr "Après la fin de la tâche ou une occurrence ignorée"
+msgstr "Após a conclusão ou ao pular"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
@@ -735,281 +735,281 @@ msgstr "Agenda"
 
 #: src/i18n/editor-phrases.ts
 msgid "all"
-msgstr "tout"
+msgstr "todos"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
-msgstr "Toutes"
+msgstr "Todos"
 
 #: src/components/expression-builder.tsx
 msgid "All conditions match"
-msgstr "Toutes les conditions correspondent"
+msgstr "Todas as condições correspondem"
 
 #: src/app/full-calendar-view.tsx
 msgid "All day"
-msgstr "Toute la journée"
+msgstr "Dia inteiro"
 
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
-msgstr "Toutes les tâches correspondantes sont chargées"
+msgstr "Todas as tarefas correspondentes foram carregadas"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
-msgstr "Toutes les tâches"
+msgstr "Todas as tarefas"
 
 #: src/app/views/view-catalog.tsx
 msgid "All views"
-msgstr "Toutes les vues"
+msgstr "Todas as visualizações"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
-msgstr "Autoriser la création de tâches"
+msgstr "Permitir criação de tarefas"
 
 #. placeholder {0}: String(configuration.value)
 #: src/app/cloud-collection.tsx
 msgid "Allow TaskNotes Base views at {0}"
-msgstr "Autoriser les vues Base de TaskNotes à {0}"
+msgstr "Permitir visualizações do TaskNotes Base em {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
-msgstr "Quantité"
+msgstr "Quantidade"
 
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
-msgstr "Au moins une condition correspond"
+msgstr "Qualquer condição corresponde"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
-msgstr "À toute heure"
+msgstr "Qualquer horário"
 
 #: src/i18n/default-labels.ts
 msgid "Anytime"
-msgstr "Sans date"
+msgstr "A qualquer momento"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
-msgstr "Apparence"
+msgstr "Aparência"
 
 #: src/app/cloud-collection.tsx
 msgid "Apply reviewed setup"
-msgstr "Appliquer la configuration vérifiée"
+msgstr "Aplicar configuração revisada"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
-msgstr "Appliquer la règle"
+msgstr "Aplicar regra"
 
 #: src/app/notification-label.ts
 msgid "Approval required"
-msgstr "Approbation requise"
+msgstr "Aprovação necessária"
 
 #: src/components/task-actions.tsx
 msgid "Archive"
-msgstr "Archiver"
+msgstr "Arquivar"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
-msgstr "Dossier d’archives"
+msgstr "Pasta de arquivo"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive tasks after they enter a selected status. Recurring series are always excluded."
-msgstr "Archivez les tâches lorsqu’elles prennent un statut choisi. Les séries récurrentes sont toujours exclues."
+msgstr "Arquivar tarefas depois que entrarem em um status selecionado. Séries recorrentes são sempre excluídas."
 
 #: src/app/views/kanban-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Archived"
-msgstr "Archivées"
+msgstr "Arquivadas"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
-msgstr "Les tâches archivées sont conservées, pas supprimées. Vous pouvez les restaurer depuis leur menu."
+msgstr "Tarefas arquivadas são mantidas, não excluídas. Você pode restaurá-las pelo menu da tarefa."
 
 #: src/components/arrange-tasks-option.tsx
 msgid "Arrange tasks"
-msgstr "Réorganiser les tâches"
+msgstr "Organizar tarefas"
 
 #: src/app/view-editor-form.tsx
 msgid "Ascending"
-msgstr "Croissant"
+msgstr "Crescente"
 
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
-msgstr "Assignée à"
+msgstr "Atribuída a"
 
 #: src/app/search-screen.tsx
 msgid "Assigned to me"
-msgstr "Assignées à moi"
+msgstr "Atribuídas a mim"
 
 #: src/components/assignee-editor.tsx
 msgid "Assignments link to person notes, which list them as backlinks. They do not grant collection access."
-msgstr "Les assignations renvoient aux notes de personnes, où elles apparaissent comme liens entrants. Elles ne donnent pas accès à la collection."
+msgstr "As atribuições se vinculam a notas de pessoas, que as listam como backlinks. Elas não concedem acesso à coleção."
 
 #: src/app/search-screen.tsx
 msgid "Assignments use your linked person record."
-msgstr "Les assignations utilisent votre document de personne lié."
+msgstr "As atribuições usam o registro de pessoa vinculado a você."
 
 #: src/components/task-attachments.tsx
 msgid "Attach image"
-msgstr "Joindre une image"
+msgstr "Anexar imagem"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
-msgstr "Image jointe"
+msgstr "Imagem anexada"
 
 #: src/app/search-match-context.ts
 msgid "attachments"
-msgstr "pièces jointes"
+msgstr "anexos"
 
 #: src/components/task-attachments.tsx
 msgid "Attachments"
-msgstr "Pièces jointes"
+msgstr "Anexos"
 
 #: src/components/task-model-settings.tsx
 msgid "Auto archive"
-msgstr "Archivage automatique"
+msgstr "Arquivar automaticamente"
 
 #: src/app/collection-picker.tsx
 msgid "Available collections"
-msgstr "Collections disponibles"
+msgstr "Coleções disponíveis"
 
 #: src/app/view-editor-form.tsx
 msgid "Available in"
-msgstr "Disponible dans"
+msgstr "Disponível em"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Back"
-msgstr "Retour"
+msgstr "Voltar"
 
 #: src/components/task-actions.tsx
 msgid "Back to previous actions"
-msgstr "Revenir aux actions précédentes"
+msgstr "Voltar às ações anteriores"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
-msgstr "avant"
+msgstr "antes"
 
 #: src/components/reminder-editor.tsx
 msgid "Before"
-msgstr "Avant"
+msgstr "Antes"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
-msgstr "Bloquée par"
+msgstr "Bloqueada por"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocking"
-msgstr "Bloque"
+msgstr "Bloqueando"
 
 #: src/app/view-editor-form.tsx
 msgid "Board"
-msgstr "Tableau"
+msgstr "Quadro"
 
 #: src/app/view-editor-form.tsx
 msgid "Board column"
-msgstr "Colonne du tableau"
+msgstr "Coluna do quadro"
 
 #: src/components/kanban-column-jump.tsx
 msgid "Board columns"
-msgstr "Colonnes du tableau"
+msgstr "Colunas do quadro"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Bold"
-msgstr "Gras"
+msgstr "Negrito"
 
 #: src/app/app-shell.tsx
 msgid "Browse"
-msgstr "Parcourir"
+msgstr "Navegar"
 
 #: src/components/expression-builder.tsx
 msgid "Builder"
-msgstr "Éditeur visuel"
+msgstr "Criador"
 
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
-msgstr "Espaces de travail intégrés"
+msgstr "Espaços de trabalho integrados"
 
 #: src/i18n/editor-phrases.ts
 msgid "by word"
-msgstr "par mot"
+msgstr "por palavra"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
-msgstr "Calendrier"
+msgstr "Calendário"
 
 #: src/components/calendar-preferences.tsx
 msgid "Calendar display"
-msgstr "Affichage du calendrier"
+msgstr "Exibição do calendário"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar layout"
-msgstr "Disposition du calendrier"
+msgstr "Layout do calendário"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr "Puis-je changer de collection plus tard ?"
+msgstr "Posso mudar de coleção mais tarde?"
 
 #: src/app/cloud-collection.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 msgid "Cancel"
-msgstr "Annuler"
+msgstr "Cancelar"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr "Annuler la confirmation"
+msgstr "Cancelar confirmação"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr "Déplacement de {title} annulé."
+msgstr "Movendo {title} foi cancelado."
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr "Expression CEL"
+msgstr "Expressão CEL"
 
 #: src/app/collection-settings.tsx
 msgid "Change collection"
-msgstr "Changer de collection"
+msgstr "Mudar coleção"
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr "Modifie chaque occurrence"
+msgstr "Altera cada ocorrência"
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr "Vérification en cours"
+msgstr "Verificando"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings"
-msgstr "Vérification des paramètres de la collection"
+msgstr "Verificando as configurações da coleção"
 
 #: src/app/cloud-collection.tsx
 msgid "Checking this collection’s TaskNotes setup…"
-msgstr "Vérification de la configuration TaskNotes de cette collection…"
+msgstr "Verificando a configuração do TaskNotes para esta coleção…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr "Sous-élément"
+msgstr "Item filho"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr "Choisir"
+msgstr "Escolher"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection"
-msgstr "Choisir une collection"
+msgstr "Escolher uma coleção"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection to open your tasks."
-msgstr "Choisissez une collection pour ouvrir vos tâches."
+msgstr "Escolha uma coleção para abrir suas tarefas."
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a different collection in mdbase"
-msgstr "Choisir une collection différente dans mdbase"
+msgstr "Escolher outra coleção no mdbase"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr "Choisir une personne…"
+msgstr "Escolher uma pessoa…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
