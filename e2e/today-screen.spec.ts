@@ -53,6 +53,15 @@ test("a finished day says Today is clear and leads to Upcoming", async ({
   await expect(
     page.getByRole("button", { name: "Overdue 4", exact: true }),
   ).toBeVisible();
+  // The demo has an extra Today occurrence on MO/WE/FR. Count the planned
+  // tasks before completing anything; overdue work is not part of this total.
+  const plannedTasks = section(page, "Today").getByRole("button", {
+    name: /^Complete /,
+  });
+  await expect(plannedTasks.first()).toBeVisible();
+  const plannedToday = await plannedTasks.count();
+  // Progress is intentionally hidden until the first planned task is done.
+  await expect(page.locator(".view-date")).not.toContainText(/\d+ of \d+ done/);
   for (const name of ["Today", "Overdue"]) {
     const rows = section(page, name).getByRole("button", {
       name: /^Complete /,
@@ -63,7 +72,9 @@ test("a finished day says Today is clear and leads to Upcoming", async ({
     }
   }
   await expect(page.getByText("Today is clear")).toBeVisible();
-  await expect(page.locator(".view-date")).toContainText(/· 1 of 1 done/);
+  await expect(page.locator(".view-date")).toContainText(
+    `· ${plannedToday} of ${plannedToday} done`,
+  );
   await expect(page.locator(".today-clear")).toContainText(/^Today is clear/);
   await expect(page.locator(".today-clear")).toContainText("Next:");
   await page.getByRole("button", { name: "See Upcoming" }).click();
