@@ -1,11 +1,19 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "./local-test";
 
+async function startupLocale(page: Page, locale: string): Promise<void> {
+  await page.addInitScript(
+    (value) => localStorage.setItem("tasknotes:locale", value),
+    locale,
+  );
+}
+
 for (const locale of ["en", "fr"]) {
-  test(`collection settings pilot ${locale}: local demo, controls and accessibility`, async ({
+  test(`collection settings ${locale}: local demo, controls and accessibility`, async ({
     page,
   }) => {
-    await page.goto(`more?demo=12&i18n-pilot=${locale}`);
+    await startupLocale(page, locale);
+    await page.goto("more?demo=12");
     await expect(
       page.getByRole("heading", {
         name: locale === "fr" ? "Paramètres" : "Settings",
@@ -13,12 +21,14 @@ for (const locale of ["en", "fr"]) {
       }),
     ).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    await page.goto("more/device?demo=12");
     await expect(
       page.getByRole("combobox", {
         name: locale === "fr" ? "Début de la semaine" : "Week starts",
         exact: true,
       }),
     ).toContainText(locale === "fr" ? "dim." : "Sun");
+    await page.goto("more/collection?demo=12");
     const panel = page.getByRole("region", { name: "Collection", exact: true });
     await expect(panel).toContainText("TaskNotes demo");
     await expect(panel).toContainText(locale === "fr" ? "au total" : "total");
@@ -48,7 +58,7 @@ for (const locale of ["en", "fr"]) {
       }),
     ).toBeVisible();
     const results = await new AxeBuilder({ page })
-      .include(".settings-section[aria-labelledby='collection-settings-title']")
+      .include("#settings-collection")
       .analyze();
     expect(results.violations).toEqual([]);
     await page.screenshot({
@@ -58,10 +68,11 @@ for (const locale of ["en", "fr"]) {
   });
 }
 
-test("complete French preview preserves user edits and stored English view names", async ({
+test("French interface preserves user edits and stored English view names", async ({
   page,
 }) => {
-  await page.goto("?demo=12&i18n-pilot=fr");
+  await startupLocale(page, "fr");
+  await page.goto("?demo=12");
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
   await page
     .getByRole("button", {
@@ -111,7 +122,9 @@ test("complete French preview preserves user edits and stored English view names
   await expect(
     page.getByRole("button", { name: "Actualiser maintenant", exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/i18n-pilot=fr/);
+  expect(
+    await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
+  ).toBe("fr");
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
   await page.screenshot({
     path: `test-results/i18n-app-fr-${test.info().project.name}.png`,
@@ -122,7 +135,8 @@ test("complete French preview preserves user edits and stored English view names
 test("French capture, accepted-write notice and task actions", async ({
   page,
 }) => {
-  await page.goto("?demo=12&i18n-pilot=fr");
+  await startupLocale(page, "fr");
+  await page.goto("?demo=12");
   // Saved view names and enum-backed collection status labels remain data.
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),
@@ -164,7 +178,8 @@ test("French capture, accepted-write notice and task actions", async ({
 });
 
 test("French view editor and Scratchpad writing controls", async ({ page }) => {
-  await page.goto("views?demo=12&i18n-pilot=fr");
+  await startupLocale(page, "fr");
+  await page.goto("views?demo=12");
   await expect(
     page.getByRole("heading", { name: "Gérer les vues", exact: true }),
   ).toBeVisible();
@@ -203,7 +218,9 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
   await current
     .getByRole("textbox", { name: "Markdown du Bloc-notes", exact: true })
     .fill("- [ ] Texte personnel **inchangé**\n");
-  await expect(current.getByRole("status")).toHaveText("Enregistré");
+  await expect(current.locator(".scratchpad-save-state")).toHaveText(
+    "Enregistré",
+  );
   await expect(
     current.getByRole("button", { name: "Gras", exact: true }),
   ).toBeVisible();
@@ -230,12 +247,80 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
   });
 });
 
-async function openNavigationItem(page: Page, name: string): Promise<void> {
+for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
+  test(`Settings switches and persists ${locale} without changing collection data`, async ({
+    page,
+  }) => {
+    await startupLocale(page, locale);
+    await page.goto("more/device?demo=12");
+    const picker = page.locator(".language-picker");
+    await expect(picker).toHaveValue(locale);
+    await expect(picker.locator("option")).toHaveCount(9);
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    await page.screenshot({
+      path: `test-results/i18n-settings-${locale}-${test.info().project.name}.png`,
+      fullPage: true,
+    });
+    const next = locale === "en" ? "fr" : "en";
+    await picker.selectOption(next);
+    await expect(page.locator("html")).toHaveAttribute("lang", next);
+    expect(
+      await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
+    ).toBe(next);
+    await openNavigationItem(page, "Today", next);
+    await expect(
+      page.getByRole("button", {
+        name: "Prepare quarterly planning session",
+        exact: true,
+      }),
+    ).toBeVisible();
+    // A fresh browser tab (no startup script) verifies the saved explicit choice.
+    const restored = await page.context().newPage();
+    await restored.goto("more/device?demo=12");
+    await expect(restored.locator("html")).toHaveAttribute("lang", next);
+    await restored.close();
+  });
+}
+
+test("a failed locale chunk retains English, the explicit preference and a retryable Settings error", async ({
+  page,
+}) => {
+  await startupLocale(page, "en");
+  await page.route(
+    (url) =>
+      url.pathname.includes("/locales/fr/messages.json") ||
+      /\/assets\/messages-/.test(url.pathname),
+    (route) => route.abort(),
+  );
+  await page.goto("more/device?demo=12");
+  const picker = page.locator(".language-picker");
+  await expect(picker).toHaveValue("en");
+  await picker.selectOption("fr");
+  await expect(page.getByRole("alert")).toContainText(
+    "The language could not be loaded",
+  );
+  await expect(picker).toHaveValue("en");
+  expect(
+    await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
+  ).toBe("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+});
+
+async function openNavigationItem(
+  page: Page,
+  name: string,
+  locale = "fr",
+): Promise<void> {
   const direct = page.getByRole("button", { name, exact: true });
   if (await direct.isVisible()) {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Parcourir", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: locale === "fr" ? "Parcourir" : "Browse",
+      exact: true,
+    })
+    .click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }

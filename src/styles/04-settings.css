@@ -698,6 +698,15 @@
   width: 8rem;
 }
 
+.language-picker {
+  min-inline-size: 0;
+  max-inline-size: min(14rem, 50vw);
+}
+
+.language-setting-row > span {
+  overflow-wrap: anywhere;
+}
+
 .setting-explanation {
   display: flex;
   align-items: center;

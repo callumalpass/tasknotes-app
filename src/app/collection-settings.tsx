@@ -5,7 +5,7 @@ import { useLingui, Trans, Plural } from "@lingui/react/macro";
 import { useCollectionGate } from "./collection-context";
 import { useCollectionSummary, useRepository } from "./repository-context";
 
-/** Uses the application provider, including the existing partial French preview. */
+/** Uses the application-level Lingui provider. */
 export function CollectionSettings() {
   return <CollectionSettingsContent />;
 }

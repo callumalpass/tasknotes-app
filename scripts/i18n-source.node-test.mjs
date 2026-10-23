@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { inspectUiSource } from "./lib/i18n-source.mjs";
+import { inspectUiSource } from "@mdbase-dev/i18n/source";
 
 for (const [name, source, kind] of [
   [

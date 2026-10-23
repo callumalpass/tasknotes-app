@@ -1,30 +1,59 @@
-import { i18n, type Messages } from "@lingui/core";
+import { i18n } from "@lingui/core";
+import { createI18nRuntime, type Locale } from "@mdbase-dev/i18n";
 import english from "./locales/en/messages.json";
-import french from "./locales/fr/messages.json";
-import { requestedPilotLocale } from "./pilot";
 
-// CI validates these compiler-owned ICU arrays; JSON imports lose their tuple types.
-// Synchronous, bundled data. English works before any component or collection opens.
-i18n.load({ en: english.messages as unknown as Messages });
-if (import.meta.env.DEV || import.meta.env.MODE === "e2e") {
-  i18n.load({
-    fr: {
-      ...(english.messages as unknown as Messages),
-      ...(french.messages as unknown as Messages),
+const loaders = {
+  fr: () => import("./locales/fr/messages.json"),
+  de: () => import("./locales/de/messages.json"),
+  es: () => import("./locales/es/messages.json"),
+  ja: () => import("./locales/ja/messages.json"),
+  ko: () => import("./locales/ko/messages.json"),
+  pt: () => import("./locales/pt/messages.json"),
+  ru: () => import("./locales/ru/messages.json"),
+  zh: () => import("./locales/zh/messages.json"),
+};
+
+export const localeStorageKey = "tasknotes:locale";
+
+/** One singleton for React and presentation macros. English is synchronous. */
+export const appRuntime = createI18nRuntime({
+  i18n,
+  english,
+  loadLocale: async (locale) => (await loaders[locale]()).default,
+  storage: {
+    getLocale() {
+      try {
+        return localStorage.getItem(localeStorageKey);
+      } catch {
+        return null;
+      }
     },
-  });
-}
-i18n.activate("en");
+    setLocale(locale) {
+      try {
+        localStorage.setItem(localeStorageKey, locale);
+      } catch (error) {
+        console.warn(
+          "TaskNotes language preference could not be saved.",
+          error,
+        );
+      }
+    },
+  },
+});
 
-export function initializeAppI18n(locale = requestedPilotLocale()) {
-  // The complete French catalogue remains preview-only, not a production language switch.
-  const preview = import.meta.env.DEV || import.meta.env.MODE === "e2e";
-  const selected = preview && locale === "fr" ? "fr" : "en";
-  if (i18n.locale !== selected) i18n.activate(selected);
-  if (typeof document !== "undefined") document.documentElement.lang = selected;
-  return i18n;
+export function initializeAppI18n() {
+  return appRuntime.i18n;
 }
 
+export function activateAppLocale(locale: Locale): Promise<void> {
+  return appRuntime.selectLocale(locale);
+}
+
+/** Display formatting only; catalogue and persisted locale keys stay two-letter. */
 export function appLocale(): string {
-  return i18n.locale || "en";
+  return i18n.locale === "pt"
+    ? "pt-BR"
+    : i18n.locale === "zh"
+      ? "zh-CN"
+      : i18n.locale || "en";
 }

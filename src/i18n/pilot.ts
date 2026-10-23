@@ -15,11 +15,3 @@ export function createPilotI18n(
     },
   });
 }
-
-export function requestedPilotLocale(): string {
-  // No storage, network, auth or provider-specific branching. Release UI remains English.
-  if (!import.meta.env.DEV && import.meta.env.MODE !== "e2e") return "en";
-  return new URLSearchParams(window.location.search).get("i18n-pilot") === "fr"
-    ? "fr"
-    : "en";
-}

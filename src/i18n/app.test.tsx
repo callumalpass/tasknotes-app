@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPortal } from "react-dom";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { act, render, screen } from "../test/render";
-import { initializeAppI18n, appLocale } from "./app";
+import { act, fireEvent, render, screen } from "../test/render";
+import { LanguageSettings } from "./language-settings";
+import {
+  initializeAppI18n,
+  activateAppLocale,
+  appLocale,
+  localeStorageKey,
+} from "./app";
+import { locales, type Locale } from "@mdbase-dev/i18n";
 import { AppI18nProvider } from "./app-provider";
 import {
   countLabel,
@@ -21,7 +28,10 @@ import {
   relativeDateDetail,
   viewPropertyDetails,
 } from "./view-presentation";
-import { editorPhrases } from "./editor-phrases";
+import {
+  englishCodeMirrorPhrases,
+  loadCodeMirrorPhrases,
+} from "@mdbase-dev/i18n/codemirror";
 import { uiCopy } from "./ui-copy";
 import { parseRecurrenceRule } from "../domain/recurrence-rule";
 import type { TaskViewRow } from "../domain/view";
@@ -54,10 +64,10 @@ const row: TaskViewRow = {
   values: { 'note["due"]': "2026-07-24", 'note["title"]': "Keep my title" },
 };
 
-afterEach(() => {
+afterEach(async () => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
-  initializeAppI18n("en");
+  await act(() => activateAppLocale("en"));
 });
 
 function ControlsAndPortal() {
@@ -86,22 +96,20 @@ describe("application localization", () => {
       throw new Error("No translation network");
     });
     vi.stubGlobal("fetch", fetch);
-    expect(initializeAppI18n("en").locale).toBe("en");
+    expect(initializeAppI18n().locale).toBe("en");
     expect(countLabel(1, "task")).toBe("1 task");
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("shares context with portal content and updates document language", () => {
-    initializeAppI18n("en");
+  it("shares context with portal content and updates document language", async () => {
+    await activateAppLocale("en");
     render(
       <AppI18nProvider>
         <ControlsAndPortal />
       </AppI18nProvider>,
     );
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeVisible();
-    act(() => {
-      initializeAppI18n("fr");
-    });
+    await act(() => activateAppLocale("fr"));
     expect(
       screen.getByRole("button", { name: "Actualiser maintenant" }),
     ).toBeVisible();
@@ -114,22 +122,47 @@ describe("application localization", () => {
     ).toBeVisible();
   });
 
-  it("falls back for unsupported locales", () => {
-    expect(initializeAppI18n("de").locale).toBe("en");
+  it("switches and persists the Settings language without remounting user content", async () => {
+    render(
+      <>
+        <LanguageSettings />
+        <ControlsAndPortal />
+        <input aria-label="User content" defaultValue="Keep my title" />
+      </>,
+    );
+    const picker = screen.getByRole("combobox", { name: "App language" });
+    expect(picker.querySelectorAll("option")).toHaveLength(9);
+    fireEvent.change(picker, { target: { value: "fr" } });
+    expect(
+      await screen.findByRole("button", { name: "Actualiser maintenant" }),
+    ).toBeVisible();
+    expect(picker).toHaveValue("fr");
+    expect(localStorage.getItem(localeStorageKey)).toBe("fr");
+    expect(screen.getByRole("textbox", { name: "User content" })).toHaveValue(
+      "Keep my title",
+    );
+  });
+
+  it("rejects unsupported explicit locales without changing the current language", async () => {
+    await expect(activateAppLocale("zz" as Locale)).rejects.toThrow(
+      "Unsupported locale",
+    );
     expect(appLocale()).toBe("en");
   });
 
-  it("never enables the preview locale in an ordinary production build", () => {
+  it.each(locales)("enables and persists %s in production", async (locale) => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("MODE", "production");
-    expect(initializeAppI18n("fr").locale).toBe("en");
-    expect(document.documentElement.lang).toBe("en");
+    await activateAppLocale(locale);
+    expect(initializeAppI18n().locale).toBe(locale);
+    expect(document.documentElement.lang).toBe(locale);
+    expect(localStorage.getItem(localeStorageKey)).toBe(locale);
   });
 
   it.each(["en", "fr"])(
     "renders authored zero/one/many copy in %s",
-    (locale) => {
-      initializeAppI18n(locale);
+    async (locale) => {
+      await activateAppLocale(locale as Locale);
       expect([0, 1, 2].map((count) => countLabel(count, "task"))).toEqual(
         locale === "fr"
           ? ["0 tâches", "1 tâche", "2 tâches"]
@@ -143,7 +176,7 @@ describe("application localization", () => {
     },
   );
 
-  it("formats authored French ordinals with CLDR instead of English suffix assumptions", () => {
+  it("formats authored French ordinals with CLDR instead of English suffix assumptions", async () => {
     expect([1, 2, 3, 11, 21].map(ordinal)).toEqual([
       "1st",
       "2nd",
@@ -151,7 +184,7 @@ describe("application localization", () => {
       "11th",
       "21st",
     ]);
-    initializeAppI18n("fr");
+    await activateAppLocale("fr");
     expect([1, 2, 3, 11, 21].map(ordinal)).toEqual([
       "1er",
       "2e",
@@ -171,8 +204,8 @@ describe("application localization", () => {
     expect(daySectionLabel("custom", "My collection")).toBe("My collection");
   });
 
-  it("retains raw record values and explicit user-provided property labels", () => {
-    initializeAppI18n("fr");
+  it("retains raw record values and explicit user-provided property labels", async () => {
+    await activateAppLocale("fr");
     const before = structuredClone(row);
     const details = viewPropertyDetails(row, [
       { key: 'note["due"]', label: "My deadline" },
@@ -226,8 +259,8 @@ describe("application localization", () => {
     expect(draft.weekdays).toEqual(["MO", "WE"]);
   });
 
-  it("renders French field, recurrence, date and editor copy while preserving syntax", () => {
-    initializeAppI18n("fr");
+  it("renders French field, recurrence, date and editor copy while preserving syntax", async () => {
+    await activateAppLocale("fr");
     expect(builtInFieldLabel("due")).toBe("Échéance");
     expect(daySectionLabel("anytime", "ignored")).toBe("Sans date");
     expect(formatTaskDate("2026-07-24", "2026-07-24")).toBe("Aujourd’hui");
@@ -243,20 +276,20 @@ describe("application localization", () => {
         parseRecurrenceRule("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE"),
       ),
     ).toBe("Toutes les 2 semaines, les jours suivants : lundi et mercredi");
-    const phrases = editorPhrases();
+    const phrases = await loadCodeMirrorPhrases("fr");
     expect(phrases["Go to line"]).toBe("Aller à la ligne");
     expect(phrases["replaced match on line $"]).toBe(
-      "correspondance remplacée à la ligne $",
+      "Correspondance remplacée à la ligne $",
     );
     expect(phrases["replaced $ matches"]).toBe("$ correspondances remplacées");
   });
 
   it("preserves editor phrase lookup keys and substitution tokens", () => {
-    const phrases = editorPhrases();
+    const phrases = englishCodeMirrorPhrases;
     expect(phrases["Go to line"]).toBe("Go to line");
     expect(phrases["replaced match on line $"]).toBe(
-      "replaced match on line $",
+      "Replaced match on line $",
     );
-    expect(phrases["replaced $ matches"]).toBe("replaced $ matches");
+    expect(phrases["replaced $ matches"]).toBe("Replaced $ matches");
   });
 });

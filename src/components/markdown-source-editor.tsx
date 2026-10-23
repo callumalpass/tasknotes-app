@@ -1,6 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { appLocale } from "../i18n/app";
-import { editorPhrases } from "../i18n/editor-phrases";
+import { isLocale } from "@mdbase-dev/i18n";
+import {
+  englishCodeMirrorPhrases,
+  loadCodeMirrorPhrases,
+} from "@mdbase-dev/i18n/codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
@@ -122,7 +125,7 @@ export function MarkdownSourceEditor({
   ariaLabel: string;
   autoFocus?: boolean;
 }) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
@@ -130,7 +133,7 @@ export function MarkdownSourceEditor({
   const completeRecordsRef = useRef(completeRecords);
   const language = useRef(new Compartment());
   const accessibility = useRef(new Compartment());
-  const locale = appLocale();
+  const locale = i18n.locale;
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -178,7 +181,7 @@ export function MarkdownSourceEditor({
           theme.of(scratchpadEditorTheme(dark)),
           EditorView.lineWrapping,
           accessibility.current.of([]),
-          language.current.of([]),
+          language.current.of(EditorState.phrases.of(englishCodeMirrorPhrases)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged)
               onChangeRef.current(update.state.doc.toString());
@@ -207,16 +210,32 @@ export function MarkdownSourceEditor({
   }, [autoFocus]);
 
   useEffect(() => {
-    // Reconfigure instead of recreating the editor: language changes must not reset user text/undo.
     viewRef.current?.dispatch({
-      effects: [
-        accessibility.current.reconfigure(
-          EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
-        ),
-        language.current.reconfigure(EditorState.phrases.of(editorPhrases())),
-      ],
+      effects: accessibility.current.reconfigure(
+        EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
+      ),
     });
-  }, [ariaLabel, locale, autoFocus]);
+  }, [ariaLabel, autoFocus]);
+
+  useEffect(() => {
+    // Reconfigure without resetting document text, selection or undo history.
+    let active = true;
+    void loadCodeMirrorPhrases(isLocale(locale) ? locale : "en")
+      .then((phrases) => {
+        if (active)
+          viewRef.current?.dispatch({
+            effects: language.current.reconfigure(
+              EditorState.phrases.of(phrases),
+            ),
+          });
+      })
+      .catch((error: unknown) =>
+        console.warn("Editor language could not load.", error),
+      );
+    return () => {
+      active = false;
+    };
+  }, [locale, autoFocus]);
 
   useEffect(() => {
     const view = viewRef.current;

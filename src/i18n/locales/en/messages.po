@@ -819,10 +819,6 @@ msgstr "After a number of times"
 msgid "Agenda"
 msgstr "Agenda"
 
-#: src/i18n/editor-phrases.ts
-msgid "all"
-msgstr "all"
-
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "All"
@@ -1023,10 +1019,6 @@ msgstr "Builder"
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
 msgstr "Built-in working spaces"
-
-#: src/i18n/editor-phrases.ts
-msgid "by word"
-msgstr "by word"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1250,10 +1242,6 @@ msgstr "Clear selection"
 msgid "Clear value"
 msgstr "Clear value"
 
-#: src/i18n/editor-phrases.ts
-msgid "close"
-msgstr "close"
-
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
@@ -1445,10 +1433,6 @@ msgstr "Completion date"
 msgid "Completion or skip"
 msgstr "Completion or skip"
 
-#: src/i18n/editor-phrases.ts
-msgid "Completions"
-msgstr "Completions"
-
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
 msgstr "Computed properties are valid"
@@ -1544,10 +1528,6 @@ msgstr "Contexts"
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
 msgstr "Continue on the timeline"
-
-#: src/i18n/editor-phrases.ts
-msgid "Control character"
-msgstr "Control character"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
@@ -1696,10 +1676,6 @@ msgstr "Created “{0}”"
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
 msgstr "Creating…"
-
-#: src/i18n/editor-phrases.ts
-msgid "current match"
-msgstr "current match"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -2220,10 +2196,6 @@ msgstr "Filter value"
 msgid "Filter views"
 msgstr "Filter views"
 
-#: src/i18n/editor-phrases.ts
-msgid "Find"
-msgstr "Find"
-
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "Find a task"
@@ -2281,18 +2253,6 @@ msgstr "Fixed date and time"
 msgid "Focused task"
 msgstr "Focused task"
 
-#: src/i18n/editor-phrases.ts
-msgid "Fold line"
-msgstr "Fold line"
-
-#: src/i18n/editor-phrases.ts
-msgid "folded code"
-msgstr "folded code"
-
-#: src/i18n/editor-phrases.ts
-msgid "Folded lines"
-msgstr "Folded lines"
-
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
 msgstr "For an upcoming window"
@@ -2341,10 +2301,6 @@ msgstr "Future horizon"
 msgid "Gap"
 msgstr "Gap"
 
-#: src/i18n/editor-phrases.ts
-msgid "go"
-msgstr "go"
-
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "Go back and refresh the collection before editing."
@@ -2356,10 +2312,6 @@ msgstr "Go back and refresh the collection."
 #: src/app/command-palette-model.ts
 msgid "Go to"
 msgstr "Go to"
-
-#: src/i18n/editor-phrases.ts
-msgid "Go to line"
-msgstr "Go to line"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
@@ -2845,10 +2797,6 @@ msgstr "Markdown link"
 msgid "Markdown links"
 msgstr "Markdown links"
 
-#: src/i18n/editor-phrases.ts
-msgid "match case"
-msgstr "match case"
-
 #: src/components/expression-builder.tsx
 msgid "Match mode"
 msgstr "Match mode"
@@ -3115,10 +3063,6 @@ msgstr "New tasks, repeating tasks, and archive"
 #: src/app/view-editor.tsx
 msgid "New view"
 msgstr "New view"
-
-#: src/i18n/editor-phrases.ts
-msgid "next"
-msgstr "next"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3409,10 +3353,6 @@ msgstr "On"
 msgid "On a date"
 msgstr "On a date"
 
-#: src/i18n/editor-phrases.ts
-msgid "on line"
-msgstr "on line"
-
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "On this device"
@@ -3631,10 +3571,6 @@ msgstr "Preview tasks"
 msgid "Preview updates after saving"
 msgstr "Preview updates after saving"
 
-#: src/i18n/editor-phrases.ts
-msgid "previous"
-msgstr "previous"
-
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
@@ -3841,10 +3777,6 @@ msgstr "Refreshing results…"
 msgid "Refreshing…"
 msgstr "Refreshing…"
 
-#: src/i18n/editor-phrases.ts
-msgid "regexp"
-msgstr "regexp"
-
 #: src/components/dependency-editor.tsx
 msgid "Related work"
 msgstr "Related work"
@@ -4027,28 +3959,6 @@ msgstr "Repeating tasks"
 #: src/i18n/presentation.ts
 msgid "Repeats"
 msgstr "Repeats"
-
-#: src/i18n/editor-phrases.ts
-msgid "replace"
-msgstr "replace"
-
-#: src/i18n/editor-phrases.ts
-msgid "Replace"
-msgstr "Replace"
-
-#: src/i18n/editor-phrases.ts
-msgid "replace all"
-msgstr "replace all"
-
-#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
-#: src/i18n/editor-phrases.ts
-msgid "replaced {count} matches"
-msgstr "replaced {count} matches"
-
-#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
-#: src/i18n/editor-phrases.ts
-msgid "replaced match on line {line}"
-msgstr "replaced match on line {line}"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -4432,10 +4342,6 @@ msgstr "Selected day"
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
 msgstr "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-
-#: src/i18n/editor-phrases.ts
-msgid "Selection deleted"
-msgstr "Selection deleted"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5183,7 +5089,6 @@ msgstr "Title required"
 msgid "Title: “{title}”. "
 msgstr "Title: “{title}”. "
 
-#: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "to"
@@ -5269,18 +5174,6 @@ msgstr "Undo"
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
 msgstr "Undo a deleted task"
-
-#: src/i18n/editor-phrases.ts
-msgid "unfold"
-msgstr "unfold"
-
-#: src/i18n/editor-phrases.ts
-msgid "Unfold line"
-msgstr "Unfold line"
-
-#: src/i18n/editor-phrases.ts
-msgid "Unfolded lines"
-msgstr "Unfolded lines"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
