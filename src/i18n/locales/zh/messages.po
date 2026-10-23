@@ -2667,7 +2667,7 @@ msgstr "最后一天"
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "最近一次刷新检查了 {0} 条记录，耗时 {1} 毫秒。"
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
@@ -2689,7 +2689,7 @@ msgstr "布局：{layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "了解详情"
 
 #: src/app/more-screen.tsx
 msgid "Light"
@@ -2697,7 +2697,7 @@ msgstr "浅色"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "链接格式"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
@@ -2709,7 +2709,7 @@ msgstr "已关联"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "链接和时间跟踪"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
@@ -2777,11 +2777,11 @@ msgstr "正在加载…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "在此设备上锁定恢复密钥"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "此设备已锁定"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
@@ -2834,7 +2834,7 @@ msgstr "标记为未完成"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Markdown 文件"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
@@ -2865,11 +2865,11 @@ msgstr "mdbase 集合"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase 已确认严格模式已完成。此设备上的恢复密钥已移除。"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase 已确认恢复目标已应用严格模式。"
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
@@ -2882,23 +2882,23 @@ msgstr "mdbase 是权威数据源。更改需要连接。"
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase 将任务保存为可移植的 Markdown 文件，同时让兼容应用能够以统一方式理解这些任务。在 mdbase 中，你可以选择集合并批准 TaskNotes 的访问权限，无论集合由 mdbase 托管还是来自已连接的电脑。"
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase 保护了你的编辑"
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase 拒绝了此更改。"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "mdbase 更新"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "mdbase 已升级。批准 TaskNotes 一次即可继续。你的集合和笔记均未更改。"
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
@@ -2979,11 +2979,11 @@ msgstr "将 {label} 上移"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "全部移至今天"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "将已归档的任务文件移至文件夹"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
@@ -2999,7 +2999,7 @@ msgstr "将“手动排序”移到第一位以启用拖动手柄。"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "已移动 "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -3072,7 +3072,7 @@ msgstr "从不"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "新设备需要由现有设备批准。密码和恢复密钥解锁将停止使用。在集合应用撤销操作并重新生成密钥之前，持有旧密码和密钥包的人仍可能读取早先的内容。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3080,7 +3080,7 @@ msgstr "新建笔记"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "新的恢复密码"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
@@ -3097,7 +3097,7 @@ msgstr "新建任务"
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "新任务（{0}）"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
@@ -3110,7 +3110,7 @@ msgstr "新建任务"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "新建任务、重复任务和归档"
 
 #: src/app/view-editor.tsx
 msgid "New view"
@@ -3131,15 +3131,15 @@ msgstr "下一时段"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "下一个任务"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "下周"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "下一项： "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
@@ -3188,7 +3188,7 @@ msgstr "无分组"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "没有匹配的命令。"
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
@@ -3212,7 +3212,7 @@ msgstr "没有投影"
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "此设备未持有恢复密钥。"
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
@@ -3228,7 +3228,7 @@ msgstr "无状态"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "没有任务"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
@@ -3253,7 +3253,7 @@ msgstr "这一天没有任务。使用“添加任务”安排任务。"
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "还没有任务"
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
@@ -3271,7 +3271,7 @@ msgstr "无值"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "还没有视图。"
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
@@ -3284,7 +3284,7 @@ msgstr "无"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "不可用"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
@@ -3301,11 +3301,11 @@ msgstr "未保存"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "未保存 · 检查"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "未保存。请检查你的编辑。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
@@ -3313,11 +3313,11 @@ msgstr "笔记"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "笔记操作"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "笔记已删除"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
@@ -3334,7 +3334,7 @@ msgstr "笔记"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "今天之后没有安排任务。"
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
@@ -3346,7 +3346,7 @@ msgstr "此处无法使用通知"
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "系统设置中已关闭 TaskNotes 的通知。请在系统设置中开启通知以接收提醒。"
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
@@ -3382,11 +3382,11 @@ msgstr "重复项"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr " / "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr " / 4"
 
 #: src/app/notification-label.ts
 msgid "Off"
@@ -3394,7 +3394,7 @@ msgstr "关闭"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "离线"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
@@ -3427,7 +3427,7 @@ msgstr "仅显示任务标题。"
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "仅在我创建某次重复项时"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
@@ -3440,7 +3440,7 @@ msgstr "未完成"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "打开“{title}”"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
@@ -3449,7 +3449,7 @@ msgstr "打开 {0}"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "请先打开一个集合"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
@@ -3483,7 +3483,7 @@ msgstr "正在打开"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "正在打开集合"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
@@ -3527,7 +3527,7 @@ msgstr "选项"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "或"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -3568,7 +3568,7 @@ msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "密码强度： "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
@@ -3584,7 +3584,7 @@ msgstr "路径"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "路径已复制"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
@@ -3601,7 +3601,7 @@ msgstr "无法加载人员。现有分配保持不变。{0}"
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "计划日期"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
@@ -3655,7 +3655,7 @@ msgstr "上一时段"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "上一个任务"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
@@ -3682,15 +3682,15 @@ msgstr "优先级、项目、依赖项、上下文和标签"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "私有账户恢复"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "私有集合恢复"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "私有集合需要你的桌面设备保持在线。"
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
@@ -3729,7 +3729,7 @@ msgstr "要排序的属性"
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "受保护的编辑"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
@@ -3745,11 +3745,11 @@ msgstr "引用"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "最近的搜索"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "最近打开"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
@@ -3757,7 +3757,7 @@ msgstr "已识别的任务详情"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "正在重新连接"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
@@ -3765,7 +3765,7 @@ msgstr "正在重新连接…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "恢复账户访问权限"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -3773,47 +3773,47 @@ msgstr "恢复任务"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "尚未设置恢复"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "恢复已设置。离开此页面前请保存恢复密钥。"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "恢复密钥"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "恢复密钥（仅显示一次）"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "无法检查恢复密钥的保管状态。"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "已关闭恢复密钥提示。TaskNotes 不会保留密钥的显示副本。"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "此设备上的恢复密钥已锁定。现有集合密钥仍可使用。"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "恢复密码"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "恢复密码已更改。恢复密钥未更改。"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "恢复状态不可用"
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "个恢复目标待处理。"
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
@@ -3884,7 +3884,7 @@ msgstr "提醒日期"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "提醒详情会保存在任务中，但此版本的 TaskNotes 不会发送提醒通知。"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
@@ -3892,7 +3892,7 @@ msgstr "提醒详情会保留在 Markdown 中，但存储在此设备上的任�
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "提醒设置"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
@@ -3967,7 +3967,7 @@ msgstr "重新打开"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "重新打开“{title}”"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
@@ -4022,7 +4022,7 @@ msgstr "重复任务操作"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "重复任务"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
@@ -4060,7 +4060,7 @@ msgstr "恢复"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
-msgstr ""
+msgstr "恢复未保存的编辑"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -4068,7 +4068,7 @@ msgstr "正在恢复你的首页视图"
 
 #: src/components/command-palette.tsx
 msgid "Results"
-msgstr ""
+msgstr "结果"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
@@ -4076,7 +4076,7 @@ msgstr "设为当前项"
 
 #: src/app/model-setup-screen.tsx
 msgid "Resume original setup"
-msgstr ""
+msgstr "继续原始设置流程"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
@@ -4101,7 +4101,7 @@ msgstr "重试会检查已保存的请求，不会发送新的删除操作。放
 
 #: src/app/more-screen.tsx
 msgid "Retry collection details"
-msgstr ""
+msgstr "重试加载集合详情"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
@@ -4109,7 +4109,7 @@ msgstr "重试连接"
 
 #: src/app/more-screen.tsx
 msgid "Retry notification check"
-msgstr ""
+msgstr "重试检查通知"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
@@ -4129,7 +4129,7 @@ msgstr "重试，或撤销以将任务恢复到此处。"
 
 #: src/app/app-shell.tsx
 msgid "Retrying…"
-msgstr ""
+msgstr "正在重试…"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
@@ -4141,11 +4141,11 @@ msgstr "供分组和显示字段使用的可复用值。"
 
 #: src/app/app-shell.tsx
 msgid "Review access"
-msgstr ""
+msgstr "检查访问权限"
 
 #: src/app/model-setup-screen.tsx
 msgid "Review collection permission"
-msgstr ""
+msgstr "检查集合权限"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4153,31 +4153,31 @@ msgstr "检查通知权限"
 
 #: src/components/held-edits.tsx
 msgid "Review protected edits"
-msgstr ""
+msgstr "检查受保护的编辑"
 
 #: src/components/collection-write-status.tsx
 msgid "Review record"
-msgstr ""
+msgstr "检查记录"
 
 #: src/app/task-screen.tsx
 msgid "Review save"
-msgstr ""
+msgstr "检查保存状态"
 
 #: src/components/private-account-settings.tsx
 msgid "Review strict mode"
-msgstr ""
+msgstr "查看严格模式"
 
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
-msgstr ""
+msgstr "检查 TaskNotes 的访问权限"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
-msgstr ""
+msgstr "进行其他更改前，请先检查此任务。"
 
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
-msgstr ""
+msgstr "重新加载前，请先检查受保护的编辑。"
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -4194,11 +4194,11 @@ msgstr "在此任务中保存固定时间或相对时间的提醒。"
 
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
-msgstr ""
+msgstr "保存并重新加载 TaskNotes"
 
 #: src/components/task-model-settings.tsx
 msgid "Save changes"
-msgstr ""
+msgstr "保存更改"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
@@ -4206,15 +4206,15 @@ msgstr "保存失败 · 重试"
 
 #: src/app/task-screen.tsx
 msgid "Save failed. {retrySaveLabel}"
-msgstr ""
+msgstr "保存失败。{retrySaveLabel}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Save needs review"
-msgstr ""
+msgstr "保存需要审核"
 
 #: src/components/collection-write-status.tsx
 msgid "Save outcome unknown"
-msgstr ""
+msgstr "保存结果未知"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
@@ -4226,7 +4226,7 @@ msgstr "保存视图"
 
 #: src/components/private-account-settings.tsx
 msgid "Save your recovery key"
-msgstr ""
+msgstr "保存恢复密钥"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -4238,7 +4238,7 @@ msgstr "已保存"
 #: src/app/task-screen.tsx
 #: src/components/collection-write-status.tsx
 msgid "Saved on this device; waiting for sync"
-msgstr ""
+msgstr "已保存在此设备，等待同步"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
@@ -4250,7 +4250,7 @@ msgstr "已保存的视图"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
-msgstr ""
+msgstr "与集合一起保存，并供每个打开该集合的应用使用。"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
@@ -4262,11 +4262,11 @@ msgstr "正在保存"
 
 #: src/components/app-update-notice.tsx
 msgid "Saving changes…"
-msgstr ""
+msgstr "正在保存更改…"
 
 #: src/components/task-model-settings.tsx
 msgid "Saving collection behavior"
-msgstr ""
+msgstr "正在保存集合行为设置"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
@@ -4282,7 +4282,7 @@ msgstr "计划和状态"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Schedule next week"
-msgstr ""
+msgstr "安排在下周"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4373,7 +4373,7 @@ msgstr "搜索"
 
 #: src/components/command-palette.tsx
 msgid "Search commands and tasks"
-msgstr ""
+msgstr "搜索命令和任务"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
@@ -4395,7 +4395,7 @@ msgstr "搜索视图"
 
 #: src/components/command-palette.tsx
 msgid "Searching tasks…"
-msgstr ""
+msgstr "正在搜索任务…"
 
 #: src/i18n/presentation.ts
 msgid "second"
@@ -4407,7 +4407,7 @@ msgstr "第二个"
 
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
-msgstr ""
+msgstr "查看“即将到来”"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -4455,11 +4455,11 @@ msgstr "会话开始时间"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
-msgstr ""
+msgstr "设置恢复"
 
 #: src/app/model-setup-screen.tsx
 msgid "Set up TaskNotes"
-msgstr ""
+msgstr "设置 TaskNotes"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
@@ -4473,7 +4473,7 @@ msgstr "设置"
 
 #: src/app/more-screen.tsx
 msgid "Settings sections"
-msgstr ""
+msgstr "设置分区"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
@@ -4481,7 +4481,7 @@ msgstr "设置需要处理"
 
 #: src/app/model-setup-screen.tsx
 msgid "Setup outcome unknown. "
-msgstr ""
+msgstr "设置结果未知。 "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -4494,7 +4494,7 @@ msgstr "先整理大纲，再创建任务"
 
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
-msgstr ""
+msgstr "与使用此集合的所有人共享"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
@@ -4569,7 +4569,7 @@ msgstr "已跳过的重复任务实例"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "部分更改仍在保存。请保持此页面打开并重试。"
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
@@ -4577,7 +4577,7 @@ msgstr "部分文件无法读取，已从此视图中排除。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "部分笔记更改尚未保存。请保持此页面打开并重试。"
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
@@ -4603,7 +4603,7 @@ msgstr "开始"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "使用模板创建新任务"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
@@ -4619,7 +4619,7 @@ msgstr "开始-开始"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "初始视图"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
@@ -4645,7 +4645,7 @@ msgstr "停止"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "任务完成后停止正在运行的计时器"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
@@ -4653,19 +4653,19 @@ msgstr "停止计时器"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "严格模式"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "目前无法关闭严格模式。在设备上设置或解锁密码恢复功能不会关闭严格模式。"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "尚未确认所有私有恢复目标都已启用严格模式。必须由已联网且持有密钥的设备完成应用更改。"
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "正在提交…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
@@ -4685,19 +4685,19 @@ msgstr "根据前 {limit} 个任务提供的建议。搜索以查找其他任务
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "切换到严格模式"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "同步时间比平时长"
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "已同步版本"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "正在同步…"
 
 #: src/app/more-screen.tsx
 msgid "System"
@@ -4729,7 +4729,7 @@ msgstr "轻点以重试。"
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
