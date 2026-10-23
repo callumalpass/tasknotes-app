@@ -331,6 +331,35 @@ it("ignores an old passive check after explicit enablement", async () => {
   expect(screen.getByRole("switch", { name: "Task reminders" })).toBeChecked();
 });
 
+it("offers explicit cleanup for unresolved registration without passively replaying it", async () => {
+  fixture.status.mockResolvedValue({ state: "error", optedIn: false });
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  );
+  await waitFor(() => expect(fixture.disable).toHaveBeenCalledOnce());
+  const toggle = await screen.findByRole("switch", { name: "Task reminders" });
+  expect(toggle).not.toBeChecked();
+  expect(fixture.enable).not.toHaveBeenCalled();
+  fireEvent.click(toggle);
+  await waitFor(() => expect(fixture.enable).toHaveBeenCalledOnce());
+});
+
+it("offers cleanup immediately when an explicit registration has an unknown outcome", async () => {
+  fixture.enable.mockRejectedValueOnce(
+    new Error("Registration outcome is unknown"),
+  );
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("switch", { name: "Task reminders" }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  ).toBeVisible();
+  expect(fixture.enable).toHaveBeenCalledOnce();
+  expect(fixture.disable).not.toHaveBeenCalled();
+});
+
 it("retains an actionable approval result from explicit registration", async () => {
   fixture.enable.mockResolvedValueOnce({
     state: "reauthorization_required",

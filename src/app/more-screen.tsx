@@ -517,7 +517,7 @@ function useReminderSettings() {
   }, []);
 
   async function setEnabled(enabled: boolean) {
-    if (!delivers) return;
+    if (!delivers || busyRef.current) return;
     // An older passive check must not overwrite explicit enable/disable results.
     operation.current += 1;
     busyRef.current = true;
@@ -532,6 +532,7 @@ function useReminderSettings() {
           : await mdbaseNotifications.disable(),
       );
     } catch (reason) {
+      setStatus({ state: "error", optedIn: false });
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       busyRef.current = false;
@@ -617,6 +618,14 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             onClick={reminders.retry}
           >
             Retry notification check
+          </button>
+          <button
+            className="secondary-action"
+            disabled={busy}
+            type="button"
+            onClick={() => void reminders.setEnabled(false)}
+          >
+            Turn reminders off
           </button>
         </div>
       ) : null}
