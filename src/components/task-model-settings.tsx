@@ -104,7 +104,12 @@ export function TaskModelSettingsEditor() {
         if (!active) return;
         setAccess({
           writable: false,
-          source: "Collection settings",
+          get source() {
+            return translate({
+              message: "Collection settings",
+              context: "settings access source label",
+            });
+          },
           reason: reason instanceof Error ? reason.message : String(reason),
         });
       });

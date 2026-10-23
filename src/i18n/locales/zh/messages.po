@@ -1323,6 +1323,10 @@ msgctxt "settings section title"
 msgid "Collection"
 msgstr "集合"
 
+#: src/app/model-setup-screen.tsx
+msgid "Collection access is unavailable."
+msgstr ""
+
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
@@ -1343,6 +1347,11 @@ msgstr "集合顺序"
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
 msgstr "正在使用集合顺序。"
+
+#: src/components/task-model-settings.tsx
+msgctxt "settings access source label"
+msgid "Collection settings"
+msgstr ""
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx

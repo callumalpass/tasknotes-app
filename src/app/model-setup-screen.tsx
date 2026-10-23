@@ -50,10 +50,11 @@ export function ModelSetupScreen({
         if (active && current === generation)
           setView({
             state: "blocked",
-            message:
-              reason instanceof Error
+            get message() {
+              return reason instanceof Error
                 ? reason.message
-                : "Collection access is unavailable.",
+                : translate({ message: "Collection access is unavailable." });
+            },
           });
       }
     };
