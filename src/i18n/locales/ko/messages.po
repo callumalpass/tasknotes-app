@@ -1325,7 +1325,7 @@ msgstr "컬렉션"
 
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
-msgstr ""
+msgstr "컬렉션에 접근할 수 없습니다."
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1351,7 +1351,7 @@ msgstr "컬렉션 순서를 사용합니다."
 #: src/components/task-model-settings.tsx
 msgctxt "settings access source label"
 msgid "Collection settings"
-msgstr ""
+msgstr "컬렉션 설정"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
