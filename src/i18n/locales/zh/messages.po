@@ -1325,7 +1325,7 @@ msgstr "集合"
 
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
-msgstr ""
+msgstr "无法访问集合。"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1351,7 +1351,7 @@ msgstr "正在使用集合顺序。"
 #: src/components/task-model-settings.tsx
 msgctxt "settings access source label"
 msgid "Collection settings"
-msgstr ""
+msgstr "集合设置"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
