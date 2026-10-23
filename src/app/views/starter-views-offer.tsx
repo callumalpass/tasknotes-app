@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useAddStarterViews } from "../use-starter-views";
 
 export function StarterViewsOffer({ onAdded }: { onAdded(): Promise<void> }) {
@@ -8,8 +10,12 @@ export function StarterViewsOffer({ onAdded }: { onAdded(): Promise<void> }) {
       className="starter-views-offer"
     >
       <div>
-        <h3 id="starter-views-title">Starter views</h3>
-        <p>Adds Today, Upcoming, Calendar, Projects, and Archive.</p>
+        <h3 id="starter-views-title">
+          <Trans>Starter views</Trans>
+        </h3>
+        <p>
+          <Trans>Adds Today, Upcoming, Calendar, Projects, and Archive.</Trans>
+        </p>
         {error ? <p role="alert">{error}</p> : null}
       </div>
       <button
@@ -18,7 +24,9 @@ export function StarterViewsOffer({ onAdded }: { onAdded(): Promise<void> }) {
         disabled={adding}
         onClick={() => void add()}
       >
-        {adding ? "Adding starter views…" : "Add starter views"}
+        {adding
+          ? translate({ message: "Adding starter views…" })
+          : translate({ message: "Add starter views" })}
       </button>
     </section>
   );

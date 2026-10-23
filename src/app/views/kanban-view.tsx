@@ -1,4 +1,6 @@
-import { useLingui, Trans } from "@lingui/react/macro";
+import { useLingui as useI18n } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
 import { Plus } from "lucide-react";
 import {
@@ -89,6 +91,7 @@ export function KanbanView({
   onCreateInColumn(property: string, value: unknown, label: string): void;
   canCreateInColumn(property: string, value: unknown): boolean;
 }) {
+  useI18n();
   const departing = useContext(TaskDeparturesContext);
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<

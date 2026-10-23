@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { ConnectionNoticeContext } from "../app/connection-notice";

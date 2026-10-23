@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import {
   TaskNotesDateField,
   TaskNotesDateTimeField,
@@ -41,7 +42,11 @@ export function CustomField({
         disabled={field.readOnly}
         label={label}
         options={options}
-        placeholder={field.required ? "Choose a value" : "No value"}
+        placeholder={
+          field.required
+            ? translate({ message: "Choose a value" })
+            : translate({ message: "No value" })
+        }
         value={typeof value === "string" ? value : ""}
         onChange={onChange}
       />
@@ -88,7 +93,7 @@ export function CustomField({
       <ListField
         field={field.key}
         label={label}
-        placeholder="Comma-separated values"
+        placeholder={translate({ message: "Comma-separated values" })}
         values={Array.isArray(value) ? value.map(String) : []}
         completion={completion ?? { kind: "values" }}
         completeField={completeField}

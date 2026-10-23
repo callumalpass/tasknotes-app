@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   ModelSetupError,

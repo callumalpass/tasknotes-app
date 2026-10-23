@@ -102,7 +102,10 @@ export function TaskCapture({
           const current = session.getSnapshot();
           if (current.text.trim() || current.status === "submitting")
             throw new Error(
-              "Finish or discard the task you are adding before reloading.",
+              translate({
+                message:
+                  "Finish or discard the task you are adding before reloading.",
+              }),
             );
         },
       }),
@@ -430,12 +433,16 @@ export function TaskCapture({
         <div className="capture-interpretation" aria-live="polite">
           <div>
             {slowParse ? (
-              <span className="capture-parsing">Understanding…</span>
+              <span className="capture-parsing">
+                <Trans>Understanding…</Trans>
+              </span>
             ) : (
               <>
                 {settled && settled.input.title !== parsedText ? (
                   <span className="capture-title-preview">
-                    <span className="visually-hidden">Task: </span>
+                    <span className="visually-hidden">
+                      <Trans>Task: </Trans>
+                    </span>
                     {settled.input.title}
                   </span>
                 ) : null}
@@ -512,7 +519,9 @@ export function TaskCapture({
 
       {error?.code === "outcome-unknown" && session.recovering ? (
         <p className="capture-pending" role="status">
-          Confirming that “{text.trim()}” was saved…
+          <Trans>Confirming that “</Trans>
+          {text.trim()}
+          <Trans>” was saved…</Trans>
         </p>
       ) : error ? (
         <OperationErrorNotice

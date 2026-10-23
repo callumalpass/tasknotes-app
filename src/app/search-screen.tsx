@@ -1,3 +1,7 @@
+import { useLingui } from "@lingui/react/macro";
+import { countLabel } from "../i18n/default-labels";
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import {
   ArrowLeft,
   FileText,
@@ -199,7 +203,10 @@ export function SearchScreen({
         >
           <p>
             {people.error
-              ? "Your person record could not be loaded. Check your connection, then reload people to try again."
+              ? translate({
+                  message:
+                    "Your person record could not be loaded. Check your connection, then reload people to try again.",
+                })
               : !people.directory
                 ? t({ message: "Loading your person identity…" })
                 : people.directory.current.status === "ambiguous"
@@ -392,13 +399,15 @@ function SearchHistory({
       {searches.length ? (
         <section aria-labelledby="recent-searches-title">
           <header>
-            <h2 id="recent-searches-title">Recent searches</h2>
+            <h2 id="recent-searches-title">
+              <Trans>Recent searches</Trans>
+            </h2>
             <button
-              aria-label="Clear recent searches"
+              aria-label={translate({ message: "Clear recent searches" })}
               type="button"
               onClick={() => onClear("searches")}
             >
-              Clear
+              <Trans>Clear</Trans>
             </button>
           </header>
           <ul>
@@ -416,13 +425,15 @@ function SearchHistory({
       {tasks.length ? (
         <section aria-labelledby="recent-tasks-title">
           <header>
-            <h2 id="recent-tasks-title">Recently opened</h2>
+            <h2 id="recent-tasks-title">
+              <Trans>Recently opened</Trans>
+            </h2>
             <button
-              aria-label="Clear recently opened tasks"
+              aria-label={translate({ message: "Clear recently opened tasks" })}
               type="button"
               onClick={() => onClear("tasks")}
             >
-              Clear
+              <Trans>Clear</Trans>
             </button>
           </header>
           <ul>

@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import {
   monthName,
   recurrenceRuleSummary,
@@ -361,15 +362,18 @@ export function RecurrenceField({
               options={[
                 {
                   value: "scheduled",
-                  label: "Planned dates",
-                  description:
-                    "Keep the planned dates, even if you finish late.",
+                  label: translate({ message: "Planned dates" }),
+                  description: translate({
+                    message: "Keep the planned dates, even if you finish late.",
+                  }),
                 },
                 {
                   value: "completion",
-                  label: "Completion date",
-                  description:
-                    "Count the interval from when you finish the task.",
+                  label: translate({ message: "Completion date" }),
+                  description: translate({
+                    message:
+                      "Count the interval from when you finish the task.",
+                  }),
                 },
               ]}
               value={anchor ?? "scheduled"}
@@ -383,7 +387,7 @@ export function RecurrenceField({
               type="button"
               onClick={() => setAdvanced(true)}
             >
-              Advanced rule
+              <Trans>Advanced rule</Trans>
             </button>
           </div>
         )

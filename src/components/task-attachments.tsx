@@ -153,7 +153,8 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={attachInputId}>
-            <ImagePlus aria-hidden="true" size={16} /> Attach image
+            <ImagePlus aria-hidden="true" size={16} />{" "}
+            <Trans>Attach image</Trans>
           </label>
           <input
             accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
@@ -166,7 +167,8 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={insertInputId}>
-            <NotebookPen aria-hidden="true" size={16} /> Insert in Notes
+            <NotebookPen aria-hidden="true" size={16} />{" "}
+            <Trans>Insert in Notes</Trans>
           </label>
         </div>
       </header>

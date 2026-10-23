@@ -1,3 +1,8 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useContext } from "react";
 import { ConnectionNoticeContext } from "../app/connection-notice";
 import { cleanOperationError } from "../app/operation-error";
@@ -17,7 +22,7 @@ export function OperationErrorNotice({
   recovery: string;
   className?: string;
 }) {
-  const { t } = useLingui();
+  useI18n();
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
   const waiting =
@@ -25,7 +30,9 @@ export function OperationErrorNotice({
   if (waiting && failure.code === "unavailable")
     return (
       <p role="status">
-        Waiting for your computer. Try this action again when it reconnects.
+        <Trans>
+          Waiting for your computer. Try this action again when it reconnects.
+        </Trans>
       </p>
     );
   const technical = cleanOperationError(failure.detail).trim();
@@ -34,7 +41,10 @@ export function OperationErrorNotice({
       <p className="inline-error" role="alert">
         {operationErrorSummary(action, failure.code)}{" "}
         {failure.code === "outcome-unknown"
-          ? "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
+          ? translate({
+              message:
+                "TaskNotes keeps checking automatically while the collection is connected. You can keep working.",
+            })
           : recovery}
       </p>
       {technical ? (

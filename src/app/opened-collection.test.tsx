@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { OpenedCollection } from "./opened-collection";
 import { useRepository } from "./repository-context";

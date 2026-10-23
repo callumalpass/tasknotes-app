@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { useCallback, useRef, useState } from "react";
 
 import { addTaskNotesStarterViews } from "../application/ensure-default-view-source";
@@ -27,7 +28,7 @@ export function useAddStarterViews(onAdded: () => Promise<void>): {
       setError(
         reason instanceof Error && reason.message
           ? `Couldn't add starter views. ${cleanOperationError(reason.message)}`
-          : "Couldn't add starter views.",
+          : translate({ message: "Couldn't add starter views." }),
       );
     } finally {
       running.current = false;

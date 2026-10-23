@@ -1,14 +1,12 @@
+import { t as translate } from "@lingui/core/macro";
+import { appLocale } from "../i18n/app";
 import { t } from "@lingui/core/macro";
 import { countLabel, type CountKind } from "../i18n/default-labels";
-import { recurrenceLabel } from "../i18n/presentation";
+import { recurrenceLabel, formatRelativeTaskDate } from "../i18n/presentation";
 import { linkDisplayLabel } from "../domain/completion";
 import { isEmptyFieldValue } from "../domain/custom-field-value";
 import { recurrencePreset } from "../domain/recurrence-rule";
-import {
-  activeTimeEntry,
-  formatRelativeTaskDate,
-  type Task,
-} from "../domain/task";
+import { activeTimeEntry, type Task } from "../domain/task";
 import {
   occurrenceTask,
   taskOccurrenceForDate,
@@ -68,12 +66,12 @@ export function scheduleSummary(
           )?.label ?? draft.status)
         : "",
       dates.scheduled
-        ? `Scheduled ${formatRelativeTaskDate(dates.scheduled)}`
+        ? t`Scheduled ${formatRelativeTaskDate(dates.scheduled)}`
         : "",
-      dates.due ? `Due ${formatRelativeTaskDate(dates.due)}` : "",
+      dates.due ? t`Due ${formatRelativeTaskDate(dates.due)}` : "",
     ]
       .filter(Boolean)
-      .join(" · ") || "No dates"
+      .join(" · ") || translate({ message: "No dates" })
   );
 }
 
@@ -162,7 +160,7 @@ function listSummary(values: string[], singular: CountKind): string {
 export function formatOccurrenceDate(value: string): string {
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     day: "numeric",
     month: "long",

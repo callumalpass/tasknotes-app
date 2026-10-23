@@ -1,4 +1,4 @@
-import { countLabel, builtInFieldLabel } from "../i18n/default-labels";
+import { countLabel } from "../i18n/default-labels";
 import { appLocale } from "../i18n/app";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";

@@ -1,7 +1,6 @@
-import { appLocale } from "../i18n/app";
-import { formatRelativeTaskDate } from "../i18n/presentation";
+import { t as translate } from "@lingui/core/macro";
+import { OccurrencePolicyField } from "./occurrence-policy-field";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { uiCopy } from "../i18n/ui-copy";
 import { ArrowLeft } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
 import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
@@ -42,7 +41,6 @@ import { AssigneeEditor } from "../components/assignee-editor";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateTimeField,
-  TaskNotesSelect,
   TaskNotesSelectField,
 } from "../components/tasknotes-controls";
 import {
@@ -168,6 +166,7 @@ function TaskEditor({
   onMaterialized,
   recoveryScope,
 }: TaskEditorProps & { recoveryScope: string }) {
+  const { t } = useLingui();
   const {
     updateTask,
     mutations,
@@ -272,7 +271,7 @@ function TaskEditor({
     writeState === "failed"
       ? (reportedRejection ?? {
           changedElsewhere: false,
-          message: "mdbase refused the change.",
+          message: translate({ message: "mdbase refused the change." }),
         })
       : undefined;
   // Saving again would overwrite the other change without an explicit choice.
@@ -564,7 +563,10 @@ function TaskEditor({
     if (!awaitingChoiceRef.current) return;
     reviewRejection();
     throw new Error(
-      "Keep or discard your unsaved edit before making another change.",
+      translate({
+        message:
+          "Keep or discard your unsaved edit before making another change.",
+      }),
     );
   }
 
@@ -581,10 +583,16 @@ function TaskEditor({
       };
       if (!Object.keys(mine).length)
         throw new Error(
-          "Your edit is no longer available on this device. Discard it to load the latest version.",
+          translate({
+            message:
+              "Your edit is no longer available on this device. Discard it to load the latest version.",
+          }),
         );
       const latest = await repository.get(task.id);
-      if (!latest) throw new Error("This task is no longer available.");
+      if (!latest)
+        throw new Error(
+          translate({ message: "This task is no longer available." }),
+        );
       if (!mounted.current) return;
       const base = toDraft(latest);
       const next = { ...base, ...mine };
@@ -611,7 +619,10 @@ function TaskEditor({
     setResolveError(null);
     try {
       const latest = await repository.get(task.id);
-      if (!latest) throw new Error("This task is no longer available.");
+      if (!latest)
+        throw new Error(
+          translate({ message: "This task is no longer available." }),
+        );
       if (!mounted.current) return;
       editVersion.current += 1;
       const next = toDraft(latest);
@@ -750,6 +761,7 @@ function TaskEditor({
     }
   }
 
+  const retrySaveLabel = saveError ?? translate({ message: "Tap to retry." });
   return (
     <section
       className="screen task-screen"
@@ -778,27 +790,29 @@ function TaskEditor({
           }
           aria-label={
             rejection
-              ? "Not saved. Review your edit."
+              ? translate({ message: "Not saved. Review your edit." })
               : saveState === "error"
-                ? `Save failed. ${saveError ?? "Tap to retry."}`
+                ? translate`Save failed. ${retrySaveLabel}`
                 : writeState === "pending"
-                  ? "Saved on this device; waiting for sync"
+                  ? translate({
+                      message: "Saved on this device; waiting for sync",
+                    })
                   : undefined
           }
         >
           {rejection
-            ? "Not saved · Review"
+            ? translate({ message: "Not saved · Review" })
             : !draft.title.trim()
-              ? "Title required"
+              ? translate({ message: "Title required" })
               : saveState === "saving"
-                ? "Saving"
+                ? translate({ message: "Saving" })
                 : saveState === "error"
-                  ? "Save failed · Retry"
+                  ? translate({ message: "Save failed · Retry" })
                   : writeState === "pending"
                     ? ""
                     : writeState
-                      ? "Review save"
-                      : "Saved"}
+                      ? translate({ message: "Review save" })
+                      : translate({ message: "Saved" })}
         </button>
         <RecordWriteNotice
           repository={repository}
@@ -842,8 +856,10 @@ function TaskEditor({
       ) : null}
       {backupUnavailable ? (
         <p className="inline-error" role="alert">
-          Unsaved edits cannot be backed up in this browser. Keep this tab open
-          until saving finishes.
+          <Trans>
+            Unsaved edits cannot be backed up in this browser. Keep this tab
+            open until saving finishes.
+          </Trans>
         </p>
       ) : null}
 
@@ -978,13 +994,15 @@ function TaskEditor({
         ) : null}
 
         <TaskFormSection
-          title="Schedule and status"
+          title={translate({ message: "Schedule and status" })}
           summary={scheduleSummary(task, draft, configuration, occurrenceDate)}
         >
           {occurrenceDate && draft.recurrence ? (
             <p className="field-help">
-              These fields edit the series dates. The summary above shows this
-              occurrence.
+              <Trans>
+                These fields edit the series dates. The summary above shows this
+                occurrence.
+              </Trans>
             </p>
           ) : null}
           <div className="field-grid timing-fields task-core-fields">
@@ -1271,117 +1289,6 @@ function TaskEditor({
           task={task}
         />
       </div>
-    </section>
-  );
-}
-
-function OccurrencePolicyField({
-  materialization,
-  nextTrigger,
-  template,
-  pastHorizon,
-  futureHorizon,
-  onChange,
-}: {
-  materialization: "manual" | "on_completion" | "rolling";
-  nextTrigger: "completion" | "completion_or_skip";
-  template?: string;
-  pastHorizon?: string;
-  futureHorizon?: string;
-  onChange(value: Partial<Draft>): void;
-}) {
-  const { t } = useLingui();
-  return (
-    <section className="repeat-fields occurrence-policy">
-      <div className="repeat-heading">
-        <div>
-          <span className="field-label">
-            <Trans>Occurrence notes</Trans>
-          </span>
-          <p>
-            <Trans>Keep individual Markdown notes for recurring dates.</Trans>
-          </p>
-        </div>
-        <TaskNotesSelect
-          ariaLabel={t({ message: "Occurrence note policy" })}
-          options={[
-            { value: "manual", label: t({ message: "When I choose" }) },
-            {
-              value: "on_completion",
-              label: t({ message: "Create the next after completion" }),
-            },
-            {
-              value: "rolling",
-              label: t({ message: "Keep a rolling window" }),
-            },
-          ]}
-          value={materialization}
-          onChange={(value) =>
-            onChange({
-              occurrenceMaterialization:
-                value as Task["occurrenceMaterialization"],
-            })
-          }
-        />
-      </div>
-      {materialization === "on_completion" ? (
-        <TaskNotesSelectField
-          label={t({ message: "Advance after" })}
-          options={[
-            { value: "completion", label: t({ message: "Completion" }) },
-            {
-              value: "completion_or_skip",
-              label: t({ message: "Completion or skip" }),
-            },
-          ]}
-          value={nextTrigger}
-          onChange={(value) =>
-            onChange({
-              occurrenceNextTrigger: value as Task["occurrenceNextTrigger"],
-            })
-          }
-        />
-      ) : null}
-      {materialization === "rolling" ? (
-        <div className="field-grid metadata-fields">
-          <label className="form-field">
-            <span>
-              <Trans>Past horizon</Trans>
-            </span>
-            <input
-              placeholder={t({ message: "P0D" })}
-              value={pastHorizon ?? ""}
-              onChange={(event) =>
-                onChange({ occurrencePastHorizon: event.target.value })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span>
-              <Trans>Future horizon</Trans>
-            </span>
-            <input
-              placeholder={t({ message: "P14D" })}
-              value={futureHorizon ?? ""}
-              onChange={(event) =>
-                onChange({ occurrenceFutureHorizon: event.target.value })
-              }
-            />
-          </label>
-        </div>
-      ) : null}
-      <label className="form-field">
-        <span>
-          <Trans>Occurrence template</Trans>
-        </span>
-        <input
-          placeholder={t({ message: "Templates/Occurrence.md" })}
-          value={template ?? ""}
-          onChange={(event) =>
-            onChange({ occurrenceTemplate: event.target.value })
-          }
-        />
-      </label>
     </section>
   );
 }

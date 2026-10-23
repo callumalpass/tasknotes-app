@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
@@ -59,7 +60,11 @@ export function ViewEditor({
     () =>
       registerReloadParticipant({
         check: () => {
-          throw new Error("Finish or close the view editor before reloading.");
+          throw new Error(
+            translate({
+              message: "Finish or close the view editor before reloading.",
+            }),
+          );
         },
       }),
     [],

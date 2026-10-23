@@ -2,7 +2,9 @@
 
 TaskNotes uses Lingui 6.9 across the application interface: collection access and recovery, navigation, views, search, task capture/editing/actions, settings, Scratchpad, dialogs, accessible announcements, and reusable controls. Presentation helpers localize built-in field/day labels, dates, recurrence summaries, counts and editor phrases. The provider-neutral `TaskRepository`, domain parsing and serialized record values remain unchanged.
 
-**The French catalogue is complete; French is not enabled in production.** All 1130 active English messages have locally authored French translations, with zero missing before fallback. The original 16 French contracts are retained. One local writer completed three authoring batches and a second linguistic/context consistency pass over the full catalogue and corresponding source UI. This is not independent native-speaker certification. English remains the only production locale; French is a development/e2e preview.
+**The nine-locale migration is in progress on this branch.** After rebasing the original 1130-message pilot onto current main, the English catalogue contains 1313 active messages. French currently needs 307 new translations; the seven new locale PO scaffolds are intentionally untranslated. No English placeholders were authored as translations. The shared runtime and complete locale gates still need integration before this branch is merge-ready.
+
+Historical pilot result: all 1130 then-active English messages had locally authored French translations, with zero missing before fallback. The original 16 French contracts are retained. One local writer completed three authoring batches and a second linguistic/context consistency pass over the full catalogue and corresponding source UI. This is not independent native-speaker certification. English remains the only production locale; French is a development/e2e preview.
 
 ## Preview and runtime
 

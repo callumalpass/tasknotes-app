@@ -1,4 +1,3 @@
-import { t } from "@lingui/core/macro";
 import { connectProblemFromError } from "../cloud/outcome";
 
 export function isAuthorizationError(reason: unknown): boolean {

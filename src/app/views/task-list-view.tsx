@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
 import { daySectionLabel } from "../../i18n/default-labels";
@@ -653,7 +654,7 @@ function ManualTaskRows({
       >
         {manualOrder ? (
           <button
-            aria-label={`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
+            aria-label={translate`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
             className="manual-order-handle"
             disabled={orderPending || orderUnavailable}
             type="button"
@@ -724,7 +725,9 @@ function ManualTaskRows({
                   daySectionsClear
                 ) : grouped && manualOrder && !lane.rows.length ? (
                   <div className="task-list-empty-drop-zone">
-                    {dragging && canMoveAcrossLanes ? "Drop here" : "No tasks"}
+                    {dragging && canMoveAcrossLanes
+                      ? translate({ message: "Drop here" })
+                      : translate({ message: "No tasks" })}
                   </div>
                 ) : null}
               </div>
@@ -745,7 +748,7 @@ function ManualTaskRows({
                     ? `tasknotes:section:${preferenceScope}:${lane.key}`
                     : undefined
                 }
-                label={lane.label ?? "Other"}
+                label={lane.label ?? translate({ message: "Other" })}
                 count={settledRowCount(lane.rows, departing)}
                 action={sectionAction?.(lane)}
                 showEmpty={Boolean(manualOrder) || lane.rows.length > 0}

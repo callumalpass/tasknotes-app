@@ -1,3 +1,4 @@
+import { t as translate, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
@@ -994,7 +995,7 @@ export function ViewsScreen({
       if (selectedKeyRef.current === view.key)
         setViewActionError({
           viewKey: view.key,
-          message: `Could not reschedule ${updates.length === 1 ? "the task" : `${updates.length} tasks`}. ${message(reason)}`,
+          message: `Could not reschedule ${updates.length === 1 ? translate({ message: "the task" }) : `${updates.length} tasks`}. ${message(reason)}`,
         });
       return false;
     }
@@ -1221,7 +1222,7 @@ export function ViewsScreen({
             </button>
           ) : null}
           <div>
-            <h1>{selected?.name ?? "Saved view"}</h1>
+            <h1>{selected?.name ?? translate({ message: "Saved view" })}</h1>
             {selected ? (
               <RecordWriteNotice
                 repository={repository}
@@ -1238,7 +1239,8 @@ export function ViewsScreen({
                 {todayProgress ? (
                   <span className="today-progress">
                     {" "}
-                    · {todayProgress.done} of {todayProgress.total} done
+                    · {todayProgress.done} <Trans>of </Trans>
+                    {todayProgress.total} <Trans>done</Trans>
                   </span>
                 ) : null}
               </p>
@@ -1371,7 +1373,9 @@ export function ViewsScreen({
           <OperationErrorNotice
             action={t({ message: "The view change" })}
             message={currentViewActionError}
-            recovery="Review the task before making another change."
+            recovery={translate({
+              message: "Review the task before making another change.",
+            })}
           />
         ) : null}
         {editing ? (
@@ -1393,7 +1397,7 @@ export function ViewsScreen({
           <>
             <CaptureFab
               className="view-context-capture"
-              aria-label="New task"
+              aria-label={translate({ message: "New task" })}
               onClick={() => setMobileCaptureOpen(true)}
             />
             <GlobalTaskCapture
@@ -1569,11 +1573,14 @@ export function ViewsScreen({
                 <button
                   className="section-heading-action"
                   type="button"
-                  aria-label={`Move all to today, ${lane.rows.length} overdue ${lane.rows.length === 1 ? "task" : "tasks"}`}
+                  aria-label={plural(lane.rows.length, {
+                    one: "Move all to today, # overdue task",
+                    other: "Move all to today, # overdue tasks",
+                  })}
                   disabled={reschedulePending}
                   onClick={() => void moveOverdueToToday(lane.rows)}
                 >
-                  Move all to today
+                  <Trans>Move all to today</Trans>
                 </button>
               ) : null
             }
@@ -1616,21 +1623,29 @@ export function ViewsScreen({
         {rescheduled && rescheduled.viewKey === selected?.key ? (
           <>
             <p aria-atomic="true" className="visually-hidden" role="status">
-              Moved {rescheduled.count}{" "}
-              {rescheduled.count === 1 ? "task" : "tasks"} to today.
+              <Trans>Moved </Trans>
+              {rescheduled.count}{" "}
+              {rescheduled.count === 1
+                ? translate({ message: "task" })
+                : translate({ message: "tasks" })}{" "}
+              <Trans>to today.</Trans>
             </p>
             {!pendingDeletion ? (
               <div className="undo-toast is-above-mobile-controls">
                 <span>
-                  Moved {rescheduled.count}{" "}
-                  {rescheduled.count === 1 ? "task" : "tasks"} to today
+                  <Trans>Moved </Trans>
+                  {rescheduled.count}{" "}
+                  {rescheduled.count === 1
+                    ? translate({ message: "task" })
+                    : translate({ message: "tasks" })}{" "}
+                  <Trans>to today</Trans>
                 </span>
                 <button
                   ref={rescheduleUndoRef}
                   type="button"
                   onClick={() => void undoReschedule()}
                 >
-                  Undo
+                  <Trans>Undo</Trans>
                 </button>
               </div>
             ) : null}

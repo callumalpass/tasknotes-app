@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { countLabel } from "../../i18n/default-labels";
 import { ChevronRight, Plus } from "lucide-react";
@@ -184,7 +185,10 @@ export function ProjectsView({
                     <ChevronRight aria-hidden="true" size={16} />
                     <span>{project.label}</span>
                     <span className="project-count">
-                      {project.count} {project.count === 1 ? "task" : "tasks"}
+                      {project.count}{" "}
+                      {project.count === 1
+                        ? translate({ message: "task" })
+                        : translate({ message: "tasks" })}
                     </span>
                   </button>
                 </h2>

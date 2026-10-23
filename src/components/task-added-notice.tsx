@@ -1,4 +1,6 @@
-import { useLingui, Trans } from "@lingui/react/macro";
+import { useLingui as useI18n } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import { FeedbackNotice } from "./workspace-feedback";
 import type { TaskSummary } from "../domain/task";
@@ -19,12 +21,15 @@ export function TaskAddedNotice({
   onDismiss(): void;
   aboveMobileControls: boolean;
 }) {
+  useI18n();
   const state = useRecordWriteState(repository, {
     kind: "task",
     id: task?.id ?? "",
   });
   const message = task
-    ? `${state === "failed" ? "Change rejected" : "Task added"}: ${task.title}`
+    ? state === "failed"
+      ? t`Change rejected: ${task.title}`
+      : t`Task added: ${task.title}`
     : "";
   return (
     <FeedbackNotice>
@@ -50,7 +55,7 @@ export function TaskAddedNotice({
                 onOpen(task);
               }}
             >
-              Open
+              <Trans>Open</Trans>
             </button>
           ) : null}
           <button

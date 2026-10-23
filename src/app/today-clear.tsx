@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { formatRelativeTaskDate } from "../domain/task";
 import type { TaskSummary } from "../domain/task";
 import type { TaskOccurrenceEntry } from "../domain/task-occurrence";
@@ -25,12 +27,16 @@ export function TodayClear({
     : "";
   return (
     <div className="today-clear">
-      <p className="today-clear-title">Today is clear</p>
+      <p className="today-clear-title">
+        <Trans>Today is clear</Trans>
+      </p>
       {loading ? null : (
         <p>
           {next ? (
             <>
-              <span>Next: </span>
+              <span>
+                <Trans>Next: </Trans>
+              </span>
               <button
                 className="today-clear-next"
                 type="button"
@@ -41,7 +47,7 @@ export function TodayClear({
               <span className="today-clear-date"> · {nextDate}</span>
             </>
           ) : (
-            "Nothing is scheduled after today."
+            translate({ message: "Nothing is scheduled after today." })
           )}
         </p>
       )}
@@ -51,7 +57,7 @@ export function TodayClear({
           type="button"
           onClick={onOpenUpcoming}
         >
-          See Upcoming
+          <Trans>See Upcoming</Trans>
         </button>
       ) : null}
     </div>
@@ -62,8 +68,12 @@ export function TodayClear({
 export function TodayFirstRun() {
   return (
     <div className="plain-empty task-list-view">
-      <h2>No tasks yet</h2>
-      <p>Add a task to start planning your day.</p>
+      <h2>
+        <Trans>No tasks yet</Trans>
+      </h2>
+      <p>
+        <Trans>Add a task to start planning your day.</Trans>
+      </p>
     </div>
   );
 }

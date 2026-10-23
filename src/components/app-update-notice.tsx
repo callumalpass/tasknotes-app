@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useState } from "react";
 import { deferPwaUpdate, activatePwaUpdate, usePwaUpdate } from "../pwa/update";
 import { saveBeforeReload } from "../pwa/reload";
@@ -14,9 +16,14 @@ export function AppUpdateNotice({
   const [error, setError] = useState<string | null>(null);
   if (!available) return null;
   return (
-    <aside className="app-update-notice" aria-label="App update">
+    <aside
+      className="app-update-notice"
+      aria-label={translate({ message: "App update" })}
+    >
       <p role="status">
-        A TaskNotes update is ready. Save your changes, then reload.
+        <Trans>
+          A TaskNotes update is ready. Save your changes, then reload.
+        </Trans>
       </p>
       {error && <p role="alert">{error}</p>}
       <div>
@@ -34,16 +41,21 @@ export function AppUpdateNotice({
                 setError(
                   reason instanceof Error
                     ? reason.message
-                    : "Changes could not be saved. Keep this page open and try again.",
+                    : translate({
+                        message:
+                          "Changes could not be saved. Keep this page open and try again.",
+                      }),
                 );
                 setReloading(false);
               });
           }}
         >
-          {reloading ? "Saving changes…" : "Save and reload TaskNotes"}
+          {reloading
+            ? translate({ message: "Saving changes…" })
+            : translate({ message: "Save and reload TaskNotes" })}
         </button>
         <button type="button" disabled={reloading} onClick={deferPwaUpdate}>
-          Later
+          <Trans>Later</Trans>
         </button>
       </div>
     </aside>

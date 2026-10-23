@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
 import { countLabel } from "../../i18n/default-labels";
@@ -87,7 +88,7 @@ export function ViewCatalog({
       normalizedQuery,
       tool.name,
       tool.description,
-      "TaskNotes tool",
+      translate({ message: "TaskNotes tool" }),
     ),
   );
   const queryViews = views.filter((view) =>

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { PaletteCommand } from "./command-palette-model";
 import {
   requestTaskShortcut,
@@ -57,7 +58,7 @@ export function navigationCommands({
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
       commands.push({
         id: "go:scratchpad",
-        label: "Scratchpad",
+        label: t({ message: "Scratchpad" }),
         section: "navigate",
         keywords: ["notes", "outline"],
         run: () => navigate(routeFor(key, { page: "scratchpad" })),
@@ -67,7 +68,7 @@ export function navigationCommands({
     if (key === SEARCH_NAVIGATION_KEY) {
       commands.push({
         id: "go:search",
-        label: "Search",
+        label: t({ message: "Search" }),
         section: "navigate",
         keywords: ["find"],
         run: () => navigate(routeFor(key, { page: "search" })),
@@ -91,28 +92,28 @@ export function navigationCommands({
   commands.push(
     {
       id: "go:views",
-      label: "Manage views",
+      label: t({ message: "Manage views" }),
       section: "navigate",
       keywords: ["views", "saved"],
       run: () => navigate({ page: "views" }),
     },
     {
       id: "go:settings",
-      label: "Settings",
+      label: t({ message: "Settings" }),
       section: "navigate",
       keywords: ["preferences", "collection", "theme"],
       run: () => navigate({ page: "more" }),
     },
     {
       id: "action:new-task",
-      label: "New task",
+      label: t({ message: "New task" }),
       section: "actions",
       keywords: ["add", "create", "capture"],
       run: newTask,
     },
     {
       id: "action:shortcuts",
-      label: "Keyboard shortcuts",
+      label: t({ message: "Keyboard shortcuts" }),
       section: "actions",
       keywords: ["help", "keys"],
       shortcut: "?",
@@ -127,7 +128,7 @@ export function taskCommands(
   openTaskId?: string,
 ): PaletteCommand[] {
   if (!row?.dataset.taskId) return [];
-  const title = row.dataset.taskTitle ?? "this task";
+  const title = row.dataset.taskTitle ?? t({ message: "this task" });
   const completed = row.dataset.taskCompleted === "true";
   const request = (action: TaskShortcutAction) => () => {
     if (row.isConnected) requestTaskShortcut(row, action);
@@ -136,7 +137,7 @@ export function taskCommands(
   if (row.dataset.taskId !== openTaskId)
     commands.push({
       id: "task:open",
-      label: `Open “${title}”`,
+      label: t`Open “${title}”`,
       section: "task",
       keywords: ["details", "edit"],
       shortcut: "o",
@@ -145,7 +146,7 @@ export function taskCommands(
   commands.push(
     {
       id: "task:toggle",
-      label: `${completed ? "Reopen" : "Complete"} “${title}”`,
+      label: completed ? t`Reopen “${title}”` : t`Complete “${title}”`,
       section: "task",
       keywords: ["done", "finish", "check"],
       shortcut: "x",
@@ -153,7 +154,7 @@ export function taskCommands(
     },
     {
       id: "task:today",
-      label: "Schedule today",
+      label: t({ message: "Schedule today" }),
       section: "task",
       keywords: ["date", "move"],
       shortcut: "t",
@@ -162,7 +163,7 @@ export function taskCommands(
     },
     {
       id: "task:tomorrow",
-      label: "Schedule tomorrow",
+      label: t({ message: "Schedule tomorrow" }),
       section: "task",
       keywords: ["date", "move", "postpone"],
       shortcut: "m",
@@ -171,7 +172,7 @@ export function taskCommands(
     },
     {
       id: "task:next-week",
-      label: "Schedule next week",
+      label: t({ message: "Schedule next week" }),
       section: "task",
       keywords: ["date", "move", "postpone", "defer"],
       shortcut: "w",

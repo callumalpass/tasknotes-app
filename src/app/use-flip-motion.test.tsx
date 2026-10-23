@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render } from "../test/render";
 import { useRef } from "react";
 
 import { useFlipMotion } from "./use-flip-motion";

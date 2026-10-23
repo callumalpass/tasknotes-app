@@ -1,3 +1,6 @@
+import { t } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
+import { appLocale } from "../i18n/app";
 import {
   orderedWeekdays,
   type CalendarPreferences,

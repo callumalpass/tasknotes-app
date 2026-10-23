@@ -6,7 +6,7 @@ import {
   screen,
   waitFor,
   within,
-} from "@testing-library/react";
+} from "../test/render";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
 import { deferred } from "../test/mdbase-fixture";

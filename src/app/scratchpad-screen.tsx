@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { nestedItemCount } from "../i18n/default-labels";
 import { appLocale } from "../i18n/app";
@@ -853,10 +854,10 @@ export function ScratchpadScreen({
         <div className="scratchpad-notice" role="status">
           <span className="scratchpad-notice-title">
             {pendingDeletion.title?.trim()
-              ? `Deleted “${pendingDeletion.title.trim()}”`
-              : "Note deleted"}
+              ? translate`Deleted “${pendingDeletion.title.trim()}”`
+              : translate({ message: "Note deleted" })}
             <span className="visually-hidden">
-              . Undo is available for 30 seconds.
+              <Trans>. Undo is available for 30 seconds.</Trans>
             </span>
           </span>
           <button
@@ -865,10 +866,10 @@ export function ScratchpadScreen({
             type="button"
             onClick={undoDeletion}
           >
-            Undo
+            <Trans>Undo</Trans>
           </button>
           <button
-            aria-label="Dismiss"
+            aria-label={translate({ message: "Dismiss" })}
             type="button"
             onClick={() => void commitDeletion()}
           >
@@ -1104,7 +1105,9 @@ export function ScratchpadScreen({
                 onClick={() => setImageCaptureOpen((open) => !open)}
               >
                 <ImagePlus aria-hidden="true" size={18} />
-                <span>Add image</span>
+                <span>
+                  <Trans>Add image</Trans>
+                </span>
               </button>
               <button
                 aria-label={t({ message: "New note" })}
@@ -1269,7 +1272,7 @@ function ScratchNoteActions({
       <button
         aria-expanded={menuOpen}
         aria-haspopup="menu"
-        aria-label="Note actions"
+        aria-label={translate({ message: "Note actions" })}
         className="scratchpad-document-menu-trigger"
         disabled={disabled}
         ref={menuTriggerRef}
@@ -1280,7 +1283,7 @@ function ScratchNoteActions({
       </button>
       {menuOpen ? (
         <div
-          aria-label="Note actions"
+          aria-label={translate({ message: "Note actions" })}
           className="scratchpad-row-menu"
           ref={menuRef}
           role="menu"
@@ -1300,7 +1303,7 @@ function ScratchNoteActions({
               onDelete();
             }}
           >
-            <Trash2 aria-hidden="true" size={17} /> Delete note
+            <Trash2 aria-hidden="true" size={17} /> <Trans>Delete note</Trans>
           </button>
         </div>
       ) : null}
@@ -1834,13 +1837,18 @@ function ScratchpadDocumentEditor({
         save: async () => {
           if (reviewProcessing || convertingId || autosaveSuspended.current)
             throw new Error(
-              "Finish the note action in progress before reloading.",
+              translate({
+                message: "Finish the note action in progress before reloading.",
+              }),
             );
           const version = sourceEditVersion.current;
           await flush();
           if (version !== sourceEditVersion.current)
             throw new Error(
-              "Your note changed while saving. Save it again before reloading.",
+              translate({
+                message:
+                  "Your note changed while saving. Save it again before reloading.",
+              }),
             );
         },
         check: () => {
@@ -1856,7 +1864,10 @@ function ScratchpadDocumentEditor({
             repository.writeState?.({ kind: "scratchpad", id: current.id })
           )
             throw new Error(
-              "Some note changes are not saved. Keep this page open and try again.",
+              translate({
+                message:
+                  "Some note changes are not saved. Keep this page open and try again.",
+              }),
             );
         },
       }),
@@ -2720,11 +2731,11 @@ function ScratchpadDocumentEditor({
           >
             {saveState === "error"
               ? nativeSaveState
-                ? "Save needs review"
-                : "Not saved"
+                ? translate({ message: "Save needs review" })
+                : translate({ message: "Not saved" })
               : saveState === "saving" || nativeSaveState
                 ? ""
-                : "Saved"}
+                : translate({ message: "Saved" })}
           </span>
           {onReactivate ? (
             <button

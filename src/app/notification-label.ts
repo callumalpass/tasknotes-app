@@ -14,7 +14,7 @@ export function changeNotificationLabel(
     case "denied":
       return t({ message: "Disabled in system settings" });
     case "not_connected":
-      return "Open a collection first";
+      return t({ message: "Open a collection first" });
     case "not_configured":
       return t({ message: "Firebase setup required" });
     case "reauthorization_required":

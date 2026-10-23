@@ -1,3 +1,7 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import {
   Columns3,
   Command,
@@ -227,7 +231,7 @@ export function AppShell() {
           type="button"
           onClick={changeCollection}
         >
-          Choose a different collection
+          <Trans>Choose a different collection</Trans>
         </button>
       </main>
     );
@@ -331,12 +335,14 @@ export function AppShell() {
           aria-keyshortcuts="Control+N Meta+N"
           aria-label={t({ message: "New task" })}
           className="global-capture-navigation"
-          title={`New task (${shortcutLabel("N")})`}
+          title={translate`New task (${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
-          <span>New task</span>
+          <span>
+            <Trans>New task</Trans>
+          </span>
           {isApplePlatform() ? <kbd>{shortcutLabel("N")}</kbd> : null}
         </button>
         <Navigation
@@ -487,7 +493,7 @@ export function AppShell() {
       {route.page !== "task" && showGlobalCaptureFab ? (
         <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
-          aria-label="New task"
+          aria-label={translate({ message: "New task" })}
           onClick={() => setCaptureOpen(true)}
         />
       ) : null}
@@ -604,11 +610,13 @@ export function ViewDiscoveryNotice({
   return (
     <section
       className="view-discovery-notice"
-      aria-label="Views availability"
+      aria-label={translate({ message: "Views availability" })}
       aria-busy={refreshing}
     >
       <p role={outcome === "error" ? "alert" : "status"}>
-        {outcome === "error" ? "Couldn't load your views." : "No views yet."}
+        {outcome === "error"
+          ? translate({ message: "Couldn't load your views." })
+          : translate({ message: "No views yet." })}
       </p>
       <button
         className="text-action"
@@ -618,9 +626,9 @@ export function ViewDiscoveryNotice({
       >
         {outcome === "error"
           ? refreshing
-            ? "Retrying…"
-            : "Retry"
-          : "Create a view"}
+            ? translate({ message: "Retrying…" })
+            : translate({ message: "Retry" })
+          : translate({ message: "Create a view" })}
       </button>
     </section>
   );
@@ -639,17 +647,21 @@ function EmptyViewsNotice({
   return (
     <section
       className="view-discovery-notice"
-      aria-label="Views availability"
+      aria-label={translate({ message: "Views availability" })}
       aria-busy={refreshing || adding}
     >
-      <p role="status">No views yet.</p>
+      <p role="status">
+        <Trans>No views yet.</Trans>
+      </p>
       <button
         className="text-action"
         type="button"
         disabled={refreshing || adding}
         onClick={() => void add()}
       >
-        {adding ? "Adding starter views…" : "Add starter views"}
+        {adding
+          ? translate({ message: "Adding starter views…" })
+          : translate({ message: "Add starter views" })}
       </button>
       <button
         className="text-action"
@@ -657,7 +669,7 @@ function EmptyViewsNotice({
         disabled={refreshing || adding}
         onClick={onCreate}
       >
-        Create a view
+        <Trans>Create a view</Trans>
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </section>
@@ -849,20 +861,23 @@ export function StorageErrorScreen({
   reauthorizeCurrentCollection(): void;
   retry(): void;
 }) {
-  const { t } = useLingui();
+  useI18n();
   const authorizationExpired = isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">
       <img alt="" src={tasknotesMarkUrl} />
       <h1>
         {authorizationExpired
-          ? "Review TaskNotes’ access"
-          : "TaskNotes could not open."}
+          ? translate({ message: "Review TaskNotes’ access" })
+          : translate({ message: "TaskNotes could not open." })}
       </h1>
       <p>
         {authorizationExpired
-          ? "TaskNotes needs your approval in mdbase again before it can open this collection."
-          : "The collection is unavailable right now."}
+          ? translate({
+              message:
+                "TaskNotes needs your approval in mdbase again before it can open this collection.",
+            })
+          : translate({ message: "The collection is unavailable right now." })}
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
@@ -871,11 +886,11 @@ export function StorageErrorScreen({
             type="button"
             onClick={reauthorizeCurrentCollection}
           >
-            Review access
+            <Trans>Review access</Trans>
           </button>
         ) : (
           <button className="outline-action" type="button" onClick={retry}>
-            Try again
+            <Trans>Try again</Trans>
           </button>
         )}
         <button
@@ -883,7 +898,7 @@ export function StorageErrorScreen({
           type="button"
           onClick={changeCollection}
         >
-          Choose a different collection
+          <Trans>Choose a different collection</Trans>
         </button>
       </div>
     </main>
@@ -1174,17 +1189,23 @@ export function Navigation({
         </p>
       ) : null}
       {mode === "desktop" ? (
-        <div aria-label="Manage" className="navigation-utility" role="group">
+        <div
+          aria-label={translate({ message: "Manage" })}
+          className="navigation-utility"
+          role="group"
+        >
           {onCommands ? (
             <button
               aria-keyshortcuts="Control+K Meta+K"
               className="navigation-commands"
-              title={`Commands (${shortcutLabel("K")})`}
+              title={translate`Commands (${shortcutLabel("K")})`}
               type="button"
               onClick={onCommands}
             >
               <Command aria-hidden="true" size={20} strokeWidth={1.7} />
-              <span>Commands</span>
+              <span>
+                <Trans>Commands</Trans>
+              </span>
               {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
           ) : null}

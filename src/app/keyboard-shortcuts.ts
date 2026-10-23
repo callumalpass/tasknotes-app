@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { hasOpenOverlay } from "../components/overlays/overlay-stack";
 import { todayString } from "../domain/task";
 import { setTaskDate, shiftTaskDate } from "../domain/task-date-actions";
@@ -88,10 +89,10 @@ export function shortcutScheduleLabel(
   action: Extract<TaskShortcutAction, "today" | "tomorrow" | "next-week">,
 ): string {
   return action === "today"
-    ? "today"
+    ? t({ message: "today" })
     : action === "tomorrow"
-      ? "tomorrow"
-      : "next week";
+      ? t({ message: "tomorrow" })
+      : t({ message: "next week" });
 }
 
 /** Ask a mounted task row to run an action, as if its key had been pressed. */
@@ -230,24 +231,30 @@ export function keyboardShortcutGroups(): {
 }[] {
   return [
     {
-      title: "Anywhere",
+      title: t({ message: "Anywhere" }),
       shortcuts: [
-        { keys: [shortcutLabel("K")], description: "Command palette" },
-        { keys: [shortcutLabel("N")], description: "New task" },
-        { keys: [shortcutLabel("Z")], description: "Undo a deleted task" },
-        { keys: ["?"], description: "Keyboard shortcuts" },
+        {
+          keys: [shortcutLabel("K")],
+          description: t({ message: "Command palette" }),
+        },
+        { keys: [shortcutLabel("N")], description: t({ message: "New task" }) },
+        {
+          keys: [shortcutLabel("Z")],
+          description: t({ message: "Undo a deleted task" }),
+        },
+        { keys: ["?"], description: t({ message: "Keyboard shortcuts" }) },
       ],
     },
     {
-      title: "Task lists",
+      title: t({ message: "Task lists" }),
       shortcuts: [
-        { keys: ["j", "↓"], description: "Next task" },
-        { keys: ["k", "↑"], description: "Previous task" },
-        { keys: ["o", "Enter"], description: "Open task" },
-        { keys: ["x"], description: "Complete or reopen" },
-        { keys: ["t"], description: "Schedule today" },
-        { keys: ["m"], description: "Schedule tomorrow" },
-        { keys: ["w"], description: "Schedule next week" },
+        { keys: ["j", "↓"], description: t({ message: "Next task" }) },
+        { keys: ["k", "↑"], description: t({ message: "Previous task" }) },
+        { keys: ["o", "Enter"], description: t({ message: "Open task" }) },
+        { keys: ["x"], description: t({ message: "Complete or reopen" }) },
+        { keys: ["t"], description: t({ message: "Schedule today" }) },
+        { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },
+        { keys: ["w"], description: t({ message: "Schedule next week" }) },
       ],
     },
   ];

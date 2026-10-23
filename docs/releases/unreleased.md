@@ -1,5 +1,7 @@
 # Unreleased
 
+- Include the current Settings, keyboard commands, account recovery, and save-status messages in app translations.
+
 - Keep a reviewed collection setup working when another tab opens the same setup review. If the changes differ, show the new review for confirmation instead of reporting that the collection was deleted.
 
 - Fixed native iOS hosted-collection access failing after successful authorization

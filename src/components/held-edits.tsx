@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useEffect, useRef, useState } from "react";
 import { useRepository } from "../app/repository-context";
 import type {
@@ -20,16 +22,18 @@ export function HeldEditsNotice({
   return (
     <div className="collection-held-notice" role="status">
       <div>
-        <strong>mdbase protected your edit</strong>
+        <strong>
+          <Trans>mdbase protected your edit</Trans>
+        </strong>
         <p>
           {total === 1 && edits[0]
-            ? `${edits[0].path} is waiting for your choice. ${edits[0].cause}`
-            : `${total} edits are waiting for your choice.`}
+            ? translate`${edits[0].path} is waiting for your choice. ${edits[0].cause}`
+            : translate`${total} edits are waiting for your choice.`}
         </p>
       </div>
       {onReview ? (
         <button className="text-action" type="button" onClick={onReview}>
-          Review protected edits
+          <Trans>Review protected edits</Trans>
         </button>
       ) : null}
     </div>
@@ -87,20 +91,29 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
       await repository.resolveHeldEdit(edit.id, action.action);
       if (lifetime.signal.aborted) return;
       setNotice(
-        "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts.",
+        translate({
+          message:
+            "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts.",
+        }),
       );
       try {
         await refresh();
       } catch {
         if (!lifetime.signal.aborted)
           setProblem(
-            "Your choice was submitted, but the latest status could not be read. Refresh before making another choice.",
+            translate({
+              message:
+                "Your choice was submitted, but the latest status could not be read. Refresh before making another choice.",
+            }),
           );
       }
     } catch {
       if (!lifetime.signal.aborted)
         setProblem(
-          "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again.",
+          translate({
+            message:
+              "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again.",
+          }),
         );
     } finally {
       working.current = false;
@@ -109,7 +122,11 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
   }
 
   return (
-    <div className="held-edits" role="region" aria-label="Protected edits">
+    <div
+      className="held-edits"
+      role="region"
+      aria-label={translate({ message: "Protected edits" })}
+    >
       {edits.map((edit) => (
         <article className="held-edit" key={edit.id}>
           <h3>{edit.title}</h3>
@@ -125,23 +142,25 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
               }
             >
               {comparison === edit.id
-                ? "Close comparison"
-                : "Compare side by side"}
+                ? translate({ message: "Close comparison" })
+                : translate({ message: "Compare side by side" })}
             </button>
           ) : (
             <p className="section-copy">
               {edit.comparisonUnavailable ??
-                "Comparison is not available from this backend."}
+                translate({
+                  message: "Comparison is not available from this backend.",
+                })}
             </p>
           )}
           {comparison === edit.id && edit.comparison ? (
             <div
               className="held-comparison"
               role="group"
-              aria-label={`Versions of ${edit.path}`}
+              aria-label={translate`Versions of ${edit.path}`}
             >
               <label>
-                Your protected version
+                <Trans>Your protected version</Trans>
                 <textarea
                   readOnly
                   autoComplete="off"
@@ -150,7 +169,7 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
                 />
               </label>
               <label>
-                Synced version
+                <Trans>Synced version</Trans>
                 <textarea
                   readOnly
                   autoComplete="off"
@@ -160,9 +179,11 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
               </label>
               {edit.comparison.shortened ? (
                 <p className="held-comparison-note section-copy">
-                  These previews are shortened. Choices apply to the full
-                  versions, not the previews. Keep both to preserve your full
-                  edit.
+                  <Trans>
+                    These previews are shortened. Choices apply to the full
+                    versions, not the previews. Keep both to preserve your full
+                    edit.
+                  </Trans>
                 </p>
               ) : null}
             </div>
@@ -183,7 +204,9 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
                       : void choose(edit, action)
                   }
                 >
-                  {busy === edit.id ? "Submitting…" : action.label}
+                  {busy === edit.id
+                    ? translate({ message: "Submitting…" })
+                    : action.label}
                 </button>
               ))}
           </div>
@@ -193,14 +216,22 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
           ) ? (
             <div
               role="group"
-              aria-label="Confirm protected-version replacement"
+              aria-label={translate({
+                message: "Confirm protected-version replacement",
+              })}
             >
               <p>
-                {confirmation.action.description} This discards your protected
-                version.{" "}
+                {confirmation.action.description}{" "}
+                <Trans>This discards your protected version.</Trans>{" "}
                 {edit.actions.some((action) => action.action === "keep_both")
-                  ? "Keep both instead if you want your edit kept as a file."
-                  : "Keep mine instead if you want to keep your edit."}
+                  ? translate({
+                      message:
+                        "Keep both instead if you want your edit kept as a file.",
+                    })
+                  : translate({
+                      message:
+                        "Keep mine instead if you want to keep your edit.",
+                    })}
               </p>
               <button
                 className="text-action"
@@ -208,14 +239,15 @@ function HeldEditsPanel({ edits }: { edits: HeldEdit[] }) {
                 disabled={busy !== null}
                 onClick={() => void choose(edit, confirmation.action)}
               >
-                Confirm {confirmation.action.label.toLowerCase()}
+                <Trans>Confirm </Trans>
+                {confirmation.action.label.toLowerCase()}
               </button>
               <button
                 className="text-action"
                 type="button"
                 onClick={() => setConfirmation(null)}
               >
-                Cancel
+                <Trans>Cancel</Trans>
               </button>
             </div>
           ) : null}

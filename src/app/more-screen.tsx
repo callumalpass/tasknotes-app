@@ -1,3 +1,4 @@
+import { t as translate, plural } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ArrowLeft,
@@ -22,6 +23,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { LanguageSettings } from "../i18n/language-settings";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
@@ -108,21 +110,28 @@ export function MoreScreen({
 
   const summaries: Record<SettingsSection, ReactNode> = {
     collection: [
-      info?.name ?? "mdbase collection",
+      info?.name ?? translate({ message: "mdbase collection" }),
       connectionLabel(connection, notice),
-      loading || !stats ? null : `${stats.open} open`,
+      loading || !stats
+        ? null
+        : plural(stats.open, {
+            one: "# open",
+            other: "# open",
+          }),
     ]
       .filter(Boolean)
       .join(" · "),
-    account: "Private collection recovery",
+    account: translate({ message: "Private collection recovery" }),
     reminders: reminders.label,
-    device: "Theme, Scratchpad, and calendar",
+    device: translate({ message: "Theme, Scratchpad, and calendar" }),
     behavior: unsavedBehavior ? (
-      <span className="settings-unsaved">Unsaved changes</span>
+      <span className="settings-unsaved">
+        <Trans>Unsaved changes</Trans>
+      </span>
     ) : (
-      "New tasks, repeating tasks, and archive"
+      translate({ message: "New tasks, repeating tasks, and archive" })
     ),
-    about: `Version ${__APP_VERSION__}`,
+    about: translate`Version ${__APP_VERSION__}`,
   };
 
   const panels: Record<SettingsSection, () => ReactNode> = {
@@ -150,7 +159,7 @@ export function MoreScreen({
       >
         <header className="screen-header compact-header settings-detail-header">
           <button
-            aria-label="Back to Settings"
+            aria-label={translate({ message: "Back to Settings" })}
             className="back-action"
             type="button"
             onClick={() => onSection(undefined, true)}
@@ -178,7 +187,10 @@ export function MoreScreen({
       </header>
       <InstallBanner install={install} />
       {narrow ? (
-        <nav aria-label="Settings sections" className="settings-overview">
+        <nav
+          aria-label={translate({ message: "Settings sections" })}
+          className="settings-overview"
+        >
           <ul>
             {sections.map((key) => {
               const Icon = sectionIcons[key];
@@ -257,7 +269,10 @@ function SettingsIndex({
   }, [sectionKeys]);
   const active = visible ?? current ?? sections[0];
   return (
-    <nav aria-label="Settings sections" className="settings-index">
+    <nav
+      aria-label={translate({ message: "Settings sections" })}
+      className="settings-index"
+    >
       <ul>
         {sections.map((key) => (
           <li key={key}>
@@ -279,8 +294,14 @@ function SettingsIndex({
             >
               {settingsSectionLabels[key]}
               {key === "behavior" && unsavedBehavior ? (
-                <span className="settings-unsaved-dot" title="Unsaved changes">
-                  <span className="visually-hidden"> (unsaved changes)</span>
+                <span
+                  className="settings-unsaved-dot"
+                  title={translate({ message: "Unsaved changes" })}
+                >
+                  <span className="visually-hidden">
+                    {" "}
+                    <Trans>(unsaved changes)</Trans>
+                  </span>
                 </span>
               ) : null}
             </a>
@@ -292,8 +313,12 @@ function SettingsIndex({
 }
 
 const sectionScopes: Partial<Record<SettingsSection, string>> = {
-  device: "This device only",
-  behavior: "Shared with everyone using this collection",
+  get device() {
+    return translate({ message: "This device only" });
+  },
+  get behavior() {
+    return translate({ message: "Shared with everyone using this collection" });
+  },
 };
 
 function SettingsPanel({
@@ -346,7 +371,9 @@ function CollectionSettings() {
     <>
       <div className="settings-collection-card">
         <div className="settings-collection-identity">
-          <strong>{info?.name ?? "mdbase collection"}</strong>
+          <strong>
+            {info?.name ?? translate({ message: "mdbase collection" })}
+          </strong>
           <span
             className={`settings-connection is-${connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
             role="status"
@@ -354,12 +381,18 @@ function CollectionSettings() {
             <span aria-hidden="true" className="settings-connection-dot" />
             <span>{connectionLabel(connection, notice)}</span>
             {loading ? (
-              <span>· Opening</span>
+              <span>
+                <Trans>· Opening</Trans>
+              </span>
             ) : summaryError ? (
-              <span>· Details need attention</span>
+              <span>
+                <Trans>· Details need attention</Trans>
+              </span>
             ) : stats ? (
               <span>
-                · {stats.open} open · {stats.total} total
+                <Trans>
+                  · {stats.open} open · {stats.total} total
+                </Trans>
               </span>
             ) : null}
           </span>
@@ -373,21 +406,22 @@ function CollectionSettings() {
           <p className="section-copy" role="status">
             {connection.sync.text}
             {connection.sync.pending > 0
-              ? ". Pending edits are not yet synced."
+              ? translate({ message: ". Pending edits are not yet synced." })
               : null}
           </p>
         ) : null}
         {summaryError ? (
           <>
             <p className="inline-error" role="alert">
-              Collection details could not be loaded. {summaryError.message}
+              <Trans>Collection details could not be loaded. </Trans>
+              {summaryError.message}
             </p>
             <button
               className="text-action"
               type="button"
               onClick={retrySummary}
             >
-              Retry collection details
+              <Trans>Retry collection details</Trans>
             </button>
           </>
         ) : null}
@@ -398,7 +432,9 @@ function CollectionSettings() {
             type="button"
             onClick={() => void refresh().catch(() => undefined)}
           >
-            {refreshing ? "Refreshing" : "Refresh now"}
+            {refreshing
+              ? translate({ message: "Refreshing" })
+              : translate({ message: "Refresh now" })}
           </button>
           {collectionUi ? (
             <CollectionSwitcher {...collectionUi} variant="full" />
@@ -408,14 +444,16 @@ function CollectionSettings() {
               type="button"
               onClick={changeCollection}
             >
-              Change collection
+              <Trans>Change collection</Trans>
             </button>
           )}
         </div>
       </div>
       {connection.heldEdits?.length ? (
         <div className="settings-group">
-          <h3>Protected edits</h3>
+          <h3>
+            <Trans>Protected edits</Trans>
+          </h3>
           <HeldEditsReview edits={connection.heldEdits} />
         </div>
       ) : null}
@@ -425,7 +463,9 @@ function CollectionSettings() {
         type="button"
         onClick={() => setShowStorage(!showStorage)}
       >
-        <span>How tasks are stored</span>
+        <span>
+          <Trans>How tasks are stored</Trans>
+        </span>
         <ChevronDown
           aria-hidden="true"
           className={showStorage ? "is-open" : undefined}
@@ -436,15 +476,19 @@ function CollectionSettings() {
         <div className="collection-storage-detail">
           <p className="section-copy">{storageExplanation()}</p>
           <p className="section-copy">
-            Tasks are portable Markdown records in the mdbase v0.3 format.
+            <Trans>
+              Tasks are portable Markdown records in the mdbase v0.3 format.
+            </Trans>
           </p>
           {info ? (
             <code className="collection-path">{info.location}</code>
           ) : null}
           {lastRefresh ? (
             <p className="refresh-detail">
-              Last refresh checked {lastRefresh.scanned.toLocaleString()}{" "}
-              records in {lastRefresh.elapsedMs.toLocaleString()} ms.
+              <Trans>
+                Last refresh checked {lastRefresh.scanned.toLocaleString()}{" "}
+                records in {lastRefresh.elapsedMs.toLocaleString()} ms.
+              </Trans>
             </p>
           ) : null}
         </div>
@@ -553,7 +597,9 @@ function useReminderSettings() {
     status,
     busy,
     error,
-    label: delivers ? changeNotificationLabel(status) : "Not available",
+    label: delivers
+      ? changeNotificationLabel(status)
+      : translate({ message: "Not available" }),
     setEnabled,
     reviewAccess,
     retry,
@@ -565,11 +611,15 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
   if (!delivers)
     return (
       <div className="settings-status-row">
-        <span>Task reminders</span>
+        <span>
+          <Trans>Task reminders</Trans>
+        </span>
         <small>{reminders.label}</small>
         <p className="setting-hint">
-          Reminder details are saved on tasks, but this version of TaskNotes
-          does not send reminder notifications.
+          <Trans>
+            Reminder details are saved on tasks, but this version of TaskNotes
+            does not send reminder notifications.
+          </Trans>
         </p>
       </div>
     );
@@ -577,8 +627,10 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
     status.state === "off" ||
     status.state === "enabled" ||
     (status.state === "denied" && status.optedIn);
-  const description =
-    "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content.";
+  const description = translate({
+    message:
+      "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content.",
+  });
   return (
     <>
       {switchable ? (
@@ -587,15 +639,20 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
           checked={status.optedIn}
           description={
             status.state === "denied"
-              ? "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
+              ? translate({
+                  message:
+                    "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders.",
+                })
               : description
           }
-          label="Task reminders"
+          label={translate({ message: "Task reminders" })}
           onChange={(enabled) => void reminders.setEnabled(enabled)}
         />
       ) : (
         <div className="settings-status-row">
-          <span>Task reminders</span>
+          <span>
+            <Trans>Task reminders</Trans>
+          </span>
           <small role="status">{reminders.label}</small>
           <p className="setting-hint">{description}</p>
         </div>
@@ -619,15 +676,17 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             type="button"
             onClick={reminders.retry}
           >
-            Retry notification check
+            <Trans>Retry notification check</Trans>
           </button>
         </div>
       ) : null}
       {error ? (
         <OperationErrorNotice
-          action="Reminder setup"
+          action={translate({ message: "Reminder setup" })}
           message={error}
-          recovery="Check that the collection is connected, then try again."
+          recovery={translate({
+            message: "Check that the collection is connected, then try again.",
+          })}
         />
       ) : null}
     </>
@@ -644,25 +703,38 @@ function DeviceSettings({
   return (
     <>
       <p className="section-copy">
-        These choices apply as soon as you make them and don’t change the
-        collection.
+        <Trans>
+          These choices apply as soon as you make them and don’t change the
+          collection.
+        </Trans>
       </p>
+      <LanguageSettings />
       <div className="settings-group">
-        <h3>Appearance</h3>
+        <h3>
+          <Trans>Appearance</Trans>
+        </h3>
         <div className="setting-row">
-          <span>Color theme</span>
+          <span>
+            <Trans>Color theme</Trans>
+          </span>
           <ThemeSelect />
         </div>
       </div>
       <div className="settings-group">
-        <h3>Scratchpad</h3>
+        <h3>
+          <Trans>Scratchpad</Trans>
+        </h3>
         <div className="setting-row">
-          <span>Default mode for new notes</span>
+          <span>
+            <Trans>Default mode for new notes</Trans>
+          </span>
           <ScratchpadModePreference />
         </div>
       </div>
       <div className="settings-group">
-        <h3>Calendar</h3>
+        <h3>
+          <Trans>Calendar</Trans>
+        </h3>
         <CalendarPreferencesEditor
           value={calendarPreferences}
           onChange={onCalendarPreferencesChange}
@@ -700,7 +772,9 @@ function useInstallPrompt() {
       setError(
         reason instanceof Error
           ? reason.message
-          : "TaskNotes could not open the install prompt.",
+          : translate({
+              message: "TaskNotes could not open the install prompt.",
+            }),
       );
     } finally {
       setBusy(false);
@@ -730,12 +804,12 @@ function InstallAction({ install }: { install: InstallPrompt }) {
       >
         <Download aria-hidden="true" size={17} />
         {install.busy
-          ? "Opening install prompt…"
+          ? translate({ message: "Opening install prompt…" })
           : install.instructionsOnly
             ? install.showInstructions
-              ? "Hide installation steps"
-              : "How to install"
-            : "Install app"}
+              ? translate({ message: "Hide installation steps" })
+              : translate({ message: "How to install" })
+            : translate({ message: "Install app" })}
       </button>
     </>
   );
@@ -746,7 +820,9 @@ function InstallFeedback({ install }: { install: InstallPrompt }) {
     <>
       {install.showInstructions ? (
         <p className="section-copy" role="status">
-          Open your browser’s Share menu, then choose Add to Home Screen.
+          <Trans>
+            Open your browser’s Share menu, then choose Add to Home Screen.
+          </Trans>
         </p>
       ) : null}
       {install.error ? (
@@ -761,12 +837,17 @@ function InstallFeedback({ install }: { install: InstallPrompt }) {
 function InstallBanner({ install }: { install: InstallPrompt }) {
   if (!install.available || install.dismissed) return null;
   return (
-    <aside aria-label="Install TaskNotes" className="settings-banner">
-      <p>Install TaskNotes to open it from your home screen.</p>
+    <aside
+      aria-label={translate({ message: "Install TaskNotes" })}
+      className="settings-banner"
+    >
+      <p>
+        <Trans>Install TaskNotes to open it from your home screen.</Trans>
+      </p>
       <div className="settings-actions">
         <InstallAction install={install} />
         <button className="text-action" type="button" onClick={install.dismiss}>
-          Not now
+          <Trans>Not now</Trans>
         </button>
       </div>
       <InstallFeedback install={install} />
@@ -779,19 +860,26 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
     <>
       <div className="setting-row">
         <span>TaskNotes</span>
-        <small>Version {__APP_VERSION__}</small>
+        <small>
+          <Trans>Version </Trans>
+          {__APP_VERSION__}
+        </small>
       </div>
       {install.available ? (
         <>
           <div className="setting-row">
-            <span>Install on this device</span>
+            <span>
+              <Trans>Install on this device</Trans>
+            </span>
             <InstallAction install={install} />
           </div>
           {install.dismissed ? <InstallFeedback install={install} /> : null}
         </>
       ) : null}
       <div className="settings-group">
-        <h3>Help</h3>
+        <h3>
+          <Trans>Help</Trans>
+        </h3>
         <details className="help-topic">
           <summary>
             <Trans>Does TaskNotes work offline?</Trans>
@@ -809,8 +897,11 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
             <Trans>Can I change collections later?</Trans>
           </summary>
           <p>
-            Yes. Use Change collection under Collection to open another mdbase
-            collection. Changing collections does not move records between them.
+            <Trans>
+              Yes. Use Change collection under Collection to open another mdbase
+              collection. Changing collections does not move records between
+              them.
+            </Trans>
           </p>
         </details>
       </div>
@@ -854,9 +945,12 @@ function connectionLabel(
   connection: ReturnType<typeof useRepository>["connection"],
   notice: ConnectionNotice | null,
 ): string {
-  if (connection.state === "connecting") return "Connecting";
+  if (connection.state === "connecting")
+    return translate({ message: "Connecting" });
   if (notice) return connectionNoticeLabels[notice];
-  if (connection.state === "unavailable") return "Collection unavailable";
-  if (connection.savedOnDevice) return "Saved on this device; waiting for sync";
-  return "Connected";
+  if (connection.state === "unavailable")
+    return translate({ message: "Collection unavailable" });
+  if (connection.savedOnDevice)
+    return translate({ message: "Saved on this device; waiting for sync" });
+  return translate({ message: "Connected" });
 }

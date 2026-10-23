@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import {
   useCallback,
   useContext,
@@ -116,7 +117,7 @@ export function VirtualTaskList({
             headingOnly
             className={entry.lane.className}
             laneKey={entry.lane.key}
-            label={entry.lane.label ?? "Other"}
+            label={entry.lane.label ?? translate({ message: "Other" })}
             count={settledRowCount(entry.lane.rows, departing)}
             action={sectionAction?.(entry.lane)}
             preferenceKey={preferenceKey(entry.lane)}

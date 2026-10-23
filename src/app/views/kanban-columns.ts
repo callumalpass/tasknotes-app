@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { viewPropertyValue } from "../../domain/view-values";
 import type { TaskViewRow } from "../../domain/view";
 
