@@ -421,7 +421,7 @@ export function ScratchpadScreen({
         return next;
       });
     } catch (reason) {
-      setError(`The note was not deleted. ${message(reason)}`);
+      setError(t`The note was not deleted. ${message(reason)}`);
     } finally {
       setPendingDeletion((current) =>
         current?.id === document.id ? undefined : current,
@@ -615,7 +615,7 @@ export function ScratchpadScreen({
       setError("");
       setStreamNotice(
         plural(files.length, {
-          "=1": "Adding image…",
+          1: "Adding image…",
           other: "Adding # images…",
         }),
       );
@@ -646,7 +646,7 @@ export function ScratchpadScreen({
       setStreamNotice(
         created.length
           ? plural(created.length, {
-              "=1": "Image added",
+              1: "Image added",
               other: "# images added",
             })
           : "",

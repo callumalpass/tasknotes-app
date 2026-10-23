@@ -1063,6 +1063,7 @@ msgid "Cancel confirmation"
 msgstr "取消确认"
 
 #: src/app/views/kanban-view.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Cancelled moving {title}."
 msgstr "已取消移动 {title}。"
 
@@ -3009,6 +3010,7 @@ msgstr "已移动 {0}。"
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
 msgstr "正在移动 {0}。"
 
@@ -4753,6 +4755,10 @@ msgstr "TaskNotes 需要重新启动。"
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "要打开此集合，TaskNotes 需要你再次在 mdbase 中批准访问权限。"
 
+#: src/app/model-setup-screen.tsx
+msgid "TaskNotes setup is unavailable."
+msgstr ""
+
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "TaskNotes 工具"
@@ -4872,6 +4878,11 @@ msgstr "找不到关联的 TaskNote。"
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
 msgstr "菜单仍处于打开状态，可以重试。"
+
+#. placeholder {0}: message(reason)
+#: src/app/scratchpad-screen.tsx
+msgid "The note was not deleted. {0}"
+msgstr ""
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx

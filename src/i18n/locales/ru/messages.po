@@ -1063,6 +1063,7 @@ msgid "Cancel confirmation"
 msgstr "Подтверждение отмены"
 
 #: src/app/views/kanban-view.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Cancelled moving {title}."
 msgstr "Перемещение задачи «{title}» отменено."
 
@@ -3009,6 +3010,7 @@ msgstr "{0} перемещено."
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
 msgstr "Перемещение: {0}."
 
@@ -4753,6 +4755,10 @@ msgstr "Необходимо перезапустить TaskNotes."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "Чтобы открыть эту коллекцию, снова разрешите TaskNotes доступ в mdbase."
 
+#: src/app/model-setup-screen.tsx
+msgid "TaskNotes setup is unavailable."
+msgstr ""
+
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "Инструмент TaskNotes"
@@ -4872,6 +4878,11 @@ msgstr "Связанную задачу TaskNote не удалось найти.
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
 msgstr "Меню осталось открытым, чтобы вы могли повторить попытку."
+
+#. placeholder {0}: message(reason)
+#: src/app/scratchpad-screen.tsx
+msgid "The note was not deleted. {0}"
+msgstr ""
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx

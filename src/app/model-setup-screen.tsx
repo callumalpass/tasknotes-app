@@ -101,7 +101,7 @@ export function ModelSetupScreen({
             ? ""
             : reason instanceof Error
               ? reason.message
-              : "TaskNotes setup is unavailable.",
+              : translate({ message: "TaskNotes setup is unavailable." }),
         );
         if (reason instanceof ModelSetupError) setView(reason.view);
         else {

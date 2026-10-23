@@ -1063,6 +1063,7 @@ msgid "Cancel confirmation"
 msgstr "취소 확인"
 
 #: src/app/views/kanban-view.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Cancelled moving {title}."
 msgstr "{title} 이동을 취소했습니다."
 
@@ -3009,6 +3010,7 @@ msgstr "{0}을(를) 이동했습니다."
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
 msgstr "{0} 이동 중."
 
@@ -4753,6 +4755,10 @@ msgstr "TaskNotes를 다시 시작해야 합니다."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "이 컬렉션을 열려면 mdbase에서 TaskNotes를 다시 승인해야 합니다."
 
+#: src/app/model-setup-screen.tsx
+msgid "TaskNotes setup is unavailable."
+msgstr ""
+
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "TaskNotes 도구"
@@ -4872,6 +4878,11 @@ msgstr "연결된 TaskNote를 찾을 수 없습니다."
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
 msgstr "다시 시도할 수 있도록 메뉴가 계속 열려 있습니다."
+
+#. placeholder {0}: message(reason)
+#: src/app/scratchpad-screen.tsx
+msgid "The note was not deleted. {0}"
+msgstr ""
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx

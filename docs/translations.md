@@ -20,9 +20,11 @@ Settings → Language changes the interface and saves a successful explicit choi
 stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
-**Catalogue scope:** all 1,287 active application messages have agent-authored
-targets in the eight non-English languages. This is not native-speaker certification
-or permission to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
+**Catalogue scope:** 1,292 active application messages. The eight QA-fixed
+translation branches are merged; the follow-up source adds 13 IDs and retires eight
+(11 at `304e167`, then two more exposed by the repaired state-copy guard). These
+13 targets per language remain blank until the coordinator routes translator authoring. This is not native-speaker certification or permission
+to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
 copied into application PO files. The current integration tarball still needs a
 complete, obsolete-free library catalogue refresh: conflicts fail closed and retain
@@ -71,10 +73,20 @@ English fallback.
 The guard covers application, component and i18n UI directories; test fixtures,
 tests and locale data are excluded. Extraction also includes `src/main.tsx`.
 This is a structural guard, not proof that every dependency's copy is translated.
-The app retains contract/source regression tests against the kit's real validators.
-Kit `b4134d71` fixes the old symlink-sensitive bin guard; the temporary app CLI
-adapter has been removed. A regression test ensures the real kit bin executes.
-CI runs the check and rejects generated catalogue drift before its normal gates.
+The app retains contract/source regression tests against the kit's real validators,
+including cardinal/ordinal CLDR categories in all nine locales at 0/1/2/5/11/21/22/101.
+Exact numeric cases, argument names/types, offsets and rich-text tags remain
+contracts; no pound-marker exceptions are allowed. Singular phrases that omit a
+number use `=1` rather than the language-dependent grammatical category `one`.
+
+Kit `b4134d71` fixed the old symlink-sensitive bin guard; the temporary app CLI
+adapter remains removed. Its successor `8785bd19` also follows local React state
+rendered as copy to its initializers/setters, fixing the account-notice blind spot
+(the old guard stopped at every call, including `setNotice`). Regression tests
+reject both direct and conditional unmarked state notices, but accept whole-plural
+messages and opaque state. `i18n:check` now includes the kit's runtime-equivalent
+`--compose` check against public UI, reporting all conflicting IDs and values.
+CI rejects generated catalogue drift before its normal gates.
 
 Browser acceptance uses isolated Playwright contexts, blocked external traffic,
 and app-lane ports. `e2e/i18n.spec.ts` covers local collection controls, data and
@@ -85,9 +97,11 @@ same-deployment lazy chunks. The retired `i18n-pilot` query has no authority.
 
 ## Shared-kit handoff
 
-The app vendors kit `0.1.0-beta.141` from commit `b4134d71` as
-`vendor/mdbase-dev-i18n-0.1.0-beta.141-b4134d71.tgz` (SHA256
-`3cc9e231dd0ea2ef3cbb34112689e7ed227111f30d976ce0f94d6cd991520806`).
+The app adopted and hash-verified kit `b4134d71` (SHA256
+`3cc9e231dd0ea2ef3cbb34112689e7ed227111f30d976ce0f94d6cd991520806`),
+then advanced to its source-guard/composition successor `8785bd19`, same version
+`0.1.0-beta.141`, as `vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz`
+(SHA256 `4eae06666795c7d7e8c24d5eb35ead06686e6f351b3d76d39f2b95f402c91af6`).
 Public UI is vendored from `9041442d` in
 `vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz` (SHA256
 `65b7ab3754fe840e04c0128e00f4b9f81dbbf999e0eb987acf97ee72c6b3b55b`).

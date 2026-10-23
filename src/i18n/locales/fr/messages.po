@@ -1064,6 +1064,7 @@ msgid "Cancel confirmation"
 msgstr "Annuler la confirmation"
 
 #: src/app/views/kanban-view.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Cancelled moving {title}."
 msgstr "Déplacement de {title} annulé."
 
@@ -3010,6 +3011,7 @@ msgstr "Déplacement de {0}."
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
 msgstr "Déplacement de {0} en cours."
 
@@ -4754,6 +4756,10 @@ msgstr "TaskNotes doit redémarrer."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "TaskNotes a de nouveau besoin de votre autorisation dans mdbase pour ouvrir cette collection."
 
+#: src/app/model-setup-screen.tsx
+msgid "TaskNotes setup is unavailable."
+msgstr ""
+
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "Outil TaskNotes"
@@ -4873,6 +4879,11 @@ msgstr "La note de tâche liée est introuvable."
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
 msgstr "Le menu reste ouvert pour vous permettre de réessayer."
+
+#. placeholder {0}: message(reason)
+#: src/app/scratchpad-screen.tsx
+msgid "The note was not deleted. {0}"
+msgstr ""
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx

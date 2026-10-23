@@ -174,23 +174,23 @@ export function recurrenceRuleSummary(draft: RecurrenceRuleDraft): string {
   let summary: string;
   switch (draft.frequency) {
     case "DAILY":
-      summary = plural(interval, { "=1": "Every day", other: "Every # days" });
+      summary = plural(interval, { 1: "Every day", other: "Every # days" });
       break;
     case "WEEKLY":
       summary = plural(interval, {
-        "=1": "Every week",
+        1: "Every week",
         other: "Every # weeks",
       });
       break;
     case "MONTHLY":
       summary = plural(interval, {
-        "=1": "Every month",
+        1: "Every month",
         other: "Every # months",
       });
       break;
     case "YEARLY":
       summary = plural(interval, {
-        "=1": "Every year",
+        1: "Every year",
         other: "Every # years",
       });
       break;

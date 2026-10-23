@@ -1063,6 +1063,7 @@ msgid "Cancel confirmation"
 msgstr "Bestätigung abbrechen"
 
 #: src/app/views/kanban-view.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Cancelled moving {title}."
 msgstr "Verschieben von {title} abgebrochen."
 
@@ -3009,6 +3010,7 @@ msgstr "{0} verschoben."
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
+#: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
 msgstr "{0} wird verschoben."
 
@@ -4753,6 +4755,10 @@ msgstr "TaskNotes muss neu gestartet werden."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "TaskNotes benötigt erneut Ihre Genehmigung in mdbase, bevor es diese Sammlung öffnen kann."
 
+#: src/app/model-setup-screen.tsx
+msgid "TaskNotes setup is unavailable."
+msgstr ""
+
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "TaskNotes-Werkzeug"
@@ -4872,6 +4878,11 @@ msgstr "Die verknüpfte TaskNote konnte nicht gefunden werden."
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
 msgstr "Das Menü ist noch geöffnet. Sie können es erneut versuchen."
+
+#. placeholder {0}: message(reason)
+#: src/app/scratchpad-screen.tsx
+msgid "The note was not deleted. {0}"
+msgstr ""
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx

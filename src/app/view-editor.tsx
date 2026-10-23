@@ -372,7 +372,7 @@ export function ViewEditor({
         </footer>
         {confirmation ? (
           <ViewEditorConfirmation
-            action={confirmation}
+            kind={confirmation}
             busy={status !== "ready"}
             containerRef={confirmationRef}
             name={draft?.name || view?.name || t`this view`}
@@ -430,14 +430,14 @@ function previewLabel(preview: ViewDraftPreview): string {
 }
 
 function ViewEditorConfirmation({
-  action,
+  kind,
   busy,
   containerRef,
   name,
   onCancel,
   onConfirm,
 }: {
-  action: "discard" | "delete";
+  kind: "discard" | "delete";
   busy: boolean;
   containerRef: RefObject<HTMLElement | null>;
   name: string;
@@ -445,7 +445,7 @@ function ViewEditorConfirmation({
   onConfirm(): void;
 }) {
   const { t } = useLingui();
-  const deleting = action === "delete";
+  const deleting = kind === "delete";
   return (
     <div className="view-editor-confirmation-layer">
       <button

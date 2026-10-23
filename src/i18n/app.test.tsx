@@ -178,18 +178,56 @@ describe("application localization", () => {
 
   it.each([
     {
+      locale: "en",
+      expected: [
+        "0 tasks",
+        "1 task",
+        "2 tasks",
+        "5 tasks",
+        "11 tasks",
+        "21 tasks",
+        "22 tasks",
+        "101 tasks",
+      ],
+    },
+    {
+      locale: "fr",
+      expected: [
+        "0 tâches",
+        "1 tâche",
+        "2 tâches",
+        "5 tâches",
+        "11 tâches",
+        "21 tâches",
+        "22 tâches",
+        "101 tâches",
+      ],
+    },
+    {
       locale: "de",
       expected: [
         "0 Aufgaben",
         "1 Aufgabe",
         "2 Aufgaben",
         "5 Aufgaben",
+        "11 Aufgaben",
         "21 Aufgaben",
+        "22 Aufgaben",
+        "101 Aufgaben",
       ],
     },
     {
       locale: "es",
-      expected: ["0 tareas", "1 tarea", "2 tareas", "5 tareas", "21 tareas"],
+      expected: [
+        "0 tareas",
+        "1 tarea",
+        "2 tareas",
+        "5 tareas",
+        "11 tareas",
+        "21 tareas",
+        "22 tareas",
+        "101 tareas",
+      ],
     },
     {
       locale: "ja",
@@ -198,12 +236,24 @@ describe("application localization", () => {
         "タスク1件",
         "タスク2件",
         "タスク5件",
+        "タスク11件",
         "タスク21件",
+        "タスク22件",
+        "タスク101件",
       ],
     },
     {
       locale: "ko",
-      expected: ["작업 0개", "작업 1개", "작업 2개", "작업 5개", "작업 21개"],
+      expected: [
+        "작업 0개",
+        "작업 1개",
+        "작업 2개",
+        "작업 5개",
+        "작업 11개",
+        "작업 21개",
+        "작업 22개",
+        "작업 101개",
+      ],
     },
     {
       locale: "pt",
@@ -212,23 +262,44 @@ describe("application localization", () => {
         "1 tarefa",
         "2 tarefas",
         "5 tarefas",
+        "11 tarefas",
         "21 tarefas",
+        "22 tarefas",
+        "101 tarefas",
       ],
     },
     {
       locale: "ru",
-      expected: ["0 задач", "1 задача", "2 задачи", "5 задач", "21 задача"],
+      expected: [
+        "0 задач",
+        "1 задача",
+        "2 задачи",
+        "5 задач",
+        "11 задач",
+        "21 задача",
+        "22 задачи",
+        "101 задача",
+      ],
     },
     {
       locale: "zh",
-      expected: ["0 个任务", "1 个任务", "2 个任务", "5 个任务", "21 个任务"],
+      expected: [
+        "0 个任务",
+        "1 个任务",
+        "2 个任务",
+        "5 个任务",
+        "11 个任务",
+        "21 个任务",
+        "22 个任务",
+        "101 个任务",
+      ],
     },
   ])(
-    "renders authored zero/one/few/many counts in $locale",
+    "renders authored 0/1/2/5/11/21/22/101 counts in $locale",
     async ({ locale, expected }) => {
       await activateAppLocale(locale as Locale);
       expect(
-        [0, 1, 2, 5, 21].map((count) => countLabel(count, "task")),
+        [0, 1, 2, 5, 11, 21, 22, 101].map((count) => countLabel(count, "task")),
       ).toEqual(expected);
     },
   );
@@ -315,6 +386,17 @@ describe("application localization", () => {
     );
     expect(draft.weekdays).toEqual(["MO", "WE"]);
   });
+
+  it.each([2, 3, 11, 21, 22, 31])(
+    "describes BYMONTHDAY=-%i as an inclusive ordinal from month end",
+    (count) => {
+      const draft = parseRecurrenceRule(`FREQ=MONTHLY;BYMONTHDAY=-${count}`);
+      expect(recurrenceRuleSummary(draft)).toBe(
+        `Every month on the ${ordinal(count)}-to-last day of the month`,
+      );
+      expect(draft.monthDay).toBe(-count);
+    },
+  );
 
   it("renders French field, recurrence, date and editor copy while preserving syntax", async () => {
     await activateAppLocale("fr");

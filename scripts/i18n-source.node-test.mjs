@@ -29,6 +29,16 @@ for (const [name, source, kind] of [
     "unmarked visible interpolation",
   ],
   [
+    "notice stored in rendered state",
+    'function Panel() { const [notice, setNotice] = useState(null); function done() { setNotice(`Account unlocked. ${count} private collections still need key access.`); } return <p role="status">{notice}</p> }',
+    "unmarked visible interpolation",
+  ],
+  [
+    "conditional notice stored in rendered state",
+    'function Panel() { const [notice, setNotice] = useState(null); function done() { setNotice(complete ? "Complete" : `Strict mode is pending in ${count} recovery targets.`); } return <>{notice ? <p>{notice}</p> : null}</> }',
+    "unmarked visible interpolation",
+  ],
+  [
     "identifier comparison",
     'function handle() { return kind === t({message:"task"}) }',
     "translation in control-flow comparison",
@@ -105,6 +115,14 @@ for (const [name, source] of [
     'function Panel() { return <input id="task-title" type="text" className="form-field" /> }',
   ],
   ["user content", "function Panel() { return <span>{task.title}</span> }"],
+  [
+    "marked whole-plural notice stored in state",
+    'function Panel() { const [notice, setNotice] = useState(null); function done() { setNotice(plural(count, { one: "# target remains", other: "# targets remain" })); } return <p>{notice}</p> }',
+  ],
+  [
+    "opaque state not rendered as copy",
+    'function Panel() { const [mode, setMode] = useState("unlock"); function done() { setMode("change_password"); } return <input value={mode} /> }',
+  ],
   [
     "translation alias",
     "function Panel() { return <button aria-label={translate`Save ${title}`} /> }",

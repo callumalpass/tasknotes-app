@@ -501,7 +501,7 @@ function ManualTaskRows({
     };
     draggingRef.current = active;
     setDragging(active);
-    setAnnouncement(`Moving ${row.task.title}.`);
+    setAnnouncement(t`Moving ${row.task.title}.`);
     // The dragged row moves through the list as its own placeholder, and
     // React may re-insert or remount it, which drops pointer capture; the
     // rest of the gesture is followed on the window instead.
@@ -522,7 +522,8 @@ function ManualTaskRows({
       if (event.key !== "Escape") return;
       event.preventDefault();
       live.current.clearDrag();
-      setAnnouncement(`Cancelled moving ${row.task.title}.`);
+      const title = row.task.title;
+      setAnnouncement(t`Cancelled moving ${title}.`);
     };
     windowListeners.current?.();
     window.addEventListener("pointermove", move);

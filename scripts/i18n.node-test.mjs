@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { formatter } from "@lingui/format-po";
+import { setupI18n } from "@lingui/core";
+import { compileMessageOrThrow } from "@lingui/message-utils/compileMessage";
 import { generateMessageId } from "@lingui/message-utils/generateMessageId";
 import {
   assertCompleteCatalogue,
@@ -116,6 +118,108 @@ test("select cases, exact zero and pound markers cannot disappear", () => {
       "{count, plural, other {# 件のタスク}}",
       "ja",
     ),
+  );
+});
+
+for (const locale of locales) {
+  for (const type of ["cardinal", "ordinal"]) {
+    test(`${locale} ${type} contracts follow CLDR, not English case sets`, () => {
+      const formattingLocale = locale === "pt" ? "pt-BR" : locale;
+      const categories = new Intl.PluralRules(formattingLocale, {
+        type,
+      }).resolvedOptions().pluralCategories;
+      const selector = type === "ordinal" ? "selectordinal" : "plural";
+      const source =
+        type === "ordinal"
+          ? "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+          : "{count, plural, =0 {none} one {# item} other {# items}}";
+      // These are structural numeric fixtures, not authored catalogue copy.
+      const target = `{count, ${selector}, ${type === "cardinal" ? "=0 {none} " : ""}${categories.map((key) => `${key} {# ${key}}`).join(" ")}}`;
+      assert.doesNotThrow(() => assertMessageContract(source, target, locale));
+      const runtime = setupI18n({
+        locale,
+        messages: { [locale]: { fixture: compileMessageOrThrow(target) } },
+      });
+      const rules = new Intl.PluralRules(formattingLocale, { type });
+      for (const count of [0, 1, 2, 5, 11, 21, 22, 101]) {
+        assert.equal(
+          runtime._("fixture", { count }),
+          type === "cardinal" && count === 0
+            ? "none"
+            : `${new Intl.NumberFormat(locale).format(count)} ${rules.select(count)}`,
+        );
+      }
+      const unsupported = ["zero", "one", "two", "few", "many"].find(
+        (key) => !categories.includes(key),
+      );
+      assert.ok(unsupported);
+      const invalid = `{count, ${selector}, ${unsupported} {#} other {#}}`;
+      assert.throws(
+        () =>
+          assertMessageContract(
+            "{count, " + selector + ", other {#}}",
+            invalid,
+            locale,
+          ),
+        /Invalid plural category/,
+      );
+    });
+  }
+}
+
+test("exact singular is distinct from grammatical one at 21 and 101", () => {
+  const source = "{interval, plural, =1 {Every day} other {Every # days}}";
+  const target =
+    "{interval, plural, =1 {Каждый день} one {Раз в # день} few {Раз в # дня} many {Раз в # дней} other {Раз в # дня}}";
+  assert.doesNotThrow(() => assertMessageContract(source, target, "ru"));
+  assert.throws(
+    () =>
+      assertMessageContract(
+        source,
+        target.replace("=1 {Каждый день} ", ""),
+        "ru",
+      ),
+    /exact numeric cases/,
+  );
+  assert.throws(
+    () => assertMessageContract(source, target.replace("=1", "=2"), "ru"),
+    /exact numeric cases/,
+  );
+  assert.throws(
+    () =>
+      assertMessageContract(
+        source,
+        target.replace("one {Раз в # день}", "one {Каждый день}"),
+        "ru",
+      ),
+    /pound markers/,
+  );
+  assert.throws(
+    () =>
+      assertMessageContract(
+        "{count, plural, =0 {# items} other {# items}}",
+        "{count, plural, =0 {none} other {#}}",
+        "en",
+      ),
+    /pound markers/,
+  );
+  assert.throws(
+    () =>
+      assertMessageContract(
+        "{count, plural, offset:1 other {#}}",
+        "{count, plural, other {#}}",
+        "en",
+      ),
+    /offset/,
+  );
+  assert.throws(
+    () =>
+      assertMessageContract(
+        "{count, plural, other {#}}",
+        "{count, selectordinal, other {#}}",
+        "en",
+      ),
+    /argument names\/types/,
   );
 });
 
