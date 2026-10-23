@@ -853,9 +853,6 @@ export class TaskNotesTaskModel {
         this.config.storeTitleInFilename,
         this.config.userFields,
       ),
-      ...(info.projects?.length === 0
-        ? { [this.config.fieldMapping.projects]: [] }
-        : {}),
       // The model omits empty reminders, but a Connect patch must retain []:
       // removing the property becomes null, which the array schema rejects.
       ...(info.reminders?.length === 0

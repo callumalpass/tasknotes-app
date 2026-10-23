@@ -39,16 +39,6 @@ describe("TaskNotes task model app boundary", () => {
     expect(task.projects).toEqual([]);
   });
 
-  it("clears projects with an array rather than a null-producing removal", () => {
-    const task = model.create(
-      { title: "Work task", projects: ["Work"] },
-      { id: "work-task" },
-    );
-    expect(model.update(task, { projects: [] }).frontmatter.projects).toEqual(
-      [],
-    );
-  });
-
   it("persists the first planned date for a due-only repeating task", () => {
     const task = model.create(
       {
