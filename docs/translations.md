@@ -20,11 +20,13 @@ Settings → Language changes the interface and saves a successful explicit choi
 stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
-**Integration state:** the nine-locale runtime is implemented, but complete authored
-catalogues and their final mechanical/browser gates are still pending. Compiled
-fallback output is not evidence of a complete translation or permission to release.
-Shared library catalogues must be composed from their own `/i18n` exports when the
-coordinated library packages are available, not copied into application PO files.
+**Catalogue scope:** all 1,287 active application messages have agent-authored
+targets in the eight non-English languages. This is not native-speaker certification
+or permission to release. The existing `@mdbase-dev/ui` pin does not yet export its
+coordinated library catalogues: compose its own `/i18n` source through the kit's
+`libraries` option when that package is available, rather than copying library UI
+into application PO files. Complete shared-library translation remains a product
+release gate.
 
 ## Authoring
 
@@ -60,9 +62,10 @@ before fallback**; generated IDs; ICU/rich-text contracts; strict compilation;
 and the source guard. Missing, fuzzy or untranslated English-placeholder entries
 fail. Legitimate identical vocabulary, format skeletons, product names and paths
 need a reviewed generated-ID entry in `i18n-policy.json` for each target locale.
-The current French allowlist preserves genuinely shared vocabulary (for example
-Collection, Date, Notes), prelocalized formatting skeletons, literal paths and
-identifiers. It does not permit arbitrary English fallback.
+The per-language allowlists preserve genuinely shared vocabulary (for example
+French Collection/Date/Notes, German Status/Tags, Spanish Agenda/No), product names,
+formatting skeletons, literal paths and identifiers. They do not permit arbitrary
+English fallback.
 
 The guard covers application, component and i18n UI directories; test fixtures,
 tests and locale data are excluded. Extraction also includes `src/main.tsx`.

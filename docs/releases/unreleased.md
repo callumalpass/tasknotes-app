@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add a persistent App language setting for English, French, German, Spanish, Japanese, Korean, Brazilian Portuguese, Russian, and Simplified Chinese. The interface starts in the best supported device language unless you choose another language.
+
 - Include the current Settings, keyboard commands, account recovery, and save-status messages in app translations.
 
 - Keep a reviewed collection setup working when another tab opens the same setup review. If the changes differ, show the new review for confirmation instead of reporting that the collection was deleted.
