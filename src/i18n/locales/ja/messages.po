@@ -4620,214 +4620,213 @@ msgstr "「{0}」を使用"
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx
 msgid "Use template{0}"
-msgstr "Utiliser le modèle{0}"
+msgstr "テンプレート{0}を使用"
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured due field."
-msgstr "Utiliser le champ d’échéance configuré."
+msgstr "設定済みの期限フィールドを使用します。"
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured scheduled field."
-msgstr "Utiliser le champ de date planifiée configuré."
+msgstr "設定済みの予定日フィールドを使用します。"
 
 #: src/app/task-screen.tsx
 msgid "Use the occurrence actions above to change this state."
-msgstr "Utilisez les actions d’occurrence ci-dessus pour modifier cet état."
+msgstr "この状態を変更するには、上の発生分の操作を使用してください。"
 
 #: src/components/task-model-settings.tsx
 msgid "Use the task template for new tasks"
-msgstr "Utiliser le modèle de tâche pour les nouvelles tâches"
+msgstr "新しいタスクにタスクテンプレートを使用"
 
 #: src/components/recurrence-field.tsx
 msgid "Use visual editor"
-msgstr "Utiliser l’éditeur visuel"
+msgstr "ビジュアルエディターを使用"
 
 #: src/components/expression-builder.tsx
 msgid "Value"
-msgstr "Valeur"
+msgstr "値"
 
 #: src/app/more-screen.tsx
 msgid "Version {__APP_VERSION__}"
-msgstr "Version {__APP_VERSION__}"
+msgstr "バージョン {__APP_VERSION__}"
 
 #: src/app/view-editor-form.tsx
 msgid "View details"
-msgstr "Détails de la vue"
+msgstr "詳細を表示"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"
-msgstr "Nom de la vue"
+msgstr "ビュー名"
 
 #: src/components/view-options.tsx
 msgid "View options"
-msgstr "Options de la vue"
+msgstr "ビューのオプション"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Views"
-msgstr "Vues"
+msgstr "ビュー"
 
 #: src/app/views/view-catalog.tsx
 msgid "Views stored in your collection"
-msgstr "Vues stockées dans votre collection"
+msgstr "コレクションに保存されたビュー"
 
 #: src/components/task-model-settings.tsx
 msgid "Virtual occurrences"
-msgstr "Occurrences virtuelles"
+msgstr "仮想的な発生分"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
-msgstr "L’édition visuelle est indisponible car cette règle utilise {0}."
+msgstr "このルールは{0}を使用しているため、ビジュアル編集は利用できません。"
 
 #: src/app/cloud-collection.tsx
 msgid "Waiting to check the exact saved request."
-msgstr "En attente de vérification de la requête enregistrée à l’identique."
+msgstr "保存済みの要求の正確な結果を確認するまで待機中です。"
 
 #: src/app/task-screen.tsx
 msgid "Website, Home"
-msgstr "Site web, Maison"
+msgstr "ウェブサイト、ホーム"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Week"
-msgstr "Semaine"
+msgstr "週"
 
 #: src/components/calendar-preferences.tsx
 msgid "Week starts"
-msgstr "Début de la semaine"
+msgstr "週の開始"
 
 #: src/components/recurrence-field.tsx
 msgid "Weekday"
-msgstr "Jour de semaine"
+msgstr "曜日"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekdays"
-msgstr "Du lundi au vendredi"
+msgstr "平日"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekly"
-msgstr "Toutes les semaines"
+msgstr "毎週"
 
 #: src/components/duration-field.tsx
 msgid "Weeks"
-msgstr "Semaines"
+msgstr "週"
 
 #: src/app/cloud-collection.tsx
 msgid "Welcome back"
-msgstr "Heureux de vous retrouver"
+msgstr "おかえりなさい"
 
 #: src/app/task-time-tracking.tsx
 msgid "What are you working on?"
-msgstr "Sur quoi travaillez-vous ?"
+msgstr "何に取り組んでいますか？"
 
 #: src/app/cloud-collection.tsx
 msgid "What is mdbase?"
-msgstr "Qu’est-ce que mdbase ?"
+msgstr "mdbaseとは何ですか？"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "What needs doing?"
-msgstr "Que faut-il faire ?"
+msgstr "何をする必要がありますか？"
 
 #: src/app/task-screen.tsx
 msgid "When I choose"
-msgstr "Quand je choisis"
+msgstr "選択したとき"
 
 #: src/app/more-screen.tsx
 msgid "Where are my tasks saved?"
-msgstr "Où sont enregistrées mes tâches ?"
+msgstr "タスクはどこに保存されますか？"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr "Position"
+msgstr "どれ"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr "Wikilink"
+msgstr "ウィキリンク"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr "Wikilinks"
+msgstr "ウィキリンク"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
-msgstr "Session de travail"
+msgstr "作業セッション"
 
 #: src/app/task-screen.tsx
 msgid "work, important"
-msgstr "travail, important"
+msgstr "仕事、重要"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
-msgstr "Écrire"
+msgstr "書く"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
-msgstr "Outils d’écriture"
+msgstr "執筆ツール"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"
-msgstr "Tous les ans"
+msgstr "毎年"
 
 #: src/i18n/view-presentation.ts
 msgid "Yes"
-msgstr "Oui"
+msgstr "はい"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Collection above to open another mdbase collection. Changing collections does not move records between them."
-msgstr "Oui. Utilisez « Collection » ci-dessus pour ouvrir une autre collection mdbase. Changer de collection ne déplace pas les documents entre elles."
+msgstr "はい。上の「コレクション」から別のmdbaseコレクションを開けます。コレクションを変更してもレコードは移動しません。"
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
-msgstr "Hier"
+msgstr "昨日"
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
-msgstr "Vous avez terminé pour aujourd’hui."
+msgstr "今日はこれで完了です。"
 
 #: src/components/task-attachments.tsx
 msgid "Your browser blocked the image window. Allow pop-ups and try again."
-msgstr "Votre navigateur a bloqué la fenêtre de l’image. Autorisez les fenêtres contextuelles et réessayez."
+msgstr "ブラウザーが画像ウィンドウをブロックしました。ポップアップを許可して、もう一度お試しください。"
 
 #: src/app/view-editor.tsx
 msgid "Your changes to this view have not been saved."
-msgstr "Vos modifications de cette vue n’ont pas été enregistrées."
+msgstr "このビューへの変更はまだ保存されていません。"
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
-msgstr "Votre collection n’a pas été supprimée. Redémarrez l’application pour rouvrir vos tâches."
+msgstr "コレクションは削除されていません。タスクを再度開くにはアプリを再起動してください。"
 
 #: src/app/app-shell.tsx
 msgid "Your connection has expired. Reconnect to continue."
-msgstr "Votre connexion a expiré. Reconnectez-vous pour continuer."
+msgstr "接続の有効期限が切れました。続けるには再接続してください。"
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr "Votre brouillon est toujours ici. Vérifiez-le et réessayez."
+msgstr "下書きはまだここにあります。内容を確認して、もう一度お試しください。"
 
 #. placeholder {0}: people.error.message
 #: src/app/search-screen.tsx
 msgid "Your person identity could not be loaded. {0}"
-msgstr "Impossible de charger votre identité de personne. {0}"
+msgstr "人物の識別情報を読み込めませんでした。{0}"
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr "Votre document de personne doit être corrigé avant de filtrer les tâches : {0}."
+msgstr "タスクを絞り込む前に人物レコードを修正してください：{0}。"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr "Votre barre latérale, dans l’ordre.{0}"
+msgstr "順序付きサイドバー。{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
-msgstr "Vos choix non enregistrés sont toujours ici. Vérifiez-les et réessayez."
-
+msgstr "未保存の選択内容はまだ残っています。確認して再試行してください。"
