@@ -2494,37 +2494,37 @@ msgstr "Links Markdown"
 
 #: src/app/task-screen.tsx
 msgid "Markdown record"
-msgstr "Document Markdown"
+msgstr "Registro Markdown"
 
 #: src/i18n/editor-phrases.ts
 msgid "match case"
-msgstr "respecter la casse"
+msgstr "diferenciar maiúsculas de minúsculas"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
-msgstr "Mode de correspondance"
+msgstr "Modo de correspondência"
 
 #. placeholder {0}: matches.join(", ")
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
-msgstr "Correspondance dans : {0}"
+msgstr "Correspondência em {0}"
 
 #: src/app/collection-settings.tsx
 msgid "mdbase collection"
-msgstr "Collection mdbase"
+msgstr "Coleção mdbase"
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-msgstr "mdbase envoie les rappels même quand TaskNotes est fermé. Les notifications ne contiennent jamais le contenu des tâches."
+msgstr "mdbase envia lembretes enquanto o TaskNotes está fechado. As notificações nunca incluem o conteúdo das tarefas."
 
 #: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase est la source de référence. Les modifications nécessitent une connexion."
+msgstr "mdbase é a fonte de verdade. As alterações exigem uma conexão."
 
 #: src/app/cloud-collection.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. mdbase Connect lets you choose a collection and approve TaskNotes’ access—whether it’s hosted by mdbase or available from a connected computer."
-msgstr "mdbase conserve vos tâches dans des fichiers Markdown portables et permet aux applications compatibles de les comprendre de la même manière. mdbase Connect vous permet de choisir une collection et d’approuver l’accès de TaskNotes, qu’elle soit hébergée par mdbase ou accessible depuis un ordinateur connecté."
+msgstr "mdbase mantém suas tarefas como arquivos Markdown portáteis e permite que aplicativos compatíveis as compreendam de forma compartilhada. O mdbase Connect permite escolher uma coleção e aprovar o acesso do TaskNotes, seja ela hospedada pelo mdbase ou disponível em um computador conectado."
 
 #: src/app/more-screen.tsx
 msgid "mdbase v0.3"
@@ -2532,11 +2532,11 @@ msgstr "mdbase v0.3"
 
 #: src/app/cloud-collection.tsx
 msgid "mdbase will open so you can choose a collection and approve access."
-msgstr "mdbase va s’ouvrir pour vous permettre de choisir une collection et d’approuver l’accès."
+msgstr "O mdbase será aberto para que você escolha uma coleção e aprove o acesso."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
-msgstr "Minuit"
+msgstr "Meia-noite"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
@@ -2544,111 +2544,111 @@ msgstr "min"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
-msgstr "Mini-calendrier"
+msgstr "Mini calendário"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Minute"
-msgstr "Minute"
+msgstr "Minuto"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "Minutos"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr "Mois"
+msgstr "Mês"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Monthly"
-msgstr "Tous les mois"
+msgstr "Mensal"
 
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
-msgstr "Autres actions pour {0}"
+msgstr "Mais ações para {0}"
 
 #: src/components/task-actions.tsx
 msgid "More task actions"
-msgstr "Autres actions de tâche"
+msgstr "Mais ações da tarefa"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
-msgstr "déplacer"
+msgstr "mover"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move"
-msgstr "Déplacer"
+msgstr "Mover"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
-msgstr "Déplacer {0}"
+msgstr "Mover {0}"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
-msgstr "Remonter {0}"
+msgstr "Mover {0} para antes"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} later"
-msgstr "Descendre {0}"
+msgstr "Mover {0} para depois"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0}. Drag, or use up and down arrow keys."
-msgstr "Déplacer {0}. Faites glisser ou utilisez les flèches haut et bas."
+msgstr "Mover {0}. Arraste ou use as teclas de seta para cima e para baixo."
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} down"
-msgstr "Descendre {label}"
+msgstr "Mover {label} para baixo"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} up"
-msgstr "Remonter {label}"
+msgstr "Mover {label} para cima"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into the archive folder"
-msgstr "Déplacer les fichiers des tâches archivées dans le dossier d’archives"
+msgstr "Mover arquivos de tarefas arquivadas para a pasta de arquivo"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
-msgstr "Décaler les dates d’un jour"
+msgstr "Mover datas um dia para depois"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
-msgstr "Déplacer l’élément actif"
+msgstr "Mover item em foco"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
-msgstr "Placez « Ordre manuel » en première position pour activer les poignées de déplacement."
+msgstr "Mova Ordem manual para a primeira posição para ativar as alças de arraste."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
-msgstr "Déplacement de {0} {1}."
+msgstr "{0} movido {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} after {1}."
-msgstr "Déplacement de {0} après {1}."
+msgstr "{0} movido para depois de {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} before {1}."
-msgstr "Déplacement de {0} avant {1}."
+msgstr "{0} movido para antes de {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} down."
-msgstr "Déplacement de {0} vers le bas."
+msgstr "{0} movido para baixo."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
@@ -2656,17 +2656,17 @@ msgstr "Déplacement de {0} vers le bas."
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
-msgstr "Déplacement de {0} vers {1}."
+msgstr "{0} movido para {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
-msgstr "Déplacement de {0} vers le haut."
+msgstr "{0} movido para cima."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
-msgstr "Déplacement de {0}."
+msgstr "{0} movido."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
@@ -2674,325 +2674,325 @@ msgstr "Déplacement de {0}."
 #: src/app/views/navigation-view-order.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
-msgstr "Déplacement de {0} en cours."
+msgstr "Movendo {0}."
 
 #: src/app/view-editor-form.tsx
 #: src/i18n/view-presentation.ts
 msgid "Name"
-msgstr "Nom"
+msgstr "Nome"
 
 #: src/app/view-editor-form.tsx
 msgid "Name this view and choose its layout."
-msgstr "Nommez cette vue et choisissez sa disposition."
+msgstr "Dê um nome a esta visualização e escolha o layout."
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
-msgstr "Groupe imbriqué"
+msgstr "Grupo aninhado"
 
 #: src/components/expression-builder.tsx
 msgid "Nested match mode"
-msgstr "Mode de correspondance imbriqué"
+msgstr "Modo de correspondência aninhada"
 
 #: src/components/recurrence-field.tsx
 msgid "Never"
-msgstr "Jamais"
+msgstr "Nunca"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
-msgstr "Nouvelle note"
+msgstr "Nova nota"
 
 #: src/components/task-model-settings.tsx
 msgid "New recurring tasks"
-msgstr "Nouvelles tâches récurrentes"
+msgstr "Novas tarefas recorrentes"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
-msgstr "Nouvelle sous-tâche"
+msgstr "Nova subtarefa"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
-msgstr "Nouvelle tâche"
+msgstr "Nova tarefa"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr "Titre de la nouvelle tâche"
+msgstr "Novo título da tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "New tasks"
-msgstr "Nouvelles tâches"
+msgstr "Novas tarefas"
 
 #: src/app/view-editor.tsx
 msgid "New view"
-msgstr "Nouvelle vue"
+msgstr "Nova visualização"
 
 #: src/i18n/editor-phrases.ts
 msgid "next"
-msgstr "suivant"
+msgstr "próxima"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
-msgstr "Mois suivant"
+msgstr "Próximo mês"
 
 #: src/app/full-calendar-view.tsx
 msgid "Next period"
-msgstr "Période suivante"
+msgstr "Próximo período"
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
 msgid "Next: {0}"
-msgstr "Prochaines dates : {0}"
+msgstr "Próximo: {0}"
 
 #: src/i18n/view-presentation.ts
 msgid "No"
-msgstr "Non"
+msgstr "Não"
 
 #: src/i18n/view-presentation.ts
 msgid "No {label}"
-msgstr "Sans {label}"
+msgstr "Sem {label}"
 
 #: src/app/views/projects-view.tsx
 msgid "No active projects"
-msgstr "Aucun projet actif"
+msgstr "Nenhum projeto ativo"
 
 #: src/app/view-empty-state.tsx
 msgid "No archived tasks here."
-msgstr "Aucune tâche archivée ici."
+msgstr "Não há tarefas arquivadas aqui."
 
 #: src/app/view-empty-state.tsx
 msgid "No cached tasks for this view."
-msgstr "Aucune tâche en cache pour cette vue."
+msgstr "Não há tarefas em cache para esta visualização."
 
 #: src/app/collection-picker.tsx
 msgid "No collections are connected to TaskNotes on this device yet."
-msgstr "Aucune collection n’est encore connectée à TaskNotes sur cet appareil."
+msgstr "Ainda não há coleções conectadas ao TaskNotes neste dispositivo."
 
 #: src/app/view-editor-form.tsx
 msgid "No computed properties."
-msgstr "Aucune propriété calculée."
+msgstr "Não há propriedades calculadas."
 
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
-msgstr "Aucune date"
+msgstr "Sem data"
 
 #: src/app/task-screen.tsx
 msgid "No dates"
-msgstr "Aucune date"
+msgstr "Sem datas"
 
 #: src/app/view-editor-form.tsx
 msgid "No formulas"
-msgstr "Aucune formule"
+msgstr "Sem fórmulas"
 
 #: src/app/view-editor-form.tsx
 msgid "No grouping"
-msgstr "Aucun regroupement"
+msgstr "Sem agrupamento"
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
-msgstr "Aucune tâche correspondante ne vous est assignée."
+msgstr "Nenhuma tarefa correspondente atribuída a você."
 
 #: src/app/views/view-catalog.tsx
 msgid "No matching views"
-msgstr "Aucune vue correspondante"
+msgstr "Nenhuma visualização correspondente"
 
 #: src/components/assignee-editor.tsx
 msgid "No other people are available to assign."
-msgstr "Aucune autre personne n’est disponible pour l’assignation."
+msgstr "Não há outras pessoas disponíveis para atribuição."
 
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
-msgstr "Sans priorité"
+msgstr "Sem prioridade"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
-msgstr "Aucune projection"
+msgstr "Sem projeções"
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
-msgstr "Aucun rappel défini."
+msgstr "Nenhum lembrete definido."
 
 #: src/app/task-editor-draft.ts
 msgid "No repeat or reminder"
-msgstr "Aucune répétition ni aucun rappel"
+msgstr "Sem repetição ou lembrete"
 
 #: src/app/views/kanban-columns.ts
 msgid "No status"
-msgstr "Sans statut"
+msgstr "Sem status"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
-msgstr "Aucune tâche sur cette période."
+msgstr "Nenhuma tarefa neste período."
 
 #: src/app/view-editor.tsx
 msgid "No tasks match this draft."
-msgstr "Aucune tâche ne correspond à ce brouillon."
+msgstr "Nenhuma tarefa corresponde a este rascunho."
 
 #: src/app/view-empty-state.tsx
 msgid "No tasks match this view"
-msgstr "Aucune tâche ne correspond à cette vue"
+msgstr "Nenhuma tarefa corresponde a esta visualização"
 
 #: src/app/search-screen.tsx
 msgid "No tasks matched."
-msgstr "Aucune tâche correspondante."
+msgstr "Nenhuma tarefa correspondente."
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
-msgstr "Aucune tâche ce jour-là. Utilisez « Ajouter une tâche » pour en planifier une."
+msgstr "Nenhuma tarefa neste dia. Use Adicionar tarefa para agendar uma."
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
-msgstr "Aucune date à venir dans ce schéma de récurrence."
+msgstr "Não há próximas datas neste padrão."
 
 #: src/app/view-empty-state.tsx
 msgid "No upcoming tasks here."
-msgstr "Aucune tâche à venir ici."
+msgstr "Não há próximas tarefas aqui."
 
 #: src/app/task-screen.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
-msgstr "Aucune valeur"
+msgstr "Nenhum valor"
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "Non. TaskNotes lit et modifie directement la collection mdbase de référence. Les collections hébergées nécessitent une connexion réseau ; une collection sur ordinateur nécessite aussi que cet ordinateur soit joignable."
+msgstr "Não. O TaskNotes lê e grava diretamente na coleção mdbase autoritativa. Coleções hospedadas precisam de conexão com a internet; uma coleção em computador também exige que esse computador esteja acessível."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
-msgstr "Aucun"
+msgstr "Nenhum"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
-msgstr "Indisponibles dans ce navigateur"
+msgstr "Indisponível neste navegador"
 
 #: src/app/more-screen.tsx
 msgid "Not in the demo"
-msgstr "Pas dans la démo"
+msgstr "Não está disponível na demonstração"
 
 #: src/app/cloud-collection.tsx
 msgid "not installed"
-msgstr "non installé"
+msgstr "não instalado"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Not now"
-msgstr "Pas maintenant"
+msgstr "Agora não"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Not saved"
-msgstr "Non enregistré"
+msgstr "Não salvo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
-msgstr "Note"
+msgstr "Nota"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
-msgstr "Titre de la note"
+msgstr "Título da nota"
 
 #: src/app/search-match-context.ts
 msgid "notes"
-msgstr "notes"
+msgstr "notas"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
-msgstr "Notes"
+msgstr "Notas"
 
 #: src/app/views-screen.tsx
 msgid "Nothing else changed. Try again."
-msgstr "Rien d’autre n’a changé. Réessayez."
+msgstr "Nada mais foi alterado. Tente novamente."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "Rien à afficher pour le moment. Choisissez « Écrire » pour ajouter des notes."
+msgstr "Ainda não há nada para visualizar. Escolha Escrever para adicionar notas."
 
 #: src/app/more-screen.tsx
 msgid "Notifications"
-msgstr "Notifications"
+msgstr "Notificações"
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
-msgstr "Les notifications ne sont pas disponibles ici"
+msgstr "As notificações não estão disponíveis aqui"
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
-msgstr "Notifier à une heure fixe ou par rapport à cette tâche."
+msgstr "Notificar em um horário fixo ou relativo a esta tarefa."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
-msgstr "Maintenant"
+msgstr "Agora"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence"
-msgstr "Occurrence"
+msgstr "Ocorrência"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note"
-msgstr "Note d’occurrence"
+msgstr "Nota da ocorrência"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note policy"
-msgstr "Politique des notes d’occurrence"
+msgstr "Política de notas de ocorrência"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence notes"
-msgstr "Notes d’occurrence"
+msgstr "Notas de ocorrência"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence template"
-msgstr "Modèle d’occurrence"
+msgstr "Modelo de ocorrência"
 
 #: src/components/recurrence-field.tsx
 msgid "Occurrences"
-msgstr "Occurrences"
+msgstr "Ocorrências"
 
 #: src/app/notification-label.ts
 msgid "Off"
-msgstr "Désactivées"
+msgstr "Desativado"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "Le"
+msgstr "Ativado"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr "Activées"
+msgstr "Em"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr "À une date"
+msgstr "Em uma data"
 
 #: src/i18n/editor-phrases.ts
 msgid "on line"
-msgstr "à la ligne"
+msgstr "na linha"
 
 #: src/components/calendar-preferences.tsx
 msgid "On this device"
-msgstr "Sur cet appareil"
+msgstr "Neste dispositivo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Only draft items can become TaskNotes."
-msgstr "Seuls les éléments en brouillon peuvent devenir des notes de tâche."
+msgstr "Somente itens de rascunho podem se tornar tarefas do TaskNotes."
 
 #: src/app/view-editor-form.tsx
 msgid "Only the task title is shown."
-msgstr "Seul le titre de la tâche est affiché."
+msgstr "Somente o título da tarefa é exibido."
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr "Ouvrir"
+msgstr "Abertas"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "Ouvertes"
+msgstr "Abrir"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
