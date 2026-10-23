@@ -3,8 +3,8 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 
 export function LanguageSettings() {
-  const { t, i18n } = useLingui();
-  const [failedLocale, setFailedLocale] = useState<string | null>(null);
+  const { t } = useLingui();
+  const [failed, setFailed] = useState(false);
   return (
     <div className="settings-group">
       <h3>
@@ -17,10 +17,11 @@ export function LanguageSettings() {
         <LanguagePicker
           className="language-picker"
           label={t`App language`}
-          onError={() => setFailedLocale(i18n.locale)}
+          onChangeCapture={() => setFailed(false)}
+          onError={() => setFailed(true)}
         />
       </div>
-      {failedLocale === i18n.locale ? (
+      {failed ? (
         <p className="inline-error" role="alert">
           <Trans>
             The language could not be loaded. Check your connection and try

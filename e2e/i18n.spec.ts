@@ -62,7 +62,7 @@ for (const locale of ["en", "fr"]) {
       .analyze();
     expect(results.violations).toEqual([]);
     await page.screenshot({
-      path: `test-results/i18n-pilot-${locale}-${test.info().project.name}.png`,
+      path: `test-results/i18n-collection-${locale}-${test.info().project.name}.png`,
       fullPage: true,
     });
   });
@@ -257,9 +257,20 @@ for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
     await expect(picker).toHaveValue(locale);
     await expect(picker.locator("option")).toHaveCount(9);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(320);
+    await expect(picker).toBeVisible();
     await page.screenshot({
       path: `test-results/i18n-settings-${locale}-${test.info().project.name}.png`,
       fullPage: true,
+    });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "";
     });
     const next = locale === "en" ? "fr" : "en";
     await picker.selectOption(next);
@@ -304,6 +315,14 @@ test("a failed locale chunk retains English, the explicit preference and a retry
     await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
   ).toBe("en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  // A later successful selection must retire the old error, including on return
+  // to the locale that was active when the original failure happened.
+  await picker.selectOption("de");
+  await expect(page.locator("html")).toHaveAttribute("lang", "de");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await picker.selectOption("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 async function openNavigationItem(
