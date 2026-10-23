@@ -30,6 +30,7 @@ export const appRuntime = createI18nRuntime({
     },
     setLocale(locale) {
       try {
+        if (typeof localStorage === "undefined") return;
         localStorage.setItem(localeStorageKey, locale);
       } catch (error) {
         console.warn(
