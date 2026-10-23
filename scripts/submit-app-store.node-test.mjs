@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, verify } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import {
   APP_ID,
   BUNDLE_ID,
@@ -75,7 +76,28 @@ function fixture() {
             data: { attributes: { bundleId: f.bundleId ?? BUNDLE_ID } },
           };
         if (path.endsWith("/relationships/build")) return { data: f.attached };
-        if (path.endsWith("/appStoreReviewDetail")) return { data: f.review };
+        if (
+          new URL(path, "https://fixture.test/").pathname.endsWith(
+            "/appStoreReviewDetail",
+          )
+        ) {
+          const fields = new URL(path, "https://fixture.test/").searchParams
+            .get("fields[appStoreReviewDetails]")
+            ?.split(",");
+          assert.ok(fields?.includes("demoAccountName"));
+          assert.ok(fields?.includes("demoAccountRequired"));
+          assert.ok(!fields?.includes("demoAccountPassword"));
+          return {
+            data: f.review && {
+              ...f.review,
+              attributes: Object.fromEntries(
+                fields
+                  .filter((key) => key in f.review.attributes)
+                  .map((key) => [key, f.review.attributes[key]]),
+              ),
+            },
+          };
+        }
         if (path.endsWith("/relationships/appStoreVersionPhasedRelease"))
           return { data: f.phased };
         if (path === "appStoreVersions/new") return { data: target() };
@@ -131,6 +153,7 @@ function fixture() {
       buildNumber: "15",
       metadata,
       waitOptions: { attempts: 1 },
+      env: {},
       ...options,
     });
   return f;
@@ -143,10 +166,65 @@ test("requires version-specific complete release metadata", () => {
     { ...metadata, reviewNotes: "" },
     { ...metadata, whatsNew: {} },
     { ...metadata, whatsNew: { "en-AU": "x".repeat(4001) } },
+    { ...metadata, draft: "not approved" },
   ]) {
     assert.throws(() => validateMetadata(m, "1.0.4"));
   }
   assert.throws(() => validateMetadata(metadata, "../secret"));
+});
+
+test("approved 1.0.9 metadata holds MANUAL release and names the migrated review collection; drafts remain refused", async () => {
+  const approved = JSON.parse(
+    await readFile(
+      new URL("../docs/releases/ios/1.0.9.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(validateMetadata(approved, "1.0.9"), approved);
+  assert.equal(approved.releaseType, "MANUAL");
+  assert.ok(
+    approved.reviewNotes.includes('collection "[test] C hosted tasks"'),
+  );
+  assert.match(approved.reviewNotes, /review account has already moved/);
+  assert.throws(
+    () => validateMetadata({ ...approved, draft: "not approved" }, "1.0.9"),
+    /draft/,
+  );
+});
+
+test("a MANUAL release is held after approval and checked on reruns", async () => {
+  const held = { ...metadata, releaseType: "MANUAL" };
+  const f = fixture();
+  const result = await f.run({ commit: true, metadata: held });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  assert.equal(result.releaseType, "MANUAL");
+  assert.equal(f.versions[1].attributes.releaseType, "MANUAL");
+  const rerun = await f.run({ commit: true, metadata: held });
+  assert.equal(rerun.alreadySubmitted, true);
+  assert.equal(rerun.releaseType, "MANUAL");
+  await assert.rejects(
+    f.run({ commit: true }),
+    /does not match the expected release policy/,
+  );
+  assert.throws(
+    () => validateMetadata({ ...metadata, releaseType: "SCHEDULED" }, "1.0.4"),
+    /releaseType/,
+  );
+});
+
+test("rechecks the MANUAL policy after Apple confirms submission", async () => {
+  const f = fixture();
+  const request = f.client.request;
+  f.client.request = async (path, method, data) => {
+    const result = await request(path, method, data);
+    if (path === "reviewSubmissions/submission" && method === "PATCH")
+      f.versions[1].attributes.releaseType = "AFTER_APPROVAL";
+    return result;
+  };
+  await assert.rejects(
+    f.run({ commit: true, metadata: { ...metadata, releaseType: "MANUAL" } }),
+    /Release policy changed during submission/,
+  );
 });
 
 test("dry run never writes", async () => {
@@ -160,15 +238,212 @@ test("dry run never writes", async () => {
   );
 });
 
+const reviewEnv = {
+  APP_REVIEW_DEMO_ACCOUNT_NAME: "synthetic-review@example.test",
+  APP_REVIEW_DEMO_ACCOUNT_PASSWORD: "  synthetic password\n ",
+};
+const assertNoSubmission = (f) =>
+  assert.ok(!f.writes.some((w) => w.data.attributes?.submitted));
+const assertSafeResult = (result) => {
+  const serialized = JSON.stringify(result);
+  for (const value of Object.values(reviewEnv)) {
+    assert.ok(!serialized.includes(value));
+    assert.ok(!serialized.includes(JSON.stringify(value).slice(1, -1)));
+  }
+  assert.ok(!serialized.includes("demoAccountPassword"));
+  assert.ok(!serialized.includes('demoAccountName"'));
+};
+
+test("optional credentials are saved with notes, verified without password reads, and never returned", async () => {
+  const f = fixture();
+  const result = await f.run({ commit: true, env: reviewEnv });
+  const patches = f.writes.filter(
+    (w) => w.path === "appStoreReviewDetails/review",
+  );
+  assert.equal(patches.length, 1);
+  assert.deepEqual(patches[0].data.attributes, {
+    notes: metadata.reviewNotes,
+    demoAccountName: reviewEnv.APP_REVIEW_DEMO_ACCOUNT_NAME,
+    demoAccountPassword: reviewEnv.APP_REVIEW_DEMO_ACCOUNT_PASSWORD,
+    demoAccountRequired: true,
+  });
+  assert.equal(result.demoAccountNameVerified, true);
+  assert.equal(result.demoAccountRequired, true);
+  assertSafeResult(result);
+});
+
+test("dry run with credentials never writes or exposes credentials", async () => {
+  const f = fixture();
+  const result = await f.run({ env: reviewEnv });
+  assert.equal(result.state, "DRY_RUN");
+  assert.equal(f.writes.length, 0);
+  assertSafeResult(result);
+});
+
+for (const env of [
+  { APP_REVIEW_DEMO_ACCOUNT_NAME: reviewEnv.APP_REVIEW_DEMO_ACCOUNT_NAME },
+  {
+    APP_REVIEW_DEMO_ACCOUNT_PASSWORD:
+      reviewEnv.APP_REVIEW_DEMO_ACCOUNT_PASSWORD,
+  },
+  { ...reviewEnv, APP_REVIEW_DEMO_ACCOUNT_NAME: "" },
+  { ...reviewEnv, APP_REVIEW_DEMO_ACCOUNT_PASSWORD: "" },
+  { ...reviewEnv, APP_REVIEW_DEMO_ACCOUNT_NAME: "   " },
+]) {
+  test("partial or invalid credential pair fails closed before API access, including dry run", async () => {
+    for (const commit of [false, true]) {
+      const f = fixture();
+      await assert.rejects(f.run({ commit, env }), (error) => {
+        assertSafeResult({ error: error.message });
+        return /review credentials/i.test(error.message);
+      });
+      assert.equal(f.writes.length, 0);
+      assert.equal(f.reads.length, 0);
+    }
+  });
+}
+
+for (const [field, value] of [
+  ["demoAccountName", "wrong@example.test"],
+  ["demoAccountName", undefined],
+  ["demoAccountRequired", false],
+  ["demoAccountRequired", undefined],
+]) {
+  test(`credential readback mismatch in ${field} blocks submission`, async () => {
+    const f = fixture();
+    const request = f.client.request;
+    f.client.request = async (path, method, data) => {
+      const result = await request(path, method, data);
+      if (method === "PATCH" && path === "appStoreReviewDetails/review")
+        f.review.attributes[field] = value;
+      return result;
+    };
+    await assert.rejects(
+      f.run({ commit: true, env: reviewEnv }),
+      /review credentials/i,
+    );
+    assertNoSubmission(f);
+  });
+}
+
+test("READY_FOR_REVIEW rerun verifies credentials without rewriting prepared details", async () => {
+  const f = fixture();
+  f.failAfter = "reviewSubmissionItems";
+  await assert.rejects(
+    f.run({ commit: true, env: reviewEnv }),
+    /response lost/,
+  );
+  f.writes = [];
+  f.review.attributes.demoAccountRequired = false;
+  await assert.rejects(
+    f.run({ commit: true, env: reviewEnv }),
+    /review credentials/i,
+  );
+  assert.equal(f.writes.length, 0);
+  f.review.attributes.demoAccountRequired = true;
+  const result = await f.run({ commit: true, env: reviewEnv });
+  assert.equal(result.demoAccountNameVerified, true);
+  assert.ok(!f.writes.some((w) => w.path === "appStoreReviewDetails/review"));
+});
+
+test("already submitted same build verifies credentials read-only and rejects mismatches", async () => {
+  const f = fixture();
+  await f.run({ commit: true, env: reviewEnv });
+  f.writes = [];
+  for (const appStoreState of [
+    "WAITING_FOR_REVIEW",
+    "IN_REVIEW",
+    "PENDING_APPLE_RELEASE",
+    "READY_FOR_SALE",
+  ]) {
+    f.versions[1].attributes.appStoreState = appStoreState;
+    for (const commit of [false, true]) {
+      const result = await f.run({ commit, env: reviewEnv });
+      assert.equal(result.alreadySubmitted, true);
+      assert.equal(result.demoAccountNameVerified, true);
+      assertSafeResult(result);
+      f.review.attributes.demoAccountName = "wrong@example.test";
+      await assert.rejects(
+        f.run({ commit, env: reviewEnv }),
+        /review credentials/i,
+      );
+      f.review.attributes.demoAccountName =
+        reviewEnv.APP_REVIEW_DEMO_ACCOUNT_NAME;
+      f.review.attributes.demoAccountRequired = false;
+      await assert.rejects(
+        f.run({ commit, env: reviewEnv }),
+        /review credentials/i,
+      );
+      f.review.attributes.demoAccountRequired = true;
+    }
+  }
+  assert.equal(f.writes.length, 0);
+});
+
 test("creates version, saves metadata, attaches exact build and submits", async () => {
   const f = fixture();
   assert.equal((await f.run({ commit: true })).state, "WAITING_FOR_REVIEW");
   assert.equal(f.attached.id, "build");
   assert.equal(f.locales[0].attributes.whatsNew, "Bug fixes.");
   assert.equal(f.review.attributes.notes, metadata.reviewNotes);
+  assert.deepEqual(
+    f.writes.find((w) => w.path === "appStoreReviewDetails/review").data
+      .attributes,
+    { notes: metadata.reviewNotes },
+  );
   assert.equal(f.versions[1].attributes.releaseType, "AFTER_APPROVAL");
   assert.equal(f.writes.at(-1).data.attributes.submitted, true);
   assert.ok(!f.writes.some((w) => w.method === "DELETE"));
+});
+
+for (const failAfter of [
+  "appStoreReviewDetails/review",
+  "reviewSubmissionItems",
+  "reviewSubmissions/submission",
+]) {
+  test(`credential policy survives a lost response after ${failAfter}`, async () => {
+    const f = fixture();
+    f.failAfter = failAfter;
+    await assert.rejects(
+      f.run({ commit: true, env: reviewEnv }),
+      /response lost/,
+    );
+    const result = await f.run({ commit: true, env: reviewEnv });
+    assert.equal(result.demoAccountNameVerified, true);
+    assert.equal(result.demoAccountRequired, true);
+    assert.equal(f.versions.length, 2);
+    assert.equal(f.items.length, 1);
+    assert.equal(f.submissions.length, 1);
+    assertSafeResult(result);
+  });
+}
+
+test("empty optional environment secrets preserve notes-only updates", async () => {
+  const f = fixture();
+  await f.run({
+    commit: true,
+    env: {
+      APP_REVIEW_DEMO_ACCOUNT_NAME: "",
+      APP_REVIEW_DEMO_ACCOUNT_PASSWORD: "",
+    },
+  });
+  assert.deepEqual(
+    f.writes.find((w) => w.path === "appStoreReviewDetails/review").data
+      .attributes,
+    { notes: metadata.reviewNotes },
+  );
+});
+
+test("production workflow wires both optional review credentials only into the submission step", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/app-store-submit.yml", import.meta.url),
+    "utf8",
+  );
+  assert.match(workflow, /name: app-store-production/);
+  for (const key of Object.keys(reviewEnv)) {
+    assert.ok(workflow.includes(`${key}: \${{ secrets.${key} }}`));
+    assert.equal(workflow.split(key).length - 1, 2);
+  }
 });
 
 for (const failAfter of [

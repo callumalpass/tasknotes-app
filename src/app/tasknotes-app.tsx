@@ -7,6 +7,7 @@ import {
   type ComponentType,
 } from "react";
 import { ChevronDown } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import type { Mdbase, MdbaseApplicationConnection } from "@mdbase-dev/sdk";
 import {
   CollectionGate,
@@ -18,6 +19,7 @@ import "@mdbase-dev/ui/collections.css";
 
 import { addTaskNotesStarterViews } from "../application/ensure-default-view-source";
 import { taskNotesMdbase } from "../cloud/tasknotes-application";
+import { followNativeSignInReturn } from "../native/sign-in";
 import { registerStartupTiming } from "../observability/startup-timing";
 import { NextTaskRepository } from "../storage/next-repository";
 import { tasknotesMarkUrl } from "./assets";
@@ -50,6 +52,13 @@ export function TaskNotesApp({
   const [arming] = useState(() => new StarterViewArming(mdbase.getSnapshot()));
   useEffect(() => arming.follow(mdbase), [arming, mdbase]);
   useEffect(() => followSignOutRoute(mdbase), [mdbase]);
+  useEffect(
+    () =>
+      Capacitor.isNativePlatform()
+        ? followNativeSignInReturn(mdbase)
+        : undefined,
+    [mdbase],
+  );
   useMdbaseLifetime(mdbase);
   const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
   return (

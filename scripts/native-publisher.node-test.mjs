@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { originalOfflineRuntime } from "./lib/native-offline-shell.mjs";
 import { offlineShellFor } from "./fixtures/offline-shell-data.mjs";
+import { frozenStagingRoot } from "./fixtures/staging-intake-root.mjs";
 import { createHash } from "node:crypto";
 import {
   mkdtemp,
@@ -200,7 +201,7 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 
 // --- SDK trust guard --------------------------------------------------------
 
-test("actual missing target intake refuses (no LAB/UI relabel fallback)", async () => {
+test("actual missing target intake refuses (no LAB/UI relabel fallback)", async (t) => {
   await assert.rejects(
     verifySdkTrust({
       root: new URL("../", import.meta.url).pathname,
@@ -209,7 +210,7 @@ test("actual missing target intake refuses (no LAB/UI relabel fallback)", async 
     /Missing actual reviewed target intake/,
   );
   const historical = await verifySdkTrust({
-    root: new URL("../", import.meta.url).pathname,
+    root: await frozenStagingRoot(t),
     target: NATIVE_PUBLISH_TARGETS.staging,
   });
   assert.deepEqual(historical.publicationConstraints, []);

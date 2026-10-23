@@ -22,11 +22,21 @@ function requireValue(value, label) {
   return value.trim();
 }
 
+/** AFTER_APPROVAL releases as soon as Apple approves. MANUAL holds the
+ * approved version until a person releases it in App Store Connect. */
+export function releaseTypeOf(metadata) {
+  return metadata.releaseType ?? "AFTER_APPROVAL";
+}
+
 export function validateMetadata(metadata, version) {
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw new Error("Public releases require a three-part numeric version");
   if (metadata.version !== version)
     throw new Error("Release metadata version does not match the build");
+  if (metadata.draft !== undefined)
+    throw new Error("Release metadata is still marked as a draft");
+  if (!["AFTER_APPROVAL", "MANUAL"].includes(releaseTypeOf(metadata)))
+    throw new Error("releaseType must be AFTER_APPROVAL or MANUAL");
   requireValue(metadata.copyright, "copyright");
   const reviewNotes = requireValue(metadata.reviewNotes, "reviewNotes");
   if (reviewNotes.length > 4000)
@@ -191,6 +201,54 @@ function assertLocales(localizations, metadata) {
   }
 }
 
+function demoCredentialsOf(env) {
+  const name = env.APP_REVIEW_DEMO_ACCOUNT_NAME;
+  const password = env.APP_REVIEW_DEMO_ACCOUNT_PASSWORD;
+  // Unset GitHub secrets arrive as empty strings. Never normalize the password.
+  if (!name && !password) return undefined;
+  if (
+    typeof name !== "string" ||
+    !name.trim() ||
+    typeof password !== "string" ||
+    !password.length
+  ) {
+    throw new Error(
+      "App review credentials require both a nonempty account name and password",
+    );
+  }
+  return {
+    demoAccountName: name,
+    demoAccountPassword: password,
+    demoAccountRequired: true,
+  };
+}
+
+async function readReview(client, versionId) {
+  const query = new URLSearchParams({
+    "fields[appStoreReviewDetails]":
+      "contactEmail,contactFirstName,contactLastName,contactPhone,notes,demoAccountName,demoAccountRequired",
+  });
+  return (
+    await client.request(
+      `appStoreVersions/${versionId}/appStoreReviewDetail?${query}`,
+    )
+  ).data;
+}
+
+function verifyDemoAccount(review, credentials) {
+  if (!credentials) return {};
+  if (
+    review?.attributes?.demoAccountName !== credentials.demoAccountName ||
+    review?.attributes?.demoAccountRequired !== true
+  ) {
+    throw new Error(
+      "Saved app review credentials do not match the configured account name and required flag; inspect App Store Connect before rerunning",
+    );
+  }
+  // Deliberately return only safe verification flags, never either credential.
+  return { demoAccountNameVerified: true, demoAccountRequired: true };
+}
+
 export async function submitAppStore({
   client,
   version,
@@ -198,8 +256,10 @@ export async function submitAppStore({
   metadata,
   commit = false,
   waitOptions,
+  env = process.env,
 }) {
   validateMetadata(metadata, version);
+  const demoCredentials = demoCredentialsOf(env);
   const app = (await client.request(`apps/${APP_ID}`)).data;
   if (app.attributes.bundleId !== BUNDLE_ID)
     throw new Error("Unexpected app bundle ID");
@@ -227,20 +287,30 @@ export async function submitAppStore({
       submittedStates.has(state(target)) ||
       releasedStates.has(state(target))
     ) {
+      // Reconcile read-only: a previously submitted version must never be patched.
+      target = (await client.request(`appStoreVersions/${target.id}`)).data;
       if (
         !linked ||
         (!releasedStates.has(state(target)) &&
-          target.attributes.releaseType !== "AFTER_APPROVAL")
+          target.attributes.releaseType !== releaseTypeOf(metadata))
       ) {
         throw new Error(
           "Existing submitted version does not match the expected release policy",
         );
       }
+      const demoVerification = demoCredentials
+        ? verifyDemoAccount(
+            await readReview(client, target.id),
+            demoCredentials,
+          )
+        : {};
       return {
         version,
         buildNumber,
         versionId: target.id,
         state: state(target),
+        releaseType: target.attributes.releaseType,
+        ...demoVerification,
         alreadySubmitted: true,
       };
     }
@@ -264,9 +334,7 @@ export async function submitAppStore({
     `appStoreVersions/${sourceId}/appStoreVersionLocalizations`,
   );
   assertLocales(localizations, metadata);
-  const review = (
-    await client.request(`appStoreVersions/${sourceId}/appStoreReviewDetail`)
-  ).data;
+  const review = await readReview(client, sourceId);
   if (
     !review ||
     !review.attributes.contactEmail ||
@@ -325,7 +393,7 @@ export async function submitAppStore({
           platform: "IOS",
           versionString: version,
           copyright: metadata.copyright,
-          releaseType: "AFTER_APPROVAL",
+          releaseType: releaseTypeOf(metadata),
         },
         relationships: { app: relation("apps", APP_ID) },
       })
@@ -337,7 +405,7 @@ export async function submitAppStore({
       id: target.id,
       attributes: {
         copyright: metadata.copyright,
-        releaseType: "AFTER_APPROVAL",
+        releaseType: releaseTypeOf(metadata),
         earliestReleaseDate: null,
       },
       relationships: { build: relation("builds", build.id) },
@@ -359,9 +427,7 @@ export async function submitAppStore({
         },
       );
     }
-    const detail = (
-      await client.request(`appStoreVersions/${target.id}/appStoreReviewDetail`)
-    ).data;
+    const detail = await readReview(client, target.id);
     if (!detail)
       throw new Error(
         "Apple did not inherit review details; configure them before rerunning",
@@ -369,7 +435,7 @@ export async function submitAppStore({
     await client.request(`appStoreReviewDetails/${detail.id}`, "PATCH", {
       type: "appStoreReviewDetails",
       id: detail.id,
-      attributes: { notes: metadata.reviewNotes },
+      attributes: { notes: metadata.reviewNotes, ...demoCredentials },
     });
   }
   // Read back durable state before the irreversible submission step (also on reruns).
@@ -380,19 +446,18 @@ export async function submitAppStore({
   const savedLocales = await client.list(
     `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
   );
-  const savedReview = (
-    await client.request(`appStoreVersions/${target.id}/appStoreReviewDetail`)
-  ).data;
+  const savedReview = await readReview(client, target.id);
+  const demoVerification = verifyDemoAccount(savedReview, demoCredentials);
   assertLocales(savedLocales, metadata);
   if (
     attached?.id !== build.id ||
-    prepared.attributes.releaseType !== "AFTER_APPROVAL" ||
+    prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
     savedLocales.some(
       (item) =>
         item.attributes.whatsNew !== metadata.whatsNew[item.attributes.locale],
     ) ||
-    savedReview.attributes.notes !== metadata.reviewNotes
+    savedReview?.attributes?.notes !== metadata.reviewNotes
   ) {
     throw new Error(
       "Saved release metadata/build does not match the requested submission",
@@ -440,6 +505,11 @@ export async function submitAppStore({
   });
   const confirmed = (await client.request(`appStoreVersions/${target.id}`))
     .data;
+  if (confirmed.attributes.releaseType !== releaseTypeOf(metadata)) {
+    throw new Error(
+      "Release policy changed during submission; inspect App Store Connect immediately",
+    );
+  }
   if (
     !submittedStates.has(state(confirmed)) &&
     !releasedStates.has(state(confirmed))
@@ -454,6 +524,8 @@ export async function submitAppStore({
     versionId: target.id,
     submissionId: submission.id,
     state: state(confirmed),
+    releaseType: confirmed.attributes.releaseType,
+    ...demoVerification,
     alreadySubmitted: false,
   };
 }
@@ -496,9 +568,15 @@ async function main() {
   });
   console.log(JSON.stringify(result));
   if (process.env.GITHUB_STEP_SUMMARY) {
+    const verificationSummary = result.demoAccountNameVerified
+      ? "Review account name verified: **true**. Demo account required: **true**.\n\n"
+      : "";
+    const releaseSummary = result.releaseType
+      ? `Release type (read back): **${result.releaseType}**.\n\n`
+      : "";
     await appendFile(
       process.env.GITHUB_STEP_SUMMARY,
-      `## App Store submission\n\nVersion **${result.version}**, build **${result.buildNumber}**: **${result.state}**.\n\n[App Store Connect](https://appstoreconnect.apple.com/apps/${APP_ID}/distribution)\n\nApple review is required. Submission is not proof of public availability.\n`,
+      `## App Store submission\n\nVersion **${result.version}**, build **${result.buildNumber}**: **${result.state}**.\n\n${releaseSummary}${verificationSummary}[App Store Connect](https://appstoreconnect.apple.com/apps/${APP_ID}/distribution)\n\nApple review is required. Submission is not proof of public availability.\n`,
     );
   }
 }

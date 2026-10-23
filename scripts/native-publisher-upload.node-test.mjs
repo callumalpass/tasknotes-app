@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
+import { frozenStagingRoot } from "./fixtures/staging-intake-root.mjs";
 import { test } from "node:test";
 import {
   validateArtifactMetadata,
@@ -285,6 +286,7 @@ for (const value of [undefined, "f".repeat(64)])
       NATIVE_PROTOCOL_SHA256:
         "cd1e15236ab7e25c511a4ba13af6a9df23f4b41715161479bba97b0445e1c138",
     };
+    const historicalRoot = await frozenStagingRoot(t);
     let checks = 0,
       networkCalls = 0;
     t.mock.method(globalThis, "fetch", async () => {
@@ -297,7 +299,7 @@ for (const value of [undefined, "f".repeat(64)])
         intake: async (options) => {
           checks++;
           assert.equal(options.approvedHashes.asset, value);
-          return verifyTargetIntake(options); // actual unchanged STAGING packet + real 4-hash guard
+          return verifyTargetIntake({ ...options, root: historicalRoot }); // original frozen STAGING inputs + real four-hash guard
         },
       }),
       /protected raw trust ASSET/,

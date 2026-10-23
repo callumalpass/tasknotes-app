@@ -7,9 +7,10 @@ import { test } from "node:test";
 import { upload } from "./native-publisher-upload.mjs";
 import { verifyTargetIntake } from "./lib/native-publish-intake.mjs";
 import { NATIVE_PUBLISH_TARGETS } from "./native-publisher.mjs";
-test("Co064253: actual historical UI labels do not veto STAGING protected-hash + approved-lock intake", async () => {
+import { frozenStagingRoot } from "./fixtures/staging-intake-root.mjs";
+test("Co064253: actual historical UI labels do not veto STAGING protected-hash + approved-lock intake", async (t) => {
   const result = await verifyTargetIntake({
-    root: new URL("../", import.meta.url).pathname,
+    root: await frozenStagingRoot(t),
     target: NATIVE_PUBLISH_TARGETS.staging,
     approvedHashes: {
       sdk: "15eb64b50fc7c2809ff3dba9cce5104fe48d8592208b3af8acb529862a1af18c",

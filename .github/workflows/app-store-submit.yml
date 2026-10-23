@@ -56,6 +56,8 @@ jobs:
           APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
           APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
           APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
+          APP_REVIEW_DEMO_ACCOUNT_NAME: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_NAME }}
+          APP_REVIEW_DEMO_ACCOUNT_PASSWORD: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_PASSWORD }}
           SUBMIT: ${{ inputs.submit }}
         run: |
           if [ "$SUBMIT" = true ]; then

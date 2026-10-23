@@ -35,7 +35,10 @@ describe("TaskNotes mdbase manifest", () => {
       staging: {
         "app-runtime": ["https://staging.tasknotes-app.pages.dev"],
       },
-      production: { "app-runtime": ["https://app.tasknotes.dev"] },
+      production: {
+        "app-runtime": ["https://app.tasknotes.dev"],
+        mobile: ["capacitor://app.tasknotes.dev"],
+      },
     });
     expect(manifest.notifications.criteria).toEqual([
       {

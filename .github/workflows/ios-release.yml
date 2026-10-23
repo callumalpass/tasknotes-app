@@ -99,6 +99,10 @@ jobs:
             test -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64"
           fi
 
+          if [ "$GITHUB_RUN_NUMBER" -le 25 ]; then
+            echo "TaskNotes 1.0.9 requires an iOS build number greater than 25." >&2
+            exit 1
+          fi
           echo "TASKNOTES_IOS_VERSION=$version" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_BUILD=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           echo "TASKNOTES_IOS_UPLOAD=$upload" >> "$GITHUB_ENV"
@@ -266,7 +270,7 @@ jobs:
       - name: Test App Store publication policy
         run: node --test scripts/submit-app-store.node-test.mjs
 
-      - name: Prepare listing and submit for automatic release after Apple approval
+      - name: Prepare listing and submit with the approved release policy
         env:
           APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
           APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
