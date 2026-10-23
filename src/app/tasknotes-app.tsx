@@ -141,9 +141,7 @@ function HeldCollection({
     () =>
       mdbaseNotifications.bindScope(
         { key: scope.key, timers: scope.timers },
-        (enabled) => {
-          void repository.setRemindersEnabled(enabled).catch(() => undefined);
-        },
+        (enabled) => repository.setRemindersEnabled(enabled),
       ),
     [repository, scope.key, scope.timers],
   );

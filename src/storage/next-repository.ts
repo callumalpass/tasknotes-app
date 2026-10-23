@@ -727,16 +727,17 @@ export class NextTaskRepository implements TaskRepository {
     this.requestReminders();
   }
 
-  /** Permission/channel ownership stays with the app's notification manager.
-   * Disabling retires in-flight work; channel removal belongs to that manager.
+  /** Pause new schedules and drain the original request before the manager
+   * changes channels on the same single-flight port. Actual collection teardown
+   * still aborts through the repository scope; opt-out must not release a port
+   * slot before the SDK has received its response.
    */
   setRemindersEnabled(enabled: boolean): Promise<void> {
     if (this.remindersEnabled !== enabled) {
-      this.reminderScope.abort();
-      this.reminderScope = new AbortController();
+      if (enabled) this.reminderScope = new AbortController();
       this.remindersEnabled = enabled;
     }
-    return enabled ? this.reconcileReminders() : Promise.resolve();
+    return enabled ? this.reconcileReminders() : this.reminderTail;
   }
 
   private requestReminders(): void {
@@ -782,7 +783,9 @@ export class NextTaskRepository implements TaskRepository {
             "This connection does not support reminder scheduling.",
           );
         let completed = 0;
-        while (completed < run.requested) {
+        const enabled = () =>
+          this.remindersEnabled && consent === this.reminderScope;
+        while (enabled() && completed < run.requested) {
           const target = run.requested;
           // Re-read the native pages, not the bounded/filtered UI cache. A
           // pending edit, deletion, hold or incomplete page cannot cancel timers.
@@ -847,6 +850,7 @@ export class NextTaskRepository implements TaskRepository {
             },
           );
           signal.throwIfAborted();
+          if (!enabled()) return;
           if (
             snapshot.revision !== this.dataRevision ||
             snapshot.ledgerRevision !== this.reminderLedgerRevision

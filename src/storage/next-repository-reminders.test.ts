@@ -337,7 +337,7 @@ describe("native repository reminder reconciliation", () => {
     expect(submit.mock.calls[1]![1]).toEqual(submit.mock.calls[0]![1]);
   });
 
-  it.each(["suspend", "dispose", "disable"] as const)(
+  it.each(["suspend", "dispose"] as const)(
     "%s cancels a pending snapshot before timer dispatch",
     async (action) => {
       const f = await fixture();
@@ -355,11 +355,69 @@ describe("native repository reminder reconciliation", () => {
       const pending = f.repository.setRemindersEnabled(true);
       const failed = expect(pending).rejects.toThrow();
       await vi.waitFor(() => expect(pages).toHaveBeenCalledOnce());
-      if (action === "disable") await f.repository.setRemindersEnabled(false);
-      else f.repository[action]();
+      f.repository[action]();
       release();
       await failed;
       expect(f.service.port.reconcile).not.toHaveBeenCalled();
     },
   );
+
+  it("pauses a pending snapshot before dispatch and drains it before channel changes", async () => {
+    const f = await fixture();
+    await f.repository.initialize({ deferTaskIndex: true });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const pages = vi
+      .spyOn(f.client, "pages")
+      .mockImplementationOnce(async function* () {
+        await gate;
+        yield { records: [], complete: true, asOf: 0 };
+      });
+    const pending = f.repository.setRemindersEnabled(true);
+    await vi.waitFor(() => expect(pages).toHaveBeenCalledOnce());
+    let drained = false;
+    const stopping = f.repository.setRemindersEnabled(false).then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+    release();
+    await Promise.all([pending, stopping]);
+    expect(drained).toBe(true);
+    expect(f.service.port.reconcile).not.toHaveBeenCalled();
+  });
+
+  it("drains an admitted reconcile without aborting or dispatching a coalesced replacement", async () => {
+    const f = await fixture();
+    await f.repository.initialize({ deferTaskIndex: true });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = vi
+      .mocked(f.service.port.reconcile)
+      .getMockImplementation()!;
+    const submit = vi
+      .mocked(f.service.port.reconcile)
+      .mockImplementationOnce(async (...args) => {
+        await gate;
+        return original(...args);
+      });
+    const pending = f.repository.setRemindersEnabled(true);
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    const repeated = f.repository.reconcileReminders();
+    let drained = false;
+    const stopping = f.repository.setRemindersEnabled(false).then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+    expect(submit.mock.calls[0]![2].signal?.aborted).toBe(false);
+    release();
+    await Promise.all([pending, repeated, stopping]);
+    expect(drained).toBe(true);
+    expect(submit).toHaveBeenCalledOnce();
+  });
 });
