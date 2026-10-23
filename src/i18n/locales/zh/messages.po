@@ -409,7 +409,7 @@ msgstr "{taskCount, plural, =0 {此视图中有 # 个任务就绪。} other {此
 # Calendar day ordinal: 1er, then 2e, 3e, etc.; kept cases preserve the source contract.
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr "{value, selectordinal, one {第 #} two {第 #} few {第 #} other {第 #}}"
+msgstr "{value, selectordinal, other {第 #}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"
