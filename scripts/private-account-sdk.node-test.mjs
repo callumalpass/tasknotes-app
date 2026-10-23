@@ -358,10 +358,40 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
     manifest.sourceIncludesPrs,
     [888, 889, 892, 893, 895, 899, 902],
   );
+  const successor = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(
+    successor.sourceCommit,
+    "9041442d6584ef5354620eada6995156ece883c4",
+  );
+  assert.equal(successor.extendsArtifact, manifest.artifact);
+  assert.deepEqual(successor.sourceIncludesPrs, manifest.sourceIncludesPrs);
   assert.equal(
     pkg.dependencies["@mdbase-dev/ui"],
-    `file:vendor/${manifest.artifact}`,
+    `file:vendor/${successor.artifact}`,
   );
+  const currentBytes = await readFile(
+    new URL(`vendor/${successor.artifact}`, root),
+  );
+  assert.equal(currentBytes.byteLength, 124189);
+  assert.equal(successor.bytes, currentBytes.byteLength);
+  assert.equal(
+    successor.sha256,
+    "65b7ab3754fe840e04c0128e00f4b9f81dbbf999e0eb987acf97ee72c6b3b55b",
+  );
+  assert.equal(
+    createHash("sha256").update(currentBytes).digest("hex"),
+    successor.sha256,
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(currentBytes).digest("base64")}`,
+    successor.integrity,
+  );
+  // Retain the authenticated predecessor bytes and their regression checks.
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, 91016);
   assert.equal(manifest.bytes, bytes.byteLength);
@@ -377,6 +407,10 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
   );
+  const { uiCatalogues, i18n } = await import("@mdbase-dev/ui/i18n");
+  assert.ok(Object.keys(uiCatalogues.english.messages).length > 0);
+  assert.equal(typeof uiCatalogues.loadLocale, "function");
+  assert.equal(i18n, (await import("@lingui/core")).i18n);
   const ui = await import("@mdbase-dev/ui/collections");
   for (const name of [
     "CollectionGate",
