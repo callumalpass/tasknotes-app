@@ -2003,7 +2003,7 @@ msgstr "Срок: {0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr "Срок и планирование"
+msgstr "Срок и запланированная дата"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
@@ -2671,7 +2671,7 @@ msgstr "При последнем обновлении проверено зап
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "При последнем обновлении проверена {scanned, plural, one {# запись} few {# записи} many {# записей} other {# записи}} за {elapsed} мс."
+msgstr "При последнем обновлении {scanned, plural, one {проверена # запись} few {проверены # записи} many {проверено # записей} other {проверено # записи}} за {elapsed} мс."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
@@ -3072,7 +3072,7 @@ msgstr "Никогда"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr "Для новых устройств потребуется разрешение с уже настроенного устройства. Разблокировка паролем и ключом восстановления будет отключена. Старые данные могут оставаться доступными тому, кто знает прежний пароль и располагает старым пакетом, пока коллекции не применят отзыв доступа и повторное шифрование."
+msgstr "Для новых устройств потребуется разрешение с уже настроенного устройства. Разблокировка с помощью пароля или ключа восстановления будет отключена. Старые данные могут оставаться доступными тому, кто знает прежний пароль и располагает старым пакетом ключей, пока коллекции не применят отзыв доступа и не сменят ключи шифрования."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
