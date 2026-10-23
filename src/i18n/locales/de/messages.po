@@ -4742,7 +4742,7 @@ msgstr "Wo werden meine Aufgaben gespeichert?"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr "Position"
+msgstr "Wochentagsposition"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
@@ -4810,23 +4810,23 @@ msgstr "Ihre Verbindung ist abgelaufen. Stellen Sie die Verbindung wieder her, u
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr "Votre brouillon est toujours ici. Vérifiez-le et réessayez."
+msgstr "Ihr Entwurf ist noch vorhanden. Prüfen Sie ihn und versuchen Sie es erneut."
 
 #. placeholder {0}: people.error.message
 #: src/app/search-screen.tsx
 msgid "Your person identity could not be loaded. {0}"
-msgstr "Impossible de charger votre identité de personne. {0}"
+msgstr "Ihre Personenidentität konnte nicht geladen werden. {0}"
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr "Votre document de personne doit être corrigé avant de filtrer les tâches : {0}."
+msgstr "Ihr Personen-Datensatz muss korrigiert werden, bevor Sie Aufgaben filtern können: {0}."
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr "Votre barre latérale, dans l’ordre.{0}"
+msgstr "Ihre Seitenleiste in der angezeigten Reihenfolge.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
-msgstr "Vos choix non enregistrés sont toujours ici. Vérifiez-les et réessayez."
+msgstr "Ihre nicht gespeicherten Einstellungen sind noch vorhanden. Überprüfen Sie sie und versuchen Sie es erneut."
