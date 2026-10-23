@@ -63,6 +63,7 @@ export class MdbaseNotificationManager {
   // Serialize channel changes across scopes. The installation's push endpoint
   // is shared: collection opt-out must never delete it.
   private tail: Promise<unknown> = Promise.resolve();
+  private readonly statusListeners = new Set<() => void | Promise<void>>();
 
   constructor(private readonly options: MdbaseNotificationManagerOptions) {}
 
@@ -86,6 +87,15 @@ export class MdbaseNotificationManager {
     void this.notifyOptIn(binding, false);
     return () => {
       if (this.binding === binding) this.detach();
+    };
+  }
+
+  /** Recheck status after channel work settles, including background restoration.
+   * Reads never emit, and observing a change never retries registration. */
+  subscribeStatus(listener: () => void | Promise<void>): () => void {
+    this.statusListeners.add(listener);
+    return () => {
+      this.statusListeners.delete(listener);
     };
   }
 
@@ -352,7 +362,16 @@ export class MdbaseNotificationManager {
       );
   }
   private enqueue<T>(work: () => Promise<T>): Promise<T> {
-    const result = this.tail.then(work);
+    const result = this.tail.then(work).finally(() => {
+      for (const listener of [...this.statusListeners]) {
+        try {
+          // Observers must not delay the queue or change an acknowledged outcome.
+          void Promise.resolve(listener()).catch(() => undefined);
+        } catch {
+          /* A failed observer is not a failed channel mutation. */
+        }
+      }
+    });
     this.tail = result.catch(() => undefined);
     return result;
   }

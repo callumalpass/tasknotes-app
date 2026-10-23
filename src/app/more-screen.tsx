@@ -469,11 +469,18 @@ function useReminderSettings() {
   useEffect(() => {
     if (!delivers || busyRef.current) return;
     let active = true;
+    let unsubscribe: (() => void) | undefined;
     const current = ++operation.current;
     void import("../native/mdbase-notifications")
-      .then(({ mdbaseNotifications }) => mdbaseNotifications.status())
+      .then(({ mdbaseNotifications }) => {
+        if (!active) return;
+        unsubscribe = mdbaseNotifications.subscribeStatus(() => {
+          if (active && !busyRef.current) setRevision((value) => value + 1);
+        });
+        return mdbaseNotifications.status();
+      })
       .then((next) => {
-        if (active && current === operation.current) {
+        if (next && active && current === operation.current) {
           setStatus(next);
           setError(null);
         }
@@ -486,6 +493,7 @@ function useReminderSettings() {
       });
     return () => {
       active = false;
+      unsubscribe?.();
     };
   }, [delivers, revision]);
 

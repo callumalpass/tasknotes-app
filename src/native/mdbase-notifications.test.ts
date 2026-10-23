@@ -231,6 +231,41 @@ describe("mdbase native notifications", () => {
     });
   });
 
+  it.each(["throw", "reject"])(
+    "isolates a status observer %s and only notifies on settled mutations",
+    async (failure) => {
+      const fixture = manager({
+        checkPermissions: vi.fn(async () => ({ receive: "granted" })),
+      });
+      fixture.subject.subscribeStatus(() => {
+        if (failure === "throw") throw new Error("observer failed");
+        return Promise.reject(new Error("observer failed"));
+      });
+      // A slow observer must not occupy the channel queue either.
+      fixture.subject.subscribeStatus(() => new Promise<void>(() => undefined));
+      const observer = vi.fn();
+      const unsubscribe = fixture.subject.subscribeStatus(observer);
+      await fixture.subject.status();
+      expect(observer).not.toHaveBeenCalled();
+      expect(await fixture.subject.enable()).toEqual({
+        state: "enabled",
+        optedIn: true,
+      });
+      expect(observer).toHaveBeenCalledOnce();
+      expect(
+        fixture.storage.getItem("tasknotes:mdbase-notifications:v2:scope"),
+      ).toBe("1");
+      await fixture.subject.status();
+      expect(observer).toHaveBeenCalledOnce();
+      unsubscribe();
+      expect(await fixture.subject.disable()).toEqual({
+        state: "off",
+        optedIn: false,
+      });
+      expect(observer).toHaveBeenCalledOnce();
+    },
+  );
+
   it("requires renewed approval when the grant predates manifest criteria", async () => {
     const fixture = manager({
       registerFcm: vi.fn(async () => {
